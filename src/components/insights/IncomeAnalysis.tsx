@@ -3,7 +3,7 @@ import { View, Text, Dimensions } from 'react-native';
 import { LineChart, PieChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
-import { CURRENCY_SYMBOLS, formatCompactCurrency } from '../../utils/currencyUtils';
+import { CURRENCY_SYMBOLS, formatCompactCurrency, formatCompactNumber } from '../../utils/currencyUtils';
 
 interface IncomeAnalysisProps {
     monthlyTrends: {
@@ -60,29 +60,48 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
 
             <Card style={{ marginBottom: 16 }}>
                 <Text style={{ color: colors.textSecondary, marginBottom: 10 }}>Income Trend</Text>
-                <LineChart
-                    data={{
-                        labels: monthlyTrends.labels,
-                        datasets: [{ data: monthlyTrends.incomeData.length > 0 ? monthlyTrends.incomeData : [0] }]
-                    }}
-                    width={screenWidth - 64}
-                    height={220}
-                    yAxisLabel={CURRENCY_SYMBOLS[currency] || currency}
-                    yAxisSuffix=""
-                    formatYLabel={(yValue) => formatCompactCurrency(parseFloat(yValue), currency).replace(CURRENCY_SYMBOLS[currency] || currency, '')}
-                    chartConfig={{
-                        backgroundColor: colors.surface,
-                        backgroundGradientFrom: colors.surface,
-                        backgroundGradientTo: colors.surface,
-                        decimalPlaces: 0,
-                        color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`, // Green for income
-                        labelColor: (opacity = 1) => colors.textSecondary,
-                        style: { borderRadius: 16 },
-                        propsForDots: { r: "4", strokeWidth: "2", stroke: "#4CAF50" }
-                    }}
-                    bezier
-                    style={{ marginVertical: 8, borderRadius: 16 }}
-                />
+                <View style={{ position: 'relative' }}>
+                    <LineChart
+                        data={{
+                            labels: monthlyTrends.labels,
+                            datasets: [{ data: monthlyTrends.incomeData.length > 0 ? monthlyTrends.incomeData : [0] }]
+                        }}
+                        width={screenWidth - 64}
+                        height={220}
+                        yAxisLabel={CURRENCY_SYMBOLS[currency] || currency}
+                        yAxisSuffix=""
+                        formatYLabel={(yValue) => formatCompactNumber(parseFloat(yValue))}
+                        chartConfig={{
+                            backgroundColor: colors.surface,
+                            backgroundGradientFrom: colors.surface,
+                            backgroundGradientTo: colors.surface,
+                            decimalPlaces: 0,
+                            color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`, // Green for income
+                            labelColor: (opacity = 1) => colors.textSecondary,
+                            style: { borderRadius: 16 },
+                            propsForDots: { r: "4", strokeWidth: "2", stroke: "#4CAF50" }
+                        }}
+                        bezier
+                        style={{ marginVertical: 8, borderRadius: 16 }}
+                    />
+                    {isPrivacyEnabled && (
+                        <View style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: '#666',
+                            borderRadius: 16,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginVertical: 8
+                        }}>
+                            <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>🔒</Text>
+                            <Text style={{ color: '#fff', fontSize: 12, marginTop: 4 }}>Hidden in Privacy Mode</Text>
+                        </View>
+                    )}
+                </View>
             </Card>
 
             <Card>

@@ -3,25 +3,40 @@ import { View, Text, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
-import { formatCurrencyAmount, CURRENCY_SYMBOLS, formatCompactCurrency } from '../../utils/currencyUtils';
+import { formatCurrencyAmount, CURRENCY_SYMBOLS, formatCompactCurrency, formatCompactNumber } from '../../utils/currencyUtils';
 
 interface ComparisonChartProps {
     currentMonthExpense: number;
     lastMonthExpense: number;
     averageExpense: number;
+    average6Month: number;
+    average1Year: number;
     currency: string;
     isPrivacyEnabled: boolean;
 }
 
-const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, currency, isPrivacyEnabled }) => {
+const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year, currency, isPrivacyEnabled }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
+    // Determine the scale for compact display
+    const maxValue = Math.max(currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year);
+    let scaledData = [currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year];
+    let suffix = '';
+
+    if (maxValue >= 1000000) {
+        scaledData = scaledData.map(v => v / 1000000);
+        suffix = 'M';
+    } else if (maxValue >= 1000) {
+        scaledData = scaledData.map(v => v / 1000);
+        suffix = 'K';
+    }
+
     const data = {
-        labels: ["This Month", "Last Month", "Avg (3M)"],
+        labels: ["This M", "Last M", "Avg 3M", "Avg 6M", "Avg 1Y"],
         datasets: [
             {
-                data: [currentMonthExpense, lastMonthExpense, averageExpense]
+                data: scaledData
             }
         ]
     };
@@ -47,26 +62,43 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
             </View>
 
             <Card>
-                <BarChart
-                    data={data}
-                    width={screenWidth - 64}
-                    height={220}
-                    yAxisLabel={CURRENCY_SYMBOLS[currency] || currency}
-                    yAxisSuffix=""
-                    // @ts-ignore: formatYLabel exists in the library but types might be outdated
-                    formatYLabel={(yValue: string) => formatCompactCurrency(parseFloat(yValue), currency).replace(CURRENCY_SYMBOLS[currency] || currency, '')}
-                    chartConfig={{
-                        backgroundColor: colors.surface,
-                        backgroundGradientFrom: colors.surface,
-                        backgroundGradientTo: colors.surface,
-                        decimalPlaces: 0,
-                        color: (opacity = 1) => `rgba(255, 152, 0, ${opacity})`, // Orange for comparison
-                        labelColor: (opacity = 1) => colors.textSecondary,
-                        style: { borderRadius: 16 },
-                        barPercentage: 0.7,
-                    }}
-                    style={{ marginVertical: 8, borderRadius: 16 }}
-                />
+                <View style={{ position: 'relative' }}>
+                    <BarChart
+                        data={data}
+                        width={screenWidth - 64}
+                        height={220}
+                        yAxisLabel={CURRENCY_SYMBOLS[currency] || currency}
+                        yAxisSuffix={suffix}
+                        chartConfig={{
+                            backgroundColor: colors.surface,
+                            backgroundGradientFrom: colors.surface,
+                            backgroundGradientTo: colors.surface,
+                            decimalPlaces: 1,
+                            color: (opacity = 1) => `rgba(255, 152, 0, ${opacity})`, // Orange for comparison
+                            labelColor: (opacity = 1) => colors.textSecondary,
+                            style: { borderRadius: 16 },
+                            barPercentage: 0.7,
+                        }}
+                        style={{ marginVertical: 8, borderRadius: 16 }}
+                    />
+                    {isPrivacyEnabled && (
+                        <View style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: '#666',
+                            borderRadius: 16,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginVertical: 8
+                        }}>
+                            <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>🔒</Text>
+                            <Text style={{ color: '#fff', fontSize: 12, marginTop: 4 }}>Hidden in Privacy Mode</Text>
+                        </View>
+                    )}
+                </View>
             </Card>
         </View>
     );
