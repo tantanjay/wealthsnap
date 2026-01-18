@@ -22,6 +22,7 @@ export interface Transaction {
     note?: string;
     isRecurring: boolean;
     recurrenceId?: string; // Link to recurrence rule
+    creationMethod?: 'MANUAL' | 'RECURRENCE';
     createdAt: string;
     updatedAt: string;
 }
