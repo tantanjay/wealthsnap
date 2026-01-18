@@ -30,8 +30,7 @@ const SetupScreen = ({ navigation }: any) => {
 
     // Profile State
     const [name, setName] = useState('');
-    const [currency, setCurrency] = useState('USD');
-    const [salary, setSalary] = useState('');
+    const [currency, setCurrency] = useState('PHP');
     const [goals, setGoals] = useState<string[]>([]);
 
     const availableGoals = ['Save Money', 'Invest More', 'Reduce Debt', 'Track Spending', 'Retire Early'];
@@ -106,7 +105,7 @@ const SetupScreen = ({ navigation }: any) => {
             id: Date.now().toString(),
             name,
             currency,
-            monthlySalary: parseFloat(salary) || 0,
+            monthlySalary: 0,
             financialGoals: goals,
             isOnboardingComplete: true,
             createdAt: new Date().toISOString(),
@@ -439,18 +438,6 @@ const SetupScreen = ({ navigation }: any) => {
                                     </TouchableOpacity>
                                 ))}
                             </View>
-                        </Card>
-
-                        <Card>
-                            <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Monthly Salary (Estimate)</Text>
-                            <TextInput
-                                style={{ color: colors.text, fontSize: 16, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                                value={salary}
-                                onChangeText={setSalary}
-                                keyboardType="numeric"
-                                placeholder="5000"
-                                placeholderTextColor={colors.gray500}
-                            />
                         </Card>
 
                         <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginVertical: 10 }}>Financial Goals</Text>
