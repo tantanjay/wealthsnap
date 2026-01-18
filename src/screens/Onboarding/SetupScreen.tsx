@@ -7,6 +7,7 @@ import { saveUserProfile, setOnboardingComplete } from '../../services/storageSe
 import { UserProfile } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING } from '../../styles/theme';
+import PinCreationScreen from '../PinCreationScreen';
 
 const { height } = Dimensions.get('window');
 
@@ -310,6 +311,15 @@ const SetupScreen = ({ navigation }: any) => {
                     </View>
                 )}
 
+                {/* Step 3: PIN Setup */}
+                {step === 3 && (
+                    <View style={styles.stepContainer}>
+                        <PinCreationScreen
+                            onSuccess={handleFinish}
+                        />
+                    </View>
+                )}
+
                 {/* Step 2: Profile Setup (Existing Logic) */}
                 {step === 2 && (
                     <View style={styles.stepContainer}>
@@ -397,7 +407,7 @@ const SetupScreen = ({ navigation }: any) => {
                             ))}
                         </View>
 
-                        <Button title="Complete Setup" onPress={handleFinish} style={{ marginTop: 20, marginBottom: 40 }} />
+                        <Button title="Continue" onPress={() => setStep(3)} style={{ marginTop: 20, marginBottom: 40 }} />
                     </View>
                 )}
             </ScrollView>
