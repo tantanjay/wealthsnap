@@ -25,7 +25,20 @@ const RecurringExpensesSummaryModal: React.FC<RecurringExpensesSummaryProps> = (
     const totalMonthly = useMemo(() => {
         return recurrences
             .filter(r => r.isActive)
-            .reduce((sum, r) => sum + r.transactionTemplate.amount, 0);
+            .reduce((sum, r) => {
+                const amount = r.transactionTemplate.amount;
+                let monthlyAmount = 0;
+                switch (r.frequency) {
+                    case 'DAILY': monthlyAmount = amount * 30; break;
+                    case 'WEEKLY': monthlyAmount = amount * 4.333; break;
+                    case 'SEMI_MONTHLY': monthlyAmount = amount * 2; break;
+                    case 'MONTHLY': monthlyAmount = amount; break;
+                    case 'QUARTERLY': monthlyAmount = amount / 3; break;
+                    case 'YEARLY': monthlyAmount = amount / 12; break;
+                    default: monthlyAmount = amount;
+                }
+                return sum + monthlyAmount;
+            }, 0);
     }, [recurrences]);
 
     const upcoming = useMemo(() => {
@@ -51,7 +64,7 @@ const RecurringExpensesSummaryModal: React.FC<RecurringExpensesSummaryProps> = (
             title="Recurring Expenses"
             subtitle="Monthly commitments"
         >
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                 {/* Total Section */}
                 <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
                     <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 5 }}>Total Monthly Commitment</Text>

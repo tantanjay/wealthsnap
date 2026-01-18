@@ -25,8 +25,10 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
 }) => {
     const { colors } = useTheme();
 
+    const cardWidth = (Dimensions.get('window').width - 32 - 12) / 2; // (Screen - Padding - Gap) / 2
+
     const renderCard = (title: string, value: string, subValue?: string, color?: string) => (
-        <View style={{ width: Dimensions.get('window').width * 0.45, marginRight: 12 }}>
+        <View style={{ width: cardWidth, marginRight: 12 }}>
             <Card style={{ padding: 16, height: 120, justifyContent: 'space-between', backgroundColor: colors.surface }}>
                 <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600' }}>{title.toUpperCase()}</Text>
                 <View>
