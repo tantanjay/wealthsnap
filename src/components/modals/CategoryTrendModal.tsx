@@ -13,6 +13,7 @@ interface CategoryTrendModalProps {
     category: string;
     transactions: Transaction[];
     currency: string;
+    grouping?: 'CATEGORY' | 'SUB_CATEGORY';
 }
 
 const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
@@ -20,14 +21,15 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
     onClose,
     category,
     transactions,
-    currency
+    currency,
+    grouping = 'CATEGORY'
 }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
     const trendData = useMemo(() => {
-        return getCategoryTrend(transactions, category, 6);
-    }, [transactions, category]);
+        return getCategoryTrend(transactions, category, 6, grouping);
+    }, [transactions, category, grouping]);
 
     const chartData = {
         labels: trendData.labels,
