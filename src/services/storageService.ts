@@ -187,6 +187,17 @@ export const getAllRecurrenceRules = async (): Promise<RecurrenceRule[]> => {
     return (await safeGet<RecurrenceRule[]>(KEYS.RECURRENCE_RULES)) || [];
 };
 
+export const deleteRecurrenceRule = async (id: string): Promise<void> => {
+    try {
+        const rules = await getAllRecurrenceRules();
+        const filtered = rules.filter(r => r.id !== id);
+        await safeSave(KEYS.RECURRENCE_RULES, filtered);
+    } catch (error) {
+        console.error('Error deleting recurrence rule:', error);
+        throw new Error('Failed to delete recurrence rule');
+    }
+};
+
 // ============= Onboarding =============
 
 export const setOnboardingComplete = async (): Promise<void> => {
