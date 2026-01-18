@@ -53,12 +53,25 @@ export const getCategoryBreakdown = (transactions: Transaction[], type: Transact
     const breakdown: { [key: string]: number } = {};
     let total = 0;
 
-    transactions.filter(t => t.type === type).forEach(t => {
-        let key = t.category;
-        if (groupBy === 'SUB_CATEGORY') {
-            // Use subCategory if available, otherwise fallback to category (or maybe "Uncategorized"?)
-            // User requested "Item" view, so falling back to Category name is reasonable if no sub-cat.
-            key = t.subCategory || t.category;
+    const filteredTransactions = transactions.filter(t => t.type === type);
+
+    filteredTransactions.forEach(t => {
+        let key: string;
+
+        if (groupBy === 'CATEGORY') {
+            // Group mode: Group by category group (e.g., "Family & Home", "Food & Lifestyle")
+            // We need to get the group for this category
+            // Import getCategoryGroup from categories.ts
+            const { getCategoryGroup } = require('../constants/categories');
+            key = getCategoryGroup(t.category, t.type);
+        } else {
+            // Item mode (SUB_CATEGORY): Group by individual category/item (e.g., "Groceries", "Food")
+            // If subCategory exists and is valid, use it; otherwise use category
+            if (t.subCategory && t.subCategory !== 'undefined') {
+                key = t.subCategory;
+            } else {
+                key = t.category;
+            }
         }
 
         breakdown[key] = (breakdown[key] || 0) + t.amount;

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, ScrollView, TouchableOpacity, Text, RefreshControl } from 'react-native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
@@ -24,6 +24,8 @@ const InsightsScreen = ({ navigation }: any) => {
     const [refreshing, setRefreshing] = useState(false);
     const [expenseGrouping, setExpenseGrouping] = useState<'CATEGORY' | 'SUB_CATEGORY'>('CATEGORY');
 
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+
     const [data, setData] = useState({
         netCashFlow: 0,
         income: 0,
@@ -39,35 +41,37 @@ const InsightsScreen = ({ navigation }: any) => {
         anomalies: [] as Metrics.Anomaly[]
     });
 
-    const loadData = async () => {
+    const fetchTransactions = async () => {
         const profile = await getUserProfile();
         if (profile?.currency) setCurrency(profile.currency);
-
         const allTransactions = await getAllTransactions();
+        setTransactions(allTransactions);
+    };
 
+    const calculateMetrics = useCallback(() => {
         const today = new Date();
-        const currentMonthTrans = Metrics.getTransactionsByMonth(allTransactions, today);
+        const currentMonthTrans = Metrics.getTransactionsByMonth(transactions, today);
 
         const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const lastMonthTrans = Metrics.getTransactionsByMonth(allTransactions, lastMonthDate);
+        const lastMonthTrans = Metrics.getTransactionsByMonth(transactions, lastMonthDate);
 
         // Core Metrics
         const totals = Metrics.calculateTotals(currentMonthTrans);
         const savingsRate = Metrics.calculateSavingsRate(totals.income, totals.expense);
-        const burnRate = Metrics.calculateBurnRate(allTransactions);
+        const burnRate = Metrics.calculateBurnRate(transactions);
 
         // Breakdowns
-        const incomeBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'INCOME');
+        const incomeBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'INCOME', 'SUB_CATEGORY');
         const expenseBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', expenseGrouping);
 
         // Trends
-        const monthlyTrends = Metrics.getMonthlyTrends(allTransactions, 6);
+        const monthlyTrends = Metrics.getMonthlyTrends(transactions, 6);
 
         // Comparison
         const lastMonthTotals = Metrics.calculateTotals(lastMonthTrans);
 
         // Anomalies
-        const anomalies = Metrics.detectAnomalies(currentMonthTrans, allTransactions);
+        const anomalies = Metrics.detectAnomalies(currentMonthTrans, transactions);
 
         setData({
             netCashFlow: totals.net,
@@ -83,19 +87,23 @@ const InsightsScreen = ({ navigation }: any) => {
             averageExpense: burnRate, // Using burn rate as rough average for now
             anomalies
         });
-    };
+    }, [transactions, expenseGrouping]);
 
     useFocusEffect(
         useCallback(() => {
-            loadData();
-        }, [expenseGrouping])
+            fetchTransactions();
+        }, [])
     );
+
+    useEffect(() => {
+        calculateMetrics();
+    }, [calculateMetrics, expenseGrouping]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await loadData();
+        await fetchTransactions();
         setRefreshing(false);
-    }, [expenseGrouping]);
+    }, []);
 
     return (
         <ScreenWrapper>
