@@ -17,6 +17,14 @@
             "env": {
                 "EXPO_NO_TELEMETRY": "1"
             }
+        },
+        "apk": {
+            "android": {
+                "buildType": "apk"
+            },
+            "env": {
+                "EXPO_NO_TELEMETRY": "1"
+            }
         }
     },
     "submit": {
