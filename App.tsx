@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { isOnboardingComplete } from './src/services/storageService';
+import { SecurityProvider } from './src/context/SecurityContext';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -30,10 +31,12 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <SafeAreaProvider>
-        <StatusBar style="auto" />
-        <AppNavigator initialRoute={initialRoute} />
-      </SafeAreaProvider>
+      <SecurityProvider>
+        <SafeAreaProvider>
+          <StatusBar style="auto" />
+          <AppNavigator initialRoute={initialRoute} />
+        </SafeAreaProvider>
+      </SecurityProvider>
     </ThemeProvider>
   );
 }
