@@ -89,3 +89,32 @@ export const shouldLockApp = async (): Promise<boolean> => {
 
     return elapsed > maxDuration;
 };
+
+// ============= Biometrics =============
+
+import * as LocalAuthentication from 'expo-local-authentication';
+
+export const hasBiometrics = async (): Promise<boolean> => {
+    try {
+        const hasHardware = await LocalAuthentication.hasHardwareAsync();
+        const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+        return hasHardware && isEnrolled;
+    } catch (error) {
+        return false;
+    }
+};
+
+export const authenticateBiometrics = async (): Promise<boolean> => {
+    try {
+        const result = await LocalAuthentication.authenticateAsync({
+            promptMessage: 'Unlock WealthSnap',
+            fallbackLabel: 'Use PIN',
+            cancelLabel: 'Cancel',
+            disableDeviceFallback: false, // Allow device passcode if needed, typically we want our app PIN as fallback though. 
+        });
+        return result.success;
+    } catch (error) {
+        console.error('Biometric auth error:', error);
+        return false;
+    }
+};
