@@ -662,7 +662,6 @@ const RecordScreen = ({ navigation }: any) => {
                                 borderTopLeftRadius: 24,
                                 borderTopRightRadius: 24,
                                 maxHeight: SCREEN_HEIGHT * 0.75,
-                                paddingBottom: 40
                             }}>
                                 {/* Modal Header */}
                                 <View style={{
@@ -734,7 +733,10 @@ const RecordScreen = ({ navigation }: any) => {
                                     </View>
                                 )}
 
-                                <ScrollView style={{ padding: 20 }} showsVerticalScrollIndicator={false}>
+                                <ScrollView
+                                    contentContainerStyle={{ padding: 20, paddingBottom: 60 }}
+                                    showsVerticalScrollIndicator={false}
+                                >
                                     {/* Show search results */}
                                     {categorySearch.trim() && !selectedGroup ? (
                                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
