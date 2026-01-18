@@ -4,7 +4,9 @@ import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
 import { clearAllData, saveGeminiConfig, getGeminiConfig } from '../services/storageService';
-import * as Sharing from 'expo-sharing'; // For backup (mock)
+import * as DocumentPicker from 'expo-document-picker';
+import * as Sharing from 'expo-sharing';
+import { createBackup, restoreFromBackup } from '../services/backupService';
 import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import { isPinSet, getTimeoutSetting, saveTimeoutSetting, TimeoutOption, TIMEOUT_OPTIONS } from '../services/securityService';
 import PinCreationScreen from './PinCreationScreen';
@@ -19,6 +21,14 @@ const ProfileScreen = ({ navigation }: any) => {
     const [hasPin, setHasPin] = useState(false);
     const [timeoutSetting, setTimeoutSetting] = useState<TimeoutOption>('daily');
     const [showPinModal, setShowPinModal] = useState(false);
+
+    // Backup/Restore State
+    const [showBackupModal, setShowBackupModal] = useState(false);
+    const [showRestoreModal, setShowRestoreModal] = useState(false);
+    const [backupPassword, setBackupPassword] = useState('');
+    const [restorePassword, setRestorePassword] = useState('');
+    const [restoreFileUri, setRestoreFileUri] = useState<string | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
@@ -78,9 +88,82 @@ const ProfileScreen = ({ navigation }: any) => {
         }
     };
 
-    const handleBackup = async () => {
-        // Mock backup logic
-        Alert.alert('Backup', 'Backup feature coming soon!');
+    const handleCreateBackup = async () => {
+        if (!backupPassword) {
+            Alert.alert('Error', 'Password is required to encrypt your backup.');
+            return;
+        }
+
+        try {
+            setIsProcessing(true);
+            const uri = await createBackup(backupPassword);
+            setIsProcessing(false);
+            setShowBackupModal(false);
+            setBackupPassword('');
+
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(uri);
+            } else {
+                Alert.alert('Success', 'Backup created at ' + uri);
+            }
+        } catch (error) {
+            setIsProcessing(false);
+            Alert.alert('Error', 'Failed to create backup: ' + (error as Error).message);
+        }
+    };
+
+    const handleSelectRestoreFile = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/zip',
+                copyToCacheDirectory: true,
+            });
+
+            if (result.canceled) return;
+
+            if (result.assets && result.assets.length > 0) {
+                setRestoreFileUri(result.assets[0].uri);
+                setShowRestoreModal(true);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to pick file');
+        }
+    };
+
+    const handleRestore = async () => {
+        if (!restoreFileUri) return;
+        if (!restorePassword) {
+            Alert.alert('Error', 'Password is required.');
+            return;
+        }
+
+        try {
+            setIsProcessing(true);
+            await restoreFromBackup(restoreFileUri, restorePassword);
+            setIsProcessing(false);
+            setShowRestoreModal(false);
+            setRestorePassword('');
+
+            Alert.alert('Success', 'Data restored successfully. The app will reload.', [
+                {
+                    text: 'OK', onPress: () => {
+                        // Reset to Main to refresh everything
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Main' }],
+                        });
+                    }
+                }
+            ]);
+        } catch (error) {
+            setIsProcessing(false);
+            const msg = (error as Error).message;
+            if (msg === 'INVALID_PASSWORD') {
+                Alert.alert('Error', 'Incorrect password.');
+            } else {
+                Alert.alert('Error', 'Failed to restore: ' + msg);
+            }
+        }
     };
 
     const ThemeOption = ({ title, value, current }: { title: string, value: 'light' | 'dark' | 'system', current: string }) => (
@@ -118,8 +201,8 @@ const ProfileScreen = ({ navigation }: any) => {
 
             <Card>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Data Management</Text>
-                <Button variant="secondary" title="Backup Data" onPress={handleBackup} style={{ marginBottom: 10 }} />
-                <Button variant="outline" title="Restore Data" onPress={() => Alert.alert('Restore', 'Feature coming soon')} style={{ marginBottom: 10 }} />
+                <Button variant="secondary" title="Backup Data" onPress={() => setShowBackupModal(true)} style={{ marginBottom: 10 }} />
+                <Button variant="outline" title="Restore Data" onPress={handleSelectRestoreFile} style={{ marginBottom: 10 }} />
                 <Button variant="ghost" title="Clear All Data" onPress={handleClearData} />
             </Card>
 
@@ -228,6 +311,68 @@ const ProfileScreen = ({ navigation }: any) => {
                         }}
                         onCancel={() => setShowPinModal(false)}
                     />
+                </View>
+            </Modal>
+
+            {/* Backup Modal */}
+            <Modal visible={showBackupModal} animationType="slide" transparent>
+                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
+                    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 20 }}>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Create Backup</Text>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 15 }}>Enter a password to encrypt your backup file.</Text>
+
+                        <TextInput
+                            style={{
+                                borderWidth: 1,
+                                borderColor: colors.border,
+                                borderRadius: 8,
+                                padding: 12,
+                                color: colors.text,
+                                marginBottom: 20
+                            }}
+                            placeholder="Password"
+                            placeholderTextColor={colors.gray500}
+                            secureTextEntry
+                            value={backupPassword}
+                            onChangeText={setBackupPassword}
+                        />
+
+                        <View style={{ gap: 10 }}>
+                            <Button title={isProcessing ? "Creating..." : "Create & Share"} onPress={handleCreateBackup} disabled={isProcessing} />
+                            <Button variant="ghost" title="Cancel" onPress={() => setShowBackupModal(false)} disabled={isProcessing} />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Restore Modal */}
+            <Modal visible={showRestoreModal} animationType="slide" transparent>
+                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
+                    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 20 }}>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Restore Backup</Text>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 15 }}>Enter the password for this backup file.</Text>
+
+                        <TextInput
+                            style={{
+                                borderWidth: 1,
+                                borderColor: colors.border,
+                                borderRadius: 8,
+                                padding: 12,
+                                color: colors.text,
+                                marginBottom: 20
+                            }}
+                            placeholder="Password"
+                            placeholderTextColor={colors.gray500}
+                            secureTextEntry
+                            value={restorePassword}
+                            onChangeText={setRestorePassword}
+                        />
+
+                        <View style={{ gap: 10 }}>
+                            <Button title={isProcessing ? "Restoring..." : "Restore Data"} onPress={handleRestore} disabled={isProcessing} />
+                            <Button variant="ghost" title="Cancel" onPress={() => setShowRestoreModal(false)} disabled={isProcessing} />
+                        </View>
+                    </View>
                 </View>
             </Modal>
         </ScreenWrapper >
