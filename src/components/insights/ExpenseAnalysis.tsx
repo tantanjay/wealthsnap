@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
@@ -7,6 +7,7 @@ import { formatCurrencyAmount, formatCompactCurrency } from '../../utils/currenc
 import { getBudgets, checkBudgetStatus, Budget } from '../../services/budgetService';
 import CategoryTrendModal from '../modals/CategoryTrendModal';
 import RecurringExpensesSummary from '../modals/RecurringExpensesSummary';
+import AllExpensesModal from '../modals/AllExpensesModal';
 import { Ionicons } from '@expo/vector-icons';
 import { Transaction } from '../../types';
 
@@ -29,6 +30,7 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
     const [budgets, setBudgets] = React.useState<Budget[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
     const [showRecurringModal, setShowRecurringModal] = React.useState(false);
+    const [showAllModal, setShowAllModal] = React.useState(false);
 
     React.useEffect(() => {
         loadBudgets();
@@ -54,6 +56,31 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
     }));
 
     const topCategory = categoryBreakdown[0];
+
+    // Sort: Over-budget items first, then Budgeted items, then by amount
+    const sortedCategories = React.useMemo(() => {
+        return [...categoryBreakdown].sort((a, b) => {
+            const budgetA = budgets.find(budget => budget.category === a.name);
+            const budgetB = budgets.find(budget => budget.category === b.name);
+
+            const isOverA = budgetA ? a.amount > budgetA.amount : false;
+            const isOverB = budgetB ? b.amount > budgetB.amount : false;
+
+            // 1. Priority: Over Budget
+            if (isOverA && !isOverB) return -1;
+            if (!isOverA && isOverB) return 1;
+
+            // 2. Priority: Has Budget (but not necessarily over)
+            const hasBudgetA = !!budgetA;
+            const hasBudgetB = !!budgetB;
+
+            if (hasBudgetA && !hasBudgetB) return -1;
+            if (!hasBudgetA && hasBudgetB) return 1;
+
+            // 3. Fallback: Amount Descending
+            return b.amount - a.amount;
+        });
+    }, [categoryBreakdown, budgets]);
 
     return (
         <View>
@@ -142,7 +169,8 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
 
             <Card>
                 <Text style={{ color: colors.textSecondary, marginBottom: 10 }}>Top Spending Categories</Text>
-                {categoryBreakdown.slice(0, 5).map((item, index) => {
+                {/* Show only top 3 items statically */}
+                {sortedCategories.slice(0, 3).map((item, index) => {
                     const budget = budgets.find(b => b.category === item.name);
                     const budgetStatus = budget ? checkBudgetStatus(item.amount, budget.amount) : null;
 
@@ -202,6 +230,24 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                         </View>
                     );
                 })}
+
+                {/* View All Button */}
+                {categoryBreakdown.length > 3 && (
+                    <TouchableOpacity
+                        onPress={() => setShowAllModal(true)}
+                        style={{
+                            marginTop: 8,
+                            paddingVertical: 10,
+                            alignItems: 'center',
+                            borderTopWidth: 1,
+                            borderTopColor: colors.border
+                        }}
+                    >
+                        <Text style={{ color: colors.primary, fontWeight: '600' }}>
+                            View All {categoryBreakdown.length} Categories
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </Card>
 
             {/* Category Trend Modal */}
@@ -211,6 +257,7 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                 category={selectedCategory || ''}
                 transactions={transactions}
                 currency={currency}
+                grouping={grouping}
             />
 
             {/* Recurring Expenses Summary Modal */}
@@ -219,6 +266,16 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                 onClose={() => setShowRecurringModal(false)}
                 transactions={transactions}
                 currency={currency}
+            />
+
+            <AllExpensesModal
+                visible={showAllModal}
+                onClose={() => setShowAllModal(false)}
+                categoryBreakdown={sortedCategories}
+                budgets={budgets}
+                currency={currency}
+                isPrivacyEnabled={isPrivacyEnabled}
+                onSelectCategory={setSelectedCategory}
             />
         </View>
     );
