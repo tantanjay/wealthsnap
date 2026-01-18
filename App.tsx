@@ -11,10 +11,7 @@ export default function App() {
   const [initialRoute, setInitialRoute] = useState<'Onboarding' | 'Main'>('Onboarding');
 
   useEffect(() => {
-    // In future, check onboarding here
-    // for now, always onboarding for testing
-    // checkOnboarding();
-    setLoading(false);
+    checkOnboarding();
   }, []);
 
   const checkOnboarding = async () => {
@@ -35,7 +32,7 @@ export default function App() {
     <ThemeProvider>
       <SafeAreaProvider>
         <StatusBar style="auto" />
-        <AppNavigator />
+        <AppNavigator initialRoute={initialRoute} />
       </SafeAreaProvider>
     </ThemeProvider>
   );

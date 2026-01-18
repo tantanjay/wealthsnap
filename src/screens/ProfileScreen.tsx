@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
 import { clearAllData, saveGeminiConfig, getGeminiConfig } from '../services/storageService';
 import * as Sharing from 'expo-sharing'; // For backup (mock)
+import { CommonActions } from '@react-navigation/native';
 
 const ProfileScreen = ({ navigation }: any) => {
     const { colors, toggleTheme, mode } = useTheme();
@@ -14,13 +15,19 @@ const ProfileScreen = ({ navigation }: any) => {
     const handleClearData = async () => {
         Alert.alert(
             'Clear Data',
-            'Are you sure you want to delete all data? This cannot be undone.',
+            'Are you sure you want to delete all data? This cannot be undone. The app will restart automatically.',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'Delete', style: 'destructive', onPress: async () => {
                         await clearAllData();
-                        Alert.alert('Data Cleared', 'Please restart the app.');
+                        // Reset navigation to Welcome screen (simulates app restart)
+                        navigation.dispatch(
+                            CommonActions.reset({
+                                index: 0,
+                                routes: [{ name: 'Welcome' }],
+                            })
+                        );
                     }
                 }
             ]
