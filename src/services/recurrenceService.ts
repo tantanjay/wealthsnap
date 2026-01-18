@@ -55,6 +55,7 @@ export const processRecurrenceRules = async (): Promise<number> => {
                     updatedAt: new Date().toISOString(),
                     isRecurring: true,
                     recurrenceId: rule.id,
+                    creationMethod: 'RECURRENCE',
                 };
 
                 await saveTransaction(newTransaction);

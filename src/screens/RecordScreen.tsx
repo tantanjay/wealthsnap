@@ -11,15 +11,19 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const RecordScreen = ({ navigation }: any) => {
+const RecordScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
-    const [type, setType] = useState<TransactionType>('EXPENSE');
-    const [amount, setAmount] = useState('');
-    const [category, setCategory] = useState('');
-    const [subCategory, setSubCategory] = useState('');
-    const [note, setNote] = useState('');
-    const [isRecurring, setIsRecurring] = useState(false);
-    const [recurringLabel, setRecurringLabel] = useState(''); // Label for recurring transaction
+    const { transaction } = route.params || {};
+
+    const [type, setType] = useState<TransactionType>(transaction?.type || 'EXPENSE');
+    const [amount, setAmount] = useState(transaction?.amount?.toString() || '');
+    const [category, setCategory] = useState(transaction?.category || '');
+    const [subCategory, setSubCategory] = useState(transaction?.subCategory || '');
+    const [note, setNote] = useState(transaction?.note || '');
+    const [isRecurring, setIsRecurring] = useState(transaction?.isRecurring || false);
+    // Recurring fields might need more complex handling if we support editing recurrence rules from here
+    // For now let's assume valid transaction edits don't change recurrence rules deeply
+    const [recurringLabel, setRecurringLabel] = useState('');
     const [frequency, setFrequency] = useState<string>('MONTHLY');
     const [startDate, setStartDate] = useState<Date>(new Date());
     const [endsNever, setEndsNever] = useState(true);
@@ -209,21 +213,22 @@ const RecordScreen = ({ navigation }: any) => {
             }
         }
 
-        const transaction: Transaction = {
-            id: transactionId,
+        const newTransaction: Transaction = {
+            id: transaction ? transaction.id : transactionId,
             type,
             amount: parseFloat(amount),
             category,
             subCategory: subCategory || undefined,
             note: note || undefined,
-            date: new Date().toISOString(),
-            isRecurring,
-            recurrenceId: recurrenceRuleId,
-            createdAt: new Date().toISOString(),
+            date: transaction ? transaction.date : new Date().toISOString(), // Keep original date if editing
+            isRecurring: transaction ? transaction.isRecurring : isRecurring, // Keep original recurrence status if editing (simplification)
+            recurrenceId: transaction ? transaction.recurrenceId : recurrenceRuleId,
+            creationMethod: transaction ? transaction.creationMethod : 'MANUAL',
+            createdAt: transaction ? transaction.createdAt : new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
 
-        await saveTransaction(transaction);
+        await saveTransaction(newTransaction);
 
         // Reset form immediately before navigation
         resetForm();
@@ -241,7 +246,9 @@ const RecordScreen = ({ navigation }: any) => {
     return (
         <ScreenWrapper>
             <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 20 }}>New Transaction</Text>
+                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 20 }}>
+                    {transaction ? 'Edit Transaction' : 'New Transaction'}
+                </Text>
 
                 {/* Type Toggle */}
                 <View style={{ flexDirection: 'row', marginBottom: 20, backgroundColor: colors.surface, borderRadius: 12, padding: 4 }}>

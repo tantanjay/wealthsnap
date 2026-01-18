@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Text, View, Alert, TextInput, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { Text, View, Alert, TextInput, TouchableOpacity, StyleSheet, Modal, FlatList } from 'react-native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
-import { clearAllData, saveGeminiConfig, getGeminiConfig } from '../services/storageService';
+import { clearAllData, saveGeminiConfig, getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule } from '../services/storageService';
+import { RecurrenceRule } from '../types';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 import { createBackup, restoreFromBackup } from '../services/backupService';
@@ -29,6 +30,10 @@ const ProfileScreen = ({ navigation }: any) => {
     const [restorePassword, setRestorePassword] = useState('');
     const [restoreFileUri, setRestoreFileUri] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Recurring Rules State
+    const [showRecurringModal, setShowRecurringModal] = useState(false);
+    const [recurrenceRules, setRecurrenceRules] = useState<RecurrenceRule[]>([]);
 
     useFocusEffect(
         useCallback(() => {
@@ -166,6 +171,43 @@ const ProfileScreen = ({ navigation }: any) => {
         }
     };
 
+    const handleManageRecurring = async () => {
+        const rules = await getAllRecurrenceRules();
+        setRecurrenceRules(rules);
+        setShowRecurringModal(true);
+    };
+
+    const handleToggleRule = async (rule: RecurrenceRule) => {
+        try {
+            const updatedRule = { ...rule, isActive: !rule.isActive };
+            await saveRecurrenceRule(updatedRule);
+            // Refresh list
+            const rules = await getAllRecurrenceRules();
+            setRecurrenceRules(rules);
+        } catch (error) {
+            Alert.alert('Error', 'Failed to update rule');
+        }
+    };
+
+    const handleDeleteRule = (id: string) => {
+        Alert.alert(
+            "Delete Rule",
+            "Stop this recurring transaction? Past transactions will remain.",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        await deleteRecurrenceRule(id);
+                        const rules = await getAllRecurrenceRules();
+                        setRecurrenceRules(rules);
+                    }
+                }
+            ]
+        );
+    };
+
     const ThemeOption = ({ title, value, current }: { title: string, value: 'light' | 'dark' | 'system', current: string }) => (
         <TouchableOpacity
             style={[
@@ -197,6 +239,11 @@ const ProfileScreen = ({ navigation }: any) => {
                     <ThemeOption title="Dark" value="dark" current={mode} />
                     <ThemeOption title="System" value="system" current={mode} />
                 </View>
+            </Card>
+
+            <Card>
+                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Transactions</Text>
+                <Button variant="outline" title="Manage Recurring" onPress={handleManageRecurring} />
             </Card>
 
             <Card>
@@ -373,6 +420,52 @@ const ProfileScreen = ({ navigation }: any) => {
                             <Button variant="ghost" title="Cancel" onPress={() => setShowRestoreModal(false)} disabled={isProcessing} />
                         </View>
                     </View>
+                </View>
+            </Modal>
+
+            {/* Recurring Rules Modal */}
+            <Modal visible={showRecurringModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowRecurringModal(false)}>
+                <View style={{ flex: 1, backgroundColor: colors.background, paddingVertical: 20, paddingHorizontal: 20 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, marginTop: 20 }}>
+                        <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>Recurring Transactions</Text>
+                        <TouchableOpacity onPress={() => setShowRecurringModal(false)} style={{ padding: 10 }}>
+                            <Text style={{ color: colors.primary, fontSize: 16, fontWeight: 'bold' }}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {recurrenceRules.length === 0 ? (
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                            <Text style={{ color: colors.textSecondary }}>No recurring rules found.</Text>
+                        </View>
+                    ) : (
+                        <FlatList
+                            data={recurrenceRules}
+                            keyExtractor={item => item.id}
+                            renderItem={({ item }) => (
+                                <Card style={{ marginBottom: 10 }}>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>{item.name || item.transactionTemplate.category}</Text>
+                                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                                            <TouchableOpacity onPress={() => handleToggleRule(item)}>
+                                                <Text style={{ color: item.isActive ? colors.success : colors.textSecondary, fontWeight: '600' }}>
+                                                    {item.isActive ? 'Active' : 'Paused'}
+                                                </Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity onPress={() => handleDeleteRule(item.id)}>
+                                                <Text style={{ color: colors.error, fontWeight: '600' }}>Delete</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                    <Text style={{ color: colors.textSecondary }}>
+                                        {item.frequency} • ${item.transactionTemplate.amount}
+                                    </Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
+                                        Next due: {new Date(item.nextDueDate).toLocaleDateString()}
+                                    </Text>
+                                </Card>
+                            )}
+                        />
+                    )}
                 </View>
             </Modal>
         </ScreenWrapper >
