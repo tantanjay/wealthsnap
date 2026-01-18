@@ -308,25 +308,32 @@ const SetupScreen = ({ navigation }: any) => {
                         <Card>
                             <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Currency</Text>
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                                {['USD', 'EUR', 'GBP', 'JPY', 'PHP'].map(curr => (
-                                    <Text
+                                {['PHP', 'USD', 'EUR', 'GBP', 'JPY'].map(curr => (
+                                    <TouchableOpacity
                                         key={curr}
                                         onPress={() => setCurrency(curr)}
                                         style={{
-                                            color: currency === curr ? colors.white : colors.text,
                                             backgroundColor: currency === curr ? colors.primary : 'transparent',
                                             paddingVertical: 8,
-                                            paddingHorizontal: 12,
+                                            paddingHorizontal: 16,
                                             borderRadius: 8,
                                             marginRight: 8,
                                             marginBottom: 8,
-                                            overflow: 'hidden',
                                             borderWidth: 1,
-                                            borderColor: currency === curr ? colors.primary : colors.border
+                                            borderColor: currency === curr ? colors.primary : colors.border,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
                                         }}
                                     >
-                                        {curr}
-                                    </Text>
+                                        <Text
+                                            style={{
+                                                color: currency === curr ? colors.white : colors.text,
+                                                fontWeight: '600'
+                                            }}
+                                        >
+                                            {curr}
+                                        </Text>
+                                    </TouchableOpacity>
                                 ))}
                             </View>
                         </Card>
