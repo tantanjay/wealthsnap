@@ -56,11 +56,13 @@ export const getTopTransactions = (transactions: Transaction[], limit: number = 
         .slice(0, limit);
 };
 
-export const getCategoryTrend = (transactions: Transaction[], category: string, months: number = 6) => {
+export const getCategoryTrend = (transactions: Transaction[], category: string, months: number = 6, grouping: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
     const result = {
         labels: [] as string[],
         data: [] as number[]
     };
+
+    const { getCategoryGroup } = require('../constants/categories');
 
     const today = new Date();
     for (let i = months - 1; i >= 0; i--) {
@@ -69,7 +71,17 @@ export const getCategoryTrend = (transactions: Transaction[], category: string, 
 
         const monthlyTransactions = getTransactionsByMonth(transactions, d);
         const categoryTotal = monthlyTransactions
-            .filter(t => t.category === category)
+            .filter(t => {
+                if (grouping === 'CATEGORY') {
+                    // Group mode: check against category group
+                    const group = getCategoryGroup(t.category, t.type);
+                    return group === category;
+                } else {
+                    // Item mode (SUB_CATEGORY): check against subCategory (or category if sub is missing)
+                    const key = (t.subCategory && t.subCategory !== 'undefined') ? t.subCategory : t.category;
+                    return key === category;
+                }
+            })
             .reduce((sum, t) => sum + t.amount, 0);
 
         result.data.push(categoryTotal);
