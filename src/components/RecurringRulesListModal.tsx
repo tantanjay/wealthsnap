@@ -3,6 +3,7 @@ import { View, Text, Modal, TouchableOpacity, FlatList } from 'react-native';
 import { Card } from './index';
 import { useTheme } from '../context/ThemeContext';
 import { RecurrenceRule } from '../types';
+import { formatCurrencyAmount } from '../utils/currencyUtils';
 
 interface RecurringRulesListModalProps {
     visible: boolean;
@@ -10,6 +11,7 @@ interface RecurringRulesListModalProps {
     rules: RecurrenceRule[];
     onToggleRule: (rule: RecurrenceRule) => void;
     onDeleteRule: (id: string) => void;
+    currency: string;
 }
 
 export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = ({
@@ -17,7 +19,8 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
     onClose,
     rules,
     onToggleRule,
-    onDeleteRule
+    onDeleteRule,
+    currency
 }) => {
     const { colors } = useTheme();
 
@@ -60,7 +63,7 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
                                     </View>
                                 </View>
                                 <Text style={{ color: colors.textSecondary }}>
-                                    {item.frequency} • ${item.transactionTemplate.amount}
+                                    {item.frequency} • {formatCurrencyAmount(item.transactionTemplate.amount, currency)}
                                 </Text>
                                 <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
                                     Next due: {new Date(item.nextDueDate).toLocaleDateString()}
