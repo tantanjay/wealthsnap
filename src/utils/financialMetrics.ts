@@ -116,48 +116,36 @@ export interface Anomaly {
 export const detectAnomalies = (currentMonthTransactions: Transaction[], allTransactions: Transaction[]): Anomaly[] => {
     const anomalies: Anomaly[] = [];
 
-    // 1. Check for new categories
+    // Only detect anomalies if we have enough historical data
+    if (allTransactions.length < 10) {
+        return anomalies; // Not enough data to detect meaningful patterns
+    }
+
     const historyTransactions = allTransactions.filter(t => !currentMonthTransactions.includes(t));
-    const historicalCategories = new Set(historyTransactions.map(t => t.category));
 
-    const newCategories = new Set<string>();
-    currentMonthTransactions.forEach(t => {
-        if (!historicalCategories.has(t.category) && t.type === 'EXPENSE') {
-            newCategories.add(t.category);
-        }
-    });
-
-    newCategories.forEach(cat => {
-        anomalies.push({
-            type: 'NEW_CATEGORY',
-            message: `New recurring expense detected: ${cat}`, // Simplified text
-            severity: 'MEDIUM'
-        });
-    });
-
-    // 2. Check for spikes in existing categories (Simple Avg comparison)
-    // Group current month by category
+    // Check for significant spending spikes (50%+ increase vs historical average)
     const currentBreakdown = getCategoryBreakdown(currentMonthTransactions, 'EXPENSE');
 
     currentBreakdown.forEach(item => {
-        // Find average for this category in history
+        // Only check categories that exist in history
         const catHistory = historyTransactions.filter(t => t.category === item.name && t.type === 'EXPENSE');
-        if (catHistory.length === 0) return;
+        if (catHistory.length < 3) return; // Need at least 3 historical transactions
 
-        // Simple average of all historical transactions (better would be monthly average, but this is a start)
-        // Let's do monthly average for the last 3 months for this category
-        let totalCatHistory = 0;
-        let monthsWithTrans = 0; // naive count
-        // Group history by month to get proper monthly average
-        // ... (Skipping complex grouping for brevity, using simple avg of total / 3 as a heuristic if we assume 3 months history)
+        // Calculate historical average
+        const historicalTotal = catHistory.reduce((sum, t) => sum + t.amount, 0);
+        const historicalAverage = historicalTotal / catHistory.length;
 
-        // Better: Compare to "Normal" monthly average
-        // Let's use getCategoryBreakdown on history and divide by approx months
-        // This is getting complex for a synced function. Let's simplify:
-        // Identify single large transactions > 50% of history average?
+        // Flag if current month is 50% higher than average AND the difference is significant
+        const percentIncrease = ((item.amount - historicalAverage) / historicalAverage) * 100;
+        const difference = item.amount - historicalAverage;
 
-        // Let's stick to the user's specific request: "Sudden spike vs historical average"
-        // Calculate historical average for this category per month.
+        if (percentIncrease > 50 && difference > 1000) { // 50% increase AND at least 1000 difference
+            anomalies.push({
+                type: 'SPIKE',
+                message: `${item.name} spending is ${percentIncrease.toFixed(0)}% higher than usual`,
+                severity: percentIncrease > 100 ? 'HIGH' : 'MEDIUM'
+            });
+        }
     });
 
     return anomalies;
