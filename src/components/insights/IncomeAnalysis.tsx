@@ -4,6 +4,10 @@ import { LineChart, PieChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
 import { CURRENCY_SYMBOLS, formatCompactCurrency, formatCompactNumber } from '../../utils/currencyUtils';
+import MonthEndProjection from '../modals/MonthEndProjection';
+import { Transaction } from '../../types';
+import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity } from 'react-native';
 
 interface IncomeAnalysisProps {
     monthlyTrends: {
@@ -17,11 +21,13 @@ interface IncomeAnalysisProps {
     }[];
     currency: string;
     isPrivacyEnabled: boolean;
+    transactions: Transaction[];
 }
 
-const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, categoryBreakdown, currency, isPrivacyEnabled }) => {
+const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, categoryBreakdown, currency, isPrivacyEnabled, transactions }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
+    const [showProjectionModal, setShowProjectionModal] = React.useState(false);
 
     const pieData = categoryBreakdown.map((item, index) => ({
         name: item.name,
@@ -50,7 +56,23 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
 
     return (
         <View>
-            <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12, marginTop: 20 }}>Income Analytics</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 }}>
+                <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Income Analytics</Text>
+
+                {/* Projection Button */}
+                {!isPrivacyEnabled && (
+                    <TouchableOpacity
+                        onPress={() => setShowProjectionModal(true)}
+                        style={{
+                            padding: 8,
+                            backgroundColor: colors.primary + '20',
+                            borderRadius: 8
+                        }}
+                    >
+                        <Ionicons name="trending-up" size={18} color={colors.primary} />
+                    </TouchableOpacity>
+                )}
+            </View>
 
             {/* Insight Bubble */}
             <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
@@ -60,7 +82,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
 
             <Card style={{ marginBottom: 16 }}>
                 <Text style={{ color: colors.textSecondary, marginBottom: 10 }}>Income Trend</Text>
-                <View style={{ position: 'relative' }}>
+                {!isPrivacyEnabled ? (
                     <LineChart
                         data={{
                             labels: monthlyTrends.labels,
@@ -84,65 +106,80 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
                         bezier
                         style={{ marginVertical: 8, borderRadius: 16 }}
                     />
-                    {isPrivacyEnabled && (
-                        <View style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundColor: '#666',
-                            borderRadius: 16,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            marginVertical: 8
-                        }}>
-                            <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>🔒</Text>
-                            <Text style={{ color: '#fff', fontSize: 12, marginTop: 4 }}>Hidden in Privacy Mode</Text>
-                        </View>
-                    )}
-                </View>
+                ) : (
+                    <View style={{
+                        height: 220,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: colors.border + '20',
+                        borderRadius: 16,
+                        marginVertical: 8
+                    }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>🔒 Chart hidden for privacy</Text>
+                    </View>
+                )}
             </Card>
 
             <Card>
                 <Text style={{ color: colors.textSecondary, marginBottom: 10 }}>Income Sources</Text>
-                {pieData.length > 0 ? (
-                    <>
-                        <PieChart
-                            data={pieData}
-                            width={screenWidth - 64}
-                            height={220}
-                            chartConfig={{
-                                color: (opacity = 1) => colors.text,
-                            }}
-                            accessor={"population"}
-                            backgroundColor={"transparent"}
-                            paddingLeft={"15"}
-                            center={[10, 0]}
-                            absolute={false}
-                        />
-                        <View style={{ marginTop: 20 }}>
-                            {categoryBreakdown.map((item, index) => (
-                                <View key={index} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, alignItems: 'center' }}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: pieData[index].color, marginRight: 10 }} />
-                                        <Text style={{ color: colors.text, fontSize: 14 }}>{item.name}</Text>
+                {!isPrivacyEnabled ? (
+                    pieData.length > 0 ? (
+                        <>
+                            <PieChart
+                                data={pieData}
+                                width={screenWidth - 64}
+                                height={220}
+                                chartConfig={{
+                                    color: (opacity = 1) => colors.text,
+                                }}
+                                accessor={"population"}
+                                backgroundColor={"transparent"}
+                                paddingLeft={"15"}
+                                center={[10, 0]}
+                                absolute={false}
+                            />
+                            <View style={{ marginTop: 20 }}>
+                                {categoryBreakdown.map((item, index) => (
+                                    <View key={index} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, alignItems: 'center' }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: pieData[index].color, marginRight: 10 }} />
+                                            <Text style={{ color: colors.text, fontSize: 14 }}>{item.name}</Text>
+                                        </View>
+                                        <View style={{ alignItems: 'flex-end' }}>
+                                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>
+                                                {formatCompactCurrency(item.amount, currency)}
+                                            </Text>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{item.percentage.toFixed(1)}%</Text>
+                                        </View>
                                     </View>
-                                    <View style={{ alignItems: 'flex-end' }}>
-                                        <Text style={{ color: colors.text, fontWeight: 'bold' }}>
-                                            {isPrivacyEnabled ? '***' : formatCompactCurrency(item.amount, currency)}
-                                        </Text>
-                                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{item.percentage.toFixed(1)}%</Text>
-                                    </View>
-                                </View>
-                            ))}
-                        </View>
-                    </>
+                                ))}
+                            </View>
+                        </>
+                    ) : (
+                        <Text style={{ color: colors.textSecondary, textAlign: 'center', padding: 20 }}>No income data available.</Text>
+                    )
                 ) : (
-                    <Text style={{ color: colors.textSecondary, textAlign: 'center', padding: 20 }}>No income data available.</Text>
+                    <View style={{
+                        height: 220,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: colors.border + '20',
+                        borderRadius: 16,
+                        marginVertical: 8
+                    }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>🔒 Chart hidden for privacy</Text>
+                    </View>
                 )}
             </Card>
-        </View>
+
+
+            <MonthEndProjection
+                visible={showProjectionModal}
+                onClose={() => setShowProjectionModal(false)}
+                transactions={transactions}
+                currency={currency}
+            />
+        </View >
     );
 };
 
