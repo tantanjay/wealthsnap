@@ -3,10 +3,12 @@ import { Text, View, Alert, SectionList, TouchableOpacity } from 'react-native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
-import { getAllTransactions, deleteTransaction, saveHistoryTimeFrame, getHistoryTimeFrame } from '../services/storageService';
-import { Transaction } from '../types';
+import { getAllTransactions, deleteTransaction, saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile } from '../services/storageService';
+import { Transaction, UserProfile } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../components';
+import { usePrivacy } from '../context/PrivacyContext';
+import { formatCurrencyAmount } from '../utils/currencyUtils';
 
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
@@ -26,16 +28,24 @@ interface FinancialSummary {
 
 const HistoryScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
+    const { isPrivacyEnabled } = usePrivacy();
     const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
     const [timeFrame, setTimeFrame] = useState<TimeFrame>('DAILY');
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
+    const [profile, setProfile] = useState<UserProfile | null>(null);
 
     useFocusEffect(
         useCallback(() => {
             loadTransactions();
             loadTimeFramePref();
+            loadProfile();
         }, [])
     );
+
+    const loadProfile = async () => {
+        const p = await getUserProfile();
+        setProfile(p);
+    };
 
     const loadTimeFramePref = async () => {
         const saved = await getHistoryTimeFrame();
@@ -57,6 +67,11 @@ const HistoryScreen = ({ navigation }: any) => {
         // Sort by date desc (default)
         data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setAllTransactions(data);
+    };
+
+    const formatCurrency = (amount: number) => {
+        if (isPrivacyEnabled) return '****';
+        return formatCurrencyAmount(amount, profile?.currency || 'USD');
     };
 
     // --- Date Logic Helpers ---
@@ -279,7 +294,7 @@ const HistoryScreen = ({ navigation }: any) => {
                             fontSize: 16,
                             fontWeight: 'bold'
                         }}>
-                            {isExpense ? '-' : '+'}${item.amount.toFixed(2)}
+                            {isExpense ? '-' : '+'}{formatCurrency(item.amount)}
                         </Text>
                     </View>
                 </Card>
@@ -300,7 +315,7 @@ const HistoryScreen = ({ navigation }: any) => {
                 {title} <Text style={{ color: colors.textSecondary, fontWeight: 'normal' }}>({count})</Text>
             </Text>
             <Text style={{ color: totalAmount >= 0 ? colors.success : colors.text, fontSize: 14, fontWeight: 'bold' }}>
-                {totalAmount >= 0 ? '+' : ''}PHP{totalAmount.toFixed(2)}
+                {totalAmount >= 0 ? '+' : ''}{formatCurrency(totalAmount)}
             </Text>
         </View>
     );
@@ -354,20 +369,20 @@ const HistoryScreen = ({ navigation }: any) => {
                     <View style={{ marginBottom: 12 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Balance</Text>
                         <Text style={{ color: summary.balance >= 0 ? colors.success : colors.error, fontSize: 24, fontWeight: 'bold' }}>
-                            PHP {summary.balance.toFixed(2)}
+                            {formatCurrency(summary.balance)}
                         </Text>
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                         <View>
                             <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Total Income</Text>
                             <Text style={{ color: colors.success, fontSize: 16, fontWeight: '600' }}>
-                                +PHP {summary.totalIncome.toFixed(2)}
+                                +{formatCurrency(summary.totalIncome)}
                             </Text>
                         </View>
                         <View>
                             <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Total Expense</Text>
                             <Text style={{ color: colors.error, fontSize: 16, fontWeight: '600' }}>
-                                -PHP {summary.totalExpense.toFixed(2)}
+                                -{formatCurrency(summary.totalExpense)}
                             </Text>
                         </View>
                     </View>
