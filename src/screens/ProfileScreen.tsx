@@ -161,12 +161,24 @@ const ProfileScreen = ({ navigation }: any) => {
 
             Alert.alert('Success', 'Data restored successfully. The app will reload.', [
                 {
-                    text: 'OK', onPress: () => {
-                        // Reset to Main to refresh everything
-                        navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'Main' }],
-                        });
+                    text: 'OK', onPress: async () => {
+                        // Verify the restore set the proper flags
+                        const profile = await getUserProfile();
+                        if (profile && profile.isOnboardingComplete) {
+                            // Reset to Main to refresh everything
+                            navigation.reset({
+                                index: 0,
+                                routes: [{ name: 'Main' }],
+                            });
+                        } else {
+                            // If backup was from a state before onboarding completion (unlikely but possible)
+                            // or if restore failed silently.
+                            Alert.alert('Notice', 'Restore complete, but user profile is incomplete. Redirecting to setup.');
+                            navigation.reset({
+                                index: 0,
+                                routes: [{ name: 'Onboarding' }],
+                            });
+                        }
                     }
                 }
             ]);

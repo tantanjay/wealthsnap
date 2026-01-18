@@ -10,9 +10,10 @@ interface TopTransactionsProps {
     transactions: Transaction[];
     currency: string;
     onTransactionPress?: (transaction: Transaction) => void;
+    isPrivacyEnabled?: boolean;
 }
 
-const TopTransactions: React.FC<TopTransactionsProps> = ({ transactions, currency, onTransactionPress }) => {
+const TopTransactions: React.FC<TopTransactionsProps> = ({ transactions, currency, onTransactionPress, isPrivacyEnabled = false }) => {
     const { colors } = useTheme();
 
     const getCategoryIcon = (category: string): string => {
@@ -120,7 +121,7 @@ const TopTransactions: React.FC<TopTransactionsProps> = ({ transactions, currenc
                             fontSize: 16,
                             fontWeight: 'bold'
                         }}>
-                            {item.type === 'EXPENSE' ? '-' : '+'}{formatCurrencyAmount(item.amount, currency)}
+                            {item.type === 'EXPENSE' ? '-' : '+'}{isPrivacyEnabled ? '****' : formatCurrencyAmount(item.amount, currency)}
                         </Text>
                     </TouchableOpacity>
                 )}

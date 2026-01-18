@@ -13,7 +13,8 @@ import {
     saveCategory,
     saveRecurrenceRule,
     saveGeminiConfig,
-    clearAllData
+    clearAllData,
+    setOnboardingComplete
 } from './storageService';
 import { encryptData, decryptData } from './encryptionService';
 import { UserProfile, Transaction, Investment, Category, RecurrenceRule, GeminiConfig } from '../types';
@@ -133,7 +134,14 @@ export const restoreFromBackup = async (
     // Clear existing first? Yes, usually restore is a full replacement.
     await clearAllData();
 
-    if (backupData.profile) await saveUserProfile(backupData.profile);
+    if (backupData.profile) {
+        await saveUserProfile(backupData.profile);
+        // Explicitly restore the onboarding flag if the profile suggests it is complete, 
+        // or generally assume a restored backup implies completed onboarding.
+        if (backupData.profile.isOnboardingComplete) {
+            await setOnboardingComplete();
+        }
+    }
 
     // Bulk save would be better, but loop is fine for local async storage for now
     for (const t of backupData.transactions) await saveTransaction(t);
