@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, ScrollView, TouchableOpacity, Text, RefreshControl } from 'react-native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
+import { usePrivacy } from '../context/PrivacyContext';
 
 import { Transaction } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
@@ -18,8 +19,10 @@ import SmartAlerts from '../components/insights/SmartAlerts';
 
 const InsightsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
+    const { isPrivacyEnabled } = usePrivacy();
     const [currency, setCurrency] = useState('USD');
     const [refreshing, setRefreshing] = useState(false);
+    const [expenseGrouping, setExpenseGrouping] = useState<'CATEGORY' | 'SUB_CATEGORY'>('CATEGORY');
 
     const [data, setData] = useState({
         netCashFlow: 0,
@@ -55,7 +58,7 @@ const InsightsScreen = ({ navigation }: any) => {
 
         // Breakdowns
         const incomeBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'INCOME');
-        const expenseBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE');
+        const expenseBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', expenseGrouping);
 
         // Trends
         const monthlyTrends = Metrics.getMonthlyTrends(allTransactions, 6);
@@ -85,14 +88,14 @@ const InsightsScreen = ({ navigation }: any) => {
     useFocusEffect(
         useCallback(() => {
             loadData();
-        }, [])
+        }, [expenseGrouping])
     );
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         await loadData();
         setRefreshing(false);
-    }, []);
+    }, [expenseGrouping]);
 
     return (
         <ScreenWrapper>
@@ -117,6 +120,7 @@ const InsightsScreen = ({ navigation }: any) => {
                     savingsRate={data.savingsRate}
                     burnRate={data.burnRate}
                     currency={currency}
+                    isPrivacyEnabled={isPrivacyEnabled}
                 />
 
                 {/* 2. Income Insights */}
@@ -124,12 +128,16 @@ const InsightsScreen = ({ navigation }: any) => {
                     monthlyTrends={data.incomeTrends}
                     categoryBreakdown={data.incomeBreakdown}
                     currency={currency}
+                    isPrivacyEnabled={isPrivacyEnabled}
                 />
 
                 {/* 3. Expense Insights */}
                 <ExpenseAnalysis
                     categoryBreakdown={data.expenseBreakdown}
                     currency={currency}
+                    isPrivacyEnabled={isPrivacyEnabled}
+                    grouping={expenseGrouping}
+                    onToggleGrouping={setExpenseGrouping}
                 />
 
                 {/* 4. Comparison */}
@@ -138,6 +146,7 @@ const InsightsScreen = ({ navigation }: any) => {
                     lastMonthExpense={data.lastMonthExpense}
                     averageExpense={data.averageExpense}
                     currency={currency}
+                    isPrivacyEnabled={isPrivacyEnabled}
                 />
 
                 {/* 5. Smart Alerts */}
