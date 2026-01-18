@@ -45,7 +45,7 @@ const MainTabs = () => {
     );
 };
 
-const AppNavigator = () => {
+const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' }) => {
     const { colors } = useTheme();
     const navigationTheme = {
         ...DefaultTheme,
@@ -61,7 +61,7 @@ const AppNavigator = () => {
 
     return (
         <NavigationContainer theme={navigationTheme}>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
                 <Stack.Screen name="Onboarding" component={WelcomeScreen} />
                 <Stack.Screen name="Setup" component={SetupScreen} />
                 <Stack.Screen name="Main" component={MainTabs} />

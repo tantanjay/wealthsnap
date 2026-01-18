@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Alert, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TextInput, ScrollView, Alert, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
 import { Button, Card } from '../../components';
@@ -8,10 +8,13 @@ import { UserProfile } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING } from '../../styles/theme';
 
+const { height } = Dimensions.get('window');
+
 const SetupScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const [step, setStep] = useState(0);
     const [hasAgreed, setHasAgreed] = useState(false);
+    const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
 
     // Profile State
@@ -77,7 +80,7 @@ const SetupScreen = ({ navigation }: any) => {
             marginBottom: 20,
         },
         termsCard: {
-            height: 400, // Fixed height for scrolling terms
+            height: height * 0.6, // Dynamic height: 60% of screen height
             borderWidth: 1,
             borderRadius: 12,
             marginBottom: 20,
@@ -177,7 +180,18 @@ const SetupScreen = ({ navigation }: any) => {
                         </Text>
 
                         <View style={[styles.termsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                            <ScrollView nestedScrollEnabled showsVerticalScrollIndicator>
+                            <ScrollView
+                                nestedScrollEnabled
+                                showsVerticalScrollIndicator
+                                onScroll={(event) => {
+                                    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+                                    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+                                    if (isCloseToBottom && !hasScrolledToBottom) {
+                                        setHasScrolledToBottom(true);
+                                    }
+                                }}
+                                scrollEventThrottle={16}
+                            >
                                 <Text style={[styles.termsHeading, { color: colors.primary, marginTop: 0 }]}>1. ACCEPTANCE OF TERMS</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
                                     By downloading, installing, or using WealthSnap ("the App"), you agree to be bound by these Terms of Use and Privacy Policy. If you do not agree to these terms, do not use the App. Your continued use of the App following any modifications to these terms constitutes acceptance of those changes.
@@ -222,18 +236,28 @@ const SetupScreen = ({ navigation }: any) => {
                             </ScrollView>
                         </View>
 
+                        {!hasScrolledToBottom && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, paddingHorizontal: 10 }}>
+                                <Ionicons name="arrow-down" size={16} color={colors.primary} />
+                                <Text style={{ color: colors.primary, fontSize: 12, marginLeft: 6, fontStyle: 'italic' }}>
+                                    Please scroll to the bottom to continue
+                                </Text>
+                            </View>
+                        )}
+
                         <TouchableOpacity
-                            style={styles.checkboxRow}
-                            onPress={() => setHasAgreed(!hasAgreed)}
+                            style={[styles.checkboxRow, { opacity: hasScrolledToBottom ? 1 : 0.4 }]}
+                            onPress={() => hasScrolledToBottom && setHasAgreed(!hasAgreed)}
+                            disabled={!hasScrolledToBottom}
                         >
                             <View style={[
                                 styles.checkbox,
-                                { borderColor: colors.primary },
+                                { borderColor: hasScrolledToBottom ? colors.primary : colors.gray500 },
                                 hasAgreed && { backgroundColor: colors.primary }
                             ]}>
                                 {hasAgreed && <Ionicons name="checkmark" size={16} color="#FFF" />}
                             </View>
-                            <Text style={[styles.checkboxLabel, { color: colors.text }]}>
+                            <Text style={[styles.checkboxLabel, { color: hasScrolledToBottom ? colors.text : colors.gray500 }]}>
                                 I have read and agree to the Terms of Use and Privacy Policy
                             </Text>
                         </TouchableOpacity>
