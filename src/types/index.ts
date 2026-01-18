@@ -49,6 +49,7 @@ export interface Category {
 
 export interface RecurrenceRule {
     id: string;
+    name?: string; // Label/name for the recurring transaction
     frequency: RecurrenceFrequency;
     startDate?: string;
     endDate?: string;
