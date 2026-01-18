@@ -100,27 +100,26 @@ const HomeScreen = ({ navigation }: any) => {
                                 <Text style={{ color: colors.white, fontWeight: 'bold' }}>-{formatCurrency(expense)}</Text>
                             </View>
                         </View>
-                    </Card>
 
-                    {/* Insight Button */}
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('Insights')}
-                        style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: 12,
-                            backgroundColor: colors.surface,
-                            borderRadius: 12,
-                            borderWidth: 1,
-                            borderColor: colors.border
-                        }}
-                    >
-                        <Ionicons name="analytics" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-                        <Text style={{ color: colors.primary, fontWeight: '600' }}>
-                            View Financial Insights
-                        </Text>
-                    </TouchableOpacity>
+                        {/* Insight Button */}
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('Insights')}
+                            style={{
+                                marginTop: 15,
+                                backgroundColor: 'rgba(255,255,255,0.2)',
+                                paddingVertical: 10,
+                                borderRadius: 8,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <Ionicons name="analytics" size={20} color={colors.white} style={{ marginRight: 8 }} />
+                            <Text style={{ color: colors.white, fontWeight: '600' }}>
+                                View Financial Insights
+                            </Text>
+                        </TouchableOpacity>
+                    </Card>
                 </View>
 
                 {/* Investment Section Placeholder */}

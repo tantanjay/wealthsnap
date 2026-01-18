@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
 import { BackupModal, RestoreModal } from '../components/DataManagementModals';
 import { RecurringRulesListModal } from '../components/RecurringRulesListModal';
-import { clearAllData, saveGeminiConfig, getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule } from '../services/storageService';
+import { clearAllData, saveGeminiConfig, getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
@@ -35,6 +35,7 @@ const ProfileScreen = ({ navigation }: any) => {
     // Recurring Rules State
     const [showRecurringModal, setShowRecurringModal] = useState(false);
     const [recurrenceRules, setRecurrenceRules] = useState<RecurrenceRule[]>([]);
+    const [currency, setCurrency] = useState('USD');
 
     useFocusEffect(
         useCallback(() => {
@@ -48,6 +49,11 @@ const ProfileScreen = ({ navigation }: any) => {
         setHasPin(pinSet);
         const timeout = await getTimeoutSetting();
         setTimeoutSetting(timeout);
+
+        const profile = await getUserProfile();
+        if (profile?.currency) {
+            setCurrency(profile.currency);
+        }
     };
 
     const handleSetTimeout = async (option: TimeoutOption) => {
@@ -383,6 +389,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 rules={recurrenceRules}
                 onToggleRule={handleToggleRule}
                 onDeleteRule={handleDeleteRule}
+                currency={currency}
             />
         </ScreenWrapper >
     );
