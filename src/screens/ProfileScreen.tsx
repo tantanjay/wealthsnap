@@ -25,7 +25,7 @@ const ProfileScreen = ({ navigation }: any) => {
                         navigation.dispatch(
                             CommonActions.reset({
                                 index: 0,
-                                routes: [{ name: 'Welcome' }],
+                                routes: [{ name: 'Onboarding' }],
                             })
                         );
                     }
