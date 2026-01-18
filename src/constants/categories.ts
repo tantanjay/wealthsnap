@@ -24,6 +24,7 @@ export const RECURRENCE_OPTIONS = [
     { label: 'None', value: 'NONE' },
     { label: 'Daily', value: 'DAILY' },
     { label: 'Weekly', value: 'WEEKLY' },
+    { label: 'Semi-Monthly', value: 'SEMI_MONTHLY' },
     { label: 'Monthly', value: 'MONTHLY' },
     { label: 'Quarterly', value: 'QUARTERLY' },
     { label: 'Yearly', value: 'YEARLY' },

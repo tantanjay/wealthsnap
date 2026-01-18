@@ -3,8 +3,8 @@ import { View, Text, TextInput, ScrollView, Alert, TouchableOpacity } from 'reac
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
-import { saveTransaction } from '../services/storageService';
-import { Transaction, TransactionType } from '../types';
+import { saveTransaction, saveRecurrenceRule } from '../services/storageService';
+import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency } from '../types';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES, RECURRENCE_OPTIONS } from '../constants/categories';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -16,9 +16,25 @@ const RecordScreen = ({ navigation }: any) => {
     const [subCategory, setSubCategory] = useState('');
     const [note, setNote] = useState('');
     const [isRecurring, setIsRecurring] = useState(false);
-    const [frequency, setFrequency] = useState('MONTHLY');
+    const [frequency, setFrequency] = useState<string>('MONTHLY');
+    const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [endsNever, setEndsNever] = useState(true);
+    const [endDate, setEndDate] = useState('');
 
     const categories = type === 'EXPENSE' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+
+    const resetForm = () => {
+        setAmount('');
+        setCategory('');
+        setSubCategory('');
+        setNote('');
+        setIsRecurring(false);
+        setFrequency('MONTHLY');
+        setStartDate(new Date().toISOString().split('T')[0]);
+        setEndsNever(true);
+        setEndDate('');
+        // Maybe keep type as is, or reset to default? Let's keep type as is for convenience
+    };
 
     const handleSave = async () => {
         if (!amount || !category) {
@@ -26,8 +42,42 @@ const RecordScreen = ({ navigation }: any) => {
             return;
         }
 
+        const transactionId = Date.now().toString();
+        let recurrenceRuleId: string | undefined;
+
+        if (isRecurring) {
+            const ruleId = `rule_${Date.now()}`;
+            // Ensure start date is valid ISO
+            const start = startDate ? new Date(startDate) : new Date();
+            const nextDue = start.toISOString();
+
+            const rule: RecurrenceRule = {
+                id: ruleId,
+                frequency: frequency as RecurrenceFrequency,
+                startDate: nextDue,
+                endDate: (!endsNever && endDate) ? new Date(endDate).toISOString() : undefined,
+                nextDueDate: nextDue,
+                transactionTemplate: {
+                    type,
+                    amount: parseFloat(amount),
+                    category,
+                    subCategory: subCategory || undefined,
+                    note: note || undefined,
+                },
+                isActive: true
+            };
+
+            try {
+                await saveRecurrenceRule(rule);
+                recurrenceRuleId = ruleId;
+            } catch (error) {
+                Alert.alert('Error', 'Failed to save recurrence rule.');
+                return;
+            }
+        }
+
         const transaction: Transaction = {
-            id: Date.now().toString(),
+            id: transactionId,
             type,
             amount: parseFloat(amount),
             category,
@@ -35,14 +85,21 @@ const RecordScreen = ({ navigation }: any) => {
             note: note || undefined,
             date: new Date().toISOString(),
             isRecurring,
-            recurrenceId: isRecurring ? frequency : undefined, // Simplification for now
+            recurrenceId: recurrenceRuleId,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
 
         await saveTransaction(transaction);
+
         Alert.alert('Success', 'Transaction saved!', [
-            { text: 'OK', onPress: () => navigation.goBack() }
+            {
+                text: 'OK',
+                onPress: () => {
+                    resetForm();
+                    navigation.goBack();
+                }
+            }
         ]);
     };
 
@@ -134,24 +191,56 @@ const RecordScreen = ({ navigation }: any) => {
                         </TouchableOpacity>
                     </View>
                     {isRecurring && (
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
-                            {RECURRENCE_OPTIONS.filter(o => o.value !== 'NONE').map(opt => (
-                                <Text
-                                    key={opt.value}
-                                    onPress={() => setFrequency(opt.value)}
-                                    style={{
-                                        color: frequency === opt.value ? '#FFF' : colors.text,
-                                        backgroundColor: frequency === opt.value ? colors.primary : colors.background,
-                                        padding: 8,
-                                        borderRadius: 8,
-                                        marginRight: 8,
-                                        marginBottom: 8,
-                                        overflow: 'hidden'
-                                    }}
-                                >
-                                    {opt.label}
-                                </Text>
-                            ))}
+                        <View style={{ marginTop: 10 }}>
+                            <Text style={{ color: colors.textSecondary, marginBottom: 5 }}>Frequency</Text>
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 }}>
+                                {RECURRENCE_OPTIONS.filter(o => o.value !== 'NONE').map(opt => (
+                                    <Text
+                                        key={opt.value}
+                                        onPress={() => setFrequency(opt.value)}
+                                        style={{
+                                            color: frequency === opt.value ? '#FFF' : colors.text,
+                                            backgroundColor: frequency === opt.value ? colors.primary : colors.background,
+                                            padding: 8,
+                                            borderRadius: 8,
+                                            marginRight: 8,
+                                            marginBottom: 8,
+                                            overflow: 'hidden'
+                                        }}
+                                    >
+                                        {opt.label}
+                                    </Text>
+                                ))}
+                            </View>
+
+                            <Text style={{ color: colors.textSecondary, marginBottom: 5 }}>Start Date (YYYY-MM-DD)</Text>
+                            <TextInput
+                                style={{ color: colors.text, fontSize: 16, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8, marginBottom: 16 }}
+                                value={startDate}
+                                onChangeText={setStartDate}
+                                placeholder="YYYY-MM-DD"
+                                placeholderTextColor={colors.gray500}
+                            />
+
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                                <Text style={{ color: colors.textSecondary, marginRight: 10 }}>Ends Never?</Text>
+                                <TouchableOpacity onPress={() => setEndsNever(!endsNever)}>
+                                    <Ionicons name={endsNever ? 'checkbox' : 'square-outline'} size={24} color={colors.primary} />
+                                </TouchableOpacity>
+                            </View>
+
+                            {!endsNever && (
+                                <>
+                                    <Text style={{ color: colors.textSecondary, marginBottom: 5 }}>End Date (YYYY-MM-DD)</Text>
+                                    <TextInput
+                                        style={{ color: colors.text, fontSize: 16, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8, marginBottom: 10 }}
+                                        value={endDate}
+                                        onChangeText={setEndDate}
+                                        placeholder="YYYY-MM-DD"
+                                        placeholderTextColor={colors.gray500}
+                                    />
+                                </>
+                            )}
                         </View>
                     )}
                 </Card>
