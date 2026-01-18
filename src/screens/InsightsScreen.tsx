@@ -16,6 +16,7 @@ import IncomeAnalysis from '../components/insights/IncomeAnalysis';
 import ExpenseAnalysis from '../components/insights/ExpenseAnalysis';
 import ComparisonChart from '../components/insights/ComparisonChart';
 import SmartAlerts from '../components/insights/SmartAlerts';
+import SavingsRateTrend from '../components/insights/SavingsRateTrend';
 
 const InsightsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -143,6 +144,7 @@ const InsightsScreen = ({ navigation }: any) => {
                     categoryBreakdown={data.incomeBreakdown}
                     currency={currency}
                     isPrivacyEnabled={isPrivacyEnabled}
+                    transactions={transactions}
                 />
 
                 {/* 3. Expense Insights */}
@@ -152,6 +154,7 @@ const InsightsScreen = ({ navigation }: any) => {
                     isPrivacyEnabled={isPrivacyEnabled}
                     grouping={expenseGrouping}
                     onToggleGrouping={setExpenseGrouping}
+                    transactions={transactions}
                 />
 
                 {/* 4. Comparison */}
@@ -165,7 +168,13 @@ const InsightsScreen = ({ navigation }: any) => {
                     isPrivacyEnabled={isPrivacyEnabled}
                 />
 
-                {/* 5. Smart Alerts */}
+                {/* 5. Savings Rate Trend */}
+                <SavingsRateTrend
+                    transactions={transactions}
+                    privacyMode={isPrivacyEnabled}
+                />
+
+                {/* 6. Smart Alerts */}
                 <SmartAlerts anomalies={data.anomalies} />
 
                 <View style={{ height: 40 }} />

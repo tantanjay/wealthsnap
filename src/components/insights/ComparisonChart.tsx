@@ -62,7 +62,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
             </View>
 
             <Card>
-                <View style={{ position: 'relative' }}>
+                {!isPrivacyEnabled ? (
                     <BarChart
                         data={data}
                         width={screenWidth - 64}
@@ -81,24 +81,18 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                         }}
                         style={{ marginVertical: 8, borderRadius: 16 }}
                     />
-                    {isPrivacyEnabled && (
-                        <View style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundColor: '#666',
-                            borderRadius: 16,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            marginVertical: 8
-                        }}>
-                            <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>🔒</Text>
-                            <Text style={{ color: '#fff', fontSize: 12, marginTop: 4 }}>Hidden in Privacy Mode</Text>
-                        </View>
-                    )}
-                </View>
+                ) : (
+                    <View style={{
+                        height: 220,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: colors.border + '20',
+                        borderRadius: 16,
+                        marginVertical: 8
+                    }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>🔒 Chart hidden for privacy</Text>
+                    </View>
+                )}
             </Card>
         </View>
     );

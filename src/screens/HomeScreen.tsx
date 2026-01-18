@@ -11,6 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePrivacy } from '../context/PrivacyContext';
 import { TouchableOpacity } from 'react-native';
 import { formatCurrencyAmount } from '../utils/currencyUtils';
+import { getTopTransactions } from '../utils/financialMetrics';
+import TopTransactions from '../components/TopTransactions';
 
 
 
@@ -146,6 +148,15 @@ const HomeScreen = ({ navigation }: any) => {
                             <Text style={{ color: colors.white, fontWeight: '600' }}>View Portfolio</Text>
                         </TouchableOpacity>
                     </Card>
+                </View>
+
+                {/* Top Transactions */}
+                <View style={{ marginBottom: 20 }}>
+                    <TopTransactions
+                        transactions={getTopTransactions(transactions, 5)}
+                        currency={profile?.currency || 'USD'}
+                        onTransactionPress={() => navigation.navigate('History')}
+                    />
                 </View>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>

@@ -28,6 +28,89 @@ export const calculateSavingsRate = (income: number, expense: number) => {
     return (savings / income) * 100;
 };
 
+export const getSavingsRateTrend = (transactions: Transaction[], months: number = 6) => {
+    const trends = getMonthlyTrends(transactions, months);
+
+    return trends.labels.map((month, index) => {
+        const income = trends.incomeData[index];
+        const expense = trends.expenseData[index];
+        const savingsRate = calculateSavingsRate(income, expense);
+
+        return {
+            month,
+            rate: Math.round(savingsRate * 10) / 10, // Round to 1 decimal
+            income,
+            expense,
+            savings: income - expense
+        };
+    });
+};
+
+export const getTopTransactions = (transactions: Transaction[], limit: number = 5) => {
+    const currentMonth = new Date();
+    const currentMonthTransactions = getTransactionsByMonth(transactions, currentMonth);
+
+    return currentMonthTransactions
+        .filter(t => t.type !== 'TRANSFER') // Exclude transfers
+        .sort((a, b) => b.amount - a.amount) // Sort by amount descending
+        .slice(0, limit);
+};
+
+export const getCategoryTrend = (transactions: Transaction[], category: string, months: number = 6) => {
+    const result = {
+        labels: [] as string[],
+        data: [] as number[]
+    };
+
+    const today = new Date();
+    for (let i = months - 1; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        result.labels.push(d.toLocaleString('default', { month: 'short' }));
+
+        const monthlyTransactions = getTransactionsByMonth(transactions, d);
+        const categoryTotal = monthlyTransactions
+            .filter(t => t.category === category)
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        result.data.push(categoryTotal);
+    }
+
+    return result;
+};
+
+export const getMonthEndProjection = (transactions: Transaction[]) => {
+    const today = new Date();
+    const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthlyTransactions = getTransactionsByMonth(transactions, currentMonth);
+
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const currentDay = today.getDate();
+    const daysRemaining = daysInMonth - currentDay;
+
+    const { income, expense } = calculateTotals(monthlyTransactions);
+
+    // Calculate daily averages
+    const dailyIncomeAvg = income / currentDay;
+    const dailyExpenseAvg = expense / currentDay;
+
+    // Project to end of month
+    const projectedIncome = income + (dailyIncomeAvg * daysRemaining);
+    const projectedExpense = expense + (dailyExpenseAvg * daysRemaining);
+
+    return {
+        currentIncome: income,
+        currentExpense: expense,
+        projectedIncome,
+        projectedExpense,
+        projectedSavings: projectedIncome - projectedExpense,
+        daysRemaining,
+        progress: (currentDay / daysInMonth) * 100
+    };
+};
+
+
+
+
 export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: number = 6) => {
     // Average monthly expense over the last N months
     const today = new Date();
