@@ -265,42 +265,39 @@ const SetupScreen = ({ navigation }: any) => {
                                     <Text style={{ fontWeight: 'bold' }}>2.3 Analytics:</Text> This App does not include any analytics, tracking, or telemetry services. No usage data is collected or transmitted.
                                 </Text>
 
-                                <Text style={[styles.termsHeading, { color: colors.primary }]}>3. API KEY REQUIREMENTS</Text>
+                                <Text style={[styles.termsHeading, { color: colors.primary }]}>3. FREEWARE & API USAGE</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
-                                    <Text style={{ fontWeight: 'bold' }}>3.1 User-Provided API Key:</Text> The App requires a Google Gemini API key to perform AI-powered financial insights and receipt analysis. You must obtain and provide your own API key from Google AI Studio.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>3.2 API Key Storage:</Text> Your API key is stored locally in SecureStore and is only used to communicate directly with Google's Gemini API services.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>3.3 API Costs:</Text> You are solely responsible for any costs, fees, or charges incurred through your use of the Google Gemini API.
+                                    <Text style={{ fontWeight: 'bold' }}>3.1 Free to Use:</Text> The App is provided as "Freeware" at no cost to you.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>3.2 User-Provided API Key:</Text> To access optional AI-powered features, you must obtain and provide your own Google Gemini API key.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>3.3 API Costs:</Text> While the App itself is free, you are solely responsible for any costs, fees, or usage limits associated with your personal Google Gemini API key.
                                 </Text>
 
-                                <Text style={[styles.termsHeading, { color: colors.primary }]}>4. THIRD-PARTY SERVICES</Text>
+                                <Text style={[styles.termsHeading, { color: colors.primary }]}>4. "AS IS" & NO WARRANTY</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
-                                    <Text style={{ fontWeight: 'bold' }}>4.1 Google Gemini API:</Text> When you use AI features, data is transmitted directly from your device to Google's Gemini API servers for processing. This transmission is subject to Google's privacy policy and terms of service.
+                                    THE APPLICATION IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                 </Text>
 
                                 <Text style={[styles.termsHeading, { color: colors.primary }]}>5. FINANCIAL DISCLAIMER</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
                                     <Text style={{ fontWeight: 'bold' }}>5.1 Not Financial Advice:</Text> This App is not intended to provide professional financial, investment, or tax advice. The insights provided by the App and AI analysis are for informational purposes only.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>5.2 Consult Professionals:</Text> Always consult with qualified financial advisors or tax professionals before making significant financial decisions.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>5.3 AI Limitations:</Text> AI-generated financial analysis may contain inaccuracies. Do not rely solely on this App for critical financial decisions.
+                                    <Text style={{ fontWeight: 'bold' }}>5.2 AI Accuracy:</Text> AI-generated limits, budgets, categories, or insights may be inaccurate, incomplete, or misleading. Check all AI outputs carefully.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>5.3 Responsibility:</Text> You are fully responsible for your own financial decisions. The developer is not liable for any financial losses incurred based on App usage.
                                 </Text>
 
                                 <Text style={[styles.termsHeading, { color: colors.primary }]}>6. LIMITATION OF LIABILITY</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
-                                    TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE DEVELOPER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, LOSS OF PROFITS, DATA, USE, OR GOODWILL.
+                                    TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE DEVELOPER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, LOSS OF PROFITS, DATA, USE, OR GOODWILL, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
                                 </Text>
 
-                                <Text style={[styles.termsHeading, { color: colors.primary }]}>7. USER RESPONSIBILITIES</Text>
+                                <Text style={[styles.termsHeading, { color: colors.primary }]}>7. INDEMNIFICATION</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
-                                    <Text style={{ fontWeight: 'bold' }}>7.1 Data Backup:</Text> You are solely responsible for backing up your data. The developer cannot recover lost data.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>7.2 Security:</Text> You are responsible for maintaining the security of your device and API keys.
+                                    You agree to indemnify, defend, and hold harmless the developer from any and all claims, liabilities, damages, and costs (including attorney's fees) arising from your use of the App, your violation of these Terms, or your violation of any third-party rights.
                                 </Text>
 
-                                <Text style={[styles.termsHeading, { color: colors.primary }]}>8. PIN SECURITY & APP PROTECTION</Text>
+                                <Text style={[styles.termsHeading, { color: colors.primary }]}>8. USER DATA & SECURITY</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
-                                    <Text style={{ fontWeight: 'bold' }}>8.1 Local Secure Storage:</Text> The App allows you to secure your data with a 6-digit PIN. This PIN is stored securely on your local device using industry-standard encryption (SecureStore). It is NOT stored on any server.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>8.2 No Password Recovery:</Text> Because your PIN is stored only on your device, there is NO "Forgot Password" or recovery mechanism. If you forget your PIN, you will permanently lose access to your data stored within the App.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>8.3 Data Loss Risk:</Text> By enabling the PIN feature, you acknowledge and accept the risk that forgetting your PIN will result in total data loss.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>8.4 Screen Protection:</Text> To prevent prying eyes and unauthorized captures, the App enforces screen security constraints (FLAG_SECURE), which blocks screenshots and hides App Switcher previews on supported devices.
+                                    <Text style={{ fontWeight: 'bold' }}>8.1 Data Loss:</Text> Data is stored locally. If you delete the App, lose your device, or forget your PIN, your data cannot be recovered. Regular backups (via the specific Backup feature) are your sole responsibility.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>8.2 No Password Recovery:</Text> There is NO "Forgot Password" or recovery mechanism for your custom PIN. Creating a PIN is optional but highly recommended for privacy; however, forgetting it results in permanent data loss.
                                 </Text>
                             </ScrollView>
                         </View>

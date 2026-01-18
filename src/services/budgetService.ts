@@ -89,3 +89,14 @@ export const checkBudgetStatus = (spent: number, budget: number): {
 
     return { percentage, status };
 };
+
+/**
+ * Clear all budgets
+ */
+export const clearBudgets = async (): Promise<void> => {
+    try {
+        await AsyncStorage.removeItem(BUDGETS_KEY);
+    } catch (error) {
+        console.error('Error clearing budgets:', error);
+    }
+};

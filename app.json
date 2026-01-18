@@ -24,7 +24,9 @@
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",
-        "VIBRATE"
+        "VIBRATE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -36,7 +38,14 @@
       "expo-font",
       "expo-secure-store",
       "expo-sqlite",
-      "@react-native-community/datetimepicker"
-    ]
+      "@react-native-community/datetimepicker",
+      "expo-local-authentication",
+      "expo-document-picker"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ef38c9a6-19b2-4532-8ec8-f1b68e09dac1"
+      }
+    }
   }
 }

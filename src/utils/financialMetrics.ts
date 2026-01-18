@@ -1,4 +1,5 @@
 import { Transaction, TransactionType } from '../types';
+import { getCategoryGroup } from '../constants/categories';
 
 export const getTransactionsByMonth = (transactions: Transaction[], date: Date = new Date()) => {
     return transactions.filter(t => {
@@ -51,7 +52,7 @@ export const getTopTransactions = (transactions: Transaction[], limit: number = 
     const currentMonthTransactions = getTransactionsByMonth(transactions, currentMonth);
 
     return currentMonthTransactions
-        .filter(t => t.type !== 'TRANSFER') // Exclude transfers
+        //.filter(t => t.type !== 'TRANSFER') // Exclude transfers - TRANSFER type does not exist yet
         .sort((a, b) => b.amount - a.amount) // Sort by amount descending
         .slice(0, limit);
 };
@@ -62,7 +63,7 @@ export const getCategoryTrend = (transactions: Transaction[], category: string, 
         data: [] as number[]
     };
 
-    const { getCategoryGroup } = require('../constants/categories');
+    // const { getCategoryGroup } = require('../constants/categories');
 
     const today = new Date();
     for (let i = months - 1; i >= 0; i--) {
@@ -157,7 +158,7 @@ export const getCategoryBreakdown = (transactions: Transaction[], type: Transact
             // Group mode: Group by category group (e.g., "Family & Home", "Food & Lifestyle")
             // We need to get the group for this category
             // Import getCategoryGroup from categories.ts
-            const { getCategoryGroup } = require('../constants/categories');
+            // const { getCategoryGroup } = require('../constants/categories');
             key = getCategoryGroup(t.category, t.type);
         } else {
             // Item mode (SUB_CATEGORY): Group by individual category/item (e.g., "Groceries", "Food")
@@ -228,6 +229,10 @@ export const detectAnomalies = (currentMonthTransactions: Transaction[], allTran
 
         // Calculate historical average
         const historicalTotal = catHistory.reduce((sum, t) => sum + t.amount, 0);
+
+        // Prevent division by zero if historicalTotal is 0
+        if (historicalTotal === 0) return;
+
         const historicalAverage = historicalTotal / catHistory.length;
 
         // Flag if current month is 50% higher than average AND the difference is significant
