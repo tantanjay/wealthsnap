@@ -14,7 +14,7 @@ interface MonthEndProjectionProps {
     currency: string;
 }
 
-const MonthEndProjection: React.FC<MonthEndProjectionProps> = ({
+const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
     visible,
     onClose,
     transactions,
@@ -157,4 +157,4 @@ const MonthEndProjection: React.FC<MonthEndProjectionProps> = ({
     );
 };
 
-export default MonthEndProjection;
+export default MonthEndProjectionModal;
