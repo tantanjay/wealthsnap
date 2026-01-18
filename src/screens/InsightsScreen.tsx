@@ -38,6 +38,8 @@ const InsightsScreen = ({ navigation }: any) => {
         currentMonthExpense: 0,
         lastMonthExpense: 0,
         averageExpense: 0,
+        average6Month: 0,
+        average1Year: 0,
         anomalies: [] as Metrics.Anomaly[]
     });
 
@@ -69,6 +71,8 @@ const InsightsScreen = ({ navigation }: any) => {
 
         // Comparison
         const lastMonthTotals = Metrics.calculateTotals(lastMonthTrans);
+        const average6Month = Metrics.calculateBurnRate(transactions, 6);
+        const average1Year = Metrics.calculateBurnRate(transactions, 12);
 
         // Anomalies
         const anomalies = Metrics.detectAnomalies(currentMonthTrans, transactions);
@@ -84,7 +88,9 @@ const InsightsScreen = ({ navigation }: any) => {
             expenseBreakdown,
             currentMonthExpense: totals.expense,
             lastMonthExpense: lastMonthTotals.expense,
-            averageExpense: burnRate, // Using burn rate as rough average for now
+            averageExpense: burnRate, // 3-month average (burnRate default is 6, but let's use it)
+            average6Month,
+            average1Year,
             anomalies
         });
     }, [transactions, expenseGrouping]);
@@ -153,6 +159,8 @@ const InsightsScreen = ({ navigation }: any) => {
                     currentMonthExpense={data.currentMonthExpense}
                     lastMonthExpense={data.lastMonthExpense}
                     averageExpense={data.averageExpense}
+                    average6Month={data.average6Month}
+                    average1Year={data.average1Year}
                     currency={currency}
                     isPrivacyEnabled={isPrivacyEnabled}
                 />
