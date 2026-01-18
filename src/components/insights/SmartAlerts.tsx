@@ -28,11 +28,9 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies }) => {
             {anomalies.map((anomaly, index) => (
                 <Card key={index} style={{ marginBottom: 10, borderLeftWidth: 4, borderLeftColor: anomaly.severity === 'HIGH' ? '#F44336' : '#FF9800' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 24, marginRight: 15 }}>
-                            {anomaly.type === 'NEW_CATEGORY' ? '🆕' : '⚠️'}
-                        </Text>
+                        <Text style={{ fontSize: 24, marginRight: 15 }}>📈</Text>
                         <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{anomaly.type === 'NEW_CATEGORY' ? 'New Recurring Expense' : 'Spending Alert'}</Text>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>Spending Spike</Text>
                             <Text style={{ color: colors.textSecondary, marginTop: 4 }}>{anomaly.message}</Text>
                         </View>
                     </View>
