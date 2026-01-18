@@ -11,6 +11,7 @@ const KEYS = {
     RECURRENCE_RULES: '@wealthsnap_recurrence_rules',
     ONBOARDING_COMPLETE: '@wealthsnap_onboarding_complete',
     GEMINI_CONFIG: '@wealthsnap_gemini_config',
+    HISTORY_PREFS: '@wealthsnap_history_prefs',
 };
 
 // Helper to safely read Encrypted OR Plaintext data (Migration Logic)
@@ -263,6 +264,7 @@ export const clearAllData = async (): Promise<void> => {
             KEYS.RECURRENCE_RULES,
             KEYS.ONBOARDING_COMPLETE,
             KEYS.GEMINI_CONFIG,
+            KEYS.HISTORY_PREFS,
         ]);
         await SecureStore.deleteItemAsync(SECURE_KEY_API_KEY).catch(() => { });
     } catch (error) {
