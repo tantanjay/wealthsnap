@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Text, View, Alert, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Text, View, Alert, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
@@ -8,9 +8,21 @@ import * as Sharing from 'expo-sharing'; // For backup (mock)
 import { CommonActions } from '@react-navigation/native';
 
 const ProfileScreen = ({ navigation }: any) => {
-    const { colors, toggleTheme, mode } = useTheme();
+    const { colors, setMode, mode } = useTheme();
     const [apiKey, setApiKey] = useState('');
     const [showKeyInput, setShowKeyInput] = useState(false);
+    const [hasApiKey, setHasApiKey] = useState(false);
+
+    useEffect(() => {
+        checkApiKey();
+    }, []);
+
+    const checkApiKey = async () => {
+        const config = await getGeminiConfig();
+        if (config && config.apiKey) {
+            setHasApiKey(true);
+        }
+    };
 
     const handleClearData = async () => {
         Alert.alert(
@@ -40,6 +52,7 @@ const ProfileScreen = ({ navigation }: any) => {
             Alert.alert('Success', 'API Key saved securely.');
             setShowKeyInput(false);
             setApiKey('');
+            setHasApiKey(true);
         }
     };
 
@@ -48,13 +61,37 @@ const ProfileScreen = ({ navigation }: any) => {
         Alert.alert('Backup', 'Backup feature coming soon!');
     };
 
+    const ThemeOption = ({ title, value, current }: { title: string, value: 'light' | 'dark' | 'system', current: string }) => (
+        <TouchableOpacity
+            style={[
+                styles.themeButton,
+                {
+                    backgroundColor: current === value ? colors.primary : 'transparent',
+                    borderColor: current === value ? colors.primary : colors.border,
+                }
+            ]}
+            onPress={() => setMode(value)}
+        >
+            <Text style={{
+                color: current === value ? '#fff' : colors.text,
+                fontWeight: current === value ? '600' : '400'
+            }}>
+                {title}
+            </Text>
+        </TouchableOpacity>
+    );
+
     return (
         <ScreenWrapper>
             <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>Profile & Settings</Text>
 
             <Card>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Appearance</Text>
-                <Button variant="outline" title={`Switch to ${mode === 'dark' ? 'Light' : 'Dark'} Mode`} onPress={toggleTheme} />
+                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 15 }}>Appearance</Text>
+                <View style={styles.themeContainer}>
+                    <ThemeOption title="Light" value="light" current={mode} />
+                    <ThemeOption title="Dark" value="dark" current={mode} />
+                    <ThemeOption title="System" value="system" current={mode} />
+                </View>
             </Card>
 
             <Card>
@@ -66,7 +103,12 @@ const ProfileScreen = ({ navigation }: any) => {
 
             <Card>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Gemini AI Settings</Text>
-                <Text style={{ color: colors.textSecondary, marginBottom: 10 }}>Use your own API key for smart insights.</Text>
+                <Text style={{ color: colors.textSecondary, marginBottom: 10 }}>
+                    {hasApiKey
+                        ? "✅ Custom API Key is configured."
+                        : "Use your own API key for smart insights."}
+                </Text>
+
                 {showKeyInput ? (
                     <View>
                         <TextInput
@@ -84,10 +126,21 @@ const ProfileScreen = ({ navigation }: any) => {
                             onChangeText={setApiKey}
                             secureTextEntry
                         />
-                        <Button title="Save Key" onPress={handleSaveKey} />
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            <View style={{ flex: 1 }}>
+                                <Button title="Save" onPress={handleSaveKey} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Button variant="outline" title="Cancel" onPress={() => setShowKeyInput(false)} />
+                            </View>
+                        </View>
                     </View>
                 ) : (
-                    <Button variant="outline" title="Configure API Key" onPress={() => setShowKeyInput(true)} />
+                    <Button
+                        variant={hasApiKey ? "outline" : "primary"}
+                        title={hasApiKey ? "Change API Key" : "Configure API Key"}
+                        onPress={() => setShowKeyInput(true)}
+                    />
                 )}
             </Card>
 
@@ -98,4 +151,20 @@ const ProfileScreen = ({ navigation }: any) => {
         </ScreenWrapper>
     );
 };
+
+const styles = StyleSheet.create({
+    themeContainer: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    themeButton: {
+        flex: 1,
+        paddingVertical: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderRadius: 8,
+    }
+});
+
 export default ProfileScreen;
