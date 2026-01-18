@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
 import { BackupModal, RestoreModal } from '../components/DataManagementModals';
 import { RecurringRulesListModal } from '../components/RecurringRulesListModal';
+import BudgetManagement from '../components/profile/BudgetManagement';
 import { clearAllData, saveGeminiConfig, getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import * as DocumentPicker from 'expo-document-picker';
@@ -36,6 +37,9 @@ const ProfileScreen = ({ navigation }: any) => {
     const [showRecurringModal, setShowRecurringModal] = useState(false);
     const [recurrenceRules, setRecurrenceRules] = useState<RecurrenceRule[]>([]);
     const [currency, setCurrency] = useState('USD');
+
+    // Budget State
+    const [showBudgetModal, setShowBudgetModal] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
@@ -248,7 +252,8 @@ const ProfileScreen = ({ navigation }: any) => {
 
             <Card>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Transactions</Text>
-                <Button variant="outline" title="Manage Recurring" onPress={handleManageRecurring} />
+                <Button variant="outline" title="Manage Recurring" onPress={handleManageRecurring} style={{ marginBottom: 10 }} />
+                <Button variant="secondary" title="Manage Budgets" onPress={() => setShowBudgetModal(true)} />
             </Card>
 
             <Card>
@@ -389,6 +394,13 @@ const ProfileScreen = ({ navigation }: any) => {
                 rules={recurrenceRules}
                 onToggleRule={handleToggleRule}
                 onDeleteRule={handleDeleteRule}
+                currency={currency}
+            />
+
+            {/* Budget Management Modal */}
+            <BudgetManagement
+                visible={showBudgetModal}
+                onClose={() => setShowBudgetModal(false)}
                 currency={currency}
             />
         </ScreenWrapper >
