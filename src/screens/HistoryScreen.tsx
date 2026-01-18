@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Text, View, Alert, SectionList, TouchableOpacity } from 'react-native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
@@ -8,6 +8,8 @@ import { Transaction } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../components';
 
+type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+
 interface TransactionSection {
     title: string;
     data: Transaction[];
@@ -16,9 +18,17 @@ interface TransactionSection {
     originalDate: Date;
 }
 
+interface FinancialSummary {
+    totalIncome: number;
+    totalExpense: number;
+    balance: number;
+}
+
 const HistoryScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
-    const [sections, setSections] = useState<TransactionSection[]>([]);
+    const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+    const [timeFrame, setTimeFrame] = useState<TimeFrame>('DAILY');
+    const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
     useFocusEffect(
         useCallback(() => {
@@ -26,29 +36,119 @@ const HistoryScreen = ({ navigation }: any) => {
         }, [])
     );
 
-    const getDayLabel = (dateString: string) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        if (date.toDateString() === now.toDateString()) {
-            return 'Today';
-        }
-        if (date.toDateString() === yesterday.toDateString()) {
-            return 'Yesterday';
-        }
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    };
-
     const loadTransactions = async () => {
         const data = await getAllTransactions();
-        // Sort by date desc
+        // Sort by date desc (default)
         data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setAllTransactions(data);
+    };
 
+    // --- Date Logic Helpers ---
+
+    const getStartEndOfPeriod = (date: Date, mode: TimeFrame): { start: Date; end: Date } => {
+        const start = new Date(date);
+        const end = new Date(date);
+
+        if (mode === 'DAILY') {
+            start.setHours(0, 0, 0, 0);
+            end.setHours(23, 59, 59, 999);
+        } else if (mode === 'WEEKLY') {
+            const day = start.getDay(); // 0 is Sunday
+            const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Adjust to make Monday start, or Sunday? Let's do Monday start for business, or Sunday for standard. Let's do Sunday start.
+            // Actually, standard Date.getDay() 0 is Sunday.
+            // Let's assume Start of Week = Sunday.
+            start.setDate(start.getDate() - day);
+            start.setHours(0, 0, 0, 0);
+
+            end.setDate(start.getDate() + 6);
+            end.setHours(23, 59, 59, 999);
+        } else if (mode === 'MONTHLY') {
+            start.setDate(1);
+            start.setHours(0, 0, 0, 0);
+
+            end.setMonth(end.getMonth() + 1);
+            end.setDate(0); // Last day of previous month (which is current month since we added 1)
+            end.setHours(23, 59, 59, 999);
+        } else if (mode === 'YEARLY') {
+            start.setMonth(0, 1);
+            start.setHours(0, 0, 0, 0);
+
+            end.setMonth(11, 31);
+            end.setHours(23, 59, 59, 999);
+        }
+
+        return { start, end };
+    };
+
+    const getDateRangeLabel = (date: Date, mode: TimeFrame): string => {
+        if (mode === 'DAILY') {
+            const now = new Date();
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            if (date.toDateString() === now.toDateString()) return 'Today';
+            if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        } else if (mode === 'WEEKLY') {
+            const { start, end } = getStartEndOfPeriod(date, mode);
+            return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        } else if (mode === 'MONTHLY') {
+            return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        } else if (mode === 'YEARLY') {
+            return date.getFullYear().toString();
+        }
+        return '';
+    };
+
+    const navigateDate = (direction: 'prev' | 'next') => {
+        const newDate = new Date(currentDate);
+        const adder = direction === 'next' ? 1 : -1;
+
+        if (timeFrame === 'DAILY') {
+            newDate.setDate(newDate.getDate() + adder);
+        } else if (timeFrame === 'WEEKLY') {
+            newDate.setDate(newDate.getDate() + (adder * 7));
+        } else if (timeFrame === 'MONTHLY') {
+            newDate.setMonth(newDate.getMonth() + adder);
+        } else if (timeFrame === 'YEARLY') {
+            newDate.setFullYear(newDate.getFullYear() + adder);
+        }
+        setCurrentDate(newDate);
+    };
+
+    // --- Computed Data ---
+
+    const filteredData = useMemo(() => {
+        const { start, end } = getStartEndOfPeriod(currentDate, timeFrame);
+        return allTransactions.filter(t => {
+            const tDate = new Date(t.date);
+            return tDate >= start && tDate <= end;
+        });
+    }, [allTransactions, currentDate, timeFrame]);
+
+    const summary = useMemo((): FinancialSummary => {
+        let totalIncome = 0;
+        let totalExpense = 0;
+
+        filteredData.forEach(t => {
+            if (t.type === 'INCOME') {
+                totalIncome += t.amount;
+            } else {
+                totalExpense += t.amount;
+            }
+        });
+
+        return {
+            totalIncome,
+            totalExpense,
+            balance: totalIncome - totalExpense
+        };
+    }, [filteredData]);
+
+    const sections = useMemo((): TransactionSection[] => {
         const grouped: { [key: string]: Transaction[] } = {};
 
-        data.forEach(transaction => {
+        filteredData.forEach(transaction => {
             const dateKey = new Date(transaction.date).toDateString();
             if (!grouped[dateKey]) {
                 grouped[dateKey] = [];
@@ -62,9 +162,20 @@ const HistoryScreen = ({ navigation }: any) => {
                 return sum + (t.type === 'INCOME' ? t.amount : -t.amount);
             }, 0);
 
-            // We use the first transaction's date to generate the label (all share the same dateKey)
+            // Helper to get nice label for the section header
+            const getSectionLabel = (dKey: string) => {
+                const d = new Date(dKey);
+                const now = new Date();
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+
+                if (d.toDateString() === now.toDateString()) return 'Today';
+                if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            };
+
             return {
-                title: getDayLabel(dateKey),
+                title: getSectionLabel(dateKey),
                 data: transactions,
                 totalAmount,
                 count: transactions.length,
@@ -74,9 +185,10 @@ const HistoryScreen = ({ navigation }: any) => {
 
         // Ensure sections are sorted by date desc
         newSections.sort((a, b) => b.originalDate.getTime() - a.originalDate.getTime());
+        return newSections;
+    }, [filteredData]);
 
-        setSections(newSections);
-    };
+    // --- Actions ---
 
     const handleDelete = (id: string) => {
         Alert.alert(
@@ -99,6 +211,8 @@ const HistoryScreen = ({ navigation }: any) => {
     const handleEdit = (transaction: Transaction) => {
         navigation.navigate('Record', { transaction });
     };
+
+    // --- Renderers ---
 
     const renderItem = ({ item }: { item: Transaction }) => {
         const isExpense = item.type === 'EXPENSE';
@@ -164,7 +278,7 @@ const HistoryScreen = ({ navigation }: any) => {
             alignItems: 'center',
             marginBottom: 10,
             marginTop: 10,
-            paddingHorizontal: 4 // Add some padding so it aligns nicely
+            paddingHorizontal: 4
         }}>
             <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>
                 {title} <Text style={{ color: colors.textSecondary, fontWeight: 'normal' }}>({count})</Text>
@@ -177,12 +291,78 @@ const HistoryScreen = ({ navigation }: any) => {
 
     return (
         <ScreenWrapper>
-            <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginBottom: 10 }}>History</Text>
+            {/* Header */}
+            <View style={{ marginBottom: 20 }}>
+                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginBottom: 16 }}>History</Text>
 
+                {/* TimeFrame Tabs */}
+                <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, marginBottom: 16 }}>
+                    {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as TimeFrame[]).map((tf) => (
+                        <TouchableOpacity
+                            key={tf}
+                            onPress={() => setTimeFrame(tf)}
+                            style={{
+                                flex: 1,
+                                paddingVertical: 8,
+                                alignItems: 'center',
+                                backgroundColor: timeFrame === tf ? colors.primary : 'transparent',
+                                borderRadius: 8
+                            }}
+                        >
+                            <Text style={{
+                                color: timeFrame === tf ? '#FFF' : colors.textSecondary,
+                                fontSize: 12,
+                                fontWeight: 'bold'
+                            }}>
+                                {tf.charAt(0) + tf.slice(1).toLowerCase()}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                {/* Date Navigator */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <TouchableOpacity onPress={() => navigateDate('prev')} style={{ padding: 8 }}>
+                        <Ionicons name="chevron-back" size={24} color={colors.primary} />
+                    </TouchableOpacity>
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
+                        {getDateRangeLabel(currentDate, timeFrame)}
+                    </Text>
+                    <TouchableOpacity onPress={() => navigateDate('next')} style={{ padding: 8 }}>
+                        <Ionicons name="chevron-forward" size={24} color={colors.primary} />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Summary Dashboard */}
+                <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16 }}>
+                    <View style={{ marginBottom: 12 }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Balance</Text>
+                        <Text style={{ color: summary.balance >= 0 ? colors.success : colors.error, fontSize: 24, fontWeight: 'bold' }}>
+                            PHP {summary.balance.toFixed(2)}
+                        </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <View>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Total Income</Text>
+                            <Text style={{ color: colors.success, fontSize: 16, fontWeight: '600' }}>
+                                +PHP {summary.totalIncome.toFixed(2)}
+                            </Text>
+                        </View>
+                        <View>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Total Expense</Text>
+                            <Text style={{ color: colors.error, fontSize: 16, fontWeight: '600' }}>
+                                -PHP {summary.totalExpense.toFixed(2)}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+            </View>
+
+            {/* Transactions List */}
             {sections.length === 0 ? (
-                <View style={{ alignItems: 'center', marginTop: 50 }}>
+                <View style={{ alignItems: 'center', marginTop: 30 }}>
                     <Ionicons name="documents-outline" size={64} color={colors.textSecondary} />
-                    <Text style={{ color: colors.textSecondary, marginTop: 10 }}>No transactions found.</Text>
+                    <Text style={{ color: colors.textSecondary, marginTop: 10 }}>No transactions in this period.</Text>
                 </View>
             ) : (
                 <SectionList
@@ -190,9 +370,9 @@ const HistoryScreen = ({ navigation }: any) => {
                     keyExtractor={item => item.id}
                     renderItem={renderItem}
                     renderSectionHeader={renderSectionHeader}
-                    scrollEnabled={false} // ScreenWrapper handles scrolling
+                    scrollEnabled={false}
                     contentContainerStyle={{ paddingBottom: 20 }}
-                    showVerticalScrollIndicator={false}
+                    showsVerticalScrollIndicator={false}
                 />
             )}
         </ScreenWrapper>
