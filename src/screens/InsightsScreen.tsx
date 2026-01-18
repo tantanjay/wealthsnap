@@ -1,57 +1,84 @@
 import React, { useState, useCallback } from 'react';
-import { Text, View, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Text, RefreshControl } from 'react-native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
-import { Card } from '../components';
-import { getAllTransactions } from '../services/storageService';
+
 import { Transaction } from '../types';
-import { LineChart } from 'react-native-chart-kit';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Metrics from '../utils/financialMetrics';
+import { getAllTransactions, getUserProfile } from '../services/storageService';
+
+// Sub-components
+import InsightsOverviewCards from '../components/insights/InsightsOverviewCards';
+import IncomeAnalysis from '../components/insights/IncomeAnalysis';
+import ExpenseAnalysis from '../components/insights/ExpenseAnalysis';
+import ComparisonChart from '../components/insights/ComparisonChart';
+import SmartAlerts from '../components/insights/SmartAlerts';
 
 const InsightsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
-    const [chartData, setChartData] = useState<{ labels: string[], datasets: { data: number[] }[] }>({
-        labels: [],
-        datasets: [{ data: [0] }]
+    const [currency, setCurrency] = useState('USD');
+    const [refreshing, setRefreshing] = useState(false);
+
+    const [data, setData] = useState({
+        netCashFlow: 0,
+        income: 0,
+        expense: 0,
+        savingsRate: 0,
+        burnRate: 0,
+        incomeTrends: { labels: [], incomeData: [] as number[], expenseData: [] as number[] } as { labels: string[], incomeData: number[], expenseData: number[] }, // Correct type
+        incomeBreakdown: [] as any[],
+        expenseBreakdown: [] as any[],
+        currentMonthExpense: 0,
+        lastMonthExpense: 0,
+        averageExpense: 0,
+        anomalies: [] as Metrics.Anomaly[]
     });
 
     const loadData = async () => {
-        const t = await getAllTransactions();
-        prepareChartData(t);
-    };
+        const profile = await getUserProfile();
+        if (profile?.currency) setCurrency(profile.currency);
 
-    const prepareChartData = (allTransactions: Transaction[]) => {
-        // 1. Get last 6 months
-        const months: string[] = [];
-        const monthEndDates: Date[] = [];
+        const allTransactions = await getAllTransactions();
+
         const today = new Date();
+        const currentMonthTrans = Metrics.getTransactionsByMonth(allTransactions, today);
 
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            months.push(d.toLocaleString('default', { month: 'short' }));
+        const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastMonthTrans = Metrics.getTransactionsByMonth(allTransactions, lastMonthDate);
 
-            // End of this month
-            const endOfMonth = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
-            endOfMonth.setHours(23, 59, 59, 999);
-            monthEndDates.push(endOfMonth);
-        }
+        // Core Metrics
+        const totals = Metrics.calculateTotals(currentMonthTrans);
+        const savingsRate = Metrics.calculateSavingsRate(totals.income, totals.expense);
+        const burnRate = Metrics.calculateBurnRate(allTransactions);
 
-        // 2. Calculate Cumulative Balance for each month end
-        const dataPoints = monthEndDates.map(endDate => {
-            // Sum all transactions strictly before or on endDate
-            return allTransactions.reduce((acc, tx) => {
-                const txDate = new Date(tx.date);
-                if (txDate <= endDate) {
-                    return acc + (tx.type === 'INCOME' ? tx.amount : -tx.amount);
-                }
-                return acc;
-            }, 0);
-        });
+        // Breakdowns
+        const incomeBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'INCOME');
+        const expenseBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE');
 
-        setChartData({
-            labels: months,
-            datasets: [{ data: dataPoints }]
+        // Trends
+        const monthlyTrends = Metrics.getMonthlyTrends(allTransactions, 6);
+
+        // Comparison
+        const lastMonthTotals = Metrics.calculateTotals(lastMonthTrans);
+
+        // Anomalies
+        const anomalies = Metrics.detectAnomalies(currentMonthTrans, allTransactions);
+
+        setData({
+            netCashFlow: totals.net,
+            income: totals.income,
+            expense: totals.expense,
+            savingsRate,
+            burnRate,
+            incomeTrends: monthlyTrends,
+            incomeBreakdown,
+            expenseBreakdown,
+            currentMonthExpense: totals.expense,
+            lastMonthExpense: lastMonthTotals.expense,
+            averageExpense: burnRate, // Using burn rate as rough average for now
+            anomalies
         });
     };
 
@@ -60,6 +87,12 @@ const InsightsScreen = ({ navigation }: any) => {
             loadData();
         }, [])
     );
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await loadData();
+        setRefreshing(false);
+    }, []);
 
     return (
         <ScreenWrapper>
@@ -70,63 +103,47 @@ const InsightsScreen = ({ navigation }: any) => {
                 <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>Financial Insights</Text>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={{ marginBottom: 20 }}>
-                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Balance Trend</Text>
-                    <Card>
-                        <LineChart
-                            data={chartData}
-                            width={Dimensions.get('window').width - 64} // Card padding + Screen padding
-                            height={220}
-                            yAxisLabel=""
-                            yAxisSuffix=""
-                            yAxisInterval={1}
-                            chartConfig={{
-                                backgroundColor: colors.surface,
-                                backgroundGradientFrom: colors.surface,
-                                backgroundGradientTo: colors.surface,
-                                decimalPlaces: 0,
-                                color: (opacity = 1) => colors.primary,
-                                labelColor: (opacity = 1) => colors.textSecondary,
-                                style: {
-                                    borderRadius: 16
-                                },
-                                propsForDots: {
-                                    r: "4",
-                                    strokeWidth: "2",
-                                    stroke: colors.primary
-                                }
-                            }}
-                            bezier
-                            style={{
-                                marginVertical: 8,
-                                borderRadius: 16
-                            }}
-                            withVerticalLines={false}
-                            withHorizontalLines={true}
-                        />
-                    </Card>
-                </View>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+                }
+            >
+                {/* 1. Core Overview */}
+                <InsightsOverviewCards
+                    netCashFlow={data.netCashFlow}
+                    income={data.income}
+                    expense={data.expense}
+                    savingsRate={data.savingsRate}
+                    burnRate={data.burnRate}
+                    currency={currency}
+                />
 
-                {/* Placeholders for future insights */}
-                <View style={{ marginBottom: 20 }}>
-                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Monthly Analysis</Text>
-                    <Card>
-                        <Text style={{ color: colors.textSecondary, fontStyle: 'italic', textAlign: 'center', padding: 20 }}>
-                            Detailed monthly breakdown coming soon.
-                        </Text>
-                    </Card>
-                </View>
+                {/* 2. Income Insights */}
+                <IncomeAnalysis
+                    monthlyTrends={data.incomeTrends}
+                    categoryBreakdown={data.incomeBreakdown}
+                    currency={currency}
+                />
 
-                <View style={{ marginBottom: 20 }}>
-                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Category Distribution</Text>
-                    <Card>
-                        <Text style={{ color: colors.textSecondary, fontStyle: 'italic', textAlign: 'center', padding: 20 }}>
-                            Category pie chart coming soon.
-                        </Text>
-                    </Card>
-                </View>
+                {/* 3. Expense Insights */}
+                <ExpenseAnalysis
+                    categoryBreakdown={data.expenseBreakdown}
+                    currency={currency}
+                />
 
+                {/* 4. Comparison */}
+                <ComparisonChart
+                    currentMonthExpense={data.currentMonthExpense}
+                    lastMonthExpense={data.lastMonthExpense}
+                    averageExpense={data.averageExpense}
+                    currency={currency}
+                />
+
+                {/* 5. Smart Alerts */}
+                <SmartAlerts anomalies={data.anomalies} />
+
+                <View style={{ height: 40 }} />
             </ScrollView>
         </ScreenWrapper>
     );
