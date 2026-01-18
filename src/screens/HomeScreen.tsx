@@ -5,8 +5,8 @@ import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Card, Button } from '../components';
 import { processRecurrenceRules } from '../services/recurrenceService';
-import { getUserProfile, getAllTransactions } from '../services/storageService';
-import { UserProfile, Transaction } from '../types';
+import { getUserProfile, getAllTransactions, getAllInvestments } from '../services/storageService';
+import { UserProfile, Transaction, Investment } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { usePrivacy } from '../context/PrivacyContext';
 import { TouchableOpacity } from 'react-native';
@@ -22,6 +22,8 @@ const HomeScreen = ({ navigation }: any) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [income, setIncome] = useState(0);
     const [expense, setExpense] = useState(0);
+    const [showInsights, setShowInsights] = useState(false);
+    const [investmentTotal, setInvestmentTotal] = useState(0);
     const [chartData, setChartData] = useState<{ labels: string[], datasets: { data: number[] }[] }>({
         labels: [],
         datasets: [{ data: [0] }]
@@ -33,6 +35,8 @@ const HomeScreen = ({ navigation }: any) => {
 
         const p = await getUserProfile();
         const t = await getAllTransactions();
+        const inv = await getAllInvestments();
+
         setProfile(p);
 
         // Sort for list display (newest first)
@@ -47,6 +51,9 @@ const HomeScreen = ({ navigation }: any) => {
         });
         setIncome(inc);
         setExpense(exp);
+
+        const totalInv = inv.reduce((sum, item) => sum + (item.quantity * (item.currentPrice || item.averageBuyPrice)), 0);
+        setInvestmentTotal(totalInv);
 
         prepareChartData(t);
     };
@@ -104,68 +111,120 @@ const HomeScreen = ({ navigation }: any) => {
                     <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>{profile?.name || 'User'}</Text>
                 </View>
 
-                {/* Balance Card */}
-                <Card style={{ backgroundColor: colors.primary, padding: 20, marginBottom: 20 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Total Balance</Text>
-                        <TouchableOpacity onPress={togglePrivacy}>
-                            <Ionicons
-                                name={isPrivacyEnabled ? 'eye-off' : 'eye'}
-                                size={22}
-                                color={colors.white}
-                            />
-                        </TouchableOpacity>
-                    </View>
-                    <Text style={{ color: colors.white, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
-                        {formatCurrency(income - expense)}
-                    </Text>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
-                        <View>
-                            <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Income</Text>
-                            <Text style={{ color: colors.white, fontWeight: 'bold' }}>+{formatCurrency(income)}</Text>
-                        </View>
-                        <View>
-                            <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Expense</Text>
-                            <Text style={{ color: colors.white, fontWeight: 'bold' }}>-{formatCurrency(expense)}</Text>
-                        </View>
-                    </View>
-                </Card>
-
-                {/* Chart Section */}
-                {/* Only show chart if we have some data points that are not all zero, or just show it anyway so it looks nice */}
+                {/* Expense/Income Section */}
                 <View style={{ marginBottom: 20 }}>
-                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Balance Trend</Text>
-                    <LineChart
-                        data={chartData}
-                        width={Dimensions.get('window').width - 32} // Screen width - padding
-                        height={220}
-                        yAxisLabel=""
-                        yAxisSuffix=""
-                        yAxisInterval={1}
-                        chartConfig={{
-                            backgroundColor: colors.surface,
-                            backgroundGradientFrom: colors.surface,
-                            backgroundGradientTo: colors.surface,
-                            decimalPlaces: 0,
-                            color: (opacity = 1) => colors.primary,
-                            labelColor: (opacity = 1) => colors.textSecondary,
-                            style: {
-                                borderRadius: 16
-                            },
-                            propsForDots: {
-                                r: "4",
-                                strokeWidth: "2",
-                                stroke: colors.primary
-                            }
-                        }}
-                        bezier
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Expense & Income</Text>
+                    </View>
+
+                    {/* Balance Card */}
+                    <Card style={{ backgroundColor: colors.primary, padding: 20, marginBottom: 10 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Total Balance</Text>
+                            <TouchableOpacity onPress={togglePrivacy}>
+                                <Ionicons
+                                    name={isPrivacyEnabled ? 'eye-off' : 'eye'}
+                                    size={22}
+                                    color={colors.white}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={{ color: colors.white, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
+                            {formatCurrency(income - expense)}
+                        </Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                            <View>
+                                <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Income</Text>
+                                <Text style={{ color: colors.white, fontWeight: 'bold' }}>+{formatCurrency(income)}</Text>
+                            </View>
+                            <View>
+                                <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Expense</Text>
+                                <Text style={{ color: colors.white, fontWeight: 'bold' }}>-{formatCurrency(expense)}</Text>
+                            </View>
+                        </View>
+                    </Card>
+
+                    {/* Insight Button and Collapsible Graph */}
+                    <TouchableOpacity
+                        onPress={() => setShowInsights(!showInsights)}
                         style={{
-                            marginVertical: 8,
-                            borderRadius: 16
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 10,
+                            backgroundColor: colors.surface,
+                            borderRadius: 12,
+                            marginBottom: showInsights ? 10 : 0
                         }}
-                        withVerticalLines={false}
-                        withHorizontalLines={true}
-                    />
+                    >
+                        <Text style={{ color: colors.primary, fontWeight: '600', marginRight: 8 }}>
+                            {showInsights ? 'Hide Insights' : 'Show Insights'}
+                        </Text>
+                        <Ionicons name={showInsights ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primary} />
+                    </TouchableOpacity>
+
+                    {showInsights && (
+                        <View style={{ marginTop: 10, backgroundColor: colors.surface, borderRadius: 16, padding: 10 }}>
+                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 10, alignSelf: 'center' }}>6-Month Trend</Text>
+                            <LineChart
+                                data={chartData}
+                                width={Dimensions.get('window').width - 60} // Adjusted width
+                                height={220}
+                                yAxisLabel=""
+                                yAxisSuffix=""
+                                yAxisInterval={1}
+                                chartConfig={{
+                                    backgroundColor: colors.surface,
+                                    backgroundGradientFrom: colors.surface,
+                                    backgroundGradientTo: colors.surface,
+                                    decimalPlaces: 0,
+                                    color: (opacity = 1) => colors.primary,
+                                    labelColor: (opacity = 1) => colors.textSecondary,
+                                    style: {
+                                        borderRadius: 16
+                                    },
+                                    propsForDots: {
+                                        r: "4",
+                                        strokeWidth: "2",
+                                        stroke: colors.primary
+                                    }
+                                }}
+                                bezier
+                                style={{
+                                    marginVertical: 8,
+                                    borderRadius: 16
+                                }}
+                                withVerticalLines={false}
+                                withHorizontalLines={true}
+                            />
+                        </View>
+                    )}
+                </View>
+
+                {/* Investment Section Placeholder */}
+                <View style={{ marginBottom: 20 }}>
+                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Investments</Text>
+                    <Card style={{ backgroundColor: colors.secondary, padding: 20 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Total Portfolio</Text>
+                            <Ionicons name="trending-up" size={24} color={colors.white} />
+                        </View>
+                        <Text style={{ color: colors.white, fontSize: 32, fontWeight: 'bold' }}>
+                            {isPrivacyEnabled ? '****' : formatCurrencyAmount(investmentTotal, profile?.currency || 'USD')}
+                        </Text>
+                        <TouchableOpacity
+                            style={{
+                                marginTop: 15,
+                                backgroundColor: 'rgba(255,255,255,0.2)',
+                                paddingVertical: 8,
+                                alignItems: 'center',
+                                borderRadius: 8
+                            }}
+                            onPress={() => navigation.navigate('Investment')}
+                        >
+                            <Text style={{ color: colors.white, fontWeight: '600' }}>View Portfolio</Text>
+                        </TouchableOpacity>
+                    </Card>
                 </View>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
