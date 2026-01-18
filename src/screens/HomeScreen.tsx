@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Card, Button } from '../components';
+import { processRecurrenceRules } from '../services/recurrenceService';
 import { getUserProfile, getAllTransactions } from '../services/storageService';
 import { UserProfile, Transaction } from '../types';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,9 @@ const HomeScreen = ({ navigation }: any) => {
     const [expense, setExpense] = useState(0);
 
     const loadData = async () => {
+        // Process recurring rules first to ensure we fetch the latest transactions
+        await processRecurrenceRules();
+
         const p = await getUserProfile();
         const t = await getAllTransactions();
         setProfile(p);

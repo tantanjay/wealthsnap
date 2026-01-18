@@ -10,7 +10,7 @@ export interface UserProfile {
 }
 
 export type TransactionType = 'INCOME' | 'EXPENSE';
-export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
 
 export interface Transaction {
     id: string;
@@ -50,6 +50,8 @@ export interface Category {
 export interface RecurrenceRule {
     id: string;
     frequency: RecurrenceFrequency;
+    startDate?: string;
+    endDate?: string;
     nextDueDate: string;
     transactionTemplate: Omit<Transaction, 'id' | 'date' | 'createdAt' | 'updatedAt' | 'isRecurring'>;
     isActive: boolean;
