@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, AppState, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ThemeProvider } from './src/context/ThemeContext';
@@ -11,9 +11,19 @@ import { PrivacyProvider } from './src/context/PrivacyContext';
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [initialRoute, setInitialRoute] = useState<'Onboarding' | 'Main'>('Onboarding');
+  const [isAppActive, setIsAppActive] = useState(true);
 
   useEffect(() => {
     checkOnboarding();
+
+    // Privacy Overlay Listener
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      setIsAppActive(nextAppState === 'active');
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   const checkOnboarding = async () => {
@@ -37,6 +47,10 @@ export default function App() {
           <SafeAreaProvider>
             <StatusBar style="auto" />
             <AppNavigator initialRoute={initialRoute} />
+            {/* Privacy Overlay: Covers the screen when app is in background/switcher */}
+            {!isAppActive && (
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FFFFFF', zIndex: 99999 }]} pointerEvents="none" />
+            )}
           </SafeAreaProvider>
         </PrivacyProvider>
       </SecurityProvider>

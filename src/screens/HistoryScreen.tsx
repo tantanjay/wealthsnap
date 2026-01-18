@@ -85,9 +85,7 @@ const HistoryScreen = ({ navigation }: any) => {
             end.setHours(23, 59, 59, 999);
         } else if (mode === 'WEEKLY') {
             const day = start.getDay(); // 0 is Sunday
-            const diff = start.getDate() - day + (day === 0 ? -6 : 1); // Adjust to make Monday start, or Sunday? Let's do Monday start for business, or Sunday for standard. Let's do Sunday start.
-            // Actually, standard Date.getDay() 0 is Sunday.
-            // Let's assume Start of Week = Sunday.
+            // Start of Week = Sunday
             start.setDate(start.getDate() - day);
             start.setHours(0, 0, 0, 0);
 
