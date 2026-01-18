@@ -12,8 +12,7 @@ import { usePrivacy } from '../context/PrivacyContext';
 import { TouchableOpacity } from 'react-native';
 import { formatCurrencyAmount } from '../utils/currencyUtils';
 
-import { LineChart } from 'react-native-chart-kit';
-import { Dimensions } from 'react-native';
+
 
 const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -22,12 +21,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [income, setIncome] = useState(0);
     const [expense, setExpense] = useState(0);
-    const [showInsights, setShowInsights] = useState(false);
     const [investmentTotal, setInvestmentTotal] = useState(0);
-    const [chartData, setChartData] = useState<{ labels: string[], datasets: { data: number[] }[] }>({
-        labels: [],
-        datasets: [{ data: [0] }]
-    });
 
     const loadData = async () => {
         // Process recurring rules first to ensure we fetch the latest transactions
@@ -54,42 +48,6 @@ const HomeScreen = ({ navigation }: any) => {
 
         const totalInv = inv.reduce((sum, item) => sum + (item.quantity * (item.currentPrice || item.averageBuyPrice)), 0);
         setInvestmentTotal(totalInv);
-
-        prepareChartData(t);
-    };
-
-    const prepareChartData = (allTransactions: Transaction[]) => {
-        // 1. Get last 6 months
-        const months: string[] = [];
-        const monthEndDates: Date[] = [];
-        const today = new Date();
-
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            months.push(d.toLocaleString('default', { month: 'short' }));
-
-            // End of this month
-            const endOfMonth = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
-            endOfMonth.setHours(23, 59, 59, 999);
-            monthEndDates.push(endOfMonth);
-        }
-
-        // 2. Calculate Cumulative Balance for each month end
-        const dataPoints = monthEndDates.map(endDate => {
-            // Sum all transactions strictly before or on endDate
-            return allTransactions.reduce((acc, tx) => {
-                const txDate = new Date(tx.date);
-                if (txDate <= endDate) {
-                    return acc + (tx.type === 'INCOME' ? tx.amount : -tx.amount);
-                }
-                return acc;
-            }, 0);
-        });
-
-        setChartData({
-            labels: months,
-            datasets: [{ data: dataPoints }]
-        });
     };
 
     useFocusEffect(
@@ -144,61 +102,25 @@ const HomeScreen = ({ navigation }: any) => {
                         </View>
                     </Card>
 
-                    {/* Insight Button and Collapsible Graph */}
+                    {/* Insight Button */}
                     <TouchableOpacity
-                        onPress={() => setShowInsights(!showInsights)}
+                        onPress={() => navigation.navigate('Insights')}
                         style={{
                             flexDirection: 'row',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            padding: 10,
+                            padding: 12,
                             backgroundColor: colors.surface,
                             borderRadius: 12,
-                            marginBottom: showInsights ? 10 : 0
+                            borderWidth: 1,
+                            borderColor: colors.border
                         }}
                     >
-                        <Text style={{ color: colors.primary, fontWeight: '600', marginRight: 8 }}>
-                            {showInsights ? 'Hide Insights' : 'Show Insights'}
+                        <Ionicons name="analytics" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                        <Text style={{ color: colors.primary, fontWeight: '600' }}>
+                            View Financial Insights
                         </Text>
-                        <Ionicons name={showInsights ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primary} />
                     </TouchableOpacity>
-
-                    {showInsights && (
-                        <View style={{ marginTop: 10, backgroundColor: colors.surface, borderRadius: 16, padding: 10 }}>
-                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 10, alignSelf: 'center' }}>6-Month Trend</Text>
-                            <LineChart
-                                data={chartData}
-                                width={Dimensions.get('window').width - 60} // Adjusted width
-                                height={220}
-                                yAxisLabel=""
-                                yAxisSuffix=""
-                                yAxisInterval={1}
-                                chartConfig={{
-                                    backgroundColor: colors.surface,
-                                    backgroundGradientFrom: colors.surface,
-                                    backgroundGradientTo: colors.surface,
-                                    decimalPlaces: 0,
-                                    color: (opacity = 1) => colors.primary,
-                                    labelColor: (opacity = 1) => colors.textSecondary,
-                                    style: {
-                                        borderRadius: 16
-                                    },
-                                    propsForDots: {
-                                        r: "4",
-                                        strokeWidth: "2",
-                                        stroke: colors.primary
-                                    }
-                                }}
-                                bezier
-                                style={{
-                                    marginVertical: 8,
-                                    borderRadius: 16
-                                }}
-                                withVerticalLines={false}
-                                withHorizontalLines={true}
-                            />
-                        </View>
-                    )}
                 </View>
 
                 {/* Investment Section Placeholder */}
