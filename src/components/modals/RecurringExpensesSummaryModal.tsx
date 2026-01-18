@@ -3,9 +3,9 @@ import { View, Text, ScrollView } from 'react-native';
 import BottomModal from './BottomModal';
 import { useTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { Transaction, RecurrenceRule } from '../../types';
+import { RecurrenceRule } from '../../types';
 import { formatCurrencyAmount } from '../../utils/currencyUtils';
-import { getAllRecurrenceRules } from '../../services/storageService';
+
 
 interface RecurringExpensesSummaryProps {
     visible: boolean;

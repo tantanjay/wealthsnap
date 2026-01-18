@@ -16,6 +16,7 @@ import {
     clearAllData,
     setOnboardingComplete
 } from './storageService';
+import { getBudgets, setBudget, clearBudgets, Budget } from './budgetService';
 import { encryptData, decryptData } from './encryptionService';
 import { UserProfile, Transaction, Investment, Category, RecurrenceRule, GeminiConfig } from '../types';
 
@@ -28,6 +29,7 @@ export interface BackupData {
     categories: Category[];
     recurrenceRules: RecurrenceRule[];
     geminiConfig: GeminiConfig | null;
+    budgets: Budget[];
 }
 
 /**
@@ -47,6 +49,7 @@ export const createBackup = async (password: string): Promise<string> => {
     const categories = await getAllCategories();
     const recurrenceRules = await getAllRecurrenceRules();
     const geminiConfig = await getGeminiConfig();
+    const budgets = await getBudgets();
 
     const backupData: BackupData = {
         version: '1.0.0',
@@ -56,7 +59,8 @@ export const createBackup = async (password: string): Promise<string> => {
         investments,
         categories,
         recurrenceRules,
-        geminiConfig: geminiConfig ? { ...geminiConfig, apiKey: undefined } : null
+        geminiConfig: geminiConfig ? { ...geminiConfig, apiKey: undefined } : null,
+        budgets
     };
 
     // 2. Create zip archive
@@ -141,6 +145,11 @@ export const restoreFromBackup = async (
         if (backupData.profile.isOnboardingComplete) {
             await setOnboardingComplete();
         }
+    }
+
+    if (backupData.budgets) {
+        await clearBudgets();
+        for (const b of backupData.budgets) await setBudget(b.category, b.amount);
     }
 
     // Bulk save would be better, but loop is fine for local async storage for now
