@@ -240,6 +240,13 @@ const SetupScreen = ({ navigation }: any) => {
                                     <Text style={{ fontWeight: 'bold' }}>7.1 Data Backup:</Text> You are solely responsible for backing up your data. The developer cannot recover lost data.{'\n\n'}
                                     <Text style={{ fontWeight: 'bold' }}>7.2 Security:</Text> You are responsible for maintaining the security of your device and API keys.
                                 </Text>
+
+                                <Text style={[styles.termsHeading, { color: colors.primary }]}>8. PIN SECURITY & DATA RECOVERY</Text>
+                                <Text style={[styles.termsText, { color: colors.text }]}>
+                                    <Text style={{ fontWeight: 'bold' }}>8.1 Local Secure Storage:</Text> The App allows you to secure your data with a 6-digit PIN. This PIN is stored securely on your local device using industry-standard encryption (KeychainServices/Keystore). It is NOT stored on any server.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>8.2 No Password Recovery:</Text> Because your PIN is stored only on your device, there is NO "Forgot Password" or recovery mechanism. If you forget your PIN, you will permanently lose access to your data stored within the App.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>8.3 Data Loss Risk:</Text> By enabling the PIN feature, you acknowledge and accept the risk that forgetting your PIN will result in total data loss. The developer cannot reset your PIN or recover your data.
+                                </Text>
                             </ScrollView>
                         </View>
 
