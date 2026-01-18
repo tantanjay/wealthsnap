@@ -12,6 +12,7 @@ import HistoryScreen from '../screens/HistoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import WelcomeScreen from '../screens/Onboarding/WelcomeScreen';
 import SetupScreen from '../screens/Onboarding/SetupScreen';
+import InsightsScreen from '../screens/InsightsScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -65,6 +66,7 @@ const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' })
                 <Stack.Screen name="Onboarding" component={WelcomeScreen} />
                 <Stack.Screen name="Setup" component={SetupScreen} />
                 <Stack.Screen name="Main" component={MainTabs} />
+                <Stack.Screen name="Insights" component={InsightsScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );
