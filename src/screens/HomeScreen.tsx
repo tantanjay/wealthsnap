@@ -13,6 +13,7 @@ import { TouchableOpacity } from 'react-native';
 import { formatCurrencyAmount } from '../utils/currencyUtils';
 import { getTopTransactions } from '../utils/financialMetrics';
 import TopTransactions from '../components/TopTransactions';
+import HomeTransactionsCard from '../components/HomeTransactionsCard';
 
 
 
@@ -151,50 +152,16 @@ const HomeScreen = ({ navigation }: any) => {
                 </View>
 
                 {/* Top Transactions */}
+                {/* Transactions Card with Tabs */}
                 <View style={{ marginBottom: 20 }}>
-                    <TopTransactions
-                        transactions={getTopTransactions(transactions, 5)}
+                    <HomeTransactionsCard
+                        recentTransactions={transactions.slice(0, 5)}
+                        topTransactions={getTopTransactions(transactions.filter(t => t.type === 'EXPENSE'), 5)}
                         currency={profile?.currency || 'USD'}
                         onTransactionPress={() => navigation.navigate('History')}
+                        isPrivacyEnabled={isPrivacyEnabled}
                     />
                 </View>
-
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Recent Transactions</Text>
-                    <Text onPress={() => navigation.navigate('History')} style={{ color: colors.primary, fontWeight: '600' }}>See All</Text>
-                </View>
-
-                {transactions.slice(0, 4).map(tx => (
-                    <Card key={tx.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 8, marginBottom: 8 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View style={{
-                                width: 32, height: 32, borderRadius: 16,
-                                backgroundColor: tx.type === 'INCOME' ? colors.success + '20' : colors.error + '20',
-                                justifyContent: 'center', alignItems: 'center', marginRight: 10
-                            }}>
-                                <Ionicons
-                                    name={tx.type === 'INCOME' ? 'arrow-down' : 'arrow-up'}
-                                    size={16}
-                                    color={tx.type === 'INCOME' ? colors.success : colors.error}
-                                />
-                            </View>
-                            <View>
-                                <Text style={{ color: colors.text, fontWeight: '600', fontSize: 14 }}>{tx.category}</Text>
-                            </View>
-                        </View>
-                        <Text style={{
-                            color: tx.type === 'INCOME' ? colors.success : colors.error,
-                            fontWeight: 'bold',
-                            fontSize: 14
-                        }}>
-                            {tx.type === 'INCOME' ? '+' : '-'}{formatCurrency(tx.amount)}
-                        </Text>
-                    </Card>
-                ))}
-
-                {transactions.length === 0 && (
-                    <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 20 }}>No transactions yet.</Text>
-                )}
             </ScrollView>
         </ScreenWrapper>
     );
