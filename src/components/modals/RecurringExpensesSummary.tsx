@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, Text, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+import BottomModal from './BottomModal';
 import { useTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Transaction } from '../../types';
@@ -71,103 +72,72 @@ const RecurringExpensesSummary: React.FC<RecurringExpensesSummaryProps> = ({
     }, [recurrences]);
 
     return (
-        <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
-            <TouchableOpacity
-                activeOpacity={1}
-                onPress={onClose}
-                style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+        <BottomModal
+            visible={visible}
+            onClose={onClose}
+            title="Recurring Expenses"
+            subtitle="Monthly commitments"
+        >
+            {/* Summary Cards */}
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+                <View style={{
+                    flex: 1,
+                    backgroundColor: colors.primary + '10',
+                    padding: 15,
+                    borderRadius: 12
+                }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Monthly</Text>
+                    <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>
+                        {formatCurrencyAmount(monthlyTotal, currency)}
+                    </Text>
+                </View>
+                <View style={{
+                    flex: 1,
+                    backgroundColor: colors.surface,
+                    padding: 15,
+                    borderRadius: 12
+                }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Yearly</Text>
+                    <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>
+                        {formatCurrencyAmount(yearlyTotal, currency)}
+                    </Text>
+                </View>
+            </View>
+
+            <ScrollView
+                contentContainerStyle={{ paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
             >
-                <TouchableOpacity
-                    activeOpacity={1}
-                    onPress={e => e.stopPropagation()}
-                    style={{
-                        backgroundColor: colors.background,
-                        borderTopLeftRadius: 20,
-                        borderTopRightRadius: 20,
-                        padding: 20,
-                        maxHeight: '80%',
-                        width: '100%'
-                    }}
-                >
-                    {/* Header */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                        <View>
-                            <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>
-                                Recurring Expenses
-                            </Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
-                                Monthly commitments
-                            </Text>
-                        </View>
-                        <TouchableOpacity onPress={onClose}>
-                            <Ionicons name="close" size={24} color={colors.text} />
-                        </TouchableOpacity>
+                {/* By Category */}
+                <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 10 }}>
+                    By Category
+                </Text>
+                {groupedByCategory.map(([category, amount], index) => (
+                    <View key={index} style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        paddingVertical: 12,
+                        borderBottomWidth: index < groupedByCategory.length - 1 ? 1 : 0,
+                        borderBottomColor: colors.border
+                    }}>
+                        <Text style={{ color: colors.text, fontSize: 14 }}>{category}</Text>
+                        <Text style={{ color: colors.text, fontWeight: 'bold' }}>
+                            {formatCurrencyAmount(amount, currency)}/mo
+                        </Text>
                     </View>
+                ))}
 
-                    {/* Summary Cards */}
-                    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
-                        <View style={{
-                            flex: 1,
-                            backgroundColor: colors.primary + '10',
-                            padding: 15,
-                            borderRadius: 12
-                        }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Monthly</Text>
-                            <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>
-                                {formatCurrencyAmount(monthlyTotal, currency)}
-                            </Text>
-                        </View>
-                        <View style={{
-                            flex: 1,
-                            backgroundColor: colors.surface,
-                            padding: 15,
-                            borderRadius: 12
-                        }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Yearly</Text>
-                            <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>
-                                {formatCurrencyAmount(yearlyTotal, currency)}
-                            </Text>
-                        </View>
+                {recurrences.length === 0 && (
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                        <Ionicons name="calendar-outline" size={48} color={colors.textSecondary} />
+                        <Text style={{ color: colors.textSecondary, marginTop: 10, textAlign: 'center' }}>
+                            No recurring expenses set up yet
+                        </Text>
                     </View>
-
-                    <View style={{ flexShrink: 1 }}>
-                        <ScrollView
-                            contentContainerStyle={{ paddingBottom: 40 }}
-                            showsVerticalScrollIndicator={false}
-                        >
-                            {/* By Category */}
-                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 10 }}>
-                                By Category
-                            </Text>
-                            {groupedByCategory.map(([category, amount], index) => (
-                                <View key={index} style={{
-                                    flexDirection: 'row',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    paddingVertical: 12,
-                                    borderBottomWidth: index < groupedByCategory.length - 1 ? 1 : 0,
-                                    borderBottomColor: colors.border
-                                }}>
-                                    <Text style={{ color: colors.text, fontSize: 14 }}>{category}</Text>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>
-                                        {formatCurrencyAmount(amount, currency)}/mo
-                                    </Text>
-                                </View>
-                            ))}
-
-                            {recurrences.length === 0 && (
-                                <View style={{ padding: 20, alignItems: 'center' }}>
-                                    <Ionicons name="calendar-outline" size={48} color={colors.textSecondary} />
-                                    <Text style={{ color: colors.textSecondary, marginTop: 10, textAlign: 'center' }}>
-                                        No recurring expenses set up yet
-                                    </Text>
-                                </View>
-                            )}
-                        </ScrollView>
-                    </View>
-                </TouchableOpacity>
-            </TouchableOpacity>
-        </Modal>
+                )}
+            </ScrollView>
+        </BottomModal>
     );
 };
 

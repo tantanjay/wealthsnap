@@ -3,8 +3,8 @@ import { Text, View, Alert, TextInput, TouchableOpacity, StyleSheet, Modal, Flat
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
-import { BackupModal, RestoreModal } from '../components/DataManagementModals';
-import { RecurringRulesListModal } from '../components/RecurringRulesListModal';
+import { BackupModal, RestoreModal } from '../components/modals/DataManagementModals';
+import { RecurringRulesListModal } from '../components/modals/RecurringRulesListModal';
 import BudgetManagement from '../components/profile/BudgetManagement';
 import { clearAllData, saveGeminiConfig, getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
