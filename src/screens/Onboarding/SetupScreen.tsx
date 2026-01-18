@@ -261,7 +261,7 @@ const SetupScreen = ({ navigation }: any) => {
 
                                 <Text style={[styles.termsHeading, { color: colors.primary }]}>2. PRIVACY POLICY</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
-                                    <Text style={{ fontWeight: 'bold' }}>2.1 Data Encryption & Storage:</Text> All personal data including but not limited to financial transactions, income logs, investment portfolios, budget goals, and user profiles is stored exclusively on your local device and is protected by industry-standard encryption. The App does not collect, transmit, or store any personal information on external servers.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>2.1 Data Encryption & Storage:</Text> All personal data is stored exclusively on your local device. Sensitive keys (Encryption Key, API Key) and your PIN are stored in hardware-backed secure storage (SecureStore) and are never exposed in plain text. Detailed financial data is encrypted at rest.{'\n\n'}
                                     <Text style={{ fontWeight: 'bold' }}>2.2 No Data Collection:</Text> We do not collect, sell, share, or transfer any of your personal data to third parties. Your privacy is protected by virtue of the App's local-only storage architecture.{'\n\n'}
                                     <Text style={{ fontWeight: 'bold' }}>2.3 Analytics:</Text> This App does not include any analytics, tracking, or telemetry services. No usage data is collected or transmitted.
                                 </Text>
@@ -269,7 +269,7 @@ const SetupScreen = ({ navigation }: any) => {
                                 <Text style={[styles.termsHeading, { color: colors.primary }]}>3. API KEY REQUIREMENTS</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
                                     <Text style={{ fontWeight: 'bold' }}>3.1 User-Provided API Key:</Text> The App requires a Google Gemini API key to perform AI-powered financial insights and receipt analysis. You must obtain and provide your own API key from Google AI Studio.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>3.2 API Key Storage:</Text> Your API key is stored locally on your device and is only used to communicate directly with Google's Gemini API services.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>3.2 API Key Storage:</Text> Your API key is stored locally in SecureStore and is only used to communicate directly with Google's Gemini API services.{'\n\n'}
                                     <Text style={{ fontWeight: 'bold' }}>3.3 API Costs:</Text> You are solely responsible for any costs, fees, or charges incurred through your use of the Google Gemini API.
                                 </Text>
 
@@ -296,11 +296,12 @@ const SetupScreen = ({ navigation }: any) => {
                                     <Text style={{ fontWeight: 'bold' }}>7.2 Security:</Text> You are responsible for maintaining the security of your device and API keys.
                                 </Text>
 
-                                <Text style={[styles.termsHeading, { color: colors.primary }]}>8. PIN SECURITY & DATA RECOVERY</Text>
+                                <Text style={[styles.termsHeading, { color: colors.primary }]}>8. PIN SECURITY & APP PROTECTION</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
-                                    <Text style={{ fontWeight: 'bold' }}>8.1 Local Secure Storage:</Text> The App allows you to secure your data with a 6-digit PIN. This PIN is stored securely on your local device using industry-standard encryption (KeychainServices/Keystore). It is NOT stored on any server.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>8.1 Local Secure Storage:</Text> The App allows you to secure your data with a 6-digit PIN. This PIN is stored securely on your local device using industry-standard encryption (SecureStore). It is NOT stored on any server.{'\n\n'}
                                     <Text style={{ fontWeight: 'bold' }}>8.2 No Password Recovery:</Text> Because your PIN is stored only on your device, there is NO "Forgot Password" or recovery mechanism. If you forget your PIN, you will permanently lose access to your data stored within the App.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>8.3 Data Loss Risk:</Text> By enabling the PIN feature, you acknowledge and accept the risk that forgetting your PIN will result in total data loss. The developer cannot reset your PIN or recover your data.
+                                    <Text style={{ fontWeight: 'bold' }}>8.3 Data Loss Risk:</Text> By enabling the PIN feature, you acknowledge and accept the risk that forgetting your PIN will result in total data loss.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>8.4 Screen Protection:</Text> To prevent prying eyes and unauthorized captures, the App enforces screen security constraints (FLAG_SECURE), which blocks screenshots and hides App Switcher previews on supported devices.
                                 </Text>
                             </ScrollView>
                         </View>
