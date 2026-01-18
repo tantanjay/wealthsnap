@@ -10,7 +10,7 @@ import { SPACING } from '../../styles/theme';
 import PinCreationScreen from '../PinCreationScreen';
 import * as DocumentPicker from 'expo-document-picker';
 import { restoreFromBackup } from '../../services/backupService';
-import { Modal } from 'react-native';
+import { RestoreModal } from '../../components/modals/DataManagementModals';
 
 const { height } = Dimensions.get('window');
 
@@ -25,7 +25,6 @@ const SetupScreen = ({ navigation }: any) => {
 
     // Restore State
     const [showRestoreModal, setShowRestoreModal] = useState(false);
-    const [restorePassword, setRestorePassword] = useState('');
     const [restoreFileUri, setRestoreFileUri] = useState<string | null>(null);
 
     // Profile State
@@ -58,16 +57,16 @@ const SetupScreen = ({ navigation }: any) => {
         }
     };
 
-    const confirmRestore = async () => {
+    const confirmRestore = async (password: string) => {
         if (!restoreFileUri) return;
-        if (!restorePassword) {
+        if (!password) {
             Alert.alert('Error', 'Password is required.');
             return;
         }
 
         try {
             setIsRestoring(true);
-            await restoreFromBackup(restoreFileUri, restorePassword);
+            await restoreFromBackup(restoreFileUri, password);
             setIsRestoring(false);
             setShowRestoreModal(false);
 
@@ -470,35 +469,12 @@ const SetupScreen = ({ navigation }: any) => {
             </ScrollView>
 
             {/* Restore Modal */}
-            <Modal visible={showRestoreModal} animationType="slide" transparent>
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 20 }}>
-                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Restore Backup</Text>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 15 }}>Enter the password for this backup file.</Text>
-
-                        <TextInput
-                            style={{
-                                borderWidth: 1,
-                                borderColor: colors.border,
-                                borderRadius: 8,
-                                padding: 12,
-                                color: colors.text,
-                                marginBottom: 20
-                            }}
-                            placeholder="Password"
-                            placeholderTextColor={colors.gray500}
-                            secureTextEntry
-                            value={restorePassword}
-                            onChangeText={setRestorePassword}
-                        />
-
-                        <View style={{ gap: 10 }}>
-                            <Button title={isRestoring ? "Restoring..." : "Restore Data"} onPress={confirmRestore} disabled={isRestoring} />
-                            <Button variant="ghost" title="Cancel" onPress={() => setShowRestoreModal(false)} disabled={isRestoring} />
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <RestoreModal
+                visible={showRestoreModal}
+                onClose={() => setShowRestoreModal(false)}
+                onRestore={confirmRestore}
+                isProcessing={isRestoring}
+            />
         </ScreenWrapper>
     );
 };
