@@ -16,6 +16,7 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
     const [pin, setPinState] = useState('');
     const [error, setError] = useState(false);
     const [biometricsAvailable, setBiometricsAvailable] = useState(false);
+    const [biometricType, setBiometricType] = useState<'FINGERPRINT' | 'FACIAL_RECOGNITION' | 'IRIS' | 'UNKNOWN'>('UNKNOWN');
 
     useEffect(() => {
         checkBiometrics();
@@ -24,8 +25,11 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
     const checkBiometrics = async () => {
         const available = await securityService.hasBiometrics();
         setBiometricsAvailable(available);
+
         if (available) {
-            triggerBiometricAuth();
+            const type = await securityService.getBiometricType();
+            setBiometricType(type);
+            triggerBiometricAuth(); // Still auto-trigger
         }
     };
 
@@ -96,7 +100,11 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
                         if (biometricsAvailable) {
                             return (
                                 <TouchableOpacity key={index} style={styles.key} onPress={triggerBiometricAuth}>
-                                    <Ionicons name="finger-print" size={32} color={colors.primary} />
+                                    <Ionicons
+                                        name={biometricType === 'FACIAL_RECOGNITION' ? "scan" : "finger-print"}
+                                        size={32}
+                                        color={colors.primary}
+                                    />
                                 </TouchableOpacity>
                             );
                         }
