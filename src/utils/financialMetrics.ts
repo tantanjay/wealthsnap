@@ -49,13 +49,19 @@ export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: nu
     return monthCount > 0 ? totalExpense / monthCount : 0;
 };
 
-export const getCategoryBreakdown = (transactions: Transaction[], type: TransactionType) => {
-    const breakdown: { [category: string]: number } = {};
+export const getCategoryBreakdown = (transactions: Transaction[], type: TransactionType, groupBy: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
+    const breakdown: { [key: string]: number } = {};
     let total = 0;
 
     transactions.filter(t => t.type === type).forEach(t => {
-        const cat = t.category;
-        breakdown[cat] = (breakdown[cat] || 0) + t.amount;
+        let key = t.category;
+        if (groupBy === 'SUB_CATEGORY') {
+            // Use subCategory if available, otherwise fallback to category (or maybe "Uncategorized"?)
+            // User requested "Item" view, so falling back to Category name is reasonable if no sub-cat.
+            key = t.subCategory || t.category;
+        }
+
+        breakdown[key] = (breakdown[key] || 0) + t.amount;
         total += t.amount;
     });
 
