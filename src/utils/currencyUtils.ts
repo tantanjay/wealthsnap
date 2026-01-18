@@ -45,3 +45,20 @@ export const formatCompactCurrency = (amount: number, currencyCode: string = 'US
 
     return `${symbol}${formatter.format(amount)}`;
 };
+
+/**
+ * Formats a numeric amount into a compact number string without currency symbol (e.g., 80K, 1.2M).
+ * Useful for chart Y-axis labels where the currency symbol is added separately.
+ * @param amount The numeric amount to format.
+ * @returns The formatted compact number string (e.g., "80K", "1.2M").
+ */
+export const formatCompactNumber = (amount: number): string => {
+    const formatter = new Intl.NumberFormat('en-US', {
+        notation: 'compact',
+        compactDisplay: 'short',
+        maximumFractionDigits: 1
+    });
+
+    return formatter.format(amount);
+};
+
