@@ -252,6 +252,26 @@ export const getGeminiConfig = async (): Promise<GeminiConfig | null> => {
     }
 };
 
+// ============= History Preferences =============
+
+export const saveHistoryTimeFrame = async (timeFrame: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(KEYS.HISTORY_PREFS, JSON.stringify({ timeFrame }));
+    } catch (error) {
+        console.error('Failed to save history prefs:', error);
+    }
+};
+
+export const getHistoryTimeFrame = async (): Promise<string | null> => {
+    try {
+        const data = await AsyncStorage.getItem(KEYS.HISTORY_PREFS);
+        return data ? JSON.parse(data).timeFrame : null;
+    } catch (error) {
+        console.error('Failed to get history prefs:', error);
+        return null;
+    }
+};
+
 // ============= Clear All Data =============
 
 export const clearAllData = async (): Promise<void> => {
