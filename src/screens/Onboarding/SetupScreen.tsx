@@ -170,8 +170,13 @@ const SetupScreen = ({ navigation }: any) => {
     });
 
     return (
-        <ScreenWrapper>
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScreenWrapper scrollable={false}>
+            <ScrollView
+                style={styles.content}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 40 }}
+                nestedScrollEnabled={true}
+            >
                 {/* Step 0: Privacy Policy & Terms */}
                 {step === 0 && (
                     <View style={styles.stepContainer}>
@@ -182,6 +187,7 @@ const SetupScreen = ({ navigation }: any) => {
 
                         <View style={[styles.termsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                             <ScrollView
+                                style={{ flex: 1 }}
                                 nestedScrollEnabled
                                 showsVerticalScrollIndicator
                                 onScroll={(event) => {

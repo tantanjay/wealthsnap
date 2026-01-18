@@ -214,10 +214,10 @@ const ProfileScreen = ({ navigation }: any) => {
                 <Button variant="secondary" title="Buy me a coffee ☕" onPress={() => Alert.alert('Thanks!', 'Link to buy coffee coming soon.')} />
             </Card>
 
-            <Modal visible={showPinModal} animationType="slide" presentationStyle="pageSheet">
-                <View style={{ flex: 1, backgroundColor: colors.background }}>
-                    <View style={{ padding: 20, alignItems: 'flex-end' }}>
-                        <TouchableOpacity onPress={() => setShowPinModal(false)}>
+            <Modal visible={showPinModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPinModal(false)}>
+                <View style={{ flex: 1, backgroundColor: colors.background, paddingVertical: 40, paddingHorizontal: 20 }}>
+                    <View style={{ alignItems: 'flex-end', marginBottom: 20 }}>
+                        <TouchableOpacity onPress={() => setShowPinModal(false)} style={{ padding: 10 }}>
                             <Text style={{ color: colors.primary, fontSize: 16, fontWeight: 'bold' }}>Close</Text>
                         </TouchableOpacity>
                     </View>
