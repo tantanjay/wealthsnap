@@ -55,7 +55,7 @@ export const createBackup = async (password: string): Promise<string> => {
         investments,
         categories,
         recurrenceRules,
-        geminiConfig
+        geminiConfig: geminiConfig ? { ...geminiConfig, apiKey: undefined } : null
     };
 
     // 2. Create zip archive

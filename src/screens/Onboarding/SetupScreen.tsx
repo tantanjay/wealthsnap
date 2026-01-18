@@ -21,6 +21,7 @@ const SetupScreen = ({ navigation }: any) => {
     const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
 
     const [isRestoring, setIsRestoring] = useState(false);
+    const [hasRestored, setHasRestored] = useState(false);
 
     // Restore State
     const [showRestoreModal, setShowRestoreModal] = useState(false);
@@ -71,12 +72,11 @@ const SetupScreen = ({ navigation }: any) => {
             setIsRestoring(false);
             setShowRestoreModal(false);
 
-            Alert.alert('Success', 'Data restored successfully!', [
+            setHasRestored(true);
+            Alert.alert('Success', 'Data restored successfully! Please set a new PIN for this device.', [
                 {
                     text: 'Continue', onPress: async () => {
-                        // Mark onboarding complete and go to Main
-                        await setOnboardingComplete();
-                        navigation.replace('Main');
+                        setStep(3); // Go to PIN creation
                     }
                 }
             ]);
@@ -89,6 +89,11 @@ const SetupScreen = ({ navigation }: any) => {
                 Alert.alert('Error', 'Failed to restore: ' + msg);
             }
         }
+    };
+
+    const handleRestoredFinish = async () => {
+        await setOnboardingComplete();
+        navigation.replace('Main');
     };
 
     const handleFinish = async () => {
@@ -379,7 +384,7 @@ const SetupScreen = ({ navigation }: any) => {
                 {step === 3 && (
                     <View style={styles.stepContainer}>
                         <PinCreationScreen
-                            onSuccess={handleFinish}
+                            onSuccess={hasRestored ? handleRestoredFinish : handleFinish}
                         />
                     </View>
                 )}
