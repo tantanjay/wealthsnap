@@ -3,16 +3,17 @@ import { View, Text, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
-import { formatCurrencyAmount } from '../../utils/currencyUtils';
+import { formatCurrencyAmount, CURRENCY_SYMBOLS, formatCompactCurrency } from '../../utils/currencyUtils';
 
 interface ComparisonChartProps {
     currentMonthExpense: number;
     lastMonthExpense: number;
     averageExpense: number;
     currency: string;
+    isPrivacyEnabled: boolean;
 }
 
-const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, currency }) => {
+const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, currency, isPrivacyEnabled }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
@@ -26,6 +27,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
     };
 
     const getComparisonInsight = () => {
+        if (isPrivacyEnabled) return "Spending comparison hidden in privacy mode.";
         if (currentMonthExpense > averageExpense) {
             const diff = currentMonthExpense - averageExpense;
             return `You spent ${formatCurrencyAmount(diff, currency)} more than your 3-month average.`;
@@ -49,8 +51,10 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                     data={data}
                     width={screenWidth - 64}
                     height={220}
-                    yAxisLabel=""
+                    yAxisLabel={CURRENCY_SYMBOLS[currency] || currency}
                     yAxisSuffix=""
+                    // @ts-ignore: formatYLabel exists in the library but types might be outdated
+                    formatYLabel={(yValue: string) => formatCompactCurrency(parseFloat(yValue), currency).replace(CURRENCY_SYMBOLS[currency] || currency, '')}
                     chartConfig={{
                         backgroundColor: colors.surface,
                         backgroundGradientFrom: colors.surface,
