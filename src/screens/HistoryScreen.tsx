@@ -3,7 +3,7 @@ import { Text, View, Alert, SectionList, TouchableOpacity } from 'react-native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
-import { getAllTransactions, deleteTransaction } from '../services/storageService';
+import { getAllTransactions, deleteTransaction, saveHistoryTimeFrame, getHistoryTimeFrame } from '../services/storageService';
 import { Transaction } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../components';
@@ -33,8 +33,24 @@ const HistoryScreen = ({ navigation }: any) => {
     useFocusEffect(
         useCallback(() => {
             loadTransactions();
+            loadTimeFramePref();
         }, [])
     );
+
+    const loadTimeFramePref = async () => {
+        const saved = await getHistoryTimeFrame();
+        if (saved) {
+            // Validate it is a valid TimeFrame
+            if (['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'].includes(saved)) {
+                setTimeFrame(saved as TimeFrame);
+            }
+        }
+    };
+
+    const handleSetTimeFrame = (tf: TimeFrame) => {
+        setTimeFrame(tf);
+        saveHistoryTimeFrame(tf);
+    };
 
     const loadTransactions = async () => {
         const data = await getAllTransactions();
@@ -300,7 +316,7 @@ const HistoryScreen = ({ navigation }: any) => {
                     {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as TimeFrame[]).map((tf) => (
                         <TouchableOpacity
                             key={tf}
-                            onPress={() => setTimeFrame(tf)}
+                            onPress={() => handleSetTimeFrame(tf)}
                             style={{
                                 flex: 1,
                                 paddingVertical: 8,
