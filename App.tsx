@@ -7,6 +7,7 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import { isOnboardingComplete } from './src/services/storageService';
 import { SecurityProvider } from './src/context/SecurityContext';
 import { PrivacyProvider } from './src/context/PrivacyContext';
+import * as ScreenCapture from 'expo-screen-capture';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -15,6 +16,9 @@ export default function App() {
 
   useEffect(() => {
     checkOnboarding();
+
+    // enhance privacy by preventing screen capture (Android: blank in switcher, iOS: no screenshots/recording)
+    ScreenCapture.preventScreenCaptureAsync().catch(err => console.log('Screen capture prevention failed:', err));
 
     // Privacy Overlay Listener
     const subscription = AppState.addEventListener('change', nextAppState => {
