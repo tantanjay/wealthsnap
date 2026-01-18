@@ -4,7 +4,7 @@ import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
 import { CURRENCY_SYMBOLS, formatCompactCurrency, formatCompactNumber } from '../../utils/currencyUtils';
-import MonthEndProjection from '../modals/MonthEndProjection';
+import MonthEndProjectionModal from '../modals/MonthEndProjectionModal';
 import { Transaction } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
@@ -213,7 +213,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
             </Card>
 
 
-            <MonthEndProjection
+            <MonthEndProjectionModal
                 visible={showProjectionModal}
                 onClose={() => setShowProjectionModal(false)}
                 transactions={transactions}

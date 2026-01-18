@@ -5,12 +5,12 @@ import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
 import { formatCurrencyAmount, formatCompactCurrency } from '../../utils/currencyUtils';
 import { getBudgets, checkBudgetStatus, Budget } from '../../services/budgetService';
+import { getAllRecurrenceRules } from '../../services/storageService';
+import { Transaction, RecurrenceRule } from '../../types';
 import CategoryTrendModal from '../modals/CategoryTrendModal';
-import RecurringExpensesSummary from '../modals/RecurringExpensesSummary';
+import RecurringExpensesSummaryModal from '../modals/RecurringExpensesSummaryModal';
 import AllExpensesModal from '../modals/AllExpensesModal';
 import { Ionicons } from '@expo/vector-icons';
-import { Transaction } from '../../types';
-
 interface ExpenseAnalysisProps {
     categoryBreakdown: {
         name: string;
@@ -28,17 +28,22 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
     const [budgets, setBudgets] = React.useState<Budget[]>([]);
+    const [recurrences, setRecurrences] = React.useState<RecurrenceRule[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
     const [showRecurringModal, setShowRecurringModal] = React.useState(false);
     const [showAllModal, setShowAllModal] = React.useState(false);
 
     React.useEffect(() => {
-        loadBudgets();
+        loadData();
     }, []);
 
-    const loadBudgets = async () => {
-        const data = await getBudgets();
-        setBudgets(data);
+    const loadData = async () => {
+        const [budgetsData, recurrenceData] = await Promise.all([
+            getBudgets(),
+            getAllRecurrenceRules()
+        ]);
+        setBudgets(budgetsData);
+        setRecurrences(recurrenceData);
     };
 
     // Fixed colors for categories to make it look decent
@@ -261,10 +266,10 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
             />
 
             {/* Recurring Expenses Summary Modal */}
-            <RecurringExpensesSummary
+            <RecurringExpensesSummaryModal
                 visible={showRecurringModal}
                 onClose={() => setShowRecurringModal(false)}
-                transactions={transactions}
+                recurrences={recurrences}
                 currency={currency}
             />
 

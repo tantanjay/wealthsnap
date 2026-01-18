@@ -30,6 +30,8 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
             visible={visible}
             onClose={onClose}
             title="Recurring Transactions"
+            style={{ height: '70%' }}
+            contentStyle={{ flex: 1 }}
         >
             {rules.length === 0 ? (
                 <View style={{ padding: 20, alignItems: 'center' }}>

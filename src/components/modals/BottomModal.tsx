@@ -11,6 +11,7 @@ interface BottomModalProps {
     children: React.ReactNode;
     maxHeight?: DimensionValue;
     style?: ViewStyle;
+    contentStyle?: ViewStyle;
 }
 
 const BottomModal: React.FC<BottomModalProps> = ({
@@ -19,8 +20,9 @@ const BottomModal: React.FC<BottomModalProps> = ({
     title,
     subtitle,
     children,
-    maxHeight = '80%',
-    style
+    maxHeight = '70%',
+    style,
+    contentStyle
 }) => {
     const { colors } = useTheme();
 
@@ -72,7 +74,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
                     )}
 
                     {/* Content Wrapper */}
-                    <View style={styles.content}>
+                    <View style={[styles.content, contentStyle]}>
                         {children}
                     </View>
                 </View>

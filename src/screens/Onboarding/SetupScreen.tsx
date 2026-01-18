@@ -10,7 +10,7 @@ import { SPACING } from '../../styles/theme';
 import PinCreationScreen from '../PinCreationScreen';
 import * as DocumentPicker from 'expo-document-picker';
 import { restoreFromBackup } from '../../services/backupService';
-import { RestoreModal } from '../../components/modals/DataManagementModals';
+import RestoreModal from '../../components/modals/RestoreModal';
 
 const { height } = Dimensions.get('window');
 
