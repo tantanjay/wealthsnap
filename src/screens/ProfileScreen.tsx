@@ -3,6 +3,8 @@ import { Text, View, Alert, TextInput, TouchableOpacity, StyleSheet, Modal, Flat
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
+import { BackupModal, RestoreModal } from '../components/DataManagementModals';
+import { RecurringRulesListModal } from '../components/RecurringRulesListModal';
 import { clearAllData, saveGeminiConfig, getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import * as DocumentPicker from 'expo-document-picker';
@@ -26,8 +28,7 @@ const ProfileScreen = ({ navigation }: any) => {
     // Backup/Restore State
     const [showBackupModal, setShowBackupModal] = useState(false);
     const [showRestoreModal, setShowRestoreModal] = useState(false);
-    const [backupPassword, setBackupPassword] = useState('');
-    const [restorePassword, setRestorePassword] = useState('');
+    // passwords are now managed inside the modals
     const [restoreFileUri, setRestoreFileUri] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -93,18 +94,17 @@ const ProfileScreen = ({ navigation }: any) => {
         }
     };
 
-    const handleCreateBackup = async () => {
-        if (!backupPassword) {
+    const handleCreateBackup = async (password: string) => {
+        if (!password) {
             Alert.alert('Error', 'Password is required to encrypt your backup.');
             return;
         }
 
         try {
             setIsProcessing(true);
-            const uri = await createBackup(backupPassword);
+            const uri = await createBackup(password);
             setIsProcessing(false);
             setShowBackupModal(false);
-            setBackupPassword('');
 
             if (await Sharing.isAvailableAsync()) {
                 await Sharing.shareAsync(uri);
@@ -135,19 +135,18 @@ const ProfileScreen = ({ navigation }: any) => {
         }
     };
 
-    const handleRestore = async () => {
+    const handleRestore = async (password: string) => {
         if (!restoreFileUri) return;
-        if (!restorePassword) {
+        if (!password) {
             Alert.alert('Error', 'Password is required.');
             return;
         }
 
         try {
             setIsProcessing(true);
-            await restoreFromBackup(restoreFileUri, restorePassword);
+            await restoreFromBackup(restoreFileUri, password);
             setIsProcessing(false);
             setShowRestoreModal(false);
-            setRestorePassword('');
 
             Alert.alert('Success', 'Data restored successfully. The app will reload.', [
                 {
@@ -362,112 +361,29 @@ const ProfileScreen = ({ navigation }: any) => {
             </Modal>
 
             {/* Backup Modal */}
-            <Modal visible={showBackupModal} animationType="slide" transparent>
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 20 }}>
-                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Create Backup</Text>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 15 }}>Enter a password to encrypt your backup file.</Text>
-
-                        <TextInput
-                            style={{
-                                borderWidth: 1,
-                                borderColor: colors.border,
-                                borderRadius: 8,
-                                padding: 12,
-                                color: colors.text,
-                                marginBottom: 20
-                            }}
-                            placeholder="Password"
-                            placeholderTextColor={colors.gray500}
-                            secureTextEntry
-                            value={backupPassword}
-                            onChangeText={setBackupPassword}
-                        />
-
-                        <View style={{ gap: 10 }}>
-                            <Button title={isProcessing ? "Creating..." : "Create & Share"} onPress={handleCreateBackup} disabled={isProcessing} />
-                            <Button variant="ghost" title="Cancel" onPress={() => setShowBackupModal(false)} disabled={isProcessing} />
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <BackupModal
+                visible={showBackupModal}
+                onClose={() => setShowBackupModal(false)}
+                onBackup={handleCreateBackup}
+                isProcessing={isProcessing}
+            />
 
             {/* Restore Modal */}
-            <Modal visible={showRestoreModal} animationType="slide" transparent>
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 20 }}>
-                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Restore Backup</Text>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 15 }}>Enter the password for this backup file.</Text>
-
-                        <TextInput
-                            style={{
-                                borderWidth: 1,
-                                borderColor: colors.border,
-                                borderRadius: 8,
-                                padding: 12,
-                                color: colors.text,
-                                marginBottom: 20
-                            }}
-                            placeholder="Password"
-                            placeholderTextColor={colors.gray500}
-                            secureTextEntry
-                            value={restorePassword}
-                            onChangeText={setRestorePassword}
-                        />
-
-                        <View style={{ gap: 10 }}>
-                            <Button title={isProcessing ? "Restoring..." : "Restore Data"} onPress={handleRestore} disabled={isProcessing} />
-                            <Button variant="ghost" title="Cancel" onPress={() => setShowRestoreModal(false)} disabled={isProcessing} />
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <RestoreModal
+                visible={showRestoreModal}
+                onClose={() => setShowRestoreModal(false)}
+                onRestore={handleRestore}
+                isProcessing={isProcessing}
+            />
 
             {/* Recurring Rules Modal */}
-            <Modal visible={showRecurringModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowRecurringModal(false)}>
-                <View style={{ flex: 1, backgroundColor: colors.background, paddingVertical: 20, paddingHorizontal: 20 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, marginTop: 20 }}>
-                        <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>Recurring Transactions</Text>
-                        <TouchableOpacity onPress={() => setShowRecurringModal(false)} style={{ padding: 10 }}>
-                            <Text style={{ color: colors.primary, fontSize: 16, fontWeight: 'bold' }}>Close</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {recurrenceRules.length === 0 ? (
-                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                            <Text style={{ color: colors.textSecondary }}>No recurring rules found.</Text>
-                        </View>
-                    ) : (
-                        <FlatList
-                            data={recurrenceRules}
-                            keyExtractor={item => item.id}
-                            renderItem={({ item }) => (
-                                <Card style={{ marginBottom: 10 }}>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>{item.name || item.transactionTemplate.category}</Text>
-                                        <View style={{ flexDirection: 'row', gap: 10 }}>
-                                            <TouchableOpacity onPress={() => handleToggleRule(item)}>
-                                                <Text style={{ color: item.isActive ? colors.success : colors.textSecondary, fontWeight: '600' }}>
-                                                    {item.isActive ? 'Active' : 'Paused'}
-                                                </Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity onPress={() => handleDeleteRule(item.id)}>
-                                                <Text style={{ color: colors.error, fontWeight: '600' }}>Delete</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                    <Text style={{ color: colors.textSecondary }}>
-                                        {item.frequency} • ${item.transactionTemplate.amount}
-                                    </Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
-                                        Next due: {new Date(item.nextDueDate).toLocaleDateString()}
-                                    </Text>
-                                </Card>
-                            )}
-                        />
-                    )}
-                </View>
-            </Modal>
+            <RecurringRulesListModal
+                visible={showRecurringModal}
+                onClose={() => setShowRecurringModal(false)}
+                rules={recurrenceRules}
+                onToggleRule={handleToggleRule}
+                onDeleteRule={handleDeleteRule}
+            />
         </ScreenWrapper >
     );
 };
