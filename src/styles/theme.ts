@@ -1,0 +1,98 @@
+export const PALETTE = {
+    primary: '#4CAF50',
+    primaryDark: '#388E3C',
+    primaryLight: '#81C784',
+    secondary: '#FF9800',
+    secondaryDark: '#F57C00',
+    secondaryLight: '#FFD93D',
+    accent: '#6C5CE7',
+    white: '#FFFFFF',
+    black: '#000000',
+    gray100: '#F5F5F5',
+    gray200: '#EEEEEE',
+    gray300: '#E0E0E0',
+    gray400: '#BDBDBD',
+    gray500: '#9E9E9E',
+    gray600: '#757575',
+    gray700: '#616161',
+    gray800: '#424242',
+    gray900: '#212121',
+    error: '#F44336',
+    warning: '#FF9800',
+    info: '#2196F3',
+    success: '#4CAF50',
+};
+
+export const lightTheme = {
+    mode: 'light',
+    colors: {
+        primary: PALETTE.primary,
+        primaryDark: PALETTE.primaryDark,
+        primaryLight: PALETTE.primaryLight,
+        secondary: PALETTE.secondary,
+        secondaryDark: PALETTE.secondaryDark,
+        secondaryLight: PALETTE.secondaryLight,
+        accent: PALETTE.accent,
+        background: '#F8F9FA',
+        surface: '#FFFFFF',
+        text: '#212121',
+        textSecondary: '#757575',
+        textLight: '#FFFFFF',
+        border: '#E0E0E0',
+        divider: '#BDBDBD',
+        error: PALETTE.error,
+        warning: PALETTE.warning,
+        info: PALETTE.info,
+        success: PALETTE.success,
+        tabBar: '#FFFFFF',
+        gray300: PALETTE.gray300,
+        gray500: PALETTE.gray500,
+        white: PALETTE.white,
+    }
+};
+
+export const darkTheme = {
+    mode: 'dark',
+    colors: {
+        primary: PALETTE.primary,
+        primaryDark: '#2E7D32',
+        primaryLight: '#66BB6A',
+        secondary: PALETTE.secondary,
+        secondaryDark: '#EF6C00',
+        secondaryLight: '#FFE082',
+        accent: '#7C4DFF',
+        background: '#121212',
+        surface: '#1E1E1E',
+        text: '#E0E0E0',
+        textSecondary: '#B0B0B0',
+        textLight: '#121212',
+        border: '#333333',
+        divider: '#424242',
+        error: '#EF5350',
+        warning: '#FFA726',
+        info: '#42A5F5',
+        success: '#66BB6A',
+        tabBar: '#1E1E1E',
+        gray300: '#555555',
+        gray500: '#888888',
+        white: '#FFFFFF',
+    }
+};
+
+export const SPACING = {
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
+    xxl: 48,
+};
+
+export const FONT_SIZES = {
+    xs: 12,
+    sm: 14,
+    md: 16,
+    lg: 18,
+    xl: 24,
+    xxl: 32,
+};
