@@ -1,20 +1,42 @@
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AppNavigator from './src/navigation/AppNavigator';
+import { ThemeProvider } from './src/context/ThemeContext';
+import { isOnboardingComplete } from './src/services/storageService';
 
 export default function App() {
+  const [loading, setLoading] = useState(true);
+  const [initialRoute, setInitialRoute] = useState<'Onboarding' | 'Main'>('Onboarding');
+
+  useEffect(() => {
+    // In future, check onboarding here
+    // for now, always onboarding for testing
+    // checkOnboarding();
+    setLoading(false);
+  }, []);
+
+  const checkOnboarding = async () => {
+    const completed = await isOnboardingComplete();
+    setInitialRoute(completed ? 'Main' : 'Onboarding');
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <ThemeProvider>
+      <SafeAreaProvider>
+        <StatusBar style="auto" />
+        <AppNavigator />
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
