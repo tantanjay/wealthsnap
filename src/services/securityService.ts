@@ -118,3 +118,21 @@ export const authenticateBiometrics = async (): Promise<boolean> => {
         return false;
     }
 };
+
+export const getBiometricType = async (): Promise<'FINGERPRINT' | 'FACIAL_RECOGNITION' | 'IRIS' | 'UNKNOWN'> => {
+    try {
+        const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+        if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+            return 'FACIAL_RECOGNITION';
+        }
+        if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+            return 'FINGERPRINT';
+        }
+        if (types.includes(LocalAuthentication.AuthenticationType.IRIS)) {
+            return 'IRIS';
+        }
+        return 'UNKNOWN';
+    } catch (error) {
+        return 'UNKNOWN';
+    }
+};
