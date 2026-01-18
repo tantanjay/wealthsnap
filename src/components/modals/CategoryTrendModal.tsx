@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, Dimensions } from 'react-native';
+import { View, Text, Dimensions, ScrollView } from 'react-native';
 import BottomModal from './BottomModal';
 import { LineChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
@@ -77,77 +77,81 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
             title={`${category} Trend`}
             subtitle="Last 6 months"
         >
-            {/* Chart */}
-            {trendData.data.length > 0 && (
-                <LineChart
-                    data={chartData}
-                    width={screenWidth - 40}
-                    height={220}
-                    chartConfig={chartConfig}
-                    bezier
-                    style={{
-                        marginVertical: 8,
-                        borderRadius: 16,
-                    }}
-                    formatYLabel={(value) => {
-                        const num = parseFloat(value);
-                        if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
-                        return num.toFixed(0);
-                    }}
-                />
-            )}
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 20 }}
+            >
+                {/* Chart */}
+                {trendData.data.length > 0 && (
+                    <LineChart
+                        data={chartData}
+                        width={screenWidth - 40}
+                        height={220}
+                        chartConfig={chartConfig}
+                        bezier
+                        style={{
+                            marginVertical: 8,
+                            borderRadius: 16,
+                        }}
+                        formatYLabel={(value) => {
+                            const num = parseFloat(value);
+                            if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
+                            return num.toFixed(0);
+                        }}
+                    />
+                )}
 
-            {/* Stats */}
-            <View style={{
-                flexDirection: 'row',
-                justifyContent: 'space-around',
-                marginTop: 20,
-                padding: 15,
-                backgroundColor: colors.surface,
-                borderRadius: 12
-            }}>
-                <View style={{ alignItems: 'center' }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Total</Text>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
-                        {formatCurrencyAmount(total, currency)}
-                    </Text>
-                </View>
-                <View style={{ width: 1, backgroundColor: colors.border }} />
-                <View style={{ alignItems: 'center' }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Average</Text>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
-                        {formatCurrencyAmount(average, currency)}
-                    </Text>
-                </View>
-                <View style={{ width: 1, backgroundColor: colors.border }} />
-                <View style={{ alignItems: 'center' }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Highest</Text>
-                    <Text style={{ color: '#F44336', fontSize: 16, fontWeight: 'bold' }}>
-                        {formatCurrencyAmount(max, currency)}
-                    </Text>
-                </View>
-            </View>
-
-            {/* Insight */}
-            {trendData.data.length > 1 && (
+                {/* Stats */}
                 <View style={{
-                    marginTop: 15,
-                    padding: 12,
-                    backgroundColor: colors.primary + '10',
-                    borderRadius: 8,
                     flexDirection: 'row',
-                    alignItems: 'center',
-                    marginBottom: 20 // Add bottom margin for scrolling safety
+                    justifyContent: 'space-around',
+                    marginTop: 20,
+                    padding: 15,
+                    backgroundColor: colors.surface,
+                    borderRadius: 12
                 }}>
-                    <Ionicons name="information-circle" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-                    <Text style={{ color: colors.text, fontSize: 12, flex: 1 }}>
-                        {trendData.data[trendData.data.length - 1] > average
-                            ? `Your ${category} spending this month is above average.`
-                            : `Your ${category} spending this month is below average. Great job! 🎉`
-                        }
-                    </Text>
+                    <View style={{ alignItems: 'center' }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Total</Text>
+                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
+                            {formatCurrencyAmount(total, currency)}
+                        </Text>
+                    </View>
+                    <View style={{ width: 1, backgroundColor: colors.border }} />
+                    <View style={{ alignItems: 'center' }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Average</Text>
+                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
+                            {formatCurrencyAmount(average, currency)}
+                        </Text>
+                    </View>
+                    <View style={{ width: 1, backgroundColor: colors.border }} />
+                    <View style={{ alignItems: 'center' }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Highest</Text>
+                        <Text style={{ color: '#F44336', fontSize: 16, fontWeight: 'bold' }}>
+                            {formatCurrencyAmount(max, currency)}
+                        </Text>
+                    </View>
                 </View>
-            )}
+
+                {/* Insight */}
+                {trendData.data.length > 1 && (
+                    <View style={{
+                        marginTop: 15,
+                        padding: 12,
+                        backgroundColor: colors.primary + '10',
+                        borderRadius: 8,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                    }}>
+                        <Ionicons name="information-circle" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                        <Text style={{ color: colors.text, fontSize: 12, flex: 1 }}>
+                            {trendData.data[trendData.data.length - 1] > average
+                                ? `Your ${category} spending this month is above average.`
+                                : `Your ${category} spending this month is below average. Great job! 🎉`
+                            }
+                        </Text>
+                    </View>
+                )}
+            </ScrollView>
         </BottomModal>
     );
 };

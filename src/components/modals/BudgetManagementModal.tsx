@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput, FlatList, Alert } from 'react-native';
-import BottomModal from '../modals/BottomModal';
+import BottomModal from './BottomModal';
 import { useTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { getBudgets, setBudget, deleteBudget, Budget } from '../../services/budgetService';
 import { EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '../../constants/categories';
 import { formatCurrencyAmount } from '../../utils/currencyUtils';
-import { CategorySelectModal } from '../modals/CategorySelectModal';
+import { CategorySelectModal } from './CategorySelectModal';
 
 interface BudgetManagementProps {
     visible: boolean;
@@ -14,7 +14,7 @@ interface BudgetManagementProps {
     currency: string;
 }
 
-const BudgetManagement: React.FC<BudgetManagementProps> = ({ visible, onClose, currency }) => {
+const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClose, currency }) => {
     const { colors } = useTheme();
     const [budgets, setBudgetsList] = useState<Budget[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -108,6 +108,8 @@ const BudgetManagement: React.FC<BudgetManagementProps> = ({ visible, onClose, c
             visible={visible}
             onClose={onClose}
             title="Manage Budgets"
+            style={{ height: '70%' }}
+            contentStyle={{ flex: 1 }}
         >
             <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 10, paddingHorizontal: 20 }}>
@@ -301,4 +303,4 @@ const BudgetManagement: React.FC<BudgetManagementProps> = ({ visible, onClose, c
     );
 };
 
-export default BudgetManagement;
+export default BudgetManagementModal;
