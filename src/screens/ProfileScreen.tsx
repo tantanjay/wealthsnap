@@ -3,9 +3,10 @@ import { Text, View, Alert, TextInput, TouchableOpacity, StyleSheet, Modal, Flat
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
-import { BackupModal, RestoreModal } from '../components/modals/DataManagementModals';
+import BackupModal from '../components/modals/BackupModal';
+import RestoreModal from '../components/modals/RestoreModal';
 import { RecurringRulesListModal } from '../components/modals/RecurringRulesListModal';
-import BudgetManagement from '../components/profile/BudgetManagement';
+import BudgetManagementModal from '../components/modals/BudgetManagementModal';
 import { clearAllData, saveGeminiConfig, getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import * as DocumentPicker from 'expo-document-picker';
@@ -398,7 +399,7 @@ const ProfileScreen = ({ navigation }: any) => {
             />
 
             {/* Budget Management Modal */}
-            <BudgetManagement
+            <BudgetManagementModal
                 visible={showBudgetModal}
                 onClose={() => setShowBudgetModal(false)}
                 currency={currency}
