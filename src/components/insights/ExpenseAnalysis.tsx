@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, Dimensions } from 'react-native';
+import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
-import { formatCurrencyAmount } from '../../utils/currencyUtils';
+import { formatCurrencyAmount, formatCompactCurrency } from '../../utils/currencyUtils';
 
 interface ExpenseAnalysisProps {
     categoryBreakdown: {
@@ -12,9 +12,12 @@ interface ExpenseAnalysisProps {
         percentage: number;
     }[];
     currency: string;
+    isPrivacyEnabled: boolean;
+    grouping: 'CATEGORY' | 'SUB_CATEGORY';
+    onToggleGrouping: (grouping: 'CATEGORY' | 'SUB_CATEGORY') => void;
 }
 
-const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, currency }) => {
+const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, currency, isPrivacyEnabled, grouping, onToggleGrouping }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
@@ -36,13 +39,35 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
 
     return (
         <View>
-            <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12, marginTop: 20 }}>Expense Analysis</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 }}>
+                <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Expense Analysis</Text>
+
+                {/* Simple Toggle */}
+                <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
+                    <TouchableOpacity
+                        onPress={() => onToggleGrouping('CATEGORY')}
+                        style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: grouping === 'CATEGORY' ? colors.primary : 'transparent' }}
+                    >
+                        <Text style={{ color: grouping === 'CATEGORY' ? '#fff' : colors.text, fontSize: 12, fontWeight: '600' }}>Group</Text>
+                    </TouchableOpacity>
+                    <View style={{ width: 1, backgroundColor: colors.border }} />
+                    <TouchableOpacity
+                        onPress={() => onToggleGrouping('SUB_CATEGORY')}
+                        style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: grouping === 'SUB_CATEGORY' ? colors.primary : 'transparent' }}
+                    >
+                        <Text style={{ color: grouping === 'SUB_CATEGORY' ? '#fff' : colors.text, fontSize: 12, fontWeight: '600' }}>Item</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
 
             {topCategory && (
                 <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
                     <Text style={{ fontSize: 20, marginRight: 10 }}>💡</Text>
                     <Text style={{ color: colors.text, flex: 1 }}>
-                        {`${topCategory.name} accounts for ${Math.round(topCategory.percentage)}% of your total expenses.`}
+                        {isPrivacyEnabled
+                            ? "Expense insights hidden in privacy mode."
+                            : `${topCategory.name} accounts for ${Math.round(topCategory.percentage)}% of your total expenses.`
+                        }
                     </Text>
                 </View>
             )}
@@ -61,7 +86,7 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                         backgroundColor={"transparent"}
                         paddingLeft={"15"}
                         center={[10, 0]}
-                        absolute
+                        absolute={false}
                     />
                 ) : (
                     <Text style={{ color: colors.textSecondary, textAlign: 'center', padding: 20 }}>No expense data available.</Text>
@@ -77,7 +102,9 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                             <Text style={{ color: colors.text, fontSize: 14 }}>{item.name}</Text>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>{formatCurrencyAmount(item.amount, currency)}</Text>
+                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>
+                                {isPrivacyEnabled ? '***' : formatCompactCurrency(item.amount, currency)}
+                            </Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{item.percentage.toFixed(1)}%</Text>
                         </View>
                     </View>

@@ -11,6 +11,7 @@ interface InsightsOverviewCardsProps {
     savingsRate: number;
     burnRate: number;
     currency: string;
+    isPrivacyEnabled: boolean;
 }
 
 const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
@@ -19,7 +20,8 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
     expense,
     savingsRate,
     burnRate,
-    currency
+    currency,
+    isPrivacyEnabled
 }) => {
     const { colors } = useTheme();
 
@@ -28,7 +30,9 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
             <Card style={{ padding: 16, height: 120, justifyContent: 'space-between', backgroundColor: colors.surface }}>
                 <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600' }}>{title.toUpperCase()}</Text>
                 <View>
-                    <Text style={{ color: color || colors.text, fontSize: 20, fontWeight: 'bold' }}>{value}</Text>
+                    <Text style={{ color: color || colors.text, fontSize: 20, fontWeight: 'bold' }}>
+                        {isPrivacyEnabled ? '***' : value}
+                    </Text>
                     {subValue && <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4 }}>{subValue}</Text>}
                 </View>
             </Card>

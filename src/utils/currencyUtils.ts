@@ -26,3 +26,22 @@ export const formatCurrencyAmount = (amount: number, currencyCode: string = 'USD
 
     return `${symbol}${formattedNumber}`;
 };
+
+/**
+ * Formats a numeric amount into a compact currency string (e.g., 80K, 1.2M).
+ * Useful for charts where space is limited.
+ * @param amount The numeric amount to format.
+ * @param currencyCode The currency code (e.g., 'USD', 'PHP').
+ * @returns The formatted compact string (e.g., "₱80K").
+ */
+export const formatCompactCurrency = (amount: number, currencyCode: string = 'USD'): string => {
+    const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
+
+    const formatter = new Intl.NumberFormat('en-US', {
+        notation: 'compact',
+        compactDisplay: 'short',
+        maximumFractionDigits: 1
+    });
+
+    return `${symbol}${formatter.format(amount)}`;
+};
