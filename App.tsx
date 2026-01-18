@@ -6,6 +6,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { isOnboardingComplete } from './src/services/storageService';
 import { SecurityProvider } from './src/context/SecurityContext';
+import { PrivacyProvider } from './src/context/PrivacyContext';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -32,10 +33,12 @@ export default function App() {
   return (
     <ThemeProvider>
       <SecurityProvider>
-        <SafeAreaProvider>
-          <StatusBar style="auto" />
-          <AppNavigator initialRoute={initialRoute} />
-        </SafeAreaProvider>
+        <PrivacyProvider>
+          <SafeAreaProvider>
+            <StatusBar style="auto" />
+            <AppNavigator initialRoute={initialRoute} />
+          </SafeAreaProvider>
+        </PrivacyProvider>
       </SecurityProvider>
     </ThemeProvider>
   );

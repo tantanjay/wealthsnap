@@ -8,9 +8,13 @@ import { processRecurrenceRules } from '../services/recurrenceService';
 import { getUserProfile, getAllTransactions } from '../services/storageService';
 import { UserProfile, Transaction } from '../types';
 import { Ionicons } from '@expo/vector-icons';
+import { usePrivacy } from '../context/PrivacyContext';
+import { TouchableOpacity } from 'react-native';
+import { formatCurrencyAmount } from '../utils/currencyUtils';
 
 const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
+    const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [income, setIncome] = useState(0);
@@ -42,7 +46,8 @@ const HomeScreen = ({ navigation }: any) => {
     );
 
     const formatCurrency = (amount: number) => {
-        return (profile?.currency || '$') + amount.toFixed(2);
+        if (isPrivacyEnabled) return '****';
+        return formatCurrencyAmount(amount, profile?.currency || 'USD');
     };
 
     return (
@@ -55,7 +60,16 @@ const HomeScreen = ({ navigation }: any) => {
 
                 {/* Balance Card */}
                 <Card style={{ backgroundColor: colors.primary, padding: 20 }}>
-                    <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Total Balance</Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Total Balance</Text>
+                        <TouchableOpacity onPress={togglePrivacy}>
+                            <Ionicons
+                                name={isPrivacyEnabled ? 'eye-off' : 'eye'}
+                                size={22}
+                                color={colors.white}
+                            />
+                        </TouchableOpacity>
+                    </View>
                     <Text style={{ color: colors.white, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
                         {formatCurrency(income - expense)}
                     </Text>
