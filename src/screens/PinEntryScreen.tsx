@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Vibration } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { verifyPin } from '../services/securityService';
+import * as securityService from '../services/securityService';
 
 // This screen should be rendered conditionally via Context or a Modal
 interface PinEntryScreenProps {
@@ -15,6 +15,26 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
     const { colors } = useTheme();
     const [pin, setPinState] = useState('');
     const [error, setError] = useState(false);
+    const [biometricsAvailable, setBiometricsAvailable] = useState(false);
+
+    useEffect(() => {
+        checkBiometrics();
+    }, []);
+
+    const checkBiometrics = async () => {
+        const available = await securityService.hasBiometrics();
+        setBiometricsAvailable(available);
+        if (available) {
+            triggerBiometricAuth();
+        }
+    };
+
+    const triggerBiometricAuth = async () => {
+        const success = await securityService.authenticateBiometrics();
+        if (success) {
+            onSuccess();
+        }
+    };
 
     const handlePress = (num: string) => {
         if (pin.length < PIN_LENGTH) {
@@ -35,7 +55,7 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
     }, [pin]);
 
     const checkPin = async () => {
-        const isValid = await verifyPin(pin);
+        const isValid = await securityService.verifyPin(pin);
         if (isValid) {
             onSuccess();
         } else {
@@ -72,7 +92,16 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
         return (
             <View style={styles.keypad}>
                 {keys.map((key, index) => {
-                    if (key === '') return <View key={index} style={styles.key} />;
+                    if (key === '') {
+                        if (biometricsAvailable) {
+                            return (
+                                <TouchableOpacity key={index} style={styles.key} onPress={triggerBiometricAuth}>
+                                    <Ionicons name="finger-print" size={32} color={colors.primary} />
+                                </TouchableOpacity>
+                            );
+                        }
+                        return <View key={index} style={styles.key} />;
+                    }
                     if (key === 'del') {
                         return (
                             <TouchableOpacity key={index} style={styles.key} onPress={handleDelete}>
