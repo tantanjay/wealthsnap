@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Text, View, Alert, TextInput, TouchableOpacity, StyleSheet, Modal, FlatList } from 'react-native';
+import { Text, View, Alert, TextInput, TouchableOpacity, StyleSheet, Modal, FlatList, Linking } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
@@ -7,6 +8,7 @@ import BackupModal from '../components/modals/BackupModal';
 import RestoreModal from '../components/modals/RestoreModal';
 import { RecurringRulesListModal } from '../components/modals/RecurringRulesListModal';
 import BudgetManagementModal from '../components/modals/BudgetManagementModal';
+import SupportModal from '../components/modals/SupportModal';
 import { clearAllData, saveGeminiConfig, getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import * as DocumentPicker from 'expo-document-picker';
@@ -41,6 +43,9 @@ const ProfileScreen = ({ navigation }: any) => {
 
     // Budget State
     const [showBudgetModal, setShowBudgetModal] = useState(false);
+
+    // Support Modal State
+    const [showSupportModal, setShowSupportModal] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
@@ -364,7 +369,35 @@ const ProfileScreen = ({ navigation }: any) => {
 
             <Card>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Support</Text>
-                <Button variant="secondary" title="Buy me a coffee ☕" onPress={() => Alert.alert('Thanks!', 'Link to buy coffee coming soon.')} />
+                <TouchableOpacity
+                    onPress={() => setShowSupportModal(true)}
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: 15,
+                        backgroundColor: colors.surface,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                    }}
+                >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Ionicons name="heart" size={24} color="#FF6B6B" />
+                        <View style={{ marginLeft: 12 }}>
+                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>☕ Buy Me a Coffee</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Support via PayPal</Text>
+                        </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+            </Card>
+
+            <Card>
+                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>About</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20 }}>
+                    WealthSnap is a free, ad-free personal finance tracker with AI-powered receipt scanning. Your data stays private and secure on your device.
+                </Text>
             </Card>
 
             <Modal visible={showPinModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPinModal(false)}>
@@ -415,6 +448,12 @@ const ProfileScreen = ({ navigation }: any) => {
                 visible={showBudgetModal}
                 onClose={() => setShowBudgetModal(false)}
                 currency={currency}
+            />
+
+            {/* Support Modal */}
+            <SupportModal
+                visible={showSupportModal}
+                onClose={() => setShowSupportModal(false)}
             />
         </ScreenWrapper >
     );

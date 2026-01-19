@@ -12,6 +12,8 @@ import PinCreationScreen from '../PinCreationScreen';
 import * as DocumentPicker from 'expo-document-picker';
 import { restoreFromBackup } from '../../services/backupService';
 import RestoreModal from '../../components/modals/RestoreModal';
+import { CONFIG } from '../../constants/config';
+import { generateDummyData } from '../../services/dummyDataService';
 
 const { height } = Dimensions.get('window');
 
@@ -100,6 +102,7 @@ const SetupScreen = ({ navigation }: any) => {
         );
     };
 
+
     const handleFinish = async () => {
         if (!name || name.trim().length < 4) {
             Alert.alert('Required', 'Please enter a valid name (at least 4 characters).');
@@ -125,6 +128,26 @@ const SetupScreen = ({ navigation }: any) => {
                 routes: [{ name: 'Main' }],
             })
         );
+    };
+
+    const handlePopulateDemoData = async () => {
+        try {
+            setIsRestoring(true); // Reuse restoring state for loading indicator
+            await generateDummyData();
+            setIsRestoring(false);
+
+            Alert.alert('Success', 'Demo data populated! Please set a PIN.', [
+                {
+                    text: 'Continue', onPress: () => {
+                        setStep(3); // Go to PIN creation
+                        setHasRestored(true); // Treat as restored so we skip profile creation
+                    }
+                }
+            ]);
+        } catch (error) {
+            setIsRestoring(false);
+            Alert.alert('Error', 'Failed to generate demo data.');
+        }
     };
 
     const styles = StyleSheet.create({
@@ -389,6 +412,25 @@ const SetupScreen = ({ navigation }: any) => {
                             </View>
                             {!isRestoring && <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />}
                         </TouchableOpacity>
+
+                        {CONFIG.ENABLE_DUMMY_DATA && (
+                            <TouchableOpacity
+                                style={[styles.welcomeButton, { backgroundColor: '#FF9800', marginTop: 10 }]}
+                                onPress={handlePopulateDemoData}
+                                disabled={isRestoring}
+                            >
+                                {isRestoring ? (
+                                    <ActivityIndicator size="small" color="#FFF" />
+                                ) : (
+                                    <Ionicons name="construct" size={24} color="#FFF" />
+                                )}
+                                <View style={{ marginLeft: SPACING.md }}>
+                                    <Text style={styles.welcomeButtonTitle}>Populate Demo Data</Text>
+                                    <Text style={styles.welcomeButtonSubtitle}>For screenshots only</Text>
+                                </View>
+                                {!isRestoring && <Ionicons name="chevron-forward" size={24} color="#FFF" style={{ marginLeft: 'auto' }} />}
+                            </TouchableOpacity>
+                        )}
                     </View>
                 )}
 
