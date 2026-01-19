@@ -64,7 +64,7 @@ const RecurringExpensesSummaryModal: React.FC<RecurringExpensesSummaryProps> = (
             title="Recurring Expenses"
             subtitle="Monthly commitments"
         >
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+            <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Total Section */}
                 <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
                     <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 5 }}>Total Monthly Commitment</Text>
