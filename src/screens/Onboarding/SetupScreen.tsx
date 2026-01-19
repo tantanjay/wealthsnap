@@ -308,15 +308,16 @@ const SetupScreen = ({ navigation }: any) => {
                                 </Text>
 
                                 <Text style={[styles.termsHeading, { color: colors.primary }]}>4. "AS IS" & NO WARRANTY</Text>
-                                <Text style={[styles.termsText, { color: colors.text }]}>
+                                <Text style={[styles.termsText, { color: colors.text, fontWeight: 'bold' }]}>
                                     THE APPLICATION IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                 </Text>
 
                                 <Text style={[styles.termsHeading, { color: colors.primary }]}>5. FINANCIAL DISCLAIMER</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
                                     <Text style={{ fontWeight: 'bold' }}>5.1 Not Financial Advice:</Text> This App is not intended to provide professional financial, investment, or tax advice. The insights provided by the App and AI analysis are for informational purposes only.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>5.2 AI Accuracy:</Text> AI-generated limits, budgets, categories, or insights may be inaccurate, incomplete, or misleading. Check all AI outputs carefully.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>5.3 Responsibility:</Text> You are fully responsible for your own financial decisions. The developer is not liable for any financial losses incurred based on App usage.
+                                    <Text style={{ fontWeight: 'bold' }}>5.2 AI Accuracy:</Text> WealthSnap does not verify the accuracy of the financial data entered or the AI's interpretation. AI-generated limits, budgets, categories, or insights may be inaccurate, incomplete, or misleading. Check all AI outputs carefully.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>5.3 Illustrative Purposes:</Text> All calculations are for illustrative purposes and should not be used for tax, legal, or professional financial reporting.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>5.4 Responsibility:</Text> You are fully responsible for your own financial decisions. The developer is not liable for any financial losses incurred based on App usage.
                                 </Text>
 
                                 <Text style={[styles.termsHeading, { color: colors.primary }]}>6. LIMITATION OF LIABILITY</Text>
@@ -331,8 +332,8 @@ const SetupScreen = ({ navigation }: any) => {
 
                                 <Text style={[styles.termsHeading, { color: colors.primary }]}>8. USER DATA & SECURITY</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
-                                    <Text style={{ fontWeight: 'bold' }}>8.1 Data Loss:</Text> Data is stored locally. If you delete the App, lose your device, or forget your PIN, your data cannot be recovered. Regular backups (via the specific Backup feature) are your sole responsibility.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>8.2 No Password Recovery:</Text> There is NO "Forgot Password" or recovery mechanism for your custom PIN. Creating a PIN is optional but highly recommended for privacy; however, forgetting it results in permanent data loss.
+                                    <Text style={{ fontWeight: 'bold' }}>8.1 Data Loss:</Text> Data is stored locally. There is no "Cloud Sync." If you delete the App, lose your device, or forget your PIN, your data is gone permanently. Regular backups (via the in-app Backup feature) are your sole responsibility.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>8.2 No Password Recovery:</Text> There is NO "Forgot Password" or recovery mechanism for your custom PIN. The Developer cannot "reset" your PIN or recover your encrypted database. Creating a PIN is optional but highly recommended for privacy; however, forgetting it results in permanent data loss.
                                 </Text>
 
                                 <Text style={[styles.termsHeading, { color: colors.primary }]}>9. CHILDREN'S PRIVACY</Text>
