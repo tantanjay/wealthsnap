@@ -1,3 +1,3 @@
 export const CONFIG = {
-    ENABLE_DUMMY_DATA: true,
+    ENABLE_DUMMY_DATA: false,
 };
