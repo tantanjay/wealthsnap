@@ -365,6 +365,13 @@ const ProfileScreen = ({ navigation }: any) => {
                     WealthSnap is a free, ad-free personal finance tracker with AI-powered receipt scanning. Your data stays private and secure on your device.
                 </Text>
 
+                <View style={{ backgroundColor: colors.surface, borderLeftWidth: 3, borderLeftColor: colors.primary, padding: 12, borderRadius: 8, marginBottom: 15 }}>
+                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 6 }}>Why is WealthSnap free?</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>
+                        WealthSnap was built as a passion project to provide a high-quality, private financial tool without the tracking found in modern apps. We don't have server costs because your data stays on your phone. If you use the AI features, you use your own API key, keeping the app sustainable and free for everyone.
+                    </Text>
+                </View>
+
                 <TouchableOpacity
                     onPress={() => setShowSupportModal(true)}
                     style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}

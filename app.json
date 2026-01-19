@@ -13,7 +13,10 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "WealthSnap uses FaceID to unlock your locally stored financial dashboard. Your biometric data never leaves your device and is not accessible by the developer."
+      }
     },
     "android": {
       "adaptiveIcon": {
