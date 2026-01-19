@@ -310,6 +310,11 @@ const SetupScreen = ({ navigation }: any) => {
                                     <Text style={{ fontWeight: 'bold' }}>8.1 Data Loss:</Text> Data is stored locally. If you delete the App, lose your device, or forget your PIN, your data cannot be recovered. Regular backups (via the specific Backup feature) are your sole responsibility.{'\n\n'}
                                     <Text style={{ fontWeight: 'bold' }}>8.2 No Password Recovery:</Text> There is NO "Forgot Password" or recovery mechanism for your custom PIN. Creating a PIN is optional but highly recommended for privacy; however, forgetting it results in permanent data loss.
                                 </Text>
+
+                                <Text style={[styles.termsHeading, { color: colors.primary }]}>9. CHILDREN'S PRIVACY</Text>
+                                <Text style={[styles.termsText, { color: colors.text }]}>
+                                    Our Services do not address anyone under the age of 13. We do not knowingly collect personally identifiable information from children under 13. In the case we discover that a child under 13 has provided us with personal information, we immediately delete this from our records.
+                                </Text>
                             </ScrollView>
                         </View>
 
