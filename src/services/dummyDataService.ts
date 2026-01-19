@@ -4,11 +4,13 @@ import { CONFIG } from '../constants/config';
 
 const EXPENSE_CATEGORIES = [
     { name: 'Food', type: 'EXPENSE' as TransactionType, icon: 'fast-food' },
-    { name: 'Transport', type: 'EXPENSE' as TransactionType, icon: 'car' },
-    { name: 'Utilities', type: 'EXPENSE' as TransactionType, icon: 'water' },
+    { name: 'Transportation', type: 'EXPENSE' as TransactionType, icon: 'car' }, // Changed from 'Transport'
+    { name: 'Electricity', type: 'EXPENSE' as TransactionType, icon: 'flash' }, // Changed from 'Utilities'
     { name: 'Entertainment', type: 'EXPENSE' as TransactionType, icon: 'film' },
     { name: 'Shopping', type: 'EXPENSE' as TransactionType, icon: 'cart' },
-    { name: 'Health', type: 'EXPENSE' as TransactionType, icon: 'fitness' },
+    { name: 'Medical', type: 'EXPENSE' as TransactionType, icon: 'medkit' }, // Changed from 'Health'
+    { name: 'Groceries', type: 'EXPENSE' as TransactionType, icon: 'cart' },
+    { name: 'Water', type: 'EXPENSE' as TransactionType, icon: 'water' },
 ];
 
 const INCOME_CATEGORIES = [
