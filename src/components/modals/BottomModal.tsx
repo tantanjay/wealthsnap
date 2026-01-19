@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet, ViewStyle, DimensionValue } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -25,6 +26,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
     contentStyle
 }) => {
     const { colors } = useTheme();
+    const insets = useSafeAreaInsets();
 
     return (
         <Modal
@@ -48,6 +50,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
                         {
                             backgroundColor: colors.background,
                             maxHeight: maxHeight,
+                            paddingBottom: Math.max(insets.bottom, 20)
                         },
                         style
                     ]}

@@ -16,6 +16,16 @@ import InsightsScreen from '../screens/InsightsScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+const HomeStack = createStackNavigator();
+
+const HomeStackNavigator = () => {
+    return (
+        <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+            <HomeStack.Screen name="HomeMain" component={HomeScreen} />
+            <HomeStack.Screen name="Insights" component={InsightsScreen} />
+        </HomeStack.Navigator>
+    );
+};
 
 const MainTabs = () => {
     const { colors } = useTheme();
@@ -37,7 +47,7 @@ const MainTabs = () => {
                 headerShown: false,
             })}
         >
-            <Tab.Screen name="Home" component={HomeScreen} />
+            <Tab.Screen name="Home" component={HomeStackNavigator} />
             <Tab.Screen name="Investment" component={InvestmentScreen} />
             <Tab.Screen name="Record" component={RecordScreen} />
             <Tab.Screen name="History" component={HistoryScreen} />
@@ -66,7 +76,6 @@ const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' })
                 <Stack.Screen name="Onboarding" component={WelcomeScreen} />
                 <Stack.Screen name="Setup" component={SetupScreen} />
                 <Stack.Screen name="Main" component={MainTabs} />
-                <Stack.Screen name="Insights" component={InsightsScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

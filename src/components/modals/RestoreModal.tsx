@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, TouchableOpacity } from 'react-native';
+import { View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import BottomModal from './BottomModal';
 import { Button } from '../../components';
 import { useTheme } from '../../context/ThemeContext';
@@ -33,7 +33,7 @@ const RestoreModal: React.FC<RestoreModalProps> = ({
             title="Restore Backup"
             subtitle="Enter the password for this backup file."
         >
-            <View style={{ marginBottom: 20 }}>
+            <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -77,7 +77,7 @@ const RestoreModal: React.FC<RestoreModalProps> = ({
                         disabled={isProcessing}
                     />
                 </View>
-            </View>
+            </ScrollView>
         </BottomModal>
     );
 };
