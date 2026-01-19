@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Alert, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
+import { CommonActions } from '@react-navigation/native';
 import { ScreenWrapper } from '../../components/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
 import { Button, Card } from '../../components';
@@ -91,12 +92,17 @@ const SetupScreen = ({ navigation }: any) => {
 
     const handleRestoredFinish = async () => {
         await setOnboardingComplete();
-        navigation.replace('Main');
+        navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Main' }],
+            })
+        );
     };
 
     const handleFinish = async () => {
-        if (!name) {
-            Alert.alert('Required', 'Please enter your name.');
+        if (!name || name.trim().length < 4) {
+            Alert.alert('Required', 'Please enter a valid name (at least 4 characters).');
             return;
         }
 
@@ -113,7 +119,12 @@ const SetupScreen = ({ navigation }: any) => {
 
         await saveUserProfile(profile);
         await setOnboardingComplete();
-        navigation.replace('Main');
+        navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Main' }],
+            })
+        );
     };
 
     const styles = StyleSheet.create({
@@ -460,7 +471,17 @@ const SetupScreen = ({ navigation }: any) => {
                             ))}
                         </View>
 
-                        <Button title="Continue" onPress={() => setStep(3)} style={{ marginTop: 20, marginBottom: 40 }} />
+                        <Button
+                            title="Continue"
+                            onPress={() => {
+                                if (name.trim().length < 4) {
+                                    Alert.alert('Invalid Name', 'Name must be at least 4 characters long.');
+                                    return;
+                                }
+                                setStep(3);
+                            }}
+                            style={{ marginTop: 20, marginBottom: 40 }}
+                        />
                     </View>
                 )}
             </ScrollView>
