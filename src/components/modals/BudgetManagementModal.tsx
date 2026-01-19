@@ -119,7 +119,7 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
                 <FlatList
                     data={budgets}
                     keyExtractor={item => item.category}
-                    contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+                    contentContainerStyle={{ paddingHorizontal: 20 }}
                     ListEmptyComponent={
                         <View style={{ alignItems: 'center', marginTop: 40 }}>
                             <Ionicons name="wallet-outline" size={48} color={colors.textSecondary} />
