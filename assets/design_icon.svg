@@ -1,0 +1,28 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background: Deep Blue -->
+  <rect width="1024" height="1024" rx="200" fill="#0033CC"/>
+  
+  <!-- Wallet Body: Slightly lighter blue or just the background, let's use a subtle gradient or shape for the wallet if needed. 
+       Actually, let's make the W the main feature. 
+       Let's create a stylized W that looks like a graph.
+  -->
+  
+  <!-- Graph Bars forming a W -->
+  <!-- Bar 1: Left, short -->
+  <rect x="200" y="300" width="120" height="400" rx="20" fill="white" fill-opacity="0.8"/>
+  <!-- Bar 2: Middle-left, shorter (downstroke/upstroke) -->
+  <rect x="360" y="500" width="120" height="200" rx="20" fill="white" fill-opacity="0.9"/>
+  <!-- Bar 3: Middle-right, taller -->
+  <rect x="520" y="400" width="120" height="300" rx="20" fill="white" fill-opacity="0.95"/>
+  <!-- Bar 4: Right, tall (growth) -->
+  <rect x="680" y="200" width="120" height="500" rx="20" fill="white"/>
+
+  <!-- Connecting line at bottom to unify as W and maybe resemble a wallet fold? 
+       Or just simple bars. The prompt asked for "W icon... wallet and bar graph".
+       Let's add a wallet flap element.
+  -->
+  
+  <!-- Wallet Flap outline styled -->
+  <path d="M150 250 H 874 V 800 Q 874 850 824 850 H 200 Q 150 850 150 800 V 250 Z" stroke="white" stroke-width="40" fill="none" opacity="0.5"/>
+  
+</svg>
