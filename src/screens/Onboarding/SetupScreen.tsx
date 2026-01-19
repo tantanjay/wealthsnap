@@ -14,6 +14,8 @@ import { restoreFromBackup } from '../../services/backupService';
 import RestoreModal from '../../components/modals/RestoreModal';
 import { CONFIG } from '../../constants/config';
 import { generateDummyData } from '../../services/dummyDataService';
+import OnboardingGuide from './OnboardingGuide';
+
 
 const { height } = Dimensions.get('window');
 
@@ -93,15 +95,9 @@ const SetupScreen = ({ navigation }: any) => {
     };
 
     const handleRestoredFinish = async () => {
-        await setOnboardingComplete();
-        navigation.dispatch(
-            CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'Main' }],
-            })
-        );
+        // Instead of finishing immediately, show the guide
+        setStep(4);
     };
-
 
     const handleFinish = async () => {
         if (!name || name.trim().length < 4) {
@@ -121,13 +117,8 @@ const SetupScreen = ({ navigation }: any) => {
         };
 
         await saveUserProfile(profile);
-        await setOnboardingComplete();
-        navigation.dispatch(
-            CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'Main' }],
-            })
-        );
+        // show guide
+        setStep(4);
     };
 
     const handlePopulateDemoData = async () => {
@@ -148,6 +139,16 @@ const SetupScreen = ({ navigation }: any) => {
             setIsRestoring(false);
             Alert.alert('Error', 'Failed to generate demo data.');
         }
+    };
+
+    const handleFinalizeOnboarding = async () => {
+        await setOnboardingComplete();
+        navigation.dispatch(
+            CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Main' }],
+            })
+        );
     };
 
     const styles = StyleSheet.create({
@@ -443,6 +444,11 @@ const SetupScreen = ({ navigation }: any) => {
                     </View>
                 )}
 
+                {/* Step 4: Onboarding Guide */}
+                {step === 4 && (
+                    <OnboardingGuide onFinish={handleFinalizeOnboarding} mode="onboarding" />
+                )}
+
                 {/* Step 2: Profile Setup (Existing Logic) */}
                 {step === 2 && (
                     <View style={styles.stepContainer}>
@@ -540,7 +546,7 @@ const SetupScreen = ({ navigation }: any) => {
                 onRestore={confirmRestore}
                 isProcessing={isRestoring}
             />
-        </ScreenWrapper>
+        </ScreenWrapper >
     );
 };
 export default SetupScreen;
