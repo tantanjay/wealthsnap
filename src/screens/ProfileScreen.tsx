@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Text, View, Alert, TextInput, TouchableOpacity, StyleSheet, Modal, FlatList, Linking } from 'react-native';
+import { Text, View, Alert, TouchableOpacity, StyleSheet, Modal, FlatList, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
@@ -9,6 +9,7 @@ import RestoreModal from '../components/modals/RestoreModal';
 import { RecurringRulesListModal } from '../components/modals/RecurringRulesListModal';
 import BudgetManagementModal from '../components/modals/BudgetManagementModal';
 import SupportModal from '../components/modals/SupportModal';
+import GeminiSettingsModal from '../components/modals/GeminiSettingsModal';
 import { clearAllData, saveGeminiConfig, getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import * as DocumentPicker from 'expo-document-picker';
@@ -17,11 +18,11 @@ import { createBackup, restoreFromBackup } from '../services/backupService';
 import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import { isPinSet, getTimeoutSetting, saveTimeoutSetting, TimeoutOption, TIMEOUT_OPTIONS } from '../services/securityService';
 import PinCreationScreen from './PinCreationScreen';
+import OnboardingGuide from './Onboarding/OnboardingGuide';
+
 
 const ProfileScreen = ({ navigation }: any) => {
     const { colors, setMode, mode } = useTheme();
-    const [apiKey, setApiKey] = useState('');
-    const [showKeyInput, setShowKeyInput] = useState(false);
     const [hasApiKey, setHasApiKey] = useState(false);
 
     // Security State
@@ -46,6 +47,9 @@ const ProfileScreen = ({ navigation }: any) => {
 
     // Support Modal State
     const [showSupportModal, setShowSupportModal] = useState(false);
+    const [showGuide, setShowGuide] = useState(false);
+    const [showGeminiModal, setShowGeminiModal] = useState(false);
+
 
     useFocusEffect(
         useCallback(() => {
@@ -100,15 +104,7 @@ const ProfileScreen = ({ navigation }: any) => {
         );
     };
 
-    const handleSaveKey = async () => {
-        if (apiKey) {
-            await saveGeminiConfig({ apiKey });
-            Alert.alert('Success', 'API Key saved securely.');
-            setShowKeyInput(false);
-            setApiKey('');
-            setHasApiKey(true);
-        }
-    };
+
 
     const handleCreateBackup = async (password: string) => {
         if (!password) {
@@ -259,6 +255,8 @@ const ProfileScreen = ({ navigation }: any) => {
         <ScreenWrapper>
             <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>Profile & Settings</Text>
 
+
+
             <Card>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 15 }}>Appearance</Text>
                 <View style={styles.themeContainer}>
@@ -271,15 +269,17 @@ const ProfileScreen = ({ navigation }: any) => {
             <Card>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Transactions</Text>
                 <Button variant="outline" title="Manage Recurring" onPress={handleManageRecurring} style={{ marginBottom: 10 }} />
-                <Button variant="secondary" title="Manage Budgets" onPress={() => setShowBudgetModal(true)} />
+                <Button variant="outline" title="Manage Budgets" onPress={() => setShowBudgetModal(true)} />
             </Card>
 
             <Card>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Data Management</Text>
-                <Button variant="secondary" title="Backup Data" onPress={() => setShowBackupModal(true)} style={{ marginBottom: 10 }} />
+                <Button variant="outline" title="Backup Data" onPress={() => setShowBackupModal(true)} style={{ marginBottom: 10 }} />
                 <Button variant="outline" title="Restore Data" onPress={handleSelectRestoreFile} style={{ marginBottom: 10 }} />
                 <Button variant="ghost" title="Clear All Data" onPress={handleClearData} />
             </Card>
+
+
 
             <Card>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Gemini AI Settings</Text>
@@ -288,40 +288,11 @@ const ProfileScreen = ({ navigation }: any) => {
                         ? "✅ Custom API Key is configured."
                         : "Use your own API key for smart insights."}
                 </Text>
-
-                {showKeyInput ? (
-                    <View>
-                        <TextInput
-                            style={{
-                                color: colors.text,
-                                borderColor: colors.border,
-                                borderWidth: 1,
-                                borderRadius: 8,
-                                padding: 10,
-                                marginBottom: 10
-                            }}
-                            placeholder="Enter Gemini API Key"
-                            placeholderTextColor={colors.gray500}
-                            value={apiKey}
-                            onChangeText={setApiKey}
-                            secureTextEntry
-                        />
-                        <View style={{ flexDirection: 'row', gap: 10 }}>
-                            <View style={{ flex: 1 }}>
-                                <Button title="Save" onPress={handleSaveKey} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Button variant="outline" title="Cancel" onPress={() => setShowKeyInput(false)} />
-                            </View>
-                        </View>
-                    </View>
-                ) : (
-                    <Button
-                        variant={hasApiKey ? "outline" : "primary"}
-                        title={hasApiKey ? "Change API Key" : "Configure API Key"}
-                        onPress={() => setShowKeyInput(true)}
-                    />
-                )}
+                <Button
+                    variant="outline"
+                    title={hasApiKey ? "Change API Key" : "Configure API Key"}
+                    onPress={() => setShowGeminiModal(true)}
+                />
             </Card>
 
             <Card>
@@ -368,35 +339,44 @@ const ProfileScreen = ({ navigation }: any) => {
             </Card>
 
             <Card>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Support</Text>
-                <TouchableOpacity
-                    onPress={() => setShowSupportModal(true)}
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: 15,
-                        backgroundColor: colors.surface,
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
+                    <View style={{
+                        width: 40, height: 40,
                         borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                    }}
-                >
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Ionicons name="heart" size={24} color="#FF6B6B" />
-                        <View style={{ marginLeft: 12 }}>
-                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>☕ Buy Me a Coffee</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Support via PayPal</Text>
-                        </View>
+                        backgroundColor: colors.primary + '20', // 20% opacity primary
+                        justifyContent: 'center', alignItems: 'center',
+                        marginRight: 12
+                    }}>
+                        <Ionicons name="book" size={22} color={colors.primary} />
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Help & Guide</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Master your personal finance</Text>
+                    </View>
+                </View>
+
+                <Button variant="primary" title="View Onboarding Guide" onPress={() => setShowGuide(true)} />
+
             </Card>
 
             <Card>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>About</Text>
-                <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 15 }}>
                     WealthSnap is a free, ad-free personal finance tracker with AI-powered receipt scanning. Your data stays private and secure on your device.
+                </Text>
+
+                <TouchableOpacity
+                    onPress={() => setShowSupportModal(true)}
+                    style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}
+                >
+                    <Ionicons name="heart-outline" size={16} color={colors.primary} />
+                    <Text style={{ color: colors.primary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
+                        Support Developer
+                    </Text>
+                </TouchableOpacity>
+
+                <Text style={{ color: colors.gray500, fontSize: 12, marginTop: 15 }}>
+                    Version 1.0.0
                 </Text>
             </Card>
 
@@ -455,7 +435,21 @@ const ProfileScreen = ({ navigation }: any) => {
                 visible={showSupportModal}
                 onClose={() => setShowSupportModal(false)}
             />
+
+            {/* Gemini Settings Modal */}
+            <GeminiSettingsModal
+                visible={showGeminiModal}
+                onClose={() => setShowGeminiModal(false)}
+                hasApiKey={hasApiKey}
+                onApiKeySaved={checkApiKey}
+            />
+
+            {/* Guide Modal */}
+            <Modal visible={showGuide} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowGuide(false)}>
+                <OnboardingGuide onFinish={() => setShowGuide(false)} mode="view" />
+            </Modal>
         </ScreenWrapper >
+
     );
 };
 
