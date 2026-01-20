@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
 import { AlertButton } from 'react-native';
 
 interface AlertState {
@@ -46,7 +46,11 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
         options: { cancelable: true }
     });
 
-    const showAlert = (
+    const hideAlert = useCallback(() => {
+        setAlertState(prev => ({ ...prev, visible: false }));
+    }, []);
+
+    const showAlert = useCallback((
         title: string,
         message?: string,
         buttons?: AlertButton[],
@@ -59,14 +63,12 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
             buttons: buttons || [{ text: 'OK', onPress: () => hideAlert() }],
             options: options || { cancelable: true }
         });
-    };
+    }, [hideAlert]);
 
-    const hideAlert = () => {
-        setAlertState(prev => ({ ...prev, visible: false }));
-    };
+    const value = React.useMemo(() => ({ showAlert, hideAlert, alertState }), [showAlert, hideAlert, alertState]);
 
     return (
-        <AlertContext.Provider value={{ showAlert, hideAlert, alertState }}>
+        <AlertContext.Provider value={value}>
             {children}
         </AlertContext.Provider>
     );
