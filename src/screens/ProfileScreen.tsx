@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Text, View, Alert, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
@@ -15,10 +15,12 @@ import appJson from '../../app.json';
 import SecurityCard from '../components/profile/SecurityCard';
 import DataManagementCard from '../components/profile/data/DataManagementCard';
 import { RecurringRulesListModal } from '../components/profile/RecurringRulesListModal';
+import { useAlert } from '../context/AlertContext';
 
 
 const ProfileScreen = ({ navigation }: any) => {
     const { colors, setMode, mode } = useTheme();
+    const { showAlert } = useAlert();
     const [hasApiKey, setHasApiKey] = useState(false);
 
     // Recurring Rules State
@@ -70,12 +72,12 @@ const ProfileScreen = ({ navigation }: any) => {
             const rules = await getAllRecurrenceRules();
             setRecurrenceRules(rules);
         } catch {
-            Alert.alert('Error', 'Failed to update rule');
+            showAlert('Error', 'Failed to update rule');
         }
     };
 
     const handleDeleteRule = (id: string) => {
-        Alert.alert(
+        showAlert(
             "Delete Rule",
             "Stop this recurring transaction? Past transactions will remain.",
             [

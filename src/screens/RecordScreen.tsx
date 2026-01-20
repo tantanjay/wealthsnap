@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, BackHandler } from 'react-native';
+import { BackHandler } from 'react-native';
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
+import { useAlert } from '../context/AlertContext';
 import RecordMenuModal from '../components/record/RecordMenuModal';
 import { Transaction, TransactionType } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
@@ -81,12 +82,14 @@ const RecordScreen = ({ navigation, route }: any) => {
         setModalVisible(false); // Hide modal after selection
     };
 
+    const { showAlert } = useAlert();
+
     const handleInvestmentSelect = (investmentType: 'STOCKS' | 'BONDS' | 'CRYPTO' | 'FUNDS' | 'COMMODITIES') => {
-        Alert.alert('Coming Soon', `${investmentType} recording will be available in a future update.`);
+        showAlert('Coming Soon', `${investmentType} recording will be available in a future update.`);
     };
 
     const handleAISelect = (aiType: 'BROWSE' | 'CAPTURE') => {
-        Alert.alert('Coming Soon', `AI ${aiType} feature will be available in a future update.`);
+        showAlert('Coming Soon', `AI ${aiType} feature will be available in a future update.`);
     };
 
     const handleTransactionSave = () => {
