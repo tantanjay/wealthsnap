@@ -102,20 +102,64 @@ export const getMonthEndProjection = (transactions: Transaction[]) => {
 
     const { income, expense } = calculateTotals(monthlyTransactions);
 
-    // Calculate daily averages
-    const dailyIncomeAvg = income / currentDay;
-    const dailyExpenseAvg = expense / currentDay;
+    // --- SMART PROJECTION LOGIC ---
+    // 1. Calculate Linear Projection (Fallback)
+    const linearProjectedIncome = income + ((income / currentDay) * daysRemaining);
+    const linearProjectedExpense = expense + ((expense / currentDay) * daysRemaining);
 
-    // Project to end of month
-    const projectedIncome = income + (dailyIncomeAvg * daysRemaining);
-    const projectedExpense = expense + (dailyExpenseAvg * daysRemaining);
+    // 2. Calculate Historical Pace (Smart)
+    let smartProjectedIncome = linearProjectedIncome;
+    let smartProjectedExpense = linearProjectedExpense;
+
+    // Get previous months (go back up to 6 months)
+    let historyMonthsCount = 0;
+    let totalHistoricalExpenseEnd = 0;
+    let totalHistoricalExpenseToDate = 0;
+
+    // We only care about Expense for "Smart" usually, as Income is often irregular (bi-weekly)
+    // making daily-pace less useful, but we can try basic pacing for income too.
+
+    for (let i = 1; i <= 6; i++) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const histTrans = getTransactionsByMonth(transactions, d);
+        if (histTrans.length === 0) continue; // Skip empty months
+
+        const histTotals = calculateTotals(histTrans);
+
+        // Calculate how much was spent by this day in that month
+        const histToDate = histTrans.filter(t => new Date(t.date).getDate() <= currentDay)
+            .reduce((sum, t) => sum + (t.type === 'EXPENSE' ? t.amount : 0), 0);
+
+        totalHistoricalExpenseEnd += histTotals.expense;
+        totalHistoricalExpenseToDate += histToDate;
+        historyMonthsCount++;
+    }
+
+    // Apply Smart Logic if we have enough history and non-zero pacing
+    if (historyMonthsCount >= 1 && totalHistoricalExpenseToDate > 0) {
+        // Average spend by "Today's Date" across history
+        const avgExpenseToDate = totalHistoricalExpenseToDate / historyMonthsCount;
+        // Average total spend per month across history
+        const avgExpenseEnd = totalHistoricalExpenseEnd / historyMonthsCount;
+
+        // Multiplier: "Am I spending faster or slower than usual?"
+        // Example: Usually spend $1000 by Day 15. Today spent $1200. Multiplier = 1.2
+        const paceMultiplier = expense / avgExpenseToDate;
+
+        // Project: Normal Month Total * Multiplier
+        smartProjectedExpense = avgExpenseEnd * paceMultiplier;
+    }
+
+    // 3. Final Calculation
+    // For income, linear is usually "okay" or we should stick to linear for safety unless we do cycle detection.
+    // Let's stick to linear for Income, and use Smart for Expense.
 
     return {
         currentIncome: income,
         currentExpense: expense,
-        projectedIncome,
-        projectedExpense,
-        projectedSavings: projectedIncome - projectedExpense,
+        projectedIncome: linearProjectedIncome,
+        projectedExpense: smartProjectedExpense,
+        projectedSavings: linearProjectedIncome - smartProjectedExpense,
         daysRemaining,
         progress: (currentDay / daysInMonth) * 100
     };

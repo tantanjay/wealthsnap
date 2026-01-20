@@ -46,6 +46,9 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
 
     const getComparisonInsight = () => {
         if (isPrivacyEnabled) return "Spending comparison hidden in privacy mode.";
+        if (Math.abs(currentMonthExpense - averageExpense) < 0.01) {
+            return "Your spending matches your 3-month average.";
+        }
         if (currentMonthExpense > averageExpense) {
             const diff = currentMonthExpense - averageExpense;
             return `You spent ${formatCurrencyAmount(diff, currency)} more than your 3-month average.`;

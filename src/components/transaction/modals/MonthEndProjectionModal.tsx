@@ -144,15 +144,16 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
 
                 {/* Insight */}
                 <View style={{
-                    padding: 12,
-                    backgroundColor: colors.surface,
-                    borderRadius: 8,
                     flexDirection: 'row',
-                    alignItems: 'center',
+                    backgroundColor: colors.primary + '15',
+                    padding: 12,
+                    borderRadius: 8,
+                    marginTop: 5,
+                    alignItems: 'center'
                 }}>
-                    <Ionicons name="information-circle" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
-                    <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 1 }}>
-                        Based on your current daily spending pattern
+                    <Ionicons name="information-circle" size={20} color={colors.primary} style={{ marginRight: 10 }} />
+                    <Text style={{ color: colors.text, flex: 1, fontSize: 13, lineHeight: 18 }}>
+                        <Text style={{ fontWeight: 'bold' }}>New Account?</Text> If you have less than 1 month of history, this uses a simple daily average. Once you track more months, it switches to Smart Projection based on your historical patterns!
                     </Text>
                 </View>
             </ScrollView>
