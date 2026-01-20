@@ -125,24 +125,39 @@ export const getMonthEndProjection = (transactions: Transaction[]) => {
 
 
 export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: number = 6) => {
-    // Average monthly expense over the last N months
-    const today = new Date();
-    let totalExpense = 0;
-    let monthCount = 0;
+    if (allTransactions.length === 0) return 0;
 
-    for (let i = 0; i < monthsBack; i++) {
+    const today = new Date();
+    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    // Find the earliest transaction date to determine account age
+    // We treat the "start" as the 1st of the month of the first transaction
+    const firstTxDate = allTransactions.reduce((earliest, t) => {
+        const tDate = new Date(t.date);
+        return tDate < earliest ? tDate : earliest;
+    }, new Date());
+
+    const firstTxMonthStart = new Date(firstTxDate.getFullYear(), firstTxDate.getMonth(), 1);
+
+    // Calculate months since start (inclusive of current month)
+    const monthDiff = (currentMonthStart.getFullYear() - firstTxMonthStart.getFullYear()) * 12 +
+        (currentMonthStart.getMonth() - firstTxMonthStart.getMonth()) + 1;
+
+    // The effective window is the smaller of: requested history OR actual history depth
+    // We ensure it's at least 1 month
+    const effectiveMonths = Math.max(1, Math.min(monthsBack, monthDiff));
+
+    let totalExpense = 0;
+
+    // Sum expenses for the effective window
+    for (let i = 0; i < effectiveMonths; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
         const { expense } = calculateTotals(monthlyTransactions);
-
-        // Only count months that have expenses or are not in the future
-        if (monthlyTransactions.length > 0 || i === 0) { // Always count current month? Maybe not if empty. Let's count if it exists.
-            totalExpense += expense;
-            monthCount++;
-        }
+        totalExpense += expense;
     }
 
-    return monthCount > 0 ? totalExpense / monthCount : 0;
+    return totalExpense / effectiveMonths;
 };
 
 export const getCategoryBreakdown = (transactions: Transaction[], type: TransactionType, groupBy: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
