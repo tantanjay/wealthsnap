@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { AlertButton } from 'react-native';
 
 interface AlertState {
