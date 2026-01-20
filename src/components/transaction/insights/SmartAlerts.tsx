@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
-import { Card } from '../../components';
-import { Anomaly } from '../../utils/financialMetrics';
+import { useTheme } from '../../../context/ThemeContext';
+import { Card } from '../../../components';
+import { Anomaly } from '../../../utils/financialMetrics';
 
 interface SmartAlertsProps {
     anomalies: Anomaly[];

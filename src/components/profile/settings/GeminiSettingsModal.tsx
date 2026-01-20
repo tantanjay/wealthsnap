@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Text, TextInput, Alert } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
-import BottomModal from '../common/BottomModal';
-import { Button } from '../index';
-import { saveGeminiConfig } from '../../services/storageService';
+import { useTheme } from '../../../context/ThemeContext';
+import BottomModal from '../../common/BottomModal';
+import { Button } from '../../index';
+import { saveGeminiConfig } from '../../../services/storageService';
 
 interface GeminiSettingsModalProps {
     visible: boolean;
