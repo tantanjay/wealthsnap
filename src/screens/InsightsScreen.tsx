@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, ScrollView, TouchableOpacity, Text, RefreshControl } from 'react-native';
-import { ScreenWrapper } from '../components/ScreenWrapper';
+import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { usePrivacy } from '../context/PrivacyContext';
 

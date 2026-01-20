@@ -4,7 +4,7 @@ import { PieChart, BarChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
 import { CURRENCY_SYMBOLS, formatCompactCurrency } from '../../utils/currencyUtils';
-import MonthEndProjectionModal from '../modals/financial/MonthEndProjectionModal';
+import MonthEndProjectionModal from './MonthEndProjectionModal';
 import { Transaction } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 

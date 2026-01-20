@@ -3,8 +3,8 @@ import { Alert, Text } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { Card, Button } from '../../components';
 
-import BackupModal from '../../components/modals/data/BackupModal';
-import RestoreModal from '../../components/modals/data/RestoreModal';
+import BackupModal from './BackupModal';
+import RestoreModal from './RestoreModal';
 import { clearAllData, getUserProfile } from '../../services/storageService';
 import { createBackup, restoreFromBackup } from '../../services/backupService';
 import * as DocumentPicker from 'expo-document-picker';
