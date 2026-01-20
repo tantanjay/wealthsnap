@@ -12,12 +12,12 @@ import { getUserProfile } from '../services/storageService';
 import { getCachedTransactions } from '../services/dataCache';
 
 // Sub-components
-import InsightsOverviewCards from '../components/insights/InsightsOverviewCards';
-import IncomeAnalysis from '../components/insights/IncomeAnalysis';
-import ExpenseAnalysis from '../components/insights/ExpenseAnalysis';
-import ComparisonChart from '../components/insights/ComparisonChart';
-import SmartAlerts from '../components/insights/SmartAlerts';
-import SavingsRateTrend from '../components/insights/SavingsRateTrend';
+import InsightsOverviewCards from '../components/transaction/insights/InsightsOverviewCards';
+import IncomeAnalysis from '../components/transaction/insights/IncomeAnalysis';
+import ExpenseAnalysis from '../components/transaction/insights/ExpenseAnalysis';
+import ComparisonChart from '../components/transaction/insights/ComparisonChart';
+import SmartAlerts from '../components/transaction/insights/SmartAlerts';
+import SavingsRateTrend from '../components/transaction/insights/SavingsRateTrend';
 
 const InsightsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();

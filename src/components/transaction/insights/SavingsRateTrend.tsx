@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { useTheme } from '../../context/ThemeContext';
-import { Card } from '../index';
-import { Transaction } from '../../types';
-import { getSavingsRateTrend } from '../../utils/financialMetrics';
+import { useTheme } from '../../../context/ThemeContext';
+import { Card } from '../../../components';
+import { Transaction } from '../../../types';
+import { getSavingsRateTrend } from '../../../utils/financialMetrics';
 
 interface SavingsRateTrendProps {
     transactions: Transaction[];

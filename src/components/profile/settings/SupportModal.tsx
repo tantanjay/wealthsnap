@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../context/ThemeContext';
-import BottomModal from '../common/BottomModal';
+import { useTheme } from '../../../context/ThemeContext';
+import BottomModal from '../../common/BottomModal';
 
 interface SupportModalProps {
     visible: boolean;
