@@ -262,6 +262,59 @@ export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: num
     return result;
 };
 
+// --- PULSE CHART METRICS ---
+
+export const getCumulativeSpendingCurve = (allTransactions: Transaction[], monthsBack: number): number[] => {
+    const today = new Date();
+    // 1. Identify which completed months we are looking at
+    // We want the average of the last X *completed* months, OR we can include current month if careful.
+    // Usually "Average" means "Historical Average", so let's skip current month.
+    let count = 0;
+    const dailySums: number[] = new Array(31).fill(0);
+
+    for (let i = 1; i <= monthsBack; i++) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const monthlyTrans = getTransactionsByMonth(allTransactions, d);
+        if (monthlyTrans.length === 0) continue;
+
+        // Sum up this month's daily usage
+        const daysInThisMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        let monthRunningTotal = 0;
+
+        // We only up to day 28/30/31 depending on month length, but we fill our array to 31
+        for (let day = 1; day <= 31; day++) {
+            // If day exceeds month length, just carry over the last value (cumulative stays flat)
+            if (day <= daysInThisMonth) {
+                const daysTrans = monthlyTrans.filter(t => new Date(t.date).getDate() === day && t.type === 'EXPENSE');
+                const daySum = daysTrans.reduce((acc, t) => acc + t.amount, 0);
+                monthRunningTotal += daySum;
+            }
+            dailySums[day - 1] += monthRunningTotal;
+        }
+        count++;
+    }
+
+    if (count === 0) return []; // No history
+
+    // Average the sums
+    return dailySums.map(sum => sum / count);
+};
+
+export const getCurrentMonthCumulative = (currentMonthTransactions: Transaction[]): number[] => {
+    const today = new Date();
+    const currentDay = today.getDate();
+    const result: number[] = [];
+    let runningTotal = 0;
+
+    for (let day = 1; day <= currentDay; day++) {
+        const daysTrans = currentMonthTransactions.filter(t => new Date(t.date).getDate() === day && t.type === 'EXPENSE');
+        const daySum = daysTrans.reduce((acc, t) => acc + t.amount, 0);
+        runningTotal += daySum;
+        result.push(runningTotal);
+    }
+    return result;
+};
+
 export interface Anomaly {
     type: 'SPIKE' | 'NEW_CATEGORY' | 'HIGH_SPENDING';
     message: string;
