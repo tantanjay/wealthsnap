@@ -140,32 +140,14 @@ const InsightsScreen = ({ navigation }: any) => {
                     isPrivacyEnabled={isPrivacyEnabled}
                 />
 
-                {/* 2. Expense Insights */}
-                <ExpenseAnalysis
-                    categoryBreakdown={data.expenseBreakdown}
-                    currency={currency}
-                    isPrivacyEnabled={isPrivacyEnabled}
-                    grouping={expenseGrouping}
-                    onToggleGrouping={setExpenseGrouping}
-                    transactions={transactions}
-                />
-
-                {/* 3. Income Insights */}
-                <IncomeAnalysis
-                    monthlyTrends={data.incomeTrends}
-                    categoryBreakdown={data.incomeBreakdown}
-                    currency={currency}
-                    isPrivacyEnabled={isPrivacyEnabled}
-                    transactions={transactions}
-                />
-
-                {/* 4. Comparison */}
+                {/* 2. Cumulative Spending */}
                 <CumulativeSpendingChart
                     transactions={transactions}
                     currency={currency}
                     isPrivacyEnabled={isPrivacyEnabled}
                 />
 
+                {/* 3. Comparison */}
                 <ComparisonChart
                     currentMonthExpense={data.currentMonthExpense}
                     lastMonthExpense={data.lastMonthExpense}
@@ -176,13 +158,32 @@ const InsightsScreen = ({ navigation }: any) => {
                     isPrivacyEnabled={isPrivacyEnabled}
                 />
 
-                {/* 5. Savings Rate Trend */}
+                {/* 4. Expense Insights */}
+                <ExpenseAnalysis
+                    categoryBreakdown={data.expenseBreakdown}
+                    currency={currency}
+                    isPrivacyEnabled={isPrivacyEnabled}
+                    grouping={expenseGrouping}
+                    onToggleGrouping={setExpenseGrouping}
+                    transactions={transactions}
+                />
+
+                {/* 5. Income Insights */}
+                <IncomeAnalysis
+                    monthlyTrends={data.incomeTrends}
+                    categoryBreakdown={data.incomeBreakdown}
+                    currency={currency}
+                    isPrivacyEnabled={isPrivacyEnabled}
+                    transactions={transactions}
+                />
+
+                {/* 6. Savings Rate Trend */}
                 <SavingsRateTrend
                     transactions={transactions}
                     privacyMode={isPrivacyEnabled}
                 />
 
-                {/* 6. Smart Alerts */}
+                {/* 7. Smart Alerts */}
                 <SmartAlerts
                     anomalies={data.anomalies}
                     hasHistory={transactions.length > 10}
