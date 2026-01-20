@@ -62,6 +62,10 @@ const SetupScreen = ({ navigation }: any) => {
         }
     };
 
+    /**
+     * Decrypts and restores the backup.
+     * If successful, prompts user to secure the device with a PIN.
+     */
     const confirmRestore = async (password: string) => {
         if (!restoreFileUri) return;
         if (!password) {
@@ -121,6 +125,10 @@ const SetupScreen = ({ navigation }: any) => {
         setStep(4);
     };
 
+    /**
+     * Generates dummy data for testing/screenshots.
+     * Only available if ENABLE_DUMMY_DATA is true.
+     */
     const handlePopulateDemoData = async () => {
         try {
             setIsRestoring(true); // Reuse restoring state for loading indicator

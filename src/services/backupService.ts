@@ -52,7 +52,7 @@ export const createBackup = async (password: string): Promise<string> => {
     const budgets = await getBudgets();
 
     const backupData: BackupData = {
-        version: '2.0', // Updated for SQLite migration
+        version: '2.0', // Schema version 2.0 (SQLite Support)
         timestamp: new Date().toISOString(),
         profile,
         transactions,
@@ -135,7 +135,7 @@ export const restoreFromBackup = async (
     }
 
     // Restore Data
-    // Clear existing first? Yes, usually restore is a full replacement.
+    // We clear all existing data first to ensure the restore is a complete replacement/clean slate.
     await clearAllData();
 
     if (backupData.profile) {
