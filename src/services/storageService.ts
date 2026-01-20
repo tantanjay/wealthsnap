@@ -190,7 +190,9 @@ export const saveInvestment = async (investment: Investment): Promise<void> => {
     try {
         const db = await getDatabase();
 
-        // Encrypt sensitive field
+        // Encrypt sensitive fields
+        const encryptedQuantity = await encryptField(investment.quantity);
+        const encryptedAvgPrice = await encryptField(investment.averageBuyPrice);
         const encryptedNotes = investment.notes ? await encryptField(investment.notes) : null;
 
         await db.runAsync(
@@ -202,8 +204,8 @@ export const saveInvestment = async (investment: Investment): Promise<void> => {
                 investment.symbol,
                 investment.name,
                 investment.type,
-                investment.quantity,
-                investment.averageBuyPrice,
+                encryptedQuantity,
+                encryptedAvgPrice,
                 investment.currentPrice || null,
                 investment.lastUpdated || null,
                 encryptedNotes
@@ -221,7 +223,7 @@ export const getAllInvestments = async (): Promise<Investment[]> => {
         const db = await getDatabase();
         const rows = await db.getAllAsync<any>('SELECT * FROM investments ORDER BY symbol');
 
-        // Decrypt notes field
+        // Decrypt sensitive fields
         const decrypted = await Promise.all(rows.map(async (row) => {
             const decryptedNotes = await decryptField(row.notes);
             return {
@@ -229,8 +231,8 @@ export const getAllInvestments = async (): Promise<Investment[]> => {
                 symbol: row.symbol,
                 name: row.name,
                 type: row.type,
-                quantity: row.quantity,
-                averageBuyPrice: row.averageBuyPrice,
+                quantity: parseFloat((await decryptField(row.quantity)) || '0'),
+                averageBuyPrice: parseFloat((await decryptField(row.averageBuyPrice)) || '0'),
                 currentPrice: row.currentPrice,
                 lastUpdated: row.lastUpdated,
                 notes: decryptedNotes || undefined
@@ -299,6 +301,10 @@ export const getAllCategories = async (): Promise<Category[]> => {
 export const saveRecurrenceRule = async (rule: RecurrenceRule): Promise<void> => {
     try {
         const db = await getDatabase();
+
+        // Encrypt the entire template to protect sensitive fields inside
+        const encryptedTemplate = await encryptField(JSON.stringify(rule.transactionTemplate));
+
         await db.runAsync(
             `INSERT OR REPLACE INTO recurrence_rules 
              (id, name, frequency, startDate, endDate, nextDueDate, transactionTemplate, isActive)
@@ -310,7 +316,7 @@ export const saveRecurrenceRule = async (rule: RecurrenceRule): Promise<void> =>
                 rule.startDate || null,
                 rule.endDate || null,
                 rule.nextDueDate,
-                JSON.stringify(rule.transactionTemplate),
+                encryptedTemplate,
                 rule.isActive ? 1 : 0
             ]
         );
@@ -325,16 +331,35 @@ export const getAllRecurrenceRules = async (): Promise<RecurrenceRule[]> => {
     try {
         const db = await getDatabase();
         const rows = await db.getAllAsync<any>('SELECT * FROM recurrence_rules');
-        return rows.map(row => ({
-            id: row.id,
-            name: row.name,
-            frequency: row.frequency,
-            startDate: row.startDate,
-            endDate: row.endDate,
-            nextDueDate: row.nextDueDate,
-            transactionTemplate: JSON.parse(row.transactionTemplate),
-            isActive: row.isActive === 1
+
+        const rules = await Promise.all(rows.map(async (row) => {
+            let template: any = {};
+            try {
+                // Try to decrypt first
+                const decrypted = await decryptField(row.transactionTemplate);
+                template = decrypted ? JSON.parse(decrypted) : {};
+            } catch (e) {
+                // Fallback for unencrypted data (migration transition)
+                try {
+                    template = JSON.parse(row.transactionTemplate);
+                } catch (pe) {
+                    console.error('Failed to parse transaction template');
+                }
+            }
+
+            return {
+                id: row.id,
+                name: row.name,
+                frequency: row.frequency,
+                startDate: row.startDate,
+                endDate: row.endDate,
+                nextDueDate: row.nextDueDate,
+                transactionTemplate: template,
+                isActive: row.isActive === 1
+            };
         }));
+
+        return rules;
     } catch (error) {
         console.error('Error getting recurrence rules:', error);
         return [];
@@ -496,7 +521,9 @@ export const bulkSaveInvestments = async (investments: Investment[]): Promise<vo
         const db = await getDatabase();
         await db.withTransactionAsync(async () => {
             for (const inv of investments) {
-                // Encrypt notes
+                // Encrypt sensitive fields
+                const encryptedQuantity = await encryptField(inv.quantity);
+                const encryptedAvgPrice = await encryptField(inv.averageBuyPrice);
                 const encryptedNotes = inv.notes ? await encryptField(inv.notes) : null;
 
                 await db.runAsync(
@@ -508,8 +535,8 @@ export const bulkSaveInvestments = async (investments: Investment[]): Promise<vo
                         inv.symbol,
                         inv.name,
                         inv.type,
-                        inv.quantity,
-                        inv.averageBuyPrice,
+                        encryptedQuantity,
+                        encryptedAvgPrice,
                         inv.currentPrice || null,
                         inv.lastUpdated || null,
                         encryptedNotes
@@ -554,6 +581,9 @@ export const bulkSaveRecurrenceRules = async (rules: RecurrenceRule[]): Promise<
         const db = await getDatabase();
         await db.withTransactionAsync(async () => {
             for (const rule of rules) {
+                // Encrypt the entire template
+                const encryptedTemplate = await encryptField(JSON.stringify(rule.transactionTemplate));
+
                 await db.runAsync(
                     `INSERT OR REPLACE INTO recurrence_rules 
                      (id, name, frequency, startDate, endDate, nextDueDate, transactionTemplate, isActive)
@@ -565,7 +595,7 @@ export const bulkSaveRecurrenceRules = async (rules: RecurrenceRule[]): Promise<
                         rule.startDate || null,
                         rule.endDate || null,
                         rule.nextDueDate,
-                        JSON.stringify(rule.transactionTemplate),
+                        encryptedTemplate,
                         rule.isActive ? 1 : 0
                     ]
                 );
