@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
 import { View, Text, Dimensions, ScrollView } from 'react-native';
-import BottomModal from './BottomModal';
+import BottomModal from '../base/BottomModal';
 import { LineChart } from 'react-native-chart-kit';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { Transaction } from '../../types';
-import { getCategoryTrend } from '../../utils/financialMetrics';
-import { formatCurrencyAmount } from '../../utils/currencyUtils';
+import { Transaction } from '../../../types';
+import { getCategoryTrend } from '../../../utils/financialMetrics';
+import { formatCurrencyAmount } from '../../../utils/currencyUtils';
 
 interface CategoryTrendModalProps {
     visible: boolean;

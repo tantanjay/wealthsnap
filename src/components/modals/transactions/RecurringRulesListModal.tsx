@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, FlatList } from 'react-native';
-import BottomModal from './BottomModal';
-import { Card } from '../../components';
-import { useTheme } from '../../context/ThemeContext';
-import { RecurrenceRule } from '../../types';
-import { formatCurrencyAmount } from '../../utils/currencyUtils';
+import BottomModal from '../base/BottomModal';
+import { Card } from '../../../components';
+import { useTheme } from '../../../context/ThemeContext';
+import { RecurrenceRule } from '../../../types';
+import { formatCurrencyAmount } from '../../../utils/currencyUtils';
 
 interface RecurringRulesListModalProps {
     visible: boolean;

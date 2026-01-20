@@ -7,7 +7,7 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import { isOnboardingComplete } from './src/services/storageService';
 import { SecurityProvider } from './src/context/SecurityContext';
 import { PrivacyProvider } from './src/context/PrivacyContext';
-import { MigrationScreen } from './src/components/MigrationScreen';
+import { MigrationScreen } from './src/screens/MigrationScreen';
 import * as ScreenCapture from 'expo-screen-capture';
 
 export default function App() {

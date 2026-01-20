@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import BottomModal from './BottomModal';
-import { useTheme } from '../../context/ThemeContext';
+import BottomModal from '../base/BottomModal';
+import { useTheme } from '../../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { formatCompactCurrency } from '../../utils/currencyUtils';
-import { checkBudgetStatus, Budget } from '../../services/budgetService';
+import { formatCompactCurrency } from '../../../utils/currencyUtils';
+import { checkBudgetStatus, Budget } from '../../../services/budgetService';
 
 interface AllExpensesModalProps {
     visible: boolean;
