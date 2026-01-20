@@ -1,13 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { Text, View, Alert, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ScreenWrapper } from '../components/ScreenWrapper';
+import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
-import { RecurringRulesListModal } from '../components/modals/transactions/RecurringRulesListModal';
-import BudgetManagementModal from '../components/modals/financial/BudgetManagementModal';
-import SupportModal from '../components/modals/settings/SupportModal';
-import GeminiSettingsModal from '../components/modals/settings/GeminiSettingsModal';
+import BudgetManagementModal from '../components/profile/BudgetManagementModal';
+import SupportModal from '../components/settings/SupportModal';
+import GeminiSettingsModal from '../components/settings/GeminiSettingsModal';
 import { getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,6 +14,7 @@ import OnboardingGuide from './Onboarding/OnboardingGuide';
 import appJson from '../../app.json';
 import SecurityCard from '../components/profile/SecurityCard';
 import DataManagementCard from '../components/profile/DataManagementCard';
+import { RecurringRulesListModal } from '../components/profile/RecurringRulesListModal';
 
 
 const ProfileScreen = ({ navigation }: any) => {

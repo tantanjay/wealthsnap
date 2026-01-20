@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Text, View, ScrollView, TextInput, Alert, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { ScreenWrapper } from '../components/ScreenWrapper';
+import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Card, Button } from '../components';
 import { saveInvestment, getAllInvestments, deleteInvestment } from '../services/storageService';

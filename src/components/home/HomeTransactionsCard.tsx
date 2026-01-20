@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
-import { Card } from '../components';
-import { Transaction } from '../types';
+import { useTheme } from '../../context/ThemeContext';
+import { Card } from '..';
+import { Transaction } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
-import { formatCurrencyAmount } from '../utils/currencyUtils';
+import { formatCurrencyAmount } from '../../utils/currencyUtils';
 
 interface HomeTransactionsCardProps {
     recentTransactions: Transaction[];

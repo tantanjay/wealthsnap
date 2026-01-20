@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleProp, ViewStyle, StatusBar, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface Props {
     children: React.ReactNode;
