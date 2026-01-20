@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import BottomModal from './BottomModal';
-import { Button } from '../../components';
-import { useTheme } from '../../context/ThemeContext';
+import BottomModal from '../base/BottomModal';
+import { Button } from '../../../components';
+import { useTheme } from '../../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
 interface BackupModalProps {

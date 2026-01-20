@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import BottomModal from './BottomModal';
+import BottomModal from '../base/BottomModal';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../context/ThemeContext';
-import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS } from '../../constants/categories';
+import { useTheme } from '../../../context/ThemeContext';
+import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS } from '../../../constants/categories';
 
 interface CategoryItem {
     label: string;

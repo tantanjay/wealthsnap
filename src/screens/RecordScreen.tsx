@@ -7,9 +7,9 @@ import { saveTransaction, saveRecurrenceRule } from '../services/storageService'
 import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency } from '../types';
 import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS, RECURRENCE_OPTIONS, getCategoryGroup } from '../constants/categories';
 import { Ionicons } from '@expo/vector-icons';
-import { CalculatorModal } from '../components/modals/CalculatorModal';
+import { CalculatorModal } from '../components/modals/financial/CalculatorModal';
 import { RecurringForm } from '../components/RecurringForm';
-import { CategorySelectModal } from '../components/modals/CategorySelectModal';
+import { CategorySelectModal } from '../components/modals/transactions/CategorySelectModal';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import { CommonActions, useFocusEffect } from '@react-navigation/native';
