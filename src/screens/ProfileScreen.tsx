@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Text, View, Alert, TouchableOpacity, StyleSheet, Modal, FlatList, Linking } from 'react-native';
+import { Text, View, Alert, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
@@ -33,7 +33,6 @@ const ProfileScreen = ({ navigation }: any) => {
     // Backup/Restore State
     const [showBackupModal, setShowBackupModal] = useState(false);
     const [showRestoreModal, setShowRestoreModal] = useState(false);
-    // passwords are now managed inside the modals
     const [restoreFileUri, setRestoreFileUri] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -82,6 +81,9 @@ const ProfileScreen = ({ navigation }: any) => {
         }
     };
 
+    /**
+     * Wipes all data (SQLite + AsyncStorage) and resets the app state.
+     */
     const handleClearData = async () => {
         Alert.alert(
             'Clear Data',
@@ -106,6 +108,10 @@ const ProfileScreen = ({ navigation }: any) => {
 
 
 
+    /**
+     * Creates a secure backup of all user data.
+     * Encrypts the payload with the provided password.
+     */
     const handleCreateBackup = async (password: string) => {
         if (!password) {
             Alert.alert('Error', 'Password is required to encrypt your backup.');
@@ -147,6 +153,10 @@ const ProfileScreen = ({ navigation }: any) => {
         }
     };
 
+    /**
+     * Restores data from the selected backup file.
+     * Decrypts using the password and replaces current data.
+     */
     const handleRestore = async (password: string) => {
         if (!restoreFileUri) return;
         if (!password) {
