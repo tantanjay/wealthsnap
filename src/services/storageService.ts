@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { UserProfile, Transaction, Investment, Category, RecurrenceRule, GeminiConfig } from '../types';
+import { UserProfile, Transaction, Investment, Category, RecurrenceRule, AIConfig, AIUsageLog } from '../types';
 import { encryptData, decryptData, encryptField, decryptField } from './encryptionService';
 import * as DataCache from './dataCache';
 import { getDatabase } from './database/databaseService';
@@ -15,7 +15,7 @@ import { getDatabase } from './database/databaseService';
 const KEYS = {
     USER_PROFILE: '@wealthsnap_user_profile',
     ONBOARDING_COMPLETE: '@wealthsnap_onboarding_complete',
-    GEMINI_CONFIG: '@wealthsnap_gemini_config',
+    AI_CONFIG: '@wealthsnap_ai_config',
     HISTORY_PREFS: '@wealthsnap_history_prefs',
 };
 
@@ -404,36 +404,78 @@ export const isOnboardingComplete = async (): Promise<boolean> => {
     }
 };
 
-// ============= Gemini Config (AsyncStorage) =============
+// ============= AI Config (AsyncStorage) =============
 
-const SECURE_KEY_API_KEY = 'wealthsnap_gemini_api_key';
+const SECURE_KEY_AI_API_KEY = 'wealthsnap_ai_api_key';
 
-export const saveGeminiConfig = async (config: GeminiConfig): Promise<void> => {
+export const saveAIConfig = async (config: AIConfig): Promise<void> => {
     try {
         if (config.apiKey) {
-            await SecureStore.setItemAsync(SECURE_KEY_API_KEY, config.apiKey);
+            await SecureStore.setItemAsync(SECURE_KEY_AI_API_KEY, config.apiKey);
         } else {
-            await SecureStore.deleteItemAsync(SECURE_KEY_API_KEY).catch(() => { });
+            await SecureStore.deleteItemAsync(SECURE_KEY_AI_API_KEY).catch(() => { });
         }
-        await AsyncStorage.setItem(KEYS.GEMINI_CONFIG, JSON.stringify({ modelId: config.modelId }));
+        await AsyncStorage.setItem(KEYS.AI_CONFIG, JSON.stringify({ modelId: config.modelId }));
     } catch (error) {
-        console.error('Failed to save Gemini config:', error);
+        console.error('Failed to save AI config:', error);
         throw error;
     }
 };
 
-export const getGeminiConfig = async (): Promise<GeminiConfig | null> => {
+export const getAIConfig = async (): Promise<AIConfig | null> => {
     try {
-        const apiKey = await SecureStore.getItemAsync(SECURE_KEY_API_KEY);
-        const data = await AsyncStorage.getItem(KEYS.GEMINI_CONFIG);
+        const apiKey = await SecureStore.getItemAsync(SECURE_KEY_AI_API_KEY);
+        const data = await AsyncStorage.getItem(KEYS.AI_CONFIG);
         const config = data ? JSON.parse(data) : {};
         return {
             apiKey: apiKey || undefined,
             modelId: config.modelId
         };
     } catch (error) {
-        console.error('Failed to get Gemini config:', error);
+        console.error('Failed to get AI config:', error);
         return null;
+    }
+};
+
+// ============= AI Usage Logs (SQLite) =============
+
+export const saveAIUsageLog = async (log: AIUsageLog): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        await db.runAsync(
+            `INSERT INTO ai_usage_logs 
+             (id, timestamp, endpoint, provider, model, status, inputTokens, outputTokens, imageCount, durationMs, costUSD)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                log.id,
+                log.timestamp,
+                log.endpoint,
+                log.provider,
+                log.model,
+                log.status,
+                log.inputTokens,
+                log.outputTokens,
+                log.imageCount,
+                log.durationMs,
+                log.costUSD
+            ]
+        );
+    } catch (error) {
+        console.error('Failed to save AI log:', error);
+    }
+};
+
+export const getAIUsageLogs = async (limit: number = 50): Promise<AIUsageLog[]> => {
+    try {
+        const db = await getDatabase();
+        const rows = await db.getAllAsync<any>(
+            'SELECT * FROM ai_usage_logs ORDER BY timestamp DESC LIMIT ?',
+            [limit]
+        );
+        return rows as AIUsageLog[];
+    } catch (error) {
+        console.error('Failed to get AI logs:', error);
+        return [];
     }
 };
 
@@ -465,10 +507,10 @@ export const clearAllData = async (): Promise<void> => {
         await AsyncStorage.multiRemove([
             KEYS.USER_PROFILE,
             KEYS.ONBOARDING_COMPLETE,
-            KEYS.GEMINI_CONFIG,
+            KEYS.AI_CONFIG,
             KEYS.HISTORY_PREFS,
         ]);
-        await SecureStore.deleteItemAsync(SECURE_KEY_API_KEY).catch(() => { });
+        await SecureStore.deleteItemAsync(SECURE_KEY_AI_API_KEY).catch(() => { });
 
         // Clear SQLite
         const db = await getDatabase();
@@ -478,6 +520,7 @@ export const clearAllData = async (): Promise<void> => {
             DELETE FROM categories;
             DELETE FROM recurrence_rules;
             DELETE FROM budgets;
+            DELETE FROM ai_usage_logs;
         `);
 
         DataCache.invalidateAllCaches();

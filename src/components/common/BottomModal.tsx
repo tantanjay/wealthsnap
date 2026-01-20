@@ -13,6 +13,7 @@ interface BottomModalProps {
     maxHeight?: DimensionValue;
     style?: ViewStyle;
     contentStyle?: ViewStyle;
+    dismissable?: boolean;
 }
 
 const BottomModal: React.FC<BottomModalProps> = ({
@@ -23,17 +24,24 @@ const BottomModal: React.FC<BottomModalProps> = ({
     children,
     maxHeight = '70%',
     style,
-    contentStyle
+    contentStyle,
+    dismissable = true
 }) => {
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
+
+    const handleClose = () => {
+        if (dismissable) {
+            onClose();
+        }
+    };
 
     return (
         <Modal
             visible={visible}
             animationType="slide"
             transparent={true}
-            onRequestClose={onClose}
+            onRequestClose={handleClose}
         >
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -42,7 +50,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
                 {/* Backdrop - handles closing */}
                 <TouchableOpacity
                     activeOpacity={1}
-                    onPress={onClose}
+                    onPress={handleClose}
                     style={styles.backdrop}
                 />
 
@@ -73,9 +81,11 @@ const BottomModal: React.FC<BottomModalProps> = ({
                                     </Text>
                                 )}
                             </View>
-                            <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                                <Ionicons name="close" size={24} color={colors.text} />
-                            </TouchableOpacity>
+                            {dismissable && (
+                                <TouchableOpacity onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                                    <Ionicons name="close" size={24} color={colors.text} />
+                                </TouchableOpacity>
+                            )}
                         </View>
                     )}
 

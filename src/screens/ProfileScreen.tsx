@@ -7,7 +7,7 @@ import { Button, Card } from '../components';
 import BudgetManagementModal from '../components/profile/BudgetManagementModal';
 import SupportModal from '../components/profile/settings/SupportModal';
 import GeminiSettingsModal from '../components/profile/settings/GeminiSettingsModal';
-import { getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
+import { getAIConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 import OnboardingGuide from './Onboarding/OnboardingGuide';
@@ -52,7 +52,7 @@ const ProfileScreen = ({ navigation }: any) => {
     }
 
     const checkApiKey = async () => {
-        const config = await getGeminiConfig();
+        const config = await getAIConfig();
         if (config && config.apiKey) {
             setHasApiKey(true);
         }
