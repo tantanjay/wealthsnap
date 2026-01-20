@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Text, View, Alert, SectionList, TouchableOpacity } from 'react-native';
+import { Text, View, SectionList, TouchableOpacity } from 'react-native';
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
