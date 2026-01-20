@@ -4,12 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
-import BackupModal from '../components/modals/BackupModal';
-import RestoreModal from '../components/modals/RestoreModal';
-import { RecurringRulesListModal } from '../components/modals/RecurringRulesListModal';
-import BudgetManagementModal from '../components/modals/BudgetManagementModal';
-import SupportModal from '../components/modals/SupportModal';
-import GeminiSettingsModal from '../components/modals/GeminiSettingsModal';
+import BackupModal from '../components/modals/data/BackupModal';
+import RestoreModal from '../components/modals/data/RestoreModal';
+import { RecurringRulesListModal } from '../components/modals/transactions/RecurringRulesListModal';
+import BudgetManagementModal from '../components/modals/financial/BudgetManagementModal';
+import SupportModal from '../components/modals/settings/SupportModal';
+import GeminiSettingsModal from '../components/modals/settings/GeminiSettingsModal';
 import { clearAllData, saveGeminiConfig, getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import * as DocumentPicker from 'expo-document-picker';
@@ -19,6 +19,7 @@ import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import { isPinSet, getTimeoutSetting, saveTimeoutSetting, TimeoutOption, TIMEOUT_OPTIONS } from '../services/securityService';
 import PinCreationScreen from './PinCreationScreen';
 import OnboardingGuide from './Onboarding/OnboardingGuide';
+import appJson from '../../app.json';
 
 
 const ProfileScreen = ({ navigation }: any) => {
@@ -393,7 +394,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
 
                 <Text style={{ color: colors.gray500, fontSize: 12, marginTop: 15 }}>
-                    Version 1.0.0
+                    Version {appJson.expo.version}
                 </Text>
             </Card>
 
