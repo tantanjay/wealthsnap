@@ -16,7 +16,9 @@ import IncomeAnalysis from '../components/transaction/insights/IncomeAnalysis';
 import ExpenseAnalysis from '../components/transaction/insights/ExpenseAnalysis';
 import ComparisonChart from '../components/transaction/insights/ComparisonChart';
 import SmartAlerts from '../components/transaction/insights/SmartAlerts';
+
 import SavingsRateTrend from '../components/transaction/insights/SavingsRateTrend';
+import CumulativeSpendingChart from '../components/transaction/insights/CumulativeSpendingChart';
 
 const InsightsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -158,6 +160,12 @@ const InsightsScreen = ({ navigation }: any) => {
                 />
 
                 {/* 4. Comparison */}
+                <CumulativeSpendingChart
+                    transactions={transactions}
+                    currency={currency}
+                    isPrivacyEnabled={isPrivacyEnabled}
+                />
+
                 <ComparisonChart
                     currentMonthExpense={data.currentMonthExpense}
                     lastMonthExpense={data.lastMonthExpense}
