@@ -89,7 +89,8 @@ const RecordScreen = ({ navigation, route }: any) => {
     };
 
     const handleAISelect = (aiType: 'BROWSE' | 'CAPTURE') => {
-        showAlert('Coming Soon', `AI ${aiType} feature will be available in a future update.`);
+        setModalVisible(false);
+        navigation.goBack();
     };
 
     const handleTransactionSave = () => {
