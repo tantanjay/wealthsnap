@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '../common/BottomModal';
@@ -25,6 +26,10 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
 }) => {
     const { colors } = useTheme();
 
+    const sortedRules = useMemo(() => {
+        return [...rules].sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime());
+    }, [rules]);
+
     return (
         <BottomModal
             visible={visible}
@@ -33,13 +38,13 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
             style={{ height: '70%' }}
             contentStyle={{ flex: 1 }}
         >
-            {rules.length === 0 ? (
+            {sortedRules.length === 0 ? (
                 <View style={{ padding: 20, alignItems: 'center' }}>
                     <Text style={{ color: colors.textSecondary }}>No recurring rules found.</Text>
                 </View>
             ) : (
                 <FlatList
-                    data={rules}
+                    data={sortedRules}
                     keyExtractor={item => item.id}
                     renderItem={({ item }) => (
                         <Card style={{ marginBottom: 10 }}>
@@ -52,7 +57,7 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
                                         {item.frequency} • {formatCurrencyAmount(item.transactionTemplate.amount, currency)}
                                     </Text>
                                     <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
-                                        Next due: {new Date(item.nextDueDate).toLocaleDateString()}
+                                        Next due: {new Date(item.nextDueDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
                                     </Text>
                                 </View>
 
