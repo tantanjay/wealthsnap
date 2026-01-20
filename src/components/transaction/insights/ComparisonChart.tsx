@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
-import { useTheme } from '../../context/ThemeContext';
-import { Card } from '../../components';
-import { formatCurrencyAmount, CURRENCY_SYMBOLS } from '../../utils/currencyUtils';
+import { useTheme } from '../../../context/ThemeContext';
+import { CURRENCY_SYMBOLS, formatCurrencyAmount } from '../../../utils/currencyUtils';
+import { Card } from '../..';
 
 interface ComparisonChartProps {
     currentMonthExpense: number;

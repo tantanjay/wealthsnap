@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView } from 'react-native';
-import BottomModal from '../common/BottomModal';
-import { useTheme } from '../../context/ThemeContext';
+import BottomModal from '../../common/BottomModal';
+import { useTheme } from '../../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { Transaction } from '../../types';
-import { formatCurrencyAmount } from '../../utils/currencyUtils';
-import { getMonthEndProjection } from '../../utils/financialMetrics';
+import { Transaction } from '../../../types';
+import { formatCurrencyAmount } from '../../../utils/currencyUtils';
+import { getMonthEndProjection } from '../../../utils/financialMetrics';
 
 interface MonthEndProjectionProps {
     visible: boolean;
