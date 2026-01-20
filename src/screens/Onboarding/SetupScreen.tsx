@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Alert, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
-import { ScreenWrapper } from '../../components/ScreenWrapper';
+import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
 import { Button, Card } from '../../components';
 import { saveUserProfile, setOnboardingComplete } from '../../services/storageService';
@@ -11,7 +11,7 @@ import { SPACING } from '../../styles/theme';
 import PinCreationScreen from '../PinCreationScreen';
 import * as DocumentPicker from 'expo-document-picker';
 import { restoreFromBackup } from '../../services/backupService';
-import RestoreModal from '../../components/modals/data/RestoreModal';
+import RestoreModal from '../../components/profile/RestoreModal';
 import { CONFIG } from '../../constants/config';
 import { generateDummyData } from '../../services/dummyDataService';
 import OnboardingGuide from './OnboardingGuide';

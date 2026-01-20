@@ -7,10 +7,11 @@ import { formatCompactCurrency } from '../../utils/currencyUtils';
 import { getBudgets, checkBudgetStatus, Budget } from '../../services/budgetService';
 import { getAllRecurrenceRules } from '../../services/storageService';
 import { Transaction, RecurrenceRule } from '../../types';
-import CategoryTrendModal from '../modals/transactions/CategoryTrendModal';
-import RecurringExpensesSummaryModal from '../modals/transactions/RecurringExpensesSummaryModal';
-import AllExpensesModal from '../modals/transactions/AllExpensesModal';
 import { Ionicons } from '@expo/vector-icons';
+import CategoryTrendModal from './CategoryTrendModal';
+import RecurringExpensesSummaryModal from './RecurringExpensesSummaryModal';
+import AllExpensesModal from './AllExpensesModal';
+
 interface ExpenseAnalysisProps {
     categoryBreakdown: {
         name: string;

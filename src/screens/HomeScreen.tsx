@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { ScreenWrapper } from '../components/ScreenWrapper';
+import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Card } from '../components';
 import { processRecurrenceRules } from '../services/recurrenceService';
@@ -13,7 +13,7 @@ import { usePrivacy } from '../context/PrivacyContext';
 
 import { formatCurrencyAmount } from '../utils/currencyUtils';
 import { getTopTransactions } from '../utils/financialMetrics';
-import HomeTransactionsCard from '../components/HomeTransactionsCard';
+import HomeTransactionsCard from '../components/home/HomeTransactionsCard';
 
 
 
