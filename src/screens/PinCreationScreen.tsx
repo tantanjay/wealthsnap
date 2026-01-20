@@ -41,14 +41,26 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
         setStep('create');
     }, []);
 
+    const isValidating = React.useRef(false);
+
     const validatePin = useCallback(async () => {
+        if (isValidating.current) return;
+
         if (pin === confirmPin) {
+            isValidating.current = true;
             try {
                 await setPin(pin);
                 showAlert("Success", "Your PIN has been secured.", [
-                    { text: "OK", onPress: onSuccess }
+                    {
+                        text: "OK",
+                        onPress: () => {
+                            isValidating.current = false;
+                            onSuccess();
+                        }
+                    }
                 ]);
             } catch {
+                isValidating.current = false;
                 showAlert("Error", "Failed to save PIN. Please try again.");
                 reset();
             }
@@ -111,6 +123,8 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
     const styles = StyleSheet.create({
         container: {
             flex: 1,
+            width: '100%',
+            minHeight: 400, // Ensure it doesn't collapse in scroll views
             alignItems: 'center',
             justifyContent: 'center',
             padding: 20,

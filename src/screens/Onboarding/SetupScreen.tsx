@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
@@ -100,12 +100,12 @@ const SetupScreen = ({ navigation }: any) => {
         }
     };
 
-    const handleRestoredFinish = async () => {
+    const handleRestoredFinish = useCallback(async () => {
         // Instead of finishing immediately, show the guide
         setStep(4);
-    };
+    }, []);
 
-    const handleFinish = async () => {
+    const handleFinish = useCallback(async () => {
         if (!name || name.trim().length < 4) {
             showAlert('Required', 'Please enter a valid name (at least 4 characters).');
             return;
@@ -125,7 +125,7 @@ const SetupScreen = ({ navigation }: any) => {
         await saveUserProfile(profile);
         // show guide
         setStep(4);
-    };
+    }, [name, currency, goals, showAlert]);
 
     /**
      * Generates dummy data for testing/screenshots.
@@ -168,6 +168,7 @@ const SetupScreen = ({ navigation }: any) => {
         stepContainer: {
             flex: 1,
             paddingBottom: 20,
+            justifyContent: 'center', // Center content vertically especially for PIN screen
         },
         stepTitle: {
             fontSize: 24,
@@ -273,7 +274,7 @@ const SetupScreen = ({ navigation }: any) => {
             <ScrollView
                 style={styles.content}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 40 }}
+                contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}
                 nestedScrollEnabled={true}
             >
                 {/* Step 0: Privacy Policy & Terms */}
