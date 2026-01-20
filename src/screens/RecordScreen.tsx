@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
+import { Alert, BackHandler } from 'react-native';
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import RecordMenuModal from '../components/record/RecordMenuModal';
 import { Transaction, TransactionType } from '../types';
