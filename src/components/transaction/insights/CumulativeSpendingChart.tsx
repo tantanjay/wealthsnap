@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { Card } from '../../../components';
+import BottomModal from '../../common/BottomModal';
 import { Transaction } from '../../../types';
 import { getCumulativeSpendingCurve, getCurrentMonthCumulative, getTransactionsByMonth } from '../../../utils/financialMetrics';
 import { CURRENCY_SYMBOLS, formatCompactCurrency, formatCurrencyAmount } from '../../../utils/currencyUtils';
@@ -21,6 +23,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
     const [period, setPeriod] = useState<3 | 6 | 12>(3);
+    const [showInfo, setShowInfo] = useState(false);
 
     const { currentData, avgData, insight } = useMemo(() => {
         const today = new Date();
@@ -200,30 +203,35 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                 </View>
 
                 {/* Tabs */}
-                {avgData.length > 0 && (
-                    <View style={{ flexDirection: 'row', backgroundColor: colors.background, borderRadius: 8, padding: 2 }}>
-                        {[3, 6, 12].map((m) => (
-                            <TouchableOpacity
-                                key={m}
-                                onPress={() => setPeriod(m as any)}
-                                style={{
-                                    paddingVertical: 4,
-                                    paddingHorizontal: 8,
-                                    backgroundColor: period === m ? colors.surface : 'transparent',
-                                    borderRadius: 6,
-                                    borderWidth: period === m ? 1 : 0,
-                                    borderColor: colors.border
-                                }}
-                            >
-                                <Text style={{
-                                    color: period === m ? colors.text : colors.textSecondary,
-                                    fontSize: 12,
-                                    fontWeight: period === m ? '600' : '400'
-                                }}>{m}M</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                )}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {avgData.length > 0 && (
+                        <View style={{ flexDirection: 'row', backgroundColor: colors.background, borderRadius: 8, padding: 2, marginRight: 10 }}>
+                            {[3, 6, 12].map((m) => (
+                                <TouchableOpacity
+                                    key={m}
+                                    onPress={() => setPeriod(m as any)}
+                                    style={{
+                                        paddingVertical: 4,
+                                        paddingHorizontal: 8,
+                                        backgroundColor: period === m ? colors.surface : 'transparent',
+                                        borderRadius: 6,
+                                        borderWidth: period === m ? 1 : 0,
+                                        borderColor: colors.border
+                                    }}
+                                >
+                                    <Text style={{
+                                        color: period === m ? colors.text : colors.textSecondary,
+                                        fontSize: 12,
+                                        fontWeight: period === m ? '600' : '400'
+                                    }}>{m}M</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
+                    <TouchableOpacity onPress={() => setShowInfo(true)}>
+                        <Ionicons name="information-circle-outline" size={22} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Chart */}
@@ -266,6 +274,43 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                     </View>
                 )}
             </Card>
+
+            <BottomModal
+                visible={showInfo}
+                onClose={() => setShowInfo(false)}
+                title="Understanding the Pulse"
+                maxHeight="60%"
+            >
+                <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
+                        This chart shows your <Text style={{ fontWeight: 'bold' }}>spending speed</Text> throughout the month. It adds up your expenses day by day.
+                    </Text>
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                        <View style={{ width: 24, height: 4, backgroundColor: colors.primary, marginRight: 12, borderRadius: 2 }} />
+                        <View>
+                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>Solid Line (You)</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Your actual spending so far this month.</Text>
+                        </View>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+                        <View style={{ width: 24, height: 4, backgroundColor: '#A0A0A0', marginRight: 12, borderRadius: 2, borderStyle: 'dashed', borderWidth: 1, borderColor: '#A0A0A0' }} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>Dashed Line (Average)</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>How you usually spend by this time of the month.</Text>
+                        </View>
+                    </View>
+
+                    <View style={{ backgroundColor: colors.primary + '15', padding: 15, borderRadius: 12 }}>
+                        <Text style={{ color: colors.primary, fontWeight: 'bold', marginBottom: 5 }}>🏁 The Goal</Text>
+                        <Text style={{ color: colors.text, fontSize: 13 }}>
+                            Try to keep your Solid Line <Text style={{ fontWeight: 'bold' }}>below</Text> the Dashed Line.
+                            If it goes above, you are spending faster than your historical average!
+                        </Text>
+                    </View>
+                </ScrollView>
+            </BottomModal>
         </View>
     );
 };
