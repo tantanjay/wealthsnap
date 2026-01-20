@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
 import BottomModal from '../common/BottomModal';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
@@ -20,6 +20,9 @@ export const CalculatorModal: React.FC<CalculatorModalProps> = ({
     type
 }) => {
     const { colors } = useTheme();
+    const { height } = useWindowDimensions();
+    const modalHeight = height < 800 ? '85%' : '70%';
+
     const [calcDisplay, setCalcDisplay] = useState('0');
     const [calcOperator, setCalcOperator] = useState<string | null>(null);
     const [calcPrevValue, setCalcPrevValue] = useState<number | null>(null);
@@ -108,6 +111,7 @@ export const CalculatorModal: React.FC<CalculatorModalProps> = ({
             visible={visible}
             onClose={onClose}
             title="Calculator"
+            maxHeight={modalHeight}
         >
             {/* Display */}
             <View style={{
@@ -134,114 +138,116 @@ export const CalculatorModal: React.FC<CalculatorModalProps> = ({
             </View>
 
             {/* Calculator Buttons */}
-            <View style={{ gap: 8 }}>
-                {/* Row 1 */}
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TouchableOpacity
-                        onPress={handleCalcClear}
-                        style={{ flex: 1, backgroundColor: colors.error + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                    >
-                        <Text style={{ color: colors.error, fontSize: 20, fontWeight: 'bold' }}>C</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => setCalcDisplay(calcDisplay.slice(0, -1) || '0')}
-                        style={{ flex: 1, backgroundColor: colors.warning + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                    >
-                        <Ionicons name="backspace-outline" size={24} color={colors.warning} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => handleCalcOperator('÷')}
-                        style={{ flex: 1, backgroundColor: colors.primary + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                    >
-                        <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>÷</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => handleCalcOperator('×')}
-                        style={{ flex: 1, backgroundColor: colors.primary + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                    >
-                        <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>×</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Row 2 */}
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                    {['7', '8', '9'].map(d => (
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={{ gap: 8 }}>
+                    {/* Row 1 */}
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
                         <TouchableOpacity
-                            key={d}
-                            onPress={() => handleCalcDigit(d)}
+                            onPress={handleCalcClear}
+                            style={{ flex: 1, backgroundColor: colors.error + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
+                        >
+                            <Text style={{ color: colors.error, fontSize: 20, fontWeight: 'bold' }}>C</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => setCalcDisplay(calcDisplay.slice(0, -1) || '0')}
+                            style={{ flex: 1, backgroundColor: colors.warning + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
+                        >
+                            <Ionicons name="backspace-outline" size={24} color={colors.warning} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => handleCalcOperator('÷')}
+                            style={{ flex: 1, backgroundColor: colors.primary + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
+                        >
+                            <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>÷</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => handleCalcOperator('×')}
+                            style={{ flex: 1, backgroundColor: colors.primary + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
+                        >
+                            <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>×</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Row 2 */}
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {['7', '8', '9'].map(d => (
+                            <TouchableOpacity
+                                key={d}
+                                onPress={() => handleCalcDigit(d)}
+                                style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
+                            >
+                                <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>{d}</Text>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity
+                            onPress={() => handleCalcOperator('-')}
+                            style={{ flex: 1, backgroundColor: colors.primary + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
+                        >
+                            <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>−</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Row 3 */}
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {['4', '5', '6'].map(d => (
+                            <TouchableOpacity
+                                key={d}
+                                onPress={() => handleCalcDigit(d)}
+                                style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
+                            >
+                                <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>{d}</Text>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity
+                            onPress={() => handleCalcOperator('+')}
+                            style={{ flex: 1, backgroundColor: colors.primary + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
+                        >
+                            <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>+</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Row 4 */}
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {['1', '2', '3'].map(d => (
+                            <TouchableOpacity
+                                key={d}
+                                onPress={() => handleCalcDigit(d)}
+                                style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
+                            >
+                                <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>{d}</Text>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity
+                            onPress={handleCalcEquals}
+                            style={{ flex: 1, backgroundColor: colors.success, borderRadius: 12, padding: 16, alignItems: 'center' }}
+                        >
+                            <Text style={{ color: '#FFF', fontSize: 20, fontWeight: 'bold' }}>=</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Row 5 */}
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity
+                            onPress={() => handleCalcDigit('0')}
+                            style={{ flex: 2, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
+                        >
+                            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>0</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={handleCalcDecimal}
                             style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
                         >
-                            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>{d}</Text>
+                            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>.</Text>
                         </TouchableOpacity>
-                    ))}
-                    <TouchableOpacity
-                        onPress={() => handleCalcOperator('-')}
-                        style={{ flex: 1, backgroundColor: colors.primary + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                    >
-                        <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>−</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Row 3 */}
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                    {['4', '5', '6'].map(d => (
                         <TouchableOpacity
-                            key={d}
-                            onPress={() => handleCalcDigit(d)}
-                            style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
+                            onPress={handleCalcApply}
+                            style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 12, padding: 16, alignItems: 'center' }}
                         >
-                            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>{d}</Text>
+                            <Ionicons name="checkmark" size={24} color="#FFF" />
                         </TouchableOpacity>
-                    ))}
-                    <TouchableOpacity
-                        onPress={() => handleCalcOperator('+')}
-                        style={{ flex: 1, backgroundColor: colors.primary + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                    >
-                        <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>+</Text>
-                    </TouchableOpacity>
+                    </View>
                 </View>
-
-                {/* Row 4 */}
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                    {['1', '2', '3'].map(d => (
-                        <TouchableOpacity
-                            key={d}
-                            onPress={() => handleCalcDigit(d)}
-                            style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                        >
-                            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>{d}</Text>
-                        </TouchableOpacity>
-                    ))}
-                    <TouchableOpacity
-                        onPress={handleCalcEquals}
-                        style={{ flex: 1, backgroundColor: colors.success, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                    >
-                        <Text style={{ color: '#FFF', fontSize: 20, fontWeight: 'bold' }}>=</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Row 5 */}
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TouchableOpacity
-                        onPress={() => handleCalcDigit('0')}
-                        style={{ flex: 2, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                    >
-                        <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>0</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={handleCalcDecimal}
-                        style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                    >
-                        <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>.</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={handleCalcApply}
-                        style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                    >
-                        <Ionicons name="checkmark" size={24} color="#FFF" />
-                    </TouchableOpacity>
-                </View>
-            </View>
+            </ScrollView>
         </BottomModal>
     );
 };

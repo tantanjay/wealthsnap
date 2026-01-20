@@ -51,6 +51,7 @@ export const processRecurrenceRules = async (): Promise<number> => {
                     ...rule.transactionTemplate,
                     id: Date.now().toString() + Math.random().toString(36).substr(2, 5), // Unique ID
                     date: nextDueDate.toISOString(),
+                    note: rule.name || rule.transactionTemplate.note,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
                     isRecurring: true,
