@@ -255,7 +255,7 @@ const HistoryScreen = ({ navigation }: any) => {
                                 alignItems: 'center'
                             }}>
                                 <Ionicons
-                                    name={isRecurring ? "repeat" : "wallet"}
+                                    name={isRecurring ? "repeat" : (item.creationMethod === 'AI' ? "sparkles" : "wallet")}
                                     size={18}
                                     color={isExpense ? colors.error : colors.success}
                                 />

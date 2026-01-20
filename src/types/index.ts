@@ -22,7 +22,7 @@ export interface Transaction {
     note?: string;
     isRecurring: boolean;
     recurrenceId?: string; // Link to recurrence rule
-    creationMethod?: 'MANUAL' | 'RECURRENCE';
+    creationMethod?: 'MANUAL' | 'RECURRENCE' | 'AI';
     createdAt: string;
     updatedAt: string;
 }
@@ -59,7 +59,40 @@ export interface RecurrenceRule {
     isActive: boolean;
 }
 
-export interface GeminiConfig {
+export interface AIConfig {
     apiKey?: string;
     modelId?: string;
+}
+
+export interface AIUsageLog {
+    id: string;
+    timestamp: string;
+    endpoint: string;
+    provider: 'gemini' | 'openai' | 'other';
+    model: string;
+    status: 'success' | 'error';
+    inputTokens: number;
+    outputTokens: number;
+    imageCount: number;
+    durationMs: number;
+    costUSD: number;
+}
+
+export interface ReceiptItem {
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    amount: number;
+    category?: string; // Suggested category
+}
+
+export interface ReceiptAnalysisResult {
+    isValidReceipt: boolean;
+    merchantName?: string;
+    date?: string;
+    totalAmount?: number;
+    currency?: string;
+    items?: ReceiptItem[];
+    confidence: number; // 0-100
+    validationError?: string; // Reason why it's not a receipt
 }

@@ -100,6 +100,23 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
         CREATE INDEX IF NOT EXISTS idx_price_history_asset ON price_history(assetId);
         CREATE INDEX IF NOT EXISTS idx_price_history_timestamp ON price_history(timestamp DESC);
         CREATE INDEX IF NOT EXISTS idx_price_history_asset_timestamp ON price_history(assetId, timestamp DESC);
+
+        -- AI Usage logs table
+        CREATE TABLE IF NOT EXISTS ai_usage_logs (
+            id TEXT PRIMARY KEY,
+            timestamp TEXT NOT NULL,
+            endpoint TEXT NOT NULL,
+            provider TEXT NOT NULL,
+            model TEXT NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('success', 'error')),
+            inputTokens INTEGER DEFAULT 0,
+            outputTokens INTEGER DEFAULT 0,
+            imageCount INTEGER DEFAULT 0,
+            durationMs INTEGER DEFAULT 0,
+            costUSD REAL DEFAULT 0
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_logs_timestamp ON ai_usage_logs(timestamp DESC);
     `);
 
     console.log('[Database] Tables and indexes created successfully');
