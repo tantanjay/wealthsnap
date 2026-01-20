@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../components';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyAmount } from '../utils/currencyUtils';
+import TransactionOptionsModal from '../components/transaction/modals/TransactionOptionsModal';
 
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
@@ -33,6 +34,7 @@ const HistoryScreen = ({ navigation }: any) => {
     const [timeFrame, setTimeFrame] = useState<TimeFrame>('DAILY');
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
     useFocusEffect(
         useCallback(() => {
@@ -218,22 +220,11 @@ const HistoryScreen = ({ navigation }: any) => {
 
     // --- Actions ---
 
-    const handleDelete = (id: string) => {
-        Alert.alert(
-            "Delete Transaction",
-            "Are you sure you want to delete this transaction?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: async () => {
-                        await deleteTransaction(id);
-                        loadTransactions();
-                    }
-                }
-            ]
-        );
+    const handleDelete = async (id: string) => {
+        // The confirmation is handled in the modal, but just in case we wanted it here,
+        // we can assume the caller has confirmed if they reached here via the Modal's destructive action.
+        await deleteTransaction(id);
+        loadTransactions();
     };
 
     const handleEdit = (transaction: Transaction) => {
@@ -248,19 +239,11 @@ const HistoryScreen = ({ navigation }: any) => {
 
         return (
             <TouchableOpacity
-                onPress={() => {
-                    Alert.alert(
-                        "Transaction Options",
-                        "Choose an action",
-                        [
-                            { text: "Cancel", style: "cancel" },
-                            { text: "Edit", onPress: () => handleEdit(item) },
-                            { text: "Delete", style: "destructive", onPress: () => handleDelete(item.id) }
-                        ]
-                    );
-                }}
+                onPress={() => setSelectedTransaction(item)}
+                style={{ marginBottom: 8 }}
+                activeOpacity={0.7}
             >
-                <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 8 }}>
+                <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                             <View style={{
@@ -403,6 +386,15 @@ const HistoryScreen = ({ navigation }: any) => {
                     showsVerticalScrollIndicator={false}
                 />
             )}
+
+            <TransactionOptionsModal
+                visible={!!selectedTransaction}
+                transaction={selectedTransaction}
+                onClose={() => setSelectedTransaction(null)}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                currency={profile?.currency}
+            />
         </ScreenWrapper>
     );
 };
