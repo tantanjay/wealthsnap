@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import BottomModal from '../base/BottomModal';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
+import BottomModal from '../common/BottomModal';
 
 interface CategoryItem {
     label: string;

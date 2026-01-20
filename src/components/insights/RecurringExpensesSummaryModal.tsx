@@ -1,11 +1,10 @@
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView } from 'react-native';
-import BottomModal from '../base/BottomModal';
-import { useTheme } from '../../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { RecurrenceRule } from '../../../types';
-import { formatCurrencyAmount } from '../../../utils/currencyUtils';
-
+import { RecurrenceRule } from '../../types';
+import { formatCurrencyAmount } from '../../utils/currencyUtils';
+import { useTheme } from '../../context/ThemeContext';
+import BottomModal from '../common/BottomModal';
 
 interface RecurringExpensesSummaryProps {
     visible: boolean;

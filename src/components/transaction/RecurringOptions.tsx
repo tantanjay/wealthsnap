@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { useTheme } from '../context/ThemeContext';
-import { Card } from './index';
-import { RECURRENCE_OPTIONS } from '../constants/categories';
+import { useTheme } from '../../context/ThemeContext';
+import { Card } from '../index';
+import { RECURRENCE_OPTIONS } from '../../constants/categories';
 
-interface RecurringFormProps {
+interface RecurringOptionsProps {
     isRecurring: boolean;
     setIsRecurring: (value: boolean) => void;
     recurringLabel: string;
@@ -21,7 +21,7 @@ interface RecurringFormProps {
     setEndDate: (date: Date) => void;
 }
 
-export const RecurringForm: React.FC<RecurringFormProps> = ({
+export const RecurringOptions: React.FC<RecurringOptionsProps> = ({
     isRecurring,
     setIsRecurring,
     recurringLabel,
