@@ -52,7 +52,7 @@ export const createBackup = async (password: string): Promise<string> => {
     const budgets = await getBudgets();
 
     const backupData: BackupData = {
-        version: '1.0.0',
+        version: '2.0', // Updated for SQLite migration
         timestamp: new Date().toISOString(),
         profile,
         transactions,
