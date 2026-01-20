@@ -28,6 +28,29 @@ const RecordScreen = ({ navigation, route }: any) => {
         return unsubscribe;
     }, [navigation, viewMode, modalVisible]);
 
+    // Handle Android Back Button
+    useEffect(() => {
+        const backAction = () => {
+            if (viewMode === 'TRANSACTION') {
+                handleTransactionCancel();
+                return true; // Prevent default behavior
+            }
+            // If modal is open, let standard modal behavior handle it (or default back)
+            if (viewMode === 'MENU' && modalVisible) {
+                // Let the modal close itself or navigation go back
+                return false;
+            }
+            return false;
+        };
+
+        const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            backAction
+        );
+
+        return () => backHandler.remove();
+    }, [viewMode, modalVisible]);
+
     useFocusEffect(
         React.useCallback(() => {
             const { transaction } = route.params || {};
