@@ -1,15 +1,15 @@
 import React from 'react';
-import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
-import { formatCurrencyAmount, formatCompactCurrency } from '../../utils/currencyUtils';
+import { formatCompactCurrency } from '../../utils/currencyUtils';
 import { getBudgets, checkBudgetStatus, Budget } from '../../services/budgetService';
 import { getAllRecurrenceRules } from '../../services/storageService';
 import { Transaction, RecurrenceRule } from '../../types';
-import CategoryTrendModal from '../modals/CategoryTrendModal';
-import RecurringExpensesSummaryModal from '../modals/RecurringExpensesSummaryModal';
-import AllExpensesModal from '../modals/AllExpensesModal';
+import CategoryTrendModal from '../modals/transactions/CategoryTrendModal';
+import RecurringExpensesSummaryModal from '../modals/transactions/RecurringExpensesSummaryModal';
+import AllExpensesModal from '../modals/transactions/AllExpensesModal';
 import { Ionicons } from '@expo/vector-icons';
 interface ExpenseAnalysisProps {
     categoryBreakdown: {

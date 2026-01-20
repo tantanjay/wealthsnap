@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getDatabase, transaction } from './databaseService';
+import { getDatabase } from './databaseService';
 import { decryptData, encryptField } from '../encryptionService';
 import { Transaction, Investment, Category, RecurrenceRule } from '../../types';
 import { Budget } from '../budgetService';
@@ -58,7 +58,7 @@ const readAsyncStorageData = async <T>(key: string): Promise<T[]> => {
             if (decrypted) {
                 return Array.isArray(decrypted) ? decrypted : [];
             }
-        } catch (decryptError) {
+        } catch {
             // Decryption failed - likely plain JSON, will try parsing below
             // This is expected for some data types like budgets that weren't encrypted
         }
@@ -67,7 +67,7 @@ const readAsyncStorageData = async <T>(key: string): Promise<T[]> => {
         try {
             const parsed = JSON.parse(encrypted);
             return Array.isArray(parsed) ? parsed : [];
-        } catch (parseError) {
+        } catch {
             console.warn(`[Migration] Could not parse data for key: ${key}`);
             return [];
         }

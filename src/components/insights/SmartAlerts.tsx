@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
 import { Anomaly } from '../../utils/financialMetrics';

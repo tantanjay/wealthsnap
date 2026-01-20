@@ -1,13 +1,13 @@
 import React from 'react';
-import { View, Text, Dimensions } from 'react-native';
-import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
+import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
+import { PieChart, BarChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
-import { CURRENCY_SYMBOLS, formatCompactCurrency, formatCompactNumber } from '../../utils/currencyUtils';
-import MonthEndProjectionModal from '../modals/MonthEndProjectionModal';
+import { CURRENCY_SYMBOLS, formatCompactCurrency } from '../../utils/currencyUtils';
+import MonthEndProjectionModal from '../modals/financial/MonthEndProjectionModal';
 import { Transaction } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
-import { TouchableOpacity } from 'react-native';
+
 
 interface IncomeAnalysisProps {
     monthlyTrends: {

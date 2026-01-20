@@ -125,7 +125,7 @@ export const getDatabaseVersion = async (db: SQLite.SQLiteDatabase): Promise<num
             ['database_version']
         );
         return result ? parseInt(result.value, 10) : 0;
-    } catch (error) {
+    } catch {
         return 0;
     }
 };

@@ -1,19 +1,18 @@
 import React, { useCallback, useState } from 'react';
-import { Text, View, ScrollView } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
-import { Card, Button } from '../components';
+import { Card } from '../components';
 import { processRecurrenceRules } from '../services/recurrenceService';
 import { getUserProfile } from '../services/storageService';
 import { getCachedTransactions, getCachedInvestments } from '../services/dataCache';
 import { UserProfile, Transaction, Investment } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { usePrivacy } from '../context/PrivacyContext';
-import { TouchableOpacity } from 'react-native';
+
 import { formatCurrencyAmount } from '../utils/currencyUtils';
 import { getTopTransactions } from '../utils/financialMetrics';
-import TopTransactions from '../components/TopTransactions';
 import HomeTransactionsCard from '../components/HomeTransactionsCard';
 
 

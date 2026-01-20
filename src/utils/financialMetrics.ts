@@ -254,7 +254,6 @@ export const detectAnomalies = (currentMonthTransactions: Transaction[], allTran
 export const getCategoryAverages = (allTransactions: Transaction[], monthsBack: number = 3) => {
     const today = new Date();
     const totalsByCategory: { [key: string]: number } = {};
-    const months = monthsBack; // Divide by this
 
     // Filter for last N months excluding current
     const startHistory = new Date(today.getFullYear(), today.getMonth() - monthsBack, 1);
