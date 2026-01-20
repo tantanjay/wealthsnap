@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { UserProfile, Transaction, Investment, Category, RecurrenceRule, GeminiConfig } from '../types';
-import { encryptData, decryptData } from './encryptionService';
+import { encryptData, decryptData, encryptField, decryptField } from './encryptionService';
 import * as DataCache from './dataCache';
 import { getDatabase } from './database/databaseService';
 
@@ -79,6 +79,11 @@ export const updateUserProfile = async (updates: Partial<UserProfile>): Promise<
 export const saveTransaction = async (transaction: Transaction): Promise<void> => {
     try {
         const db = await getDatabase();
+
+        // Encrypt sensitive fields
+        const encryptedAmount = await encryptField(transaction.amount);
+        const encryptedNote = transaction.note ? await encryptField(transaction.note) : null;
+
         await db.runAsync(
             `INSERT OR REPLACE INTO transactions 
              (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId)
@@ -86,11 +91,11 @@ export const saveTransaction = async (transaction: Transaction): Promise<void> =
             [
                 transaction.id,
                 transaction.date,
-                transaction.amount,
+                encryptedAmount,
                 transaction.type,
                 transaction.category || null,
                 transaction.subCategory || null,
-                transaction.note || null,
+                encryptedNote,
                 transaction.creationMethod || null,
                 transaction.isRecurring ? 1 : 0,
                 transaction.recurrenceId || null
@@ -107,20 +112,27 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
     try {
         const db = await getDatabase();
         const rows = await db.getAllAsync<any>('SELECT * FROM transactions ORDER BY date DESC');
-        return rows.map(row => ({
-            id: row.id,
-            date: row.date,
-            amount: row.amount,
-            type: row.type,
-            category: row.category,
-            subCategory: row.subCategory,
-            note: row.note,
-            creationMethod: row.creationMethod,
-            isRecurring: row.isRecurring === 1,
-            recurrenceId: row.recurrenceId,
-            createdAt: row.createdAt,
-            updatedAt: row.updatedAt
+
+        // Decrypt sensitive fields for each transaction
+        const decrypted = await Promise.all(rows.map(async (row) => {
+            const decryptedNote = await decryptField(row.note);
+            return {
+                id: row.id,
+                date: row.date,
+                amount: parseFloat((await decryptField(row.amount)) || '0'),
+                type: row.type,
+                category: row.category,
+                subCategory: row.subCategory,
+                note: decryptedNote || undefined,
+                creationMethod: row.creationMethod,
+                isRecurring: row.isRecurring === 1,
+                recurrenceId: row.recurrenceId,
+                createdAt: row.createdAt,
+                updatedAt: row.updatedAt
+            };
         }));
+
+        return decrypted;
     } catch (error) {
         console.error('Error getting transactions:', error);
         return [];
@@ -145,20 +157,27 @@ export const getTransactionsByDateRange = async (startDate: string, endDate: str
             'SELECT * FROM transactions WHERE date BETWEEN ? AND ? ORDER BY date DESC',
             [startDate, endDate]
         );
-        return rows.map(row => ({
-            id: row.id,
-            date: row.date,
-            amount: row.amount,
-            type: row.type,
-            category: row.category,
-            subCategory: row.subCategory,
-            note: row.note,
-            creationMethod: row.creationMethod,
-            isRecurring: row.isRecurring === 1,
-            recurrenceId: row.recurrenceId,
-            createdAt: row.createdAt,
-            updatedAt: row.updatedAt
+
+        // Decrypt sensitive fields
+        const decrypted = await Promise.all(rows.map(async (row) => {
+            const decryptedNote = await decryptField(row.note);
+            return {
+                id: row.id,
+                date: row.date,
+                amount: parseFloat((await decryptField(row.amount)) || '0'),
+                type: row.type,
+                category: row.category,
+                subCategory: row.subCategory,
+                note: decryptedNote || undefined,
+                creationMethod: row.creationMethod,
+                isRecurring: row.isRecurring === 1,
+                recurrenceId: row.recurrenceId,
+                createdAt: row.createdAt,
+                updatedAt: row.updatedAt
+            };
         }));
+
+        return decrypted;
     } catch (error) {
         console.error('Error getting transactions by date range:', error);
         return [];
@@ -170,6 +189,10 @@ export const getTransactionsByDateRange = async (startDate: string, endDate: str
 export const saveInvestment = async (investment: Investment): Promise<void> => {
     try {
         const db = await getDatabase();
+
+        // Encrypt sensitive field
+        const encryptedNotes = investment.notes ? await encryptField(investment.notes) : null;
+
         await db.runAsync(
             `INSERT OR REPLACE INTO investments 
              (id, symbol, name, type, quantity, averageBuyPrice, currentPrice, lastUpdated, notes)
@@ -183,7 +206,7 @@ export const saveInvestment = async (investment: Investment): Promise<void> => {
                 investment.averageBuyPrice,
                 investment.currentPrice || null,
                 investment.lastUpdated || null,
-                investment.notes || null
+                encryptedNotes
             ]
         );
         DataCache.invalidateInvestmentCache();
@@ -197,17 +220,24 @@ export const getAllInvestments = async (): Promise<Investment[]> => {
     try {
         const db = await getDatabase();
         const rows = await db.getAllAsync<any>('SELECT * FROM investments ORDER BY symbol');
-        return rows.map(row => ({
-            id: row.id,
-            symbol: row.symbol,
-            name: row.name,
-            type: row.type,
-            quantity: row.quantity,
-            averageBuyPrice: row.averageBuyPrice,
-            currentPrice: row.currentPrice,
-            lastUpdated: row.lastUpdated,
-            notes: row.notes
+
+        // Decrypt notes field
+        const decrypted = await Promise.all(rows.map(async (row) => {
+            const decryptedNotes = await decryptField(row.notes);
+            return {
+                id: row.id,
+                symbol: row.symbol,
+                name: row.name,
+                type: row.type,
+                quantity: row.quantity,
+                averageBuyPrice: row.averageBuyPrice,
+                currentPrice: row.currentPrice,
+                lastUpdated: row.lastUpdated,
+                notes: decryptedNotes || undefined
+            };
         }));
+
+        return decrypted;
     } catch (error) {
         console.error('Error getting investments:', error);
         return [];
@@ -431,6 +461,10 @@ export const bulkSaveTransactions = async (transactions: Transaction[]): Promise
         const db = await getDatabase();
         await db.withTransactionAsync(async () => {
             for (const txn of transactions) {
+                // Encrypt sensitive fields
+                const encryptedAmount = await encryptField(txn.amount);
+                const encryptedNote = txn.note ? await encryptField(txn.note) : null;
+
                 await db.runAsync(
                     `INSERT OR REPLACE INTO transactions 
                      (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId)
@@ -438,11 +472,11 @@ export const bulkSaveTransactions = async (transactions: Transaction[]): Promise
                     [
                         txn.id,
                         txn.date,
-                        txn.amount,
+                        encryptedAmount,
                         txn.type,
                         txn.category || null,
                         txn.subCategory || null,
-                        txn.note || null,
+                        encryptedNote,
                         txn.creationMethod || null,
                         txn.isRecurring ? 1 : 0,
                         txn.recurrenceId || null
@@ -462,6 +496,9 @@ export const bulkSaveInvestments = async (investments: Investment[]): Promise<vo
         const db = await getDatabase();
         await db.withTransactionAsync(async () => {
             for (const inv of investments) {
+                // Encrypt notes
+                const encryptedNotes = inv.notes ? await encryptField(inv.notes) : null;
+
                 await db.runAsync(
                     `INSERT OR REPLACE INTO investments 
                      (id, symbol, name, type, quantity, averageBuyPrice, currentPrice, lastUpdated, notes)
@@ -475,7 +512,7 @@ export const bulkSaveInvestments = async (investments: Investment[]): Promise<vo
                         inv.averageBuyPrice,
                         inv.currentPrice || null,
                         inv.lastUpdated || null,
-                        inv.notes || null
+                        encryptedNotes
                     ]
                 );
             }
