@@ -8,10 +8,10 @@ import {
     getAllRecurrenceRules,
     getGeminiConfig,
     saveUserProfile,
-    saveTransaction, // We might need a bulk save, but for now we loop or use specific bulk setters if created
-    saveInvestment,
-    saveCategory,
-    saveRecurrenceRule,
+    bulkSaveTransactions,
+    bulkSaveInvestments,
+    bulkSaveCategories,
+    bulkSaveRecurrenceRules,
     saveGeminiConfig,
     clearAllData,
     setOnboardingComplete
@@ -152,11 +152,19 @@ export const restoreFromBackup = async (
         for (const b of backupData.budgets) await setBudget(b.category, b.amount);
     }
 
-    // Bulk save would be better, but loop is fine for local async storage for now
-    for (const t of backupData.transactions) await saveTransaction(t);
-    for (const i of backupData.investments) await saveInvestment(i);
-    for (const c of backupData.categories) await saveCategory(c);
-    for (const r of backupData.recurrenceRules) await saveRecurrenceRule(r);
+    // Bulk save all data for maximum performance
+    if (backupData.transactions.length > 0) {
+        await bulkSaveTransactions(backupData.transactions);
+    }
+    if (backupData.investments.length > 0) {
+        await bulkSaveInvestments(backupData.investments);
+    }
+    if (backupData.categories.length > 0) {
+        await bulkSaveCategories(backupData.categories);
+    }
+    if (backupData.recurrenceRules.length > 0) {
+        await bulkSaveRecurrenceRules(backupData.recurrenceRules);
+    }
 
     if (backupData.geminiConfig) await saveGeminiConfig(backupData.geminiConfig);
 };
