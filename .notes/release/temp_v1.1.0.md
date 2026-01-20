@@ -25,6 +25,9 @@
 - **Zero-Knowledge Architecture**
   - Continuing our commitment to privacy, no data leaves your device without your explicit action
   - Offline-first architecture preserved
+- **Conditional Screenshot Protection**
+  - Enhanced privacy controls: Screenshots and app switcher previews are now blocked by default to protect sensitive financial data
+  - **Privacy Mode Integration**: Enabling "Privacy Mode" (hiding values) automatically unblocks screenshots and app switcher previews, allowing you to safely share your screen sans sensitive data
 
 ### 🏗️ Architecture
 - **Project Structure Reorganization**
