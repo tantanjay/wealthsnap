@@ -54,7 +54,9 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
                                         {item.name || item.transactionTemplate.category}
                                     </Text>
                                     <Text style={{ color: colors.textSecondary }}>
-                                        {item.frequency} • {formatCurrencyAmount(item.transactionTemplate.amount, currency)}
+                                        {item.frequency} • <Text style={{ color: item.transactionTemplate.type === 'EXPENSE' ? colors.error : colors.success }}>
+                                            {formatCurrencyAmount(item.transactionTemplate.amount, currency)}
+                                        </Text>
                                     </Text>
                                     <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
                                         Next due: {new Date(item.nextDueDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
