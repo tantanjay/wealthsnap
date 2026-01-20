@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { useTheme } from '../../context/ThemeContext';
 import BottomModal from '../common/BottomModal';
 
@@ -20,6 +22,88 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
     onSelectAI,
 }) => {
     const { colors } = useTheme();
+    const [status, requestPermission] = ImagePicker.useMediaLibraryPermissions();
+    const [cameraStatus, requestCameraPermission] = ImagePicker.useCameraPermissions();
+
+    const processImage = async (uri: string, width: number, height: number) => {
+        try {
+            const MAX_DIMENSION = 1024;
+            const actions: ImageManipulator.Action[] = [];
+
+            if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                if (width > height) {
+                    actions.push({ resize: { width: MAX_DIMENSION } });
+                } else {
+                    actions.push({ resize: { height: MAX_DIMENSION } });
+                }
+            }
+
+            // Always compress to JPEG to save tokens and ensure consistency
+            const result = await ImageManipulator.manipulateAsync(
+                uri,
+                actions,
+                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+            );
+
+            console.log('AI Processing Ready Image:', result);
+            // TODO: Pass this result to the AI processing service
+        } catch (error) {
+            console.error('Error processing image:', error);
+            Alert.alert('Error', 'Failed to process image for AI analysis.');
+        }
+    };
+
+    const handleBrowse = async () => {
+        if (status?.status !== 'granted') {
+            const response = await requestPermission();
+            if (!response.granted) {
+                Alert.alert('Permission needed', 'Please grant photo library access to browse receipts.');
+                return;
+            }
+        }
+
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: false,
+                quality: 0.5,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const asset = result.assets[0];
+                await processImage(asset.uri, asset.width, asset.height);
+                onSelectAI('BROWSE');
+            }
+        } catch (error) {
+            console.error('Error browsing:', error);
+        }
+    };
+
+    const handleCapture = async () => {
+        if (cameraStatus?.status !== 'granted') {
+            const response = await requestCameraPermission();
+            if (!response.granted) {
+                Alert.alert('Permission needed', 'Please grant camera access to capture receipts.');
+                return;
+            }
+        }
+
+        try {
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: false,
+                quality: 0.5,
+            });
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const asset = result.assets[0];
+                await processImage(asset.uri, asset.width, asset.height);
+                onSelectAI('CAPTURE');
+            }
+        } catch (error) {
+            console.error('Error capturing:', error);
+        }
+    };
 
     const MenuItem = ({
         icon,
@@ -61,17 +145,13 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
                             icon="search"
                             label="Browse"
                             color="#9333EA"
-                            onPress={() => {
-                                onSelectAI('BROWSE');
-                            }}
+                            onPress={handleBrowse}
                         />
                         <MenuItem
                             icon="camera"
                             label="Capture"
                             color="#9333EA"
-                            onPress={() => {
-                                onSelectAI('CAPTURE');
-                            }}
+                            onPress={handleCapture}
                         />
                     </View>
                 </View>

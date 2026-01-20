@@ -44,6 +44,13 @@
       "expo-sqlite",
       "@react-native-community/datetimepicker",
       "expo-local-authentication",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to scan receipts.",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to scan receipts."
+        }
+      ],
       "expo-document-picker"
     ],
     "extra": {
