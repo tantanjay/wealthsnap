@@ -62,7 +62,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         let recurrenceRuleId: string | undefined = initialTransaction?.recurrenceId;
 
         if (isRecurring) {
-            const ruleId = `rule_${Date.now()}`;
+            const ruleId = initialTransaction?.recurrenceId || `rule_${Date.now()}`;
             const start = startDate;
 
             // Calculate the next due date
