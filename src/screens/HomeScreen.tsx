@@ -5,7 +5,8 @@ import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Card, Button } from '../components';
 import { processRecurrenceRules } from '../services/recurrenceService';
-import { getUserProfile, getAllTransactions, getAllInvestments } from '../services/storageService';
+import { getUserProfile } from '../services/storageService';
+import { getCachedTransactions, getCachedInvestments } from '../services/dataCache';
 import { UserProfile, Transaction, Investment } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { usePrivacy } from '../context/PrivacyContext';
@@ -31,25 +32,24 @@ const HomeScreen = ({ navigation }: any) => {
         await processRecurrenceRules();
 
         const p = await getUserProfile();
-        const t = await getAllTransactions();
-        const inv = await getAllInvestments();
+        const t = await getCachedTransactions();
+        const inv = await getCachedInvestments();
 
         setProfile(p);
 
-        // Sort for list display (newest first)
-        const sortedTransactions = [...t].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setTransactions(sortedTransactions);
+        // Data is already sorted by storageService, no need to sort again
+        setTransactions(t);
 
         let inc = 0;
         let exp = 0;
-        t.forEach(tx => {
+        t.forEach((tx: Transaction) => {
             if (tx.type === 'INCOME') inc += tx.amount;
             else exp += tx.amount;
         });
         setIncome(inc);
         setExpense(exp);
 
-        const totalInv = inv.reduce((sum, item) => sum + (item.quantity * (item.currentPrice || item.averageBuyPrice)), 0);
+        const totalInv = inv.reduce((sum: number, item: Investment) => sum + (item.quantity * (item.currentPrice || item.averageBuyPrice)), 0);
         setInvestmentTotal(totalInv);
     };
 

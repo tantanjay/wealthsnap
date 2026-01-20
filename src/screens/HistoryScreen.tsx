@@ -3,7 +3,8 @@ import { Text, View, Alert, SectionList, TouchableOpacity } from 'react-native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
-import { getAllTransactions, deleteTransaction, saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile } from '../services/storageService';
+import { deleteTransaction, saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile } from '../services/storageService';
+import { getCachedTransactions } from '../services/dataCache';
 import { Transaction, UserProfile } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../components';
@@ -63,9 +64,8 @@ const HistoryScreen = ({ navigation }: any) => {
     };
 
     const loadTransactions = async () => {
-        const data = await getAllTransactions();
-        // Sort by date desc (default)
-        data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const data = await getCachedTransactions();
+        // Data is already sorted by storageService
         setAllTransactions(data);
     };
 

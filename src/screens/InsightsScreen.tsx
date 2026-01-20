@@ -8,7 +8,8 @@ import { Transaction } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Metrics from '../utils/financialMetrics';
-import { getAllTransactions, getUserProfile } from '../services/storageService';
+import { getUserProfile } from '../services/storageService';
+import { getCachedTransactions } from '../services/dataCache';
 
 // Sub-components
 import InsightsOverviewCards from '../components/insights/InsightsOverviewCards';
@@ -47,7 +48,7 @@ const InsightsScreen = ({ navigation }: any) => {
     const fetchTransactions = async () => {
         const profile = await getUserProfile();
         if (profile?.currency) setCurrency(profile.currency);
-        const allTransactions = await getAllTransactions();
+        const allTransactions = await getCachedTransactions();
         setTransactions(allTransactions);
     };
 

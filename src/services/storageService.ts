@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { UserProfile, Transaction, Investment, Category, RecurrenceRule, GeminiConfig } from '../types';
 import { encryptData, decryptData } from './encryptionService';
+import * as DataCache from './dataCache';
 
 const KEYS = {
     USER_PROFILE: '@wealthsnap_user_profile',
@@ -48,6 +49,21 @@ const safeSave = async (key: string, data: any): Promise<void> => {
     }
 };
 
+// ============= Sorting Helpers =============
+
+const sortTransactionsByDate = (transactions: Transaction[]): Transaction[] => {
+    return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+};
+
+const sortInvestmentsByDate = (investments: Investment[]): Investment[] => {
+    return [...investments].sort((a, b) => {
+        const dateA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
+        const dateB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
+        return dateB - dateA; // Most recent first
+    });
+};
+
+
 // ============= User Profile =============
 
 export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
@@ -89,7 +105,9 @@ export const saveTransaction = async (transaction: Transaction): Promise<void> =
         } else {
             transactions.push(transaction);
         }
-        await safeSave(KEYS.TRANSACTIONS, transactions);
+        const sorted = sortTransactionsByDate(transactions);
+        await safeSave(KEYS.TRANSACTIONS, sorted);
+        DataCache.invalidateTransactionCache();
     } catch (error) {
         console.error('Error saving transaction:', error);
         throw new Error('Failed to save transaction');
@@ -105,6 +123,7 @@ export const deleteTransaction = async (id: string): Promise<void> => {
         const transactions = await getAllTransactions();
         const filtered = transactions.filter(t => t.id !== id);
         await safeSave(KEYS.TRANSACTIONS, filtered);
+        DataCache.invalidateTransactionCache();
     } catch (error) {
         console.error('Error deleting transaction:', error);
         throw new Error('Failed to delete transaction');
@@ -122,7 +141,9 @@ export const saveInvestment = async (investment: Investment): Promise<void> => {
         } else {
             investments.push(investment);
         }
-        await safeSave(KEYS.INVESTMENTS, investments);
+        const sorted = sortInvestmentsByDate(investments);
+        await safeSave(KEYS.INVESTMENTS, sorted);
+        DataCache.invalidateInvestmentCache();
     } catch (error) {
         console.error('Error saving investment:', error);
         throw new Error('Failed to save investment');
@@ -138,6 +159,7 @@ export const deleteInvestment = async (id: string): Promise<void> => {
         const investments = await getAllInvestments();
         const filtered = investments.filter(i => i.id !== id);
         await safeSave(KEYS.INVESTMENTS, filtered);
+        DataCache.invalidateInvestmentCache();
     } catch (error) {
         console.error('Error deleting investment:', error);
         throw new Error('Failed to delete investment');
@@ -156,6 +178,7 @@ export const saveCategory = async (category: Category): Promise<void> => {
             categories.push(category);
         }
         await safeSave(KEYS.CATEGORIES, categories);
+        DataCache.invalidateCategoryCache();
     } catch (error) {
         console.error('Error saving category:', error);
         throw new Error('Failed to save category');
@@ -178,6 +201,7 @@ export const saveRecurrenceRule = async (rule: RecurrenceRule): Promise<void> =>
             rules.push(rule);
         }
         await safeSave(KEYS.RECURRENCE_RULES, rules);
+        DataCache.invalidateRecurrenceRuleCache();
     } catch (error) {
         console.error('Error saving recurrence rule:', error);
         throw new Error('Failed to save recurrence rule');
@@ -193,6 +217,7 @@ export const deleteRecurrenceRule = async (id: string): Promise<void> => {
         const rules = await getAllRecurrenceRules();
         const filtered = rules.filter(r => r.id !== id);
         await safeSave(KEYS.RECURRENCE_RULES, filtered);
+        DataCache.invalidateRecurrenceRuleCache();
     } catch (error) {
         console.error('Error deleting recurrence rule:', error);
         throw new Error('Failed to delete recurrence rule');
@@ -287,7 +312,52 @@ export const clearAllData = async (): Promise<void> => {
             KEYS.HISTORY_PREFS,
         ]);
         await SecureStore.deleteItemAsync(SECURE_KEY_API_KEY).catch(() => { });
+        DataCache.invalidateAllCaches();
     } catch (error) {
         console.error('Error clearing data:', error);
+    }
+};
+
+// ============= Bulk Operations (Phase 2) =============
+
+export const bulkSaveTransactions = async (transactions: Transaction[]): Promise<void> => {
+    try {
+        const sorted = sortTransactionsByDate(transactions);
+        await safeSave(KEYS.TRANSACTIONS, sorted);
+        DataCache.invalidateTransactionCache();
+    } catch (error) {
+        console.error('Error bulk saving transactions:', error);
+        throw new Error('Failed to bulk save transactions');
+    }
+};
+
+export const bulkSaveInvestments = async (investments: Investment[]): Promise<void> => {
+    try {
+        const sorted = sortInvestmentsByDate(investments);
+        await safeSave(KEYS.INVESTMENTS, sorted);
+        DataCache.invalidateInvestmentCache();
+    } catch (error) {
+        console.error('Error bulk saving investments:', error);
+        throw new Error('Failed to bulk save investments');
+    }
+};
+
+export const bulkSaveCategories = async (categories: Category[]): Promise<void> => {
+    try {
+        await safeSave(KEYS.CATEGORIES, categories);
+        DataCache.invalidateCategoryCache();
+    } catch (error) {
+        console.error('Error bulk saving categories:', error);
+        throw new Error('Failed to bulk save categories');
+    }
+};
+
+export const bulkSaveRecurrenceRules = async (rules: RecurrenceRule[]): Promise<void> => {
+    try {
+        await safeSave(KEYS.RECURRENCE_RULES, rules);
+        DataCache.invalidateRecurrenceRuleCache();
+    } catch (error) {
+        console.error('Error bulk saving recurrence rules:', error);
+        throw new Error('Failed to bulk save recurrence rules');
     }
 };
