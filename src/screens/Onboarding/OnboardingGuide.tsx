@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, BackHandler, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../styles/theme';
 import { Button } from '../../components';
-
-const { width, height } = Dimensions.get('window');
 
 interface OnboardingGuideProps {
     onFinish: () => void;

@@ -55,7 +55,7 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
             setEditingBudget(null);
             setShowAddForm(false);
             Alert.alert('Success', 'Budget saved successfully');
-        } catch (error) {
+        } catch {
             Alert.alert('Error', 'Failed to save budget');
         }
     };

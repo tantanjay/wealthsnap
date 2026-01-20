@@ -49,7 +49,7 @@ export const RecurringForm: React.FC<RecurringFormProps> = ({
             </View>
             {isRecurring && (
                 <View style={{ marginTop: 10 }}>
-                    <Text style={{ color: colors.textSecondary, marginBottom: 5 }}>Label (e.g. "Netflix Subscription")</Text>
+                    <Text style={{ color: colors.textSecondary, marginBottom: 5 }}>Label (e.g. &quot;Netflix Subscription&quot;)</Text>
                     <TextInput
                         style={{
                             color: colors.text,

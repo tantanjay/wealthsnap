@@ -345,11 +345,11 @@ export const getAllRecurrenceRules = async (): Promise<RecurrenceRule[]> => {
                 // Try to decrypt first
                 const decrypted = await decryptField(row.transactionTemplate);
                 template = decrypted ? JSON.parse(decrypted) : {};
-            } catch (e) {
+            } catch {
                 // Fallback for unencrypted data (migration transition)
                 try {
                     template = JSON.parse(row.transactionTemplate);
-                } catch (pe) {
+                } catch {
                     console.error('Failed to parse transaction template');
                 }
             }
