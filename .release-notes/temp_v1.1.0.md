@@ -1,0 +1,58 @@
+# WealthSnap v1.1.0 - Release Notes
+
+**Release Date:** January 20, 2026
+**Build:** Version 1.1.0 (Major Release)
+
+---
+
+## ✨ What's New
+
+### 💾 Storage Engine Upgrade (JSON → SQLite)
+- **Transition to SQLite**
+  - Moved from flat JSON files to a robust SQLite database for improved performance and reliability
+  - Better scalability for users with large transaction histories
+- **Automatic Data Migration**
+  - Seamlessly transfers all existing transactions, budgets, and settings from JSON to the new database upon update
+  - Zero data loss guarantee during the transition
+- **Enhanced Caching**
+  - Implemented a new caching layer to significantly speed up data retrieval
+  - Improved application responsiveness and reduced loading times
+
+### 🔒 Security & Privacy
+- **Encrypted Data**
+  - All sensitive user data remains fully encrypted within the SQLite database
+  - Your financial privacy continues to be our top priority
+- **Zero-Knowledge Architecture**
+  - Continuing our commitment to privacy, no data leaves your device without your explicit action
+  - Offline-first architecture preserved
+
+### 🏗️ Architecture
+- **Project Structure Reorganization**
+  - Major codebase restructuring to improve maintainability and scalability
+  - Better organization of components and services for future feature development
+
+---
+
+## 🛠️ Technical Changes
+- **SQLite Integration**: Replaced file-based persistence with `expo-sqlite`
+- **Codebase Refactor**: organized components and services for better separation of concerns
+- **Linting & Code Quality**: Addressed various lint warnings and improved code health
+
+---
+
+## 📝 For Testers
+
+Please test the following:
+1. **Migration**: Update from the previous version and verify all your data (transactions, recurring rules, budgets) is present
+2. **Performance**: Check for improved speed in loading transactions and switching screens
+3. **Data Integrity**: Create new transactions and verify they persist correctly after app restart
+
+---
+
+## 🔄 Update Instructions
+This update includes a database migration. Please do not interrupt the update process once the app is launched for the first time after updating.
+
+---
+
+**Previous Version:** 1.0.1 (Build 2)
+**Package:** com.christian.soyosa.WealthSnap
