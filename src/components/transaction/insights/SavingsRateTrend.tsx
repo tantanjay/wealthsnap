@@ -118,26 +118,34 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                 </View>
             )}
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
-                <View style={{ alignItems: 'center' }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Average</Text>
-                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
-                        {privacyMode ? '••••' : `${avgRate}%`}
+            {savingsData.rawData.length > 1 ? (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
+                    <View style={{ alignItems: 'center' }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Average</Text>
+                        <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                            {privacyMode ? '••••' : `${avgRate}%`}
+                        </Text>
+                    </View>
+                    <View style={{ alignItems: 'center' }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Best Month</Text>
+                        <Text style={{ color: '#4CAF50', fontSize: 14, fontWeight: '600' }}>
+                            {privacyMode ? '••••' : `${Math.max(...savingsData.rawData.map(d => d.rate))}%`}
+                        </Text>
+                    </View>
+                    <View style={{ alignItems: 'center' }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Worst Month</Text>
+                        <Text style={{ color: '#F44336', fontSize: 14, fontWeight: '600' }}>
+                            {privacyMode ? '••••' : `${Math.min(...savingsData.rawData.map(d => d.rate))}%`}
+                        </Text>
+                    </View>
+                </View>
+            ) : (
+                <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
+                    <Text style={{ color: colors.textSecondary, textAlign: 'center', fontSize: 12 }}>
+                        Track more months to see your best and worst ratios!
                     </Text>
                 </View>
-                <View style={{ alignItems: 'center' }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Best Month</Text>
-                    <Text style={{ color: '#4CAF50', fontSize: 14, fontWeight: '600' }}>
-                        {privacyMode ? '••••' : `${Math.max(...savingsData.rawData.map(d => d.rate))}%`}
-                    </Text>
-                </View>
-                <View style={{ alignItems: 'center' }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Worst Month</Text>
-                    <Text style={{ color: '#F44336', fontSize: 14, fontWeight: '600' }}>
-                        {privacyMode ? '••••' : `${Math.min(...savingsData.rawData.map(d => d.rate))}%`}
-                    </Text>
-                </View>
-            </View>
+            )}
         </Card>
     );
 };

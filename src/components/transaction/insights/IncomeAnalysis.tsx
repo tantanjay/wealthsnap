@@ -41,7 +41,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
     // Generate smart insight
     const getInsight = () => {
         if (isPrivacyEnabled) return "Income insights hidden in privacy mode.";
-        if (monthlyTrends.incomeData.length < 2) return "Not enough data for insights.";
+        if (monthlyTrends.incomeData.length < 2) return "Great start! Keep tracking to see income trends.";
         const lastMonth = monthlyTrends.incomeData[monthlyTrends.incomeData.length - 1];
         const prevMonth = monthlyTrends.incomeData[monthlyTrends.incomeData.length - 2];
 

@@ -175,7 +175,10 @@ const InsightsScreen = ({ navigation }: any) => {
                 />
 
                 {/* 6. Smart Alerts */}
-                <SmartAlerts anomalies={data.anomalies} />
+                <SmartAlerts
+                    anomalies={data.anomalies}
+                    hasHistory={transactions.length > 10}
+                />
 
                 <View style={{ height: 40 }} />
             </ScrollView>
