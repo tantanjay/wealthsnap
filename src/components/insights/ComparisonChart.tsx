@@ -3,7 +3,7 @@ import { View, Text, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
-import { formatCurrencyAmount, CURRENCY_SYMBOLS, formatCompactCurrency, formatCompactNumber } from '../../utils/currencyUtils';
+import { formatCurrencyAmount, CURRENCY_SYMBOLS } from '../../utils/currencyUtils';
 
 interface ComparisonChartProps {
     currentMonthExpense: number;

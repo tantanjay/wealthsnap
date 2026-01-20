@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Alert } from 'react-native';
+import { Text, TextInput, Alert } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import BottomModal from '../base/BottomModal';
 import { Button } from '../../index';

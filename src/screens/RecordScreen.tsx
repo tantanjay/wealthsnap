@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Alert, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { View, Text, TextInput, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
 import { saveTransaction, saveRecurrenceRule } from '../services/storageService';
 import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency } from '../types';
-import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS, RECURRENCE_OPTIONS, getCategoryGroup } from '../constants/categories';
+import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '../constants/categories';
 import { Ionicons } from '@expo/vector-icons';
 import { CalculatorModal } from '../components/modals/financial/CalculatorModal';
 import { RecurringForm } from '../components/RecurringForm';
 import { CategorySelectModal } from '../components/modals/transactions/CategorySelectModal';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
-import { CommonActions, useFocusEffect } from '@react-navigation/native';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { useFocusEffect } from '@react-navigation/native';
 
 const RecordScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
@@ -51,6 +49,28 @@ const RecordScreen = ({ navigation, route }: any) => {
 
     const categoryGroups = type === 'EXPENSE' ? EXPENSE_CATEGORY_GROUPS : INCOME_CATEGORY_GROUPS;
 
+    const resetForm = React.useCallback(() => {
+        setTransactionId(null);
+        setCreatedAt(null);
+        setCreationMethod('MANUAL');
+        setOriginalRecurrenceId(undefined);
+
+        setAmount('');
+        setCategory('');
+        setSubCategory('');
+        setNote('');
+        setIsRecurring(false);
+        setRecurringLabel('');
+        setFrequency('MONTHLY');
+        setStartDate(new Date());
+        setEndsNever(true);
+        setEndDate(new Date());
+
+        // Reset transaction date to now
+        setTransactionDate(new Date());
+        // Maybe keep type as is, or reset to default? Let's keep type as is for convenience
+    }, []);
+
     useFocusEffect(
         React.useCallback(() => {
             const { transaction } = route.params || {};
@@ -82,33 +102,11 @@ const RecordScreen = ({ navigation, route }: any) => {
                 // Clear params on blur to ensure next visit is fresh (e.g. via Tab Bar)
                 navigation.setParams({ transaction: undefined });
             };
-        }, [route.params?.transaction])
+        }, [route.params, navigation, resetForm])
     );
 
     const openCalculator = () => {
         setShowCalculator(true);
-    };
-
-    const resetForm = () => {
-        setTransactionId(null);
-        setCreatedAt(null);
-        setCreationMethod('MANUAL');
-        setOriginalRecurrenceId(undefined);
-
-        setAmount('');
-        setCategory('');
-        setSubCategory('');
-        setNote('');
-        setIsRecurring(false);
-        setRecurringLabel('');
-        setFrequency('MONTHLY');
-        setStartDate(new Date());
-        setEndsNever(true);
-        setEndDate(new Date());
-
-        // Reset transaction date to now
-        setTransactionDate(new Date());
-        // Maybe keep type as is, or reset to default? Let's keep type as is for convenience
     };
 
     const handleSave = async () => {
@@ -168,7 +166,7 @@ const RecordScreen = ({ navigation, route }: any) => {
             try {
                 await saveRecurrenceRule(rule);
                 recurrenceRuleId = ruleId;
-            } catch (error) {
+            } catch {
                 Alert.alert('Error', 'Failed to save recurrence rule.');
                 return;
             }

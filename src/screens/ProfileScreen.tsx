@@ -1,41 +1,25 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Text, View, Alert, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
-import BackupModal from '../components/modals/data/BackupModal';
-import RestoreModal from '../components/modals/data/RestoreModal';
 import { RecurringRulesListModal } from '../components/modals/transactions/RecurringRulesListModal';
 import BudgetManagementModal from '../components/modals/financial/BudgetManagementModal';
 import SupportModal from '../components/modals/settings/SupportModal';
 import GeminiSettingsModal from '../components/modals/settings/GeminiSettingsModal';
-import { clearAllData, saveGeminiConfig, getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
+import { getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
-import * as DocumentPicker from 'expo-document-picker';
-import * as Sharing from 'expo-sharing';
-import { createBackup, restoreFromBackup } from '../services/backupService';
-import { CommonActions, useFocusEffect } from '@react-navigation/native';
-import { isPinSet, getTimeoutSetting, saveTimeoutSetting, TimeoutOption, TIMEOUT_OPTIONS } from '../services/securityService';
-import PinCreationScreen from './PinCreationScreen';
+import { useFocusEffect } from '@react-navigation/native';
 import OnboardingGuide from './Onboarding/OnboardingGuide';
 import appJson from '../../app.json';
+import SecurityCard from '../components/profile/SecurityCard';
+import DataManagementCard from '../components/profile/DataManagementCard';
 
 
 const ProfileScreen = ({ navigation }: any) => {
     const { colors, setMode, mode } = useTheme();
     const [hasApiKey, setHasApiKey] = useState(false);
-
-    // Security State
-    const [hasPin, setHasPin] = useState(false);
-    const [timeoutSetting, setTimeoutSetting] = useState<TimeoutOption>('daily');
-    const [showPinModal, setShowPinModal] = useState(false);
-
-    // Backup/Restore State
-    const [showBackupModal, setShowBackupModal] = useState(false);
-    const [showRestoreModal, setShowRestoreModal] = useState(false);
-    const [restoreFileUri, setRestoreFileUri] = useState<string | null>(null);
-    const [isProcessing, setIsProcessing] = useState(false);
 
     // Recurring Rules State
     const [showRecurringModal, setShowRecurringModal] = useState(false);
@@ -54,154 +38,21 @@ const ProfileScreen = ({ navigation }: any) => {
     useFocusEffect(
         useCallback(() => {
             checkApiKey();
-            checkSecuritySettings();
+            checkCurrency();
         }, [])
     );
 
-    const checkSecuritySettings = async () => {
-        const pinSet = await isPinSet();
-        setHasPin(pinSet);
-        const timeout = await getTimeoutSetting();
-        setTimeoutSetting(timeout);
-
+    const checkCurrency = async () => {
         const profile = await getUserProfile();
         if (profile?.currency) {
             setCurrency(profile.currency);
         }
-    };
-
-    const handleSetTimeout = async (option: TimeoutOption) => {
-        await saveTimeoutSetting(option);
-        setTimeoutSetting(option);
-    };
+    }
 
     const checkApiKey = async () => {
         const config = await getGeminiConfig();
         if (config && config.apiKey) {
             setHasApiKey(true);
-        }
-    };
-
-    /**
-     * Wipes all data (SQLite + AsyncStorage) and resets the app state.
-     */
-    const handleClearData = async () => {
-        Alert.alert(
-            'Clear Data',
-            'Are you sure you want to delete all data? This cannot be undone. The app will restart automatically.',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete', style: 'destructive', onPress: async () => {
-                        await clearAllData();
-                        // Reset navigation to Welcome screen (simulates app restart)
-                        navigation.dispatch(
-                            CommonActions.reset({
-                                index: 0,
-                                routes: [{ name: 'Onboarding' }],
-                            })
-                        );
-                    }
-                }
-            ]
-        );
-    };
-
-
-
-    /**
-     * Creates a secure backup of all user data.
-     * Encrypts the payload with the provided password.
-     */
-    const handleCreateBackup = async (password: string) => {
-        if (!password) {
-            Alert.alert('Error', 'Password is required to encrypt your backup.');
-            return;
-        }
-
-        try {
-            setIsProcessing(true);
-            const uri = await createBackup(password);
-            setIsProcessing(false);
-            setShowBackupModal(false);
-
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(uri);
-            } else {
-                Alert.alert('Success', 'Backup created at ' + uri);
-            }
-        } catch (error) {
-            setIsProcessing(false);
-            Alert.alert('Error', 'Failed to create backup: ' + (error as Error).message);
-        }
-    };
-
-    const handleSelectRestoreFile = async () => {
-        try {
-            const result = await DocumentPicker.getDocumentAsync({
-                type: 'application/zip',
-                copyToCacheDirectory: true,
-            });
-
-            if (result.canceled) return;
-
-            if (result.assets && result.assets.length > 0) {
-                setRestoreFileUri(result.assets[0].uri);
-                setShowRestoreModal(true);
-            }
-        } catch (error) {
-            Alert.alert('Error', 'Failed to pick file');
-        }
-    };
-
-    /**
-     * Restores data from the selected backup file.
-     * Decrypts using the password and replaces current data.
-     */
-    const handleRestore = async (password: string) => {
-        if (!restoreFileUri) return;
-        if (!password) {
-            Alert.alert('Error', 'Password is required.');
-            return;
-        }
-
-        try {
-            setIsProcessing(true);
-            await restoreFromBackup(restoreFileUri, password);
-            setIsProcessing(false);
-            setShowRestoreModal(false);
-
-            Alert.alert('Success', 'Data restored successfully. The app will reload.', [
-                {
-                    text: 'OK', onPress: async () => {
-                        // Verify the restore set the proper flags
-                        const profile = await getUserProfile();
-                        if (profile && profile.isOnboardingComplete) {
-                            // Reset to Main to refresh everything
-                            navigation.reset({
-                                index: 0,
-                                routes: [{ name: 'Main' }],
-                            });
-                        } else {
-                            // If backup was from a state before onboarding completion (unlikely but possible)
-                            // or if restore failed silently.
-                            Alert.alert('Notice', 'Restore complete, but user profile is incomplete. Redirecting to setup.');
-                            navigation.reset({
-                                index: 0,
-                                routes: [{ name: 'Onboarding' }],
-                            });
-                        }
-                    }
-                }
-            ]);
-        } catch (error) {
-            setIsProcessing(false);
-            const msg = (error as Error).message;
-            if (msg === 'INVALID_PASSWORD') {
-                Alert.alert('Error', 'Incorrect password.');
-            } else {
-                Alert.alert('Error', 'Failed to restore: ' + msg);
-            }
         }
     };
 
@@ -218,7 +69,7 @@ const ProfileScreen = ({ navigation }: any) => {
             // Refresh list
             const rules = await getAllRecurrenceRules();
             setRecurrenceRules(rules);
-        } catch (error) {
+        } catch {
             Alert.alert('Error', 'Failed to update rule');
         }
     };
@@ -266,8 +117,6 @@ const ProfileScreen = ({ navigation }: any) => {
         <ScreenWrapper>
             <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>Profile & Settings</Text>
 
-
-
             <Card>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 15 }}>Appearance</Text>
                 <View style={styles.themeContainer}>
@@ -283,14 +132,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 <Button variant="outline" title="Manage Budgets" onPress={() => setShowBudgetModal(true)} />
             </Card>
 
-            <Card>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Data Management</Text>
-                <Button variant="outline" title="Backup Data" onPress={() => setShowBackupModal(true)} style={{ marginBottom: 10 }} />
-                <Button variant="outline" title="Restore Data" onPress={handleSelectRestoreFile} style={{ marginBottom: 10 }} />
-                <Button variant="ghost" title="Clear All Data" onPress={handleClearData} />
-            </Card>
-
-
+            <DataManagementCard navigation={navigation} />
 
             <Card>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Gemini AI Settings</Text>
@@ -306,48 +148,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 />
             </Card>
 
-            <Card>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 15 }}>Security</Text>
-
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-                    <Text style={{ color: colors.text }}>App PIN</Text>
-                    <Button
-                        variant="outline"
-                        title={hasPin ? "Change PIN" : "Set PIN"}
-                        onPress={() => setShowPinModal(true)}
-                        style={{ minWidth: 100, paddingVertical: 5 }}
-                    />
-                </View>
-
-                {hasPin && (
-                    <View>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Auto-Lock Timeout</Text>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                            {TIMEOUT_OPTIONS.map(opt => (
-                                <TouchableOpacity
-                                    key={opt.value}
-                                    onPress={() => handleSetTimeout(opt.value)}
-                                    style={{
-                                        backgroundColor: timeoutSetting === opt.value ? colors.primary : 'transparent',
-                                        paddingVertical: 6,
-                                        paddingHorizontal: 12,
-                                        borderRadius: 16,
-                                        borderWidth: 1,
-                                        borderColor: timeoutSetting === opt.value ? colors.primary : colors.border
-                                    }}
-                                >
-                                    <Text style={{
-                                        color: timeoutSetting === opt.value ? '#fff' : colors.text,
-                                        fontSize: 12
-                                    }}>
-                                        {opt.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-                )}
-            </Card>
+            <SecurityCard />
 
             <Card>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
@@ -379,7 +180,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 <View style={{ backgroundColor: colors.surface, borderLeftWidth: 3, borderLeftColor: colors.primary, padding: 12, borderRadius: 8, marginBottom: 15 }}>
                     <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 6 }}>Why is WealthSnap free?</Text>
                     <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>
-                        WealthSnap was built as a passion project to provide a high-quality, private financial tool without the tracking found in modern apps. We don't have server costs because your data stays on your phone. If you use the AI features, you use your own API key, keeping the app sustainable and free for everyone.
+                        WealthSnap was built as a passion project to provide a high-quality, private financial tool without the tracking found in modern apps. We don&apos;t have server costs because your data stays on your phone. If you use the AI features, you use your own API key, keeping the app sustainable and free for everyone.
                     </Text>
                 </View>
 
@@ -397,39 +198,6 @@ const ProfileScreen = ({ navigation }: any) => {
                     Version {appJson.expo.version}
                 </Text>
             </Card>
-
-            <Modal visible={showPinModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPinModal(false)}>
-                <View style={{ flex: 1, backgroundColor: colors.background, paddingVertical: 40, paddingHorizontal: 20 }}>
-                    <View style={{ alignItems: 'flex-end', marginBottom: 20 }}>
-                        <TouchableOpacity onPress={() => setShowPinModal(false)} style={{ padding: 10 }}>
-                            <Text style={{ color: colors.primary, fontSize: 16, fontWeight: 'bold' }}>Close</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <PinCreationScreen
-                        onSuccess={() => {
-                            setShowPinModal(false);
-                            checkSecuritySettings();
-                        }}
-                        onCancel={() => setShowPinModal(false)}
-                    />
-                </View>
-            </Modal>
-
-            {/* Backup Modal */}
-            <BackupModal
-                visible={showBackupModal}
-                onClose={() => setShowBackupModal(false)}
-                onBackup={handleCreateBackup}
-                isProcessing={isProcessing}
-            />
-
-            {/* Restore Modal */}
-            <RestoreModal
-                visible={showRestoreModal}
-                onClose={() => setShowRestoreModal(false)}
-                onRestore={handleRestore}
-                isProcessing={isProcessing}
-            />
 
             {/* Recurring Rules Modal */}
             <RecurringRulesListModal

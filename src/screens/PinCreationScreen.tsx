@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
-import { Button } from '../components';
 import { setPin } from '../services/securityService';
 
 interface PinCreationScreenProps {
@@ -34,22 +33,20 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
         }
     };
 
-    useEffect(() => {
-        if (step === 'create' && pin.length === PIN_LENGTH) {
-            setTimeout(() => setStep('confirm'), 500);
-        } else if (step === 'confirm' && confirmPin.length === PIN_LENGTH) {
-            validatePin();
-        }
-    }, [pin, confirmPin]);
+    const reset = useCallback(() => {
+        setPinState('');
+        setConfirmPin('');
+        setStep('create');
+    }, []);
 
-    const validatePin = async () => {
+    const validatePin = useCallback(async () => {
         if (pin === confirmPin) {
             try {
                 await setPin(pin);
                 Alert.alert("Success", "Your PIN has been secured.", [
                     { text: "OK", onPress: onSuccess }
                 ]);
-            } catch (error) {
+            } catch {
                 Alert.alert("Error", "Failed to save PIN. Please try again.");
                 reset();
             }
@@ -57,13 +54,15 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
             Alert.alert("Mismatch", "PINs did not match. Please try again.");
             reset();
         }
-    };
+    }, [pin, confirmPin, onSuccess, reset]);
 
-    const reset = () => {
-        setPinState('');
-        setConfirmPin('');
-        setStep('create');
-    };
+    useEffect(() => {
+        if (step === 'create' && pin.length === PIN_LENGTH) {
+            setTimeout(() => setStep('confirm'), 500);
+        } else if (step === 'confirm' && confirmPin.length === PIN_LENGTH) {
+            validatePin();
+        }
+    }, [step, pin, confirmPin, validatePin]);
 
     const renderDots = (currentLength: number) => {
         return (
