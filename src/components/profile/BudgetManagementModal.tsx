@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, FlatList, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, FlatList } from 'react-native';
 import BottomModal from '../common/BottomModal';
 import { useTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { getBudgets, setBudget, deleteBudget, Budget } from '../../services/budg
 import { EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '../../constants/categories';
 import { formatCurrencyAmount } from '../../utils/currencyUtils';
 import { CategorySelectModal } from '../record/CategorySelectModal';
+import { useAlert } from '../../context/AlertContext';
 
 interface BudgetManagementProps {
     visible: boolean;
@@ -16,6 +17,7 @@ interface BudgetManagementProps {
 
 const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClose, currency }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
     const [budgets, setBudgetsList] = useState<Budget[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [budgetAmount, setBudgetAmount] = useState<string>('');
@@ -37,13 +39,13 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
 
     const handleSaveBudget = async () => {
         if (!selectedCategory || !budgetAmount) {
-            Alert.alert('Error', 'Please select a category and enter an amount');
+            showAlert('Error', 'Please select a category and enter an amount');
             return;
         }
 
         const amount = parseFloat(budgetAmount);
         if (isNaN(amount) || amount <= 0) {
-            Alert.alert('Error', 'Please enter a valid amount');
+            showAlert('Error', 'Please enter a valid amount');
             return;
         }
 
@@ -53,10 +55,11 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
             setSelectedCategory('');
             setBudgetAmount('');
             setEditingBudget(null);
+            setEditingBudget(null);
             setShowAddForm(false);
-            Alert.alert('Success', 'Budget saved successfully');
+            showAlert('Success', 'Budget saved successfully');
         } catch {
-            Alert.alert('Error', 'Failed to save budget');
+            showAlert('Error', 'Failed to save budget');
         }
     };
 
@@ -75,7 +78,7 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
     };
 
     const handleDeleteBudget = async (category: string) => {
-        Alert.alert(
+        showAlert(
             'Delete Budget',
             `Remove budget for ${category}?`,
             [

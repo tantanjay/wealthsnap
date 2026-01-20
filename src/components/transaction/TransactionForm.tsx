@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { Button, Card } from '..';
 import { saveTransaction, saveRecurrenceRule } from '../../services/storageService';
@@ -10,6 +10,7 @@ import { CalculatorModal } from '../record/CalculatorModal';
 import { RecurringOptions } from '../transaction/RecurringOptions';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { CategorySelectModal } from '../record/CategorySelectModal';
+import { useAlert } from '../../context/AlertContext';
 
 interface TransactionFormProps {
     transactionType: TransactionType;
@@ -25,6 +26,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     onCancel
 }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
 
     // Form state
     const [type, setType] = useState<TransactionType>(initialTransaction?.type || transactionType);
@@ -54,7 +56,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
     const handleSave = async () => {
         if (!amount || !category) {
-            Alert.alert('Missing Info', 'Please enter amount and category.');
+            showAlert('Missing Info', 'Please enter amount and category.');
             return;
         }
 
@@ -109,7 +111,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 await saveRecurrenceRule(rule);
                 recurrenceRuleId = ruleId;
             } catch {
-                Alert.alert('Error', 'Failed to save recurrence rule.');
+                showAlert('Error', 'Failed to save recurrence rule.');
                 return;
             }
         }
@@ -131,7 +133,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
         await saveTransaction(newTransaction);
 
-        Alert.alert('Success', 'Transaction saved!', [
+        showAlert('Success', 'Transaction saved!', [
             {
                 text: 'OK',
                 onPress: onSave
