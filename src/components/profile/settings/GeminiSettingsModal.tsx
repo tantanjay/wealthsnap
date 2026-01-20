@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Text, TextInput, Alert } from 'react-native';
+import { Text, TextInput } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import BottomModal from '../../common/BottomModal';
 import { Button } from '../../index';
 import { saveGeminiConfig } from '../../../services/storageService';
+import { useAlert } from '../../../context/AlertContext';
 
 interface GeminiSettingsModalProps {
     visible: boolean;
@@ -19,17 +20,18 @@ const GeminiSettingsModal: React.FC<GeminiSettingsModalProps> = ({
     onApiKeySaved
 }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
     const [apiKey, setApiKey] = useState('');
 
     const handleSaveKey = async () => {
         if (apiKey.trim()) {
             await saveGeminiConfig({ apiKey: apiKey.trim() });
-            Alert.alert('Success', 'API Key saved securely.');
+            showAlert('Success', 'API Key saved securely.');
             setApiKey('');
             onApiKeySaved();
             onClose();
         } else {
-            Alert.alert('Error', 'Please enter a valid API key.');
+            showAlert('Error', 'Please enter a valid API key.');
         }
     };
 

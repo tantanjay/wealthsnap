@@ -1,14 +1,16 @@
 import React, { useState, useCallback } from 'react';
-import { Text, View, ScrollView, TextInput, Alert, TouchableOpacity } from 'react-native';
+import { Text, View, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Card, Button } from '../components';
 import { saveInvestment, getAllInvestments, deleteInvestment } from '../services/storageService';
 import { Investment } from '../types';
+import { useAlert } from '../context/AlertContext';
 
 const InvestmentScreen = () => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
     const [investments, setInvestments] = useState<Investment[]>([]);
     const [showAdd, setShowAdd] = useState(false);
 
@@ -31,7 +33,7 @@ const InvestmentScreen = () => {
 
     const handleSave = async () => {
         if (!symbol || !quantity || !buyPrice) {
-            Alert.alert('Required', 'Please enter Symbol, Quantity, and Buy Price');
+            showAlert('Required', 'Please enter Symbol, Quantity, and Buy Price');
             return;
         }
 
@@ -56,7 +58,7 @@ const InvestmentScreen = () => {
     };
 
     const handleDelete = async (id: string) => {
-        Alert.alert('Delete', 'Are you sure?', [
+        showAlert('Delete', 'Are you sure?', [
             { text: 'Cancel' },
             {
                 text: 'Delete', style: 'destructive', onPress: async () => {

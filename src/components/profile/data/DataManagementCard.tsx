@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Alert, Text } from 'react-native';
+import { Text } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
+import { useAlert } from '../../../context/AlertContext';
 import { Card, Button } from '../../index';
 
 import BackupModal from './BackupModal';
@@ -24,11 +25,13 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
     const [restoreFileUri, setRestoreFileUri] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
+    const { showAlert } = useAlert();
+
     /**
      * Wipes all data (SQLite + AsyncStorage) and resets the app state.
      */
     const handleClearData = async () => {
-        Alert.alert(
+        showAlert(
             'Clear Data',
             'Are you sure you want to delete all data? This cannot be undone. The app will restart automatically.',
             [
@@ -55,7 +58,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
      */
     const handleCreateBackup = async (password: string) => {
         if (!password) {
-            Alert.alert('Error', 'Password is required to encrypt your backup.');
+            showAlert('Error', 'Password is required to encrypt your backup.');
             return;
         }
 
@@ -68,11 +71,11 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
             if (await Sharing.isAvailableAsync()) {
                 await Sharing.shareAsync(uri);
             } else {
-                Alert.alert('Success', 'Backup created at ' + uri);
+                showAlert('Success', 'Backup created at ' + uri);
             }
         } catch (error) {
             setIsProcessing(false);
-            Alert.alert('Error', 'Failed to create backup: ' + (error as Error).message);
+            showAlert('Error', 'Failed to create backup: ' + (error as Error).message);
         }
     };
 
@@ -90,7 +93,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
                 setShowRestoreModal(true);
             }
         } catch {
-            Alert.alert('Error', 'Failed to pick file');
+            showAlert('Error', 'Failed to pick file');
         }
     };
 
@@ -101,7 +104,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
     const handleRestore = async (password: string) => {
         if (!restoreFileUri) return;
         if (!password) {
-            Alert.alert('Error', 'Password is required.');
+            showAlert('Error', 'Password is required.');
             return;
         }
 
@@ -111,7 +114,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
             setIsProcessing(false);
             setShowRestoreModal(false);
 
-            Alert.alert('Success', 'Data restored successfully. The app will reload.', [
+            showAlert('Success', 'Data restored successfully. The app will reload.', [
                 {
                     text: 'OK', onPress: async () => {
                         // Verify the restore set the proper flags
@@ -125,7 +128,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
                         } else {
                             // If backup was from a state before onboarding completion (unlikely but possible)
                             // or if restore failed silently.
-                            Alert.alert('Notice', 'Restore complete, but user profile is incomplete. Redirecting to setup.');
+                            showAlert('Notice', 'Restore complete, but user profile is incomplete. Redirecting to setup.');
                             navigation.reset({
                                 index: 0,
                                 routes: [{ name: 'Onboarding' }],
@@ -138,9 +141,9 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
             setIsProcessing(false);
             const msg = (error as Error).message;
             if (msg === 'INVALID_PASSWORD') {
-                Alert.alert('Error', 'Incorrect password.');
+                showAlert('Error', 'Incorrect password.');
             } else {
-                Alert.alert('Error', 'Failed to restore: ' + msg);
+                showAlert('Error', 'Failed to restore: ' + msg);
             }
         }
     };

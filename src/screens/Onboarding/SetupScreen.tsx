@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Alert, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
@@ -15,12 +15,14 @@ import RestoreModal from '../../components/profile/data/RestoreModal';
 import { CONFIG } from '../../constants/config';
 import { generateDummyData } from '../../services/dummyDataService';
 import OnboardingGuide from './OnboardingGuide';
+import { useAlert } from '../../context/AlertContext';
 
 
 const { height } = Dimensions.get('window');
 
 const SetupScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
     const [step, setStep] = useState(0);
     const [hasAgreed, setHasAgreed] = useState(false);
     const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
@@ -58,7 +60,7 @@ const SetupScreen = ({ navigation }: any) => {
                 setShowRestoreModal(true);
             }
         } catch {
-            Alert.alert('Error', 'Failed to pick file');
+            showAlert('Error', 'Failed to pick file');
         }
     };
 
@@ -69,7 +71,7 @@ const SetupScreen = ({ navigation }: any) => {
     const confirmRestore = async (password: string) => {
         if (!restoreFileUri) return;
         if (!password) {
-            Alert.alert('Error', 'Password is required.');
+            showAlert('Error', 'Password is required.');
             return;
         }
 
@@ -80,7 +82,7 @@ const SetupScreen = ({ navigation }: any) => {
             setShowRestoreModal(false);
 
             setHasRestored(true);
-            Alert.alert('Success', 'Data restored successfully! Please set a new PIN for this device.', [
+            showAlert('Success', 'Data restored successfully! Please set a new PIN for this device.', [
                 {
                     text: 'Continue', onPress: async () => {
                         setStep(3); // Go to PIN creation
@@ -91,9 +93,9 @@ const SetupScreen = ({ navigation }: any) => {
             setIsRestoring(false);
             const msg = (error as Error).message;
             if (msg === 'INVALID_PASSWORD') {
-                Alert.alert('Error', 'Incorrect password.');
+                showAlert('Error', 'Incorrect password.');
             } else {
-                Alert.alert('Error', 'Failed to restore: ' + msg);
+                showAlert('Error', 'Failed to restore: ' + msg);
             }
         }
     };
@@ -105,7 +107,7 @@ const SetupScreen = ({ navigation }: any) => {
 
     const handleFinish = async () => {
         if (!name || name.trim().length < 4) {
-            Alert.alert('Required', 'Please enter a valid name (at least 4 characters).');
+            showAlert('Required', 'Please enter a valid name (at least 4 characters).');
             return;
         }
 
@@ -135,7 +137,7 @@ const SetupScreen = ({ navigation }: any) => {
             await generateDummyData();
             setIsRestoring(false);
 
-            Alert.alert('Success', 'Demo data populated! Please set a PIN.', [
+            showAlert('Success', 'Demo data populated! Please set a PIN.', [
                 {
                     text: 'Continue', onPress: () => {
                         setStep(3); // Go to PIN creation
@@ -145,7 +147,7 @@ const SetupScreen = ({ navigation }: any) => {
             ]);
         } catch {
             setIsRestoring(false);
-            Alert.alert('Error', 'Failed to generate demo data.');
+            showAlert('Error', 'Failed to generate demo data.');
         }
     };
 
@@ -537,7 +539,7 @@ const SetupScreen = ({ navigation }: any) => {
                             title="Continue"
                             onPress={() => {
                                 if (name.trim().length < 4) {
-                                    Alert.alert('Invalid Name', 'Name must be at least 4 characters long.');
+                                    showAlert('Invalid Name', 'Name must be at least 4 characters long.');
                                     return;
                                 }
                                 setStep(3);

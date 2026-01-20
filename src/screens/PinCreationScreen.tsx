@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { setPin } from '../services/securityService';
+import { useAlert } from '../context/AlertContext';
 
 interface PinCreationScreenProps {
     onSuccess: () => void;
@@ -13,6 +14,7 @@ const PIN_LENGTH = 6;
 
 const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCancel }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
     const [pin, setPinState] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
     const [step, setStep] = useState<'create' | 'confirm'>('create');
@@ -43,18 +45,18 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
         if (pin === confirmPin) {
             try {
                 await setPin(pin);
-                Alert.alert("Success", "Your PIN has been secured.", [
+                showAlert("Success", "Your PIN has been secured.", [
                     { text: "OK", onPress: onSuccess }
                 ]);
             } catch {
-                Alert.alert("Error", "Failed to save PIN. Please try again.");
+                showAlert("Error", "Failed to save PIN. Please try again.");
                 reset();
             }
         } else {
-            Alert.alert("Mismatch", "PINs did not match. Please try again.");
+            showAlert("Mismatch", "PINs did not match. Please try again.");
             reset();
         }
-    }, [pin, confirmPin, onSuccess, reset]);
+    }, [pin, confirmPin, onSuccess, reset, showAlert]);
 
     useEffect(() => {
         if (step === 'create' && pin.length === PIN_LENGTH) {
