@@ -51,3 +51,13 @@ To see the status of your builds or download artifacts later:
 ```bash
 eas build:list
 ```
+
+---
+
+## 4. Automated Version Bumping
+Run this command to automatically increment the version in `package.json`, `app.json`, and the Android `versionCode` before building.
+
+```bash
+npm run bump-version -- [major|minor|patch]
+# Example: npm run bump-version -- patch
+```
