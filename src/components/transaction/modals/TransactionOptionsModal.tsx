@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '../../common/BottomModal';
 import { useTheme } from '../../../context/ThemeContext';
+import { useAlert } from '../../../context/AlertContext';
 import { Transaction } from '../../../types';
 import { formatCurrencyAmount } from '../../../utils/currencyUtils';
 
@@ -24,11 +25,13 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
     currency = 'USD'
 }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
 
     if (!transaction) return null;
 
+
     const handleDeletePress = () => {
-        Alert.alert(
+        showAlert(
             "Delete Transaction",
             "Are you sure you want to delete this transaction?",
             [
@@ -44,6 +47,7 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
             ]
         );
     };
+
 
     const handleEditPress = () => {
         onEdit(transaction);

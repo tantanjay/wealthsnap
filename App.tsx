@@ -9,6 +9,8 @@ import { SecurityProvider } from './src/context/SecurityContext';
 import { PrivacyProvider } from './src/context/PrivacyContext';
 import { MigrationScreen } from './src/screens/MigrationScreen';
 import { PrivacyGuard } from './src/components/common/PrivacyGuard';
+import { AlertProvider } from './src/context/AlertContext';
+import { CustomAlert } from './src/components/common/CustomAlert';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -52,11 +54,14 @@ export default function App() {
     <ThemeProvider>
       <SecurityProvider>
         <PrivacyProvider>
-          <PrivacyGuard />
-          <SafeAreaProvider>
-            <StatusBar style="auto" />
-            <AppNavigator initialRoute={initialRoute} />
-          </SafeAreaProvider>
+          <AlertProvider>
+            <PrivacyGuard />
+            <SafeAreaProvider>
+              <StatusBar style="auto" />
+              <AppNavigator initialRoute={initialRoute} />
+              <CustomAlert />
+            </SafeAreaProvider>
+          </AlertProvider>
         </PrivacyProvider>
       </SecurityProvider>
     </ThemeProvider>
