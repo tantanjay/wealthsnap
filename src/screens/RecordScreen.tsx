@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import RecordMenuModal from '../components/record/RecordMenuModal';
@@ -10,8 +10,23 @@ type ViewMode = 'MENU' | 'TRANSACTION' | 'INVESTMENT' | 'AI';
 
 const RecordScreen = ({ navigation, route }: any) => {
     const [viewMode, setViewMode] = useState<ViewMode>('MENU');
+    const [modalVisible, setModalVisible] = useState<boolean>(true);
     const [transactionType, setTransactionType] = useState<TransactionType>('EXPENSE');
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
+    // Listen for tab press events to reopen modal
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('tabPress', (e: any) => {
+            // Only intercept if we're already on this screen (focused)
+            const isFocused = navigation.isFocused();
+            if (isFocused && viewMode === 'TRANSACTION' && !modalVisible) {
+                e.preventDefault();
+                setModalVisible(true);
+            }
+        });
+
+        return unsubscribe;
+    }, [navigation, viewMode, modalVisible]);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -22,9 +37,11 @@ const RecordScreen = ({ navigation, route }: any) => {
                 setEditingTransaction(transaction);
                 setTransactionType(transaction.type);
                 setViewMode('TRANSACTION');
+                setModalVisible(false); // Hide modal when editing
             } else {
                 // New record - show menu
                 setViewMode('MENU');
+                setModalVisible(true);
                 setEditingTransaction(null);
             }
 
@@ -38,6 +55,7 @@ const RecordScreen = ({ navigation, route }: any) => {
     const handleTransactionSelect = (selectedType: 'EXPENSE' | 'INCOME') => {
         setTransactionType(selectedType);
         setViewMode('TRANSACTION');
+        setModalVisible(false); // Hide modal after selection
     };
 
     const handleInvestmentSelect = (investmentType: 'STOCKS' | 'BONDS' | 'CRYPTO' | 'FUNDS' | 'COMMODITIES') => {
@@ -56,8 +74,9 @@ const RecordScreen = ({ navigation, route }: any) => {
     };
 
     const handleTransactionCancel = () => {
-        // Go back to menu instead of closing completely
+        // Reset to menu view and show modal again when canceling
         setViewMode('MENU');
+        setModalVisible(true);
         setEditingTransaction(null);
     };
 
@@ -66,6 +85,7 @@ const RecordScreen = ({ navigation, route }: any) => {
             {/* Transaction Form */}
             {viewMode === 'TRANSACTION' && (
                 <TransactionForm
+                    key={`${transactionType}-${editingTransaction?.id || 'new'}`}
                     transactionType={transactionType}
                     initialTransaction={editingTransaction || undefined}
                     onSave={handleTransactionSave}
@@ -75,8 +95,14 @@ const RecordScreen = ({ navigation, route }: any) => {
 
             {/* Record Menu Modal */}
             <RecordMenuModal
-                visible={viewMode === 'MENU'}
-                onClose={() => navigation.goBack()}
+                visible={modalVisible}
+                onClose={() => {
+                    setModalVisible(false);
+                    if (viewMode === 'MENU') {
+                        // Only go back if we haven't selected anything yet
+                        navigation.goBack();
+                    }
+                }}
                 onSelectTransaction={handleTransactionSelect}
                 onSelectInvestment={handleInvestmentSelect}
                 onSelectAI={handleAISelect}
