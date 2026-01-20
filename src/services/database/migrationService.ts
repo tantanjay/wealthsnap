@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDatabase, transaction } from './databaseService';
-import { decryptData } from '../encryptionService';
+import { decryptData, encryptField } from '../encryptionService';
 import { Transaction, Investment, Category, RecurrenceRule } from '../../types';
 import { Budget } from '../budgetService';
 
@@ -91,6 +91,10 @@ const migrateTransactions = async (db: any): Promise<number> => {
     console.log(`[Migration] Migrating ${transactions.length} transactions...`);
 
     for (const txn of transactions) {
+        // Encrypt sensitive fields
+        const encryptedAmount = await encryptField(txn.amount);
+        const encryptedNote = txn.note ? await encryptField(txn.note) : null;
+
         await db.runAsync(
             `INSERT OR REPLACE INTO transactions 
              (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId)
@@ -98,11 +102,11 @@ const migrateTransactions = async (db: any): Promise<number> => {
             [
                 txn.id,
                 txn.date,
-                txn.amount,
+                encryptedAmount,
                 txn.type,
                 txn.category || null,
                 txn.subCategory || null,
-                txn.note || null,
+                encryptedNote,
                 txn.creationMethod || null,
                 txn.isRecurring ? 1 : 0,
                 txn.recurrenceId || null
@@ -128,6 +132,11 @@ const migrateInvestments = async (db: any): Promise<number> => {
     console.log(`[Migration] Migrating ${investments.length} investments...`);
 
     for (const inv of investments) {
+        // Encrypt sensitive fields
+        const encryptedQuantity = await encryptField(inv.quantity);
+        const encryptedAvgPrice = await encryptField(inv.averageBuyPrice);
+        const encryptedNotes = inv.notes ? await encryptField(inv.notes) : null;
+
         await db.runAsync(
             `INSERT OR REPLACE INTO investments 
              (id, symbol, name, type, quantity, averageBuyPrice, currentPrice, lastUpdated, notes)
@@ -137,11 +146,11 @@ const migrateInvestments = async (db: any): Promise<number> => {
                 inv.symbol,
                 inv.name,
                 inv.type,
-                inv.quantity,
-                inv.averageBuyPrice,
+                encryptedQuantity,
+                encryptedAvgPrice,
                 inv.currentPrice || null,
                 inv.lastUpdated || null,
-                inv.notes || null
+                encryptedNotes
             ]
         );
     }
@@ -195,6 +204,9 @@ const migrateRecurrenceRules = async (db: any): Promise<number> => {
     console.log(`[Migration] Migrating ${rules.length} recurrence rules...`);
 
     for (const rule of rules) {
+        // Encrypt the entire template
+        const encryptedTemplate = await encryptField(JSON.stringify(rule.transactionTemplate));
+
         await db.runAsync(
             `INSERT OR REPLACE INTO recurrence_rules 
              (id, name, frequency, startDate, endDate, nextDueDate, transactionTemplate, isActive)
@@ -206,7 +218,7 @@ const migrateRecurrenceRules = async (db: any): Promise<number> => {
                 rule.startDate || null,
                 rule.endDate || null,
                 rule.nextDueDate,
-                JSON.stringify(rule.transactionTemplate),
+                encryptedTemplate,
                 rule.isActive ? 1 : 0
             ]
         );
@@ -230,9 +242,10 @@ const migrateBudgets = async (db: any): Promise<number> => {
     console.log(`[Migration] Migrating ${budgets.length} budgets...`);
 
     for (const budget of budgets) {
+        const encryptedAmount = await encryptField(budget.amount);
         await db.runAsync(
             `INSERT OR REPLACE INTO budgets (category, amount) VALUES (?, ?)`,
-            [budget.category, budget.amount]
+            [budget.category, encryptedAmount]
         );
     }
 

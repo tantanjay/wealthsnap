@@ -1,4 +1,5 @@
 import { getDatabase } from './database/databaseService';
+import { encryptField, decryptField } from './encryptionService';
 
 export interface Budget {
     category: string;
@@ -12,10 +13,13 @@ export const getBudgets = async (): Promise<Budget[]> => {
     try {
         const db = await getDatabase();
         const rows = await db.getAllAsync<any>('SELECT category, amount FROM budgets');
-        return rows.map(row => ({
+
+        const budgets = await Promise.all(rows.map(async (row) => ({
             category: row.category,
-            amount: row.amount
-        }));
+            amount: parseFloat((await decryptField(row.amount)) || '0')
+        })));
+
+        return budgets;
     } catch (error) {
         console.error('Error loading budgets:', error);
         return [];
@@ -28,9 +32,11 @@ export const getBudgets = async (): Promise<Budget[]> => {
 export const setBudget = async (category: string, amount: number): Promise<void> => {
     try {
         const db = await getDatabase();
+        const encryptedAmount = await encryptField(amount);
+
         await db.runAsync(
             'INSERT OR REPLACE INTO budgets (category, amount) VALUES (?, ?)',
-            [category, amount]
+            [category, encryptedAmount]
         );
     } catch (error) {
         console.error('Error setting budget:', error);
@@ -57,11 +63,16 @@ export const deleteBudget = async (category: string): Promise<void> => {
 export const getBudgetForCategory = async (category: string): Promise<number | null> => {
     try {
         const db = await getDatabase();
-        const result = await db.getFirstAsync<{ amount: number }>(
+        const result = await db.getFirstAsync<{ amount: string }>(
             'SELECT amount FROM budgets WHERE category = ?',
             [category]
         );
-        return result ? result.amount : null;
+
+        if (result && result.amount) {
+            const decrypted = await decryptField(result.amount);
+            return decrypted ? parseFloat(decrypted) : null;
+        }
+        return null;
     } catch (error) {
         console.error('Error getting budget for category:', error);
         return null;
@@ -109,9 +120,10 @@ export const bulkSaveBudgets = async (budgets: Budget[]): Promise<void> => {
         const db = await getDatabase();
         await db.withTransactionAsync(async () => {
             for (const budget of budgets) {
+                const encryptedAmount = await encryptField(budget.amount);
                 await db.runAsync(
                     'INSERT OR REPLACE INTO budgets (category, amount) VALUES (?, ?)',
-                    [budget.category, budget.amount]
+                    [budget.category, encryptedAmount]
                 );
             }
         });
