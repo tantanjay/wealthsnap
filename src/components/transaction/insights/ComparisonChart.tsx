@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, Dimensions } from 'react-native';
+import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { useTheme } from '../../../context/ThemeContext';
 import { CURRENCY_SYMBOLS, formatCurrencyAmount } from '../../../utils/currencyUtils';
 import { Card } from '../..';
+import { Ionicons } from '@expo/vector-icons';
+import BottomModal from '../../common/BottomModal';
 
 interface ComparisonChartProps {
     currentMonthExpense: number;
@@ -16,6 +18,7 @@ interface ComparisonChartProps {
 }
 
 const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year, currency, isPrivacyEnabled }) => {
+    const [showInfoModal, setShowInfoModal] = React.useState(false);
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
@@ -52,9 +55,38 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
         }
     };
 
+    const renderVisualScenario = (type: 'OVER' | 'UNDER', label: string) => {
+        return (
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 60, width: 80, justifyContent: 'center', marginBottom: 5 }}>
+                {/* User Bar */}
+                <View style={{
+                    width: 20,
+                    height: type === 'OVER' ? '100%' : '50%',
+                    backgroundColor: type === 'OVER' ? '#FF5252' : '#4CAF50',
+                    marginRight: 8,
+                    borderTopLeftRadius: 4,
+                    borderTopRightRadius: 4
+                }} />
+                {/* Average Bar */}
+                <View style={{
+                    width: 20,
+                    height: '75%',
+                    backgroundColor: colors.textSecondary + '50',
+                    borderTopLeftRadius: 4,
+                    borderTopRightRadius: 4
+                }} />
+            </View>
+        );
+    };
+
     return (
         <View>
-            <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12, marginTop: 20 }}>Spending Comparison</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, marginTop: 20 }}>
+                <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Spending Comparison</Text>
+                <TouchableOpacity onPress={() => setShowInfoModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="information-circle-outline" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+            </View>
 
             <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, marginRight: 10 }}>💡</Text>
@@ -94,6 +126,52 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                     </View>
                 )}
             </Card>
+
+            <BottomModal
+                visible={showInfoModal}
+                onClose={() => setShowInfoModal(false)}
+                title="Understanding Your Chart"
+                maxHeight="85%"
+            >
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <Text style={{ color: colors.text, marginBottom: 15, lineHeight: 22 }}>
+                        This chart compares your current spending against your past habits.
+                    </Text>
+
+                    <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+                        <View style={{ flex: 1, alignItems: 'center', padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginRight: 8 }}>
+                            {renderVisualScenario('OVER', 'Higher')}
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 4 }}>Spending More</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
+                                When the orange bar is taller, you are spending above your average.
+                            </Text>
+                        </View>
+
+                        <View style={{ flex: 1, alignItems: 'center', padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginLeft: 8 }}>
+                            {renderVisualScenario('UNDER', 'Lower')}
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 4 }}>Spending Less</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
+                                When the colored bar is shorter, you are saving money!
+                            </Text>
+                        </View>
+                    </View>
+
+                    <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 8, marginTop: 5 }}>What do the labels mean?</Text>
+                    <View style={{ marginLeft: 8 }}>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.text, fontWeight: 'bold' }}>This M:</Text> Your total spending so far this month.</Text>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.text, fontWeight: 'bold' }}>Avg 3M/6M/1Y:</Text> Your average monthly spending over the last 3 months, 6 months, and 1 year.</Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8, marginTop: 15, alignItems: 'center' }}>
+                        <Ionicons name="information-circle" size={20} color={colors.primary} style={{ marginRight: 10 }} />
+                        <Text style={{ color: colors.text, flex: 1, fontSize: 13 }}>
+                            <Text style={{ fontWeight: 'bold' }}>New Account?</Text> If you just started using WealthSnap, these bars might look identical. As you track more months, they will start to show different trends!
+                        </Text>
+                    </View>
+
+                    <View style={{ height: 20 }} />
+                </ScrollView>
+            </BottomModal>
         </View>
     );
 };
