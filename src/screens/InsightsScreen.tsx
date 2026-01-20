@@ -89,7 +89,7 @@ const InsightsScreen = ({ navigation }: any) => {
             expenseBreakdown,
             currentMonthExpense: totals.expense,
             lastMonthExpense: lastMonthTotals.expense,
-            averageExpense: burnRate, // 3-month average (burnRate default is 6, but let's use it)
+            averageExpense: Metrics.calculateBurnRate(transactions, 3), // 3-month average
             average6Month,
             average1Year,
             anomalies
@@ -138,22 +138,22 @@ const InsightsScreen = ({ navigation }: any) => {
                     isPrivacyEnabled={isPrivacyEnabled}
                 />
 
-                {/* 2. Income Insights */}
-                <IncomeAnalysis
-                    monthlyTrends={data.incomeTrends}
-                    categoryBreakdown={data.incomeBreakdown}
-                    currency={currency}
-                    isPrivacyEnabled={isPrivacyEnabled}
-                    transactions={transactions}
-                />
-
-                {/* 3. Expense Insights */}
+                {/* 2. Expense Insights */}
                 <ExpenseAnalysis
                     categoryBreakdown={data.expenseBreakdown}
                     currency={currency}
                     isPrivacyEnabled={isPrivacyEnabled}
                     grouping={expenseGrouping}
                     onToggleGrouping={setExpenseGrouping}
+                    transactions={transactions}
+                />
+
+                {/* 3. Income Insights */}
+                <IncomeAnalysis
+                    monthlyTrends={data.incomeTrends}
+                    categoryBreakdown={data.incomeBreakdown}
+                    currency={currency}
+                    isPrivacyEnabled={isPrivacyEnabled}
                     transactions={transactions}
                 />
 
