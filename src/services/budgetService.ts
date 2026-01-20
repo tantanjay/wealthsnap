@@ -1,6 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const BUDGETS_KEY = '@budgets';
+import { getDatabase } from './database/databaseService';
 
 export interface Budget {
     category: string;
@@ -12,8 +10,12 @@ export interface Budget {
  */
 export const getBudgets = async (): Promise<Budget[]> => {
     try {
-        const data = await AsyncStorage.getItem(BUDGETS_KEY);
-        return data ? JSON.parse(data) : [];
+        const db = await getDatabase();
+        const rows = await db.getAllAsync<any>('SELECT category, amount FROM budgets');
+        return rows.map(row => ({
+            category: row.category,
+            amount: row.amount
+        }));
     } catch (error) {
         console.error('Error loading budgets:', error);
         return [];
@@ -25,16 +27,11 @@ export const getBudgets = async (): Promise<Budget[]> => {
  */
 export const setBudget = async (category: string, amount: number): Promise<void> => {
     try {
-        const budgets = await getBudgets();
-        const existingIndex = budgets.findIndex(b => b.category === category);
-
-        if (existingIndex >= 0) {
-            budgets[existingIndex].amount = amount;
-        } else {
-            budgets.push({ category, amount });
-        }
-
-        await AsyncStorage.setItem(BUDGETS_KEY, JSON.stringify(budgets));
+        const db = await getDatabase();
+        await db.runAsync(
+            'INSERT OR REPLACE INTO budgets (category, amount) VALUES (?, ?)',
+            [category, amount]
+        );
     } catch (error) {
         console.error('Error setting budget:', error);
         throw error;
@@ -46,9 +43,8 @@ export const setBudget = async (category: string, amount: number): Promise<void>
  */
 export const deleteBudget = async (category: string): Promise<void> => {
     try {
-        const budgets = await getBudgets();
-        const filtered = budgets.filter(b => b.category !== category);
-        await AsyncStorage.setItem(BUDGETS_KEY, JSON.stringify(filtered));
+        const db = await getDatabase();
+        await db.runAsync('DELETE FROM budgets WHERE category = ?', [category]);
     } catch (error) {
         console.error('Error deleting budget:', error);
         throw error;
@@ -60,9 +56,12 @@ export const deleteBudget = async (category: string): Promise<void> => {
  */
 export const getBudgetForCategory = async (category: string): Promise<number | null> => {
     try {
-        const budgets = await getBudgets();
-        const budget = budgets.find(b => b.category === category);
-        return budget ? budget.amount : null;
+        const db = await getDatabase();
+        const result = await db.getFirstAsync<{ amount: number }>(
+            'SELECT amount FROM budgets WHERE category = ?',
+            [category]
+        );
+        return result ? result.amount : null;
     } catch (error) {
         console.error('Error getting budget for category:', error);
         return null;
@@ -95,8 +94,29 @@ export const checkBudgetStatus = (spent: number, budget: number): {
  */
 export const clearBudgets = async (): Promise<void> => {
     try {
-        await AsyncStorage.removeItem(BUDGETS_KEY);
+        const db = await getDatabase();
+        await db.runAsync('DELETE FROM budgets');
     } catch (error) {
         console.error('Error clearing budgets:', error);
+    }
+};
+
+/**
+ * Bulk save budgets (for restore)
+ */
+export const bulkSaveBudgets = async (budgets: Budget[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        await db.withTransactionAsync(async () => {
+            for (const budget of budgets) {
+                await db.runAsync(
+                    'INSERT OR REPLACE INTO budgets (category, amount) VALUES (?, ?)',
+                    [budget.category, budget.amount]
+                );
+            }
+        });
+    } catch (error) {
+        console.error('Error bulk saving budgets:', error);
+        throw error;
     }
 };

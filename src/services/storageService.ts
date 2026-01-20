@@ -3,29 +3,25 @@ import * as SecureStore from 'expo-secure-store';
 import { UserProfile, Transaction, Investment, Category, RecurrenceRule, GeminiConfig } from '../types';
 import { encryptData, decryptData } from './encryptionService';
 import * as DataCache from './dataCache';
+import { getDatabase } from './database/databaseService';
 
 const KEYS = {
     USER_PROFILE: '@wealthsnap_user_profile',
-    TRANSACTIONS: '@wealthsnap_transactions',
-    INVESTMENTS: '@wealthsnap_investments',
-    CATEGORIES: '@wealthsnap_categories',
-    RECURRENCE_RULES: '@wealthsnap_recurrence_rules',
     ONBOARDING_COMPLETE: '@wealthsnap_onboarding_complete',
     GEMINI_CONFIG: '@wealthsnap_gemini_config',
     HISTORY_PREFS: '@wealthsnap_history_prefs',
 };
 
-// Helper to safely read Encrypted OR Plaintext data (Migration Logic)
+// ============= AsyncStorage Helpers (for small data) =============
+
 const safeGet = async <T>(key: string): Promise<T | null> => {
     try {
         const raw = await AsyncStorage.getItem(key);
         if (!raw) return null;
 
-        // Try decrypting first
         const decrypted = await decryptData(raw);
         if (decrypted) return decrypted;
 
-        // If decryption returns null/empty, it might be legacy plain JSON (or initial dev data)
         try {
             return JSON.parse(raw) as T;
         } catch (e) {
@@ -38,33 +34,17 @@ const safeGet = async <T>(key: string): Promise<T | null> => {
     }
 };
 
-// Helper to save encrypted
 const safeSave = async (key: string, data: any): Promise<void> => {
     try {
         const encrypted = await encryptData(data);
         await AsyncStorage.setItem(key, encrypted);
     } catch (error) {
         console.error(`Error saving ${key}`, error);
-        throw error; // Re-throw to handle UI errors
+        throw error;
     }
 };
 
-// ============= Sorting Helpers =============
-
-const sortTransactionsByDate = (transactions: Transaction[]): Transaction[] => {
-    return [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-};
-
-const sortInvestmentsByDate = (investments: Investment[]): Investment[] => {
-    return [...investments].sort((a, b) => {
-        const dateA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
-        const dateB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
-        return dateB - dateA; // Most recent first
-    });
-};
-
-
-// ============= User Profile =============
+// ============= User Profile (AsyncStorage - small data) =============
 
 export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
     await safeSave(KEYS.USER_PROFILE, profile);
@@ -94,19 +74,28 @@ export const updateUserProfile = async (updates: Partial<UserProfile>): Promise<
     }
 };
 
-// ============= Transactions =============
+// ============= Transactions (SQLite) =============
 
 export const saveTransaction = async (transaction: Transaction): Promise<void> => {
     try {
-        const transactions = await getAllTransactions();
-        const index = transactions.findIndex(t => t.id === transaction.id);
-        if (index >= 0) {
-            transactions[index] = transaction;
-        } else {
-            transactions.push(transaction);
-        }
-        const sorted = sortTransactionsByDate(transactions);
-        await safeSave(KEYS.TRANSACTIONS, sorted);
+        const db = await getDatabase();
+        await db.runAsync(
+            `INSERT OR REPLACE INTO transactions 
+             (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                transaction.id,
+                transaction.date,
+                transaction.amount,
+                transaction.type,
+                transaction.category || null,
+                transaction.subCategory || null,
+                transaction.note || null,
+                transaction.creationMethod || null,
+                transaction.isRecurring ? 1 : 0,
+                transaction.recurrenceId || null
+            ]
+        );
         DataCache.invalidateTransactionCache();
     } catch (error) {
         console.error('Error saving transaction:', error);
@@ -115,14 +104,33 @@ export const saveTransaction = async (transaction: Transaction): Promise<void> =
 };
 
 export const getAllTransactions = async (): Promise<Transaction[]> => {
-    return (await safeGet<Transaction[]>(KEYS.TRANSACTIONS)) || [];
+    try {
+        const db = await getDatabase();
+        const rows = await db.getAllAsync<any>('SELECT * FROM transactions ORDER BY date DESC');
+        return rows.map(row => ({
+            id: row.id,
+            date: row.date,
+            amount: row.amount,
+            type: row.type,
+            category: row.category,
+            subCategory: row.subCategory,
+            note: row.note,
+            creationMethod: row.creationMethod,
+            isRecurring: row.isRecurring === 1,
+            recurrenceId: row.recurrenceId,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt
+        }));
+    } catch (error) {
+        console.error('Error getting transactions:', error);
+        return [];
+    }
 };
 
 export const deleteTransaction = async (id: string): Promise<void> => {
     try {
-        const transactions = await getAllTransactions();
-        const filtered = transactions.filter(t => t.id !== id);
-        await safeSave(KEYS.TRANSACTIONS, filtered);
+        const db = await getDatabase();
+        await db.runAsync('DELETE FROM transactions WHERE id = ?', [id]);
         DataCache.invalidateTransactionCache();
     } catch (error) {
         console.error('Error deleting transaction:', error);
@@ -130,19 +138,54 @@ export const deleteTransaction = async (id: string): Promise<void> => {
     }
 };
 
-// ============= Investments =============
+export const getTransactionsByDateRange = async (startDate: string, endDate: string): Promise<Transaction[]> => {
+    try {
+        const db = await getDatabase();
+        const rows = await db.getAllAsync<any>(
+            'SELECT * FROM transactions WHERE date BETWEEN ? AND ? ORDER BY date DESC',
+            [startDate, endDate]
+        );
+        return rows.map(row => ({
+            id: row.id,
+            date: row.date,
+            amount: row.amount,
+            type: row.type,
+            category: row.category,
+            subCategory: row.subCategory,
+            note: row.note,
+            creationMethod: row.creationMethod,
+            isRecurring: row.isRecurring === 1,
+            recurrenceId: row.recurrenceId,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt
+        }));
+    } catch (error) {
+        console.error('Error getting transactions by date range:', error);
+        return [];
+    }
+};
+
+// ============= Investments (SQLite) =============
 
 export const saveInvestment = async (investment: Investment): Promise<void> => {
     try {
-        const investments = await getAllInvestments();
-        const index = investments.findIndex(i => i.id === investment.id);
-        if (index >= 0) {
-            investments[index] = investment;
-        } else {
-            investments.push(investment);
-        }
-        const sorted = sortInvestmentsByDate(investments);
-        await safeSave(KEYS.INVESTMENTS, sorted);
+        const db = await getDatabase();
+        await db.runAsync(
+            `INSERT OR REPLACE INTO investments 
+             (id, symbol, name, type, quantity, averageBuyPrice, currentPrice, lastUpdated, notes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                investment.id,
+                investment.symbol,
+                investment.name,
+                investment.type,
+                investment.quantity,
+                investment.averageBuyPrice,
+                investment.currentPrice || null,
+                investment.lastUpdated || null,
+                investment.notes || null
+            ]
+        );
         DataCache.invalidateInvestmentCache();
     } catch (error) {
         console.error('Error saving investment:', error);
@@ -151,14 +194,30 @@ export const saveInvestment = async (investment: Investment): Promise<void> => {
 };
 
 export const getAllInvestments = async (): Promise<Investment[]> => {
-    return (await safeGet<Investment[]>(KEYS.INVESTMENTS)) || [];
+    try {
+        const db = await getDatabase();
+        const rows = await db.getAllAsync<any>('SELECT * FROM investments ORDER BY symbol');
+        return rows.map(row => ({
+            id: row.id,
+            symbol: row.symbol,
+            name: row.name,
+            type: row.type,
+            quantity: row.quantity,
+            averageBuyPrice: row.averageBuyPrice,
+            currentPrice: row.currentPrice,
+            lastUpdated: row.lastUpdated,
+            notes: row.notes
+        }));
+    } catch (error) {
+        console.error('Error getting investments:', error);
+        return [];
+    }
 };
 
 export const deleteInvestment = async (id: string): Promise<void> => {
     try {
-        const investments = await getAllInvestments();
-        const filtered = investments.filter(i => i.id !== id);
-        await safeSave(KEYS.INVESTMENTS, filtered);
+        const db = await getDatabase();
+        await db.runAsync('DELETE FROM investments WHERE id = ?', [id]);
         DataCache.invalidateInvestmentCache();
     } catch (error) {
         console.error('Error deleting investment:', error);
@@ -166,18 +225,22 @@ export const deleteInvestment = async (id: string): Promise<void> => {
     }
 };
 
-// ============= Categories =============
+// ============= Categories (SQLite) =============
 
 export const saveCategory = async (category: Category): Promise<void> => {
     try {
-        const categories = await getAllCategories();
-        const index = categories.findIndex(c => c.id === category.id);
-        if (index >= 0) {
-            categories[index] = category;
-        } else {
-            categories.push(category);
-        }
-        await safeSave(KEYS.CATEGORIES, categories);
+        const db = await getDatabase();
+        await db.runAsync(
+            `INSERT OR REPLACE INTO categories 
+             (id, name, type, icon)
+             VALUES (?, ?, ?, ?)`,
+            [
+                category.id,
+                category.name,
+                category.type,
+                category.icon || null
+            ]
+        );
         DataCache.invalidateCategoryCache();
     } catch (error) {
         console.error('Error saving category:', error);
@@ -186,21 +249,41 @@ export const saveCategory = async (category: Category): Promise<void> => {
 };
 
 export const getAllCategories = async (): Promise<Category[]> => {
-    return (await safeGet<Category[]>(KEYS.CATEGORIES)) || [];
+    try {
+        const db = await getDatabase();
+        const rows = await db.getAllAsync<any>('SELECT * FROM categories');
+        return rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            type: row.type,
+            icon: row.icon
+        }));
+    } catch (error) {
+        console.error('Error getting categories:', error);
+        return [];
+    }
 };
 
-// ============= Recurrence Rules =============
+// ============= Recurrence Rules (SQLite) =============
 
 export const saveRecurrenceRule = async (rule: RecurrenceRule): Promise<void> => {
     try {
-        const rules = await getAllRecurrenceRules();
-        const index = rules.findIndex(r => r.id === rule.id);
-        if (index >= 0) {
-            rules[index] = rule;
-        } else {
-            rules.push(rule);
-        }
-        await safeSave(KEYS.RECURRENCE_RULES, rules);
+        const db = await getDatabase();
+        await db.runAsync(
+            `INSERT OR REPLACE INTO recurrence_rules 
+             (id, name, frequency, startDate, endDate, nextDueDate, transactionTemplate, isActive)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                rule.id,
+                rule.name || null,
+                rule.frequency,
+                rule.startDate || null,
+                rule.endDate || null,
+                rule.nextDueDate,
+                JSON.stringify(rule.transactionTemplate),
+                rule.isActive ? 1 : 0
+            ]
+        );
         DataCache.invalidateRecurrenceRuleCache();
     } catch (error) {
         console.error('Error saving recurrence rule:', error);
@@ -209,14 +292,29 @@ export const saveRecurrenceRule = async (rule: RecurrenceRule): Promise<void> =>
 };
 
 export const getAllRecurrenceRules = async (): Promise<RecurrenceRule[]> => {
-    return (await safeGet<RecurrenceRule[]>(KEYS.RECURRENCE_RULES)) || [];
+    try {
+        const db = await getDatabase();
+        const rows = await db.getAllAsync<any>('SELECT * FROM recurrence_rules');
+        return rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            frequency: row.frequency,
+            startDate: row.startDate,
+            endDate: row.endDate,
+            nextDueDate: row.nextDueDate,
+            transactionTemplate: JSON.parse(row.transactionTemplate),
+            isActive: row.isActive === 1
+        }));
+    } catch (error) {
+        console.error('Error getting recurrence rules:', error);
+        return [];
+    }
 };
 
 export const deleteRecurrenceRule = async (id: string): Promise<void> => {
     try {
-        const rules = await getAllRecurrenceRules();
-        const filtered = rules.filter(r => r.id !== id);
-        await safeSave(KEYS.RECURRENCE_RULES, filtered);
+        const db = await getDatabase();
+        await db.runAsync('DELETE FROM recurrence_rules WHERE id = ?', [id]);
         DataCache.invalidateRecurrenceRuleCache();
     } catch (error) {
         console.error('Error deleting recurrence rule:', error);
@@ -224,7 +322,7 @@ export const deleteRecurrenceRule = async (id: string): Promise<void> => {
     }
 };
 
-// ============= Onboarding =============
+// ============= Onboarding (AsyncStorage) =============
 
 export const setOnboardingComplete = async (): Promise<void> => {
     try {
@@ -244,7 +342,7 @@ export const isOnboardingComplete = async (): Promise<boolean> => {
     }
 };
 
-// ============= Gemini Config =============
+// ============= Gemini Config (AsyncStorage) =============
 
 const SECURE_KEY_API_KEY = 'wealthsnap_gemini_api_key';
 
@@ -277,7 +375,7 @@ export const getGeminiConfig = async (): Promise<GeminiConfig | null> => {
     }
 };
 
-// ============= History Preferences =============
+// ============= History Preferences (AsyncStorage) =============
 
 export const saveHistoryTimeFrame = async (timeFrame: string): Promise<void> => {
     try {
@@ -301,29 +399,57 @@ export const getHistoryTimeFrame = async (): Promise<string | null> => {
 
 export const clearAllData = async (): Promise<void> => {
     try {
+        // Clear AsyncStorage
         await AsyncStorage.multiRemove([
             KEYS.USER_PROFILE,
-            KEYS.TRANSACTIONS,
-            KEYS.INVESTMENTS,
-            KEYS.CATEGORIES,
-            KEYS.RECURRENCE_RULES,
             KEYS.ONBOARDING_COMPLETE,
             KEYS.GEMINI_CONFIG,
             KEYS.HISTORY_PREFS,
         ]);
         await SecureStore.deleteItemAsync(SECURE_KEY_API_KEY).catch(() => { });
+
+        // Clear SQLite
+        const db = await getDatabase();
+        await db.execAsync(`
+            DELETE FROM transactions;
+            DELETE FROM investments;
+            DELETE FROM categories;
+            DELETE FROM recurrence_rules;
+            DELETE FROM budgets;
+        `);
+
         DataCache.invalidateAllCaches();
     } catch (error) {
         console.error('Error clearing data:', error);
     }
 };
 
-// ============= Bulk Operations (Phase 2) =============
+// ============= Bulk Operations =============
 
 export const bulkSaveTransactions = async (transactions: Transaction[]): Promise<void> => {
     try {
-        const sorted = sortTransactionsByDate(transactions);
-        await safeSave(KEYS.TRANSACTIONS, sorted);
+        const db = await getDatabase();
+        await db.withTransactionAsync(async () => {
+            for (const txn of transactions) {
+                await db.runAsync(
+                    `INSERT OR REPLACE INTO transactions 
+                     (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        txn.id,
+                        txn.date,
+                        txn.amount,
+                        txn.type,
+                        txn.category || null,
+                        txn.subCategory || null,
+                        txn.note || null,
+                        txn.creationMethod || null,
+                        txn.isRecurring ? 1 : 0,
+                        txn.recurrenceId || null
+                    ]
+                );
+            }
+        });
         DataCache.invalidateTransactionCache();
     } catch (error) {
         console.error('Error bulk saving transactions:', error);
@@ -333,8 +459,27 @@ export const bulkSaveTransactions = async (transactions: Transaction[]): Promise
 
 export const bulkSaveInvestments = async (investments: Investment[]): Promise<void> => {
     try {
-        const sorted = sortInvestmentsByDate(investments);
-        await safeSave(KEYS.INVESTMENTS, sorted);
+        const db = await getDatabase();
+        await db.withTransactionAsync(async () => {
+            for (const inv of investments) {
+                await db.runAsync(
+                    `INSERT OR REPLACE INTO investments 
+                     (id, symbol, name, type, quantity, averageBuyPrice, currentPrice, lastUpdated, notes)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        inv.id,
+                        inv.symbol,
+                        inv.name,
+                        inv.type,
+                        inv.quantity,
+                        inv.averageBuyPrice,
+                        inv.currentPrice || null,
+                        inv.lastUpdated || null,
+                        inv.notes || null
+                    ]
+                );
+            }
+        });
         DataCache.invalidateInvestmentCache();
     } catch (error) {
         console.error('Error bulk saving investments:', error);
@@ -344,7 +489,22 @@ export const bulkSaveInvestments = async (investments: Investment[]): Promise<vo
 
 export const bulkSaveCategories = async (categories: Category[]): Promise<void> => {
     try {
-        await safeSave(KEYS.CATEGORIES, categories);
+        const db = await getDatabase();
+        await db.withTransactionAsync(async () => {
+            for (const cat of categories) {
+                await db.runAsync(
+                    `INSERT OR REPLACE INTO categories 
+                     (id, name, type, icon)
+                     VALUES (?, ?, ?, ?)`,
+                    [
+                        cat.id,
+                        cat.name,
+                        cat.type,
+                        cat.icon || null
+                    ]
+                );
+            }
+        });
         DataCache.invalidateCategoryCache();
     } catch (error) {
         console.error('Error bulk saving categories:', error);
@@ -354,7 +514,26 @@ export const bulkSaveCategories = async (categories: Category[]): Promise<void> 
 
 export const bulkSaveRecurrenceRules = async (rules: RecurrenceRule[]): Promise<void> => {
     try {
-        await safeSave(KEYS.RECURRENCE_RULES, rules);
+        const db = await getDatabase();
+        await db.withTransactionAsync(async () => {
+            for (const rule of rules) {
+                await db.runAsync(
+                    `INSERT OR REPLACE INTO recurrence_rules 
+                     (id, name, frequency, startDate, endDate, nextDueDate, transactionTemplate, isActive)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        rule.id,
+                        rule.name || null,
+                        rule.frequency,
+                        rule.startDate || null,
+                        rule.endDate || null,
+                        rule.nextDueDate,
+                        JSON.stringify(rule.transactionTemplate),
+                        rule.isActive ? 1 : 0
+                    ]
+                );
+            }
+        });
         DataCache.invalidateRecurrenceRuleCache();
     } catch (error) {
         console.error('Error bulk saving recurrence rules:', error);
