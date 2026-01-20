@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Alert, TouchableOpacity, Modal, Dimensions, Platform, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, ScrollView, Alert, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
@@ -79,14 +79,7 @@ const RecordScreen = ({ navigation, route }: any) => {
             }
 
             return () => {
-                // Optional: clear params on blur to ensure next visit is fresh?
-                // But navigation.setParams might trigger re-render cycle.
-                // Instead, we rely on the fact that 'Tab' press usually usually doesn't pass params,
-                // or we rely on 'resetForm' above when params are absent.
-
-                // IMPORTANT: If we leave this screen, we want to ensure the NEXT time we visit,
-                // if it's via Tab Bar, params acts as empty.
-                // React Navigation usually retains params. So we MUST clear them on blur.
+                // Clear params on blur to ensure next visit is fresh (e.g. via Tab Bar)
                 navigation.setParams({ transaction: undefined });
             };
         }, [route.params?.transaction])
@@ -339,7 +332,6 @@ const RecordScreen = ({ navigation, route }: any) => {
                     <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Category</Text>
                     <TouchableOpacity
                         onPress={() => {
-                            // setSelectedGroup(null); // Removed state
                             setShowCategoryModal(true);
                         }}
                         style={{

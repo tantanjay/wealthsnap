@@ -5,6 +5,13 @@ import { encryptData, decryptData, encryptField, decryptField } from './encrypti
 import * as DataCache from './dataCache';
 import { getDatabase } from './database/databaseService';
 
+/**
+ * Storage Architecture:
+ * - SQLite: Core data (Transactions, Investments, Budgets, Recurrence Rules).
+ * - AsyncStorage: Lightweight preferences (User Profile, Onboarding State, History Prefs).
+ * - SecureStore: Sensitive secrets (API Keys, etc. - managed separately).
+ */
+
 const KEYS = {
     USER_PROFILE: '@wealthsnap_user_profile',
     ONBOARDING_COMPLETE: '@wealthsnap_onboarding_complete',
