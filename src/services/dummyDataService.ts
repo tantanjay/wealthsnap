@@ -1,5 +1,5 @@
 import { saveUserProfile, saveTransaction, saveCategory, setOnboardingComplete, clearAllData } from './storageService';
-import { UserProfile, Transaction, TransactionType, Category } from '../types';
+import { UserProfile, Transaction, TransactionType } from '../types';
 import { CONFIG } from '../constants/config';
 
 const EXPENSE_CATEGORIES = [

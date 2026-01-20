@@ -67,8 +67,6 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
     const total = trendData.data.reduce((sum: number, val: number) => sum + val, 0);
     const average = trendData.data.length > 0 ? total / trendData.data.length : 0;
     const max = Math.max(...trendData.data, 0);
-    const min = Math.min(...trendData.data.filter((v: number) => v > 0), Infinity);
-    const minValue = min === Infinity ? 0 : min;
 
     return (
         <BottomModal

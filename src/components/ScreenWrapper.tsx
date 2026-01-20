@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleProp, ViewStyle, StatusBar, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { StyleProp, ViewStyle, StatusBar, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 

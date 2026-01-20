@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { TouchableOpacity, Text, ViewStyle, TextStyle, ActivityIndicator, View } from 'react-native';
+import React from 'react';
+import { TouchableOpacity, Text, ViewStyle, ActivityIndicator, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 interface ButtonProps {

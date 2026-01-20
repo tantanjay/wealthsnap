@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { AppState, AppStateStatus, View } from 'react-native';
 import { shouldLockApp, updateLastActiveTime } from '../services/securityService';
 import PinEntryScreen from '../screens/PinEntryScreen';
 import { isOnboardingComplete } from '../services/storageService';
+
 
 interface SecurityContextType {
     isLocked: boolean;
@@ -24,18 +25,18 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [isLocked, setIsLocked] = useState(false);
     const appState = useRef(AppState.currentState);
 
-    useEffect(() => {
-        const subscription = AppState.addEventListener('change', handleAppStateChange);
+    const checkLockState = useCallback(async () => {
+        const startOnboarding = await isOnboardingComplete();
+        // Don't lock if user hasn't finished onboarding or is in the middle of it
+        if (!startOnboarding) return;
 
-        // Initial check
-        checkLockState();
-
-        return () => {
-            subscription.remove();
-        };
+        const locked = await shouldLockApp();
+        if (locked) {
+            setIsLocked(true);
+        }
     }, []);
 
-    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+    const handleAppStateChange = useCallback(async (nextAppState: AppStateStatus) => {
         if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
             // App coming to foreground
             console.log('App coming to foreground, checking lock state...');
@@ -46,18 +47,18 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             await updateLastActiveTime();
         }
         appState.current = nextAppState;
-    };
+    }, [checkLockState]);
 
-    const checkLockState = async () => {
-        const startOnboarding = await isOnboardingComplete();
-        // Don't lock if user hasn't finished onboarding or is in the middle of it
-        if (!startOnboarding) return;
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
 
-        const locked = await shouldLockApp();
-        if (locked) {
-            setIsLocked(true);
-        }
-    };
+        // Initial check
+        checkLockState();
+
+        return () => {
+            subscription.remove();
+        };
+    }, [handleAppStateChange, checkLockState]);
 
     const lockApp = () => setIsLocked(true);
     const unlockApp = async () => {
@@ -76,4 +77,3 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         </SecurityContext.Provider>
     );
 };
-import { View } from 'react-native';

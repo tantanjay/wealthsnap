@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Vibration } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -18,11 +18,14 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
     const [biometricsAvailable, setBiometricsAvailable] = useState(false);
     const [biometricType, setBiometricType] = useState<'FINGERPRINT' | 'FACIAL_RECOGNITION' | 'IRIS' | 'UNKNOWN'>('UNKNOWN');
 
-    useEffect(() => {
-        checkBiometrics();
-    }, []);
+    const triggerBiometricAuth = useCallback(async () => {
+        const success = await securityService.authenticateBiometrics();
+        if (success) {
+            onSuccess();
+        }
+    }, [onSuccess]);
 
-    const checkBiometrics = async () => {
+    const checkBiometrics = useCallback(async () => {
         const available = await securityService.hasBiometrics();
         setBiometricsAvailable(available);
 
@@ -31,14 +34,11 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
             setBiometricType(type);
             triggerBiometricAuth(); // Still auto-trigger
         }
-    };
+    }, [triggerBiometricAuth]);
 
-    const triggerBiometricAuth = async () => {
-        const success = await securityService.authenticateBiometrics();
-        if (success) {
-            onSuccess();
-        }
-    };
+    useEffect(() => {
+        checkBiometrics();
+    }, [checkBiometrics]);
 
     const handlePress = (num: string) => {
         if (pin.length < PIN_LENGTH) {
@@ -52,14 +52,8 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
         setError(false);
     };
 
-    useEffect(() => {
-        if (pin.length === PIN_LENGTH) {
-            checkPin();
-        }
-    }, [pin]);
-
-    const checkPin = async () => {
-        const isValid = await securityService.verifyPin(pin);
+    const checkPin = useCallback(async (currentPin: string) => {
+        const isValid = await securityService.verifyPin(currentPin);
         if (isValid) {
             onSuccess();
         } else {
@@ -70,7 +64,13 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
                 // Keep error state briefly
             }, 500);
         }
-    };
+    }, [onSuccess]);
+
+    useEffect(() => {
+        if (pin.length === PIN_LENGTH) {
+            checkPin(pin);
+        }
+    }, [pin, checkPin]);
 
     const renderDots = () => {
         return (

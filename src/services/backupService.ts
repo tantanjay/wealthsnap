@@ -121,11 +121,11 @@ export const restoreFromBackup = async (
 
         try {
             backupData = JSON.parse(decrypted) as BackupData;
-        } catch (e) {
+        } catch {
             // Fallback if double stringified (unlikely with this setup but safe)
             try {
                 backupData = JSON.parse(JSON.parse(decrypted));
-            } catch (e2) {
+            } catch {
                 throw new Error('FAILED_TO_PARSE_BACKUP');
             }
         }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Dimensions } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
 import { formatCurrencyAmount } from '../../utils/currencyUtils';

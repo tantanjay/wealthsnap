@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { migrateFromAsyncStorage, isMigrationNeeded, hasAsyncStorageData } from '../services/database/migrationService';
 import { useTheme } from '../context/ThemeContext';
@@ -12,11 +12,7 @@ export const MigrationScreen: React.FC<MigrationScreenProps> = ({ onComplete }) 
     const [progress, setProgress] = useState({ step: 'Initializing...', current: 0, total: 5 });
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        performMigration();
-    }, []);
-
-    const performMigration = async () => {
+    const performMigration = useCallback(async () => {
         try {
             // Check if migration is needed
             setProgress({ step: 'Checking migration status...', current: 1, total: 5 });
@@ -60,7 +56,11 @@ export const MigrationScreen: React.FC<MigrationScreenProps> = ({ onComplete }) 
             console.error('[Migration] Error:', err);
             setError('Migration error. Please contact support.');
         }
-    };
+    }, [onComplete]);
+
+    useEffect(() => {
+        performMigration();
+    }, [performMigration]);
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -70,7 +70,7 @@ export const MigrationScreen: React.FC<MigrationScreenProps> = ({ onComplete }) 
                 </Text>
 
                 <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                    We're upgrading to a faster storage system
+                    We&apos;re upgrading to a faster storage system
                 </Text>
 
                 {error ? (
@@ -107,7 +107,7 @@ export const MigrationScreen: React.FC<MigrationScreenProps> = ({ onComplete }) 
                         </View>
 
                         <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-                            Please don't close the app...
+                            Please don&apos;t close the app...
                         </Text>
                     </>
                 )}

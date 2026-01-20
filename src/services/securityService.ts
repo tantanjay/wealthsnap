@@ -1,6 +1,9 @@
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppState, AppStateStatus } from 'react-native';
+
+// ============= Biometrics =============
+
+import * as LocalAuthentication from 'expo-local-authentication';
 
 const KEYS = {
     PIN_CODE: 'wealthsnap_security_pin', // SecureStore key
@@ -40,7 +43,7 @@ export const isPinSet = async (): Promise<boolean> => {
     try {
         const pin = await SecureStore.getItemAsync(KEYS.PIN_CODE);
         return !!pin;
-    } catch (error) {
+    } catch {
         return false;
     }
 };
@@ -90,16 +93,12 @@ export const shouldLockApp = async (): Promise<boolean> => {
     return elapsed > maxDuration;
 };
 
-// ============= Biometrics =============
-
-import * as LocalAuthentication from 'expo-local-authentication';
-
 export const hasBiometrics = async (): Promise<boolean> => {
     try {
         const hasHardware = await LocalAuthentication.hasHardwareAsync();
         const isEnrolled = await LocalAuthentication.isEnrolledAsync();
         return hasHardware && isEnrolled;
-    } catch (error) {
+    } catch {
         return false;
     }
 };
@@ -132,7 +131,7 @@ export const getBiometricType = async (): Promise<'FINGERPRINT' | 'FACIAL_RECOGN
             return 'IRIS';
         }
         return 'UNKNOWN';
-    } catch (error) {
+    } catch {
         return 'UNKNOWN';
     }
 };
