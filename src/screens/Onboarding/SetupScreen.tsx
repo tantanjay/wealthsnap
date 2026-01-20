@@ -11,7 +11,7 @@ import { SPACING } from '../../styles/theme';
 import PinCreationScreen from '../PinCreationScreen';
 import * as DocumentPicker from 'expo-document-picker';
 import { restoreFromBackup } from '../../services/backupService';
-import RestoreModal from '../../components/profile/RestoreModal';
+import RestoreModal from '../../components/profile/data/RestoreModal';
 import { CONFIG } from '../../constants/config';
 import { generateDummyData } from '../../services/dummyDataService';
 import OnboardingGuide from './OnboardingGuide';

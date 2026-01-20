@@ -5,15 +5,15 @@ import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
 import BudgetManagementModal from '../components/profile/BudgetManagementModal';
-import SupportModal from '../components/settings/SupportModal';
-import GeminiSettingsModal from '../components/settings/GeminiSettingsModal';
+import SupportModal from '../components/profile/settings/SupportModal';
+import GeminiSettingsModal from '../components/profile/settings/GeminiSettingsModal';
 import { getGeminiConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 import OnboardingGuide from './Onboarding/OnboardingGuide';
 import appJson from '../../app.json';
 import SecurityCard from '../components/profile/SecurityCard';
-import DataManagementCard from '../components/profile/DataManagementCard';
+import DataManagementCard from '../components/profile/data/DataManagementCard';
 import { RecurringRulesListModal } from '../components/profile/RecurringRulesListModal';
 
 

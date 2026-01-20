@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Alert, Text } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
-import { Card, Button } from '../../components';
+import { useTheme } from '../../../context/ThemeContext';
+import { Card, Button } from '../../index';
 
 import BackupModal from './BackupModal';
 import RestoreModal from './RestoreModal';
-import { clearAllData, getUserProfile } from '../../services/storageService';
-import { createBackup, restoreFromBackup } from '../../services/backupService';
+import { clearAllData, getUserProfile } from '../../../services/storageService';
+import { createBackup, restoreFromBackup } from '../../../services/backupService';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 import { CommonActions, NavigationProp } from '@react-navigation/native';

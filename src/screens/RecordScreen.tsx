@@ -56,6 +56,7 @@ const RecordScreen = ({ navigation, route }: any) => {
     };
 
     const handleTransactionCancel = () => {
+        // Go back to menu instead of closing completely
         setViewMode('MENU');
         setEditingTransaction(null);
     };

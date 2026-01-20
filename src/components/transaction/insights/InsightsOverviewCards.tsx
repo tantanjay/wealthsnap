@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, ScrollView, Dimensions } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
-import { Card } from '../../components';
-import { formatCurrencyAmount } from '../../utils/currencyUtils';
+import { useTheme } from '../../../context/ThemeContext';
+import { Card } from '../../../components';
+import { formatCurrencyAmount } from '../../../utils/currencyUtils';
 
 interface InsightsOverviewCardsProps {
     netCashFlow: number;

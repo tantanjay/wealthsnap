@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import BottomModal from '../common/BottomModal';
-import { Button } from '..';
-import { useTheme } from '../../context/ThemeContext';
+import BottomModal from '../../common/BottomModal';
+import { Button } from '../../index';
+import { useTheme } from '../../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
-interface RestoreModalProps {
+interface BackupModalProps {
     visible: boolean;
     onClose: () => void;
-    onRestore: (password: string) => void;
+    onBackup: (password: string) => void;
     isProcessing: boolean;
 }
 
-const RestoreModal: React.FC<RestoreModalProps> = ({
+const BackupModal: React.FC<BackupModalProps> = ({
     visible,
     onClose,
-    onRestore,
+    onBackup,
     isProcessing
 }) => {
     const { colors } = useTheme();
@@ -30,8 +30,8 @@ const RestoreModal: React.FC<RestoreModalProps> = ({
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Restore Backup"
-            subtitle="Enter the password for this backup file."
+            title="Create Backup"
+            subtitle="Enter a password to encrypt your backup file."
         >
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={{
@@ -66,8 +66,8 @@ const RestoreModal: React.FC<RestoreModalProps> = ({
 
                 <View style={{ gap: 10 }}>
                     <Button
-                        title={isProcessing ? "Restoring..." : "Restore Data"}
-                        onPress={() => onRestore(password)}
+                        title={isProcessing ? "Creating..." : "Create & Share"}
+                        onPress={() => onBackup(password)}
                         disabled={isProcessing}
                     />
                     <Button
@@ -82,4 +82,4 @@ const RestoreModal: React.FC<RestoreModalProps> = ({
     );
 };
 
-export default RestoreModal;
+export default BackupModal;
