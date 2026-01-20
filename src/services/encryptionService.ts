@@ -59,3 +59,38 @@ export const decryptData = async (ciphertext: string, secret?: string): Promise<
         return null;
     }
 };
+
+/**
+ * Encrypts a single field value (for field-level encryption in SQLite)
+ * @param value The value to encrypt (string or number)
+ * @returns Encrypted string, or null if value is null/undefined
+ */
+export const encryptField = async (value: string | number | null | undefined): Promise<string | null> => {
+    if (value === null || value === undefined) return null;
+    try {
+        const key = await getStorageKey();
+        const stringValue = typeof value === 'number' ? value.toString() : value;
+        return CryptoJS.AES.encrypt(stringValue, key).toString();
+    } catch (error) {
+        console.error('Error encrypting field:', error);
+        throw new Error('Field encryption failed');
+    }
+};
+
+/**
+ * Decrypts a single field value
+ * @param ciphertext The encrypted field value
+ * @returns Decrypted value as string, or null if decryption fails
+ */
+export const decryptField = async (ciphertext: string | null | undefined): Promise<string | null> => {
+    if (!ciphertext) return null;
+    try {
+        const key = await getStorageKey();
+        const bytes = CryptoJS.AES.decrypt(ciphertext, key);
+        const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+        return decryptedString || null;
+    } catch (error) {
+        console.error('Error decrypting field:', error);
+        return null;
+    }
+};
