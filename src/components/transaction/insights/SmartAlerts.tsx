@@ -6,17 +6,23 @@ import { Anomaly } from '../../../utils/financialMetrics';
 
 interface SmartAlertsProps {
     anomalies: Anomaly[];
+    hasHistory: boolean;
 }
 
-const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies }) => {
+const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
     const { colors } = useTheme();
 
     if (anomalies.length === 0) {
         return (
+
             <View style={{ marginTop: 20 }}>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Smart Alerts</Text>
                 <Card>
-                    <Text style={{ color: colors.textSecondary, textAlign: 'center', padding: 10 }}>No anomalies detected. Your spending looks normal.</Text>
+                    <Text style={{ color: colors.textSecondary, textAlign: 'center', padding: 10 }}>
+                        {hasHistory
+                            ? "No anomalies detected. Your spending looks normal."
+                            : "We are learning your spending patterns. Alerts will appear here soon!"}
+                    </Text>
                 </Card>
             </View>
         );
