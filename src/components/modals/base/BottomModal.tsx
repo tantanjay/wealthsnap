@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet, ViewStyle, DimensionValue } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, ViewStyle, DimensionValue, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 
 interface BottomModalProps {
@@ -35,7 +35,10 @@ const BottomModal: React.FC<BottomModalProps> = ({
             transparent={true}
             onRequestClose={onClose}
         >
-            <View style={styles.overlay}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.overlay}
+            >
                 {/* Backdrop - handles closing */}
                 <TouchableOpacity
                     activeOpacity={1}
@@ -81,7 +84,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
                         {children}
                     </View>
                 </View>
-            </View>
+            </KeyboardAvoidingView>
         </Modal>
     );
 };
