@@ -6,19 +6,19 @@ import {
     getAllInvestments,
     getAllCategories,
     getAllRecurrenceRules,
-    getGeminiConfig,
+    getAIConfig,
     saveUserProfile,
     bulkSaveTransactions,
     bulkSaveInvestments,
     bulkSaveCategories,
     bulkSaveRecurrenceRules,
-    saveGeminiConfig,
+    saveAIConfig,
     clearAllData,
     setOnboardingComplete
 } from './storageService';
 import { getBudgets, setBudget, clearBudgets, Budget } from './budgetService';
 import { encryptData, decryptData } from './encryptionService';
-import { UserProfile, Transaction, Investment, Category, RecurrenceRule, GeminiConfig } from '../types';
+import { UserProfile, Transaction, Investment, Category, RecurrenceRule, AIConfig } from '../types';
 
 export interface BackupData {
     version: string;
@@ -28,7 +28,7 @@ export interface BackupData {
     investments: Investment[];
     categories: Category[];
     recurrenceRules: RecurrenceRule[];
-    geminiConfig: GeminiConfig | null;
+    aiConfig: AIConfig | null;
     budgets: Budget[];
 }
 
@@ -48,7 +48,7 @@ export const createBackup = async (password: string): Promise<string> => {
     const investments = await getAllInvestments();
     const categories = await getAllCategories();
     const recurrenceRules = await getAllRecurrenceRules();
-    const geminiConfig = await getGeminiConfig();
+    const aiConfig = await getAIConfig();
     const budgets = await getBudgets();
 
     const backupData: BackupData = {
@@ -59,7 +59,7 @@ export const createBackup = async (password: string): Promise<string> => {
         investments,
         categories,
         recurrenceRules,
-        geminiConfig: geminiConfig ? { ...geminiConfig, apiKey: undefined } : null,
+        aiConfig: aiConfig ? { ...aiConfig, apiKey: undefined } : null,
         budgets
     };
 
@@ -166,5 +166,10 @@ export const restoreFromBackup = async (
         await bulkSaveRecurrenceRules(backupData.recurrenceRules);
     }
 
-    if (backupData.geminiConfig) await saveGeminiConfig(backupData.geminiConfig);
+    if (backupData.aiConfig) {
+        await saveAIConfig(backupData.aiConfig);
+    } else if ((backupData as any).geminiConfig) {
+        // Legacy support
+        await saveAIConfig((backupData as any).geminiConfig);
+    }
 };

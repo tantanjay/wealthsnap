@@ -3,7 +3,7 @@ import { Text, TextInput } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import BottomModal from '../../common/BottomModal';
 import { Button } from '../../index';
-import { saveGeminiConfig } from '../../../services/storageService';
+import { saveAIConfig } from '../../../services/storageService';
 import { useAlert } from '../../../context/AlertContext';
 
 interface GeminiSettingsModalProps {
@@ -25,7 +25,7 @@ const GeminiSettingsModal: React.FC<GeminiSettingsModalProps> = ({
 
     const handleSaveKey = async () => {
         if (apiKey.trim()) {
-            await saveGeminiConfig({ apiKey: apiKey.trim() });
+            await saveAIConfig({ apiKey: apiKey.trim() });
             showAlert('Success', 'API Key saved securely.');
             setApiKey('');
             onApiKeySaved();
