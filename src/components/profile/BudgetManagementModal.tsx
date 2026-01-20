@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, FlatList } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, TextInput, FlatList, ScrollView } from 'react-native';
 import BottomModal from '../common/BottomModal';
 import { useTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +24,16 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
     const [showAddForm, setShowAddForm] = useState(false);
+    const scrollViewRef = useRef<ScrollView>(null);
+
+    useEffect(() => {
+        if (showAddForm && scrollViewRef.current) {
+            // Tiny delay to allow layout to update
+            setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+        }
+    }, [showAddForm]);
 
     useEffect(() => {
         if (visible) {
@@ -111,15 +121,15 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
             visible={visible}
             onClose={onClose}
             title="Manage Budgets"
-            style={{ height: '70%' }}
-            contentStyle={{ flex: 1 }}
+            maxHeight="85%"
         >
-            <View style={{ flex: 1 }}>
+            <ScrollView ref={scrollViewRef}>
                 <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 10, paddingHorizontal: 20 }}>
                     Your Budgets ({budgets.length})
                 </Text>
 
                 <FlatList
+                    scrollEnabled={false}
                     data={budgets}
                     keyExtractor={item => item.category}
                     contentContainerStyle={{ paddingHorizontal: 20 }}
@@ -301,7 +311,7 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
                     }}
                     categoryGroups={EXPENSE_CATEGORY_GROUPS}
                 />
-            </View>
+            </ScrollView>
         </BottomModal>
     );
 };

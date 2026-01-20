@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, Switch, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '../common/BottomModal';
 import { Card } from '..';
@@ -35,61 +35,67 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
             visible={visible}
             onClose={onClose}
             title="Recurring Transactions"
-            style={{ height: '70%' }}
-            contentStyle={{ flex: 1 }}
+            maxHeight="85%"
         >
-            {sortedRules.length === 0 ? (
-                <View style={{ padding: 20, alignItems: 'center' }}>
-                    <Text style={{ color: colors.textSecondary }}>No recurring rules found.</Text>
-                </View>
-            ) : (
-                <FlatList
-                    data={sortedRules}
-                    keyExtractor={item => item.id}
-                    renderItem={({ item }) => (
-                        <Card style={{ marginBottom: 10 }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <View style={{ flex: 1, paddingRight: 10 }}>
-                                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 4 }}>
-                                        {item.name || item.transactionTemplate.category}
-                                    </Text>
-                                    <Text style={{ color: colors.textSecondary }}>
-                                        {item.frequency} • <Text style={{ color: item.transactionTemplate.type === 'EXPENSE' ? colors.error : colors.success }}>
-                                            {formatCurrencyAmount(item.transactionTemplate.amount, currency)}
-                                        </Text>
-                                    </Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
-                                        Next due: {new Date(item.nextDueDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
-                                    </Text>
-                                </View>
+            <ScrollView>
+                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 10, paddingHorizontal: 20 }}>
+                    Your Recurring Expenses ({sortedRules.length})
+                </Text>
 
-                                <View style={{ alignItems: 'center', gap: 15 }}>
-                                    <View style={{ alignItems: 'center' }}>
-                                        <Text style={{ color: colors.textSecondary, fontSize: 10, marginBottom: 2 }}>
-                                            {item.isActive ? 'Active' : 'Paused'}
+                {sortedRules.length === 0 ? (
+                    <View style={{ padding: 20, alignItems: 'center' }}>
+                        <Text style={{ color: colors.textSecondary }}>No recurring rules found.</Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        scrollEnabled={false}
+                        data={sortedRules}
+                        keyExtractor={item => item.id}
+                        renderItem={({ item }) => (
+                            <Card style={{ marginBottom: 10 }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <View style={{ flex: 1, paddingRight: 10 }}>
+                                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 4 }}>
+                                            {item.name || item.transactionTemplate.category}
                                         </Text>
-                                        <Switch
-                                            value={item.isActive}
-                                            onValueChange={() => onToggleRule(item)}
-                                            trackColor={{ false: colors.border, true: colors.primary }}
-                                            thumbColor={item.isActive ? '#fff' : '#f4f3f4'}
-                                            style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
-                                        />
+                                        <Text style={{ color: colors.textSecondary }}>
+                                            {item.frequency} • <Text style={{ color: item.transactionTemplate.type === 'EXPENSE' ? colors.error : colors.success }}>
+                                                {formatCurrencyAmount(item.transactionTemplate.amount, currency)}
+                                            </Text>
+                                        </Text>
+                                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
+                                            Next due: {new Date(item.nextDueDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                                        </Text>
                                     </View>
 
-                                    <TouchableOpacity
-                                        onPress={() => onDeleteRule(item.id)}
-                                        style={{ padding: 5 }}
-                                    >
-                                        <Ionicons name="trash-outline" size={24} color={colors.error} />
-                                    </TouchableOpacity>
+                                    <View style={{ alignItems: 'center', gap: 15 }}>
+                                        <View style={{ alignItems: 'center' }}>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 10, marginBottom: 2 }}>
+                                                {item.isActive ? 'Active' : 'Paused'}
+                                            </Text>
+                                            <Switch
+                                                value={item.isActive}
+                                                onValueChange={() => onToggleRule(item)}
+                                                trackColor={{ false: colors.border, true: colors.primary }}
+                                                thumbColor={item.isActive ? '#fff' : '#f4f3f4'}
+                                                style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+                                            />
+                                        </View>
+
+                                        <TouchableOpacity
+                                            onPress={() => onDeleteRule(item.id)}
+                                            style={{ padding: 5 }}
+                                        >
+                                            <Ionicons name="trash-outline" size={24} color={colors.error} />
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
-                            </View>
-                        </Card>
-                    )}
-                    showsVerticalScrollIndicator={false}
-                />
-            )}
+                            </Card>
+                        )}
+                        showsVerticalScrollIndicator={false}
+                    />
+                )}
+            </ScrollView>
         </BottomModal>
     );
 };
