@@ -23,7 +23,7 @@ const RecurringExpensesSummaryModal: React.FC<RecurringExpensesSummaryProps> = (
 
     const totalMonthly = useMemo(() => {
         return recurrences
-            .filter(r => r.isActive)
+            .filter(r => r.isActive && r.transactionTemplate.type === 'EXPENSE')
             .reduce((sum, r) => {
                 const amount = r.transactionTemplate.amount;
                 let monthlyAmount = 0;
@@ -42,15 +42,16 @@ const RecurringExpensesSummaryModal: React.FC<RecurringExpensesSummaryProps> = (
 
     const upcoming = useMemo(() => {
         // Simple logic: sort active recurring by next due date
+
         return recurrences
-            .filter(r => r.isActive)
+            .filter(r => r.isActive && r.transactionTemplate.type === 'EXPENSE')
             .sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime())
             .slice(0, 3); // Top 3 upcoming
     }, [recurrences]);
 
     const categoryBreakdown = useMemo(() => {
         const groups: Record<string, number> = {};
-        recurrences.filter(r => r.isActive).forEach(r => {
+        recurrences.filter(r => r.isActive && r.transactionTemplate.type === 'EXPENSE').forEach(r => {
             groups[r.transactionTemplate.category] = (groups[r.transactionTemplate.category] || 0) + r.transactionTemplate.amount;
         });
         return Object.entries(groups).sort((a, b) => b[1] - a[1]);
