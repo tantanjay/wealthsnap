@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
@@ -97,7 +97,7 @@ const ProfileScreen = ({ navigation }: any) => {
         );
     };
 
-    const ThemeOption = ({ title, value, current }: { title: string, value: 'light' | 'dark' | 'system', current: string }) => (
+    const ThemeOption = ({ icon, title, value, current }: { icon: string, title: string, value: 'light' | 'dark' | 'system', current: string }) => (
         <TouchableOpacity
             style={[
                 styles.themeButton,
@@ -108,6 +108,12 @@ const ProfileScreen = ({ navigation }: any) => {
             ]}
             onPress={() => setMode(value)}
         >
+            <Ionicons
+                name={icon as any}
+                size={18}
+                color={current === value ? '#fff' : colors.text}
+                style={{ marginRight: 6 }}
+            />
             <Text style={{
                 color: current === value ? '#fff' : colors.text,
                 fontWeight: current === value ? '600' : '400'
@@ -117,97 +123,191 @@ const ProfileScreen = ({ navigation }: any) => {
         </TouchableOpacity>
     );
 
+    const SettingItem = ({
+        icon,
+        title,
+        subtitle,
+        onPress,
+        iconBg,
+        iconColor,
+        isLast = false
+    }: {
+        icon: string,
+        title: string,
+        subtitle?: string,
+        onPress: () => void,
+        iconBg?: string,
+        iconColor?: string,
+        isLast?: boolean
+    }) => (
+        <TouchableOpacity
+            style={[
+                styles.settingItem,
+                { borderBottomColor: colors.border },
+                isLast && { borderBottomWidth: 0 }
+            ]}
+            onPress={onPress}
+        >
+            <View style={[styles.iconContainer, { backgroundColor: iconBg || colors.primary + '20' }]}>
+                <Ionicons name={icon as any} size={22} color={iconColor || colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+                <Text style={[styles.settingTitle, { color: colors.text }]}>{title}</Text>
+                {subtitle && <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+    );
+
     return (
         <ScreenWrapper>
-            <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>Profile & Settings</Text>
-
-            <Card>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 15 }}>Appearance</Text>
-                <View style={styles.themeContainer}>
-                    <ThemeOption title="Light" value="light" current={mode} />
-                    <ThemeOption title="Dark" value="dark" current={mode} />
-                    <ThemeOption title="System" value="system" current={mode} />
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={{ marginBottom: 20, marginTop: 10 }}>
+                    <Text style={{ color: colors.textSecondary }}>Settings & Preferences</Text>
+                    <Text style={{ color: colors.text, fontSize: 28, fontWeight: 'bold' }}>Profile</Text>
                 </View>
-            </Card>
 
-            <Card>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Transactions</Text>
-                <Button variant="outline" title="Manage Recurring" onPress={handleManageRecurring} style={{ marginBottom: 10 }} />
-                <Button variant="outline" title="Manage Budgets" onPress={() => setShowBudgetModal(true)} />
-            </Card>
-
-            <DataManagementCard navigation={navigation} />
-
-            <Card>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Gemini AI Settings</Text>
-                <Text style={{ color: colors.textSecondary, marginBottom: 10 }}>
-                    {hasApiKey
-                        ? "✅ Custom API Key is configured."
-                        : "Use your own API key for smart insights."}
-                </Text>
-                <Button
-                    variant="outline"
-                    title={hasApiKey ? "Change API Key" : "Configure API Key"}
-                    onPress={() => setShowGeminiModal(true)}
-                    style={{ marginBottom: 10 }}
-                />
-                <Button
-                    variant="outline"
-                    title="View Usage"
-                    onPress={() => setShowGeminiUsageModal(true)}
-                />
-            </Card>
-
-            <SecurityCard />
-
-            <Card>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
-                    <View style={{
-                        width: 40, height: 40,
-                        borderRadius: 12,
-                        backgroundColor: colors.primary + '20', // 20% opacity primary
-                        justifyContent: 'center', alignItems: 'center',
-                        marginRight: 12
-                    }}>
-                        <Ionicons name="book" size={22} color={colors.primary} />
+                {/* Appearance Card */}
+                <Card style={{ marginBottom: 16 }}>
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
+                            <Ionicons name="color-palette" size={22} color={colors.primary} />
+                        </View>
+                        <Text style={[styles.cardTitle, { color: colors.text }]}>Appearance</Text>
                     </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Help & Guide</Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Master your personal finance</Text>
+                    <View style={styles.themeContainer}>
+                        <ThemeOption icon="sunny" title="Light" value="light" current={mode} />
+                        <ThemeOption icon="moon" title="Dark" value="dark" current={mode} />
+                        <ThemeOption icon="phone-portrait" title="System" value="system" current={mode} />
                     </View>
-                </View>
+                </Card>
 
-                <Button variant="primary" title="View Onboarding Guide" onPress={() => setShowGuide(true)} />
+                {/* Quick Actions Card */}
+                <Card style={{ marginBottom: 16 }}>
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.headerIcon, { backgroundColor: colors.accent + '20' }]}>
+                            <Ionicons name="wallet" size={22} color={colors.accent} />
+                        </View>
+                        <Text style={[styles.cardTitle, { color: colors.text }]}>Transactions</Text>
+                    </View>
+                    <SettingItem
+                        icon="repeat"
+                        title="Recurring Transactions"
+                        subtitle="Manage automatic entries"
+                        onPress={handleManageRecurring}
+                        iconBg={colors.success + '20'}
+                        iconColor={colors.success}
+                    />
+                    <SettingItem
+                        icon="calculator"
+                        title="Budget Management"
+                        subtitle="Set spending limits"
+                        onPress={() => setShowBudgetModal(true)}
+                        iconBg={colors.warning + '20'}
+                        iconColor={colors.warning}
+                    />
+                </Card>
 
-            </Card>
+                {/* Data Management */}
+                <DataManagementCard navigation={navigation} />
 
-            <Card>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>About</Text>
-                <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 15 }}>
-                    WealthSnap is a free, ad-free personal finance tracker with AI-powered receipt scanning. Your data stays private and secure on your device.
-                </Text>
+                {/* Gemini AI Card - Enhanced */}
+                <Card style={{ marginBottom: 16, backgroundColor: colors.primary, padding: 20 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                        <View style={[styles.headerIcon, { backgroundColor: 'rgba(255,255,255,0.2)', marginRight: 12 }]}>
+                            <Ionicons name="sparkles" size={22} color={colors.white} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.cardTitle, { color: colors.white }]}>Gemini AI</Text>
+                            <Text style={{ color: colors.white, opacity: 0.9, fontSize: 13, marginTop: 2 }}>
+                                {hasApiKey ? "✓ API Key configured" : "Configure your API key"}
+                            </Text>
+                        </View>
+                    </View>
 
-                <View style={{ backgroundColor: colors.surface, borderLeftWidth: 3, borderLeftColor: colors.primary, padding: 12, borderRadius: 8, marginBottom: 15 }}>
-                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 6 }}>Why is WealthSnap free?</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>
-                        WealthSnap was built as a passion project to provide a high-quality, private financial tool without the tracking found in modern apps. We don&apos;t have server costs because your data stays on your phone. If you use the AI features, you use your own API key, keeping the app sustainable and free for everyone.
+                    <View style={{ gap: 8 }}>
+                        <TouchableOpacity
+                            style={styles.aiButton}
+                            onPress={() => setShowGeminiModal(true)}
+                        >
+                            <Ionicons name="key" size={18} color={colors.primary} />
+                            <Text style={[styles.aiButtonText, { color: colors.primary }]}>
+                                {hasApiKey ? "Change API Key" : "Configure API Key"}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.aiButton}
+                            onPress={() => setShowGeminiUsageModal(true)}
+                        >
+                            <Ionicons name="bar-chart" size={18} color={colors.primary} />
+                            <Text style={[styles.aiButtonText, { color: colors.primary }]}>View Usage Statistics</Text>
+                        </TouchableOpacity>
+                    </View>
+                </Card>
+
+                {/* Security */}
+                <SecurityCard />
+
+                {/* Help & Guide Card */}
+                <Card style={{ marginBottom: 16, backgroundColor: colors.info, padding: 20 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                        <View style={[styles.headerIcon, { backgroundColor: 'rgba(255,255,255,0.2)', marginRight: 12 }]}>
+                            <Ionicons name="book" size={22} color={colors.white} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.cardTitle, { color: colors.white }]}>Help & Guide</Text>
+                            <Text style={{ color: colors.white, opacity: 0.9, fontSize: 13, marginTop: 2 }}>
+                                Master your personal finance
+                            </Text>
+                        </View>
+                    </View>
+
+                    <TouchableOpacity
+                        style={styles.aiButton}
+                        onPress={() => setShowGuide(true)}
+                    >
+                        <Ionicons name="book-outline" size={18} color={colors.info} />
+                        <Text style={[styles.aiButtonText, { color: colors.info }]}>View Onboarding Guide</Text>
+                    </TouchableOpacity>
+                </Card>
+
+                {/* About Card */}
+                <Card>
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.headerIcon, { backgroundColor: colors.secondary + '20' }]}>
+                            <Ionicons name="information-circle" size={22} color={colors.secondary} />
+                        </View>
+                        <Text style={[styles.cardTitle, { color: colors.text }]}>About WealthSnap</Text>
+                    </View>
+
+                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 15 }}>
+                        WealthSnap is a free, ad-free personal finance tracker with AI-powered receipt scanning. Your data stays private and secure on your device.
                     </Text>
-                </View>
 
-                <TouchableOpacity
-                    onPress={() => setShowSupportModal(true)}
-                    style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}
-                >
-                    <Ionicons name="heart-outline" size={16} color={colors.primary} />
-                    <Text style={{ color: colors.primary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
-                        Support Developer
+                    <View style={{ backgroundColor: colors.surface, borderLeftWidth: 3, borderLeftColor: colors.primary, padding: 12, borderRadius: 8, marginBottom: 15 }}>
+                        <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 6 }}>Why is WealthSnap free?</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>
+                            WealthSnap was built as a passion project to provide a high-quality, private financial tool without the tracking found in modern apps. We don&apos;t have server costs because your data stays on your phone. If you use the AI features, you use your own API key, keeping the app sustainable and free for everyone.
+                        </Text>
+                    </View>
+
+                    <TouchableOpacity
+                        onPress={() => setShowSupportModal(true)}
+                        style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, marginBottom: 15 }}
+                    >
+                        <Ionicons name="heart" size={18} color={colors.error} />
+                        <Text style={{ color: colors.error, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
+                            Support the Developer
+                        </Text>
+                    </TouchableOpacity>
+
+                    <Text style={{ color: colors.gray500, fontSize: 12 }}>
+                        Version {appJson.expo.version}
                     </Text>
-                </TouchableOpacity>
+                </Card>
 
-                <Text style={{ color: colors.gray500, fontSize: 12, marginTop: 15 }}>
-                    Version {appJson.expo.version}
-                </Text>
-            </Card>
+                <View style={{ height: 40 }} />
+            </ScrollView>
 
             {/* Recurring Rules Modal */}
             <RecurringRulesListModal
@@ -250,7 +350,7 @@ const ProfileScreen = ({ navigation }: any) => {
             <Modal visible={showGuide} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowGuide(false)}>
                 <OnboardingGuide onFinish={() => setShowGuide(false)} mode="view" />
             </Modal>
-        </ScreenWrapper >
+        </ScreenWrapper>
 
     );
 };
@@ -267,7 +367,60 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 1,
         borderRadius: 8,
-    }
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    headerIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+    },
+    settingItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+    },
+    iconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    settingTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 2,
+    },
+    settingSubtitle: {
+        fontSize: 13,
+    },
+    aiButton: {
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    aiButtonText: {
+        fontWeight: '600',
+        fontSize: 15,
+        marginLeft: 8,
+    },
 });
 
 export default ProfileScreen;
