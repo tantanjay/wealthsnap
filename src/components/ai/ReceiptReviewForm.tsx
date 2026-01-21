@@ -1,0 +1,454 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, BackHandler, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, Modal, Switch } from 'react-native';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { useTheme } from '../../context/ThemeContext';
+import { Button, Card } from '../index';
+import { analyzeReceiptImage } from '../../services/geminiService';
+import { getUserProfile } from '../../services/storageService';
+import { ReceiptAnalysisResult, ReceiptItem } from '../../types';
+import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useAlert } from '../../context/AlertContext';
+
+interface ReceiptReviewFormProps {
+    imageUri: string;
+    onSave: (transactionData: any, receiptData: ReceiptAnalysisResult, splitByCategory: boolean) => Promise<void>;
+    onCancel: () => void;
+}
+
+export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, onSave, onCancel }) => {
+    const { colors } = useTheme();
+    const { showAlert } = useAlert();
+    const [loading, setLoading] = useState(true);
+    const [processingStep, setProcessingStep] = useState<string>('Analyzing receipt...');
+
+    // Receipt Data State
+    const [date, setDate] = useState<Date>(new Date());
+    const [merchant, setMerchant] = useState('');
+    const [items, setItems] = useState<ReceiptItem[]>([]);
+    const [note, setNote] = useState('');
+    const [currencySymbol, setCurrencySymbol] = useState('$');
+    const [splitByCategory, setSplitByCategory] = useState(false);
+
+    // UI State
+    const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showTimePicker, setShowTimePicker] = useState(false);
+
+    // ... (rest of code)
+
+
+
+    // Block Back Button
+    useEffect(() => {
+        const backAction = () => {
+            showAlert("Discard Analysis?", "Are you sure you want to discard this receipt?", [
+                { text: "No", onPress: () => { } },
+                { text: "Yes", onPress: onCancel }
+            ]);
+            return true;
+        };
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+        return () => backHandler.remove();
+    }, [loading, onCancel, showAlert]);
+
+    // Initial Analysis
+    useEffect(() => {
+        let isMounted = true;
+        const init = async () => {
+            try {
+                // Fetch Currency
+                const profile = await getUserProfile();
+                if (isMounted && profile && profile.currency) {
+                    setCurrencySymbol(profile.currency);
+                }
+
+                // Optimize Image
+                if (isMounted) setProcessingStep('Preparing image...');
+
+                // Resize to max 1024px width (approx) to speed up upload
+                const manipResult = await ImageManipulator.manipulateAsync(
+                    imageUri,
+                    [{ resize: { width: 1024 } }],
+                    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+                );
+
+                if (!isMounted) return;
+
+                // Analyze Image
+                setProcessingStep('Extracting receipt data...');
+                const result = await analyzeReceiptImage(manipResult.uri);
+
+                if (!isMounted) return;
+
+                if (result.isValidReceipt && result.items) {
+                    if (result.date) setDate(new Date(result.date));
+                    if (result.merchantName) setMerchant(result.merchantName);
+                    setItems(result.items);
+
+                    // Pre-fill note
+                    const noteText = `Receipt from ${result.merchantName || 'Unknown'}`;
+                    setNote(noteText);
+                } else {
+                    showAlert(
+                        "Analysis Failed",
+                        result.validationError || "Could not extract receipt data.",
+                        [{ text: "Go Back", onPress: onCancel }]
+                    );
+                }
+            } catch (error) {
+                if (isMounted) showAlert("Error", "Failed to process image.", [{ text: "Go Back", onPress: onCancel }]);
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        };
+        init();
+        return () => { isMounted = false; };
+    }, [imageUri, showAlert]);
+
+    // Group Items by Category
+    const groupedItems = useMemo(() => {
+        const groups: { [key: string]: { items: ReceiptItem[], total: number, count: number } } = {};
+
+        items.forEach(item => {
+            const cat = item.category || 'Uncategorized';
+            if (!groups[cat]) {
+                groups[cat] = { items: [], total: 0, count: 0 };
+            }
+            groups[cat].items.push(item);
+            groups[cat].total += item.amount;
+            groups[cat].count += 1;
+        });
+
+        return groups;
+    }, [items]);
+
+    const totalAmount = useMemo(() => {
+        return items.reduce((sum, item) => sum + item.amount, 0);
+    }, [items]);
+
+    const handleSave = async () => {
+        if (totalAmount <= 0) {
+            showAlert("Invalid Amount", "Total amount must be greater than 0.");
+            return;
+        }
+
+        const data: ReceiptAnalysisResult = {
+            isValidReceipt: true,
+            merchantName: merchant,
+            date: date.toISOString(),
+            totalAmount: totalAmount,
+            items: items,
+            confidence: 100
+        };
+
+        const transactionBase = {
+            amount: totalAmount,
+            date: date,
+            note: note,
+        };
+
+        await onSave(transactionBase, data, splitByCategory);
+    };
+
+    if (loading) {
+        return (
+            <Modal
+                visible={true}
+                animationType="fade"
+                presentationStyle="fullScreen"
+                onRequestClose={() => {
+                    // Prevent back button during loading or handle with alert
+                    showAlert("Discard Analysis?", "Are you sure you want to discard this receipt?", [
+                        { text: "No", onPress: () => { } },
+                        { text: "Yes", onPress: onCancel }
+                    ]);
+                }}
+            >
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={{ marginTop: 20, color: colors.text, fontSize: 16 }}>{processingStep}</Text>
+                </View>
+            </Modal>
+        );
+    }
+
+    return (
+        <Modal
+            visible={true}
+            animationType="slide"
+            presentationStyle="fullScreen"
+            onRequestClose={() => {
+                // Handle hardware back button for Android
+                showAlert("Discard Analysis?", "Are you sure you want to discard this receipt?", [
+                    { text: "No", onPress: () => { } },
+                    { text: "Yes", onPress: onCancel }
+                ]);
+            }}
+        >
+            <View style={{ flex: 1, backgroundColor: colors.background }}>
+                <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Review Receipt</Text>
+                    {/* Split Toggle */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Save as Items</Text>
+                        <Switch
+                            value={splitByCategory}
+                            onValueChange={setSplitByCategory}
+                            trackColor={{ false: colors.border, true: colors.primary }}
+                            thumbColor={Platform.OS === 'ios' ? '#fff' : splitByCategory ? colors.primary : '#f4f3f4'}
+                        />
+                    </View>
+                </View>
+
+                <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+                    {/* Global Info */}
+                    <View style={{ gap: 12 }}>
+                        {/* Date & Time Selection (Styled like TransactionForm) */}
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            <TouchableOpacity
+                                onPress={() => setShowDatePicker(true)}
+                                style={{
+                                    flex: 1,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: colors.surface,
+                                    padding: 12,
+                                    borderRadius: 12,
+                                    borderWidth: 1,
+                                    borderColor: colors.border
+                                }}
+                            >
+                                <Ionicons name="calendar-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                                <View>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Date</Text>
+                                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                                        {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={() => setShowTimePicker(true)}
+                                style={{
+                                    flex: 1,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: colors.surface,
+                                    padding: 12,
+                                    borderRadius: 12,
+                                    borderWidth: 1,
+                                    borderColor: colors.border
+                                }}
+                            >
+                                <Ionicons name="time-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                                <View>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Time</Text>
+                                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                                        {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Merchant */}
+                        <View>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Merchant</Text>
+                            <TextInput
+                                value={merchant}
+                                onChangeText={setMerchant}
+                                style={{ color: colors.text, borderBottomWidth: 1, borderColor: colors.border, paddingVertical: 4, fontWeight: 'bold', fontSize: 16 }}
+                            />
+                        </View>
+
+                        {/* Note */}
+                        <View>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Note</Text>
+                            <TextInput
+                                value={note}
+                                onChangeText={setNote}
+                                style={{ color: colors.text, borderBottomWidth: 1, borderColor: colors.border, paddingVertical: 4 }}
+                                placeholder="Add a note..."
+                                placeholderTextColor={colors.gray500}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Categories & Items */}
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 12, marginTop: 8 }}>
+                        Items by Category
+                    </Text>
+
+                    {Object.entries(groupedItems).map(([category, data]) => (
+                        <View key={category} style={{ marginBottom: 16 }}>
+                            <TouchableOpacity
+                                onPress={() => setExpandedCategory(expandedCategory === category ? null : category)}
+                                style={{
+                                    flexDirection: 'row',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    backgroundColor: colors.surface,
+                                    padding: 16,
+                                    borderRadius: 12,
+                                    borderWidth: 1,
+                                    borderColor: expandedCategory === category ? colors.primary : colors.border
+                                }}
+                            >
+                                <View>
+                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{category}</Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{data.count} items</Text>
+                                </View>
+                                <View style={{ alignItems: 'flex-end' }}>
+                                    <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>
+                                        {currencySymbol} {data.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </Text>
+                                    <Ionicons name={expandedCategory === category ? "chevron-up" : "chevron-down"} size={16} color={colors.textSecondary} />
+                                </View>
+                            </TouchableOpacity>
+
+                            {/* Expanded Items List */}
+                            {expandedCategory === category && (
+                                <View style={{ marginTop: 8, paddingLeft: 8 }}>
+                                    {data.items.map((item, idx) => {
+                                        const realIndex = items.indexOf(item);
+                                        return (
+                                            <View key={idx} style={{
+                                                backgroundColor: colors.surface,
+                                                borderRadius: 8,
+                                                padding: 12,
+                                                marginBottom: 8,
+                                                flexDirection: 'row',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center'
+                                            }}>
+                                                <View style={{ flex: 1, marginRight: 8 }}>
+                                                    <TextInput
+                                                        value={item.description}
+                                                        onChangeText={(txt) => {
+                                                            const newItems = [...items];
+                                                            newItems[realIndex].description = txt;
+                                                            setItems(newItems);
+                                                        }}
+                                                        style={{ color: colors.text, fontWeight: '500', marginBottom: 4 }}
+                                                    />
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>x</Text>
+                                                        <TextInput
+                                                            value={item.quantity.toString()}
+                                                            keyboardType="numeric"
+                                                            onChangeText={(txt) => {
+                                                                const qty = parseFloat(txt) || 0;
+                                                                const newItems = [...items];
+                                                                newItems[realIndex].quantity = qty;
+                                                                newItems[realIndex].amount = qty * newItems[realIndex].unitPrice;
+                                                                setItems(newItems);
+                                                            }}
+                                                            style={{ color: colors.textSecondary, fontSize: 12, borderBottomWidth: 1, borderColor: colors.border, marginHorizontal: 4, minWidth: 20, textAlign: 'center' }}
+                                                        />
+                                                    </View>
+                                                </View>
+                                                <View style={{ alignItems: 'flex-end', minWidth: 80 }}>
+                                                    <TextInput
+                                                        value={item.amount.toString()}
+                                                        keyboardType="numeric"
+                                                        onChangeText={(txt) => {
+                                                            const amt = parseFloat(txt) || 0;
+                                                            const newItems = [...items];
+                                                            newItems[realIndex].amount = amt;
+                                                            if (newItems[realIndex].quantity > 0)
+                                                                newItems[realIndex].unitPrice = amt / newItems[realIndex].quantity;
+                                                            setItems(newItems);
+                                                        }}
+                                                        style={{ color: colors.text, fontWeight: 'bold', borderBottomWidth: 1, borderColor: colors.border, textAlign: 'right' }}
+                                                    />
+                                                    <TouchableOpacity onPress={() => {
+                                                        const newItems = items.filter((_, i) => i !== realIndex);
+                                                        setItems(newItems);
+                                                    }}>
+                                                        <Text style={{ color: colors.error, fontSize: 10, marginTop: 4 }}>Remove</Text>
+                                                    </TouchableOpacity>
+                                                </View>
+                                            </View>
+                                        );
+                                    })}
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            const newItem: ReceiptItem = {
+                                                description: "New Item",
+                                                quantity: 1,
+                                                unitPrice: 0,
+                                                amount: 0,
+                                                category: category
+                                            };
+                                            setItems([...items, newItem]);
+                                        }}
+                                        style={{ padding: 12, alignItems: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: colors.border, borderRadius: 8 }}
+                                    >
+                                        <Text style={{ color: colors.primary }}>+ Add Item</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        </View>
+                    ))}
+
+                    {/* Total Summary */}
+                    <View style={{ marginTop: 20, marginBottom: 20, alignItems: 'center' }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>Total Estimate</Text>
+                        <Text style={{ color: colors.text, fontSize: 32, fontWeight: 'bold' }}>
+                            {currencySymbol} {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </Text>
+                    </View>
+
+                </ScrollView>
+
+                {/* Footer Actions */}
+                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: colors.surface, borderTopWidth: 1, borderColor: colors.border, flexDirection: 'row', gap: 12 }}>
+                    <Button
+                        title="Cancel"
+                        variant="ghost"
+                        onPress={onCancel}
+                        style={{ flex: 1 }}
+                    />
+                    <Button
+                        title="Save Record"
+                        onPress={handleSave}
+                        style={{ flex: 2 }}
+                    />
+                </View>
+
+                {/* Date Pickers */}
+                {showDatePicker && (
+                    <DateTimePicker
+                        value={date}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event: any, selectedDate?: Date) => {
+                            setShowDatePicker(Platform.OS === 'ios');
+                            if (selectedDate) {
+                                const newDate = new Date(date);
+                                newDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+                                setDate(newDate);
+                            }
+                        }}
+                    />
+                )}
+                {showTimePicker && (
+                    <DateTimePicker
+                        value={date}
+                        mode="time"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event: any, selectedDate?: Date) => {
+                            setShowTimePicker(Platform.OS === 'ios');
+                            if (selectedDate) {
+                                const newDate = new Date(date);
+                                newDate.setHours(selectedDate.getHours(), selectedDate.getMinutes());
+                                setDate(newDate);
+                            }
+                        }}
+                    />
+                )}
+            </View>
+        </Modal>
+    );
+};
