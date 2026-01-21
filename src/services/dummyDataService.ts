@@ -57,11 +57,11 @@ export const generateDummyData = async () => {
             });
         }
 
-        // 3. Generate Transactions for last 6 months
+        // 3. Generate Transactions for last 24 months
         const today = new Date();
         const transactions: Transaction[] = [];
 
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 24; i++) {
             const currentMonth = new Date(today.getFullYear(), today.getMonth() - i, 1);
             const year = currentMonth.getFullYear();
             const month = currentMonth.getMonth();

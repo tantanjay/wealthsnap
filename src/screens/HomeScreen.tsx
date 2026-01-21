@@ -13,6 +13,7 @@ import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyAmount } from '../utils/currencyUtils';
 import { getTopTransactions } from '../utils/financialMetrics';
 import HomeTransactionsCard from '../components/home/HomeTransactionsCard';
+import { Skeleton } from '../components/common/Skeleton';
 
 
 
@@ -24,8 +25,10 @@ const HomeScreen = ({ navigation }: any) => {
     const [income, setIncome] = useState(0);
     const [expense, setExpense] = useState(0);
     const [investmentTotal, setInvestmentTotal] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
 
     const loadData = async () => {
+        setIsLoading(true);
         // Process recurring rules first to ensure we fetch the latest transactions
         await processRecurrenceRules();
 
@@ -49,6 +52,7 @@ const HomeScreen = ({ navigation }: any) => {
 
         const totalInv = inv.reduce((sum: number, item: Investment) => sum + (item.quantity * (item.currentPrice || item.averageBuyPrice)), 0);
         setInvestmentTotal(totalInv);
+        setIsLoading(false);
     };
 
     useFocusEffect(
@@ -89,16 +93,32 @@ const HomeScreen = ({ navigation }: any) => {
                             </TouchableOpacity>
                         </View>
                         <Text style={{ color: colors.white, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
-                            {formatCurrency(income - expense)}
+                            {isLoading ? (
+                                <Skeleton width={150} height={40} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                            ) : (
+                                formatCurrency(income - expense)
+                            )}
                         </Text>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
                             <View>
                                 <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Income</Text>
-                                <Text style={{ color: colors.white, fontWeight: 'bold' }}>+{formatCurrency(income)}</Text>
+                                <Text style={{ color: colors.white, fontWeight: 'bold' }}>
+                                    {isLoading ? (
+                                        <Skeleton width={80} height={20} style={{ marginTop: 4, backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                                    ) : (
+                                        `+${formatCurrency(income)}`
+                                    )}
+                                </Text>
                             </View>
                             <View>
                                 <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Expense</Text>
-                                <Text style={{ color: colors.white, fontWeight: 'bold' }}>-{formatCurrency(expense)}</Text>
+                                <Text style={{ color: colors.white, fontWeight: 'bold' }}>
+                                    {isLoading ? (
+                                        <Skeleton width={80} height={20} style={{ marginTop: 4, backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                                    ) : (
+                                        `-${formatCurrency(expense)}`
+                                    )}
+                                </Text>
                             </View>
                         </View>
 
@@ -132,7 +152,11 @@ const HomeScreen = ({ navigation }: any) => {
                             <Ionicons name="trending-up" size={24} color={colors.white} />
                         </View>
                         <Text style={{ color: colors.white, fontSize: 32, fontWeight: 'bold' }}>
-                            {isPrivacyEnabled ? '****' : formatCurrencyAmount(investmentTotal, profile?.currency || 'USD')}
+                            {isLoading ? (
+                                <Skeleton width={120} height={36} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                            ) : (
+                                isPrivacyEnabled ? '****' : formatCurrencyAmount(investmentTotal, profile?.currency || 'USD')
+                            )}
                         </Text>
                         <TouchableOpacity
                             style={{
@@ -158,6 +182,7 @@ const HomeScreen = ({ navigation }: any) => {
                         currency={profile?.currency || 'USD'}
                         onTransactionPress={() => navigation.navigate('History')}
                         isPrivacyEnabled={isPrivacyEnabled}
+                        isLoading={isLoading}
                     />
                 </View>
             </ScrollView>
