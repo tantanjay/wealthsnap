@@ -7,6 +7,7 @@ import { CURRENCY_SYMBOLS, formatCompactCurrency } from '../../../utils/currency
 import MonthEndProjectionModal from '../modals/MonthEndProjectionModal';
 import { Transaction } from '../../../types';
 import { Ionicons } from '@expo/vector-icons';
+import { Skeleton } from '../../common/Skeleton';
 
 
 interface IncomeAnalysisProps {
@@ -22,9 +23,10 @@ interface IncomeAnalysisProps {
     currency: string;
     isPrivacyEnabled: boolean;
     transactions: Transaction[];
+    isLoading?: boolean;
 }
 
-const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, categoryBreakdown, currency, isPrivacyEnabled, transactions }) => {
+const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, categoryBreakdown, currency, isPrivacyEnabled, transactions, isLoading = false }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
     const [showProjectionModal, setShowProjectionModal] = React.useState(false);
@@ -78,7 +80,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
             {/* Insight Bubble */}
             <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, marginRight: 10 }}>💡</Text>
-                <Text style={{ color: colors.text, flex: 1 }}>{getInsight()}</Text>
+                <Text style={{ color: colors.text, flex: 1 }}>{isLoading ? "Analyzing income trends..." : getInsight()}</Text>
             </View>
 
             <Card>
@@ -122,7 +124,11 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
                 </View>
 
                 {!isPrivacyEnabled ? (
-                    activeTab === 'TREND' ? (
+                    isLoading ? (
+                        <View style={{ height: 220, padding: 10, justifyContent: 'center', alignItems: 'center' }}>
+                            <Skeleton width="100%" height={200} borderRadius={16} />
+                        </View>
+                    ) : activeTab === 'TREND' ? (
                         (() => {
                             const maxValue = Math.max(...(monthlyTrends.incomeData.length > 0 ? monthlyTrends.incomeData : [0]));
                             let scaledData = monthlyTrends.incomeData.length > 0 ? monthlyTrends.incomeData : [0];

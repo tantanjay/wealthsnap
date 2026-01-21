@@ -6,6 +6,7 @@ import { CURRENCY_SYMBOLS, formatCurrencyAmount } from '../../../utils/currencyU
 import { Card } from '../..';
 import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '../../common/BottomModal';
+import { Skeleton } from '../../common/Skeleton';
 
 interface ComparisonChartProps {
     currentMonthExpense: number;
@@ -15,9 +16,10 @@ interface ComparisonChartProps {
     average1Year: number;
     currency: string;
     isPrivacyEnabled: boolean;
+    isLoading?: boolean;
 }
 
-const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year, currency, isPrivacyEnabled }) => {
+const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year, currency, isPrivacyEnabled, isLoading = false }) => {
     const [showInfoModal, setShowInfoModal] = React.useState(false);
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
@@ -93,11 +95,15 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
 
             <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, marginRight: 10 }}>💡</Text>
-                <Text style={{ color: colors.text, flex: 1 }}>{getComparisonInsight()}</Text>
+                <Text style={{ color: colors.text, flex: 1 }}>{isLoading ? "Analyzing spending habits..." : getComparisonInsight()}</Text>
             </View>
 
             <Card>
-                {!isPrivacyEnabled ? (
+                {isLoading ? (
+                    <View style={{ height: 220, padding: 10 }}>
+                        <Skeleton height={200} width="100%" borderRadius={16} />
+                    </View>
+                ) : !isPrivacyEnabled ? (
                     <BarChart
                         data={data}
                         width={screenWidth - 64}

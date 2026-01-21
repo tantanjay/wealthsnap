@@ -4,6 +4,8 @@ import { useTheme } from '../../../context/ThemeContext';
 import { Card } from '../../../components';
 import { formatCurrencyAmount } from '../../../utils/currencyUtils';
 
+import { Skeleton } from '../../common/Skeleton';
+
 interface InsightsOverviewCardsProps {
     netCashFlow: number;
     income: number;
@@ -12,6 +14,7 @@ interface InsightsOverviewCardsProps {
     burnRate: number;
     currency: string;
     isPrivacyEnabled: boolean;
+    isLoading?: boolean;
 }
 
 const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
@@ -21,7 +24,8 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
     savingsRate,
     burnRate,
     currency,
-    isPrivacyEnabled
+    isPrivacyEnabled,
+    isLoading = false
 }) => {
     const { colors } = useTheme();
 
@@ -33,9 +37,17 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                 <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600' }}>{title.toUpperCase()}</Text>
                 <View>
                     <Text style={{ color: color || colors.text, fontSize: 20, fontWeight: 'bold' }}>
-                        {isPrivacyEnabled ? '***' : value}
+                        {isLoading ? (
+                            <Skeleton width={100} height={24} style={{ marginBottom: 4 }} />
+                        ) : (
+                            isPrivacyEnabled ? '***' : value
+                        )}
                     </Text>
-                    {subValue && <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4 }}>{subValue}</Text>}
+                    {isLoading ? (
+                        <Skeleton width={60} height={12} style={{ marginTop: 4 }} />
+                    ) : (
+                        subValue && <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4 }}>{subValue}</Text>
+                    )}
                 </View>
             </Card>
         </View>

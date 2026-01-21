@@ -26,6 +26,7 @@ const InsightsScreen = ({ navigation }: any) => {
     const [currency, setCurrency] = useState('USD');
     const [refreshing, setRefreshing] = useState(false);
     const [expenseGrouping, setExpenseGrouping] = useState<'CATEGORY' | 'SUB_CATEGORY'>('CATEGORY');
+    const [isLoading, setIsLoading] = useState(true);
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
@@ -47,38 +48,48 @@ const InsightsScreen = ({ navigation }: any) => {
     });
 
     const fetchTransactions = async () => {
-        const profile = await getUserProfile();
-        if (profile?.currency) setCurrency(profile.currency);
-        const allTransactions = await getCachedTransactions();
-        setTransactions(allTransactions);
+        setIsLoading(true);
+        try {
+            const profile = await getUserProfile();
+            if (profile?.currency) setCurrency(profile.currency);
+            const allTransactions = await getCachedTransactions();
+            setTransactions(allTransactions);
+
+            // Explicitly calculate metrics with the new data
+            calculateMetrics(allTransactions);
+        } catch (error) {
+            console.error("Error loading insights:", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const calculateMetrics = useCallback(() => {
+    const calculateMetrics = useCallback((currentTransactions: Transaction[] = transactions) => {
         const today = new Date();
-        const currentMonthTrans = Metrics.getTransactionsByMonth(transactions, today);
+        const currentMonthTrans = Metrics.getTransactionsByMonth(currentTransactions, today);
 
         const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const lastMonthTrans = Metrics.getTransactionsByMonth(transactions, lastMonthDate);
+        const lastMonthTrans = Metrics.getTransactionsByMonth(currentTransactions, lastMonthDate);
 
         // Core Metrics
         const totals = Metrics.calculateTotals(currentMonthTrans);
         const savingsRate = Metrics.calculateSavingsRate(totals.income, totals.expense);
-        const burnRate = Metrics.calculateBurnRate(transactions);
+        const burnRate = Metrics.calculateBurnRate(currentTransactions);
 
         // Breakdowns
         const incomeBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'INCOME', 'SUB_CATEGORY');
         const expenseBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', expenseGrouping);
 
         // Trends
-        const monthlyTrends = Metrics.getMonthlyTrends(transactions, 6);
+        const monthlyTrends = Metrics.getMonthlyTrends(currentTransactions, 6);
 
         // Comparison
         const lastMonthTotals = Metrics.calculateTotals(lastMonthTrans);
-        const average6Month = Metrics.calculateBurnRate(transactions, 6);
-        const average1Year = Metrics.calculateBurnRate(transactions, 12);
+        const average6Month = Metrics.calculateBurnRate(currentTransactions, 6);
+        const average1Year = Metrics.calculateBurnRate(currentTransactions, 12);
 
         // Anomalies
-        const anomalies = Metrics.detectAnomalies(currentMonthTrans, transactions);
+        const anomalies = Metrics.detectAnomalies(currentMonthTrans, currentTransactions);
 
         setData({
             netCashFlow: totals.net,
@@ -91,11 +102,12 @@ const InsightsScreen = ({ navigation }: any) => {
             expenseBreakdown,
             currentMonthExpense: totals.expense,
             lastMonthExpense: lastMonthTotals.expense,
-            averageExpense: Metrics.calculateBurnRate(transactions, 3), // 3-month average
+            averageExpense: Metrics.calculateBurnRate(currentTransactions, 3), // 3-month average
             average6Month,
             average1Year,
             anomalies
         });
+        // Removed setIsLoading(false) from here since it's now handled by fetchTransactions
     }, [transactions, expenseGrouping]);
 
     useFocusEffect(
@@ -104,9 +116,10 @@ const InsightsScreen = ({ navigation }: any) => {
         }, [])
     );
 
+    // Re-calculate when grouping changes (but not on mount as fetchTransactions handles that)
     useEffect(() => {
         calculateMetrics();
-    }, [calculateMetrics, expenseGrouping]);
+    }, [expenseGrouping]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -138,6 +151,7 @@ const InsightsScreen = ({ navigation }: any) => {
                     burnRate={data.burnRate}
                     currency={currency}
                     isPrivacyEnabled={isPrivacyEnabled}
+                    isLoading={isLoading}
                 />
 
                 {/* 2. Cumulative Spending */}
@@ -145,6 +159,7 @@ const InsightsScreen = ({ navigation }: any) => {
                     transactions={transactions}
                     currency={currency}
                     isPrivacyEnabled={isPrivacyEnabled}
+                    isLoading={isLoading}
                 />
 
                 {/* 3. Comparison */}
@@ -156,6 +171,7 @@ const InsightsScreen = ({ navigation }: any) => {
                     average1Year={data.average1Year}
                     currency={currency}
                     isPrivacyEnabled={isPrivacyEnabled}
+                    isLoading={isLoading}
                 />
 
                 {/* 4. Expense Insights */}
@@ -166,6 +182,7 @@ const InsightsScreen = ({ navigation }: any) => {
                     grouping={expenseGrouping}
                     onToggleGrouping={setExpenseGrouping}
                     transactions={transactions}
+                    isLoading={isLoading}
                 />
 
                 {/* 5. Income Insights */}
@@ -175,12 +192,14 @@ const InsightsScreen = ({ navigation }: any) => {
                     currency={currency}
                     isPrivacyEnabled={isPrivacyEnabled}
                     transactions={transactions}
+                    isLoading={isLoading}
                 />
 
                 {/* 6. Savings Rate Trend */}
                 <SavingsRateTrend
                     transactions={transactions}
                     privacyMode={isPrivacyEnabled}
+                    isLoading={isLoading}
                 />
 
                 {/* 7. Smart Alerts */}
