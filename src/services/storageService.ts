@@ -360,13 +360,16 @@ export const saveRecurrenceRule = async (rule: RecurrenceRule): Promise<void> =>
         // Encrypt the entire template to protect sensitive fields inside
         const encryptedTemplate = await encryptField(JSON.stringify(rule.transactionTemplate));
 
+        // Encrypt the name
+        const encryptedName = rule.name ? await encryptField(rule.name) : null;
+
         await db.runAsync(
             `INSERT OR REPLACE INTO recurrence_rules 
              (id, name, frequency, startDate, endDate, nextDueDate, transactionTemplate, isActive)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 rule.id,
-                rule.name || null,
+                encryptedName,
                 rule.frequency,
                 rule.startDate || null,
                 rule.endDate || null,
@@ -402,9 +405,14 @@ export const getAllRecurrenceRules = async (): Promise<RecurrenceRule[]> => {
                 }
             }
 
+
+
+            // Decrypt name
+            const decryptedName = await decryptField(row.name);
+
             return {
                 id: row.id,
-                name: row.name,
+                name: decryptedName || undefined,
                 frequency: row.frequency,
                 startDate: row.startDate,
                 endDate: row.endDate,
@@ -682,13 +690,16 @@ export const bulkSaveRecurrenceRules = async (rules: RecurrenceRule[]): Promise<
                 // Encrypt the entire template
                 const encryptedTemplate = await encryptField(JSON.stringify(rule.transactionTemplate));
 
+                // Encrypt the name
+                const encryptedName = rule.name ? await encryptField(rule.name) : null;
+
                 await db.runAsync(
                     `INSERT OR REPLACE INTO recurrence_rules 
                      (id, name, frequency, startDate, endDate, nextDueDate, transactionTemplate, isActive)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         rule.id,
-                        rule.name || null,
+                        encryptedName,
                         rule.frequency,
                         rule.startDate || null,
                         rule.endDate || null,
