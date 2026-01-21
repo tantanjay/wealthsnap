@@ -36,8 +36,14 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
             await setDatabaseVersion(db, DATABASE_VERSION);
             console.log(`[Database] Database initialized with version ${DATABASE_VERSION}`);
         } else if (currentVersion < DATABASE_VERSION) {
-            // Future: Handle schema migrations here
             console.log(`[Database] Migrating from version ${currentVersion} to ${DATABASE_VERSION}`);
+
+            if (currentVersion === 1) {
+                // Import dynamically to avoid circular dependencies if possible, or just standard import
+                const { migrateV1ToV2 } = require('./migrationService');
+                await migrateV1ToV2(db);
+            }
+
             await setDatabaseVersion(db, DATABASE_VERSION);
         }
 
