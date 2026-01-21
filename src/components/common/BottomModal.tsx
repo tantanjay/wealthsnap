@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet, ViewStyle, DimensionValue, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
+import { useSecurity } from '../../context/SecurityContext';
 import { Ionicons } from '@expo/vector-icons';
 
 interface BottomModalProps {
@@ -14,6 +15,7 @@ interface BottomModalProps {
     style?: ViewStyle;
     contentStyle?: ViewStyle;
     dismissable?: boolean;
+    closeOnLock?: boolean;
 }
 
 const BottomModal: React.FC<BottomModalProps> = ({
@@ -25,10 +27,27 @@ const BottomModal: React.FC<BottomModalProps> = ({
     maxHeight = '70%',
     style,
     contentStyle,
-    dismissable = true
+    dismissable = true,
+    closeOnLock = true
 }) => {
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
+
+    // Safety check for SecurityContext
+    let isLocked = false;
+    try {
+        const security = useSecurity();
+        isLocked = security.isLocked;
+    } catch (e) {
+        // Context might not be available if used outside SecurityProvider
+        // verify generic usage safe
+    }
+
+    useEffect(() => {
+        if (visible && closeOnLock && isLocked) {
+            onClose();
+        }
+    }, [visible, closeOnLock, isLocked, onClose]);
 
     const handleClose = () => {
         if (dismissable) {
