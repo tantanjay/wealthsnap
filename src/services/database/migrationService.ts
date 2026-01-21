@@ -198,13 +198,16 @@ const migrateRecurrenceRules = async (db: any): Promise<number> => {
         // Encrypt the entire template
         const encryptedTemplate = await encryptField(JSON.stringify(rule.transactionTemplate));
 
+        // Encrypt the name (V2 requirement)
+        const encryptedName = rule.name ? await encryptField(rule.name) : null;
+
         await db.runAsync(
             `INSERT OR REPLACE INTO recurrence_rules 
              (id, name, frequency, startDate, endDate, nextDueDate, transactionTemplate, isActive)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 rule.id,
-                rule.name || null,
+                encryptedName,
                 rule.frequency,
                 rule.startDate || null,
                 rule.endDate || null,

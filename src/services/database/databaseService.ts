@@ -30,14 +30,25 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
         // Check and set database version
         const currentVersion = await getDatabaseVersion(db);
         if (currentVersion === 0) {
+            // Fresh install: Tables are created with latest schema by createTables()
+            // Just set the version and skip migrations
             await setDatabaseVersion(db, DATABASE_VERSION);
-        } else if (currentVersion < DATABASE_VERSION) {
-            if (currentVersion === 1) {
-                // Import dynamically to avoid circular dependencies if possible, or just standard import
+        } else {
+            // Sequential migrations (Waterfall pattern)
+            // This handles users jumping multiple versions (e.g. v1 -> v3)
+
+            if (currentVersion < 2) {
                 const { migrateV1ToV2 } = require('./migrationService');
                 await migrateV1ToV2(db);
             }
 
+            // Future migrations:
+            // if (currentVersion < 3) {
+            //     const { migrateV2ToV3 } = require('./migrationService');
+            //     await migrateV2ToV3(db);
+            // }
+
+            // Update to latest version after all migrations complete
             await setDatabaseVersion(db, DATABASE_VERSION);
         }
     } catch (error) {
