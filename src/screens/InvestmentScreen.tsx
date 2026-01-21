@@ -1,118 +1,52 @@
-import React, { useState, useCallback } from 'react';
-import { Text, View, ScrollView, TextInput, TouchableOpacity } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import React from 'react';
+import { Text, View } from 'react-native';
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
-import { Card, Button } from '../components';
-import { saveInvestment, getAllInvestments, deleteInvestment } from '../services/storageService';
-import { Investment } from '../types';
-import { useAlert } from '../context/AlertContext';
+import { Ionicons } from '@expo/vector-icons';
+import { Card } from '../components';
 
 const InvestmentScreen = () => {
     const { colors } = useTheme();
-    const { showAlert } = useAlert();
-    const [investments, setInvestments] = useState<Investment[]>([]);
-    const [showAdd, setShowAdd] = useState(false);
-
-    // Form Stats
-    const [symbol, setSymbol] = useState('');
-    const [quantity, setQuantity] = useState('');
-    const [buyPrice, setBuyPrice] = useState('');
-    const [currentPrice, setCurrentPrice] = useState('');
-
-    const loadData = async () => {
-        const data = await getAllInvestments();
-        setInvestments(data);
-    };
-
-    useFocusEffect(
-        useCallback(() => {
-            loadData();
-        }, [])
-    );
-
-    const handleSave = async () => {
-        if (!symbol || !quantity || !buyPrice) {
-            showAlert('Required', 'Please enter Symbol, Quantity, and Buy Price');
-            return;
-        }
-
-        const inv: Investment = {
-            id: Date.now().toString(),
-            symbol: symbol.toUpperCase(),
-            name: symbol.toUpperCase(), // Determine name via API later
-            type: 'STOCK',
-            quantity: parseFloat(quantity),
-            averageBuyPrice: parseFloat(buyPrice),
-            currentPrice: currentPrice ? parseFloat(currentPrice) : parseFloat(buyPrice),
-            lastUpdated: new Date().toISOString()
-        };
-
-        await saveInvestment(inv);
-        setShowAdd(false);
-        setSymbol('');
-        setQuantity('');
-        setBuyPrice('');
-        setCurrentPrice('');
-        loadData();
-    };
-
-    const handleDelete = async (id: string) => {
-        showAlert('Delete', 'Are you sure?', [
-            { text: 'Cancel' },
-            {
-                text: 'Delete', style: 'destructive', onPress: async () => {
-                    await deleteInvestment(id);
-                    loadData();
-                }
-            }
-        ]);
-    };
-
-    const totalValue = investments.reduce((sum, inv) => sum + (inv.quantity * (inv.currentPrice || inv.averageBuyPrice)), 0);
 
     return (
         <ScreenWrapper>
-            <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 20 }}>Portfolio</Text>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
+                <View style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: 50,
+                    backgroundColor: colors.primary + '15',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 24
+                }}>
+                    <Ionicons name="trending-up" size={48} color={colors.primary} />
+                </View>
 
-                <Card style={{ backgroundColor: colors.secondary }}>
-                    <Text style={{ color: colors.white, fontSize: 16 }}>Total Portfolio Value</Text>
-                    <Text style={{ color: colors.white, fontSize: 32, fontWeight: 'bold' }}>${totalValue.toFixed(2)}</Text>
-                </Card>
+                <Text style={{
+                    color: colors.text,
+                    fontSize: 24,
+                    fontWeight: 'bold',
+                    marginBottom: 12,
+                    textAlign: 'center'
+                }}>
+                    Investments Coming Soon
+                </Text>
 
-                {showAdd ? (
-                    <Card>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 10 }}>Add Investment</Text>
-                        <TextInput style={{ borderBottomWidth: 1, borderColor: colors.border, marginBottom: 10, color: colors.text, padding: 8 }} placeholder="Symbol (e.g. BTC)" placeholderTextColor={colors.gray500} value={symbol} onChangeText={setSymbol} />
-                        <TextInput style={{ borderBottomWidth: 1, borderColor: colors.border, marginBottom: 10, color: colors.text, padding: 8 }} placeholder="Quantity" placeholderTextColor={colors.gray500} keyboardType="numeric" value={quantity} onChangeText={setQuantity} />
-                        <TextInput style={{ borderBottomWidth: 1, borderColor: colors.border, marginBottom: 10, color: colors.text, padding: 8 }} placeholder="Avg Buy Price" placeholderTextColor={colors.gray500} keyboardType="numeric" value={buyPrice} onChangeText={setBuyPrice} />
-                        <TextInput style={{ borderBottomWidth: 1, borderColor: colors.border, marginBottom: 10, color: colors.text, padding: 8 }} placeholder="Current Price (Optional)" placeholderTextColor={colors.gray500} keyboardType="numeric" value={currentPrice} onChangeText={setCurrentPrice} />
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Button title="Cancel" variant="outline" onPress={() => setShowAdd(false)} />
-                            <Button title="Save" onPress={handleSave} />
-                        </View>
-                    </Card>
-                ) : (
-                    <Button title="Add Investment" onPress={() => setShowAdd(true)} style={{ marginBottom: 20 }} />
-                )}
+                <Text style={{
+                    color: colors.textSecondary,
+                    fontSize: 16,
+                    textAlign: 'center',
+                    lineHeight: 24,
+                    maxWidth: 300
+                }}>
+                    We're working on building a powerful portfolio tracker for your stocks, crypto, and assets. Stay tuned!
+                </Text>
 
-                {investments.map(inv => (
-                    <Card key={inv.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <TouchableOpacity onLongPress={() => handleDelete(inv.id)}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{inv.symbol}</Text>
-                            <Text style={{ color: colors.textSecondary }}>{inv.quantity} shares @ ${inv.averageBuyPrice}</Text>
-                        </TouchableOpacity>
-                        <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>${(inv.quantity * (inv.currentPrice || 0)).toFixed(2)}</Text>
-                            <Text style={{ color: (inv.currentPrice || 0) >= inv.averageBuyPrice ? colors.success : colors.error, fontSize: 12 }}>
-                                {inv.currentPrice}
-                            </Text>
-                        </View>
-                    </Card>
-                ))}
-            </ScrollView>
+                {/* Optional: Add a small decorative card or visual element if desired, but user asked for "no page" / simple */}
+            </View>
         </ScreenWrapper>
     );
 };
+
 export default InvestmentScreen;
