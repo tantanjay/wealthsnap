@@ -42,20 +42,15 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
             // App coming to foreground
             if (isPickingFile.current) {
-                console.log('App returning from file picker, skipping lock check...');
                 isPickingFile.current = false;
                 return;
             }
 
-            console.log('App coming to foreground, checking lock state...');
             await checkLockState();
         } else if (nextAppState.match(/inactive|background/)) {
             // App going to background
             if (!isPickingFile.current) {
-                console.log('App going to background, updating last active time...');
                 await updateLastActiveTime();
-            } else {
-                console.log('App going to background for file picker, skipping last active update...');
             }
         }
         appState.current = nextAppState;
@@ -79,7 +74,6 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     const temporarilyDisableLock = useCallback(() => {
-        console.log('Temporarily disabling lock for file picker...');
         isPickingFile.current = true;
     }, []);
 
