@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 1;
+export const DATABASE_VERSION = 2;
 
 /**
  * Create all database tables and indexes
