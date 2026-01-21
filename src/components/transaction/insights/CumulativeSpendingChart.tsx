@@ -137,7 +137,12 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
             {/* Header + Tabs */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
                 <View>
-                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Monthly Pulse</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginRight: 8 }}>Monthly Pulse</Text>
+                        <TouchableOpacity onPress={() => setShowInfo(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                            <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                    </View>
                     <Text style={{ color: colors.text === '#ffffff' ? '#A0A0A0' : '#666', fontSize: 12 }}>
                         {insight || "Cumulative Spending"}
                     </Text>
@@ -146,7 +151,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                 {/* Tabs */}
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     {avgData.length > 0 && (
-                        <View style={{ flexDirection: 'row', backgroundColor: colors.background, borderRadius: 8, padding: 2, marginRight: 10 }}>
+                        <View style={{ flexDirection: 'row', backgroundColor: colors.background, borderRadius: 8, padding: 2 }}>
                             {[3, 6, 12].map((m) => (
                                 <TouchableOpacity
                                     key={m}
@@ -169,9 +174,6 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                             ))}
                         </View>
                     )}
-                    <TouchableOpacity onPress={() => setShowInfo(true)}>
-                        <Ionicons name="information-circle-outline" size={22} color={colors.textSecondary} />
-                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -233,8 +235,8 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
             <BottomModal
                 visible={showInfo}
                 onClose={() => setShowInfo(false)}
-                title="Understanding the Pulse"
-                maxHeight="60%"
+                title="Understanding Your Chart"
+                maxHeight="85%"
             >
                 <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
                     <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
