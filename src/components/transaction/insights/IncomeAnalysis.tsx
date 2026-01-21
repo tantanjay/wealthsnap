@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
-import { PieChart, BarChart } from 'react-native-chart-kit';
+import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
+import { PieChart } from 'react-native-chart-kit';
 import { useTheme } from '../../../context/ThemeContext';
 import { Card } from '../../../components';
 import { CURRENCY_SYMBOLS, formatCompactCurrency } from '../../../utils/currencyUtils';
@@ -8,6 +8,7 @@ import MonthEndProjectionModal from '../modals/MonthEndProjectionModal';
 import { Transaction } from '../../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from '../../common/Skeleton';
+import BottomModal from '../../common/BottomModal';
 
 
 interface IncomeAnalysisProps {
@@ -30,7 +31,9 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
     const [showProjectionModal, setShowProjectionModal] = React.useState(false);
+    const [showInfoModal, setShowInfoModal] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState<'TREND' | 'SOURCES'>('TREND');
+    const [showInsightInfo, setShowInsightInfo] = React.useState(false);
 
     const pieData = categoryBreakdown.map((item, index) => ({
         name: item.name,
@@ -57,10 +60,39 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
         return "Your income has been stable.";
     };
 
+    const renderVisualScenario = (type: 'OVER' | 'UNDER', label: string) => {
+        return (
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 60, width: 80, justifyContent: 'center', marginBottom: 5 }}>
+                {/* User Bar */}
+                <View style={{
+                    width: 20,
+                    height: type === 'OVER' ? '100%' : '50%',
+                    backgroundColor: colors.primary,
+                    marginRight: 8,
+                    borderTopLeftRadius: 4,
+                    borderTopRightRadius: 4
+                }} />
+                {/* Average Bar */}
+                <View style={{
+                    width: 20,
+                    height: '75%',
+                    backgroundColor: colors.textSecondary + '50',
+                    borderTopLeftRadius: 4,
+                    borderTopRightRadius: 4
+                }} />
+            </View>
+        );
+    };
+
     return (
         <View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 }}>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Income Analytics</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginRight: 8 }}>Income Analytics</Text>
+                    <TouchableOpacity onPress={() => setShowInfoModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                </View>
 
                 {/* Projection Button */}
                 {!isPrivacyEnabled && (
@@ -77,10 +109,12 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
                 )}
             </View>
 
-            {/* Insight Bubble */}
             <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, marginRight: 10 }}>💡</Text>
                 <Text style={{ color: colors.text, flex: 1 }}>{isLoading ? "Analyzing income trends..." : getInsight()}</Text>
+                <TouchableOpacity onPress={() => setShowInsightInfo(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
             </View>
 
             <Card>
@@ -129,44 +163,127 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
                             <Skeleton width="100%" height={200} borderRadius={16} />
                         </View>
                     ) : activeTab === 'TREND' ? (
-                        (() => {
-                            const maxValue = Math.max(...(monthlyTrends.incomeData.length > 0 ? monthlyTrends.incomeData : [0]));
-                            let scaledData = monthlyTrends.incomeData.length > 0 ? monthlyTrends.incomeData : [0];
-                            let suffix = '';
+                        <View style={{ height: 220, paddingVertical: 10 }}>
+                            {(() => {
+                                // Prepare data with pro-rated projection (Historical Average Strategy)
+                                // Use historical average as the target for the current month's projection
 
-                            if (maxValue >= 1000000) {
-                                scaledData = scaledData.map(v => v / 1000000);
-                                suffix = 'M';
-                            } else if (maxValue >= 1000) {
-                                scaledData = scaledData.map(v => v / 1000);
-                                suffix = 'K';
-                            }
+                                const labels = [...monthlyTrends.labels];
+                                const rawData = [...monthlyTrends.incomeData];
 
-                            return (
-                                <BarChart
-                                    data={{
-                                        labels: monthlyTrends.labels,
-                                        datasets: [{ data: scaledData }]
-                                    }}
-                                    width={screenWidth - 64}
-                                    height={220}
-                                    yAxisLabel={CURRENCY_SYMBOLS[currency] || currency}
-                                    yAxisSuffix={suffix}
-                                    chartConfig={{
-                                        backgroundColor: colors.surface,
-                                        backgroundGradientFrom: colors.surface,
-                                        backgroundGradientTo: colors.surface,
-                                        decimalPlaces: 1,
-                                        color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
-                                        labelColor: (opacity = 1) => colors.textSecondary,
-                                        style: { borderRadius: 16 },
-                                        barPercentage: 0.7,
-                                    }}
-                                    style={{ marginVertical: 8, borderRadius: 16 }}
-                                    fromZero
-                                />
-                            );
-                        })()
+                                // Last element is current month
+                                const currentMonthIncome = rawData[rawData.length - 1] || 0;
+
+                                // Calculate Average from historical months (exclude current)
+                                const historicalData = rawData.slice(0, rawData.length - 1);
+                                const historicalTotal = historicalData.reduce((sum, val) => sum + val, 0);
+                                const averageIncome = historicalData.length > 0 ? historicalTotal / historicalData.length : currentMonthIncome;
+
+                                // Projection = Max(Current, Average)
+                                // If current < average, project we will reach the average.
+                                // If current > average, projection is just the current income (no extra bar).
+                                const proRatedIncome = Math.max(currentMonthIncome, averageIncome);
+
+                                // Replace last label with * indicator
+                                if (labels.length > 0) {
+                                    labels[labels.length - 1] = labels[labels.length - 1] + "*";
+                                }
+
+                                const barData = labels.map((label, index) => {
+                                    const isCurrentMonth = index === labels.length - 1;
+                                    const value = isCurrentMonth ? proRatedIncome : (rawData[index] || 0);
+                                    const actual = rawData[index] || 0;
+
+                                    return {
+                                        label,
+                                        value,
+                                        actual,
+                                        isProjected: isCurrentMonth
+                                    };
+                                });
+
+                                const maxValue = Math.max(...barData.map(b => b.value), 1); // Prevent 0 division
+                                const minValue = 0;
+                                const yMin = 0;
+                                const yMax = maxValue * 1.05; // 5% padding
+                                const yRange = yMax - yMin;
+                                const chartHeight = 150;
+
+                                // Generate Y-axis labels (4 labels)
+                                const yLabels = [];
+                                for (let i = 0; i < 4; i++) {
+                                    const value = yMin + (yRange * (i / 3));
+                                    let formatted = value;
+                                    let suffix = '';
+                                    if (value >= 1000000) {
+                                        formatted = value / 1000000;
+                                        suffix = 'M';
+                                    } else if (value >= 1000) {
+                                        formatted = value / 1000;
+                                        suffix = 'K';
+                                    }
+                                    yLabels.push(`${CURRENCY_SYMBOLS[currency] || currency}${formatted.toFixed(1)}${suffix}`);
+                                }
+
+                                return (
+                                    <View style={{ flex: 1, flexDirection: 'row' }}>
+                                        {/* Y-Axis Labels */}
+                                        <View style={{ width: 45, justifyContent: 'space-between', paddingBottom: 25, alignItems: 'flex-end', paddingRight: 5 }}>
+                                            {yLabels.reverse().map((label, i) => (
+                                                <Text key={i} style={{ color: colors.textSecondary, fontSize: 10 }}>{label}</Text>
+                                            ))}
+                                        </View>
+
+                                        {/* Bars */}
+                                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around' }}>
+                                            {barData.map((bar, index) => {
+                                                const totalHeight = yRange > 0 ? ((bar.value - yMin) / yRange) * chartHeight : 0;
+                                                const actualHeight = yRange > 0 ? ((bar.actual - yMin) / yRange) * chartHeight : 0;
+                                                // If projected < actual, prevent overflow
+                                                const projectedHeight = bar.isProjected ? Math.max(0, totalHeight - actualHeight) : 0;
+
+                                                return (
+                                                    <View key={index} style={{ alignItems: 'center', flex: 1 }}>
+                                                        <View style={{ height: chartHeight, justifyContent: 'flex-end', width: '100%', alignItems: 'center' }}>
+                                                            {bar.isProjected ? (
+                                                                <View style={{ width: '50%', borderRadius: 4, overflow: 'hidden' }}>
+                                                                    {/* Projected (Lighter) */}
+                                                                    <View style={{
+                                                                        height: projectedHeight,
+                                                                        backgroundColor: colors.primary + '50', // Lighter opacity
+                                                                        borderTopLeftRadius: 4,
+                                                                        borderTopRightRadius: 4,
+                                                                    }} />
+                                                                    {/* Actual (Solid) */}
+                                                                    <View style={{
+                                                                        height: Math.max(0, actualHeight),
+                                                                        backgroundColor: colors.primary,
+                                                                        borderBottomLeftRadius: 4,
+                                                                        borderBottomRightRadius: 4,
+                                                                        borderTopLeftRadius: projectedHeight > 0 ? 0 : 4,
+                                                                        borderTopRightRadius: projectedHeight > 0 ? 0 : 4,
+                                                                    }} />
+                                                                </View>
+                                                            ) : (
+                                                                <View style={{
+                                                                    height: Math.max(0, totalHeight),
+                                                                    width: '50%',
+                                                                    backgroundColor: colors.primary,
+                                                                    borderRadius: 4,
+                                                                }} />
+                                                            )}
+                                                        </View>
+                                                        <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 6 }}>
+                                                            {bar.label}
+                                                        </Text>
+                                                    </View>
+                                                )
+                                            })}
+                                        </View>
+                                    </View>
+                                );
+                            })()}
+                        </View>
                     ) : (
                         pieData.length > 0 ? (
                             <>
@@ -218,13 +335,82 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
                 )}
             </Card>
 
-
             <MonthEndProjectionModal
                 visible={showProjectionModal}
                 onClose={() => setShowProjectionModal(false)}
                 transactions={transactions}
                 currency={currency}
             />
+
+            <BottomModal
+                visible={showInfoModal}
+                onClose={() => setShowInfoModal(false)}
+                title="Understanding Your Chart"
+                maxHeight="85%"
+            >
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <Text style={{ color: colors.text, marginBottom: 15, lineHeight: 22 }}>
+                        This chart compares your current income against your past months.
+                    </Text>
+
+                    <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+                        <View style={{ flex: 1, alignItems: 'center', padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginRight: 8 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 60, width: 80, justifyContent: 'center', marginBottom: 5 }}>
+                                <View style={{ width: 30, height: '80%', backgroundColor: colors.primary, borderRadius: 4 }} />
+                            </View>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 4 }}>Actual</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
+                                The solid bar shows income you have already received.
+                            </Text>
+                        </View>
+
+                        <View style={{ flex: 1, alignItems: 'center', padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginLeft: 8 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 60, width: 80, justifyContent: 'center', marginBottom: 5 }}>
+                                <View style={{ width: 30, borderRadius: 4, overflow: 'hidden', height: '80%' }}>
+                                    <View style={{ flex: 1, backgroundColor: colors.primary + '50' }} />
+                                    <View style={{ flex: 1, backgroundColor: colors.primary }} />
+                                </View>
+                            </View>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 4 }}>Projected</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
+                                The lighter top part is what you're projected to earn by month end.
+                            </Text>
+                        </View>
+                    </View>
+
+                    <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 8, marginTop: 5 }}>What do the labels mean?</Text>
+                    <View style={{ marginLeft: 8 }}>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.text, fontWeight: 'bold' }}>Current Month*:</Text> The asterisk (*) indicates this is a projection.</Text>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Solid Color:</Text> Actual income recorded.</Text>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.primary + '80', fontWeight: 'bold' }}>Lighter Color:</Text> Projecting you will match your historical average.</Text>
+                    </View>
+
+                    <View style={{ height: 20 }} />
+                </ScrollView>
+            </BottomModal>
+            <BottomModal
+                visible={showInsightInfo}
+                onClose={() => setShowInsightInfo(false)}
+                title="How is this calculated?"
+                maxHeight="40%"
+            >
+                <View>
+                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 10, lineHeight: 22 }}>
+                        This smart insight compares your <Text style={{ fontWeight: 'bold' }}>current month's income</Text> (including projections) against the <Text style={{ fontWeight: 'bold' }}>previous month</Text>.
+                    </Text>
+                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5 }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                            • <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Growth:</Text> You earned more than last month.
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4 }}>
+                            • <Text style={{ color: '#FF5252', fontWeight: 'bold' }}>Decline:</Text> Income is lower than last month.
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4 }}>
+                            • <Text style={{ color: colors.text, fontWeight: 'bold' }}>Stable:</Text> Income is roughly the same.
+                        </Text>
+                    </View>
+                </View>
+            </BottomModal>
         </View >
     );
 };
