@@ -46,7 +46,12 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
 
             if (!result.canceled && result.assets && result.assets.length > 0) {
                 const asset = result.assets[0];
-                onSelectAI('BROWSE', asset.uri);
+                // Close modal immediately before triggering AI flow
+                onClose();
+                // Small delay to let modal unmount cleanly before heavy processing
+                setTimeout(() => {
+                    onSelectAI('BROWSE', asset.uri);
+                }, 100);
             }
         } catch (error) {
             console.error('Error browsing:', error);
@@ -71,7 +76,12 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
 
             if (!result.canceled && result.assets && result.assets.length > 0) {
                 const asset = result.assets[0];
-                onSelectAI('CAPTURE', asset.uri);
+                // Close modal immediately before triggering AI flow
+                onClose();
+                // Small delay to let modal unmount cleanly before heavy processing
+                setTimeout(() => {
+                    onSelectAI('CAPTURE', asset.uri);
+                }, 100);
             }
         } catch (error) {
             console.error('Error capturing:', error);

@@ -306,7 +306,7 @@ const SetupScreen = ({ navigation }: any) => {
 
                                 <Text style={[styles.termsHeading, { color: colors.primary }]}>2. PRIVACY POLICY</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
-                                    <Text style={{ fontWeight: 'bold' }}>2.1 Data Encryption & Storage:</Text> All personal data is stored exclusively on your local device. Sensitive keys (Encryption Key, API Key) and your PIN are stored in hardware-backed secure storage (SecureStore) and are never exposed in plain text. Detailed financial data is encrypted at rest.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>2.1 Hybrid Data Encryption:</Text> We prioritize both privacy and performance. <Text style={{ fontWeight: 'bold' }}>Sensitive Data</Text> (e.g., Transaction Amounts, Notes, Receipts) is encrypted at rest using AES-256. <Text style={{ fontWeight: 'bold' }}>Metadata</Text> (e.g., Dates, Categories, Transaction Type) is stored in plain text to ensure the app remains fast, searchable, and responsive.{'\n\n'}
                                     <Text style={{ fontWeight: 'bold' }}>2.2 No Data Collection:</Text> We do not collect, sell, share, or transfer any of your personal data to third parties. Your privacy is protected by virtue of the App&apos;s local-only storage architecture.{'\n\n'}
                                     <Text style={{ fontWeight: 'bold' }}>2.3 Analytics:</Text> This App does not include any analytics, tracking, or telemetry services. No usage data is collected or transmitted.
                                 </Text>
