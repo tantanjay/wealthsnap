@@ -71,7 +71,7 @@ const BackupModal: React.FC<BackupModalProps> = ({
                         disabled={isProcessing}
                     />
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         title="Cancel"
                         onPress={onClose}
                         disabled={isProcessing}

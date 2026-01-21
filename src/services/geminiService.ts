@@ -33,7 +33,7 @@ export const isGeminiConfigured = async (): Promise<boolean> => {
     try {
         const { genAI } = await getGeminiClient();
         return !!genAI;
-    } catch (e) {
+    } catch {
         return false;
     }
 };
@@ -238,7 +238,7 @@ export const analyzeReceiptImage = async (imageUri: string): Promise<ReceiptAnal
 
         try {
             return JSON.parse(text);
-        } catch (e) {
+        } catch {
             console.error("Failed to parse JSON from Gemini:", text);
             return { ...failResult, validationError: "Failed to parse AI response" };
         }
