@@ -258,8 +258,8 @@ const ProfileScreen = ({ navigation }: any) => {
                         onPress={() => setShowDevMessageModal(true)}
                         style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
                     >
-                        <Ionicons name="person-outline" size={18} color={colors.secondary} />
-                        <Text style={{ color: colors.secondary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
+                        <Ionicons name="person-outline" size={18} color={colors.primary} />
+                        <Text style={{ color: colors.primary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
                             A Message from the Developer
                         </Text>
                     </TouchableOpacity>
@@ -292,7 +292,7 @@ const ProfileScreen = ({ navigation }: any) => {
                     WealthSnap was built as a passion project to provide a high-quality, private financial tool without the tracking found in modern apps.
                 </Text>
                 <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 15 }}>
-                    We don't have server costs because your data stays on your phone. If you use the AI features, you use your own API key, keeping the app sustainable and free for everyone.
+                    We don&apos;t have server costs because your data stays on your phone. If you use the AI features, you use your own API key, keeping the app sustainable and free for everyone.
                 </Text>
                 <Button
                     title="Got it!"
@@ -317,7 +317,7 @@ const ProfileScreen = ({ navigation }: any) => {
                     </Text>
 
                     <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginBottom: 16 }}>
-                        However, as my financial needs grew, I felt the need for deeper insights and automation. That's when I decided to build WealthSnap.
+                        However, as my financial needs grew, I felt the need for deeper insights and automation. That&apos;s when I decided to build WealthSnap.
                     </Text>
 
                     <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginBottom: 24 }}>

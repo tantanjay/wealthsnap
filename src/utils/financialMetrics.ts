@@ -108,7 +108,6 @@ export const getMonthEndProjection = (transactions: Transaction[]) => {
     const linearProjectedExpense = expense + ((expense / currentDay) * daysRemaining);
 
     // 2. Calculate Historical Pace (Smart)
-    let smartProjectedIncome = linearProjectedIncome;
     let smartProjectedExpense = linearProjectedExpense;
 
     // Get previous months (go back up to 6 months)
