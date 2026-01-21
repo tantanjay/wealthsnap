@@ -14,10 +14,16 @@ import { CustomAlert } from './src/components/common/CustomAlert';
 
 import { getDatabase } from './src/services/database/databaseService';
 
+import { initNotifications, requestPermissions } from './src/services/notificationService';
+
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [migrating, setMigrating] = useState(true);
   const [initialRoute, setInitialRoute] = useState<'Onboarding' | 'Main'>('Onboarding');
+
+  useEffect(() => {
+    initNotifications();
+  }, []);
 
   const handleMigrationComplete = async () => {
     console.log('[App] Migration complete, checking onboarding...');
@@ -29,6 +35,10 @@ export default function App() {
     try {
       // Ensure database is initialized and migrations are run
       await getDatabase();
+
+      // Request notification permission once on launch
+      await requestPermissions();
+
     } catch (error) {
       console.error('[App] Database initialization failed:', error);
     }

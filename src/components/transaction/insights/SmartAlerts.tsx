@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '../../common/BottomModal';
 import { useTheme } from '../../../context/ThemeContext';
 import { Card } from '../../../components';
 import { Anomaly } from '../../../utils/financialMetrics';
+import { getPermissionStatus, openSettings, requestPermissions } from '../../../services/notificationService';
 
 interface SmartAlertsProps {
     anomalies: Anomaly[];
@@ -13,20 +14,50 @@ interface SmartAlertsProps {
 
 const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
     const { colors } = useTheme();
-    const [showInfo, setShowInfo] = React.useState(false);
+    const [showInfo, setShowInfo] = useState(false);
+    const [hasPermission, setHasPermission] = useState(true);
 
-    // imports need to be added at top of file, but for this replacement we focus on the component body.
-    // Wait, I need to make sure imports are handled. I will handle imports in a separate call if needed or assume I can do it in one go if I replace the whole file? 
-    // No, better to do valid replaces. 
-    // Let's replace the whole component body.
+    useEffect(() => {
+        checkPermission();
+    }, []);
+
+    const checkPermission = async () => {
+        const status = await getPermissionStatus();
+        setHasPermission(status === 'granted');
+    };
+
+    const handlePermissionPress = async () => {
+        Alert.alert(
+            "Enable Notifications",
+            "Turn on notifications to get real-time alerts about spending anomalies.",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Settings",
+                    onPress: () => openSettings()
+                }
+            ]
+        );
+    };
 
     return (
         <View style={{ marginTop: 20 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginRight: 8 }}>Smart Alerts</Text>
+
                 <TouchableOpacity onPress={() => setShowInfo(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                     <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
+
+                {!hasPermission && (
+                    <TouchableOpacity
+                        onPress={handlePermissionPress}
+                        style={{ marginLeft: 12 }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                        <Ionicons name="warning-outline" size={20} color={colors.warning || '#FF9800'} />
+                    </TouchableOpacity>
+                )}
             </View>
 
             {anomalies.length === 0 ? (
