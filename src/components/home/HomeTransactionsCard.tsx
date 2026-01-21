@@ -138,7 +138,11 @@ const HomeTransactionsCard: React.FC<HomeTransactionsCardProps> = ({
 
                             {/* Details */}
                             <View style={{ flex: 1 }}>
-                                <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                                <Text
+                                    style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                >
                                     {item.note || item.category}
                                 </Text>
                                 <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
