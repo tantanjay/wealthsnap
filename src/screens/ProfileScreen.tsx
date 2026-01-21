@@ -7,6 +7,7 @@ import { Button, Card } from '../components';
 import BudgetManagementModal from '../components/profile/BudgetManagementModal';
 import SupportModal from '../components/profile/settings/SupportModal';
 import GeminiSettingsModal from '../components/profile/settings/GeminiSettingsModal';
+import GeminiUsageModal from '../components/profile/settings/GeminiUsageModal';
 import { getAIConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
@@ -35,6 +36,7 @@ const ProfileScreen = ({ navigation }: any) => {
     const [showSupportModal, setShowSupportModal] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     const [showGeminiModal, setShowGeminiModal] = useState(false);
+    const [showGeminiUsageModal, setShowGeminiUsageModal] = useState(false);
 
 
     useFocusEffect(
@@ -147,6 +149,12 @@ const ProfileScreen = ({ navigation }: any) => {
                     variant="outline"
                     title={hasApiKey ? "Change API Key" : "Configure API Key"}
                     onPress={() => setShowGeminiModal(true)}
+                    style={{ marginBottom: 10 }}
+                />
+                <Button
+                    variant="outline"
+                    title="View Usage"
+                    onPress={() => setShowGeminiUsageModal(true)}
                 />
             </Card>
 
@@ -230,6 +238,12 @@ const ProfileScreen = ({ navigation }: any) => {
                 onClose={() => setShowGeminiModal(false)}
                 hasApiKey={hasApiKey}
                 onApiKeySaved={checkApiKey}
+            />
+
+            {/* Gemini Usage Modal */}
+            <GeminiUsageModal
+                visible={showGeminiUsageModal}
+                onClose={() => setShowGeminiUsageModal(false)}
             />
 
             {/* Guide Modal */}
