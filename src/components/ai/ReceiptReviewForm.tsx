@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, BackHandler, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, Modal, Switch } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, BackHandler, TextInput, ActivityIndicator, Platform, Modal, Switch } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useTheme } from '../../context/ThemeContext';
-import { Button, Card } from '../index';
+import { Button } from '../index';
 import { analyzeReceiptImage } from '../../services/geminiService';
 import { getUserProfile } from '../../services/storageService';
 import { ReceiptAnalysisResult, ReceiptItem } from '../../types';
@@ -97,7 +97,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                         [{ text: "Go Back", onPress: onCancel }]
                     );
                 }
-            } catch (error) {
+            } catch {
                 if (isMounted) showAlert("Error", "Failed to process image.", [{ text: "Go Back", onPress: onCancel }]);
             } finally {
                 if (isMounted) setLoading(false);
@@ -105,7 +105,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
         };
         init();
         return () => { isMounted = false; };
-    }, [imageUri, showAlert]);
+    }, [imageUri, showAlert, onCancel]);
 
     // Group Items by Category
     const groupedItems = useMemo(() => {
@@ -406,7 +406,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                 <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: colors.surface, borderTopWidth: 1, borderColor: colors.border, flexDirection: 'row', gap: 12 }}>
                     <Button
                         title="Cancel"
-                        variant="ghost"
+                        variant="outline"
                         onPress={onCancel}
                         style={{ flex: 1 }}
                     />

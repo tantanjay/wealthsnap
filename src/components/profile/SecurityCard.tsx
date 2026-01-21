@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
-import { Card, Button } from '../../components';
+import { Card } from '../../components';
 import { isPinSet, getTimeoutSetting, saveTimeoutSetting, TimeoutOption, TIMEOUT_OPTIONS } from '../../services/securityService';
 import { getAIConfig } from '../../services/storageService';
 import PinCreationScreen from '../../screens/PinCreationScreen';

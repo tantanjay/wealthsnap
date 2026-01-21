@@ -71,7 +71,7 @@ const RestoreModal: React.FC<RestoreModalProps> = ({
                         disabled={isProcessing}
                     />
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         title="Cancel"
                         onPress={onClose}
                         disabled={isProcessing}

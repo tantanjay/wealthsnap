@@ -89,7 +89,7 @@ const InvestmentScreen = () => {
                         <TextInput style={{ borderBottomWidth: 1, borderColor: colors.border, marginBottom: 10, color: colors.text, padding: 8 }} placeholder="Avg Buy Price" placeholderTextColor={colors.gray500} keyboardType="numeric" value={buyPrice} onChangeText={setBuyPrice} />
                         <TextInput style={{ borderBottomWidth: 1, borderColor: colors.border, marginBottom: 10, color: colors.text, padding: 8 }} placeholder="Current Price (Optional)" placeholderTextColor={colors.gray500} keyboardType="numeric" value={currentPrice} onChangeText={setCurrentPrice} />
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Button title="Cancel" variant="ghost" onPress={() => setShowAdd(false)} />
+                            <Button title="Cancel" variant="outline" onPress={() => setShowAdd(false)} />
                             <Button title="Save" onPress={handleSave} />
                         </View>
                     </Card>
