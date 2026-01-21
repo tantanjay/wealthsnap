@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../context/ThemeContext';
 import BottomModal from '../common/BottomModal';
 
+import { useSecurity } from '../../context/SecurityContext';
 import { useAlert } from '../../context/AlertContext';
 
 export interface RecordMenuModalProps {
@@ -25,6 +26,7 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
 }) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
+    const { temporarilyDisableLock } = useSecurity();
     const [status, requestPermission] = ImagePicker.useMediaLibraryPermissions();
     const [cameraStatus, requestCameraPermission] = ImagePicker.useCameraPermissions();
 
@@ -38,6 +40,7 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
         }
 
         try {
+            temporarilyDisableLock();
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: false,
@@ -68,6 +71,7 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
         }
 
         try {
+            temporarilyDisableLock();
             const result = await ImagePicker.launchCameraAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: false,

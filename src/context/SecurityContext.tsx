@@ -9,6 +9,7 @@ interface SecurityContextType {
     isLocked: boolean;
     lockApp: () => void;
     unlockApp: () => void;
+    temporarilyDisableLock: () => void;
 }
 
 const SecurityContext = createContext<SecurityContextType | undefined>(undefined);
@@ -24,6 +25,7 @@ export const useSecurity = () => {
 export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isLocked, setIsLocked] = useState(false);
     const appState = useRef(AppState.currentState);
+    const isPickingFile = useRef(false);
 
     const checkLockState = useCallback(async () => {
         const startOnboarding = await isOnboardingComplete();
@@ -39,12 +41,22 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const handleAppStateChange = useCallback(async (nextAppState: AppStateStatus) => {
         if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
             // App coming to foreground
+            if (isPickingFile.current) {
+                console.log('App returning from file picker, skipping lock check...');
+                isPickingFile.current = false;
+                return;
+            }
+
             console.log('App coming to foreground, checking lock state...');
             await checkLockState();
         } else if (nextAppState.match(/inactive|background/)) {
             // App going to background
-            console.log('App going to background, updating last active time...');
-            await updateLastActiveTime();
+            if (!isPickingFile.current) {
+                console.log('App going to background, updating last active time...');
+                await updateLastActiveTime();
+            } else {
+                console.log('App going to background for file picker, skipping last active update...');
+            }
         }
         appState.current = nextAppState;
     }, [checkLockState]);
@@ -66,8 +78,13 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         await updateLastActiveTime();
     };
 
+    const temporarilyDisableLock = useCallback(() => {
+        console.log('Temporarily disabling lock for file picker...');
+        isPickingFile.current = true;
+    }, []);
+
     return (
-        <SecurityContext.Provider value={{ isLocked, lockApp, unlockApp }}>
+        <SecurityContext.Provider value={{ isLocked, lockApp, unlockApp, temporarilyDisableLock }}>
             {children}
             {isLocked && (
                 <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}>
