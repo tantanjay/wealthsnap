@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Text } from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAlert } from '../../../context/AlertContext';
-import { Card, Button } from '../../index';
+import { Card } from '../../index';
+import { Ionicons } from '@expo/vector-icons';
 
 import BackupModal from './BackupModal';
 import RestoreModal from './RestoreModal';
@@ -148,13 +149,77 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
         }
     };
 
+    const SettingItem = ({
+        icon,
+        title,
+        subtitle,
+        onPress,
+        iconBg,
+        iconColor,
+        isLast = false
+    }: {
+        icon: string,
+        title: string,
+        subtitle?: string,
+        onPress: () => void,
+        iconBg?: string,
+        iconColor?: string,
+        isLast?: boolean
+    }) => (
+        <TouchableOpacity
+            style={[
+                styles.settingItem,
+                { borderBottomColor: colors.border },
+                isLast && { borderBottomWidth: 0 }
+            ]}
+            onPress={onPress}
+        >
+            <View style={[styles.iconContainer, { backgroundColor: iconBg || colors.primary + '20' }]}>
+                <Ionicons name={icon as any} size={22} color={iconColor || colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+                <Text style={[styles.settingTitle, { color: colors.text }]}>{title}</Text>
+                {subtitle && <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+    );
+
     return (
         <>
-            <Card>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 10 }}>Data Management</Text>
-                <Button variant="outline" title="Backup Data" onPress={() => setShowBackupModal(true)} style={{ marginBottom: 10 }} />
-                <Button variant="outline" title="Restore Data" onPress={handleSelectRestoreFile} style={{ marginBottom: 10 }} />
-                <Button variant="ghost" title="Clear All Data" onPress={handleClearData} />
+            <Card style={{ marginBottom: 16 }}>
+                <View style={styles.cardHeader}>
+                    <View style={[styles.headerIcon, { backgroundColor: colors.info + '20' }]}>
+                        <Ionicons name="shield-checkmark" size={22} color={colors.info} />
+                    </View>
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>Data Management</Text>
+                </View>
+
+                <SettingItem
+                    icon="cloud-upload"
+                    title="Backup Data"
+                    subtitle="Create encrypted backup file"
+                    onPress={() => setShowBackupModal(true)}
+                    iconBg={colors.success + '20'}
+                    iconColor={colors.success}
+                />
+                <SettingItem
+                    icon="cloud-download"
+                    title="Restore Data"
+                    subtitle="Import from backup file"
+                    onPress={handleSelectRestoreFile}
+                    iconBg={colors.primary + '20'}
+                    iconColor={colors.primary}
+                />
+                <SettingItem
+                    icon="trash"
+                    title="Clear All Data"
+                    subtitle="Delete everything and restart"
+                    onPress={handleClearData}
+                    iconBg={colors.error + '20'}
+                    iconColor={colors.error}
+                    isLast={true}
+                />
             </Card>
 
             {/* Backup Modal */}
@@ -176,4 +241,47 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
     );
 };
 
+const styles = StyleSheet.create({
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    headerIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+    },
+    settingItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+    },
+    iconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    settingTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 2,
+    },
+    settingSubtitle: {
+        fontSize: 13,
+    },
+});
+
 export default DataManagementCard;
+
