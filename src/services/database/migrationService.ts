@@ -254,6 +254,38 @@ const migrateBudgets = async (db: any): Promise<number> => {
 };
 
 /**
+ * Migrate from V1 to V2: Encrypt Recurrence Rule Names
+ */
+export const migrateV1ToV2 = async (db: any): Promise<void> => {
+    console.log('[Migration] 🚀 Starting V1 -> V2 migration (Encrypting Recurrence Names)...');
+    try {
+        const rules = await db.getAllAsync('SELECT * FROM recurrence_rules');
+        console.log(`[Migration] Found ${rules.length} recurrence rules to process.`);
+
+        await db.withTransactionAsync(async () => {
+            for (const rule of rules) {
+                // Skip if name is null/empty
+                if (!rule.name) continue;
+
+                // Encrypt the name
+                const encryptedName = await encryptField(rule.name);
+
+                // Update the record
+                await db.runAsync(
+                    'UPDATE recurrence_rules SET name = ? WHERE id = ?',
+                    [encryptedName, rule.id]
+                );
+            }
+        });
+
+        console.log('[Migration] ✅ V1 -> V2 migration completed successfully!');
+    } catch (error) {
+        console.error('[Migration] ❌ V1 -> V2 migration failed:', error);
+        throw error;
+    }
+};
+
+/**
  * Validate migration by comparing counts
  */
 const validateMigration = async (db: any, counts: { [key: string]: number }): Promise<boolean> => {
