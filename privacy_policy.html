@@ -93,8 +93,17 @@
         <h3>2.3 User Content (Financial Data)</h3>
         <p><strong>What we access:</strong> Information you input, such as transaction history, budgets, and goals.
         </p>
-        <p><strong>Data Handling:</strong> All such data is stored locally on your device using secure database
-            technologies (SQLite and SecureStore). We do not have access to this data.</p>
+        <p><strong>Data Handling:</strong> We employ a <strong>Hybrid Encryption</strong> model to balance privacy and
+            performance:</p>
+        <ul>
+            <li><strong>Sensitive Data (Encrypted):</strong> Private values such as transaction amounts, notes,
+                receipts,
+                and investment quantities are encrypted using AES-256 before being stored.</li>
+            <li><strong>Metadata (Raw):</strong> To ensure the app remains fast and searchable, non-sensitive metadata
+                such as transaction dates, categories, and types (e.g., "Expense") are stored in plain text.</li>
+        </ul>
+        <p>This ensures your private financial details remain hidden while allowing for instant search and rapid
+            filtering.</p>
 
         <h2>3. Third-Party Services</h2>
         <p>We use specific third-party services to provide app functionality. These services have their own privacy
