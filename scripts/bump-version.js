@@ -27,7 +27,7 @@ try {
     const currentVersion = packageJson.version;
 
     // Determine bump type
-    const type = process.argv[2] || 'patch';
+    const type = (process.argv[2] || 'patch').replace(/^--/, '');
     const newVersion = bumpVersion(currentVersion, type);
 
     console.log(`Bumping version from ${currentVersion} to ${newVersion} (${type})`);
