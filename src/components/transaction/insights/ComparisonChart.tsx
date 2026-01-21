@@ -24,9 +24,15 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
+    // Pro-rate current month spending to estimate full month
+    const today = new Date();
+    const currentDay = today.getDate();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const proRatedExpense = currentDay > 0 ? (currentMonthExpense / currentDay) * daysInMonth : currentMonthExpense;
+
     // Determine the scale for compact display
-    const maxValue = Math.max(currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year);
-    let scaledData = [currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year];
+    const maxValue = Math.max(proRatedExpense, lastMonthExpense, averageExpense, average6Month, average1Year);
+    let scaledData = [proRatedExpense, lastMonthExpense, averageExpense, average6Month, average1Year];
     let suffix = '';
 
     if (maxValue >= 1000000) {
@@ -38,7 +44,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
     }
 
     const data = {
-        labels: ["This M", "Last M", "Avg 3M", "Avg 6M", "Avg 1Y"],
+        labels: ["This M*", "Last M", "Avg 3M", "Avg 6M", "Avg 1Y"],
         datasets: [
             {
                 data: scaledData
@@ -48,15 +54,15 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
 
     const getComparisonInsight = () => {
         if (isPrivacyEnabled) return "Spending comparison hidden in privacy mode.";
-        if (Math.abs(currentMonthExpense - averageExpense) < 0.01) {
-            return "Your spending matches your 3-month average.";
+        if (Math.abs(proRatedExpense - averageExpense) < 0.01) {
+            return "On track to match your 3-month average.";
         }
-        if (currentMonthExpense > averageExpense) {
-            const diff = currentMonthExpense - averageExpense;
-            return `You spent ${formatCurrencyAmount(diff, currency)} more than your 3-month average.`;
+        if (proRatedExpense > averageExpense) {
+            const diff = proRatedExpense - averageExpense;
+            return `On track to spend ${formatCurrencyAmount(diff, currency)} more than your 3-month average.`;
         } else {
-            const diff = averageExpense - currentMonthExpense;
-            return `Great job! You spent ${formatCurrencyAmount(diff, currency)} less than your average.`;
+            const diff = averageExpense - proRatedExpense;
+            return `Great job! On track to spend ${formatCurrencyAmount(diff, currency)} less than average.`;
         }
     };
 
@@ -104,24 +110,104 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                         <Skeleton height={200} width="100%" borderRadius={16} />
                     </View>
                 ) : !isPrivacyEnabled ? (
-                    <BarChart
-                        data={data}
-                        width={screenWidth - 64}
-                        height={220}
-                        yAxisLabel={CURRENCY_SYMBOLS[currency] || currency}
-                        yAxisSuffix={suffix}
-                        chartConfig={{
-                            backgroundColor: colors.surface,
-                            backgroundGradientFrom: colors.surface,
-                            backgroundGradientTo: colors.surface,
-                            decimalPlaces: 1,
-                            color: (opacity = 1) => `rgba(255, 152, 0, ${opacity})`, // Orange for comparison
-                            labelColor: (opacity = 1) => colors.textSecondary,
-                            style: { borderRadius: 16 },
-                            barPercentage: 0.7,
-                        }}
-                        style={{ marginVertical: 8, borderRadius: 16 }}
-                    />
+                    <View style={{ height: 220, paddingVertical: 10 }}>
+                        {/* Custom Bar Chart with Y-Axis and Stacked First Bar */}
+                        {(() => {
+                            const barData = [
+                                { label: "This M*", value: proRatedExpense, actual: currentMonthExpense, isProjected: true },
+                                { label: "Last M", value: lastMonthExpense, actual: lastMonthExpense, isProjected: false },
+                                { label: "Avg 3M", value: averageExpense, actual: averageExpense, isProjected: false },
+                                { label: "Avg 6M", value: average6Month, actual: average6Month, isProjected: false },
+                                { label: "Avg 1Y", value: average1Year, actual: average1Year, isProjected: false },
+                            ];
+
+                            const maxValue = Math.max(...barData.map(b => b.value));
+                            const minValue = Math.min(...barData.map(b => b.isProjected ? b.actual : b.value));
+                            // Start Y-axis 15% below minimum
+                            const yMin = Math.max(0, minValue * 0.85);
+                            const yMax = maxValue * 1.05; // 5% padding on top
+                            const yRange = yMax - yMin;
+                            const chartHeight = 150;
+
+                            // Generate Y-axis labels (4 labels)
+                            const yLabels = [];
+                            for (let i = 0; i < 4; i++) {
+                                const value = yMin + (yRange * (i / 3));
+                                let formatted = value;
+                                let suffix = '';
+                                if (value >= 1000000) {
+                                    formatted = value / 1000000;
+                                    suffix = 'M';
+                                } else if (value >= 1000) {
+                                    formatted = value / 1000;
+                                    suffix = 'K';
+                                }
+                                yLabels.push(`${CURRENCY_SYMBOLS[currency]}${formatted.toFixed(1)}${suffix}`);
+                            }
+
+                            return (
+                                <View style={{ flex: 1, flexDirection: 'row' }}>
+                                    {/* Y-Axis Labels */}
+                                    <View style={{ width: 45, justifyContent: 'space-between', paddingBottom: 25, alignItems: 'flex-end', paddingRight: 5 }}>
+                                        {yLabels.reverse().map((label, i) => (
+                                            <Text key={i} style={{ color: colors.textSecondary, fontSize: 10 }}>{label}</Text>
+                                        ))}
+                                    </View>
+
+                                    {/* Bars */}
+                                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around' }}>
+                                        {barData.map((bar, index) => {
+                                            // Calculate heights relative to yMin-yMax range
+                                            const totalHeight = yRange > 0 ? ((bar.value - yMin) / yRange) * chartHeight : 0;
+                                            const actualHeight = yRange > 0 ? ((bar.actual - yMin) / yRange) * chartHeight : 0;
+                                            const projectedHeight = bar.isProjected ? Math.max(0, totalHeight - actualHeight) : 0;
+
+                                            return (
+                                                <View key={index} style={{ alignItems: 'center', flex: 1 }}>
+                                                    {/* Bar */}
+                                                    <View style={{ height: chartHeight, justifyContent: 'flex-end', width: '100%', alignItems: 'center' }}>
+                                                        {bar.isProjected ? (
+                                                            // Stacked bar: actual (solid) + projected (lighter)
+                                                            <View style={{ width: '50%', borderRadius: 4, overflow: 'hidden' }}>
+                                                                {/* Projected portion (lighter, on top) */}
+                                                                <View style={{
+                                                                    height: projectedHeight,
+                                                                    backgroundColor: 'rgba(255, 152, 0, 0.35)',
+                                                                    borderTopLeftRadius: 4,
+                                                                    borderTopRightRadius: 4,
+                                                                }} />
+                                                                {/* Actual portion (solid, on bottom) */}
+                                                                <View style={{
+                                                                    height: Math.max(0, actualHeight),
+                                                                    backgroundColor: 'rgba(255, 152, 0, 1)',
+                                                                    borderBottomLeftRadius: 4,
+                                                                    borderBottomRightRadius: 4,
+                                                                    borderTopLeftRadius: projectedHeight > 0 ? 0 : 4,
+                                                                    borderTopRightRadius: projectedHeight > 0 ? 0 : 4,
+                                                                }} />
+                                                            </View>
+                                                        ) : (
+                                                            // Regular solid bar
+                                                            <View style={{
+                                                                height: Math.max(0, totalHeight),
+                                                                width: '50%',
+                                                                backgroundColor: 'rgba(255, 152, 0, 1)',
+                                                                borderRadius: 4,
+                                                            }} />
+                                                        )}
+                                                    </View>
+                                                    {/* Label */}
+                                                    <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 6 }}>
+                                                        {bar.label}
+                                                    </Text>
+                                                </View>
+                                            );
+                                        })}
+                                    </View>
+                                </View>
+                            );
+                        })()}
+                    </View>
                 ) : (
                     <View style={{
                         height: 220,
@@ -167,7 +253,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
 
                     <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 8, marginTop: 5 }}>What do the labels mean?</Text>
                     <View style={{ marginLeft: 8 }}>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.text, fontWeight: 'bold' }}>This M:</Text> Your total spending so far this month.</Text>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.text, fontWeight: 'bold' }}>This M*:</Text> Projected full month spending.{'\n'}<Text style={{ color: 'rgba(255, 152, 0, 1)', fontWeight: 'bold' }}>Solid color</Text> = actual spending so far.{'\n'}<Text style={{ color: 'rgba(255, 152, 0, 0.5)' }}>Lighter color</Text> = projected remaining.</Text>
                         <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.text, fontWeight: 'bold' }}>Avg 3M/6M/1Y:</Text> Your average monthly spending over the last 3 months, 6 months, and 1 year.</Text>
                     </View>
 
