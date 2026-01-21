@@ -8,17 +8,20 @@ import BottomModal from '../../common/BottomModal';
 import { Transaction } from '../../../types';
 import { getCumulativeSpendingCurve, getCurrentMonthCumulative, getTransactionsByMonth } from '../../../utils/financialMetrics';
 import { CURRENCY_SYMBOLS, formatCompactCurrency } from '../../../utils/currencyUtils';
+import { Skeleton } from '../../common/Skeleton';
 
 interface CumulativeSpendingChartProps {
     transactions: Transaction[];
     currency: string;
     isPrivacyEnabled: boolean;
+    isLoading?: boolean;
 }
 
 const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     transactions,
     currency,
-    isPrivacyEnabled
+    isPrivacyEnabled,
+    isLoading = false
 }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
@@ -152,7 +155,11 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
 
             {/* Chart */}
             <Card>
-                {isPrivacyEnabled ? (
+                {isLoading ? (
+                    <View style={{ height: 200, padding: 10 }}>
+                        <Skeleton height={180} width="100%" borderRadius={16} />
+                    </View>
+                ) : isPrivacyEnabled ? (
                     <View style={{ height: 200, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.border + '20', borderRadius: 16 }}>
                         <Text style={{ color: colors.textSecondary }}>🔒 Chart hidden for privacy</Text>
                     </View>

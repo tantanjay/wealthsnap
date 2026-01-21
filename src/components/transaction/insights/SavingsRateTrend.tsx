@@ -5,13 +5,15 @@ import { useTheme } from '../../../context/ThemeContext';
 import { Card } from '../../../components';
 import { Transaction } from '../../../types';
 import { getSavingsRateTrend } from '../../../utils/financialMetrics';
+import { Skeleton } from '../../common/Skeleton';
 
 interface SavingsRateTrendProps {
     transactions: Transaction[];
     privacyMode: boolean;
+    isLoading?: boolean;
 }
 
-const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, privacyMode }) => {
+const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, privacyMode, isLoading = false }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
@@ -59,7 +61,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
 
     const latestRate = savingsData.rawData[savingsData.rawData.length - 1]?.rate || 0;
 
-    if (savingsData.datasets[0].data.length === 0) {
+    if (!isLoading && savingsData.datasets[0].data.length === 0) {
         return (
             <Card>
                 <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 10 }}>
@@ -78,17 +80,25 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                 <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>Savings Rate Trend</Text>
                 <View style={{ alignItems: 'flex-end' }}>
                     <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Current</Text>
-                    <Text style={{
-                        color: latestRate >= 0 ? '#4CAF50' : '#F44336',
-                        fontSize: 18,
-                        fontWeight: 'bold'
-                    }}>
-                        {privacyMode ? '••••' : `${latestRate}%`}
-                    </Text>
+                    {isLoading ? (
+                        <Skeleton width={60} height={20} />
+                    ) : (
+                        <Text style={{
+                            color: latestRate >= 0 ? '#4CAF50' : '#F44336',
+                            fontSize: 18,
+                            fontWeight: 'bold'
+                        }}>
+                            {privacyMode ? '••••' : `${latestRate}%`}
+                        </Text>
+                    )}
                 </View>
             </View>
 
-            {!privacyMode && (
+            {isLoading ? (
+                <View style={{ height: 200, padding: 10 }}>
+                    <Skeleton height={180} width="100%" borderRadius={16} />
+                </View>
+            ) : !privacyMode && (
                 <LineChart
                     data={savingsData}
                     width={screenWidth - 60}
@@ -105,7 +115,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                 />
             )}
 
-            {privacyMode && (
+            {!isLoading && privacyMode && (
                 <View style={{
                     height: 200,
                     justifyContent: 'center',

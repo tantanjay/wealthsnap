@@ -5,6 +5,7 @@ import { Card } from '..';
 import { Transaction } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { formatCurrencyAmount } from '../../utils/currencyUtils';
+import { Skeleton } from '../common/Skeleton';
 
 interface HomeTransactionsCardProps {
     recentTransactions: Transaction[];
@@ -12,6 +13,7 @@ interface HomeTransactionsCardProps {
     currency: string;
     onTransactionPress?: (transaction: Transaction) => void;
     isPrivacyEnabled?: boolean;
+    isLoading?: boolean;
 }
 
 const HomeTransactionsCard: React.FC<HomeTransactionsCardProps> = ({
@@ -19,7 +21,8 @@ const HomeTransactionsCard: React.FC<HomeTransactionsCardProps> = ({
     topTransactions,
     currency,
     onTransactionPress,
-    isPrivacyEnabled = false
+    isPrivacyEnabled = false,
+    isLoading = false
 }) => {
     const { colors } = useTheme();
     const [activeTab, setActiveTab] = useState<'RECENT' | 'TOP'>('RECENT');
@@ -79,11 +82,29 @@ const HomeTransactionsCard: React.FC<HomeTransactionsCardProps> = ({
         </View>
     );
 
+    const renderSkeleton = () => (
+        <View>
+            {[1, 2, 3, 4, 5].map((key) => (
+                <View key={key} style={[styles.itemContainer, { borderBottomColor: colors.border, borderBottomWidth: key < 5 ? 1 : 0 }]}>
+                    <Skeleton width={24} height={24} borderRadius={12} style={{ marginRight: 12 }} />
+                    <Skeleton width={40} height={40} borderRadius={20} style={{ marginRight: 12 }} />
+                    <View style={{ flex: 1, marginRight: 12 }}>
+                        <Skeleton width="60%" height={16} style={{ marginBottom: 6 }} />
+                        <Skeleton width="40%" height={12} />
+                    </View>
+                    <Skeleton width={80} height={16} />
+                </View>
+            ))}
+        </View>
+    );
+
     return (
         <Card>
             {renderHeader()}
 
-            {isEmpty ? (
+            {isLoading ? (
+                renderSkeleton()
+            ) : isEmpty ? (
                 <View style={{ padding: 20, alignItems: 'center' }}>
                     <Ionicons name="receipt-outline" size={48} color={colors.textSecondary} />
                     <Text style={{ color: colors.textSecondary, marginTop: 10, textAlign: 'center' }}>

@@ -11,6 +11,7 @@ import { Budget, checkBudgetStatus, getBudgets } from '../../../services/budgetS
 import { getAllRecurrenceRules } from '../../../services/storageService';
 import { Card } from '../../../components';
 import { formatCompactCurrency } from '../../../utils/currencyUtils';
+import { Skeleton } from '../../common/Skeleton';
 
 interface ExpenseAnalysisProps {
     categoryBreakdown: {
@@ -23,9 +24,10 @@ interface ExpenseAnalysisProps {
     grouping: 'CATEGORY' | 'SUB_CATEGORY';
     onToggleGrouping: (grouping: 'CATEGORY' | 'SUB_CATEGORY') => void;
     transactions: Transaction[];
+    isLoading?: boolean;
 }
 
-const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, currency, isPrivacyEnabled, grouping, onToggleGrouping, transactions }) => {
+const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, currency, isPrivacyEnabled, grouping, onToggleGrouping, transactions, isLoading = false }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
     const [budgets, setBudgets] = React.useState<Budget[]>([]);
@@ -131,7 +133,9 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                 <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
                     <Text style={{ fontSize: 20, marginRight: 10 }}>💡</Text>
                     <Text style={{ color: colors.text, flex: 1 }}>
-                        {isPrivacyEnabled
+                        {isLoading ? (
+                            <Skeleton width="90%" height={20} />
+                        ) : isPrivacyEnabled
                             ? "Expense insights hidden in privacy mode."
                             : `${topCategory.name} accounts for ${Math.round(topCategory.percentage)}% of your total expenses.`
                         }
@@ -142,7 +146,11 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
             <Card style={{ marginBottom: 16 }}>
                 <Text style={{ color: colors.textSecondary, marginBottom: 10 }}>Category Breakdown</Text>
                 {!isPrivacyEnabled ? (
-                    pieData.length > 0 ? (
+                    isLoading ? (
+                        <View style={{ height: 220, padding: 10, justifyContent: 'center', alignItems: 'center' }}>
+                            <Skeleton width={180} height={180} borderRadius={90} />
+                        </View>
+                    ) : pieData.length > 0 ? (
                         <PieChart
                             data={pieData}
                             width={screenWidth - 64}
@@ -176,7 +184,22 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
             <Card>
                 <Text style={{ color: colors.textSecondary, marginBottom: 10 }}>Top Spending Categories</Text>
                 {/* Show only top 3 items statically */}
-                {sortedCategories.length === 0 ? (
+                {isLoading ? (
+                    <View style={{ gap: 12 }}>
+                        {[1, 2, 3].map(i => (
+                            <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                    <Skeleton width={30} height={30} borderRadius={15} />
+                                    <Skeleton width={100} height={16} />
+                                </View>
+                                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                                    <Skeleton width={60} height={16} />
+                                    <Skeleton width={40} height={12} />
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                ) : sortedCategories.length === 0 ? (
                     <Text style={{ color: colors.textSecondary, paddingVertical: 10, textAlign: 'center' }}>
                         No expense data available.
                     </Text>
