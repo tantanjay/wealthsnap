@@ -19,7 +19,6 @@ export const MigrationScreen: React.FC<MigrationScreenProps> = ({ onComplete }) 
             const needsMigration = await isMigrationNeeded();
 
             if (!needsMigration) {
-                console.log('[Migration] No migration needed');
                 onComplete();
                 return;
             }
@@ -27,13 +26,12 @@ export const MigrationScreen: React.FC<MigrationScreenProps> = ({ onComplete }) 
             // Check if there's data to migrate
             const hasData = await hasAsyncStorageData();
             if (!hasData) {
-                console.log('[Migration] No data to migrate (fresh install)');
                 onComplete();
                 return;
             }
 
             // Perform migration
-            console.log('[Migration] Starting migration...');
+            // Perform migration
             const result = await migrateFromAsyncStorage((step, current, total) => {
                 setProgress({ step, current, total });
             });

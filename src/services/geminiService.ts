@@ -121,7 +121,6 @@ const logUsage = async (endpoint: string, promptText: string, responseText: stri
         };
 
         await saveAIUsageLog(log);
-        console.log(`[AI Usage] ${endpoint} (${modelName}): ${durationMs}ms, $${totalCost.toFixed(6)}`);
     } catch (e) {
         console.error('Failed to log usage:', e);
     }

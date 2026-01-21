@@ -63,7 +63,7 @@ export const getCategoryTrend = (transactions: Transaction[], category: string, 
         data: [] as number[]
     };
 
-    // const { getCategoryGroup } = require('../constants/categories');
+
 
     const today = new Date();
     for (let i = months - 1; i >= 0; i--) {
@@ -216,7 +216,6 @@ export const getCategoryBreakdown = (transactions: Transaction[], type: Transact
             // Group mode: Group by category group (e.g., "Family & Home", "Food & Lifestyle")
             // We need to get the group for this category
             // Import getCategoryGroup from categories.ts
-            // const { getCategoryGroup } = require('../constants/categories');
             key = getCategoryGroup(t.category, t.type);
         } else {
             // Item mode (SUB_CATEGORY): Group by individual category/item (e.g., "Groceries", "Food")
