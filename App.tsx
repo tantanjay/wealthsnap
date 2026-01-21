@@ -15,6 +15,7 @@ import { CustomAlert } from './src/components/common/CustomAlert';
 import { getDatabase } from './src/services/database/databaseService';
 
 import { initNotifications, requestPermissions } from './src/services/notificationService';
+import { registerBackgroundFetchAsync } from './src/services/backgroundService';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -23,6 +24,7 @@ export default function App() {
 
   useEffect(() => {
     initNotifications();
+    registerBackgroundFetchAsync();
   }, []);
 
   const handleMigrationComplete = async () => {
