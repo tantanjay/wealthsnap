@@ -117,6 +117,14 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
         );
 
         CREATE INDEX IF NOT EXISTS idx_ai_logs_timestamp ON ai_usage_logs(timestamp DESC);
+
+        -- Transaction Receipts table (Encrypted)
+        CREATE TABLE IF NOT EXISTS transaction_receipts (
+            transactionId TEXT PRIMARY KEY,
+            receiptData TEXT NOT NULL, -- Encrypted JSON
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (transactionId) REFERENCES transactions(id) ON DELETE CASCADE
+        );
     `);
 
     console.log('[Database] Tables and indexes created successfully');
