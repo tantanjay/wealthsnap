@@ -52,7 +52,9 @@
         }
       ],
       "expo-document-picker",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-background-fetch",
+      "expo-task-manager"
     ],
     "extra": {
       "eas": {
