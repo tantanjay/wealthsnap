@@ -21,6 +21,7 @@ interface ComparisonChartProps {
 
 const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year, currency, isPrivacyEnabled, isLoading = false }) => {
     const [showInfoModal, setShowInfoModal] = React.useState(false);
+    const [showInsightInfo, setShowInsightInfo] = React.useState(false);
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
@@ -93,15 +94,20 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
     return (
         <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, marginTop: 20 }}>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Spending Comparison</Text>
-                <TouchableOpacity onPress={() => setShowInfoModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="information-circle-outline" size={24} color={colors.textSecondary} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginRight: 8 }}>Spending Comparison</Text>
+                    <TouchableOpacity onPress={() => setShowInfoModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ fontSize: 20, marginRight: 10 }}>💡</Text>
                 <Text style={{ color: colors.text, flex: 1 }}>{isLoading ? "Analyzing spending habits..." : getComparisonInsight()}</Text>
+                <TouchableOpacity onPress={() => setShowInsightInfo(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
             </View>
 
             <Card>
@@ -266,6 +272,27 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
 
                     <View style={{ height: 20 }} />
                 </ScrollView>
+            </BottomModal>
+
+            <BottomModal
+                visible={showInsightInfo}
+                onClose={() => setShowInsightInfo(false)}
+                title="How is this calculated?"
+                maxHeight="40%"
+            >
+                <View>
+                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 10, lineHeight: 22 }}>
+                        This smart insight compares your <Text style={{ fontWeight: 'bold' }}>projected spending</Text> for this month against your <Text style={{ fontWeight: 'bold' }}>3-month average</Text>.
+                    </Text>
+                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5 }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                            • <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>On Track:</Text> You are projected to spend less or equal to average.
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4 }}>
+                            • <Text style={{ color: '#FF5252', fontWeight: 'bold' }}>Spending More:</Text> Projected spending is higher than average.
+                        </Text>
+                    </View>
+                </View>
             </BottomModal>
         </View>
     );
