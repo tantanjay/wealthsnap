@@ -6,9 +6,8 @@ import { useTheme } from '../context/ThemeContext';
 import { Button, Card } from '../components';
 import BudgetManagementModal from '../components/profile/BudgetManagementModal';
 import SupportModal from '../components/profile/settings/SupportModal';
-import GeminiSettingsModal from '../components/profile/settings/GeminiSettingsModal';
-import GeminiUsageModal from '../components/profile/settings/GeminiUsageModal';
-import { getAIConfig, getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
+
+import { getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 import OnboardingGuide from './Onboarding/OnboardingGuide';
@@ -17,12 +16,12 @@ import SecurityCard from '../components/profile/SecurityCard';
 import DataManagementCard from '../components/profile/data/DataManagementCard';
 import { RecurringRulesListModal } from '../components/profile/RecurringRulesListModal';
 import { useAlert } from '../context/AlertContext';
+import BottomModal from '../components/common/BottomModal';
 
 
 const ProfileScreen = ({ navigation }: any) => {
     const { colors, setMode, mode } = useTheme();
     const { showAlert } = useAlert();
-    const [hasApiKey, setHasApiKey] = useState(false);
 
     // Recurring Rules State
     const [showRecurringModal, setShowRecurringModal] = useState(false);
@@ -35,13 +34,12 @@ const ProfileScreen = ({ navigation }: any) => {
     // Support Modal State
     const [showSupportModal, setShowSupportModal] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
-    const [showGeminiModal, setShowGeminiModal] = useState(false);
-    const [showGeminiUsageModal, setShowGeminiUsageModal] = useState(false);
+    const [showWhyFreeModal, setShowWhyFreeModal] = useState(false);
+    const [showDevMessageModal, setShowDevMessageModal] = useState(false);
 
 
     useFocusEffect(
         useCallback(() => {
-            checkApiKey();
             checkCurrency();
         }, [])
     );
@@ -53,12 +51,7 @@ const ProfileScreen = ({ navigation }: any) => {
         }
     }
 
-    const checkApiKey = async () => {
-        const config = await getAIConfig();
-        if (config && config.apiKey) {
-            setHasApiKey(true);
-        }
-    };
+
 
     const handleManageRecurring = async () => {
         const rules = await getAllRecurrenceRules();
@@ -167,21 +160,6 @@ const ProfileScreen = ({ navigation }: any) => {
                     <Text style={{ color: colors.text, fontSize: 28, fontWeight: 'bold' }}>Profile</Text>
                 </View>
 
-                {/* Appearance Card */}
-                <Card style={{ marginBottom: 16 }}>
-                    <View style={styles.cardHeader}>
-                        <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
-                            <Ionicons name="color-palette" size={22} color={colors.primary} />
-                        </View>
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>Appearance</Text>
-                    </View>
-                    <View style={styles.themeContainer}>
-                        <ThemeOption icon="sunny" title="Light" value="light" current={mode} />
-                        <ThemeOption icon="moon" title="Dark" value="dark" current={mode} />
-                        <ThemeOption icon="phone-portrait" title="System" value="system" current={mode} />
-                    </View>
-                </Card>
-
                 {/* Quick Actions Card */}
                 <Card style={{ marginBottom: 16 }}>
                     <View style={styles.cardHeader}>
@@ -205,48 +183,30 @@ const ProfileScreen = ({ navigation }: any) => {
                         onPress={() => setShowBudgetModal(true)}
                         iconBg={colors.warning + '20'}
                         iconColor={colors.warning}
+                        isLast={true}
                     />
                 </Card>
 
                 {/* Data Management */}
                 <DataManagementCard navigation={navigation} />
 
-                {/* Gemini AI Card - Enhanced */}
-                <Card style={{ marginBottom: 16, backgroundColor: colors.primary, padding: 20 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                        <View style={[styles.headerIcon, { backgroundColor: 'rgba(255,255,255,0.2)', marginRight: 12 }]}>
-                            <Ionicons name="sparkles" size={22} color={colors.white} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={[styles.cardTitle, { color: colors.white }]}>Gemini AI</Text>
-                            <Text style={{ color: colors.white, opacity: 0.9, fontSize: 13, marginTop: 2 }}>
-                                {hasApiKey ? "✓ API Key configured" : "Configure your API key"}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={{ gap: 8 }}>
-                        <TouchableOpacity
-                            style={styles.aiButton}
-                            onPress={() => setShowGeminiModal(true)}
-                        >
-                            <Ionicons name="key" size={18} color={colors.primary} />
-                            <Text style={[styles.aiButtonText, { color: colors.primary }]}>
-                                {hasApiKey ? "Change API Key" : "Configure API Key"}
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.aiButton}
-                            onPress={() => setShowGeminiUsageModal(true)}
-                        >
-                            <Ionicons name="bar-chart" size={18} color={colors.primary} />
-                            <Text style={[styles.aiButtonText, { color: colors.primary }]}>View Usage Statistics</Text>
-                        </TouchableOpacity>
-                    </View>
-                </Card>
-
                 {/* Security */}
                 <SecurityCard />
+
+                {/* Appearance Card */}
+                <Card style={{ marginBottom: 16 }}>
+                    <View style={styles.cardHeader}>
+                        <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
+                            <Ionicons name="color-palette" size={22} color={colors.primary} />
+                        </View>
+                        <Text style={[styles.cardTitle, { color: colors.text }]}>Appearance</Text>
+                    </View>
+                    <View style={styles.themeContainer}>
+                        <ThemeOption icon="sunny" title="Light" value="light" current={mode} />
+                        <ThemeOption icon="moon" title="Dark" value="dark" current={mode} />
+                        <ThemeOption icon="phone-portrait" title="System" value="system" current={mode} />
+                    </View>
+                </Card>
 
                 {/* Help & Guide Card */}
                 <Card style={{ marginBottom: 16, backgroundColor: colors.info, padding: 20 }}>
@@ -284,16 +244,29 @@ const ProfileScreen = ({ navigation }: any) => {
                         WealthSnap is a free, ad-free personal finance tracker with AI-powered receipt scanning. Your data stays private and secure on your device.
                     </Text>
 
-                    <View style={{ backgroundColor: colors.surface, borderLeftWidth: 3, borderLeftColor: colors.primary, padding: 12, borderRadius: 8, marginBottom: 15 }}>
-                        <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 6 }}>Why is WealthSnap free?</Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>
-                            WealthSnap was built as a passion project to provide a high-quality, private financial tool without the tracking found in modern apps. We don&apos;t have server costs because your data stays on your phone. If you use the AI features, you use your own API key, keeping the app sustainable and free for everyone.
+                    <TouchableOpacity
+                        onPress={() => setShowWhyFreeModal(true)}
+                        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
+                    >
+                        <Ionicons name="gift-outline" size={18} color={colors.primary} />
+                        <Text style={{ color: colors.primary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
+                            Why is WealthSnap free?
                         </Text>
-                    </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => setShowDevMessageModal(true)}
+                        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
+                    >
+                        <Ionicons name="person-outline" size={18} color={colors.secondary} />
+                        <Text style={{ color: colors.secondary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
+                            A Message from the Developer
+                        </Text>
+                    </TouchableOpacity>
 
                     <TouchableOpacity
                         onPress={() => setShowSupportModal(true)}
-                        style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, marginBottom: 15 }}
+                        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
                     >
                         <Ionicons name="heart" size={18} color={colors.error} />
                         <Text style={{ color: colors.error, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
@@ -308,6 +281,56 @@ const ProfileScreen = ({ navigation }: any) => {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+
+            {/* Why Free Modal */}
+            <BottomModal
+                visible={showWhyFreeModal}
+                onClose={() => setShowWhyFreeModal(false)}
+                title="Why is WealthSnap free? 🎁"
+            >
+                <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 10 }}>
+                    WealthSnap was built as a passion project to provide a high-quality, private financial tool without the tracking found in modern apps.
+                </Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 15 }}>
+                    We don't have server costs because your data stays on your phone. If you use the AI features, you use your own API key, keeping the app sustainable and free for everyone.
+                </Text>
+                <Button
+                    title="Got it!"
+                    onPress={() => setShowWhyFreeModal(false)}
+                    style={{ marginTop: 24 }}
+                />
+            </BottomModal>
+
+            {/* Developer Message Modal */}
+            <BottomModal
+                visible={showDevMessageModal}
+                onClose={() => setShowDevMessageModal(false)}
+                title="Hello there! 👋"
+            >
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, fontWeight: '500', marginBottom: 12 }}>
+                        Thanks for using WealthSnap!
+                    </Text>
+
+                    <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginBottom: 16 }}>
+                        I built this app because I wanted a better way to understand my own spending. For years, I heavily relied on <Text style={{ fontWeight: '700', color: colors.text }}>Lista</Text> — a fantastic, free app that I genuinely admire for its simplicity.
+                    </Text>
+
+                    <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginBottom: 16 }}>
+                        However, as my financial needs grew, I felt the need for deeper insights and automation. That's when I decided to build WealthSnap.
+                    </Text>
+
+                    <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginBottom: 24 }}>
+                        It started as a personal tool, but I realized others might find it useful too. I developed this out of passion, wanting to share a privacy-focused, powerful tool with everyone. I hope it helps you achieve your financial goals as much as it helps me!
+                    </Text>
+
+                    <Button
+                        title="Close"
+                        onPress={() => setShowDevMessageModal(false)}
+                        variant="outline"
+                    />
+                </ScrollView>
+            </BottomModal>
 
             {/* Recurring Rules Modal */}
             <RecurringRulesListModal
@@ -330,20 +353,6 @@ const ProfileScreen = ({ navigation }: any) => {
             <SupportModal
                 visible={showSupportModal}
                 onClose={() => setShowSupportModal(false)}
-            />
-
-            {/* Gemini Settings Modal */}
-            <GeminiSettingsModal
-                visible={showGeminiModal}
-                onClose={() => setShowGeminiModal(false)}
-                hasApiKey={hasApiKey}
-                onApiKeySaved={checkApiKey}
-            />
-
-            {/* Gemini Usage Modal */}
-            <GeminiUsageModal
-                visible={showGeminiUsageModal}
-                onClose={() => setShowGeminiUsageModal(false)}
             />
 
             {/* Guide Modal */}
