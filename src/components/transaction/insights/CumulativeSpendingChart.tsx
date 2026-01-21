@@ -28,12 +28,31 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     const [period, setPeriod] = useState<3 | 6 | 12>(3);
     const [showInfo, setShowInfo] = useState(false);
 
-    const { currentData, avgData, insight } = useMemo(() => {
+    const { currentData, avgData, projectionData, insight } = useMemo(() => {
         const today = new Date();
         const currentMonthTrans = getTransactionsByMonth(transactions, today);
 
         const currentData = getCurrentMonthCumulative(currentMonthTrans);
         const avgData = getCumulativeSpendingCurve(transactions, period);
+
+        // Calculate projection using historical average for future days
+        const projectionData: number[] = [];
+        if (currentData.length > 0 && avgData.length > 0) {
+            const currentDay = currentData.length;
+            const currentTotal = currentData[currentData.length - 1];
+
+            // Start with current day's actual value (for seamless connection)
+            projectionData.push(currentTotal);
+
+            // Project future days using historical average's daily increments
+            let runningTotal = currentTotal;
+            for (let day = currentDay; day < avgData.length; day++) {
+                // Use the daily increment from historical average
+                const dailyIncrement = avgData[day] - avgData[day - 1];
+                runningTotal += dailyIncrement;
+                projectionData.push(runningTotal);
+            }
+        }
 
         // Calculate Insight
         let insight = "";
@@ -53,7 +72,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
             insight = "Not enough history for comparison";
         }
 
-        return { currentData, avgData, insight };
+        return { currentData, avgData, projectionData, insight };
     }, [transactions, period, currency]);
 
     const labels = Array.from({ length: 31 }, (_, i) => (i + 1) % 5 === 0 ? (i + 1).toString() : "");
@@ -72,29 +91,32 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         });
     }
 
-    // Dataset 2: Current (Foreground Line)
-    // To ensure correct X-axis alignment, we must pad the current month's data to match
-    // the length of the average data (typically 31 days). 
-    // Without this, the library stretches the shorter dataset to fill the width.
-    const fullCurrentData = [...currentData];
-    if (avgData.length > 0) {
-        while (fullCurrentData.length < avgData.length) {
-            // @ts-ignore - Pad with null to prevent drawing future points while maintaining X-axis scale
-            fullCurrentData.push(null);
+    // Dataset 2: Current (Foreground Line) - ONLY actual spending, no padding
+    // This line ends at the current day
+    datasets.push({
+        data: currentData, // Just the actual spending data, no padding
+        color: (opacity = 1) => colors.primary,
+        strokeWidth: 3
+    });
+
+    // Dataset 3: Projection (Dotted Line extending from current day)
+    // Starts from current day's value and continues to end of month
+    if (projectionData.length > 0 && avgData.length > 0) {
+        // Copy currentData for days 1 to currentDay (overlaps exactly with solid line, hidden underneath)
+        // Then add projection data for remaining days
+        const fullProjectionData: number[] = [...currentData]; // Days 1 to currentDay
+
+        // Add remaining projection days (skip first since it's already the last currentData value)
+        for (let i = 1; i < projectionData.length; i++) {
+            fullProjectionData.push(projectionData[i]);
         }
-    }
-    if (avgData.length > 0) {
+
         datasets.push({
-            data: fullCurrentData,
+            data: fullProjectionData,
             color: (opacity = 1) => colors.primary,
-            strokeWidth: 3
-        });
-    } else {
-        // No history, just show current
-        datasets.push({
-            data: currentData,
-            color: (opacity = 1) => colors.primary,
-            strokeWidth: 3
+            strokeWidth: 2,
+            withDots: false,
+            strokeDashArray: [8, 4] // Dotted
         });
     }
 
@@ -179,18 +201,28 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                         withHorizontalLines={true}
                         bezier
                         style={{ borderRadius: 16 }}
-                        yAxisLabel={CURRENCY_SYMBOLS[currency] || ""}
+                        formatYLabel={(value) => {
+                            const num = parseFloat(value);
+                            if (isNaN(num) || num === 0) return '$0';
+                            return formatCompactCurrency(num, currency);
+                        }}
                     />
                 )}
 
                 {/* Legend */}
                 {!isPrivacyEnabled && avgData.length > 0 && (
-                    <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 10 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 10, flexWrap: 'wrap' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15, marginBottom: 5 }}>
                             <View style={{ width: 12, height: 2, backgroundColor: colors.primary, marginRight: 6 }} />
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Current Month</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Current</Text>
                         </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        {projectionData.length > 0 && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15, marginBottom: 5 }}>
+                                <View style={{ width: 12, height: 2, backgroundColor: colors.primary, marginRight: 6, borderStyle: 'dashed', borderRadius: 1 }} />
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Projected</Text>
+                            </View>
+                        )}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
                             <View style={{ width: 12, height: 2, backgroundColor: '#A0A0A0', marginRight: 6, borderStyle: 'dashed', borderRadius: 1 }} />
                             <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{period}M Average</Text>
                         </View>
@@ -211,9 +243,17 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                         <View style={{ width: 24, height: 4, backgroundColor: colors.primary, marginRight: 12, borderRadius: 2 }} />
-                        <View>
-                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>Solid Line (You)</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>Solid Line (Current)</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Your actual spending so far this month.</Text>
+                        </View>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                        <View style={{ width: 24, height: 4, backgroundColor: colors.primary, marginRight: 12, borderRadius: 2, borderStyle: 'dashed', borderWidth: 2, borderColor: colors.primary }} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>Dotted Line (Projection)</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Where you're headed based on your historical spending pattern.</Text>
                         </View>
                     </View>
 
