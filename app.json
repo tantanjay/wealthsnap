@@ -51,7 +51,8 @@
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to scan receipts."
         }
       ],
-      "expo-document-picker"
+      "expo-document-picker",
+      "expo-notifications"
     ],
     "extra": {
       "eas": {

@@ -4,6 +4,8 @@ import { UserProfile, Transaction, Investment, Category, RecurrenceRule, AIConfi
 import { encryptData, decryptData, encryptField, decryptField } from './encryptionService';
 import * as DataCache from './dataCache';
 import { getDatabase } from './database/databaseService';
+import { checkAndNotifyAnomalies } from './notificationService';
+
 
 /**
  * Storage Architecture:
