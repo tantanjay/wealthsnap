@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAlert } from '../../../context/AlertContext';
+import { useSecurity } from '../../../context/SecurityContext';
 import { Card } from '../../index';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -19,6 +20,7 @@ interface DataManagementCardProps {
 
 const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) => {
     const { colors } = useTheme();
+    const { temporarilyDisableLock } = useSecurity();
 
     // Backup/Restore State
     const [showBackupModal, setShowBackupModal] = useState(false);
@@ -70,6 +72,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
             setShowBackupModal(false);
 
             if (await Sharing.isAvailableAsync()) {
+                temporarilyDisableLock();
                 await Sharing.shareAsync(uri);
             } else {
                 showAlert('Success', 'Backup created at ' + uri);
@@ -82,6 +85,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
 
     const handleSelectRestoreFile = async () => {
         try {
+            temporarilyDisableLock();
             const result = await DocumentPicker.getDocumentAsync({
                 type: 'application/zip',
                 copyToCacheDirectory: true,

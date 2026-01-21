@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, Modal, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAlert } from '../../context/AlertContext';
+import { useSecurity } from '../../context/SecurityContext';
 
 const { width } = Dimensions.get('window');
 
@@ -9,6 +10,31 @@ export const CustomAlert: React.FC = () => {
     const { colors } = useTheme();
     const { alertState, hideAlert } = useAlert();
     const { visible, title, message, buttons, options } = alertState;
+
+    // Safety check for SecurityContext
+    let isLocked = false;
+    try {
+        const security = useSecurity();
+        isLocked = security.isLocked;
+    } catch (e) {
+        // Context might not be available if used outside SecurityProvider
+    }
+
+    // Auto-close alert when app is locked
+    useEffect(() => {
+        if (visible && isLocked) {
+            // Find the safe action to trigger (cancel button or last button)
+            const cancelButton = buttons?.find(btn => btn.style === 'cancel');
+            const safeButton = cancelButton || buttons?.[buttons.length - 1];
+
+            // Trigger the safe button's action if it exists
+            if (safeButton?.onPress) {
+                safeButton.onPress();
+            }
+
+            hideAlert();
+        }
+    }, [visible, isLocked, hideAlert, buttons]);
 
     if (!visible) return null;
 
