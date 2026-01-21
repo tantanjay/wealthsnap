@@ -107,11 +107,59 @@ export const saveTransaction = async (transaction: Transaction): Promise<void> =
                 transaction.isRecurring ? 1 : 0,
                 transaction.recurrenceId || null
             ]
+            // ... existing saveTransaction ...
         );
         DataCache.invalidateTransactionCache();
     } catch (error) {
         console.error('Error saving transaction:', error);
         throw new Error('Failed to save transaction');
+    }
+};
+
+export const saveTransactionWithReceipt = async (transaction: Transaction, receiptData: any): Promise<void> => {
+    try {
+        const db = await getDatabase();
+
+        await db.withTransactionAsync(async () => {
+            // 1. Save Transaction (Duplicate logic to ensure atomicity within this transaction block)
+            // Or reuse saveTransaction if we can guarantee transaction context? 
+            // SQLite `runAsync` usually auto-commits if not in `withTransactionAsync`.
+            // Let's replicate logic locally to be safe inside `withTransactionAsync`.
+
+            // Encrypt sensitive fields
+            const encryptedAmount = await encryptField(transaction.amount);
+            const encryptedNote = transaction.note ? await encryptField(transaction.note) : null;
+
+            await db.runAsync(
+                `INSERT OR REPLACE INTO transactions 
+                 (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    transaction.id,
+                    transaction.date,
+                    encryptedAmount,
+                    transaction.type,
+                    transaction.category || null,
+                    transaction.subCategory || null,
+                    encryptedNote,
+                    transaction.creationMethod || null,
+                    transaction.isRecurring ? 1 : 0,
+                    transaction.recurrenceId || null
+                ]
+            );
+
+            // 2. Save Encrypted Receipt
+            const encryptedReceipt = await encryptData(receiptData);
+            await db.runAsync(
+                `INSERT OR REPLACE INTO transaction_receipts (transactionId, receiptData) VALUES (?, ?)`,
+                [transaction.id, encryptedReceipt]
+            );
+        });
+
+        DataCache.invalidateTransactionCache();
+    } catch (error) {
+        console.error('Error saving transaction with receipt:', error);
+        throw new Error('Failed to save transaction with receipt');
     }
 };
 
