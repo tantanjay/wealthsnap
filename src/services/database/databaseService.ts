@@ -11,7 +11,6 @@ export const getDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
         return databaseInstance;
     }
 
-    console.log('[Database] Opening database connection...');
     databaseInstance = await SQLite.openDatabaseAsync(DATABASE_NAME);
 
     // Initialize tables
@@ -25,8 +24,6 @@ export const getDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
  */
 export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => {
     try {
-        console.log('[Database] Initializing database...');
-
         // Create all tables and indexes
         await createTables(db);
 
@@ -34,10 +31,7 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
         const currentVersion = await getDatabaseVersion(db);
         if (currentVersion === 0) {
             await setDatabaseVersion(db, DATABASE_VERSION);
-            console.log(`[Database] Database initialized with version ${DATABASE_VERSION}`);
         } else if (currentVersion < DATABASE_VERSION) {
-            console.log(`[Database] Migrating from version ${currentVersion} to ${DATABASE_VERSION}`);
-
             if (currentVersion === 1) {
                 // Import dynamically to avoid circular dependencies if possible, or just standard import
                 const { migrateV1ToV2 } = require('./migrationService');
@@ -46,8 +40,6 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
 
             await setDatabaseVersion(db, DATABASE_VERSION);
         }
-
-        console.log('[Database] Database ready');
     } catch (error) {
         console.error('[Database] Initialization error:', error);
         throw error;
@@ -61,7 +53,6 @@ export const closeDatabase = async (): Promise<void> => {
     if (databaseInstance) {
         await databaseInstance.closeAsync();
         databaseInstance = null;
-        console.log('[Database] Connection closed');
     }
 };
 

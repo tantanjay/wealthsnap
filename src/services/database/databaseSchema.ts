@@ -127,7 +127,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
         );
     `);
 
-    console.log('[Database] Tables and indexes created successfully');
+
 };
 
 /**

@@ -35,7 +35,6 @@ export const setTransactionCache = (data: Transaction[]): void => {
 };
 
 export const invalidateTransactionCache = (): void => {
-    console.log('[Cache] Transactions cache invalidated');
     transactionCache = null;
 };
 
@@ -53,7 +52,6 @@ export const setInvestmentCache = (data: Investment[]): void => {
 };
 
 export const invalidateInvestmentCache = (): void => {
-    console.log('[Cache] Investments cache invalidated');
     investmentCache = null;
 };
 
@@ -71,7 +69,6 @@ export const setCategoryCache = (data: Category[]): void => {
 };
 
 export const invalidateCategoryCache = (): void => {
-    console.log('[Cache] Categories cache invalidated');
     categoryCache = null;
 };
 
@@ -89,14 +86,12 @@ export const setRecurrenceRuleCache = (data: RecurrenceRule[]): void => {
 };
 
 export const invalidateRecurrenceRuleCache = (): void => {
-    console.log('[Cache] Recurrence rules cache invalidated');
     recurrenceRuleCache = null;
 };
 
 // ============= Clear All Caches =============
 
 export const invalidateAllCaches = (): void => {
-    console.log('[Cache] All caches invalidated');
     transactionCache = null;
     investmentCache = null;
     categoryCache = null;
