@@ -722,11 +722,9 @@ export const bulkSaveRecurrenceRules = async (rules: RecurrenceRule[]): Promise<
 export const getCachedTransactions = async (): Promise<Transaction[]> => {
     const cache = DataCache.getTransactionCache();
     if (DataCache.isValid(cache)) {
-        console.log('[Cache] Transactions loaded from cache');
         return cache!.data;
     }
 
-    console.log('[Cache] Transactions loaded from storage');
     const data = await getAllTransactions();
     DataCache.setTransactionCache(data);
     return data;
@@ -735,11 +733,9 @@ export const getCachedTransactions = async (): Promise<Transaction[]> => {
 export const getCachedInvestments = async (): Promise<Investment[]> => {
     const cache = DataCache.getInvestmentCache();
     if (DataCache.isValid(cache)) {
-        console.log('[Cache] Investments loaded from cache');
         return cache!.data;
     }
 
-    console.log('[Cache] Investments loaded from storage');
     const data = await getAllInvestments();
     DataCache.setInvestmentCache(data);
     return data;
@@ -748,11 +744,9 @@ export const getCachedInvestments = async (): Promise<Investment[]> => {
 export const getCachedCategories = async (): Promise<Category[]> => {
     const cache = DataCache.getCategoryCache();
     if (DataCache.isValid(cache)) {
-        console.log('[Cache] Categories loaded from cache');
         return cache!.data;
     }
 
-    console.log('[Cache] Categories loaded from storage');
     const data = await getAllCategories();
     DataCache.setCategoryCache(data);
     return data;
@@ -761,11 +755,9 @@ export const getCachedCategories = async (): Promise<Category[]> => {
 export const getCachedRecurrenceRules = async (): Promise<RecurrenceRule[]> => {
     const cache = DataCache.getRecurrenceRuleCache();
     if (DataCache.isValid(cache)) {
-        console.log('[Cache] Recurrence rules loaded from cache');
         return cache!.data;
     }
 
-    console.log('[Cache] Recurrence rules loaded from storage');
     const data = await getAllRecurrenceRules();
     DataCache.setRecurrenceRuleCache(data);
     return data;

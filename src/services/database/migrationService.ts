@@ -38,7 +38,6 @@ const markMigrationComplete = async (): Promise<void> => {
         'INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)',
         ['migration_complete', 'true']
     );
-    console.log('[Migration] Marked as complete');
 };
 
 /**
@@ -48,7 +47,6 @@ const readAsyncStorageData = async <T>(key: string): Promise<T[]> => {
     try {
         const encrypted = await AsyncStorage.getItem(key);
         if (!encrypted) {
-            console.log(`[Migration] No data found for key: ${key}`);
             return [];
         }
 
@@ -84,7 +82,6 @@ const migrateTransactions = async (db: any): Promise<number> => {
     const transactions = await readAsyncStorageData<Transaction>(ASYNC_STORAGE_KEYS.TRANSACTIONS);
 
     if (transactions.length === 0) {
-        console.log('[Migration] No transactions to migrate');
         return 0;
     }
 
@@ -114,7 +111,8 @@ const migrateTransactions = async (db: any): Promise<number> => {
         );
     }
 
-    console.log(`[Migration] ✅ Migrated ${transactions.length} transactions`);
+
+
     return transactions.length;
 };
 
@@ -125,11 +123,8 @@ const migrateInvestments = async (db: any): Promise<number> => {
     const investments = await readAsyncStorageData<Investment>(ASYNC_STORAGE_KEYS.INVESTMENTS);
 
     if (investments.length === 0) {
-        console.log('[Migration] No investments to migrate');
         return 0;
     }
-
-    console.log(`[Migration] Migrating ${investments.length} investments...`);
 
     for (const inv of investments) {
         // Encrypt sensitive fields
@@ -155,7 +150,8 @@ const migrateInvestments = async (db: any): Promise<number> => {
         );
     }
 
-    console.log(`[Migration] ✅ Migrated ${investments.length} investments`);
+
+
     return investments.length;
 };
 
@@ -166,11 +162,8 @@ const migrateCategories = async (db: any): Promise<number> => {
     const categories = await readAsyncStorageData<Category>(ASYNC_STORAGE_KEYS.CATEGORIES);
 
     if (categories.length === 0) {
-        console.log('[Migration] No categories to migrate');
         return 0;
     }
-
-    console.log(`[Migration] Migrating ${categories.length} categories...`);
 
     for (const cat of categories) {
         await db.runAsync(
@@ -186,7 +179,8 @@ const migrateCategories = async (db: any): Promise<number> => {
         );
     }
 
-    console.log(`[Migration] ✅ Migrated ${categories.length} categories`);
+
+
     return categories.length;
 };
 
@@ -197,11 +191,8 @@ const migrateRecurrenceRules = async (db: any): Promise<number> => {
     const rules = await readAsyncStorageData<RecurrenceRule>(ASYNC_STORAGE_KEYS.RECURRENCE_RULES);
 
     if (rules.length === 0) {
-        console.log('[Migration] No recurrence rules to migrate');
         return 0;
     }
-
-    console.log(`[Migration] Migrating ${rules.length} recurrence rules...`);
 
     for (const rule of rules) {
         // Encrypt the entire template
@@ -224,7 +215,8 @@ const migrateRecurrenceRules = async (db: any): Promise<number> => {
         );
     }
 
-    console.log(`[Migration] ✅ Migrated ${rules.length} recurrence rules`);
+
+
     return rules.length;
 };
 
@@ -235,11 +227,8 @@ const migrateBudgets = async (db: any): Promise<number> => {
     const budgets = await readAsyncStorageData<Budget>(ASYNC_STORAGE_KEYS.BUDGETS);
 
     if (budgets.length === 0) {
-        console.log('[Migration] No budgets to migrate');
         return 0;
     }
-
-    console.log(`[Migration] Migrating ${budgets.length} budgets...`);
 
     for (const budget of budgets) {
         const encryptedAmount = await encryptField(budget.amount);
@@ -249,7 +238,8 @@ const migrateBudgets = async (db: any): Promise<number> => {
         );
     }
 
-    console.log(`[Migration] ✅ Migrated ${budgets.length} budgets`);
+
+
     return budgets.length;
 };
 
@@ -257,10 +247,8 @@ const migrateBudgets = async (db: any): Promise<number> => {
  * Migrate from V1 to V2: Encrypt Recurrence Rule Names
  */
 export const migrateV1ToV2 = async (db: any): Promise<void> => {
-    console.log('[Migration] 🚀 Starting V1 -> V2 migration (Encrypting Recurrence Names)...');
     try {
         const rules = await db.getAllAsync('SELECT * FROM recurrence_rules');
-        console.log(`[Migration] Found ${rules.length} recurrence rules to process.`);
 
         await db.withTransactionAsync(async () => {
             for (const rule of rules) {
@@ -278,7 +266,7 @@ export const migrateV1ToV2 = async (db: any): Promise<void> => {
             }
         });
 
-        console.log('[Migration] ✅ V1 -> V2 migration completed successfully!');
+
     } catch (error) {
         console.error('[Migration] ❌ V1 -> V2 migration failed:', error);
         throw error;
@@ -328,7 +316,6 @@ const validateMigration = async (db: any, counts: { [key: string]: number }): Pr
 export const migrateFromAsyncStorage = async (
     onProgress?: (step: string, current: number, total: number) => void
 ): Promise<{ success: boolean; counts: { [key: string]: number } }> => {
-    console.log('[Migration] 🚀 Starting migration from AsyncStorage to SQLite...');
 
     const counts = {
         transactions: 0,
@@ -360,7 +347,6 @@ export const migrateFromAsyncStorage = async (
         });
 
         // Validate migration
-        console.log('[Migration] Validating migration...');
         const valid = await validateMigration(db, counts);
 
         if (!valid) {
@@ -369,9 +355,6 @@ export const migrateFromAsyncStorage = async (
 
         // Mark migration complete
         await markMigrationComplete();
-
-        console.log('[Migration] ✅ Migration completed successfully!');
-        console.log('[Migration] Summary:', counts);
 
         return { success: true, counts };
     } catch (error) {

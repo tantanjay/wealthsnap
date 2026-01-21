@@ -27,7 +27,6 @@ export const generateDummyData = async () => {
     if (!CONFIG.ENABLE_DUMMY_DATA) return;
 
     try {
-        console.log('Generating Dummy Data...');
         await clearAllData();
 
         // 1. Create Profile
@@ -47,6 +46,7 @@ export const generateDummyData = async () => {
 
         // 2. Create Categories
         const allCategories = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
+
         for (const cat of allCategories) {
             await saveCategory({
                 id: generateRandomId(),
@@ -152,7 +152,7 @@ export const generateDummyData = async () => {
             await saveTransaction(t);
         }
 
-        console.log(`Generated ${transactions.length} dummy transactions.`);
+
 
     } catch (error) {
         console.error('Error generating dummy data:', error);
