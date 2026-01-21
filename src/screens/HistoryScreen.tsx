@@ -245,7 +245,7 @@ const HistoryScreen = ({ navigation }: any) => {
             >
                 <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                             <View style={{
                                 width: 36,
                                 height: 36,
@@ -260,11 +260,15 @@ const HistoryScreen = ({ navigation }: any) => {
                                     color={isExpense ? colors.error : colors.success}
                                 />
                             </View>
-                            <View>
+                            <View style={{ flex: 1 }}>
                                 <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
                                     {item.category}
                                 </Text>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                <Text
+                                    style={{ color: colors.textSecondary, fontSize: 12 }}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                >
                                     {item.note || (item.subCategory ? item.subCategory : item.type)}
                                 </Text>
                             </View>
@@ -272,7 +276,9 @@ const HistoryScreen = ({ navigation }: any) => {
                         <Text style={{
                             color: isExpense ? colors.error : colors.success,
                             fontSize: 16,
-                            fontWeight: 'bold'
+                            fontWeight: 'bold',
+                            flexShrink: 0,
+                            marginLeft: 8
                         }}>
                             {isExpense ? '-' : '+'}{formatCurrency(item.amount)}
                         </Text>
