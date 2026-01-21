@@ -12,6 +12,8 @@ import { PrivacyGuard } from './src/components/common/PrivacyGuard';
 import { AlertProvider } from './src/context/AlertContext';
 import { CustomAlert } from './src/components/common/CustomAlert';
 
+import { getDatabase } from './src/services/database/databaseService';
+
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [migrating, setMigrating] = useState(true);
@@ -24,6 +26,13 @@ export default function App() {
   };
 
   const checkOnboarding = async () => {
+    try {
+      // Ensure database is initialized and migrations are run
+      await getDatabase();
+    } catch (error) {
+      console.error('[App] Database initialization failed:', error);
+    }
+
     const completed = await isOnboardingComplete();
     setInitialRoute(completed ? 'Main' : 'Onboarding');
     setLoading(false);
