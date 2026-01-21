@@ -157,7 +157,8 @@ const RecordScreen = ({ navigation, route }: any) => {
                     {
                         text: "OK", onPress: () => {
                             setViewMode('MENU');
-                            navigation.goBack();
+                            setModalVisible(false);
+                            setCapturedImageUri(null);
                         }
                     }
                 ]);
@@ -202,7 +203,8 @@ const RecordScreen = ({ navigation, route }: any) => {
                     {
                         text: "OK", onPress: () => {
                             setViewMode('MENU');
-                            navigation.goBack();
+                            setModalVisible(false);
+                            setCapturedImageUri(null);
                         }
                     }
                 ]);
@@ -256,8 +258,8 @@ const RecordScreen = ({ navigation, route }: any) => {
                 visible={modalVisible}
                 onClose={() => {
                     setModalVisible(false);
-                    if (viewMode === 'MENU') {
-                        // Only go back if we haven't selected anything yet
+                    if (viewMode === 'MENU' && navigation.canGoBack()) {
+                        // Only go back if we haven't selected anything yet and can go back
                         navigation.goBack();
                     }
                 }}
