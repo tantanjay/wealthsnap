@@ -10,6 +10,7 @@ import { Card } from '../components';
 import { usePrivacy } from '../context/PrivacyContext';
 import { formatCurrencyAmount } from '../utils/currencyUtils';
 import TransactionOptionsModal from '../components/transaction/modals/TransactionOptionsModal';
+import { Skeleton } from '../components/common/Skeleton';
 
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
@@ -35,6 +36,7 @@ const HistoryScreen = ({ navigation }: any) => {
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useFocusEffect(
         useCallback(() => {
@@ -65,9 +67,11 @@ const HistoryScreen = ({ navigation }: any) => {
     };
 
     const loadTransactions = async () => {
+        setIsLoading(true);
         const data = await getCachedTransactions();
         // Data is already sorted by storageService
         setAllTransactions(data);
+        setIsLoading(false);
     };
 
     const formatCurrency = (amount: number) => {
@@ -354,29 +358,54 @@ const HistoryScreen = ({ navigation }: any) => {
                 <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16 }}>
                     <View style={{ marginBottom: 12 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Balance</Text>
-                        <Text style={{ color: summary.balance >= 0 ? colors.success : colors.error, fontSize: 24, fontWeight: 'bold' }}>
-                            {formatCurrency(summary.balance)}
-                        </Text>
+                        {isLoading ? (
+                            <Skeleton width={120} height={32} />
+                        ) : (
+                            <Text style={{ color: summary.balance >= 0 ? colors.success : colors.error, fontSize: 24, fontWeight: 'bold' }}>
+                                {formatCurrency(summary.balance)}
+                            </Text>
+                        )}
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                         <View>
                             <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Total Income</Text>
-                            <Text style={{ color: colors.success, fontSize: 16, fontWeight: '600' }}>
-                                +{formatCurrency(summary.totalIncome)}
-                            </Text>
+                            {isLoading ? (
+                                <Skeleton width={80} height={20} />
+                            ) : (
+                                <Text style={{ color: colors.success, fontSize: 16, fontWeight: '600' }}>
+                                    +{formatCurrency(summary.totalIncome)}
+                                </Text>
+                            )}
                         </View>
                         <View>
                             <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Total Expense</Text>
-                            <Text style={{ color: colors.error, fontSize: 16, fontWeight: '600' }}>
-                                -{formatCurrency(summary.totalExpense)}
-                            </Text>
+                            {isLoading ? (
+                                <Skeleton width={80} height={20} />
+                            ) : (
+                                <Text style={{ color: colors.error, fontSize: 16, fontWeight: '600' }}>
+                                    -{formatCurrency(summary.totalExpense)}
+                                </Text>
+                            )}
                         </View>
                     </View>
                 </View>
             </View>
 
             {/* Transactions List */}
-            {sections.length === 0 ? (
+            {isLoading ? (
+                <View style={{ marginTop: 10 }}>
+                    {[1, 2, 3, 4, 5].map(i => (
+                        <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
+                            <Skeleton width={36} height={36} borderRadius={18} style={{ marginRight: 12 }} />
+                            <View style={{ flex: 1 }}>
+                                <Skeleton width={120} height={16} style={{ marginBottom: 6 }} />
+                                <Skeleton width={80} height={12} />
+                            </View>
+                            <Skeleton width={60} height={16} />
+                        </View>
+                    ))}
+                </View>
+            ) : sections.length === 0 ? (
                 <View style={{ alignItems: 'center', marginTop: 30 }}>
                     <Ionicons name="documents-outline" size={64} color={colors.textSecondary} />
                     <Text style={{ color: colors.textSecondary, marginTop: 10 }}>No transactions in this period.</Text>
