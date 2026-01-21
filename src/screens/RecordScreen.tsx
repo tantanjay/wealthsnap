@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { BackHandler } from 'react-native';
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useAlert } from '../context/AlertContext';
 import RecordMenuModal from '../components/record/RecordMenuModal';
-import { Transaction, TransactionType } from '../types';
+import { Transaction, TransactionType, ReceiptAnalysisResult } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 import { TransactionForm } from '../components/transaction/TransactionForm';
 import { ReceiptReviewForm } from '../components/ai/ReceiptReviewForm';
 import { saveTransactionWithReceipt } from '../services/storageService';
-import { ReceiptAnalysisResult } from '../types';
 
 type ViewMode = 'MENU' | 'TRANSACTION' | 'INVESTMENT' | 'AI' | 'AI_REVIEW';
 
@@ -18,6 +17,12 @@ const RecordScreen = ({ navigation, route }: any) => {
     const [transactionType, setTransactionType] = useState<TransactionType>('EXPENSE');
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     const [capturedImageUri, setCapturedImageUri] = useState<string | null>(null);
+
+    // Ref for viewMode to access current value in focus effect without triggering re-runs
+    const viewModeRef = useRef(viewMode);
+    useEffect(() => {
+        viewModeRef.current = viewMode;
+    }, [viewMode]);
 
     // Listen for tab press events to reopen modal
     useEffect(() => {
@@ -32,6 +37,15 @@ const RecordScreen = ({ navigation, route }: any) => {
 
         return unsubscribe;
     }, [navigation, viewMode, modalVisible]);
+
+    // Handle Transaction Cancel (Moved up for useEffect dependency)
+    const handleTransactionCancel = useCallback(() => {
+        // Reset to menu view and show modal again when canceling
+        setViewMode('MENU');
+        setModalVisible(true);
+        setEditingTransaction(null);
+        setCapturedImageUri(null);
+    }, []);
 
     // Handle Android Back Button
     useEffect(() => {
@@ -60,10 +74,10 @@ const RecordScreen = ({ navigation, route }: any) => {
         );
 
         return () => backHandler.remove();
-    }, [viewMode, modalVisible]);
+    }, [viewMode, modalVisible, handleTransactionCancel]);
 
     useFocusEffect(
-        React.useCallback(() => {
+        useCallback(() => {
             const { transaction } = route.params || {};
 
             if (transaction) {
@@ -74,7 +88,7 @@ const RecordScreen = ({ navigation, route }: any) => {
                 setModalVisible(false); // Hide modal when editing
             } else {
                 // New record - show menu (only if not already in a process)
-                if (viewMode !== 'AI_REVIEW') {
+                if (viewModeRef.current !== 'AI_REVIEW') {
                     setViewMode('MENU');
                     setModalVisible(true);
                     setEditingTransaction(null);
@@ -223,13 +237,7 @@ const RecordScreen = ({ navigation, route }: any) => {
         navigation.goBack();
     };
 
-    const handleTransactionCancel = () => {
-        // Reset to menu view and show modal again when canceling
-        setViewMode('MENU');
-        setModalVisible(true);
-        setEditingTransaction(null);
-        setCapturedImageUri(null);
-    };
+
 
     return (
         <ScreenWrapper>

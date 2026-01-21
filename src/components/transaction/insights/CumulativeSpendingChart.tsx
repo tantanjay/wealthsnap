@@ -7,7 +7,7 @@ import { Card } from '../../../components';
 import BottomModal from '../../common/BottomModal';
 import { Transaction } from '../../../types';
 import { getCumulativeSpendingCurve, getCurrentMonthCumulative, getTransactionsByMonth } from '../../../utils/financialMetrics';
-import { CURRENCY_SYMBOLS, formatCompactCurrency, formatCurrencyAmount } from '../../../utils/currencyUtils';
+import { CURRENCY_SYMBOLS, formatCompactCurrency } from '../../../utils/currencyUtils';
 
 interface CumulativeSpendingChartProps {
     transactions: Transaction[];
@@ -53,22 +53,6 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         return { currentData, avgData, insight };
     }, [transactions, period, currency]);
 
-    // Fill Avg Data with 0s if empty, or ensure it matches X-axis length if needed
-    // But LineChart needs labels. Let's just do 1, 5, 10, 15, 20, 25, 30
-    const chartLabels = ["1", "5", "10", "15", "20", "25", "30"];
-
-    // We need to map our daily data (index 0 = day 1) to these labels? 
-    // Actually LineChart expects data points to match labels count if we are strict, 
-    // OR we can just pass all 30 points and hide labels.
-    // React Native Chart Kit is weird with X labels. 
-    // Better strategy: 
-    // Pass ALL data points (30 or 31).
-    // Hide X Labels except every 5th one using formatXLabel? No, formatXLabel runs on string.
-
-    // Simplest: Just let it draw all points. 
-    // If we want fewer labels, we must provide fewer labels in the array, but the data length must match?
-    // Actually, if we provide empty strings for intermediate labels, it works.
-
     const labels = Array.from({ length: 31 }, (_, i) => (i + 1) % 5 === 0 ? (i + 1).toString() : "");
 
     // Prepare datasets
@@ -86,84 +70,16 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     }
 
     // Dataset 2: Current (Foreground Line)
-    // We need to pad currentData with nulls or existing value? 
-    // react-native-chart-kit crashes if data lengths differ significantly without correct configuration.
-    // Actually it just stops drawing.
-    // BUT we need both arrays to be same length for X-axis alignment?
-    // Yes. So for currentData, we should pad the rest of the month with `null` or `undefined` (if supported) 
-    // OR just handle the fact that line chart might stretch the short array.
-
-    // PROPER WAY: 
-    // Both arrays length 31.
-    // Current Data: [100, 200, ... values ... , null, null, null] (using withDots: false on nulls?)
-    // This library handles nulls poorly (treats as 0 sometimes).
-    // Workaround: We only graph up to "Max Day" of the longest dataset (usually 31).
-    // If current data is length 15, and avg is 31.
-    // If we pass data point as `null`, it breaks.
-
-    // Let's try: 
-    // Only pass the Current Data points that exist.
-    // But then the chart X-axis is only 15 days long. The Avg curve will be squashed?
-    // No, we must ensure the dataset covers the full X range.
-
-    // TRICK: Add a transparent point at Day 31 for current data?
-    // Or simpler: Just render what we have. If Current is short, the graph is short.
-    // BUT the user wants to compare to the Month End.
-
-    // OK, let's try the "Same Length" approach if possible.
-    // If avgData exists (length 31), we want CurrentData to align.
-    // If we add `null` to datasets data, RNChartKit might crash or draw 0.
-
-    // Alternative: Just graph the current progress relative to avg *up to today*.
-    // And maybe show the rest of the avg curve as a "projection"?
-
-    // Let's assume for now we just graph both as is. 
-    // If lengths mismatch, chartkit draws them over same Width. This is BAD. (Day 15 current aligns with Day 30 avg).
-    // FIX: We must pad `currentData` to length 31, but make the future points `NaN` or handle via `pixel` props?
-    // RN Chart Kit is limited here.
-
-    // SAFE FIX: Use `bezier`? No.
-    // We will use the `counts` property? No.
-
-    // Let's manually pad with the LAST KNOWN VALUE? 
-    // No, that implies flat line.
-
-    // Let's rely on Average Data being the "Master".
-    // Real Data: [10, 20, 30]
-    // Avg Data: [10, 20, 30, 40, 50 ...]
-    // If we pass both, the library will likely only render X labels based on the first dataset?
-
-    // Let's Try:
-    // Dataset 1: Avg (Length 31)
-    // Dataset 2: Current (Length 15... padded with 'null'?)
-    // Note: react-native-chart-kit 6.x supports `withScrollableDot` which handles some disjoints, 
-    // but typically `null` turns to 0.
-
-    // Hack: If current data is short, we make it length 31, filling the future with `undefined`?
-    // Let's try to just render the chart with `avgData` as the primary (if exists), 
-    // and `currentData` as secondary.
-    // If `currentData` is shorter, we might need a custom renderer or just accept the limitation?
-
-    // BETTER IDEA:
-    // If user has NO history (Avg Data is empty), just show Current Data.
-    // If user HAS history, the Chart width is fixed to 31 days.
-    // We pad `currentData` with `null`. Recent versions might support `null` to skip drawing.
-
-    // Let's try padding with `null` and see.
+    // To ensure correct X-axis alignment, we must pad the current month's data to match
+    // the length of the average data (typically 31 days). 
+    // Without this, the library stretches the shorter dataset to fill the width.
     const fullCurrentData = [...currentData];
     if (avgData.length > 0) {
         while (fullCurrentData.length < avgData.length) {
-            // @ts-ignore - Allow null for chart ki quirk (might need verify)
+            // @ts-ignore - Pad with null to prevent drawing future points while maintaining X-axis scale
             fullCurrentData.push(null);
         }
     }
-
-    // If that fails, we might just clip AvgData to current day? 
-    // No, that defeats the purpose of "See where I am going".
-
-    // Let's stick to safe path:
-    // If we have history, we add AvgData first.
-    // Then Current Data (padded).
     if (avgData.length > 0) {
         datasets.push({
             data: fullCurrentData,

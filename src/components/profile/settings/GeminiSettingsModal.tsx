@@ -152,9 +152,9 @@ const GeminiSettingsModal: React.FC<GeminiSettingsModalProps> = ({
                             <Text style={styles.helpStepNumberText}>3</Text>
                         </View>
                         <View style={styles.helpStepContent}>
-                            <Text style={[styles.helpStepTitle, { color: colors.text }]}>Click "Get API Key"</Text>
+                            <Text style={[styles.helpStepTitle, { color: colors.text }]}>Click &quot;Get API Key&quot;</Text>
                             <Text style={[styles.helpStepDesc, { color: colors.textSecondary }]}>
-                                Look for a button that says "Get API Key" or "Create API Key". It's usually at the top or in the menu.
+                                Look for a button that says &quot;Get API Key&quot; or &quot;Create API Key&quot;. It&apos;s usually at the top or in the menu.
                             </Text>
                         </View>
                     </View>
@@ -166,7 +166,7 @@ const GeminiSettingsModal: React.FC<GeminiSettingsModalProps> = ({
                         <View style={styles.helpStepContent}>
                             <Text style={[styles.helpStepTitle, { color: colors.text }]}>Create a New Key</Text>
                             <Text style={[styles.helpStepDesc, { color: colors.textSecondary }]}>
-                                Click "Create API Key in new project" or select an existing project. A long code will appear - this is your API key!
+                                Click &quot;Create API Key in new project&quot; or select an existing project. A long code will appear - this is your API key!
                             </Text>
                         </View>
                     </View>
@@ -198,7 +198,7 @@ const GeminiSettingsModal: React.FC<GeminiSettingsModalProps> = ({
                     <View style={[styles.helpTip, { backgroundColor: colors.info + '15', borderColor: colors.info }]}>
                         <Ionicons name="bulb-outline" size={20} color={colors.info} />
                         <Text style={[styles.helpTipText, { color: colors.text }]}>
-                            <Text style={{ fontWeight: 'bold' }}>Tip:</Text> The API has a generous free tier! You can make many requests per day at no cost. Check Google's pricing page for current limits.
+                            <Text style={{ fontWeight: 'bold' }}>Tip:</Text> The API has a generous free tier! You can make many requests per day at no cost. Check Google&apos;s pricing page for current limits.
                         </Text>
                     </View>
 

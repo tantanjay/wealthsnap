@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import BottomModal from '../../common/BottomModal';
+import { Button } from '../../index';
 
 interface SupportModalProps {
     visible: boolean;
@@ -84,16 +85,12 @@ const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
             </TouchableOpacity>
             */}
 
-            <TouchableOpacity
+            <Button
+                variant="outline"
+                title="Close"
                 onPress={onClose}
-                style={{
-                    marginTop: 10,
-                    padding: 16,
-                    alignItems: 'center',
-                }}
-            >
-                <Text style={{ color: colors.textSecondary, fontSize: 16 }}>Close</Text>
-            </TouchableOpacity>
+                style={{ marginTop: 10 }}
+            />
         </BottomModal>
     );
 };
