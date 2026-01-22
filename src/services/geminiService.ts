@@ -157,6 +157,12 @@ export const analyzeReceiptImage = async (imageUri: string): Promise<ReceiptAnal
     // Default error result
     const failResult: ReceiptAnalysisResult = { isValidReceipt: false, validationError: "Analysis failed", confidence: 0 };
 
+    // 1. Check Configuration First - Fail fast before doing any heavy lifting
+    const isConfigured = await isGeminiConfigured();
+    if (!isConfigured) {
+        return { ...failResult, validationError: "Gemini API Key is not configured" };
+    }
+
     try {
         const { uri: optimizedUri, width, height } = await optimizeImage(imageUri);
         imageTokens = calculateImageTokens(width, height);

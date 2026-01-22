@@ -95,11 +95,19 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
 
                     if (isMounted) setLoading(false);
                 } else {
-                    showAlert(
-                        "Analysis Failed",
-                        result.validationError || "Could not extract receipt data.",
-                        [{ text: "Go Back", onPress: onCancel }]
-                    );
+                    if (result.validationError === "Gemini API Key is not configured") {
+                        showAlert(
+                            "Missing API Key",
+                            "Please configure, go to Profile -> Google Gemini",
+                            [{ text: "OK", onPress: onCancel }]
+                        );
+                    } else {
+                        showAlert(
+                            "Analysis Failed",
+                            result.validationError || "Could not extract receipt data.",
+                            [{ text: "Go Back", onPress: onCancel }]
+                        );
+                    }
                 }
             } catch {
                 if (isMounted) showAlert("Error", "Failed to process image.", [{ text: "Go Back", onPress: onCancel }]);

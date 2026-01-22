@@ -234,8 +234,8 @@ const ProfileScreen = ({ navigation }: any) => {
                 {/* About Card */}
                 <Card>
                     <View style={styles.cardHeader}>
-                        <View style={[styles.headerIcon, { backgroundColor: colors.secondary + '20' }]}>
-                            <Ionicons name="information-circle" size={22} color={colors.secondary} />
+                        <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
+                            <Ionicons name="information-circle" size={22} color={colors.primary} />
                         </View>
                         <Text style={[styles.cardTitle, { color: colors.text }]}>About WealthSnap</Text>
                     </View>
