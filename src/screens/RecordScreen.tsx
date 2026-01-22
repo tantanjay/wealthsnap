@@ -240,7 +240,7 @@ const RecordScreen = ({ navigation, route }: any) => {
 
 
     return (
-        <ScreenWrapper>
+        <ScreenWrapper scrollable={viewMode !== 'TRANSACTION' && viewMode !== 'AI_REVIEW'}>
             {/* Transaction Form */}
             {viewMode === 'TRANSACTION' && (
                 <TransactionForm

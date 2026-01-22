@@ -110,7 +110,6 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                         borderRadius: 16,
                     }}
                     formatYLabel={(value) => `${value}%`}
-                    yAxisSuffix="%"
                     fromZero
                 />
             )}

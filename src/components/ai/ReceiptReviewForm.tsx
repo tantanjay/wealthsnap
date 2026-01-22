@@ -415,7 +415,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                     <Button
                         title="Save Record"
                         onPress={handleSave}
-                        style={{ flex: 2 }}
+                        style={{ flex: 1 }}
                     />
                 </View>
 
