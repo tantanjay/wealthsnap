@@ -25,7 +25,24 @@ npx expo prebuild --platform android --clean
 
 ---
 
-## 3. Build Production Bundles (EAS)
+## 3. Local Development (Native Modules)
+When using libraries that require native code (like ML Kit, fast-storage, etc.), you cannot use the standard Expo Go app. You must build a **Development Client**.
+
+**Build & Run on Emulator/Device:**
+This builds the native app and installs it on your connected device/emulator. Run this whenever you add new native packages.
+```bash
+npx expo run:android
+```
+
+**Start Dev Client Server:**
+If the custom development app is already installed on your device, you don't need to rebuild. Just start the Metro server and open the app on your device.
+```bash
+npx expo start --dev-client
+```
+
+---
+
+## 4. Build Production Bundles (EAS)
 
 These commands use EAS Build to generate your application binaries.
 
@@ -54,7 +71,7 @@ eas build:list
 
 ---
 
-## 4. Automated Version Bumping
+## 5. Automated Version Bumping
 Run this command to automatically increment the version in `package.json`, `app.json`, and the Android `versionCode` before building.
 
 ```bash
