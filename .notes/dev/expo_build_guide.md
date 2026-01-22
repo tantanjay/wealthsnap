@@ -84,3 +84,18 @@ Run this command to automatically increment the version in `package.json`, `app.
 npm run bump-version -- [major|minor|patch]
 # Example: npm run bump-version -- patch
 ```
+
+---
+
+## 6. Android Emulator
+Commands to manage and launch Android emulators.
+
+**List Available AVDs:**
+```bash
+emulator -list-avds
+```
+
+**Launch a Specific Emulator:**
+```bash
+emulator -avd Medium_Phone_API_36.1
+```

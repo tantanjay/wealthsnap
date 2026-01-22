@@ -30,7 +30,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
     const { colors } = useTheme();
 
     const flatListRef = useRef<FlatList>(null);
-    const [currentIndex, setCurrentIndex] = useState(0);
+    const [, setCurrentIndex] = useState(0);
     // Use a Ref to track interaction state synchronously
     const isInteracting = useRef(false);
     const autoScrollTimer = useRef<NodeJS.Timeout | null>(null);
