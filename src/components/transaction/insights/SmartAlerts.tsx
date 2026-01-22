@@ -5,7 +5,7 @@ import BottomModal from '../../common/BottomModal';
 import { useTheme } from '../../../context/ThemeContext';
 import { Card } from '../../../components';
 import { Anomaly } from '../../../utils/financialMetrics';
-import { getPermissionStatus, openSettings, requestPermissions } from '../../../services/notificationService';
+import { getPermissionStatus, openSettings } from '../../../services/notificationService';
 
 interface SmartAlertsProps {
     anomalies: Anomaly[];
@@ -99,7 +99,7 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
                             <View style={{ flex: 1 }}>
                                 <Text style={{ color: colors.text, fontWeight: 'bold' }}>Spikes</Text>
                                 <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                    We alert you when a category's spending is significantly higher than your 3-month average.
+                                    We alert you when a category&apos;s spending is significantly higher than your 3-month average.
                                 </Text>
                             </View>
                         </View>

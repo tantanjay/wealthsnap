@@ -15,7 +15,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     style,
     borderRadius = 4
 }) => {
-    const { colors, mode } = useTheme();
+    const { mode } = useTheme();
     const opacity = useRef(new Animated.Value(0.3)).current;
 
     useEffect(() => {
