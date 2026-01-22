@@ -113,18 +113,21 @@ const InsightsScreen = ({ navigation }: any) => {
     useFocusEffect(
         useCallback(() => {
             fetchTransactions();
+            // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [])
     );
 
     // Re-calculate when grouping changes (but not on mount as fetchTransactions handles that)
     useEffect(() => {
         calculateMetrics();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [expenseGrouping]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
         await fetchTransactions();
         setRefreshing(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (

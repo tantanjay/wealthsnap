@@ -16,7 +16,7 @@ export const CustomAlert: React.FC = () => {
     try {
         const security = useSecurity();
         isLocked = security.isLocked;
-    } catch (e) {
+    } catch {
         // Context might not be available if used outside SecurityProvider
     }
 

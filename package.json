@@ -21,7 +21,7 @@
     "@shopify/flash-list": "2.0.2",
     "@types/react-native-crypto-js": "^1.0.3",
     "crypto-js": "^4.2.0",
-    "expo": "~54.0.31",
+    "expo": "~54.0.32",
     "expo-av": "~16.0.8",
     "expo-background-fetch": "~14.0.9",
     "expo-document-picker": "^14.0.8",

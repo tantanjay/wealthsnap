@@ -38,7 +38,7 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
             // This handles users jumping multiple versions (e.g. v1 -> v3)
 
             if (currentVersion < 2) {
-                const { migrateV1ToV2 } = require('./migrationService');
+                const { migrateV1ToV2 } = await import('./migrationService');
                 await migrateV1ToV2(db);
             }
 

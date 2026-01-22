@@ -3,7 +3,6 @@ import { Text, View } from 'react-native';
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { Card } from '../components';
 
 const InvestmentScreen = () => {
     const { colors } = useTheme();
@@ -40,7 +39,7 @@ const InvestmentScreen = () => {
                     lineHeight: 24,
                     maxWidth: 300
                 }}>
-                    We're working on building a powerful portfolio tracker for your stocks, crypto, and assets. Stay tuned!
+                    We&apos;re working on building a powerful portfolio tracker for your stocks, crypto, and assets. Stay tuned!
                 </Text>
 
                 {/* Optional: Add a small decorative card or visual element if desired, but user asked for "no page" / simple */}

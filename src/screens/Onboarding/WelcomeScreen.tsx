@@ -1,11 +1,9 @@
 import React from 'react';
-import { Text, View, StyleSheet, Dimensions } from 'react-native';
+import { Text, View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { Button } from '../../components';
-
-const { width } = Dimensions.get('window');
 
 const FeatureItem = ({ icon, text, color }: { icon: string; text: string; color: string }) => (
     <View style={styles.featureItem}>
