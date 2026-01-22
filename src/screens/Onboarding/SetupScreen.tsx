@@ -308,7 +308,8 @@ const SetupScreen = ({ navigation }: any) => {
                                 <Text style={[styles.termsText, { color: colors.text }]}>
                                     <Text style={{ fontWeight: 'bold' }}>2.1 Hybrid Data Encryption:</Text> We prioritize both privacy and performance. <Text style={{ fontWeight: 'bold' }}>Sensitive Data</Text> (e.g., Transaction Amounts, Notes, Receipts) is encrypted at rest using AES-256. <Text style={{ fontWeight: 'bold' }}>Metadata</Text> (e.g., Dates, Categories, Transaction Type) is stored in plain text to ensure the app remains fast, searchable, and responsive.{'\n\n'}
                                     <Text style={{ fontWeight: 'bold' }}>2.2 No Data Collection:</Text> We do not collect, sell, share, or transfer any of your personal data to third parties. Your privacy is protected by virtue of the App&apos;s local-only storage architecture.{'\n\n'}
-                                    <Text style={{ fontWeight: 'bold' }}>2.3 Analytics:</Text> This App does not include any analytics, tracking, or telemetry services. No usage data is collected or transmitted.
+                                    <Text style={{ fontWeight: 'bold' }}>2.3 Analytics:</Text> This App does not include any analytics, tracking, or telemetry services. No usage data is collected or transmitted.{'\n\n'}
+                                    <Text style={{ fontWeight: 'bold' }}>2.4 Third-Party Services:</Text> We use Google Gemini API for AI analysis (subject to Google&apos;s Privacy Policy) and Google ML Kit for on-device document scanning (no personal data is transmitted for this function).
                                 </Text>
 
                                 <Text style={[styles.termsHeading, { color: colors.primary }]}>3. FREEWARE & API USAGE</Text>
@@ -349,7 +350,11 @@ const SetupScreen = ({ navigation }: any) => {
 
                                 <Text style={[styles.termsHeading, { color: colors.primary }]}>9. CHILDREN&apos;S PRIVACY</Text>
                                 <Text style={[styles.termsText, { color: colors.text }]}>
-                                    Our Services do not address anyone under the age of 13. We do not knowingly collect personally identifiable information from children under 13. In the case we discover that a child under 13 has provided us with personal information, we immediately delete this from our records.
+                                    Our Services do not address anyone under the age of 13. We do not knowingly collect personally identifiable information from children under 13. In the case we discover that a child under 13 has provided us with personal information, we immediately delete this from our records.{'\n\n'}
+                                    <Text style={[styles.termsHeading, { color: colors.primary }]}>10. GOVERNING LAW</Text>{'\n'}
+                                    These Terms shall be governed by and defined following the laws of the Republic of the Philippines. WealthSnap and yourself irrevocably consent that the courts of the Philippines shall have exclusive jurisdiction to resolve any dispute which may arise in connection with these terms.{'\n\n'}
+                                    <Text style={[styles.termsHeading, { color: colors.primary }]}>11. SEVERABILITY</Text>{'\n'}
+                                    If any provision of these Terms is held to be unenforceable or invalid, such provision will be changed and interpreted to accomplish the objectives of such provision to the greatest extent possible under applicable law and the remaining provisions will continue in full force and effect.
                                 </Text>
                             </ScrollView>
                         </View>
