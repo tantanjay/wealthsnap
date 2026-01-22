@@ -107,9 +107,18 @@ export const saveTransaction = async (transaction: Transaction): Promise<void> =
                 transaction.isRecurring ? 1 : 0,
                 transaction.recurrenceId || null
             ]
-            // ... existing saveTransaction ...
         );
-        DataCache.invalidateTransactionCache();
+
+        // Optimistic cache update: check if it's a new or existing transaction
+        const cache = DataCache.getTransactionCache();
+        if (cache) {
+            const existsInCache = cache.data.some(t => t.id === transaction.id);
+            if (existsInCache) {
+                DataCache.updateTransactionInCache(transaction);
+            } else {
+                DataCache.addTransactionToCache(transaction);
+            }
+        }
     } catch (error) {
         console.error('Error saving transaction:', error);
         throw new Error('Failed to save transaction');
@@ -156,7 +165,16 @@ export const saveTransactionWithReceipt = async (transaction: Transaction, recei
             );
         });
 
-        DataCache.invalidateTransactionCache();
+        // Optimistic cache update: check if it's a new or existing transaction
+        const cache = DataCache.getTransactionCache();
+        if (cache) {
+            const existsInCache = cache.data.some(t => t.id === transaction.id);
+            if (existsInCache) {
+                DataCache.updateTransactionInCache(transaction);
+            } else {
+                DataCache.addTransactionToCache(transaction);
+            }
+        }
     } catch (error) {
         console.error('Error saving transaction with receipt:', error);
         throw new Error('Failed to save transaction with receipt');
@@ -198,7 +216,8 @@ export const deleteTransaction = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
         await db.runAsync('DELETE FROM transactions WHERE id = ?', [id]);
-        DataCache.invalidateTransactionCache();
+        // Optimistic cache update: remove from cache instead of full invalidation
+        DataCache.deleteTransactionFromCache(id);
     } catch (error) {
         console.error('Error deleting transaction:', error);
         throw new Error('Failed to delete transaction');
