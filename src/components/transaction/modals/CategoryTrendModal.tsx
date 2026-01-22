@@ -77,6 +77,7 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
         >
             <ScrollView
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 20 }}
             >
                 {/* Chart */}
                 {trendData.data.length > 0 && (

@@ -44,7 +44,7 @@ const AllExpensesModal: React.FC<AllExpensesModalProps> = ({
             title="All Spending Categories"
             subtitle="Full breakdown of your expenses"
         >
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                 {categoryBreakdown.map((item, index) => {
                     const budget = budgets.find(b => b.category === item.name);
                     const budgetStatus = budget ? checkBudgetStatus(item.amount, budget.amount) : null;

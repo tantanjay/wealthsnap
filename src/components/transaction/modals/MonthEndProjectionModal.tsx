@@ -39,6 +39,7 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
         >
             <ScrollView
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 20 }}
             >
                 {/* Progress Bar */}
                 <View style={{ marginBottom: 20 }}>

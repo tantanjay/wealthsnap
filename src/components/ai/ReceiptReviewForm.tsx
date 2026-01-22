@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, BackHandler, TextInput, ActivityIndicator, Platform, Modal, Switch } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useTheme } from '../../context/ThemeContext';
 import { Button } from '../index';
@@ -19,6 +20,7 @@ interface ReceiptReviewFormProps {
 export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, onSave, onCancel }) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
+    const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(true);
     const [processingStep, setProcessingStep] = useState<string>('Analyzing receipt...');
 
@@ -403,7 +405,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                 </ScrollView>
 
                 {/* Footer Actions */}
-                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: colors.surface, borderTopWidth: 1, borderColor: colors.border, flexDirection: 'row', gap: 12 }}>
+                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 + insets.bottom, backgroundColor: colors.surface, borderTopWidth: 1, borderColor: colors.border, flexDirection: 'row', gap: 12 }}>
                     <Button
                         title="Cancel"
                         variant="outline"

@@ -385,14 +385,6 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
                 </View>
 
                 <SettingItem
-                    icon="download-outline"
-                    title="Import Transactions"
-                    subtitle="Load from CSV or TSV file"
-                    onPress={() => setShowImportModal(true)}
-                    iconBg={colors.accent + '20'}
-                    iconColor={colors.accent}
-                />
-                <SettingItem
                     icon="cloud-upload"
                     title="Backup Data"
                     subtitle="Create encrypted backup file"
@@ -407,6 +399,14 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
                     onPress={handleSelectRestoreFile}
                     iconBg={colors.primary + '20'}
                     iconColor={colors.primary}
+                />
+                <SettingItem
+                    icon="download-outline"
+                    title="Import Transactions"
+                    subtitle="Load from CSV or TSV file"
+                    onPress={() => setShowImportModal(true)}
+                    iconBg={colors.accent + '20'}
+                    iconColor={colors.accent}
                 />
                 <SettingItem
                     icon="trash"
