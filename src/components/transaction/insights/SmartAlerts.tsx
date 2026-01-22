@@ -113,6 +113,7 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
                             </View>
                         </View>
                     </View>
+                    <View style={{ height: 20 }} />
                 </View>
             </BottomModal>
         </View>
