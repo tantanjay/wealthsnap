@@ -48,7 +48,13 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
     };
 
     return (
-        <BottomModal visible={visible} onClose={onClose}>
+        <BottomModal
+            visible={visible}
+            onClose={onClose}
+            maxHeight="85%"
+            style={{ height: '85%' }}
+            contentStyle={{ flex: 1 }}
+        >
             <View style={styles.header}>
                 <View>
                     <Text style={[styles.title, { color: colors.text }]}>API Usage History</Text>
@@ -103,7 +109,7 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
                                 {new Date(log.timestamp).toLocaleString(undefined, {
                                     month: 'short', day: 'numeric',
                                     hour: '2-digit', minute: '2-digit'
-                                })} ({log.durationMs}ms)
+                                })} ({(log.durationMs / 1000).toFixed(2)}s)
                             </Text>
                         </View>
                         <View style={styles.col2}>
@@ -150,7 +156,7 @@ const styles = StyleSheet.create({
         fontStyle: 'italic',
     },
     scrollView: {
-        height: 600,
+        flex: 1,
     },
     scrollContent: {
         paddingBottom: SPACING.xl,
