@@ -1,15 +1,15 @@
 import React, { useEffect } from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, Modal, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAlert } from '../../context/AlertContext';
 import { useSecurity } from '../../context/SecurityContext';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export const CustomAlert: React.FC = () => {
     const { colors } = useTheme();
     const { alertState, hideAlert } = useAlert();
-    const { visible, title, message, buttons, options } = alertState;
+    const { visible, title, message, details, buttons, options } = alertState;
 
     // Safety check for SecurityContext
     let isLocked = false;
@@ -57,13 +57,32 @@ export const CustomAlert: React.FC = () => {
                 activeOpacity={1}
                 onPress={handleBackgroundPress}
             >
-                <View style={[styles.alertContainer, { backgroundColor: colors.surface }]}>
+                <View
+                    style={[
+                        styles.alertContainer,
+                        { backgroundColor: colors.surface, maxHeight: height * 0.6 }
+                    ]}
+                    onStartShouldSetResponder={() => true}
+                >
                     <View style={styles.contentContainer}>
                         <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
                         {message && (
                             <Text style={[styles.message, { color: colors.textSecondary }]}>
                                 {message}
                             </Text>
+                        )}
+                        {details && (
+                            <View style={[styles.detailsContainer, { borderColor: colors.border }]}>
+                                <ScrollView
+                                    style={styles.detailsScroll}
+                                    showsVerticalScrollIndicator={true}
+                                    nestedScrollEnabled={true}
+                                >
+                                    <Text style={[styles.detailsText, { color: colors.textSecondary }]}>
+                                        {details}
+                                    </Text>
+                                </ScrollView>
+                            </View>
                         )}
                     </View>
 
@@ -121,7 +140,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     alertContainer: {
-        width: Math.min(width * 0.8, 320),
+        width: Math.min(width * 0.85, 340),
         borderRadius: 14,
         overflow: 'hidden',
         elevation: 5,
@@ -145,6 +164,21 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 18,
     },
+    detailsContainer: {
+        marginTop: 12,
+        borderWidth: 1,
+        borderRadius: 8,
+        width: '100%',
+        maxHeight: 200,
+    },
+    detailsScroll: {
+        padding: 10,
+    },
+    detailsText: {
+        fontSize: 12,
+        lineHeight: 18,
+        fontFamily: 'monospace',
+    },
     buttonContainer: {
         flexDirection: 'row',
         borderTopWidth: 0.5,
@@ -162,3 +196,4 @@ const styles = StyleSheet.create({
         fontSize: 17,
     },
 });
+
