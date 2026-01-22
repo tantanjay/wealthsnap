@@ -384,6 +384,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
                             • <Text style={{ color: colors.text, fontWeight: 'bold' }}>Stable:</Text> Income is roughly the same.
                         </Text>
                     </View>
+                    <View style={{ height: 20 }} />
                 </View>
             </BottomModal>
         </View >
