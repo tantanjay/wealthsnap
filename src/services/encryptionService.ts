@@ -4,11 +4,20 @@ import CryptoJS from 'crypto-js';
 
 const ENCRYPTION_KEY_ALIAS = 'wealthsnap_data_encryption_key';
 
+// In-memory cache for the encryption key to avoid repeated SecureStore I/O
+let cachedKey: string | null = null;
+
 /**
  * Generate or retrieve the device-specific encryption key from SecureStore.
+ * Uses in-memory caching to avoid repeated I/O operations during bulk operations.
  * This key is used for invisible local storage encryption.
  */
 const getStorageKey = async (): Promise<string> => {
+    // Return cached key if available (major performance boost for bulk operations)
+    if (cachedKey) {
+        return cachedKey;
+    }
+
     try {
         let key = await SecureStore.getItemAsync(ENCRYPTION_KEY_ALIAS);
         if (!key) {
@@ -16,6 +25,8 @@ const getStorageKey = async (): Promise<string> => {
             key = CryptoJS.lib.WordArray.random(32).toString();
             await SecureStore.setItemAsync(ENCRYPTION_KEY_ALIAS, key);
         }
+        // Cache the key in memory
+        cachedKey = key;
         return key;
     } catch (error) {
         console.error('Error accessing SecureStore for encryption key:', error);
