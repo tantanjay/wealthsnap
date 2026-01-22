@@ -268,6 +268,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                             • <Text style={{ color: '#FF5252', fontWeight: 'bold' }}>Spending More:</Text> Projected spending is higher than average.
                         </Text>
                     </View>
+                    <View style={{ height: 20 }} />
                 </View>
             </BottomModal>
         </View>
