@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
-import { BarChart } from 'react-native-chart-kit';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import { CURRENCY_SYMBOLS, formatCurrencyAmount } from '../../../utils/currencyUtils';
 import { Card } from '../..';
@@ -23,35 +22,12 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
     const [showInfoModal, setShowInfoModal] = React.useState(false);
     const [showInsightInfo, setShowInsightInfo] = React.useState(false);
     const { colors } = useTheme();
-    const screenWidth = Dimensions.get('window').width;
 
     // Pro-rate current month spending to estimate full month
     const today = new Date();
     const currentDay = today.getDate();
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const proRatedExpense = currentDay > 0 ? (currentMonthExpense / currentDay) * daysInMonth : currentMonthExpense;
-
-    // Determine the scale for compact display
-    const maxValue = Math.max(proRatedExpense, lastMonthExpense, averageExpense, average6Month, average1Year);
-    let scaledData = [proRatedExpense, lastMonthExpense, averageExpense, average6Month, average1Year];
-    let suffix = '';
-
-    if (maxValue >= 1000000) {
-        scaledData = scaledData.map(v => v / 1000000);
-        suffix = 'M';
-    } else if (maxValue >= 1000) {
-        scaledData = scaledData.map(v => v / 1000);
-        suffix = 'K';
-    }
-
-    const data = {
-        labels: ["This M*", "Last M", "Avg 3M", "Avg 6M", "Avg 1Y"],
-        datasets: [
-            {
-                data: scaledData
-            }
-        ]
-    };
 
     const getComparisonInsight = () => {
         if (isPrivacyEnabled) return "Spending comparison hidden in privacy mode.";

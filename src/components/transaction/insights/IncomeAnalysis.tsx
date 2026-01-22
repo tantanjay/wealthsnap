@@ -60,30 +60,6 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
         return "Your income has been stable.";
     };
 
-    const renderVisualScenario = (type: 'OVER' | 'UNDER', label: string) => {
-        return (
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 60, width: 80, justifyContent: 'center', marginBottom: 5 }}>
-                {/* User Bar */}
-                <View style={{
-                    width: 20,
-                    height: type === 'OVER' ? '100%' : '50%',
-                    backgroundColor: colors.primary,
-                    marginRight: 8,
-                    borderTopLeftRadius: 4,
-                    borderTopRightRadius: 4
-                }} />
-                {/* Average Bar */}
-                <View style={{
-                    width: 20,
-                    height: '75%',
-                    backgroundColor: colors.textSecondary + '50',
-                    borderTopLeftRadius: 4,
-                    borderTopRightRadius: 4
-                }} />
-            </View>
-        );
-    };
-
     return (
         <View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 }}>
@@ -203,7 +179,6 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
                                 });
 
                                 const maxValue = Math.max(...barData.map(b => b.value), 1); // Prevent 0 division
-                                const minValue = 0;
                                 const yMin = 0;
                                 const yMax = maxValue * 1.05; // 5% padding
                                 const yRange = yMax - yMin;
@@ -373,7 +348,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
                             </View>
                             <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 4 }}>Projected</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
-                                The lighter top part is what you're projected to earn by month end.
+                                The lighter top part is what you&apos;re projected to earn by month end.
                             </Text>
                         </View>
                     </View>
@@ -396,7 +371,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
             >
                 <View>
                     <Text style={{ color: colors.text, fontSize: 16, marginBottom: 10, lineHeight: 22 }}>
-                        This smart insight compares your <Text style={{ fontWeight: 'bold' }}>current month's income</Text> (including projections) against the <Text style={{ fontWeight: 'bold' }}>previous month</Text>.
+                        This smart insight compares your <Text style={{ fontWeight: 'bold' }}>current month&apos;s income</Text> (including projections) against the <Text style={{ fontWeight: 'bold' }}>previous month</Text>.
                     </Text>
                     <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>

@@ -7,7 +7,7 @@ import { Card } from '../../../components';
 import BottomModal from '../../common/BottomModal';
 import { Transaction } from '../../../types';
 import { getCumulativeSpendingCurve, getCurrentMonthCumulative, getTransactionsByMonth } from '../../../utils/financialMetrics';
-import { CURRENCY_SYMBOLS, formatCompactCurrency } from '../../../utils/currencyUtils';
+import { formatCompactCurrency } from '../../../utils/currencyUtils';
 import { Skeleton } from '../../common/Skeleton';
 
 interface CumulativeSpendingChartProps {
@@ -255,7 +255,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                         <View style={{ width: 24, height: 4, backgroundColor: colors.primary, marginRight: 12, borderRadius: 2, borderStyle: 'dashed', borderWidth: 2, borderColor: colors.primary }} />
                         <View style={{ flex: 1 }}>
                             <Text style={{ color: colors.text, fontWeight: 'bold' }}>Dotted Line (Projection)</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Where you're headed based on your historical spending pattern.</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Where you&apos;re headed based on your historical spending pattern.</Text>
                         </View>
                     </View>
 
