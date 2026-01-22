@@ -38,6 +38,62 @@ export const invalidateTransactionCache = (): void => {
     transactionCache = null;
 };
 
+/**
+ * Optimistically add a transaction to the cache without refetching.
+ * Inserts at the correct position based on date (descending order).
+ */
+export const addTransactionToCache = (transaction: Transaction): void => {
+    if (!transactionCache) return;
+
+    // Insert at correct position (sorted by date DESC)
+    const newData = [...transactionCache.data];
+    const insertIndex = newData.findIndex(t => new Date(t.date) < new Date(transaction.date));
+
+    if (insertIndex === -1) {
+        newData.push(transaction); // Oldest transaction
+    } else {
+        newData.splice(insertIndex, 0, transaction);
+    }
+
+    transactionCache = {
+        data: newData,
+        timestamp: Date.now()
+    };
+};
+
+/**
+ * Optimistically update a transaction in the cache without refetching.
+ */
+export const updateTransactionInCache = (transaction: Transaction): void => {
+    if (!transactionCache) return;
+
+    const index = transactionCache.data.findIndex(t => t.id === transaction.id);
+    if (index !== -1) {
+        const newData = [...transactionCache.data];
+        newData[index] = transaction;
+
+        // Re-sort by date DESC in case date changed
+        newData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        transactionCache = {
+            data: newData,
+            timestamp: Date.now()
+        };
+    }
+};
+
+/**
+ * Optimistically remove a transaction from the cache without refetching.
+ */
+export const deleteTransactionFromCache = (id: string): void => {
+    if (!transactionCache) return;
+
+    transactionCache = {
+        data: transactionCache.data.filter(t => t.id !== id),
+        timestamp: Date.now()
+    };
+};
+
 // ============= Investments =============
 
 export const getInvestmentCache = (): CacheEntry<Investment[]> | null => {
