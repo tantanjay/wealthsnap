@@ -5,8 +5,7 @@ import { useAlert } from '../../../context/AlertContext';
 import { useSecurity } from '../../../context/SecurityContext';
 import { Card } from '../../index';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-
+import { useFocusEffect, CommonActions, NavigationProp } from '@react-navigation/native';
 import BackupModal from './BackupModal';
 import RestoreModal from './RestoreModal';
 import ImportDataModal from './ImportDataModal';
@@ -26,7 +25,6 @@ import { Transaction } from '../../../types';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { CommonActions, NavigationProp } from '@react-navigation/native';
 
 interface DataManagementCardProps {
     navigation: NavigationProp<any>;
