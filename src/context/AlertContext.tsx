@@ -5,6 +5,7 @@ interface AlertState {
     visible: boolean;
     title: string;
     message?: string;
+    details?: string; // Scrollable details for long error lists
     buttons?: AlertButton[];
     options?: {
         cancelable?: boolean;
@@ -17,7 +18,7 @@ interface AlertContextType {
         title: string,
         message?: string,
         buttons?: AlertButton[],
-        options?: { cancelable?: boolean; onDismiss?: () => void }
+        options?: { cancelable?: boolean; onDismiss?: () => void; details?: string }
     ) => void;
     hideAlert: () => void;
     alertState: AlertState;
@@ -54,12 +55,13 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
         title: string,
         message?: string,
         buttons?: AlertButton[],
-        options?: { cancelable?: boolean; onDismiss?: () => void }
+        options?: { cancelable?: boolean; onDismiss?: () => void; details?: string }
     ) => {
         setAlertState({
             visible: true,
             title,
             message,
+            details: options?.details,
             buttons: buttons || [{ text: 'OK', onPress: () => hideAlert() }],
             options: options || { cancelable: true }
         });

@@ -1,16 +1,30 @@
-import React, { useState } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { Text, View, TouchableOpacity, StyleSheet, Modal, BackHandler } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAlert } from '../../../context/AlertContext';
 import { useSecurity } from '../../../context/SecurityContext';
 import { Card } from '../../index';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 import BackupModal from './BackupModal';
 import RestoreModal from './RestoreModal';
-import { clearAllData, getUserProfile } from '../../../services/storageService';
+import ImportDataModal from './ImportDataModal';
+import ImportProcessScreen from './ImportProcessScreen';
+import { clearAllData, getUserProfile, getAllTransactions, bulkSaveTransactions } from '../../../services/storageService';
 import { createBackup, restoreFromBackup } from '../../../services/backupService';
+import {
+    parseCSV,
+    validateHeaders,
+    validateImportData,
+    prepareTransactions,
+    calculateImportSummary,
+    formatValidationErrors,
+    ImportSummary
+} from '../../../services/importService';
+import { Transaction } from '../../../types';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { CommonActions, NavigationProp } from '@react-navigation/native';
 
@@ -28,7 +42,45 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
     const [restoreFileUri, setRestoreFileUri] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
+    // Import State
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [showImportProcess, setShowImportProcess] = useState(false);
+    const [isImportProcessing, setIsImportProcessing] = useState(false);
+    const [isImportSaving, setIsImportSaving] = useState(false);
+    const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+    const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
+    const [currency, setCurrency] = useState('PHP');
+
     const { showAlert } = useAlert();
+
+    // Fetch currency on focus
+    useFocusEffect(
+        useCallback(() => {
+            const fetchCurrency = async () => {
+                const profile = await getUserProfile();
+                if (profile?.currency) {
+                    setCurrency(profile.currency);
+                }
+            };
+            fetchCurrency();
+        }, [])
+    );
+
+    // Handle back button during import process
+    useFocusEffect(
+        useCallback(() => {
+            const backAction = () => {
+                if (showImportProcess) {
+                    // Block back during import process
+                    return true;
+                }
+                return false;
+            };
+
+            const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+            return () => backHandler.remove();
+        }, [showImportProcess])
+    );
 
     /**
      * Wipes all data (SQLite + AsyncStorage) and resets the app state.
@@ -87,7 +139,15 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
         try {
             temporarilyDisableLock();
             const result = await DocumentPicker.getDocumentAsync({
-                type: 'application/zip',
+                // Accept multiple MIME types for zip files since different sources
+                // (cloud storage, messaging apps, etc.) may report different types
+                type: [
+                    'application/zip',
+                    'application/x-zip',
+                    'application/x-zip-compressed',
+                    'application/octet-stream',
+                    '*/*'  // Fallback to allow any file if needed
+                ],
                 copyToCacheDirectory: true,
             });
 
@@ -153,6 +213,133 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
         }
     };
 
+    /**
+     * Handle file selection for import
+     */
+    const handleSelectImportFile = async () => {
+        try {
+            temporarilyDisableLock();
+            const result = await DocumentPicker.getDocumentAsync({
+                type: ['text/csv', 'text/tab-separated-values', 'text/plain', '*/*'],
+                copyToCacheDirectory: true,
+            });
+
+            if (result.canceled) return;
+
+            if (result.assets && result.assets.length > 0) {
+                setShowImportModal(false);
+                setShowImportProcess(true);
+                setIsImportProcessing(true);
+                setImportSummary(null);
+                setPendingTransactions([]);
+
+                await processImportFile(result.assets[0].uri);
+            }
+        } catch {
+            showAlert('Error', 'Failed to pick file');
+        }
+    };
+
+    /**
+     * Process the import file
+     */
+    const processImportFile = async (fileUri: string) => {
+        try {
+            // Read file content
+            const content = await FileSystem.readAsStringAsync(fileUri);
+
+            // Parse CSV/TSV
+            const { headers, rows } = parseCSV(content);
+
+            // Validate headers
+            const headerError = validateHeaders(headers);
+            if (headerError) {
+                setIsImportProcessing(false);
+                setShowImportProcess(false);
+                showAlert('Invalid File Format', headerError);
+                return;
+            }
+
+            if (rows.length === 0) {
+                setIsImportProcessing(false);
+                setShowImportProcess(false);
+                showAlert('Empty File', 'The file contains no data rows to import.');
+                return;
+            }
+
+            // Get existing transactions for duplicate detection
+            const existingTransactions = await getAllTransactions();
+
+            // Validate data
+            const validationResult = validateImportData(rows, existingTransactions);
+
+            if (!validationResult.isValid) {
+                setIsImportProcessing(false);
+                setShowImportProcess(false);
+
+                const errorDetails = formatValidationErrors(validationResult.errors);
+                const errorCount = validationResult.errors.length;
+
+                showAlert(
+                    'Validation Errors',
+                    `Found ${errorCount} error${errorCount > 1 ? 's' : ''} in your file.`,
+                    [{ text: 'OK' }],
+                    { details: errorDetails }
+                );
+                return;
+            }
+
+            // Prepare transactions
+            const transactions = prepareTransactions(validationResult.validRows);
+            const summary = calculateImportSummary(transactions);
+
+            setPendingTransactions(transactions);
+            setImportSummary(summary);
+            setIsImportProcessing(false);
+
+        } catch (error) {
+            setIsImportProcessing(false);
+            setShowImportProcess(false);
+            showAlert('Error', 'Failed to process file: ' + (error as Error).message);
+        }
+    };
+
+    /**
+     * Confirm and save imported transactions
+     */
+    const handleConfirmImport = async () => {
+        setIsImportSaving(true);
+
+        try {
+            await bulkSaveTransactions(pendingTransactions);
+
+            setIsImportSaving(false);
+            setShowImportProcess(false);
+            setPendingTransactions([]);
+            setImportSummary(null);
+
+            showAlert(
+                'Import Successful',
+                `Successfully imported ${pendingTransactions.length} transactions!`
+            );
+
+        } catch (error) {
+            setIsImportSaving(false);
+            showAlert('Error', 'Failed to save transactions: ' + (error as Error).message);
+        }
+    };
+
+    /**
+     * Cancel import
+     */
+    const handleCancelImport = () => {
+        setShowImportProcess(false);
+        setPendingTransactions([]);
+        setImportSummary(null);
+        setIsImportProcessing(false);
+        setIsImportSaving(false);
+    };
+
     const SettingItem = ({
         icon,
         title,
@@ -200,6 +387,14 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
                 </View>
 
                 <SettingItem
+                    icon="download-outline"
+                    title="Import Transactions"
+                    subtitle="Load from CSV or TSV file"
+                    onPress={() => setShowImportModal(true)}
+                    iconBg={colors.accent + '20'}
+                    iconColor={colors.accent}
+                />
+                <SettingItem
                     icon="cloud-upload"
                     title="Backup Data"
                     subtitle="Create encrypted backup file"
@@ -225,6 +420,35 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
                     isLast={true}
                 />
             </Card>
+
+            {/* Import Modal */}
+            <ImportDataModal
+                visible={showImportModal}
+                onClose={() => setShowImportModal(false)}
+                onSelectFile={handleSelectImportFile}
+            />
+
+            {/* Import Process Screen (Full Screen Modal) */}
+            <Modal
+                visible={showImportProcess}
+                animationType="slide"
+                presentationStyle="fullScreen"
+                onRequestClose={() => {
+                    // Block back during processing/saving
+                    if (!isImportProcessing && !isImportSaving) {
+                        handleCancelImport();
+                    }
+                }}
+            >
+                <ImportProcessScreen
+                    isProcessing={isImportProcessing}
+                    isSaving={isImportSaving}
+                    summary={importSummary}
+                    currency={currency}
+                    onConfirm={handleConfirmImport}
+                    onCancel={handleCancelImport}
+                />
+            </Modal>
 
             {/* Backup Modal */}
             <BackupModal
@@ -288,4 +512,5 @@ const styles = StyleSheet.create({
 });
 
 export default DataManagementCard;
+
 
