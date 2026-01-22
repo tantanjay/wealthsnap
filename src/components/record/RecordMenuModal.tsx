@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import DocumentScanner from 'react-native-document-scanner-plugin';
 import { useTheme } from '../../context/ThemeContext';
 import BottomModal from '../common/BottomModal';
 
@@ -72,19 +73,19 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
 
         try {
             temporarilyDisableLock();
-            const result = await ImagePicker.launchCameraAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: false,
-                quality: 0.8,
+
+            const { scannedImages } = await DocumentScanner.scanDocument({
+                maxNumDocuments: 1,
+                croppedImageQuality: 100
             });
 
-            if (!result.canceled && result.assets && result.assets.length > 0) {
-                const asset = result.assets[0];
+            if (scannedImages && scannedImages.length > 0) {
+                const capturedUri = scannedImages[0];
                 // Close modal immediately before triggering AI flow
                 onClose();
                 // Small delay to let modal unmount cleanly before heavy processing
                 setTimeout(() => {
-                    onSelectAI('CAPTURE', asset.uri);
+                    onSelectAI('CAPTURE', capturedUri);
                 }, 100);
             }
         } catch (error) {

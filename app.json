@@ -54,7 +54,8 @@
       "expo-document-picker",
       "expo-notifications",
       "expo-background-fetch",
-      "expo-task-manager"
+      "expo-task-manager",
+      "react-native-document-scanner-plugin"
     ],
     "extra": {
       "eas": {

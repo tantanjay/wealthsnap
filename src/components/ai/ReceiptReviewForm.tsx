@@ -90,6 +90,8 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                     // Pre-fill note
                     const noteText = `Receipt from ${result.merchantName || 'Unknown'}`;
                     setNote(noteText);
+
+                    if (isMounted) setLoading(false);
                 } else {
                     showAlert(
                         "Analysis Failed",
@@ -99,8 +101,6 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                 }
             } catch {
                 if (isMounted) showAlert("Error", "Failed to process image.", [{ text: "Go Back", onPress: onCancel }]);
-            } finally {
-                if (isMounted) setLoading(false);
             }
         };
         init();
