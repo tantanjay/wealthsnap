@@ -34,6 +34,12 @@ This builds the native app and installs it on your connected device/emulator. Ru
 npx expo run:android
 ```
 
+**Build & Run on Physical Device:**
+To install the development build on a real Android device connected via USB:
+```bash
+npx expo run:android --device
+```
+
 **Start Dev Client Server:**
 If the custom development app is already installed on your device, you don't need to rebuild. Just start the Metro server and open the app on your device.
 ```bash
