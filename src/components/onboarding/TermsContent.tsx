@@ -104,8 +104,10 @@ const TermsContent: React.FC = () => {
             <Text style={styles.termsText}>
                 The App may request the following permissions on your device:{'\n'}
                 • <Text style={styles.bold}>Camera & Photos:</Text> For receipt analysis.{'\n'}
-                • <Text style={styles.bold}>Biometrics:</Text> For secure access (FaceID/Fingerprint).{'\n'}
-                • <Text style={styles.bold}>Storage:</Text> For saving your encrypted database.
+                • <Text style={styles.bold}>Biometrics:</Text> For secure, private access (FaceID/Fingerprint).{'\n'}
+                • <Text style={styles.bold}>Storage:</Text> To save your encrypted local database.{'\n'}
+                • <Text style={styles.bold}>Notifications:</Text> For local reminders regarding budgets, bills, or investment goals. No marketing spam.{'\n'}
+                • <Text style={styles.bold}>Service Permissions:</Text> Standard system access for secure AI connectivity, haptic feedback, and reliable task scheduling.{'\n\n'}
             </Text>
 
             <Text style={styles.termsHeading}>14. CONTACT US</Text>
