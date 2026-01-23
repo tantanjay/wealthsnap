@@ -6,7 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { Card } from '../../components';
 import { isPinSet, getTimeoutSetting, saveTimeoutSetting, TimeoutOption, TIMEOUT_OPTIONS } from '../../services/securityService';
 import { getAIConfig } from '../../services/storageService';
-import PinCreationScreen from '../../screens/PinCreationScreen';
+import PinCreationScreen from '../../screens/security/PinCreationScreen';
 import GeminiSettingsModal from './settings/GeminiSettingsModal';
 import GeminiUsageModal from './settings/GeminiUsageModal';
 import BottomModal from '../common/BottomModal';
