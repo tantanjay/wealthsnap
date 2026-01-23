@@ -10,7 +10,7 @@ import SupportModal from '../components/profile/settings/SupportModal';
 import { getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
-import OnboardingGuide from './Onboarding/OnboardingGuide';
+import OnboardingGuide from './onboarding/OnboardingGuideScreen';
 import appJson from '../../app.json';
 import SecurityCard from '../components/profile/SecurityCard';
 import DataManagementCard from '../components/profile/data/DataManagementCard';
@@ -228,6 +228,14 @@ const ProfileScreen = ({ navigation }: any) => {
                     >
                         <Ionicons name="book-outline" size={18} color={colors.info} />
                         <Text style={[styles.aiButtonText, { color: colors.info }]}>View Onboarding Guide</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.aiButton, { marginTop: 12 }]}
+                        onPress={() => navigation.navigate('TermsAndPrivacy')}
+                    >
+                        <Ionicons name="shield-checkmark-outline" size={18} color={colors.info} />
+                        <Text style={[styles.aiButtonText, { color: colors.info }]}>Terms of Use & Privacy</Text>
                     </TouchableOpacity>
                 </Card>
 
