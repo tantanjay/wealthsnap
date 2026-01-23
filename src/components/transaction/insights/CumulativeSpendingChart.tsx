@@ -64,16 +64,20 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
 
             const diff = currentTotal - avgAtThisDay;
             if (diff > 0) {
-                insight = `Pacing ${formatCompactCurrency(diff, currency)} above ${period}M avg`;
+                insight = isPrivacyEnabled
+                    ? `Pacing **** above ${period}M avg`
+                    : `Pacing ${formatCompactCurrency(diff, currency)} above ${period}M avg`;
             } else {
-                insight = `Pacing ${formatCompactCurrency(Math.abs(diff), currency)} below ${period}M avg`;
+                insight = isPrivacyEnabled
+                    ? `Pacing **** below ${period}M avg`
+                    : `Pacing ${formatCompactCurrency(Math.abs(diff), currency)} below ${period}M avg`;
             }
         } else if (avgData.length === 0) {
             insight = "Not enough history for comparison";
         }
 
         return { currentData, avgData, projectionData, insight };
-    }, [transactions, period, currency]);
+    }, [transactions, period, currency, isPrivacyEnabled]);
 
     const labels = Array.from({ length: 31 }, (_, i) => (i + 1) % 5 === 0 ? (i + 1).toString() : "");
 
@@ -205,7 +209,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                         style={{ borderRadius: 16 }}
                         formatYLabel={(value) => {
                             const num = parseFloat(value);
-                            if (isNaN(num) || num === 0) return '$0';
+                            if (isNaN(num) || num === 0) return formatCompactCurrency(0, currency);
                             return formatCompactCurrency(num, currency);
                         }}
                     />

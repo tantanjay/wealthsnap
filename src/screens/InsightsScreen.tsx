@@ -9,6 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Metrics from '../utils/financialMetrics';
 import { getUserProfile, getCachedTransactions } from '../services/storageService';
+import { getBudgets } from '../services/budgetService';
 
 // Sub-components
 import InsightsOverviewCards from '../components/transaction/insights/InsightsOverviewCards';
@@ -44,7 +45,12 @@ const InsightsScreen = ({ navigation }: any) => {
         averageExpense: 0,
         average6Month: 0,
         average1Year: 0,
-        anomalies: [] as Metrics.Anomaly[]
+        anomalies: [] as Metrics.Anomaly[],
+        // New metrics for additional cards
+        currentBalance: 0,
+        budgetPerformance: 0,
+        topExpenseCategory: { name: 'None', amount: 0, percentage: 0 },
+        daysInMonth: 30
     });
 
     const fetchTransactions = async () => {
@@ -56,7 +62,7 @@ const InsightsScreen = ({ navigation }: any) => {
             setTransactions(allTransactions);
 
             // Explicitly calculate metrics with the new data
-            calculateMetrics(allTransactions);
+            await calculateMetrics(allTransactions);
         } catch (error) {
             console.error("Error loading insights:", error);
         } finally {
@@ -64,7 +70,7 @@ const InsightsScreen = ({ navigation }: any) => {
         }
     };
 
-    const calculateMetrics = useCallback((currentTransactions: Transaction[] = transactions) => {
+    const calculateMetrics = useCallback(async (currentTransactions: Transaction[] = transactions) => {
         const today = new Date();
         const currentMonthTrans = Metrics.getTransactionsByMonth(currentTransactions, today);
 
@@ -91,6 +97,32 @@ const InsightsScreen = ({ navigation }: any) => {
         // Anomalies
         const anomalies = Metrics.detectAnomalies(currentMonthTrans, currentTransactions);
 
+        // NEW: Calculate current balance (all-time income - all-time expense)
+        const allTimeTotals = Metrics.calculateTotals(currentTransactions);
+        const currentBalance = allTimeTotals.income - allTimeTotals.expense;
+
+        // NEW: Budget Performance (always use SUB_CATEGORY for budgets)
+        const specificCategoryBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'SUB_CATEGORY');
+        const budgets = await getBudgets();
+        let budgetPerformance = 0;
+        if (budgets.length > 0) {
+            // Calculate total spent in budgeted categories using the specific breakdown
+            const budgetedCategorySpent = specificCategoryBreakdown
+                .filter(cat => budgets.some(b => b.category === cat.name))
+                .reduce((sum, cat) => sum + cat.amount, 0);
+
+            const totalBudget = budgets.reduce((sum, b) => sum + b.amount, 0);
+            budgetPerformance = totalBudget > 0 ? (budgetedCategorySpent / totalBudget) * 100 : 0;
+        }
+
+        // NEW: Top Expense Category (always use individual category for better insight)
+        const topExpenseCategory = specificCategoryBreakdown.length > 0
+            ? specificCategoryBreakdown[0]
+            : { name: 'None', amount: 0, percentage: 0 };
+
+        // NEW: Days in current month
+        const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+
         setData({
             netCashFlow: totals.net,
             income: totals.income,
@@ -105,7 +137,12 @@ const InsightsScreen = ({ navigation }: any) => {
             averageExpense: Metrics.calculateBurnRate(currentTransactions, 3), // 3-month average
             average6Month,
             average1Year,
-            anomalies
+            anomalies,
+            // New metrics
+            currentBalance,
+            budgetPerformance,
+            topExpenseCategory,
+            daysInMonth
         });
         // Removed setIsLoading(false) from here since it's now handled by fetchTransactions
     }, [transactions, expenseGrouping]);
@@ -119,7 +156,10 @@ const InsightsScreen = ({ navigation }: any) => {
 
     // Re-calculate when grouping changes (but not on mount as fetchTransactions handles that)
     useEffect(() => {
-        calculateMetrics();
+        const recalc = async () => {
+            await calculateMetrics();
+        };
+        recalc();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [expenseGrouping]);
 
@@ -155,6 +195,10 @@ const InsightsScreen = ({ navigation }: any) => {
                     currency={currency}
                     isPrivacyEnabled={isPrivacyEnabled}
                     isLoading={isLoading}
+                    currentBalance={data.currentBalance}
+                    budgetPerformance={data.budgetPerformance}
+                    topExpenseCategory={data.topExpenseCategory}
+                    daysInMonth={data.daysInMonth}
                 />
 
                 {/* 2. Cumulative Spending */}
