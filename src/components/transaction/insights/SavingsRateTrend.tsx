@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
+import { Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useTheme } from '../../../context/ThemeContext';
 import { Card } from '../../../components';
 import { Transaction } from '../../../types';
@@ -37,13 +38,17 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         decimalPlaces: 1,
         color: (opacity = 1) => colors.primary,
         labelColor: (opacity = 1) => colors.text,
+        fillShadowGradientFrom: colors.surface,
+        fillShadowGradientTo: colors.surface,
+        fillShadowGradientOpacity: 0,
         style: {
             borderRadius: 16,
+            paddingRight: 0, // Minimize right padding
         },
         propsForDots: {
             r: '4',
             strokeWidth: '2',
-            stroke: colors.primary
+            stroke: '#fafafa'
         },
         propsForBackgroundLines: {
             strokeDasharray: '',
@@ -57,6 +62,68 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         if (savingsData.rawData.length === 0) return 0;
         const sum = savingsData.rawData.reduce((acc, d) => acc + d.rate, 0);
         return Math.round((sum / savingsData.rawData.length) * 10) / 10;
+    }, [savingsData.rawData]);
+
+    // Calculate chart bounds and properties based on data range
+    const chartStats = useMemo(() => {
+        if (savingsData.rawData.length === 0) return { min: 0, max: 100, zeroOffset: 1 };
+
+        const rates = savingsData.rawData.map(d => d.rate);
+        const dataMax = Math.max(...rates);
+        const dataMin = Math.min(...rates);
+
+        // Smart Scaling Algorithm
+        // Find optimal step size key: 0 must be a tick (so Min is multiple of Step).
+        // Range must be exactly 4 * Step.
+        // Range must cover dataMin and dataMax.
+        const SEGMENTS = 4;
+        const steps = [1, 2, 5, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 75, 80, 90, 100, 150, 200];
+
+        for (const step of steps) {
+            // Find minimal 'n' such that -n * step <= dataMin
+            // -n * step is the chart floor (Min)
+            // If dataMin is positive (e.g. 5%), we technically can start at 0 (n=0).
+            // But if dataMin is negative (e.g. -38%), we need floor to be below it.
+
+            // n * step >= -dataMin  =>  n >= -dataMin / step
+            // Since n must be >= 0 (to ensure 0 is max or below), 
+            // n = ceil(abs(min(dataMin, 0)) / step)
+
+            const n = Math.ceil(Math.abs(Math.min(dataMin, 0)) / step);
+            const candidateMin = -n * step;
+            const candidateMax = candidateMin + (step * SEGMENTS);
+
+            if (candidateMax >= dataMax) {
+                // Found the tightest fit!
+                let finalMin = candidateMin;
+                let finalMax = candidateMax;
+
+                // Smart Adjustment:
+                // Sometimes Max is WAY higher than dataMax. Can we shift the window down?
+                // We can increase n (shift Min down) as long as Min + 4*Step >= dataMax? 
+                // No, shifting down reduces Max. We want to shift UP?
+                // Shifting up means decreasing n. But we picked minimal n to cover dataMin.
+                // So we cannot shift up.
+
+                // However, we effectively check smallest steps first.
+                // So this IS the tightest range bandwidth (Range = 4*Step).
+                // We just need to ensure the window placement is best.
+                // Our logic fixes Min at the highest possible value (tightest to dataMin).
+                // This minimizes whitespace at the bottom.
+                // By definition of small steps, we also minimize bandwidth, so whitespace at top is minimized too relative to Step size.
+
+                const range = finalMax - finalMin;
+                const zeroOffset = finalMax / range;
+
+                return { min: finalMin, max: finalMax, zeroOffset };
+            }
+        }
+
+        // Fallback to symmetric if no smart fit found (e.g. huge numbers)
+        const absMax = Math.max(Math.abs(dataMax), Math.abs(dataMin));
+        const roundedAbs = Math.ceil(absMax / 10) * 10;
+        return { min: -roundedAbs, max: roundedAbs, zeroOffset: 0.5 };
+
     }, [savingsData.rawData]);
 
     const latestRate = savingsData.rawData[savingsData.rawData.length - 1]?.rate || 0;
@@ -100,17 +167,79 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                 </View>
             ) : !privacyMode && (
                 <LineChart
-                    data={savingsData}
-                    width={screenWidth - 60}
+                    data={{
+                        labels: savingsData.labels,
+                        datasets: [
+                            {
+                                data: savingsData.datasets[0].data,
+                                color: (opacity = 1) => `url(#savings_gradient_${savingsData.labels.join('')})`,
+                                strokeWidth: 3
+                            },
+                            {
+                                // Zero baseline
+                                data: savingsData.datasets[0].data.map(() => 0),
+                                color: (opacity = 1) => colors.border,
+                                strokeWidth: 1,
+                                withDots: false,
+                            },
+                            {
+                                // Hidden dataset to force specific scaling
+                                data: savingsData.datasets[0].data.map((_, i) => i === 0 ? chartStats.max : chartStats.min),
+                                color: () => 'transparent',
+                                strokeWidth: 0,
+                                withDots: false
+                            }
+                        ]
+                    }}
+                    width={screenWidth - 48} // Slightly wider to reduce right gap relative to container
                     height={200}
-                    chartConfig={chartConfig}
+                    chartConfig={{
+                        ...chartConfig,
+                        propsForDots: {
+                            r: '4',
+                            strokeWidth: '2',
+                            stroke: '#fafafa'
+                        }
+                    }}
                     bezier
                     style={{
                         marginVertical: 8,
                         borderRadius: 16,
+                        paddingRight: 40,
                     }}
-                    formatYLabel={(value) => `${value}%`}
+                    segments={4}
+                    formatYLabel={(value) => `${parseFloat(value).toFixed(0)}%`}
                     fromZero
+                    getDotColor={(dataPoint, dataPointIndex) => {
+                        return dataPoint < 0 ? '#F44336' : colors.primary;
+                    }}
+                    decorator={({ width, height }: any) => {
+                        // The chart library doesn't expose the y-scaler in decorator.
+                        // We fall back to manual padding calibration which was visually verified.
+                        // Since the chart height is fixed (200), these absolute values should be consistent.
+                        const paddingTop = 16;
+                        const paddingBottom = 36;
+
+                        // Use height from args or fallback to 200
+                        const chartHeight = height || 200;
+
+                        return (
+                            <Defs key={`savings-rate-defs-${savingsData.labels.join('')}`}>
+                                <LinearGradient
+                                    id={`savings_gradient_${savingsData.labels.join('')}`}
+                                    x1="0"
+                                    y1={paddingTop}
+                                    x2="0"
+                                    y2={chartHeight - paddingBottom}
+                                    gradientUnits="userSpaceOnUse"
+                                >
+                                    {/* Dynamic offset based on smart scaling */}
+                                    <Stop offset={`${chartStats.zeroOffset}`} stopColor={colors.primary} stopOpacity="1" />
+                                    <Stop offset={`${chartStats.zeroOffset}`} stopColor="#F44336" stopOpacity="1" />
+                                </LinearGradient>
+                            </Defs>
+                        );
+                    }}
                 />
             )}
 
@@ -131,7 +260,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                 <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
                     <View style={{ alignItems: 'center' }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Average</Text>
-                        <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                        <Text style={{ color: avgRate >= 0 ? '#4CAF50' : '#F44336', fontSize: 14, fontWeight: '600' }}>
                             {privacyMode ? '••••' : `${avgRate}%`}
                         </Text>
                     </View>
