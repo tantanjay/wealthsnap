@@ -1,10 +1,11 @@
-import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, Dimensions, FlatList, NativeSyntheticEvent, NativeScrollEvent, Pressable } from 'react-native';
+import React, { useRef, useState, useMemo } from 'react';
+import { View, Text, Dimensions, FlatList, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import { Card } from '../../../components';
 import { formatCurrencyAmount } from '../../../utils/currencyUtils';
-
+import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from '../../common/Skeleton';
+import BottomModal from '../../common/BottomModal';
 
 interface InsightsOverviewCardsProps {
     netCashFlow: number;
@@ -15,6 +16,11 @@ interface InsightsOverviewCardsProps {
     currency: string;
     isPrivacyEnabled: boolean;
     isLoading?: boolean;
+    // New props
+    currentBalance: number;
+    budgetPerformance: number;
+    topExpenseCategory: { name: string; amount: number; percentage: number };
+    daysInMonth: number;
 }
 
 const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
@@ -25,20 +31,37 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
     burnRate,
     currency,
     isPrivacyEnabled,
-    isLoading = false
+    isLoading = false,
+    currentBalance,
+    budgetPerformance,
+    topExpenseCategory,
+    daysInMonth
 }) => {
     const { colors } = useTheme();
 
     const flatListRef = useRef<FlatList>(null);
-    const [, setCurrentIndex] = useState(0);
-    // Use a Ref to track interaction state synchronously
-    const isInteracting = useRef(false);
-    const autoScrollTimer = useRef<NodeJS.Timeout | null>(null);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [isRunwayModalVisible, setIsRunwayModalVisible] = useState(false);
 
     const cardWidth = (Dimensions.get('window').width - 32 - 12) / 2; // (Screen - Padding - Gap) / 2
 
-    // Memoize originalData to prevent re-creation on every render
-    const originalData = useMemo(() => [
+    // Memoize data to prevent re-creation on every render
+    const data = useMemo(() => [
+        {
+            id: 'financial-runway',
+            title: "Financial Runway",
+            value: burnRate > 0 ? `${(currentBalance / burnRate).toFixed(1)} months` : "∞ months",
+            subValue: "Financial Safety Net",
+            color: (currentBalance / burnRate) >= 6 ? '#4CAF50' : (currentBalance / burnRate) >= 3 ? '#FF9800' : '#F44336',
+            hasInfo: true
+        },
+        {
+            id: 'budget-performance',
+            title: "Budget Health",
+            value: budgetPerformance > 0 ? `${budgetPerformance.toFixed(0)}%` : "N/A",
+            subValue: budgetPerformance === 0 ? "No Budgets Set" : budgetPerformance <= 100 ? "Under Budget" : "Over Budget",
+            color: budgetPerformance === 0 ? undefined : budgetPerformance <= 80 ? '#4CAF50' : budgetPerformance <= 100 ? '#FF9800' : '#F44336'
+        },
         {
             id: 'net-cash-flow',
             title: "Net Cash Flow",
@@ -73,139 +96,67 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
             value: formatCurrencyAmount(burnRate, currency),
             subValue: "Avg Monthly Expense",
             color: undefined
+        },
+        {
+            id: 'avg-daily-spending',
+            title: "Daily Average",
+            value: formatCurrencyAmount(expense / daysInMonth, currency),
+            subValue: "This Month",
+            color: undefined
+        },
+        {
+            id: 'annual-spending',
+            title: "Annualized Exp.",
+            value: formatCurrencyAmount(burnRate * 12, currency),
+            subValue: "Based on Burn Rate",
+            color: undefined
+        },
+        {
+            id: 'largest-category',
+            title: "Top Category",
+            value: topExpenseCategory.name,
+            subValue: formatCurrencyAmount(topExpenseCategory.amount, currency),
+            color: undefined
         }
-    ], [netCashFlow, income, expense, savingsRate, burnRate, currency]); // Dependencies for data content
+    ], [netCashFlow, income, expense, savingsRate, burnRate, currency, currentBalance, budgetPerformance, topExpenseCategory, daysInMonth]);
 
-    // Append first 2 items to the end for seamless looping
-    const data = useMemo(() => [
-        ...originalData,
-        ...originalData.slice(0, 2).map(item => ({ ...item, id: `${item.id}-dup` }))
-    ], [originalData]);
-
-    const startAutoScroll = useCallback(() => {
-        if (autoScrollTimer.current) clearInterval(autoScrollTimer.current);
-
-        autoScrollTimer.current = setInterval(() => {
-            // Double check interaction state inside the timer callback
-            if (isInteracting.current) return;
-
-            setCurrentIndex(prevIndex => {
-                // Determine layout details
-                const totalLen = originalData.length;
-
-                // --- Infinite Loop Logic ---
-                if (prevIndex >= totalLen) {
-                    const realIndex = prevIndex % totalLen;
-
-                    // 1. Silent Snap to real index
-                    flatListRef.current?.scrollToIndex({ index: realIndex, animated: false });
-
-                    // 2. Scroll to next index (which is realIndex + 1)
-                    const nextIndex = realIndex + 1;
-
-                    // Small delay to ensure the snap has processed
-                    setTimeout(() => {
-                        // Check interaction again before animating
-                        if (!isInteracting.current) {
-                            flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
-                        }
-                    }, 50);
-
-                    return nextIndex;
-                }
-
-                const nextIndex = prevIndex + 1;
-                flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
-                return nextIndex;
-            });
-        }, 3000);
-    }, [originalData.length]);
-
-    const stopAutoScroll = useCallback(() => {
-        if (autoScrollTimer.current) {
-            clearInterval(autoScrollTimer.current);
-            autoScrollTimer.current = null;
-        }
-    }, []);
-
-    // Initial Start
-    useEffect(() => {
-        startAutoScroll();
-        return () => stopAutoScroll();
-    }, [startAutoScroll, stopAutoScroll]);
-
-
-    // --- Interaction Handlers ---
-
-    const handleInteractionStart = () => {
-        isInteracting.current = true;
-        stopAutoScroll();
-    };
-
-    const handleInteractionEnd = () => {
-        isInteracting.current = false;
-        startAutoScroll();
-    };
-
-    const onScrollBeginDrag = () => {
-        handleInteractionStart();
-    };
-
-    const onScrollEndDrag = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-        handleInteractionEnd();
-    };
-
-
-    const onMomentumScrollBegin = () => {
-        handleInteractionStart();
-    };
+    // Calculate total pages (2 cards per page)
+    const totalPages = Math.ceil(data.length / 2);
 
     const onMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const contentOffset = event.nativeEvent.contentOffset.x;
-        const index = Math.round(contentOffset / (cardWidth + 12));
-        setCurrentIndex(index);
-
-        // Snap back logic for manual scrolling
-        if (index >= originalData.length) {
-            const realIndex = index % originalData.length;
-            flatListRef.current?.scrollToIndex({ index: realIndex, animated: false });
-            setCurrentIndex(realIndex);
-        }
-
-        handleInteractionEnd();
-    };
-
-    // Catch-all touch handlers using Pressable wrapper on items
-    // This handles "touch and hold" which stops the scroll
-    const onPressIn = () => {
-        handleInteractionStart();
+        const viewWidth = cardWidth * 2 + 12; // Two cards + gap
+        const page = Math.round(contentOffset / viewWidth);
+        setCurrentPage(page);
     };
 
     const renderItem = ({ item }: { item: any }) => (
-        <Pressable
-            onPressIn={onPressIn}
-            onPressOut={handleInteractionEnd}
-            style={{ width: cardWidth, marginRight: 12 }}
-        >
-
+        <View style={{ width: cardWidth, marginRight: 12 }}>
             <Card style={{ padding: 16, height: 120, justifyContent: 'space-between', backgroundColor: colors.surface }}>
-                <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600' }}>{item.title.toUpperCase()}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600' }}>{item.title.toUpperCase()}</Text>
+                    {item.hasInfo && (
+                        <TouchableOpacity onPress={() => setIsRunwayModalVisible(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                            <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                    )}
+                </View>
                 <View>
-                    <Text style={{ color: item.color || colors.text, fontSize: 20, fontWeight: 'bold' }}>
+                    <Text style={{ color: item.color || colors.text, fontSize: 20, fontWeight: 'bold' }} numberOfLines={1}>
                         {isLoading ? (
                             <Skeleton width={100} height={24} style={{ marginBottom: 4 }} />
                         ) : (
-                            isPrivacyEnabled ? '***' : item.value
+                            isPrivacyEnabled ? '****' : item.value
                         )}
                     </Text>
                     {isLoading ? (
                         <Skeleton width={60} height={12} style={{ marginTop: 4 }} />
                     ) : (
-                        item.subValue && <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4 }}>{item.subValue}</Text>
+                        item.subValue && <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }} numberOfLines={1}>{item.subValue}</Text>
                     )}
                 </View>
             </Card>
-        </Pressable>
+        </View>
     );
 
     // Handle error when scrolling
@@ -217,28 +168,62 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
     };
 
     return (
-        <FlatList
-            ref={flatListRef}
-            data={data}
-            renderItem={renderItem}
-            keyExtractor={item => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 0 }}
+        <View>
+            <FlatList
+                ref={flatListRef}
+                data={data}
+                renderItem={renderItem}
+                keyExtractor={item => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 0 }}
+                onMomentumScrollEnd={onMomentumScrollEnd}
+                decelerationRate="fast"
+                snapToInterval={cardWidth * 2 + 12} // Two cards + gap for page snapping
+                snapToAlignment="start"
+                getItemLayout={(data, index) => (
+                    { length: cardWidth + 12, offset: (cardWidth + 12) * index, index }
+                )}
+                onScrollToIndexFailed={onScrollToIndexFailed}
+            />
 
-            // Scroll Interaction Handlers
-            onScrollBeginDrag={onScrollBeginDrag}
-            onScrollEndDrag={onScrollEndDrag}
-            onMomentumScrollBegin={onMomentumScrollBegin}
-            onMomentumScrollEnd={onMomentumScrollEnd}
+            {/* Paging Dots */}
+            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: -10, marginBottom: 10, gap: 6 }}>
+                {Array.from({ length: totalPages }).map((_, index) => (
+                    <View
+                        key={index}
+                        style={{
+                            height: 8,
+                            width: currentPage === index ? 24 : 8,
+                            borderRadius: 4,
+                            backgroundColor: currentPage === index ? colors.primary : colors.border,
+                            opacity: currentPage === index ? 1 : 0.3,
+                        }}
+                    />
+                ))}
+            </View>
 
-            decelerationRate="fast"
-            snapToInterval={cardWidth + 12} // width + margin
-            getItemLayout={(data, index) => (
-                { length: cardWidth + 12, offset: (cardWidth + 12) * index, index }
-            )}
-            onScrollToIndexFailed={onScrollToIndexFailed}
-        />
+            {/* Info Modal for Runway */}
+            <BottomModal
+                visible={isRunwayModalVisible}
+                onClose={() => setIsRunwayModalVisible(false)}
+                title="How is this Calculated?"
+            >
+                <View style={{ padding: 20, paddingBottom: 40 }}>
+                    <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
+                        Financial Runway shows how many months you can sustain your current lifestyle based on your available balance and average monthly expenses (burn rate).
+                    </Text>
+                    <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
+                            "Essentially, if your income stopped today, this is how long you could live without changing your spending habits."
+                        </Text>
+                    </View>
+                    <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                        Calculation: Total Balance ÷ Average Monthly Expense
+                    </Text>
+                </View>
+            </BottomModal>
+        </View>
     );
 };
 
