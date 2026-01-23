@@ -232,7 +232,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                     </Text>
                     <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
-                            "Essentially, if your income stopped today, this is how long you could live without changing your spending habits."
+                            &quot;Essentially, if your income stopped today, this is how long you could live without changing your spending habits.&quot;
                         </Text>
                     </View>
                     <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
