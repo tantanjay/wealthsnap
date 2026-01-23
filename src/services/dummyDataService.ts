@@ -61,6 +61,46 @@ export const generateDummyData = async () => {
         const today = new Date();
         const transactions: Transaction[] = [];
 
+        // Pre-calculate savings rates for each month to ensure constraints
+        const monthlyIncome = 5000;
+        const minAverageSavingsRate = 0.2; // 20% minimum average
+        const savingsRates: number[] = [];
+
+        // First pass: Generate random savings rates
+        for (let i = 0; i < 24; i++) {
+            const rand = Math.random();
+
+            // 60% chance of positive savings, 40% chance of negative
+            if (rand < 0.60) {
+                // Positive savings - range from 5% to 60%
+                // Add some months with high savings (50%+) to balance negatives
+                if (Math.random() < 0.3) {
+                    // 30% of positive months have high savings (50-60%)
+                    savingsRates.push(0.50 + Math.random() * 0.10);
+                } else {
+                    // Regular positive savings (5-45%)
+                    savingsRates.push(0.05 + Math.random() * 0.40);
+                }
+            } else {
+                // Negative savings - range from -5% to -40%
+                savingsRates.push(-0.05 - Math.random() * 0.35);
+            }
+        }
+
+        // Second pass: Adjust to ensure average >= 10%
+        let currentAverage = savingsRates.reduce((sum, rate) => sum + rate, 0) / savingsRates.length;
+
+        if (currentAverage < minAverageSavingsRate) {
+            const deficit = minAverageSavingsRate - currentAverage;
+            // Boost some months to meet the minimum
+            for (let i = 0; i < savingsRates.length; i++) {
+                if (savingsRates[i] > 0 && deficit > 0) {
+                    const boost = Math.min(deficit * 2, 0.30); // Adjust up to 30%
+                    savingsRates[i] += boost;
+                }
+            }
+        }
+
         for (let i = 0; i < 24; i++) {
             const currentMonth = new Date(today.getFullYear(), today.getMonth() - i, 1);
             const year = currentMonth.getFullYear();
@@ -98,8 +138,13 @@ export const generateDummyData = async () => {
                 });
             }
 
-            // Expenses (50-95% of 5k = 2.5k - 4.75k) to ensure more variance
-            let targetExpense = getRandomAmount(2500, 4750);
+            // Calculate target expense based on savings rate
+            // Savings = Income - Expenses, so Expenses = Income * (1 - savingsRate)
+            const savingsRate = savingsRates[i];
+            let targetExpense = Math.floor(monthlyIncome * (1 - savingsRate));
+
+            // Ensure expenses are at least 0
+            targetExpense = Math.max(0, targetExpense);
 
             // Scale target expense for partial current month
             if (month === today.getMonth() && year === today.getFullYear()) {
@@ -108,6 +153,7 @@ export const generateDummyData = async () => {
                 const progress = dayOfMonth / totalDaysInMonth;
                 targetExpense = Math.floor(targetExpense * progress);
             }
+
             let currentExpense = 0;
 
             while (currentExpense < targetExpense) {
