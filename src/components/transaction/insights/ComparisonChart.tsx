@@ -32,16 +32,17 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
     const getComparisonInsight = () => {
         if (isPrivacyEnabled) return "Spending comparison hidden in privacy mode.";
         if (Math.abs(proRatedExpense - averageExpense) < 0.01) {
-            return "On track to match your 3-month average.";
+            return "On track to match your 3-month average.*";
         }
         if (proRatedExpense > averageExpense) {
             const diff = proRatedExpense - averageExpense;
-            return `On track to spend ${formatCurrencyAmount(diff, currency)} more than your 3-month average.`;
+            return `On track to spend ${formatCurrencyAmount(diff, currency)} more than your 3-month average.*`;
         } else {
             const diff = averageExpense - proRatedExpense;
-            return `Great job! On track to spend ${formatCurrencyAmount(diff, currency)} less than average.`;
+            return `Great job! On track to spend ${formatCurrencyAmount(diff, currency)} less than average.*`;
         }
     };
+
 
     const renderVisualScenario = (type: 'OVER' | 'UNDER', label: string) => {
         return (
@@ -78,12 +79,19 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                 </View>
             </View>
 
-            <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, marginRight: 10 }}>💡</Text>
-                <Text style={{ color: colors.text, flex: 1 }}>{isLoading ? "Analyzing spending habits..." : getComparisonInsight()}</Text>
-                <TouchableOpacity onPress={() => setShowInsightInfo(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
+            <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12, marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 20, marginRight: 10 }}>💡</Text>
+                    <Text style={{ color: colors.text, flex: 1 }}>{isLoading ? "Analyzing spending habits..." : getComparisonInsight()}</Text>
+                    <TouchableOpacity onPress={() => setShowInsightInfo(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                </View>
+                {!isPrivacyEnabled && (
+                    <Text style={{ color: colors.textSecondary, fontSize: 11, fontStyle: 'italic', marginTop: 8, marginLeft: 30 }}>
+                        *Projection assumes even spending throughout month
+                    </Text>
+                )}
             </View>
 
             <Card>
@@ -271,7 +279,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                     <View style={{ height: 20 }} />
                 </View>
             </BottomModal>
-        </View>
+        </View >
     );
 };
 
