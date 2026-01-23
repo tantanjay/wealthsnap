@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Vibration } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext';
-import * as securityService from '../services/securityService';
+import { useTheme } from '../../context/ThemeContext';
+import * as securityService from '../../services/securityService';
 
 // This screen should be rendered conditionally via Context or a Modal
 interface PinEntryScreenProps {

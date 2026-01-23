@@ -10,9 +10,11 @@ import InvestmentScreen from '../screens/InvestmentScreen';
 import RecordScreen from '../screens/RecordScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import WelcomeScreen from '../screens/Onboarding/WelcomeScreen';
-import SetupScreen from '../screens/Onboarding/SetupScreen';
+import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
+import SetupScreen from '../screens/onboarding/SetupScreen';
 import InsightsScreen from '../screens/InsightsScreen';
+import TermsAndPrivacyScreen from '../screens/onboarding/TermsAndPrivacyScreen';
+import LegalAcceptanceScreen from '../screens/onboarding/LegalAcceptanceScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -56,7 +58,7 @@ const MainTabs = () => {
     );
 };
 
-const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' }) => {
+const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'LegalAcceptance' }) => {
     const { colors } = useTheme();
     const navigationTheme = {
         ...DefaultTheme,
@@ -76,6 +78,8 @@ const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' })
                 <Stack.Screen name="Onboarding" component={WelcomeScreen} />
                 <Stack.Screen name="Setup" component={SetupScreen} />
                 <Stack.Screen name="Main" component={MainTabs} />
+                <Stack.Screen name="TermsAndPrivacy" component={TermsAndPrivacyScreen} />
+                <Stack.Screen name="LegalAcceptance" component={LegalAcceptanceScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

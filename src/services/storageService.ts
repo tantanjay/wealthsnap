@@ -19,6 +19,7 @@ const KEYS = {
     HISTORY_PREFS: '@wealthsnap_history_prefs',
     INSIGHTS_CARD_ORDER: '@wealthsnap_insights_card_order',
     INSIGHTS_SECTION_ORDER: '@wealthsnap_insights_section_order',
+    ACCEPTED_TERMS_VERSION: '@wealthsnap_accepted_terms_version',
 };
 
 // ============= AsyncStorage Helpers (for small data) =============
@@ -478,6 +479,26 @@ export const isOnboardingComplete = async (): Promise<boolean> => {
     } catch (error) {
         console.error('Error checking onboarding status:', error);
         return false;
+    }
+};
+
+export const saveAcceptedTermsVersion = async (version: number): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(KEYS.ACCEPTED_TERMS_VERSION, version.toString());
+    } catch (error) {
+        console.error('Error saving accepted terms version:', error);
+    }
+};
+
+export const getAcceptedTermsVersion = async (): Promise<number> => {
+    try {
+        const value = await AsyncStorage.getItem(KEYS.ACCEPTED_TERMS_VERSION);
+        if (!value) return 0;
+        const parsed = parseInt(value, 10);
+        return isNaN(parsed) ? 0 : parsed;
+    } catch (error) {
+        console.error('Error getting accepted terms version:', error);
+        return 0;
     }
 };
 

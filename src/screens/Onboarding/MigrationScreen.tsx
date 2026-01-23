@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { migrateFromAsyncStorage, isMigrationNeeded, hasAsyncStorageData } from '../services/database/migrationService';
-import { useTheme } from '../context/ThemeContext';
+import { migrateFromAsyncStorage, isMigrationNeeded, hasAsyncStorageData } from '../../services/database/migrationService';
+import { useTheme } from '../../context/ThemeContext';
 
 interface MigrationScreenProps {
     onComplete: () => void;
