@@ -21,6 +21,8 @@ interface InsightsOverviewCardsProps {
     budgetPerformance: number;
     topExpenseCategory: { name: string; amount: number; percentage: number };
     daysInMonth: number;
+    cardOrder?: string[];
+    onReorderCards?: (newOrder: string[]) => void;
 }
 
 const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
@@ -35,7 +37,9 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
     currentBalance,
     budgetPerformance,
     topExpenseCategory,
-    daysInMonth
+    daysInMonth,
+    cardOrder,
+    onReorderCards
 }) => {
     const { colors } = useTheme();
 
@@ -120,8 +124,21 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
         }
     ], [netCashFlow, income, expense, savingsRate, burnRate, currency, currentBalance, budgetPerformance, topExpenseCategory, daysInMonth]);
 
+    // Apply custom order if available
+    const orderedData = useMemo(() => {
+        if (!cardOrder || cardOrder.length === 0) return data;
+        return [...data].sort((a, b) => {
+            const indexA = cardOrder.indexOf(a.id);
+            const indexB = cardOrder.indexOf(b.id);
+            if (indexA === -1 && indexB === -1) return 0;
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+        });
+    }, [data, cardOrder]);
+
     // Calculate total pages (2 cards per page)
-    const totalPages = Math.ceil(data.length / 2);
+    const totalPages = Math.ceil(orderedData.length / 2);
 
     const onMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const contentOffset = event.nativeEvent.contentOffset.x;
@@ -171,7 +188,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
         <View>
             <FlatList
                 ref={flatListRef}
-                data={data}
+                data={orderedData}
                 renderItem={renderItem}
                 keyExtractor={item => item.id}
                 horizontal
