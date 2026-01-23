@@ -80,7 +80,9 @@
             is
             subject to <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.
             WealthSnap acts merely as a conduit for this data and does not store, process, or have access to the API's
-            internal processing of your images.</p>
+            internal processing of your images. Users are encouraged to review their own Google AI Studio or Google
+            Cloud privacy settings, as the use of a personal API key falls under the user's individual agreement with
+            Google.</p>
 
         <h3>2.2 Biometric Data</h3>
         <p><strong>What we access:</strong> We use your device's biometric capabilities (FaceID, TouchID, or
@@ -90,9 +92,11 @@
             data (fingerprints or facial maps). Authentication is handled entirely by your device's operating system,
             which simply tells our app "Success" or "Failure".</p>
 
-        <h3>2.3 User Content (Financial Data)</h3>
-        <p><strong>What we access:</strong> Information you input, such as transaction history, budgets, and goals.
-        </p>
+        <h3>2.3 User Content (Financial Data) & Data Transit</h3>
+        <p><strong>Internal:</strong> We do not collect, sell, share, or store your personal data on external developer
+            servers. Information you input—transaction history, budgets, and goals—resides locally on your device.</p>
+        <p><strong>Transit:</strong> For AI-powered features to function (such as receipt analysis), data you explicitly
+            select is transmitted securely to Google's Gemini API as described in Section 2.1.</p>
         <p><strong>Data Handling:</strong> We employ a <strong>Hybrid Encryption</strong> model to balance privacy and
             performance:</p>
         <ul>
@@ -134,6 +138,9 @@
         <p><strong>5.2 No Password Recovery:</strong> There is NO "Forgot Password" or recovery mechanism for your
             custom PIN. The Developer cannot "reset" your PIN or recover your encrypted database. Forgetting your PIN
             results in permanent data loss.</p>
+        <p><strong>5.3 Data Deletion:</strong> Users can delete all data at any time by clearing the App's cache/data in
+            device settings or by uninstalling the App. Since no data is stored on developer servers, this action is
+            permanent and irreversible.</p>
 
         <h2>6. Children’s Privacy</h2>
         <p>Our Services do not address anyone under the age of 13. We do not knowingly collect personally identifiable
@@ -182,7 +189,16 @@
         <p>We may update our Privacy Policy and Terms from time to time. Thus, you are advised to review this page
             periodically for any changes. We will notify you of any changes by posting the new policy on this page.</p>
 
-        <h2>13. Contact Us</h2>
+        <h2>13. Device Permissions</h2>
+        <p>To provide its functionality, the App may request the following permissions on your device:</p>
+        <ul>
+            <li><strong>Camera:</strong> Used for capturing images of receipts (Section 2.1).</li>
+            <li><strong>Photo Library:</strong> Used for selecting existing receipt images (Section 2.1).</li>
+            <li><strong>Biometrics:</strong> Used for secure app access via FaceID/TouchID (Section 2.2).</li>
+            <li><strong>Local Storage:</strong> Used for saving your encrypted financial database on your device.</li>
+        </ul>
+
+        <h2>14. Contact Us</h2>
         <p>If you have any questions or suggestions about our Privacy Policy, do not hesitate to contact us at:</p>
         <p>Email: cjs.dev.studio@gmail.com</p>
     </div>
