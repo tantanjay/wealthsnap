@@ -18,10 +18,43 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
+    const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
+
+    // Calculate how many months of data to load based on selection
+    const monthsToLoad = useMemo(() => {
+        if (timeRange === '6M') return 6;
+        if (timeRange === '1Y') return 12;
+        if (timeRange === '3Y') return 36;
+
+        // For 'ALL', calculate months since first transaction
+        if (transactions.length === 0) return 6;
+        const dates = transactions.map(t => new Date(t.date).getTime());
+        const minDate = new Date(Math.min(...dates));
+        const today = new Date();
+        const diff = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth()) + 1;
+        return Math.max(diff, 6); // Ensure at least 6 months shown even if data is new
+    }, [timeRange, transactions]);
+
     const savingsData = useMemo(() => {
-        const data = getSavingsRateTrend(transactions, 6);
+        const data = getSavingsRateTrend(transactions, monthsToLoad);
+
+        // Optimize labels for large datasets (prevent overcrowding)
+        const labels = data.map((d, index) => {
+            // If dataset is small, show all labels
+            if (data.length <= 12) return d.month;
+
+            // For large datasets, show roughly 6 labels evenly distributed
+            const interval = Math.ceil(data.length / 6);
+
+            // Always show first and last, and periodic interval matches
+            if (index === 0 || index === data.length - 1 || index % interval === 0) {
+                return d.month;
+            }
+            return ''; // Hide label
+        });
+
         return {
-            labels: data.map(d => d.month),
+            labels: labels,
             datasets: [{
                 data: data.map(d => d.rate),
                 color: (opacity = 1) => colors.primary,
@@ -29,15 +62,17 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
             }],
             rawData: data
         };
-    }, [transactions, colors.primary]);
+    }, [transactions, monthsToLoad, colors.primary]);
 
     const chartConfig = {
-        backgroundColor: colors.surface,
         backgroundGradientFrom: colors.surface,
         backgroundGradientTo: colors.surface,
-        decimalPlaces: 1,
+        decimalPlaces: 0,
         color: (opacity = 1) => colors.primary,
-        labelColor: (opacity = 1) => colors.text,
+        labelColor: (opacity = 1) => colors.textSecondary,
+        propsForLabels: {
+            fontSize: 10
+        },
         fillShadowGradientFrom: colors.surface,
         fillShadowGradientTo: colors.surface,
         fillShadowGradientOpacity: 0,
@@ -128,12 +163,45 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
 
     const latestRate = savingsData.rawData[savingsData.rawData.length - 1]?.rate || 0;
 
+    const renderTimeFilter = () => (
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+            <View style={{ flexDirection: 'row', backgroundColor: colors.border + '40', borderRadius: 8, padding: 2 }}>
+                {(['6M', '1Y', '3Y', 'ALL'] as const).map((range) => (
+                    <Text
+                        key={range}
+                        onPress={() => setTimeRange(range)}
+                        style={{
+                            paddingHorizontal: 12,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                            backgroundColor: timeRange === range ? colors.surface : 'transparent',
+                            color: timeRange === range ? colors.primary : colors.textSecondary,
+                            fontWeight: timeRange === range ? '600' : '400',
+                            fontSize: 12,
+                            overflow: 'hidden',
+                            elevation: timeRange === range ? 1 : 0,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: timeRange === range ? 0.1 : 0,
+                            shadowRadius: 1
+                        }}
+                    >
+                        {range}
+                    </Text>
+                ))}
+            </View>
+        </View>
+    );
+
     if (!isLoading && savingsData.datasets[0].data.length === 0) {
         return (
             <Card>
-                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 10 }}>
-                    Savings Rate Trend
-                </Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
+                        Savings Rate Trend
+                    </Text>
+                    {renderTimeFilter()}
+                </View>
                 <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 20 }}>
                     No data yet. Start tracking income and expenses!
                 </Text>
@@ -143,22 +211,24 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
 
     return (
         <Card>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
                 <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>Savings Rate Trend</Text>
-                <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Current</Text>
-                    {isLoading ? (
-                        <Skeleton width={60} height={20} />
-                    ) : (
-                        <Text style={{
-                            color: latestRate >= 0 ? '#4CAF50' : '#F44336',
-                            fontSize: 18,
-                            fontWeight: 'bold'
-                        }}>
-                            {privacyMode ? '••••' : `${latestRate}%`}
-                        </Text>
-                    )}
-                </View>
+                {renderTimeFilter()}
+            </View>
+
+            <View style={{ alignItems: 'flex-end', marginBottom: 10 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Current</Text>
+                {isLoading ? (
+                    <Skeleton width={60} height={20} />
+                ) : (
+                    <Text style={{
+                        color: latestRate >= 0 ? '#4CAF50' : '#F44336',
+                        fontSize: 18,
+                        fontWeight: 'bold'
+                    }}>
+                        {privacyMode ? '••••' : `${latestRate}%`}
+                    </Text>
+                )}
             </View>
 
             {isLoading ? (
