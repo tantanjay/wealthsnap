@@ -4,10 +4,11 @@ import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ThemeProvider } from './src/context/ThemeContext';
-import { isOnboardingComplete } from './src/services/storageService';
+import { isOnboardingComplete, getAcceptedTermsVersion } from './src/services/storageService';
 import { SecurityProvider } from './src/context/SecurityContext';
 import { PrivacyProvider } from './src/context/PrivacyContext';
-import { MigrationScreen } from './src/screens/MigrationScreen';
+import { CONFIG } from './src/constants/config';
+import { MigrationScreen } from './src/screens/onboarding/MigrationScreen';
 import { PrivacyGuard } from './src/components/common/PrivacyGuard';
 import { AlertProvider } from './src/context/AlertContext';
 import { CustomAlert } from './src/components/common/CustomAlert';
@@ -20,7 +21,7 @@ import { registerBackgroundFetchAsync } from './src/services/backgroundService';
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [migrating, setMigrating] = useState(true);
-  const [initialRoute, setInitialRoute] = useState<'Onboarding' | 'Main'>('Onboarding');
+  const [initialRoute, setInitialRoute] = useState<'Onboarding' | 'Main' | 'LegalAcceptance'>('Onboarding');
 
   useEffect(() => {
     initNotifications();
@@ -46,7 +47,16 @@ export default function App() {
     }
 
     const completed = await isOnboardingComplete();
-    setInitialRoute(completed ? 'Main' : 'Onboarding');
+    const acceptedVersion = await getAcceptedTermsVersion();
+
+    if (!completed) {
+      setInitialRoute('Onboarding');
+    } else if (acceptedVersion < CONFIG.TERMS_VERSION) {
+      setInitialRoute('LegalAcceptance');
+    } else {
+      setInitialRoute('Main');
+    }
+
     setLoading(false);
   };
 
