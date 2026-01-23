@@ -222,6 +222,19 @@ export const calculateBurnRate = (data: ProcessedData, monthsBack: number = 6) =
     return monthsFound > 0 ? totalExpense / monthsFound : 0;
 };
 
+export const calculateFIStatus = (currentAssets: number, burnRate: number) => {
+    const annualExpense = burnRate * 12;
+    const fiTarget = annualExpense * 25;
+    const progress = fiTarget > 0 ? (currentAssets / fiTarget) * 100 : 0;
+
+    return {
+        fiTarget,
+        annualExpense,
+        progress: Math.min(progress, 1000), // Cap at 1000% for UI safety
+        isFI: progress >= 100
+    };
+};
+
 export const getCategoryBreakdown = (transactions: Transaction[], type: TransactionType, groupBy: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
     const breakdown: { [key: string]: number } = {};
     let total = 0;

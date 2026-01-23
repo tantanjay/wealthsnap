@@ -49,7 +49,13 @@ const SetupScreen = ({ navigation }: any) => {
     const handleRestoreFromBackup = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({
-                type: 'application/zip',
+                type: [
+                    'application/zip',
+                    'application/x-zip',
+                    'application/x-zip-compressed',
+                    'application/octet-stream',
+                    '*/*'  // Fallback to allow any file if needed
+                ],
                 copyToCacheDirectory: true,
             });
 

@@ -8,7 +8,7 @@ import { Transaction } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Metrics from '../utils/financialMetrics';
-import { getUserProfile, getCachedTransactions } from '../services/storageService';
+import { getUserProfile, getCachedTransactions, getCachedInvestments } from '../services/storageService';
 import { getBudgets } from '../services/budgetService';
 import {
     getInsightsCardOrder,
@@ -68,7 +68,8 @@ const InsightsScreen = ({ navigation }: any) => {
         currentBalance: 0,
         budgetPerformance: 0,
         topExpenseCategory: { name: 'None', amount: 0, percentage: 0 },
-        daysInMonth: 30
+        daysInMonth: 30,
+        fiStatus: { fiTarget: 0, progress: 0, isFI: false, annualExpense: 0 }
     });
 
     const fetchTransactions = async () => {
@@ -137,8 +138,14 @@ const InsightsScreen = ({ navigation }: any) => {
         const anomalies = Metrics.detectAnomalies(processed);
 
         // NEW: Calculate current balance (all-time income - all-time expense)
+        // NEW: FI Progress Calculation
+        const allInvestments = await getCachedInvestments();
+        const totalInvestments = allInvestments.reduce((sum, inv) => sum + (inv.quantity * (inv.currentPrice || inv.averageBuyPrice)), 0);
+
         const allTimeTotals = Metrics.calculateTotals(currentTransactions);
         const currentBalance = allTimeTotals.income - allTimeTotals.expense;
+        const totalAssets = currentBalance + totalInvestments;
+        const fiStatus = Metrics.calculateFIStatus(totalAssets, burnRate || average6Month);
 
         // NEW: Budget Performance (always use SUB_CATEGORY for budgets)
         const specificCategoryBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'SUB_CATEGORY');
@@ -184,7 +191,8 @@ const InsightsScreen = ({ navigation }: any) => {
             currentBalance,
             budgetPerformance,
             topExpenseCategory,
-            daysInMonth
+            daysInMonth,
+            fiStatus
         });
         setProcessedData(processed);
     }, [transactions, expenseGrouping]);
@@ -249,6 +257,7 @@ const InsightsScreen = ({ navigation }: any) => {
                                 budgetPerformance={data.budgetPerformance}
                                 topExpenseCategory={data.topExpenseCategory}
                                 daysInMonth={data.daysInMonth}
+                                fiStatus={data.fiStatus}
                                 cardOrder={cardOrder}
                             />
                         )
@@ -404,6 +413,7 @@ const InsightsScreen = ({ navigation }: any) => {
                 }}
                 title="Reorder Cards"
                 items={[
+                    { id: 'fi-progress', label: 'FI Progress' },
                     { id: 'financial-runway', label: 'Financial Runway' },
                     { id: 'budget-performance', label: 'Budget Health' },
                     { id: 'net-cash-flow', label: 'Net Cash Flow' },
