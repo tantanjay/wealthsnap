@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { useTheme } from '../../../context/ThemeContext';
@@ -9,6 +9,7 @@ import { Transaction } from '../../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from '../../common/Skeleton';
 import BottomModal from '../../common/BottomModal';
+import { getMonthlyTrends } from '../../../utils/financialMetrics';
 
 
 interface IncomeAnalysisProps {
@@ -27,13 +28,36 @@ interface IncomeAnalysisProps {
     isLoading?: boolean;
 }
 
-const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, categoryBreakdown, currency, isPrivacyEnabled, transactions, isLoading = false }) => {
+const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialTrends, categoryBreakdown, currency, isPrivacyEnabled, transactions, isLoading = false }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
     const [showProjectionModal, setShowProjectionModal] = React.useState(false);
     const [showInfoModal, setShowInfoModal] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState<'TREND' | 'SOURCES'>('TREND');
     const [showInsightInfo, setShowInsightInfo] = React.useState(false);
+
+    // Time Range Filter Logic
+    const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
+
+    // Calculate how many months of data to load based on selection
+    const monthsToLoad = useMemo(() => {
+        if (timeRange === '6M') return 6;
+        if (timeRange === '1Y') return 12;
+        if (timeRange === '3Y') return 36;
+
+        // For 'ALL', calculate months since first transaction
+        if (transactions.length === 0) return 6;
+        const dates = transactions.map(t => new Date(t.date).getTime());
+        const minDate = new Date(Math.min(...dates));
+        const today = new Date();
+        const diff = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth()) + 1;
+        return Math.max(diff, 6); // Ensure at least 6 months shown even if data is new
+    }, [timeRange, transactions]);
+
+    // Recalculate trends based on selected time range
+    const activeMonthlyTrends = useMemo(() => {
+        return getMonthlyTrends(transactions, monthsToLoad);
+    }, [transactions, monthsToLoad]);
 
     const pieData = categoryBreakdown.map((item, index) => ({
         name: item.name,
@@ -43,12 +67,12 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
         legendFontSize: 12
     }));
 
-    // Generate smart insight
+    // Generate smart insight (using active trends)
     const getInsight = () => {
         if (isPrivacyEnabled) return "Income insights hidden in privacy mode.";
-        if (monthlyTrends.incomeData.length < 2) return "Great start! Keep tracking to see income trends.";
-        const lastMonth = monthlyTrends.incomeData[monthlyTrends.incomeData.length - 1];
-        const prevMonth = monthlyTrends.incomeData[monthlyTrends.incomeData.length - 2];
+        if (activeMonthlyTrends.incomeData.length < 2) return "Great start! Keep tracking to see income trends.";
+        const lastMonth = activeMonthlyTrends.incomeData[activeMonthlyTrends.incomeData.length - 1];
+        const prevMonth = activeMonthlyTrends.incomeData[activeMonthlyTrends.incomeData.length - 2];
 
         if (lastMonth > prevMonth) {
             const growth = prevMonth === 0 ? 100 : ((lastMonth - prevMonth) / prevMonth) * 100;
@@ -59,6 +83,34 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
         }
         return "Your income has been stable.";
     };
+
+    const renderTimeFilter = () => (
+        <View style={{ flexDirection: 'row', backgroundColor: colors.border + '40', borderRadius: 8, padding: 2 }}>
+            {(['6M', '1Y', '3Y', 'ALL'] as const).map((range) => (
+                <Text
+                    key={range}
+                    onPress={() => setTimeRange(range)}
+                    style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 4,
+                        borderRadius: 6,
+                        backgroundColor: timeRange === range ? colors.surface : 'transparent',
+                        color: timeRange === range ? colors.primary : colors.textSecondary,
+                        fontWeight: timeRange === range ? '600' : '400',
+                        fontSize: 12,
+                        overflow: 'hidden',
+                        elevation: timeRange === range ? 1 : 0,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: timeRange === range ? 0.1 : 0,
+                        shadowRadius: 1
+                    }}
+                >
+                    {range}
+                </Text>
+            ))}
+        </View>
+    );
 
     return (
         <View>
@@ -131,6 +183,9 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
                             }}>Sources</Text>
                         </TouchableOpacity>
                     </View>
+
+                    {/* Time Range Filter - Only show for TREND tab */}
+                    {activeTab === 'TREND' && renderTimeFilter()}
                 </View>
 
                 {!isPrivacyEnabled ? (
@@ -144,8 +199,8 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
                                 // Prepare data with pro-rated projection (Historical Average Strategy)
                                 // Use historical average as the target for the current month's projection
 
-                                const labels = [...monthlyTrends.labels];
-                                const rawData = [...monthlyTrends.incomeData];
+                                const labels = [...activeMonthlyTrends.labels];
+                                const rawData = [...activeMonthlyTrends.incomeData];
 
                                 // Last element is current month
                                 const currentMonthIncome = rawData[rawData.length - 1] || 0;
@@ -170,8 +225,12 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
                                     const value = isCurrentMonth ? proRatedIncome : (rawData[index] || 0);
                                     const actual = rawData[index] || 0;
 
+                                    // Smart Labeling: Throttling for density
+                                    const showLabelInterval = Math.ceil(labels.length / 6);
+                                    const shouldShowLabel = index === 0 || index === labels.length - 1 || index % showLabelInterval === 0;
+
                                     return {
-                                        label,
+                                        label: shouldShowLabel ? label : '',
                                         value,
                                         actual,
                                         isProjected: isCurrentMonth
@@ -248,7 +307,16 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends, category
                                                                 }} />
                                                             )}
                                                         </View>
-                                                        <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 6 }}>
+                                                        <Text
+                                                            numberOfLines={1}
+                                                            style={{
+                                                                color: colors.textSecondary,
+                                                                fontSize: 10,
+                                                                marginTop: 6,
+                                                                width: 40,
+                                                                textAlign: 'center'
+                                                            }}
+                                                        >
                                                             {bar.label}
                                                         </Text>
                                                     </View>
