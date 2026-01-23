@@ -17,6 +17,8 @@ const KEYS = {
     ONBOARDING_COMPLETE: '@wealthsnap_onboarding_complete',
     AI_CONFIG: '@wealthsnap_ai_config',
     HISTORY_PREFS: '@wealthsnap_history_prefs',
+    INSIGHTS_CARD_ORDER: '@wealthsnap_insights_card_order',
+    INSIGHTS_SECTION_ORDER: '@wealthsnap_insights_section_order',
 };
 
 // ============= AsyncStorage Helpers (for small data) =============
@@ -570,6 +572,44 @@ export const getHistoryTimeFrame = async (): Promise<string | null> => {
         return data ? JSON.parse(data).timeFrame : null;
     } catch (error) {
         console.error('Failed to get history prefs:', error);
+        return null;
+    }
+};
+
+// ============= Insights Order (AsyncStorage) =============
+
+export const saveInsightsCardOrder = async (order: string[]): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(KEYS.INSIGHTS_CARD_ORDER, JSON.stringify(order));
+    } catch (error) {
+        console.error('Failed to save insights card order:', error);
+    }
+};
+
+export const getInsightsCardOrder = async (): Promise<string[] | null> => {
+    try {
+        const data = await AsyncStorage.getItem(KEYS.INSIGHTS_CARD_ORDER);
+        return data ? JSON.parse(data) : null;
+    } catch (error) {
+        console.error('Failed to get insights card order:', error);
+        return null;
+    }
+};
+
+export const saveInsightsSectionOrder = async (order: string[]): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(KEYS.INSIGHTS_SECTION_ORDER, JSON.stringify(order));
+    } catch (error) {
+        console.error('Failed to save insights section order:', error);
+    }
+};
+
+export const getInsightsSectionOrder = async (): Promise<string[] | null> => {
+    try {
+        const data = await AsyncStorage.getItem(KEYS.INSIGHTS_SECTION_ORDER);
+        return data ? JSON.parse(data) : null;
+    } catch (error) {
+        console.error('Failed to get insights section order:', error);
         return null;
     }
 };
