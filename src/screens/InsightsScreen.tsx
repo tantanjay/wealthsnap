@@ -8,13 +8,14 @@ import { Transaction } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Metrics from '../utils/financialMetrics';
-import { getUserProfile, getCachedTransactions } from '../services/storageService';
 import { getBudgets } from '../services/budgetService';
 import {
     getInsightsCardOrder,
     saveInsightsCardOrder,
     getInsightsSectionOrder,
-    saveInsightsSectionOrder
+    saveInsightsSectionOrder,
+    getCachedTransactions,
+    getUserProfile
 } from '../services/storageService';
 import BottomModal from '../components/common/BottomModal';
 import ReorderModal from '../components/common/ReorderModal';
