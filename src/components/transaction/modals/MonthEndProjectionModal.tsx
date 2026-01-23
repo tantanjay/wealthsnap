@@ -3,28 +3,36 @@ import { View, Text, ScrollView } from 'react-native';
 import BottomModal from '../../common/BottomModal';
 import { useTheme } from '../../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { Transaction } from '../../../types';
 import { formatCurrencyAmount } from '../../../utils/currencyUtils';
-import { getMonthEndProjection } from '../../../utils/financialMetrics';
+import { getMonthEndProjection, ProcessedData } from '../../../utils/financialMetrics';
 
 interface MonthEndProjectionProps {
     visible: boolean;
     onClose: () => void;
-    transactions: Transaction[];
+    processedData: ProcessedData | null;
     currency: string;
 }
 
 const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
     visible,
     onClose,
-    transactions,
+    processedData,
     currency
 }) => {
     const { colors } = useTheme();
 
     const projection = useMemo(() => {
-        return getMonthEndProjection(transactions);
-    }, [transactions]);
+        if (!processedData) return {
+            daysRemaining: 0,
+            progress: 0,
+            currentIncome: 0,
+            projectedIncome: 0,
+            currentExpense: 0,
+            projectedExpense: 0,
+            projectedSavings: 0
+        };
+        return getMonthEndProjection(processedData);
+    }, [processedData]);
 
     const savingsRate = projection.projectedIncome > 0
         ? ((projection.projectedSavings / projection.projectedIncome) * 100)

@@ -5,11 +5,10 @@ import { useTheme } from '../../../context/ThemeContext';
 import { Card } from '../../../components';
 import { CURRENCY_SYMBOLS, formatCompactCurrency } from '../../../utils/currencyUtils';
 import MonthEndProjectionModal from '../modals/MonthEndProjectionModal';
-import { Transaction } from '../../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from '../../common/Skeleton';
 import BottomModal from '../../common/BottomModal';
-import { getMonthlyTrends } from '../../../utils/financialMetrics';
+import { getMonthlyTrends, ProcessedData } from '../../../utils/financialMetrics';
 
 
 interface IncomeAnalysisProps {
@@ -24,11 +23,11 @@ interface IncomeAnalysisProps {
     }[];
     currency: string;
     isPrivacyEnabled: boolean;
-    transactions: Transaction[];
+    processedData: ProcessedData | null;
     isLoading?: boolean;
 }
 
-const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialTrends, categoryBreakdown, currency, isPrivacyEnabled, transactions, isLoading = false }) => {
+const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialTrends, categoryBreakdown, currency, isPrivacyEnabled, processedData, isLoading = false }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
     const [showProjectionModal, setShowProjectionModal] = React.useState(false);
@@ -46,18 +45,19 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
         if (timeRange === '3Y') return 36;
 
         // For 'ALL', calculate months since first transaction
-        if (transactions.length === 0) return 6;
-        const dates = transactions.map(t => new Date(t.date).getTime());
-        const minDate = new Date(Math.min(...dates));
+        if (!processedData || processedData.all.length === 0) return 6;
+        const minTimestamp = processedData.all.reduce((min, t) => Math.min(min, t.timestamp), Infinity);
+        const minDate = new Date(minTimestamp);
         const today = new Date();
         const diff = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth()) + 1;
         return Math.max(diff, 6); // Ensure at least 6 months shown even if data is new
-    }, [timeRange, transactions]);
+    }, [timeRange, processedData]);
 
     // Recalculate trends based on selected time range
     const activeMonthlyTrends = useMemo(() => {
-        return getMonthlyTrends(transactions, monthsToLoad);
-    }, [transactions, monthsToLoad]);
+        if (!processedData) return { labels: [], incomeData: [], expenseData: [] };
+        return getMonthlyTrends(processedData, monthsToLoad);
+    }, [processedData, monthsToLoad]);
 
     const pieData = categoryBreakdown.map((item, index) => ({
         name: item.name,
@@ -237,7 +237,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                     };
                                 });
 
-                                const maxValue = Math.max(...barData.map(b => b.value), 1); // Prevent 0 division
+                                const maxValue = barData.reduce((max, b) => Math.max(max, b.value), 1); // Prevent 0 division
                                 const yMin = 0;
                                 const yMax = maxValue * 1.05; // 5% padding
                                 const yRange = yMax - yMin;
@@ -381,7 +381,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
             <MonthEndProjectionModal
                 visible={showProjectionModal}
                 onClose={() => setShowProjectionModal(false)}
-                transactions={transactions}
+                processedData={processedData}
                 currency={currency}
             />
 

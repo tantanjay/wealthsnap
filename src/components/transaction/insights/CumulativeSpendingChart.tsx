@@ -5,20 +5,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { Card } from '../../../components';
 import BottomModal from '../../common/BottomModal';
-import { Transaction } from '../../../types';
-import { getCumulativeSpendingCurve, getCurrentMonthCumulative, getTransactionsByMonth } from '../../../utils/financialMetrics';
+import { getCumulativeSpendingCurve, getCurrentMonthCumulative, getTransactionsByMonthKey, ProcessedData } from '../../../utils/financialMetrics';
 import { formatCompactCurrency } from '../../../utils/currencyUtils';
 import { Skeleton } from '../../common/Skeleton';
 
 interface CumulativeSpendingChartProps {
-    transactions: Transaction[];
+    processedData: ProcessedData | null;
     currency: string;
     isPrivacyEnabled: boolean;
     isLoading?: boolean;
 }
 
 const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
-    transactions,
+    processedData,
     currency,
     isPrivacyEnabled,
     isLoading = false
@@ -29,11 +28,14 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     const [showInfo, setShowInfo] = useState(false);
 
     const { currentData, avgData, projectionData, insight } = useMemo(() => {
+        if (!processedData) return { currentData: [], avgData: [], projectionData: [], insight: "" };
+
         const today = new Date();
-        const currentMonthTrans = getTransactionsByMonth(transactions, today);
+        const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        const currentMonthTrans = getTransactionsByMonthKey(processedData, monthKey);
 
         const currentData = getCurrentMonthCumulative(currentMonthTrans);
-        const avgData = getCumulativeSpendingCurve(transactions, period);
+        const avgData = getCumulativeSpendingCurve(processedData, period);
 
         // Calculate projection using historical average for future days
         const projectionData: number[] = [];
@@ -77,7 +79,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         }
 
         return { currentData, avgData, projectionData, insight };
-    }, [transactions, period, currency, isPrivacyEnabled]);
+    }, [processedData, period, currency, isPrivacyEnabled]);
 
     const labels = Array.from({ length: 31 }, (_, i) => (i + 1) % 5 === 0 ? (i + 1).toString() : "");
 

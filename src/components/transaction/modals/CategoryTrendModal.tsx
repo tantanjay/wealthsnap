@@ -2,8 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, Dimensions, ScrollView } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
-import { Transaction } from '../../../types';
-import { getCategoryTrend } from '../../../utils/financialMetrics';
+import { getCategoryTrend, ProcessedData } from '../../../utils/financialMetrics';
 import { formatCurrencyAmount } from '../../../utils/currencyUtils';
 import { useTheme } from '../../../context/ThemeContext';
 import BottomModal from '../../common/BottomModal';
@@ -12,7 +11,7 @@ interface CategoryTrendModalProps {
     visible: boolean;
     onClose: () => void;
     category: string;
-    transactions: Transaction[];
+    processedData: ProcessedData | null;
     currency: string;
     grouping?: 'CATEGORY' | 'SUB_CATEGORY';
 }
@@ -21,7 +20,7 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
     visible,
     onClose,
     category,
-    transactions,
+    processedData,
     currency,
     grouping = 'CATEGORY'
 }) => {
@@ -29,8 +28,9 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
     const screenWidth = Dimensions.get('window').width;
 
     const trendData = useMemo(() => {
-        return getCategoryTrend(transactions, category, 6, grouping);
-    }, [transactions, category, grouping]);
+        if (!processedData) return { labels: [], data: [] };
+        return getCategoryTrend(processedData, category, 6, grouping);
+    }, [processedData, category, grouping]);
 
     const chartData = {
         labels: trendData.labels,

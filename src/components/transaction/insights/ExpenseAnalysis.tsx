@@ -11,6 +11,7 @@ import { Budget, checkBudgetStatus, getBudgets } from '../../../services/budgetS
 import { getAllRecurrenceRules } from '../../../services/storageService';
 import { Card } from '../../../components';
 import { formatCompactCurrency } from '../../../utils/currencyUtils';
+import { getCategoryBreakdown, ProcessedData } from '../../../utils/financialMetrics';
 import { Skeleton } from '../../common/Skeleton';
 
 interface ExpenseAnalysisProps {
@@ -23,11 +24,11 @@ interface ExpenseAnalysisProps {
     isPrivacyEnabled: boolean;
     grouping: 'CATEGORY' | 'SUB_CATEGORY';
     onToggleGrouping: (grouping: 'CATEGORY' | 'SUB_CATEGORY') => void;
-    transactions: Transaction[];
+    processedData: ProcessedData | null;
     isLoading?: boolean;
 }
 
-const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, currency, isPrivacyEnabled, grouping, onToggleGrouping, transactions, isLoading = false }) => {
+const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, currency, isPrivacyEnabled, grouping, onToggleGrouping, processedData, isLoading = false }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
     const [budgets, setBudgets] = React.useState<Budget[]>([]);
@@ -290,7 +291,7 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                 visible={selectedCategory !== null}
                 onClose={() => setSelectedCategory(null)}
                 category={selectedCategory || ''}
-                transactions={transactions}
+                processedData={processedData}
                 currency={currency}
                 grouping={grouping}
             />

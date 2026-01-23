@@ -46,8 +46,6 @@ const InsightsScreen = ({ navigation }: any) => {
     const [isSectionReorderVisible, setIsSectionReorderVisible] = useState(false);
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [processedData, setProcessedData] = useState<Metrics.ProcessedData | null>(null);
-
 
     const [data, setData] = useState({
         netCashFlow: 0,
@@ -76,17 +74,11 @@ const InsightsScreen = ({ navigation }: any) => {
         try {
             const profile = await getUserProfile();
             if (profile?.currency) setCurrency(profile.currency);
-
-            // Consolidate all independent data fetching early
-            const [allTransactions, allBudgets] = await Promise.all([
-                getCachedTransactions(),
-                getBudgets()
-            ]);
-
+            const allTransactions = await getCachedTransactions();
             setTransactions(allTransactions);
 
             // Explicitly calculate metrics with the new data
-            await calculateMetrics(allTransactions, allBudgets);
+            await calculateMetrics(allTransactions);
 
             // Load orders
             const savedCardOrder = await getInsightsCardOrder();
@@ -101,40 +93,32 @@ const InsightsScreen = ({ navigation }: any) => {
         }
     };
 
-    const calculateMetrics = useCallback(async (currentTransactions: Transaction[] = transactions, budgetsData?: any[]) => {
-        if (!currentTransactions || currentTransactions.length === 0) return;
-
-        // 1. PROCESS DATA ONCE ($O(N)$ once)
-        const processed = Metrics.processTransactions(currentTransactions);
-
+    const calculateMetrics = useCallback(async (currentTransactions: Transaction[] = transactions) => {
         const today = new Date();
-        const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-        const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
+        const currentMonthTrans = Metrics.getTransactionsByMonth(currentTransactions, today);
 
-        // 2. GET SUBSETS (Zero cost lookup)
-        const currentMonthTrans = Metrics.getTransactionsByMonthKey(processed, monthKey);
-        const lastMonthTrans = Metrics.getTransactionsByMonthKey(processed, lastMonthKey);
+        const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastMonthTrans = Metrics.getTransactionsByMonth(currentTransactions, lastMonthDate);
 
         // Core Metrics
         const totals = Metrics.calculateTotals(currentMonthTrans);
         const savingsRate = Metrics.calculateSavingsRate(totals.income, totals.expense);
-        const burnRate = Metrics.calculateBurnRate(processed);
+        const burnRate = Metrics.calculateBurnRate(currentTransactions);
 
         // Breakdowns
         const incomeBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'INCOME', 'SUB_CATEGORY');
         const expenseBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', expenseGrouping);
 
         // Trends
-        const monthlyTrends = Metrics.getMonthlyTrends(processed, 6);
+        const monthlyTrends = Metrics.getMonthlyTrends(currentTransactions, 6);
 
         // Comparison
         const lastMonthTotals = Metrics.calculateTotals(lastMonthTrans);
-        const average6Month = Metrics.calculateBurnRate(processed, 6);
-        const average1Year = Metrics.calculateBurnRate(processed, 12);
+        const average6Month = Metrics.calculateBurnRate(currentTransactions, 6);
+        const average1Year = Metrics.calculateBurnRate(currentTransactions, 12);
 
         // Anomalies
-        const anomalies = Metrics.detectAnomalies(processed);
+        const anomalies = Metrics.detectAnomalies(currentMonthTrans, currentTransactions);
 
         // NEW: Calculate current balance (all-time income - all-time expense)
         const allTimeTotals = Metrics.calculateTotals(currentTransactions);
@@ -142,10 +126,7 @@ const InsightsScreen = ({ navigation }: any) => {
 
         // NEW: Budget Performance (always use SUB_CATEGORY for budgets)
         const specificCategoryBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'SUB_CATEGORY');
-
-        // Use provided budgets or fetch if missing (fallback)
-        const budgets = budgetsData || await getBudgets();
-
+        const budgets = await getBudgets();
         let budgetPerformance = 0;
         if (budgets.length > 0) {
             // Calculate total spent in budgeted categories using the specific breakdown
@@ -176,7 +157,7 @@ const InsightsScreen = ({ navigation }: any) => {
             expenseBreakdown,
             currentMonthExpense: totals.expense,
             lastMonthExpense: lastMonthTotals.expense,
-            averageExpense: Metrics.calculateBurnRate(processed, 3), // 3-month average
+            averageExpense: Metrics.calculateBurnRate(currentTransactions, 3), // 3-month average
             average6Month,
             average1Year,
             anomalies,
@@ -186,7 +167,7 @@ const InsightsScreen = ({ navigation }: any) => {
             topExpenseCategory,
             daysInMonth
         });
-        setProcessedData(processed);
+        // Removed setIsLoading(false) from here since it's now handled by fetchTransactions
     }, [transactions, expenseGrouping]);
 
     useFocusEffect(
@@ -258,7 +239,7 @@ const InsightsScreen = ({ navigation }: any) => {
                         component: (
                             <CumulativeSpendingChart
                                 key="cumulative"
-                                processedData={processedData}
+                                transactions={transactions}
                                 currency={currency}
                                 isPrivacyEnabled={isPrivacyEnabled}
                                 isLoading={isLoading}
@@ -291,7 +272,7 @@ const InsightsScreen = ({ navigation }: any) => {
                                 isPrivacyEnabled={isPrivacyEnabled}
                                 grouping={expenseGrouping}
                                 onToggleGrouping={setExpenseGrouping}
-                                processedData={processedData}
+                                transactions={transactions}
                                 isLoading={isLoading}
                             />
                         )
@@ -305,7 +286,7 @@ const InsightsScreen = ({ navigation }: any) => {
                                 categoryBreakdown={data.incomeBreakdown}
                                 currency={currency}
                                 isPrivacyEnabled={isPrivacyEnabled}
-                                processedData={processedData}
+                                transactions={transactions}
                                 isLoading={isLoading}
                             />
                         )
@@ -315,7 +296,7 @@ const InsightsScreen = ({ navigation }: any) => {
                         component: (
                             <SavingsRateTrend
                                 key="savings"
-                                processedData={processedData}
+                                transactions={transactions}
                                 privacyMode={isPrivacyEnabled}
                                 isLoading={isLoading}
                             />

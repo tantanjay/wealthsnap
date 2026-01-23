@@ -5,18 +5,17 @@ import { Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { Card } from '../../../components';
-import { Transaction } from '../../../types';
-import { getSavingsRateTrend } from '../../../utils/financialMetrics';
+import { getSavingsRateTrend, ProcessedData } from '../../../utils/financialMetrics';
 import { Skeleton } from '../../common/Skeleton';
 import BottomModal from '../../common/BottomModal';
 
 interface SavingsRateTrendProps {
-    transactions: Transaction[];
+    processedData: ProcessedData | null;
     privacyMode: boolean;
     isLoading?: boolean;
 }
 
-const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, privacyMode, isLoading = false }) => {
+const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ processedData, privacyMode, isLoading = false }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
@@ -30,16 +29,17 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         if (timeRange === '3Y') return 36;
 
         // For 'ALL', calculate months since first transaction
-        if (transactions.length === 0) return 6;
-        const dates = transactions.map(t => new Date(t.date).getTime());
-        const minDate = new Date(Math.min(...dates));
+        if (!processedData || processedData.all.length === 0) return 6;
+        const minTimestamp = processedData.all.reduce((min, t) => Math.min(min, t.timestamp), Infinity);
+        const minDate = new Date(minTimestamp);
         const today = new Date();
         const diff = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth()) + 1;
         return Math.max(diff, 6); // Ensure at least 6 months shown even if data is new
-    }, [timeRange, transactions]);
+    }, [timeRange, processedData]);
 
     const savingsData = useMemo(() => {
-        const data = getSavingsRateTrend(transactions, monthsToLoad);
+        if (!processedData) return { labels: [], datasets: [{ data: [], color: () => '', strokeWidth: 0 }], rawData: [] };
+        const data = getSavingsRateTrend(processedData, monthsToLoad);
 
         // Optimize labels for large datasets (prevent overcrowding)
         const labels = data.map((d, index) => {
@@ -65,7 +65,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
             }],
             rawData: data
         };
-    }, [transactions, monthsToLoad, colors.primary]);
+    }, [processedData, monthsToLoad, colors.primary]);
 
     const chartConfig = {
         backgroundGradientFrom: colors.surface,

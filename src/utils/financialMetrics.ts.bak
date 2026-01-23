@@ -1,46 +1,10 @@
 import { Transaction, TransactionType } from '../types';
 import { getCategoryGroup } from '../constants/categories';
 
-export interface ProcessedTransaction extends Transaction {
-    timestamp: number;
-    monthKey: string; // YYYY-MM
-}
-
-export interface ProcessedData {
-    all: ProcessedTransaction[];
-    byMonth: Map<string, ProcessedTransaction[]>;
-}
-
-export const processTransactions = (transactions: Transaction[]): ProcessedData => {
-    const byMonth = new Map<string, ProcessedTransaction[]>();
-    const all = transactions.map(t => {
-        const date = new Date(t.date);
-        const timestamp = date.getTime();
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-
-        const pt: ProcessedTransaction = { ...t, timestamp, monthKey };
-
-        if (!byMonth.has(monthKey)) {
-            byMonth.set(monthKey, []);
-        }
-        byMonth.get(monthKey)!.push(pt);
-
-        return pt;
-    });
-
-    return { all, byMonth };
-};
-
-export const getTransactionsByMonthKey = (data: ProcessedData, monthKey: string) => {
-    return data.byMonth.get(monthKey) || [];
-};
-
 export const getTransactionsByMonth = (transactions: Transaction[], date: Date = new Date()) => {
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     return transactions.filter(t => {
         const tDate = new Date(t.date);
-        const tKey = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}`;
-        return tKey === monthKey;
+        return tDate.getMonth() === date.getMonth() && tDate.getFullYear() === date.getFullYear();
     });
 };
 
@@ -65,8 +29,8 @@ export const calculateSavingsRate = (income: number, expense: number) => {
     return (savings / income) * 100;
 };
 
-export const getSavingsRateTrend = (data: ProcessedData, months: number = 6) => {
-    const trends = getMonthlyTrends(data, months);
+export const getSavingsRateTrend = (transactions: Transaction[], months: number = 6) => {
+    const trends = getMonthlyTrends(transactions, months);
 
     return trends.labels.map((month, index) => {
         const income = trends.incomeData[index];
@@ -93,19 +57,20 @@ export const getTopTransactions = (transactions: Transaction[], limit: number = 
         .slice(0, limit);
 };
 
-export const getCategoryTrend = (data: ProcessedData, category: string, months: number = 6, grouping: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
+export const getCategoryTrend = (transactions: Transaction[], category: string, months: number = 6, grouping: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
     const result = {
         labels: [] as string[],
         data: [] as number[]
     };
 
+
+
     const today = new Date();
     for (let i = months - 1; i >= 0; i--) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         result.labels.push(d.toLocaleString('default', { month: 'short' }));
 
-        const monthlyTransactions = data.byMonth.get(monthKey) || [];
+        const monthlyTransactions = getTransactionsByMonth(transactions, d);
         const categoryTotal = monthlyTransactions
             .filter(t => {
                 if (grouping === 'CATEGORY') {
@@ -126,10 +91,10 @@ export const getCategoryTrend = (data: ProcessedData, category: string, months: 
     return result;
 };
 
-export const getMonthEndProjection = (data: ProcessedData) => {
+export const getMonthEndProjection = (transactions: Transaction[]) => {
     const today = new Date();
-    const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-    const monthlyTransactions = data.byMonth.get(currentMonthKey) || [];
+    const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthlyTransactions = getTransactionsByMonth(transactions, currentMonth);
 
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const currentDay = today.getDate();
@@ -150,10 +115,12 @@ export const getMonthEndProjection = (data: ProcessedData) => {
     let totalHistoricalExpenseEnd = 0;
     let totalHistoricalExpenseToDate = 0;
 
+    // We only care about Expense for "Smart" usually, as Income is often irregular (bi-weekly)
+    // making daily-pace less useful, but we can try basic pacing for income too.
+
     for (let i = 1; i <= 6; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        const histTrans = data.byMonth.get(monthKey) || [];
+        const histTrans = getTransactionsByMonth(transactions, d);
         if (histTrans.length === 0) continue; // Skip empty months
 
         const histTotals = calculateTotals(histTrans);
@@ -200,26 +167,40 @@ export const getMonthEndProjection = (data: ProcessedData) => {
 
 
 
-export const calculateBurnRate = (data: ProcessedData, monthsBack: number = 6) => {
-    if (data.all.length === 0) return 0;
+export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: number = 6) => {
+    if (allTransactions.length === 0) return 0;
 
     const today = new Date();
+    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    // Find the earliest transaction date to determine account age
+    // We treat the "start" as the 1st of the month of the first transaction
+    const firstTxDate = allTransactions.reduce((earliest, t) => {
+        const tDate = new Date(t.date);
+        return tDate < earliest ? tDate : earliest;
+    }, new Date());
+
+    const firstTxMonthStart = new Date(firstTxDate.getFullYear(), firstTxDate.getMonth(), 1);
+
+    // Calculate months since start (inclusive of current month)
+    const monthDiff = (currentMonthStart.getFullYear() - firstTxMonthStart.getFullYear()) * 12 +
+        (currentMonthStart.getMonth() - firstTxMonthStart.getMonth()) + 1;
+
+    // The effective window is the smaller of: requested history OR actual history depth
+    // We ensure it's at least 1 month
+    const effectiveMonths = Math.max(1, Math.min(monthsBack, monthDiff));
+
     let totalExpense = 0;
-    let monthsFound = 0;
 
-    for (let i = 0; i < monthsBack; i++) {
+    // Sum expenses for the effective window
+    for (let i = 0; i < effectiveMonths; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        const monthlyTransactions = data.byMonth.get(monthKey) || [];
-
-        if (monthlyTransactions.length > 0 || i === 0) { // Include current month or any month with data
-            const { expense } = calculateTotals(monthlyTransactions);
-            totalExpense += expense;
-            monthsFound++;
-        }
+        const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
+        const { expense } = calculateTotals(monthlyTransactions);
+        totalExpense += expense;
     }
 
-    return monthsFound > 0 ? totalExpense / monthsFound : 0;
+    return totalExpense / effectiveMonths;
 };
 
 export const getCategoryBreakdown = (transactions: Transaction[], type: TransactionType, groupBy: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
@@ -259,7 +240,7 @@ export const getCategoryBreakdown = (transactions: Transaction[], type: Transact
         .sort((a, b) => b.amount - a.amount);
 };
 
-export const getMonthlyTrends = (data: ProcessedData, monthsBack: number = 6) => {
+export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: number = 6) => {
     const result = {
         labels: [] as string[],
         incomeData: [] as number[],
@@ -269,10 +250,9 @@ export const getMonthlyTrends = (data: ProcessedData, monthsBack: number = 6) =>
     const today = new Date();
     for (let i = monthsBack - 1; i >= 0; i--) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         result.labels.push(d.toLocaleString('default', { month: 'short' }));
 
-        const monthlyTransactions = data.byMonth.get(monthKey) || [];
+        const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
         const { income, expense } = calculateTotals(monthlyTransactions);
         result.incomeData.push(income);
         result.expenseData.push(expense);
@@ -282,32 +262,29 @@ export const getMonthlyTrends = (data: ProcessedData, monthsBack: number = 6) =>
 
 // --- PULSE CHART METRICS ---
 
-export const getCumulativeSpendingCurve = (data: ProcessedData, monthsBack: number): number[] => {
+export const getCumulativeSpendingCurve = (allTransactions: Transaction[], monthsBack: number): number[] => {
     const today = new Date();
+    // 1. Identify which completed months we are looking at
+    // We want the average of the last X *completed* months, OR we can include current month if careful.
+    // Usually "Average" means "Historical Average", so let's skip current month.
     let count = 0;
     const dailySums: number[] = new Array(31).fill(0);
 
     for (let i = 1; i <= monthsBack; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        const monthlyTrans = data.byMonth.get(monthKey) || [];
+        const monthlyTrans = getTransactionsByMonth(allTransactions, d);
         if (monthlyTrans.length === 0) continue;
 
+        // Sum up this month's daily usage
         const daysInThisMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
         let monthRunningTotal = 0;
 
-        // Group month's transactions by day once to avoid inner loop filter
-        const byDay = new Map<number, number>();
-        monthlyTrans.forEach(t => {
-            if (t.type === 'EXPENSE') {
-                const day = new Date(t.date).getDate();
-                byDay.set(day, (byDay.get(day) || 0) + t.amount);
-            }
-        });
-
+        // We only up to day 28/30/31 depending on month length, but we fill our array to 31
         for (let day = 1; day <= 31; day++) {
+            // If day exceeds month length, just carry over the last value (cumulative stays flat)
             if (day <= daysInThisMonth) {
-                const daySum = byDay.get(day) || 0;
+                const daysTrans = monthlyTrans.filter(t => new Date(t.date).getDate() === day && t.type === 'EXPENSE');
+                const daySum = daysTrans.reduce((acc, t) => acc + t.amount, 0);
                 monthRunningTotal += daySum;
             }
             dailySums[day - 1] += monthRunningTotal;
@@ -315,7 +292,9 @@ export const getCumulativeSpendingCurve = (data: ProcessedData, monthsBack: numb
         count++;
     }
 
-    if (count === 0) return [];
+    if (count === 0) return []; // No history
+
+    // Average the sums
     return dailySums.map(sum => sum / count);
 };
 
@@ -325,17 +304,9 @@ export const getCurrentMonthCumulative = (currentMonthTransactions: Transaction[
     const result: number[] = [];
     let runningTotal = 0;
 
-    // Optimize by grouping by day first
-    const byDay = new Map<number, number>();
-    currentMonthTransactions.forEach(t => {
-        if (t.type === 'EXPENSE') {
-            const day = new Date(t.date).getDate();
-            byDay.set(day, (byDay.get(day) || 0) + t.amount);
-        }
-    });
-
     for (let day = 1; day <= currentDay; day++) {
-        const daySum = byDay.get(day) || 0;
+        const daysTrans = currentMonthTransactions.filter(t => new Date(t.date).getDate() === day && t.type === 'EXPENSE');
+        const daySum = daysTrans.reduce((acc, t) => acc + t.amount, 0);
         runningTotal += daySum;
         result.push(runningTotal);
     }
@@ -348,47 +319,37 @@ export interface Anomaly {
     severity: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
-/**
- * Optimized anomaly detection
- */
-export const detectAnomalies = (data: ProcessedData): Anomaly[] => {
+export const detectAnomalies = (currentMonthTransactions: Transaction[], allTransactions: Transaction[]): Anomaly[] => {
     const anomalies: Anomaly[] = [];
-    const today = new Date();
-    const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-    const currentMonthTransactions = data.byMonth.get(currentMonthKey) || [];
 
     // Only detect anomalies if we have enough historical data
-    if (data.all.length < 10) {
+    if (allTransactions.length < 10) {
         return anomalies; // Not enough data to detect meaningful patterns
     }
 
-    // 1. Pre-process history into category buckets ($O(N)$ once)
-    const historyByCategory = new Map<string, ProcessedTransaction[]>();
-    data.all.forEach(t => {
-        if (t.monthKey === currentMonthKey || t.type !== 'EXPENSE') return;
+    const historyTransactions = allTransactions.filter(t => !currentMonthTransactions.includes(t));
 
-        if (!historyByCategory.has(t.category)) {
-            historyByCategory.set(t.category, []);
-        }
-        historyByCategory.get(t.category)!.push(t);
-    });
-
-    // 2. Check current month breakdown ($O(M)$ where M = categories)
+    // Check for significant spending spikes (50%+ increase vs historical average)
     const currentBreakdown = getCategoryBreakdown(currentMonthTransactions, 'EXPENSE');
 
     currentBreakdown.forEach(item => {
-        const catHistory = historyByCategory.get(item.name) || [];
+        // Only check categories that exist in history
+        const catHistory = historyTransactions.filter(t => t.category === item.name && t.type === 'EXPENSE');
         if (catHistory.length < 3) return; // Need at least 3 historical transactions
 
         // Calculate historical average
         const historicalTotal = catHistory.reduce((sum, t) => sum + t.amount, 0);
+
+        // Prevent division by zero if historicalTotal is 0
         if (historicalTotal === 0) return;
 
         const historicalAverage = historicalTotal / catHistory.length;
+
+        // Flag if current month is 50% higher than average AND the difference is significant
         const percentIncrease = ((item.amount - historicalAverage) / historicalAverage) * 100;
         const difference = item.amount - historicalAverage;
 
-        if (percentIncrease > 50 && difference > 1000) {
+        if (percentIncrease > 50 && difference > 1000) { // 50% increase AND at least 1000 difference
             anomalies.push({
                 type: 'SPIKE',
                 message: `${item.name} spending is ${percentIncrease.toFixed(0)}% higher than usual`,
