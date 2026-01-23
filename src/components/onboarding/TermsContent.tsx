@@ -37,8 +37,8 @@ const TermsContent: React.FC = () => {
             <Text style={styles.termsHeading}>2. PRIVACY POLICY</Text>
             <Text style={styles.termsText}>
                 <Text style={styles.bold}>2.1 Hybrid Data Encryption:</Text> We prioritize both privacy and performance. <Text style={styles.bold}>Sensitive Data</Text> (e.g., Transaction Amounts, Notes, Receipts) is encrypted at rest using AES-256. <Text style={styles.bold}>Metadata</Text> (e.g., Dates, Categories, Transaction Type) is stored in plain text to ensure the app remains fast and searchable.{'\n\n'}
-                <Text style={styles.bold}>2.2 Camera and Images:</Text> We request access to your device&apos;s camera and photo library to allow you to take photos of receipts or financial documents for analysis. Images are processed temporarily to extract insights and are sent securely to Google Gemini API for analysis. They are not permanently stored on your device.{'\n\n'}
-                <Text style={styles.bold}>2.3 No Data Collection:</Text> We do not collect, sell, share, or transfer any of your personal data to third parties. This App does not include any analytics, tracking, or telemetry services. Your privacy is protected by the App&apos;s local-only storage architecture.
+                <Text style={styles.bold}>2.2 Camera and Images:</Text> We request access to your device&apos;s camera and photo library to allow you to take photos of receipts or financial documents for analysis. Images are processed temporarily to extract insights and are sent securely to Google Gemini API for analysis. They are not permanently stored on your device. Users are encouraged to review their own Google privacy settings, as the use of a personal API key falls under the user&apos;s individual agreement with Google.{'\n\n'}
+                <Text style={styles.bold}>2.3 Data Transit (No Internal Collection):</Text> The Developer does not collect, sell, share, or store your personal data on external servers. However, for AI features to work, data you select is transmitted securely to Google Gemini as described in Section 2.2.
             </Text>
 
             <Text style={styles.termsHeading}>3. THIRD-PARTY SERVICES</Text>
@@ -59,7 +59,8 @@ const TermsContent: React.FC = () => {
             <Text style={styles.termsHeading}>5. SECURITY & DATA RETENTION</Text>
             <Text style={styles.termsText}>
                 <Text style={styles.bold}>5.1 Data Loss:</Text> Data is stored locally. If you delete the App, lose your device, or forget your PIN, your data is gone permanently. Regular backups (via the in-app Backup feature) are your sole responsibility.{'\n\n'}
-                <Text style={styles.bold}>5.2 No Password Recovery:</Text> There is NO &quot;Forgot Password&quot; or recovery mechanism for your custom PIN. The Developer cannot &quot;reset&quot; your PIN or recover your encrypted database.
+                <Text style={styles.bold}>5.2 No Password Recovery:</Text> There is NO &quot;Forgot Password&quot; or recovery mechanism for your custom PIN. The Developer cannot &quot;reset&quot; your PIN or recover your encrypted database.{'\n\n'}
+                <Text style={styles.bold}>5.3 Data Deletion:</Text> You can delete all data at any time by clearing the App&apos;s cache/data in device settings or by uninstalling the App. Since no data is stored on developer servers, this action is permanent and irreversible.
             </Text>
 
             <Text style={styles.termsHeading}>6. DISCLAIMER OF WARRANTIES</Text>
@@ -94,7 +95,15 @@ const TermsContent: React.FC = () => {
                 If any provision of these Terms is held to be unenforceable or invalid, such provision will be changed and interpreted to accomplish the objectives of such provision to the greatest extent possible.
             </Text>
 
-            <Text style={styles.termsHeading}>12. CONTACT US</Text>
+            <Text style={styles.termsHeading}>12. DEVICE PERMISSIONS</Text>
+            <Text style={styles.termsText}>
+                The App may request the following permissions on your device:{'\n'}
+                • <Text style={styles.bold}>Camera & Photos:</Text> For receipt analysis.{'\n'}
+                • <Text style={styles.bold}>Biometrics:</Text> For secure app access (FaceID/Fingerprint).{'\n'}
+                • <Text style={styles.bold}>Storage:</Text> For saving your encrypted database.
+            </Text>
+
+            <Text style={styles.termsHeading}>13. CONTACT US</Text>
             <Text style={styles.termsText}>
                 If you have any questions or suggestions, do not hesitate to contact us at:{'\n'}
                 Email: <Text style={styles.bold}>cjs.dev.studio@gmail.com</Text>
