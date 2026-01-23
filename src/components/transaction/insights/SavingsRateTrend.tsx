@@ -294,7 +294,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                 <View style={{ marginBottom: 16 }}>
                     <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📈 Reading the Chart</Text>
                     <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 12 }}>
-                        The line chart shows your savings rate trend over time. Here's what it means:
+                        The line chart shows your savings rate trend over time. Here&apos;s what it means:
                     </Text>
 
                     {/* Visual examples side by side */}
@@ -336,7 +336,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                     <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
                             • <Text style={{ fontWeight: 'bold' }}>Zero Line:</Text> The horizontal line in the middle{"\n"}
-                            • <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>Green Line:</Text> Above zero = You're saving{"\n"}
+                            • <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>Green Line:</Text> Above zero = You&apos;re saving{"\n"}
                             • <Text style={{ color: '#F44336', fontWeight: 'bold' }}>Red Line:</Text> Below zero = Spending more than earning{"\n"}
                             • <Text style={{ fontWeight: 'bold' }}>Dots:</Text> Each represents one month{"\n"}
                             • <Text style={{ fontWeight: 'bold' }}>Higher is Better:</Text> More savings = further above zero
@@ -378,7 +378,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
 
                 {/* Positive/Negative Format Explanation */}
                 <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📈 Understanding "8 / 5" Format</Text>
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📈 Understanding &quot;8 / 5&quot; Format</Text>
                     <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 8 }}>
                         This shows <Text style={{ fontWeight: 'bold' }}>two separate numbers</Text>, not division:
                     </Text>

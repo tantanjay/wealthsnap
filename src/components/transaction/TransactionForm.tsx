@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { Button, Card } from '..';
 import { saveTransaction, saveRecurrenceRule } from '../../services/storageService';
@@ -28,7 +27,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 }) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
-    const insets = useSafeAreaInsets();
 
     // Form state
     const [type, setType] = useState<TransactionType>(initialTransaction?.type || transactionType);
