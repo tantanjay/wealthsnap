@@ -440,7 +440,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
             <View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Savings Rate Trend</Text>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Savings Rate</Text>
                         <TouchableOpacity
                             onPress={() => setShowInfoModal(true)}
                             style={{
@@ -468,7 +468,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         <View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Savings Rate Trend</Text>
+                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Savings Rate</Text>
                     <TouchableOpacity onPress={() => setShowInfoModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
