@@ -426,7 +426,7 @@ const InsightsScreen = ({ navigation }: any) => {
                     { id: 'comparison', label: 'Spending Comparison' },
                     { id: 'expense', label: 'Expense Analysis' },
                     { id: 'income', label: 'Income Analysis' },
-                    { id: 'savings', label: 'Savings Rate Trend' },
+                    { id: 'savings', label: 'Savings Rate' },
                     { id: 'alerts', label: 'Smart Alerts' }
                 ].sort((a, b) => {
                     if (!sectionOrder || sectionOrder.length === 0) return 0;

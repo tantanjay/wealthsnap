@@ -155,22 +155,25 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                 {/* Tabs */}
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     {avgData.length > 0 && (
-                        <View style={{ flexDirection: 'row', backgroundColor: colors.background, borderRadius: 8, padding: 2 }}>
+                        <View style={{ flexDirection: 'row', backgroundColor: colors.border + '40', borderRadius: 8, padding: 2 }}>
                             {[3, 6, 12].map((m) => (
                                 <TouchableOpacity
                                     key={m}
                                     onPress={() => setPeriod(m as any)}
                                     style={{
                                         paddingVertical: 4,
-                                        paddingHorizontal: 8,
+                                        paddingHorizontal: 12,
                                         backgroundColor: period === m ? colors.surface : 'transparent',
                                         borderRadius: 6,
-                                        borderWidth: period === m ? 1 : 0,
-                                        borderColor: colors.border
+                                        elevation: period === m ? 1 : 0,
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: 1 },
+                                        shadowOpacity: period === m ? 0.1 : 0,
+                                        shadowRadius: 1
                                     }}
                                 >
                                     <Text style={{
-                                        color: period === m ? colors.text : colors.textSecondary,
+                                        color: period === m ? colors.primary : colors.textSecondary,
                                         fontSize: 12,
                                         fontWeight: period === m ? '600' : '400'
                                     }}>{m}M</Text>
