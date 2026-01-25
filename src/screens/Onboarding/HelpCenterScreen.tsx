@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, BackHandler, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../styles/theme';

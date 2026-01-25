@@ -263,7 +263,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
             >
                 <View style={{ padding: 20, paddingBottom: 40 }}>
                     <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
-                        Budget Health shows what percentage of your total budgets you've spent this month.
+                        Budget Health shows what percentage of your total budgets you&apos;ve spent this month.
                     </Text>
                     <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
@@ -296,7 +296,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
             >
                 <View style={{ padding: 20, paddingBottom: 40 }}>
                     <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
-                        Daily Average shows how much you're spending per day on average this month.
+                        Daily Average shows how much you&apos;re spending per day on average this month.
                     </Text>
                     <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
@@ -312,7 +312,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                             • Set daily spending goals for better control
                         </Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                            • Identify if you're spending more on certain days
+                            • Identify if you&apos;re spending more on certain days
                         </Text>
                     </View>
                     <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
