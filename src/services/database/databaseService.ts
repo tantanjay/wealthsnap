@@ -1,22 +1,37 @@
 import * as SQLite from 'expo-sqlite';
 import { createTables, setDatabaseVersion, getDatabaseVersion, DATABASE_NAME, DATABASE_VERSION } from './databaseSchema';
 
-let databaseInstance: SQLite.SQLiteDatabase | null = null;
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+let databaseInstance: SQLite.SQLiteDatabase | null = null; // Keep for synchronous checks if needed, or legacy refs
 
 /**
  * Get or create database connection
+ * Uses a singleton promise pattern to ensure initialization only happens once
+ * and all callers wait for it to complete.
  */
-export const getDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
-    if (databaseInstance) {
-        return databaseInstance;
+export const getDatabase = (): Promise<SQLite.SQLiteDatabase> => {
+    if (dbPromise) {
+        return dbPromise;
     }
 
-    databaseInstance = await SQLite.openDatabaseAsync(DATABASE_NAME);
+    dbPromise = (async () => {
+        try {
+            const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
 
-    // Initialize tables
-    await initializeDatabase(databaseInstance);
+            // Initialize tables - this must complete before we return the db
+            await initializeDatabase(db);
 
-    return databaseInstance;
+            databaseInstance = db;
+            return db;
+        } catch (error) {
+            // Reset promise on failure so we can try again
+            dbPromise = null;
+            console.error('[Database] Failed to initialize:', error);
+            throw error;
+        }
+    })();
+
+    return dbPromise;
 };
 
 /**
@@ -61,10 +76,16 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
  * Close database connection
  */
 export const closeDatabase = async (): Promise<void> => {
-    if (databaseInstance) {
-        await databaseInstance.closeAsync();
-        databaseInstance = null;
+    if (dbPromise) {
+        try {
+            const db = await dbPromise;
+            await db.closeAsync();
+        } catch (error) {
+            console.error('[Database] Error closing database:', error);
+        }
     }
+    dbPromise = null;
+    databaseInstance = null;
 };
 
 /**
