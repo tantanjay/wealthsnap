@@ -11,8 +11,18 @@ export const SECURE_KEYS = {
 
 export const ASYNC_KEYS = {
     USER_PROFILE: '@wealthsnap_user_profile',
-    HISTORY_SCREEN: {
-        PREFERENCE: '@wealthsnap_history_prefs'
+    SECURITY: {
+        PRIVACY_ENABLED: '@wealthsnap_privacy_enabled',
+        TIMEOUT_SETTING: '@wealthsnap_security_timeout',
+        LAST_ACTIVE: '@wealthsnap_security_last_active',
+    },
+    AI: {
+        PROVIDER: '@wealthsnap_ai_provider',
+        MODEL_ID: '@wealthsnap_ai_model_id',
+    },
+    ONBOARDING: {
+        COMPLETE: '@wealthsnap_onboarding_complete',
+        ACCEPTED_TERMS_VERSION: '@wealthsnap_accepted_terms_version',
     },
     HOME_SCREEN: {
         DISPLAY_MODE: '@wealthsnap_finance_display_mode',
@@ -21,17 +31,8 @@ export const ASYNC_KEYS = {
         CARD_ORDER: '@wealthsnap_insights_card_order',
         SECTION_ORDER: '@wealthsnap_insights_section_order',
     },
-    ONBOARDING: {
-        COMPLETE: '@wealthsnap_onboarding_complete',
-        ACCEPTED_TERMS_VERSION: '@wealthsnap_accepted_terms_version',
-    },
-    SECURITY: {
-        PRIVACY_ENABLED: '@wealthsnap_privacy_enabled',
-        TIMEOUT_SETTING: '@wealthsnap_security_timeout',
-        LAST_ACTIVE: '@wealthsnap_security_last_active',
-    },
-    AI: {
-        MODEL_ID: '@wealthsnap_ai_model_id',
+    HISTORY_SCREEN: {
+        PREFERENCE: '@wealthsnap_history_prefs'
     }
 };
 
