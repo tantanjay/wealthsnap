@@ -10,7 +10,7 @@ import SupportModal from '../components/profile/settings/SupportModal';
 import { getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
 import { RecurrenceRule } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
-import OnboardingGuide from './onboarding/OnboardingGuideScreen';
+import HelpCenterScreen from './onboarding/HelpCenterScreen';
 import appJson from '../../app.json';
 import SecurityCard from '../components/profile/SecurityCard';
 import DataManagementCard from '../components/profile/data/DataManagementCard';
@@ -221,16 +221,16 @@ const ProfileScreen = ({ navigation }: any) => {
                     </View>
                 </Card>
 
-                {/* Help & Guide Card */}
+                {/* Help & Documentation  */}
                 <Card style={{ marginBottom: 16, backgroundColor: colors.info, padding: 20 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                         <View style={[styles.headerIcon, { backgroundColor: 'rgba(255,255,255,0.2)', marginRight: 12 }]}>
                             <Ionicons name="book" size={22} color={colors.white} />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={[styles.cardTitle, { color: colors.white }]}>Help & Guide</Text>
+                            <Text style={[styles.cardTitle, { color: colors.white }]}>Help Center & Docs</Text>
                             <Text style={{ color: colors.white, opacity: 0.9, fontSize: 13, marginTop: 2 }}>
-                                Master your personal finance
+                                How to use WealthSnap & Math
                             </Text>
                         </View>
                     </View>
@@ -239,8 +239,8 @@ const ProfileScreen = ({ navigation }: any) => {
                         style={styles.aiButton}
                         onPress={() => setShowGuide(true)}
                     >
-                        <Ionicons name="book-outline" size={18} color={colors.info} />
-                        <Text style={[styles.aiButtonText, { color: colors.info }]}>View Onboarding Guide</Text>
+                        <Ionicons name="school-outline" size={18} color={colors.info} />
+                        <Text style={[styles.aiButtonText, { color: colors.info }]}>Open Help Center</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -388,11 +388,19 @@ const ProfileScreen = ({ navigation }: any) => {
                 onClose={() => setShowSupportModal(false)}
             />
 
-            {/* Guide Modal */}
-            <Modal visible={showGuide} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowGuide(false)}>
-                <OnboardingGuide onFinish={() => setShowGuide(false)} mode="view" />
-            </Modal>
-        </ScreenWrapper>
+            {/* Help Center Modal */}
+            <BottomModal
+                visible={showGuide}
+                onClose={() => setShowGuide(false)}
+                maxHeight="90%"
+                title=""
+                style={{ padding: 0 }} // Remove default padding to let screen handle it
+            >
+                <View style={{ height: '100%' }}>
+                    <HelpCenterScreen onFinish={() => setShowGuide(false)} mode="view" />
+                </View>
+            </BottomModal>
+        </ScreenWrapper >
 
     );
 };
