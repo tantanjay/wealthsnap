@@ -9,7 +9,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Reminder } from '../../types';
 import { handleReminderNotificationAction } from '../../services/reminderService';
-import { Button } from '../index';
 import { useTheme } from '../../context/ThemeContext';
 import { useAlert } from '../../context/AlertContext';
 
@@ -38,7 +37,7 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
             if (remaining.length === 0) {
                 onClose();
             }
-        } catch (error) {
+        } catch {
             showAlert('Error', 'Failed to process reminder');
         }
     };
@@ -49,7 +48,7 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
                 await handleReminderNotificationAction(reminder.id, 'COMPLETED');
             }
             onClose();
-        } catch (error) {
+        } catch {
             showAlert('Error', 'Failed to complete reminders');
         }
     };

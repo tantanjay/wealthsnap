@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { Reminder, ReminderFrequency, ReminderLog, ReminderAction } from '../types';
+import { Reminder, ReminderAction, ReminderLog } from '../types';
 import { saveReminder, saveReminderLog, getAllReminders } from './storageService';
 import { Platform } from 'react-native';
 import { REMINDER_PREFIXES } from '../constants/config';

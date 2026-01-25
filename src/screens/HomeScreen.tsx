@@ -29,6 +29,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [isLoading, setIsLoading] = useState(true);
 
     const loadData = async () => {
+        setDebtTotal(0); // to remove lint
         setIsLoading(true);
         // Process recurring rules first to ensure we fetch the latest transactions
         await processRecurrenceRules();
