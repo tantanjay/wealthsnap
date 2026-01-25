@@ -43,7 +43,7 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
         try {
             temporarilyDisableLock();
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                mediaTypes: ['images'],
                 allowsEditing: false,
                 quality: 0.8, // Slightly higher quality since we optimize later
             });
