@@ -1,7 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const PRIVACY_ENABLED_KEY = '@wealthsnap_privacy_enabled';
+import { ASYNC_KEYS } from '../constants/config';
 
 interface PrivacyContextType {
     isPrivacyEnabled: boolean;
@@ -22,7 +21,7 @@ export const PrivacyProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const loadPrivacySetting = async () => {
         try {
-            const storedValue = await AsyncStorage.getItem(PRIVACY_ENABLED_KEY);
+            const storedValue = await AsyncStorage.getItem(ASYNC_KEYS.SECURITY.PRIVACY_ENABLED);
             if (storedValue !== null) {
                 setIsPrivacyEnabled(storedValue === 'true');
             }
@@ -35,7 +34,7 @@ export const PrivacyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         try {
             const newValue = !isPrivacyEnabled;
             setIsPrivacyEnabled(newValue);
-            await AsyncStorage.setItem(PRIVACY_ENABLED_KEY, String(newValue));
+            await AsyncStorage.setItem(ASYNC_KEYS.SECURITY.PRIVACY_ENABLED, String(newValue));
         } catch (error) {
             console.error('Failed to save privacy setting:', error);
         }

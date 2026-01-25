@@ -85,8 +85,6 @@ const migrateTransactions = async (db: any): Promise<number> => {
         return 0;
     }
 
-    console.log(`[Migration] Migrating ${transactions.length} transactions...`);
-
     for (const txn of transactions) {
         // Encrypt sensitive fields
         const encryptedAmount = await encryptField(txn.amount);

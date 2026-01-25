@@ -1,50 +1,54 @@
 export const CONFIG = {
     ENABLE_DUMMY_DATA: false,
-    TERMS_VERSION: 1,
+    TERMS_VERSION: 2,
 };
 
-export const REMINDER_PREFIXES = [
-    // Casual & Friendly
-    "Just a nudge:",
-    "Friendly reminder:",
-    "Quick check-in:",
-    "On your radar:",
-    "A small note:",
-    "Thinking ahead:",
-    "Just a heads-up:",
+export const SECURE_KEYS = {
+    ENCRYPTION_KEY: 'wealthsnap_data_encryption_key',
+    PIN_CODE: 'wealthsnap_security_pin',
+    AI_API_KEY: 'wealthsnap_ai_api_key',
+}
 
-    // Action-Oriented
-    "Time to tackle:",
-    "Ready for this?",
-    "Let’s get to it:",
-    "Next up:",
-    "Your turn:",
-    "Action required:",
-    "Time to update:",
+export const ASYNC_KEYS = {
+    USER_PROFILE: '@wealthsnap_user_profile',
+    HISTORY_SCREEN: {
+        PREFERENCE: '@wealthsnap_history_prefs'
+    },
+    HOME_SCREEN: {
+        DISPLAY_MODE: '@wealthsnap_finance_display_mode',
+    },
+    INSIGHTS_SCREEN: {
+        CARD_ORDER: '@wealthsnap_insights_card_order',
+        SECTION_ORDER: '@wealthsnap_insights_section_order',
+    },
+    ONBOARDING: {
+        COMPLETE: '@wealthsnap_onboarding_complete',
+        ACCEPTED_TERMS_VERSION: '@wealthsnap_accepted_terms_version',
+    },
+    SECURITY: {
+        PRIVACY_ENABLED: '@wealthsnap_privacy_enabled',
+        TIMEOUT_SETTING: '@wealthsnap_security_timeout',
+        LAST_ACTIVE: '@wealthsnap_security_last_active',
+    },
+    AI: {
+        MODEL_ID: '@wealthsnap_ai_model_id',
+    }
+};
 
-    // Encouraging & Positive
-    "Keep it going!",
-    "Staying on track:",
-    "Great day for:",
-    "Making progress:",
-    "Almost there:",
-    "Level up:",
-    "Stay consistent:",
+/**
+ * Recursively extracts all string values from a nested object.
+ */
+const getAllKeys = (obj: any): string[] => {
+    let keys: string[] = [];
+    for (const value of Object.values(obj)) {
+        if (typeof value === 'string') {
+            keys.push(value);
+        } else if (typeof value === 'object' && value !== null) {
+            keys = [...keys, ...getAllKeys(value)];
+        }
+    }
+    return keys;
+};
 
-    // Finance & Detail Focused
-    "Entry needed:",
-    "Transaction alert:",
-    "Log your:",
-    "Budget check:",
-    "Balance your:",
-    "Financial focus:",
-    "Review required:",
-
-    // Minimalist
-    "Note:",
-    "Reminder:",
-    "Task:",
-    "Status:",
-    "Item:",
-    "Update:"
-];
+// Create the array automatically
+export const ALL_ASYNC_KEYS = getAllKeys(ASYNC_KEYS);
