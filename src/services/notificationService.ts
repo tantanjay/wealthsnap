@@ -1,8 +1,9 @@
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Linking } from 'react-native';
-import { Transaction } from '../types';
+import { Transaction, ReminderAction } from '../types';
 import { detectAnomalies } from '../utils/financialMetrics';
+import { initReminderCategories, handleReminderNotificationAction } from './reminderService';
 
 const NOTIFIED_ALERTS_KEY = '@wealthsnap_notified_alerts';
 
@@ -15,6 +16,31 @@ export const initNotifications = () => {
             shouldShowBanner: true,
             shouldShowList: true,
         }),
+    });
+
+    // Initialize reminder-specific categories (Snooze, Complete)
+    initReminderCategories();
+
+    // Handle background/foreground notification actions
+    Notifications.addNotificationResponseReceivedListener(response => {
+        const { actionIdentifier, notification } = response;
+        const data = notification.request.content.data;
+
+        if (data.type === 'REMINDER' && data.reminderId) {
+            let action: ReminderAction | null = null;
+            if (actionIdentifier === 'COMPLETE') {
+                action = 'COMPLETED';
+            } else if (actionIdentifier === 'SNOOZE') {
+                action = 'SNOOZED';
+            } else if (actionIdentifier === 'expo.modules.notifications.actions.DEFAULT') {
+                // User just tapped the notification without choosing an action
+                // We can treat this as "Dismissed" or just open the app (handled by Expo)
+            }
+
+            if (action) {
+                handleReminderNotificationAction(data.reminderId as string, action);
+            }
+        }
     });
 };
 

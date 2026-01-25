@@ -25,6 +25,9 @@
       },
       "package": "com.christian.soyosa.WealthSnap",
       "versionCode": 6,
+      "properties": {
+        "android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY": "true"
+      },
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",
@@ -58,7 +61,8 @@
       "expo-notifications",
       "expo-background-fetch",
       "expo-task-manager",
-      "react-native-document-scanner-plugin"
+      "react-native-document-scanner-plugin",
+      "react-native-edge-to-edge"
     ],
     "extra": {
       "eas": {
