@@ -4,12 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // ============= Biometrics =============
 
 import * as LocalAuthentication from 'expo-local-authentication';
-
-const KEYS = {
-    PIN_CODE: 'wealthsnap_security_pin', // SecureStore key
-    TIMEOUT_SETTING: '@wealthsnap_security_timeout', // AsyncStorage key
-    LAST_ACTIVE: '@wealthsnap_security_last_active', // AsyncStorage key
-};
+import { ASYNC_KEYS, SECURE_KEYS } from '../constants/config';
 
 export type TimeoutOption = 'immediately' | 'daily' | 'weekly' | 'monthly';
 
@@ -22,7 +17,7 @@ export const TIMEOUT_OPTIONS: { label: string; value: TimeoutOption; durationMs:
 
 export const setPin = async (pin: string): Promise<void> => {
     try {
-        await SecureStore.setItemAsync(KEYS.PIN_CODE, pin);
+        await SecureStore.setItemAsync(SECURE_KEYS.PIN_CODE, pin);
     } catch (error) {
         console.error('Error setting PIN:', error);
         throw error;
@@ -31,7 +26,7 @@ export const setPin = async (pin: string): Promise<void> => {
 
 export const verifyPin = async (inputPin: string): Promise<boolean> => {
     try {
-        const storedPin = await SecureStore.getItemAsync(KEYS.PIN_CODE);
+        const storedPin = await SecureStore.getItemAsync(SECURE_KEYS.PIN_CODE);
         return storedPin === inputPin;
     } catch (error) {
         console.error('Error verifying PIN:', error);
@@ -41,7 +36,7 @@ export const verifyPin = async (inputPin: string): Promise<boolean> => {
 
 export const isPinSet = async (): Promise<boolean> => {
     try {
-        const pin = await SecureStore.getItemAsync(KEYS.PIN_CODE);
+        const pin = await SecureStore.getItemAsync(SECURE_KEYS.PIN_CODE);
         return !!pin;
     } catch {
         return false;
@@ -50,23 +45,23 @@ export const isPinSet = async (): Promise<boolean> => {
 
 export const deletePin = async (): Promise<void> => {
     try {
-        await SecureStore.deleteItemAsync(KEYS.PIN_CODE);
+        await SecureStore.deleteItemAsync(SECURE_KEYS.PIN_CODE);
     } catch (error) {
         console.error('Error deleting PIN:', error);
     }
 };
 
 export const saveTimeoutSetting = async (option: TimeoutOption): Promise<void> => {
-    await AsyncStorage.setItem(KEYS.TIMEOUT_SETTING, option);
+    await AsyncStorage.setItem(ASYNC_KEYS.SECURITY.TIMEOUT_SETTING, option);
 };
 
 export const getTimeoutSetting = async (): Promise<TimeoutOption> => {
-    const setting = await AsyncStorage.getItem(KEYS.TIMEOUT_SETTING);
+    const setting = await AsyncStorage.getItem(ASYNC_KEYS.SECURITY.TIMEOUT_SETTING);
     return (setting as TimeoutOption) || 'daily'; // Default to daily as per request
 };
 
 export const updateLastActiveTime = async (): Promise<void> => {
-    await AsyncStorage.setItem(KEYS.LAST_ACTIVE, Date.now().toString());
+    await AsyncStorage.setItem(ASYNC_KEYS.SECURITY.LAST_ACTIVE, Date.now().toString());
 };
 
 export const shouldLockApp = async (): Promise<boolean> => {
@@ -79,7 +74,7 @@ export const shouldLockApp = async (): Promise<boolean> => {
     if (timeoutOption === 'immediately') return true;
 
     // 3. Get Last Active Time
-    const lastActiveStr = await AsyncStorage.getItem(KEYS.LAST_ACTIVE);
+    const lastActiveStr = await AsyncStorage.getItem(ASYNC_KEYS.SECURITY.LAST_ACTIVE);
     if (!lastActiveStr) return true; // Safety fallback
 
     const lastActive = parseInt(lastActiveStr, 10);

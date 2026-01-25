@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../styles/theme';
 import { Button } from '../../components';
@@ -13,6 +14,7 @@ interface HelpCenterProps {
 
 const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboarding' }) => {
     const { colors } = useTheme();
+    const insets = useSafeAreaInsets();
     const [selectedTopic, setSelectedTopic] = useState<HelpTopic | null>(null);
     const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -40,7 +42,11 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
     }, [selectedTopic, mode, onFinish]);
 
     const renderMenu = () => (
-        <ScrollView style={styles.menuContainer} showsVerticalScrollIndicator={false}>
+        <ScrollView
+            style={styles.menuContainer}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+            showsVerticalScrollIndicator={false}
+        >
             <View style={styles.header}>
                 <Text style={[styles.mainTitle, { color: colors.text }]}>Help Center 📚</Text>
                 <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
@@ -148,7 +154,7 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
                     </View>
                 </View>
 
-                <View style={styles.slideFooter}>
+                <View style={[styles.slideFooter, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                     <TouchableOpacity
                         onPress={handlePrev}
                         disabled={currentSlide === 0}
@@ -185,7 +191,7 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
 
                 <ScrollView
                     style={styles.documentScroll}
-                    contentContainerStyle={styles.documentContent}
+                    contentContainerStyle={[styles.documentContent, { paddingBottom: insets.bottom + 20 }]}
                     showsVerticalScrollIndicator={false}
                 >
                     {topic.content?.map((item, index) => {
