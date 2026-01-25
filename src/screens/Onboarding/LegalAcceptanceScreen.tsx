@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, BackHandler, Dimensions } from 'react-native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { Button } from '../../components';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +15,7 @@ const { height } = Dimensions.get('window');
 
 const LegalAcceptanceScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     const { colors } = useTheme();
+    const insets = useSafeAreaInsets();
     const [hasAgreed, setHasAgreed] = useState(false);
     const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
 
@@ -83,7 +85,7 @@ const LegalAcceptanceScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
         },
         termsCard: {
             flex: 1,
-            maxHeight: height * 0.45,
+            maxHeight: height * 0.65,
             borderWidth: 1,
             borderRadius: 16,
             marginBottom: 16,
@@ -134,8 +136,8 @@ const LegalAcceptanceScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     });
 
     return (
-        <ScreenWrapper scrollable={false}>
-            <View style={styles.container}>
+        <ScreenWrapper scrollable={false} noPadding>
+            <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 20) }]}>
                 <View style={styles.heroHeader}>
                     <View style={styles.iconContainer}>
                         <LinearGradient

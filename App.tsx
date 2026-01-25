@@ -57,7 +57,6 @@ export default function App() {
   }, []);
 
   const handleMigrationComplete = async () => {
-    console.log('[App] Migration complete, checking onboarding...');
     setMigrating(false);
     await checkOnboarding();
   };
