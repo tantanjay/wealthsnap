@@ -4,14 +4,14 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    FlatList,
-    Alert
+    FlatList
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Reminder } from '../../types';
 import { handleReminderNotificationAction } from '../../services/reminderService';
 import { Button } from '../index';
 import { useTheme } from '../../context/ThemeContext';
+import { useAlert } from '../../context/AlertContext';
 
 interface ReminderCatchupModalProps {
     pendingReminders: Reminder[];
@@ -23,6 +23,7 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
     onClose
 }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
     const [reminders, setReminders] = useState<Reminder[]>(initialReminders);
 
     useEffect(() => {
@@ -38,7 +39,7 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
                 onClose();
             }
         } catch (error) {
-            Alert.alert('Error', 'Failed to process reminder');
+            showAlert('Error', 'Failed to process reminder');
         }
     };
 
@@ -49,7 +50,7 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
             }
             onClose();
         } catch (error) {
-            Alert.alert('Error', 'Failed to complete reminders');
+            showAlert('Error', 'Failed to complete reminders');
         }
     };
 

@@ -168,7 +168,7 @@ const ProfileScreen = ({ navigation }: any) => {
                         <View style={[styles.headerIcon, { backgroundColor: colors.accent + '20' }]}>
                             <Ionicons name="wallet" size={22} color={colors.accent} />
                         </View>
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>Transactions</Text>
+                        <Text style={[styles.cardTitle, { color: colors.text }]}>Financial Planning</Text>
                     </View>
                     <SettingItem
                         icon="repeat"
