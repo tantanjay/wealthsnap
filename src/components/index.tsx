@@ -2,6 +2,8 @@ import React from 'react';
 import { TouchableOpacity, Text, ViewStyle, ActivityIndicator, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
+import { Ionicons } from '@expo/vector-icons';
+
 interface ButtonProps {
     title: string;
     onPress: () => void;
@@ -9,9 +11,10 @@ interface ButtonProps {
     style?: ViewStyle;
     loading?: boolean;
     disabled?: boolean;
+    icon?: string;
 }
 
-export const Button: React.FC<ButtonProps> = ({ title, onPress, variant = 'primary', style, loading, disabled }) => {
+export const Button: React.FC<ButtonProps> = ({ title, onPress, variant = 'primary', style, loading, disabled, icon }) => {
     const { colors } = useTheme();
 
     const getBackgroundColor = () => {
@@ -50,7 +53,9 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, variant = 'prima
                     justifyContent: 'center',
                     borderWidth: variant === 'outline' ? 1 : 0,
                     borderColor: colors.primary,
-                    opacity: disabled ? 0.7 : 1
+                    opacity: disabled ? 0.7 : 1,
+                    flexDirection: 'row',
+                    gap: 8,
                 },
                 style
             ]}
@@ -58,9 +63,12 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, variant = 'prima
             {loading ? (
                 <ActivityIndicator color={getTextColor()} />
             ) : (
-                <Text style={{ color: getTextColor(), fontSize: 16, fontWeight: '600' }}>
-                    {title}
-                </Text>
+                <>
+                    {icon && <Ionicons name={icon as any} size={20} color={getTextColor()} />}
+                    <Text style={{ color: getTextColor(), fontSize: 16, fontWeight: '600' }}>
+                        {title}
+                    </Text>
+                </>
             )}
         </TouchableOpacity>
     );

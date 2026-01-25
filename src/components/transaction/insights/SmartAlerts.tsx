@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '../../common/BottomModal';
 import { useTheme } from '../../../context/ThemeContext';
+import { useAlert } from '../../../context/AlertContext';
 import { Card } from '../../../components';
 import { Anomaly } from '../../../utils/financialMetrics';
 import { getPermissionStatus, openSettings } from '../../../services/notificationService';
@@ -14,6 +15,7 @@ interface SmartAlertsProps {
 
 const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
     const [showInfo, setShowInfo] = useState(false);
     const [hasPermission, setHasPermission] = useState(true);
 
@@ -27,7 +29,7 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
     };
 
     const handlePermissionPress = async () => {
-        Alert.alert(
+        showAlert(
             "Enable Notifications",
             "Turn on notifications to get real-time alerts about spending anomalies.",
             [
