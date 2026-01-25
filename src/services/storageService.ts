@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { UserProfile, Transaction, Investment, Category, RecurrenceRule, AIConfig, AIUsageLog, Reminder, ReminderLog, ReminderAction } from '../types';
+import { UserProfile, Transaction, Investment, Category, RecurrenceRule, AIConfig, AIUsageLog, Reminder, ReminderLog } from '../types';
 import { encryptData, decryptData, encryptField, decryptField } from './encryptionService';
 import * as DataCache from './dataCache';
 import { getDatabase } from './database/databaseService';

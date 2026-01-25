@@ -70,7 +70,7 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
             await saveReminder(newReminder);
             await scheduleReminderNotifications(newReminder);
             onSave();
-        } catch (error) {
+        } catch {
             showAlert('Error', 'Failed to save reminder');
         }
     };

@@ -2,7 +2,6 @@ import * as SQLite from 'expo-sqlite';
 import { createTables, setDatabaseVersion, getDatabaseVersion, DATABASE_NAME, DATABASE_VERSION } from './databaseSchema';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
-let databaseInstance: SQLite.SQLiteDatabase | null = null; // Keep for synchronous checks if needed, or legacy refs
 
 /**
  * Get or create database connection
@@ -21,7 +20,6 @@ export const getDatabase = (): Promise<SQLite.SQLiteDatabase> => {
             // Initialize tables - this must complete before we return the db
             await initializeDatabase(db);
 
-            databaseInstance = db;
             return db;
         } catch (error) {
             // Reset promise on failure so we can try again
@@ -85,7 +83,6 @@ export const closeDatabase = async (): Promise<void> => {
         }
     }
     dbPromise = null;
-    databaseInstance = null;
 };
 
 /**
