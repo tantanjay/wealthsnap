@@ -5,7 +5,8 @@ import {
     StyleSheet,
     TouchableOpacity,
     FlatList,
-    Switch
+    Switch,
+    ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Reminder } from '../../types';
@@ -53,7 +54,7 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
             }
             // Update local state
             setReminders(prev => prev.map(r => r.id === updated.id ? updated : r));
-        } catch (error) {
+        } catch {
             showAlert('Error', 'Failed to update reminder');
         }
     };
@@ -72,7 +73,7 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
                             await cancelReminderNotifications(id);
                             await deleteReminder(id);
                             setReminders(prev => prev.filter(r => r.id !== id));
-                        } catch (error) {
+                        } catch {
                             showAlert('Error', 'Failed to delete reminder');
                         }
                     }
@@ -140,18 +141,25 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <FlatList
-                data={reminders}
-                keyExtractor={item => item.id}
-                renderItem={renderItem}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Ionicons name="notifications-off-outline" size={48} color={colors.gray300} />
-                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No reminders set yet</Text>
-                    </View>
-                }
-            />
+            {loading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Fetching...</Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={reminders}
+                    keyExtractor={item => item.id}
+                    renderItem={renderItem}
+                    contentContainerStyle={styles.listContent}
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <Ionicons name="notifications-off-outline" size={48} color={colors.gray300} />
+                            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No reminders set yet</Text>
+                        </View>
+                    }
+                />
+            )}
             <TouchableOpacity
                 style={[styles.fab, { backgroundColor: colors.primary }]}
                 onPress={onAdd}
@@ -237,5 +245,15 @@ const styles = StyleSheet.create({
     emptyText: {
         marginTop: 12,
         fontSize: 16,
+    },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    loadingText: {
+        fontSize: 14,
+        fontWeight: '500',
     },
 });

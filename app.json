@@ -25,9 +25,6 @@
       },
       "package": "com.christian.soyosa.WealthSnap",
       "versionCode": 7,
-      "properties": {
-        "android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY": "true"
-      },
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",

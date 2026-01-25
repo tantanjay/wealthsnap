@@ -32,6 +32,8 @@ When using libraries that require native code (like ML Kit, fast-storage, etc.),
 This builds the native app and installs it on your connected device/emulator. Run this whenever you add new native packages.
 ```bash
 npx expo run:android
+// or
+npx expo run:android --variant release
 ```
 
 **Build & Run on Physical Device:**

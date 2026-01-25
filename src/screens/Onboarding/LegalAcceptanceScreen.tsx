@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, BackHandler, Dimensions } from 'react-native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
@@ -148,7 +148,7 @@ const LegalAcceptanceScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                         Terms Updated
                     </Text>
                     <Text style={[styles.description, { color: colors.textSecondary }]}>
-                        We've updated our Terms of Use and Privacy Policy. Please review and accept them to continue using WealthSnap.
+                        We&apos;ve updated our Terms of Use and Privacy Policy. Please review and accept them to continue using WealthSnap.
                     </Text>
                 </View>
 
@@ -182,7 +182,7 @@ const LegalAcceptanceScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                     <View style={[styles.scrollIndicator, { backgroundColor: colors.success + '15' }]}>
                         <Ionicons name="checkmark-circle" size={18} color={colors.success || '#4CAF50'} />
                         <Text style={{ color: colors.success || '#4CAF50', fontSize: 13, marginLeft: 8, fontWeight: '500' }}>
-                            You've read the updates
+                            You&apos;ve read the updates
                         </Text>
                     </View>
                 )}

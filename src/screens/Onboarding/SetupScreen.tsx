@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions, Animated } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
@@ -385,7 +385,7 @@ const SetupScreen = ({ navigation }: any) => {
                             <View style={[styles.scrollIndicator, { backgroundColor: colors.success + '15' }]}>
                                 <Ionicons name="checkmark-circle" size={18} color={colors.success || '#4CAF50'} />
                                 <Text style={{ color: colors.success || '#4CAF50', fontSize: 13, marginLeft: 8, fontWeight: '500' }}>
-                                    You've reached the end
+                                    You&apos;ve reached the end
                                 </Text>
                             </View>
                         )}
