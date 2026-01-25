@@ -5,14 +5,14 @@ import {
     StyleSheet,
     TouchableOpacity,
     FlatList,
-    Switch,
-    Alert
+    Switch
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Reminder } from '../../types';
 import { getAllReminders, saveReminder, deleteReminder } from '../../services/storageService';
 import { scheduleReminderNotifications, cancelReminderNotifications, calculateNextOccurrence } from '../../services/reminderService';
 import { useTheme } from '../../context/ThemeContext';
+import { useAlert } from '../../context/AlertContext';
 import { Card } from '../index';
 
 interface ReminderListProps {
@@ -22,6 +22,7 @@ interface ReminderListProps {
 
 export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
     const [reminders, setReminders] = useState<Reminder[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -53,12 +54,12 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
             // Update local state
             setReminders(prev => prev.map(r => r.id === updated.id ? updated : r));
         } catch (error) {
-            Alert.alert('Error', 'Failed to update reminder');
+            showAlert('Error', 'Failed to update reminder');
         }
     };
 
     const handleDelete = (id: string) => {
-        Alert.alert(
+        showAlert(
             'Delete Reminder',
             'Are you sure you want to delete this reminder?',
             [
@@ -72,7 +73,7 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
                             await deleteReminder(id);
                             setReminders(prev => prev.filter(r => r.id !== id));
                         } catch (error) {
-                            Alert.alert('Error', 'Failed to delete reminder');
+                            showAlert('Error', 'Failed to delete reminder');
                         }
                     }
                 }

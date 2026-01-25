@@ -3,7 +3,9 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import BottomModal from '../../common/BottomModal';
 import { Button } from '../../index';
 import { useTheme } from '../../../context/ThemeContext';
+import { useAlert } from '../../../context/AlertContext';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 
 interface ImportDataModalProps {
     visible: boolean;
@@ -19,6 +21,7 @@ const ImportDataModal: React.FC<ImportDataModalProps> = ({
     isLoading = false
 }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
 
     const ColumnInfo = ({ name, description }: { name: string; description: string }) => (
         <View style={styles.columnRow}>
@@ -85,6 +88,33 @@ const ImportDataModal: React.FC<ImportDataModalProps> = ({
                         2026-01-15,Food,-,25.50,Lunch{'\n'}
                         2026-01-16,Salary,5000,-,Monthly
                     </Text>
+                </View>
+
+                {/* AI Assistance */}
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>AI Assistance</Text>
+
+                <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <View style={styles.cardHeader}>
+                        <Ionicons name="sparkles" size={20} color={colors.primary} />
+                        <Text style={[styles.cardTitle, { color: colors.text }]}>Difficult to format?</Text>
+                    </View>
+
+                    <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>
+                        If your data is in a different format, you can use AI to convert it. Simply copy our prompt and paste it along with your data into ChatGPT, Gemini, or any AI tool you use.
+                    </Text>
+
+                    <Button
+                        variant="secondary"
+                        title="Copy AI Prompt"
+                        icon="copy-outline"
+                        onPress={async () => {
+                            const prompt = `I have a list of transactions to import. Please format them into a CSV with exactly these headers: Date,Category,Income,Expense,Notes\n\nRules:\n1. Date format: yyyy-MM-dd\n2. Use '-' for empty Income or Expense fields\n3. No currency symbols\n4. Do not include future dates\n\nHere is my data:`;
+                            await Clipboard.setStringAsync(prompt);
+                            // You might want to show a toast/alert here
+                            showAlert('Success', 'AI Prompt copied to clipboard!');
+                        }}
+                        style={{ marginTop: 12 }}
+                    />
                 </View>
 
                 {/* Actions */}
@@ -179,6 +209,26 @@ const styles = StyleSheet.create({
     actions: {
         marginTop: 4,
         marginBottom: 10,
+    },
+    card: {
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 20,
+        borderWidth: 1,
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 8,
+    },
+    cardTitle: {
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    cardDescription: {
+        fontSize: 13,
+        lineHeight: 18,
     },
 });
 

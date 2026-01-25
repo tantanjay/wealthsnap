@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Reminder, ReminderFrequency, ReminderLog, ReminderAction } from '../types';
 import { saveReminder, saveReminderLog, getAllReminders } from './storageService';
 import { Platform } from 'react-native';
+import { REMINDER_PREFIXES } from '../constants/config';
 
 /**
  * Handle "The 31st Problem": If a user sets a monthly reminder for the 31st, 
@@ -121,10 +122,11 @@ export const scheduleReminderNotifications = async (reminder: Reminder) => {
         const nextDate = calculateNextOccurrence(singleTimeReminder);
 
         if (nextDate) {
+            const randomPrefix = REMINDER_PREFIXES[Math.floor(Math.random() * REMINDER_PREFIXES.length)];
             const identifier = await Notifications.scheduleNotificationAsync({
                 content: {
-                    title: reminder.title,
-                    body: `Reminder: ${reminder.title}`,
+                    title: randomPrefix,
+                    body: reminder.title,
                     data: { reminderId: reminder.id, type: 'REMINDER' },
                     categoryIdentifier: 'REMINDER_ACTIONS',
                 },
