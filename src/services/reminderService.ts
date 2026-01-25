@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Reminder, ReminderAction, ReminderLog } from '../types';
 import { saveReminder, saveReminderLog, getAllReminders } from './storageService';
 import { Platform } from 'react-native';
-import { REMINDER_PREFIXES } from '../constants/config';
+import { REMINDER_PREFIXES } from '../constants/reminders';
 
 /**
  * Handle "The 31st Problem": If a user sets a monthly reminder for the 31st, 
@@ -132,7 +132,6 @@ export const scheduleReminderNotifications = async (reminder: Reminder) => {
                 },
                 trigger: { type: 'date', date: nextDate } as Notifications.DateTriggerInput,
             });
-            console.log(`Scheduled notification ${identifier} for ${reminder.title} at ${nextDate}`);
         }
     }
 };

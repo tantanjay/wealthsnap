@@ -1,8 +1,7 @@
 import 'react-native-get-random-values';
 import * as SecureStore from 'expo-secure-store';
 import CryptoJS from 'crypto-js';
-
-const ENCRYPTION_KEY_ALIAS = 'wealthsnap_data_encryption_key';
+import { SECURE_KEYS } from '../constants/config';
 
 // In-memory cache for the encryption key to avoid repeated SecureStore I/O
 let cachedKey: string | null = null;
@@ -19,11 +18,11 @@ const getStorageKey = async (): Promise<string> => {
     }
 
     try {
-        let key = await SecureStore.getItemAsync(ENCRYPTION_KEY_ALIAS);
+        let key = await SecureStore.getItemAsync(SECURE_KEYS.ENCRYPTION_KEY);
         if (!key) {
             // Generate a random 256-bit key (32 bytes -> 64 hex chars)
             key = CryptoJS.lib.WordArray.random(32).toString();
-            await SecureStore.setItemAsync(ENCRYPTION_KEY_ALIAS, key);
+            await SecureStore.setItemAsync(SECURE_KEYS.ENCRYPTION_KEY, key);
         }
         // Cache the key in memory
         cachedKey = key;

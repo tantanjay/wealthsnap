@@ -7,12 +7,8 @@ const BACKGROUND_FETCH_TASK = 'BACKGROUND_FETCH_TASK';
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
     try {
         const now = new Date();
-        console.log(`[BackgroundFetch] Task running at: ${now.toISOString()}`);
-
         // Process recurring rules - this will internally call saveTransaction -> checkAndNotifyAnomalies
         const processedCount = await processRecurrenceRules();
-
-        console.log(`[BackgroundFetch] Processed ${processedCount} recurring rules`);
 
         // Return result based on whether data was processed
         return processedCount > 0
@@ -34,9 +30,6 @@ export const registerBackgroundFetchAsync = async () => {
                 stopOnTerminate: false, // Continue running after app termination (if supported by OS)
                 startOnBoot: true, // Run on device boot (Android)
             });
-            console.log('[BackgroundFetch] Task registered successfully');
-        } else {
-            console.log('[BackgroundFetch] Task already registered');
         }
     } catch (err) {
         console.error('[BackgroundFetch] Register failed:', err);

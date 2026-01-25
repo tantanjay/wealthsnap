@@ -4,6 +4,7 @@ import { UserProfile, Transaction, Investment, Category, RecurrenceRule, AIConfi
 import { encryptData, decryptData, encryptField, decryptField } from './encryptionService';
 import * as DataCache from './dataCache';
 import { getDatabase } from './database/databaseService';
+import { ALL_ASYNC_KEYS, ASYNC_KEYS, SECURE_KEYS } from '../constants/config';
 
 /**
  * Storage Architecture:
@@ -11,16 +12,6 @@ import { getDatabase } from './database/databaseService';
  * - AsyncStorage: Lightweight preferences (User Profile, Onboarding State, History Prefs).
  * - SecureStore: Sensitive secrets (API Keys, etc. - managed separately).
  */
-
-const KEYS = {
-    USER_PROFILE: '@wealthsnap_user_profile',
-    ONBOARDING_COMPLETE: '@wealthsnap_onboarding_complete',
-    AI_CONFIG: '@wealthsnap_ai_config',
-    HISTORY_PREFS: '@wealthsnap_history_prefs',
-    INSIGHTS_CARD_ORDER: '@wealthsnap_insights_card_order',
-    INSIGHTS_SECTION_ORDER: '@wealthsnap_insights_section_order',
-    ACCEPTED_TERMS_VERSION: '@wealthsnap_accepted_terms_version',
-};
 
 // ============= AsyncStorage Helpers (for small data) =============
 
@@ -57,11 +48,11 @@ const safeSave = async (key: string, data: any): Promise<void> => {
 // ============= User Profile (AsyncStorage - small data) =============
 
 export const saveUserProfile = async (profile: UserProfile): Promise<void> => {
-    await safeSave(KEYS.USER_PROFILE, profile);
+    await safeSave(ASYNC_KEYS.USER_PROFILE, profile);
 };
 
 export const getUserProfile = async (): Promise<UserProfile | null> => {
-    return await safeGet<UserProfile>(KEYS.USER_PROFILE);
+    return await safeGet<UserProfile>(ASYNC_KEYS.USER_PROFILE);
 };
 
 export const updateUserProfile = async (updates: Partial<UserProfile>): Promise<void> => {
@@ -466,7 +457,7 @@ export const deleteRecurrenceRule = async (id: string): Promise<void> => {
 
 export const setOnboardingComplete = async (): Promise<void> => {
     try {
-        await AsyncStorage.setItem(KEYS.ONBOARDING_COMPLETE, 'true');
+        await AsyncStorage.setItem(ASYNC_KEYS.ONBOARDING.COMPLETE, 'true');
     } catch (error) {
         console.error('Error setting onboarding complete:', error);
     }
@@ -474,7 +465,7 @@ export const setOnboardingComplete = async (): Promise<void> => {
 
 export const isOnboardingComplete = async (): Promise<boolean> => {
     try {
-        const value = await AsyncStorage.getItem(KEYS.ONBOARDING_COMPLETE);
+        const value = await AsyncStorage.getItem(ASYNC_KEYS.ONBOARDING.COMPLETE);
         return value === 'true';
     } catch (error) {
         console.error('Error checking onboarding status:', error);
@@ -484,7 +475,7 @@ export const isOnboardingComplete = async (): Promise<boolean> => {
 
 export const saveAcceptedTermsVersion = async (version: number): Promise<void> => {
     try {
-        await AsyncStorage.setItem(KEYS.ACCEPTED_TERMS_VERSION, version.toString());
+        await AsyncStorage.setItem(ASYNC_KEYS.ONBOARDING.ACCEPTED_TERMS_VERSION, version.toString());
     } catch (error) {
         console.error('Error saving accepted terms version:', error);
     }
@@ -492,7 +483,7 @@ export const saveAcceptedTermsVersion = async (version: number): Promise<void> =
 
 export const getAcceptedTermsVersion = async (): Promise<number> => {
     try {
-        const value = await AsyncStorage.getItem(KEYS.ACCEPTED_TERMS_VERSION);
+        const value = await AsyncStorage.getItem(ASYNC_KEYS.ONBOARDING.ACCEPTED_TERMS_VERSION);
         if (!value) return 0;
         const parsed = parseInt(value, 10);
         return isNaN(parsed) ? 0 : parsed;
@@ -504,16 +495,14 @@ export const getAcceptedTermsVersion = async (): Promise<number> => {
 
 // ============= AI Config (AsyncStorage) =============
 
-const SECURE_KEY_AI_API_KEY = 'wealthsnap_ai_api_key';
-
 export const saveAIConfig = async (config: AIConfig): Promise<void> => {
     try {
         if (config.apiKey) {
-            await SecureStore.setItemAsync(SECURE_KEY_AI_API_KEY, config.apiKey);
+            await SecureStore.setItemAsync(SECURE_KEYS.AI_API_KEY, config.apiKey);
         } else {
-            await SecureStore.deleteItemAsync(SECURE_KEY_AI_API_KEY).catch(() => { });
+            await SecureStore.deleteItemAsync(SECURE_KEYS.AI_API_KEY).catch(() => { });
         }
-        await AsyncStorage.setItem(KEYS.AI_CONFIG, JSON.stringify({ modelId: config.modelId }));
+        await AsyncStorage.setItem(ASYNC_KEYS.AI.MODEL_ID, JSON.stringify({ modelId: config.modelId }));
     } catch (error) {
         console.error('Failed to save AI config:', error);
         throw error;
@@ -522,12 +511,11 @@ export const saveAIConfig = async (config: AIConfig): Promise<void> => {
 
 export const getAIConfig = async (): Promise<AIConfig | null> => {
     try {
-        const apiKey = await SecureStore.getItemAsync(SECURE_KEY_AI_API_KEY);
-        const data = await AsyncStorage.getItem(KEYS.AI_CONFIG);
-        const config = data ? JSON.parse(data) : {};
+        const apiKey = await SecureStore.getItemAsync(SECURE_KEYS.AI_API_KEY);
+        const modelId = await AsyncStorage.getItem(ASYNC_KEYS.AI.MODEL_ID);
         return {
             apiKey: apiKey || undefined,
-            modelId: config.modelId
+            modelId: modelId || undefined
         };
     } catch (error) {
         console.error('Failed to get AI config:', error);
@@ -581,7 +569,7 @@ export const getAIUsageLogs = async (limit: number = 50): Promise<AIUsageLog[]> 
 
 export const saveHistoryTimeFrame = async (timeFrame: string): Promise<void> => {
     try {
-        await AsyncStorage.setItem(KEYS.HISTORY_PREFS, JSON.stringify({ timeFrame }));
+        await AsyncStorage.setItem(ASYNC_KEYS.HISTORY_SCREEN.PREFERENCE, JSON.stringify({ timeFrame }));
     } catch (error) {
         console.error('Failed to save history prefs:', error);
     }
@@ -589,10 +577,31 @@ export const saveHistoryTimeFrame = async (timeFrame: string): Promise<void> => 
 
 export const getHistoryTimeFrame = async (): Promise<string | null> => {
     try {
-        const data = await AsyncStorage.getItem(KEYS.HISTORY_PREFS);
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.HISTORY_SCREEN.PREFERENCE);
         return data ? JSON.parse(data).timeFrame : null;
     } catch (error) {
         console.error('Failed to get history prefs:', error);
+        return null;
+    }
+};
+
+// ============= Home Display Preferences (AsyncStorage) =============
+// ============= Home Display Preferences (AsyncStorage) =============
+
+export const saveHomeDisplayMode = async (mode: 'Overall' | 'Month'): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.DISPLAY_MODE, mode);
+    } catch (error) {
+        console.error('Failed to save home display mode:', error);
+    }
+};
+
+export const getHomeDisplayMode = async (): Promise<'Overall' | 'Month' | null> => {
+    try {
+        const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.DISPLAY_MODE);
+        return (mode === 'Overall' || mode === 'Month') ? mode : null;
+    } catch (error) {
+        console.error('Failed to get home display mode:', error);
         return null;
     }
 };
@@ -601,7 +610,7 @@ export const getHistoryTimeFrame = async (): Promise<string | null> => {
 
 export const saveInsightsCardOrder = async (order: string[]): Promise<void> => {
     try {
-        await AsyncStorage.setItem(KEYS.INSIGHTS_CARD_ORDER, JSON.stringify(order));
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.CARD_ORDER, JSON.stringify(order));
     } catch (error) {
         console.error('Failed to save insights card order:', error);
     }
@@ -609,7 +618,7 @@ export const saveInsightsCardOrder = async (order: string[]): Promise<void> => {
 
 export const getInsightsCardOrder = async (): Promise<string[] | null> => {
     try {
-        const data = await AsyncStorage.getItem(KEYS.INSIGHTS_CARD_ORDER);
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.CARD_ORDER);
         return data ? JSON.parse(data) : null;
     } catch (error) {
         console.error('Failed to get insights card order:', error);
@@ -619,7 +628,7 @@ export const getInsightsCardOrder = async (): Promise<string[] | null> => {
 
 export const saveInsightsSectionOrder = async (order: string[]): Promise<void> => {
     try {
-        await AsyncStorage.setItem(KEYS.INSIGHTS_SECTION_ORDER, JSON.stringify(order));
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.SECTION_ORDER, JSON.stringify(order));
     } catch (error) {
         console.error('Failed to save insights section order:', error);
     }
@@ -627,7 +636,7 @@ export const saveInsightsSectionOrder = async (order: string[]): Promise<void> =
 
 export const getInsightsSectionOrder = async (): Promise<string[] | null> => {
     try {
-        const data = await AsyncStorage.getItem(KEYS.INSIGHTS_SECTION_ORDER);
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.SECTION_ORDER);
         return data ? JSON.parse(data) : null;
     } catch (error) {
         console.error('Failed to get insights section order:', error);
@@ -640,13 +649,8 @@ export const getInsightsSectionOrder = async (): Promise<string[] | null> => {
 export const clearAllData = async (): Promise<void> => {
     try {
         // Clear AsyncStorage
-        await AsyncStorage.multiRemove([
-            KEYS.USER_PROFILE,
-            KEYS.ONBOARDING_COMPLETE,
-            KEYS.AI_CONFIG,
-            KEYS.HISTORY_PREFS,
-        ]);
-        await SecureStore.deleteItemAsync(SECURE_KEY_AI_API_KEY).catch(() => { });
+        await AsyncStorage.multiRemove(ALL_ASYNC_KEYS);
+        await SecureStore.deleteItemAsync(SECURE_KEYS.AI_API_KEY).catch(() => { });
 
         // Clear SQLite
         const db = await getDatabase();
