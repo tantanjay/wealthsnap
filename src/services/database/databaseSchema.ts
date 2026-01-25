@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 2;
+export const DATABASE_VERSION = 3;
 
 /**
  * Create all database tables and indexes
@@ -125,6 +125,33 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (transactionId) REFERENCES transactions(id) ON DELETE CASCADE
         );
+
+        -- Reminders table
+        CREATE TABLE IF NOT EXISTS reminders (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL, -- Encrypted
+            frequency TEXT NOT NULL,
+            startDate TEXT NOT NULL,
+            times TEXT NOT NULL, -- JSON array of HH:mm
+            isActive INTEGER DEFAULT 1,
+            lastTriggered TEXT,
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_reminders_active ON reminders(isActive);
+
+        -- Reminder logs table
+        CREATE TABLE IF NOT EXISTS reminder_logs (
+            id TEXT PRIMARY KEY,
+            reminderId TEXT NOT NULL,
+            action TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            FOREIGN KEY (reminderId) REFERENCES reminders(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_reminder_logs_reminder ON reminder_logs(reminderId);
+        CREATE INDEX IF NOT EXISTS idx_reminder_logs_timestamp ON reminder_logs(timestamp DESC);
     `);
 
 

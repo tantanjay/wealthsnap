@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ThemeProvider } from './src/context/ThemeContext';
@@ -12,6 +12,10 @@ import { MigrationScreen } from './src/screens/onboarding/MigrationScreen';
 import { PrivacyGuard } from './src/components/common/PrivacyGuard';
 import { AlertProvider } from './src/context/AlertContext';
 import { CustomAlert } from './src/components/common/CustomAlert';
+import { Reminder } from './src/types';
+import { getPendingReminders } from './src/services/reminderService';
+import BottomModal from './src/components/common/BottomModal';
+import { ReminderCatchupModal } from './src/components/reminders/ReminderCatchupModal';
 
 import { getDatabase } from './src/services/database/databaseService';
 
@@ -22,10 +26,34 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [migrating, setMigrating] = useState(true);
   const [initialRoute, setInitialRoute] = useState<'Onboarding' | 'Main' | 'LegalAcceptance'>('Onboarding');
+  const [pendingReminders, setPendingReminders] = useState<Reminder[]>([]);
+  const [showCatchup, setShowCatchup] = useState(false);
 
   useEffect(() => {
     initNotifications();
     registerBackgroundFetchAsync();
+
+    const checkCatchup = async () => {
+      const pending = await getPendingReminders();
+      if (pending.length > 0) {
+        setPendingReminders(pending);
+        setShowCatchup(true);
+      }
+    };
+
+    // Initial check
+    checkCatchup();
+
+    // Foreground check
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        checkCatchup();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   const handleMigrationComplete = async () => {
@@ -91,6 +119,21 @@ export default function App() {
               <StatusBar style="auto" />
               <AppNavigator initialRoute={initialRoute} />
               <CustomAlert />
+              <BottomModal
+                visible={showCatchup}
+                onClose={() => setShowCatchup(false)}
+                title="Reminder Catch-up"
+                maxHeight="85%"
+                style={{ height: '85%' }}
+                contentStyle={{ flex: 1 }}
+              >
+                {showCatchup && (
+                  <ReminderCatchupModal
+                    pendingReminders={pendingReminders}
+                    onClose={() => setShowCatchup(false)}
+                  />
+                )}
+              </BottomModal>
             </SafeAreaProvider>
           </AlertProvider>
         </PrivacyProvider>
