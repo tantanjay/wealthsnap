@@ -502,7 +502,7 @@ export const saveAIConfig = async (config: AIConfig): Promise<void> => {
         } else {
             await SecureStore.deleteItemAsync(SECURE_KEYS.AI_API_KEY).catch(() => { });
         }
-        await AsyncStorage.setItem(ASYNC_KEYS.AI.MODEL_ID, JSON.stringify({ modelId: config.modelId }));
+        await AsyncStorage.setItem(ASYNC_KEYS.AI.MODEL_ID, config.modelId || 'gemini-2.5-flash');
     } catch (error) {
         console.error('Failed to save AI config:', error);
         throw error;
