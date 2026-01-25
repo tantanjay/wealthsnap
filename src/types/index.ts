@@ -88,9 +88,11 @@ export interface ReceiptItem {
 
 export interface ReceiptAnalysisResult {
     isValidReceipt: boolean;
+    receiptType?: string;
     merchantName?: string;
     date?: string;
     totalAmount?: number;
+    totalDiscount?: number;
     currency?: string;
     items?: ReceiptItem[];
     confidence: number; // 0-100
