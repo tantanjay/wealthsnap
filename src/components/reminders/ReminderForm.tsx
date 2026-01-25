@@ -6,14 +6,14 @@ import {
     TouchableOpacity,
     TextInput,
     ScrollView,
-    Platform,
-    Alert
+    Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Reminder, ReminderFrequency } from '../../types';
 import { saveReminder } from '../../services/storageService';
 import { scheduleReminderNotifications } from '../../services/reminderService';
+import { useAlert } from '../../context/AlertContext';
 
 interface ReminderFormProps {
     reminder?: Reminder;
@@ -35,6 +35,7 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
     onSave,
     onCancel
 }) => {
+    const { showAlert } = useAlert();
     const [title, setTitle] = useState(initialReminder?.title || '');
     const [frequency, setFrequency] = useState<ReminderFrequency>(initialReminder?.frequency || 'DAILY');
     const [startDate, setStartDate] = useState(new Date(initialReminder?.startDate || new Date()));
@@ -45,12 +46,12 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
 
     const handleSave = async () => {
         if (!title.trim()) {
-            Alert.alert('Error', 'Please enter a title');
+            showAlert('Error', 'Please enter a title');
             return;
         }
 
         if (times.length === 0) {
-            Alert.alert('Error', 'Please add at least one time');
+            showAlert('Error', 'Please add at least one time');
             return;
         }
 
@@ -70,7 +71,7 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
             await scheduleReminderNotifications(newReminder);
             onSave();
         } catch (error) {
-            Alert.alert('Error', 'Failed to save reminder');
+            showAlert('Error', 'Failed to save reminder');
         }
     };
 
@@ -84,7 +85,7 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
             newTimes.splice(index, 1);
             setTimes(newTimes);
         } else {
-            Alert.alert('Error', 'Please keep at least one time');
+            showAlert('Error', 'Please keep at least one time');
         }
     };
 
