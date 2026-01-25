@@ -35,7 +35,7 @@ export const ScreenWrapper: React.FC<Props> = ({ children, style, noPadding, scr
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={0}
         >
-            <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+            <StatusBar barStyle={mode === 'dark' ? 'light-content' : 'dark-content'} translucent={true} />
             {content}
         </KeyboardAvoidingView>
     );
