@@ -25,6 +25,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [income, setIncome] = useState(0);
     const [expense, setExpense] = useState(0);
     const [investmentTotal, setInvestmentTotal] = useState(0);
+    const [debtTotal, setDebtTotal] = useState(0); // Placeholder for Debt
     const [isLoading, setIsLoading] = useState(true);
 
     const loadData = async () => {
@@ -169,6 +170,38 @@ const HomeScreen = ({ navigation }: any) => {
                             onPress={() => navigation.navigate('Investment')}
                         >
                             <Text style={{ color: colors.white, fontWeight: '600' }}>View Portfolio</Text>
+                        </TouchableOpacity>
+                    </Card>
+                </View>
+
+                {/* Debt Section Placeholder */}
+                <View style={{ marginBottom: 20 }}>
+                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Debts & Liabilities</Text>
+                    <Card style={{ backgroundColor: colors.error, padding: 20 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Total Debt</Text>
+                            <Ionicons name="card" size={24} color={colors.white} />
+                        </View>
+                        <Text style={{ color: colors.white, fontSize: 32, fontWeight: 'bold' }}>
+                            {isLoading ? (
+                                <Skeleton width={120} height={36} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                            ) : (
+                                isPrivacyEnabled ? '****' : formatCurrencyAmount(debtTotal, profile?.currency || 'USD')
+                            )}
+                        </Text>
+                        <TouchableOpacity
+                            style={{
+                                marginTop: 15,
+                                backgroundColor: 'rgba(255,255,255,0.2)',
+                                paddingVertical: 8,
+                                alignItems: 'center',
+                                borderRadius: 8
+                            }}
+                            onPress={() => {
+                                // navigation.navigate('Debt') // Placeholder for future screen
+                            }}
+                        >
+                            <Text style={{ color: colors.white, fontWeight: '600' }}>View Debts</Text>
                         </TouchableOpacity>
                     </Card>
                 </View>

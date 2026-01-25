@@ -17,6 +17,7 @@ import DataManagementCard from '../components/profile/data/DataManagementCard';
 import { RecurringRulesListModal } from '../components/profile/RecurringRulesListModal';
 import { useAlert } from '../context/AlertContext';
 import BottomModal from '../components/common/BottomModal';
+import { ReminderManager } from '../components/reminders/ReminderManager';
 
 
 const ProfileScreen = ({ navigation }: any) => {
@@ -36,6 +37,7 @@ const ProfileScreen = ({ navigation }: any) => {
     const [showGuide, setShowGuide] = useState(false);
     const [showWhyFreeModal, setShowWhyFreeModal] = useState(false);
     const [showDevMessageModal, setShowDevMessageModal] = useState(false);
+    const [showRemindersModal, setShowRemindersModal] = useState(false);
 
 
     useFocusEffect(
@@ -175,6 +177,7 @@ const ProfileScreen = ({ navigation }: any) => {
                         onPress={handleManageRecurring}
                         iconBg={colors.success + '20'}
                         iconColor={colors.success}
+                        isLast={false}
                     />
                     <SettingItem
                         icon="calculator"
@@ -183,6 +186,16 @@ const ProfileScreen = ({ navigation }: any) => {
                         onPress={() => setShowBudgetModal(true)}
                         iconBg={colors.warning + '20'}
                         iconColor={colors.warning}
+                        isLast={false}
+                    />
+
+                    <SettingItem
+                        icon="notifications-outline"
+                        title="Reminders"
+                        subtitle="Schedule alerts for tasks"
+                        onPress={() => setShowRemindersModal(true)}
+                        iconBg={colors.primary + '20'}
+                        iconColor={colors.primary}
                         isLast={true}
                     />
                 </Card>
@@ -356,6 +369,18 @@ const ProfileScreen = ({ navigation }: any) => {
                 onClose={() => setShowBudgetModal(false)}
                 currency={currency}
             />
+
+            {/* Reminders Modal */}
+            <BottomModal
+                visible={showRemindersModal}
+                onClose={() => setShowRemindersModal(false)}
+                title="Reminders ⏰"
+                maxHeight="85%"
+                style={{ height: '85%' }}
+                contentStyle={{ flex: 1 }}
+            >
+                <ReminderManager onClose={() => setShowRemindersModal(false)} />
+            </BottomModal>
 
             {/* Support Modal */}
             <SupportModal

@@ -96,3 +96,25 @@ export interface ReceiptAnalysisResult {
     confidence: number; // 0-100
     validationError?: string; // Reason why it's not a receipt
 }
+export type ReminderFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+
+export type ReminderAction = 'SNOOZED' | 'COMPLETED' | 'DISMISSED';
+
+export interface Reminder {
+    id: string;
+    title: string; // Encrypted in DB
+    frequency: ReminderFrequency;
+    startDate: string; // ISO string, determines anchor day
+    times: string[]; // 24h format HH:mm
+    isActive: boolean;
+    lastTriggered?: string; // ISO string
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface ReminderLog {
+    id: string;
+    reminderId: string;
+    action: ReminderAction;
+    timestamp: string; // ISO string
+}
