@@ -13,7 +13,7 @@ const getGeminiClient = async () => {
     // 1. Try Storage
     const config = await getAIConfig();
     let apiKey = config?.apiKey;
-    // Default to gemini-2.5-flash as requested
+    // Default to gemini-2.5-flash
     let modelId = config?.modelId || 'gemini-2.5-flash';
 
     if (!apiKey) {
@@ -172,59 +172,132 @@ export const analyzeReceiptImage = async (imageUri: string): Promise<ReceiptAnal
         });
 
         const { genAI, modelName } = await getGeminiClient();
-        const model = genAI.getGenerativeModel({ model: modelName });
+
+        // 1. Initialize the model with thinking configuration
+        const model = genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+                // THE "STRICT ACCOUNTANT" SETTINGS
+                temperature: 0.1, // No randomness
+                topP: 0.1, // Stay within the highest confidence
+                topK: 1, // Pick only the best match
+                responseMimeType: "application/json",
+            }
+        });
 
         const categories = getCategoryList();
 
-        prompt = `Analyze this image to determine if it is a valid receipt, invoice, or bill.
-        
-        Step 1: VALIDATION
-        - Is this image a receipt, bill, or invoice?
-        - If NOT (e.g., photo of food, a person, a random object), set "isValidReceipt" to false and provide a reason in "validationError". Stop processing.
+        prompt = `
+You are a receipt parsing assistant for a personal finance app.
+Your goal is to extract expenses based on FINAL prices paid by the consumer.
 
-        Step 2: EXTRACTION (only if valid)
-        - Merchant/Vendor Name
-        - Date (YYYY-MM-DD format if possible)
-        - Total Amount (The final amount paid)
-        - Currency Code (e.g., USD, PHP, JPY)
-        - List of items:
-            - Description: Name of the item.
-            - Quantity: Count of items. Default to 1 if not specified.
-            - Unit Price: Price per individual item.
-            - Amount: Total price for this line item (Quantity * Unit Price).
-        
-        Special Rules for Items:
-        - Weighted Items: If an item is sold by weight (e.g., 0.5kg @ $10/kg), set "quantity" to 1, "unitPrice" to the final line amount, and include the weight in the "description" (e.g., "Apples (0.5kg)").
-        - Discounts/Tax: If there are line-item discounts or taxes, treat them as separate items.
-        
-        Step 3: CATEGORIZATION
-        - For each extracted item, link it to one of the following exact categories:
-        [${categories}]
-        - If the item doesn't fit well, use "Uncategorized" or "Others".
+Analyze the image and extract data into a clean, consumer-focused format.
 
-        Step 4: BALANCING
-        - Verify that the Sum of all Item Amounts ≈ Total Amount.
-        - If there is a discrepancy, check if a Tax or Service Charge was missed and add it as an item.
+--------------------------------------------------
+STEP 1: VALIDATION & RECEIPT TYPE
+--------------------------------------------------
+- Determine if the image is a receipt, invoice, or bill.
+- If it is NOT a receipt-like document, return:
+  {
+    "isValidReceipt": false,
+    "validationError": "<short reason>"
+  }
+- Infer the receiptType based on merchant name and items:
+  - GROCERY, RETAIL, RESTAURANT, CAFE, INVOICE, or UNKNOWN
 
-        Return ONLY a JSON object:
-        {
-          "isValidReceipt": boolean,
-          "validationError": string (optional, if invalid),
-          "merchantName": string (optional),
-          "date": string (optional),
-          "totalAmount": number (optional),
-          "currency": string (optional),
-          "items": [
-            { 
-               "description": string, 
-               "quantity": number, 
-               "unitPrice": number, 
-               "amount": number, 
-               "category": string 
-            }
-          ],
-          "confidence": number (0-100)
-        }`;
+--------------------------------------------------
+STEP 2: EXTRACTION RULES
+--------------------------------------------------
+Extract:
+- Merchant Name
+- Date (YYYY-MM-DD if possible)
+- Currency (ISO code if possible)
+- Total Amount (the FINAL amount paid, not tendered)
+
+ITEMS LIST:
+- Capture only physical goods or services purchased.
+
+TAX HANDLING:
+- Assume item prices are tax-inclusive by default.
+- Ignore VAT, GST, or Sales Tax line items.
+- ONLY include tax if item prices clearly exclude it (mostly invoices).
+
+SERVICE CHARGE HANDLING:
+- If receiptType is RESTAURANT or CAFE:
+  - If a service charge is listed:
+    - Extract it as a separate item:
+      - description: "Service Charge"
+      - quantity: 1
+      - unitPrice = amount
+      - amount = amount
+      - category: "Dining" or closest match
+- If receiptType is GROCERY or RETAIL:
+  - Ignore service charges unless explicitly mandatory and large.
+
+DISCOUNTS:
+- Item-level discounts:
+  - Use FINAL discounted price.
+  - Do NOT list discounts as separate items.
+- Global discounts (Senior, PWD, Subtotal Discount):
+  - Extract into "totalDiscount".
+  - Do NOT add as an item.
+  - If unsure, treat as global.
+
+WEIGHTED ITEMS:
+- Include weight in description.
+- quantity = 1
+- unitPrice = final line amount.
+
+PAYMENT & CHANGE HANDLING (CRITICAL):
+- Ignore payment-related lines such as:
+  - Cash, Cash Tendered, Amount Tendered
+  - Change, Change Due
+  - Card Payment, Debit, Credit, GCash, Maya
+- These are NOT expenses and must NOT be extracted as items or discounts.
+- totalAmount must reflect the receipt TOTAL, not the tendered amount.
+
+--------------------------------------------------
+STEP 3: CATEGORIZATION
+--------------------------------------------------
+- Assign each item to ONE of the following categories:
+[${categories}]
+- If uncertain, use "Uncategorized" or "Others".
+
+--------------------------------------------------
+STEP 4: DATA INTEGRITY
+--------------------------------------------------
+- Item amounts reflect FINAL prices paid.
+- totalDiscount includes ONLY global discounts.
+- totalAmount must match the final payable amount.
+- Small rounding differences are acceptable.
+- Rounding/Adjustments: If there is a small "Round Off" or "Adjustment" line at the bottom, you may ignore it or fold it into the largest item's price to ensure the totalAmount is mathematically correct.
+- DO NOT invent items to force a match.
+
+--------------------------------------------------
+RETURN FORMAT (JSON ONLY)
+--------------------------------------------------
+{
+  "isValidReceipt": boolean,
+  "validationError": string | null,
+  "receiptType": "GROCERY" | "RETAIL" | "RESTAURANT" | "CAFE" | "INVOICE" | "UNKNOWN",
+  "merchantName": string | null,
+  "date": string | null,
+  "totalAmount": number | null,
+  "totalDiscount": number | 0,
+  "currency": string | null,
+  "items": [
+    {
+      "description": string,
+      "quantity": number,
+      "unitPrice": number,
+      "amount": number,
+      "category": string
+    }
+  ],
+  "confidence": number
+}
+`;
+
 
         const result = await model.generateContent([
             prompt,
@@ -242,7 +315,21 @@ export const analyzeReceiptImage = async (imageUri: string): Promise<ReceiptAnal
         await logUsage('analyzeReceiptImage', prompt, text, imageTokens, 1, Date.now() - startTime, modelName, 'success');
 
         try {
-            return JSON.parse(text);
+            const parsedResult = JSON.parse(text);
+
+            // Handle Total Discount as an Item
+            if (parsedResult.totalDiscount && parsedResult.totalDiscount > 0) {
+                if (!parsedResult.items) parsedResult.items = [];
+                parsedResult.items.push({
+                    description: "Total Discount",
+                    quantity: 1,
+                    unitPrice: -Math.abs(parsedResult.totalDiscount),
+                    amount: -Math.abs(parsedResult.totalDiscount),
+                    category: "Others"
+                });
+            }
+
+            return parsedResult;
         } catch {
             console.error("Failed to parse JSON from Gemini:", text);
             return { ...failResult, validationError: "Failed to parse AI response" };

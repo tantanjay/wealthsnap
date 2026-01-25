@@ -10,6 +10,8 @@ import { ReceiptAnalysisResult, ReceiptItem } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAlert } from '../../context/AlertContext';
+import { CategorySelectModal } from '../record/CategorySelectModal';
+import { EXPENSE_CATEGORY_GROUPS } from '../../constants/categories';
 
 interface ReceiptReviewFormProps {
     imageUri: string;
@@ -36,6 +38,12 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
     const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
+    const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+    const [activeEditingItemIndex, setActiveEditingItemIndex] = useState<number | null>(null);
+    const [mainCategory, setMainCategory] = useState<string>('Uncategorized');
+
+    // Guard against repeated analysis calls if dependencies change
+    const analysisStartedRef = React.useRef<string | null>(null);
 
     // ... (rest of code)
 
@@ -58,7 +66,12 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
     // Initial Analysis
     useEffect(() => {
         let isMounted = true;
+
         const init = async () => {
+            // Prevent running if already analyzed this specific image
+            if (analysisStartedRef.current === imageUri) return;
+            analysisStartedRef.current = imageUri;
+
             try {
                 // Fetch Currency
                 const profile = await getUserProfile();
@@ -88,6 +101,22 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                     if (result.date) setDate(new Date(result.date));
                     if (result.merchantName) setMerchant(result.merchantName);
                     setItems(result.items);
+
+                    // Determine Main Category (Highest Sum)
+                    const catSums: { [key: string]: number } = {};
+                    result.items.forEach(item => {
+                        const cat = item.category || 'Uncategorized';
+                        catSums[cat] = (catSums[cat] || 0) + item.amount;
+                    });
+                    let maxCat = 'Uncategorized';
+                    let maxVal = -1;
+                    Object.entries(catSums).forEach(([c, v]) => {
+                        if (v > maxVal) {
+                            maxVal = v;
+                            maxCat = c;
+                        }
+                    });
+                    setMainCategory(maxCat);
 
                     // Pre-fill note
                     const noteText = `Receipt from ${result.merchantName || 'Unknown'}`;
@@ -140,8 +169,27 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
 
     const handleSave = async () => {
         if (totalAmount <= 0) {
-            showAlert("Invalid Amount", "Total amount must be greater than 0.");
             return;
+        }
+
+        let finalItems = items;
+
+        // Consolidate items by category if splitting is enabled
+        // User requested: "doble check if it will do a sum of all same category"
+        if (splitByCategory) {
+            const groups: { [key: string]: number } = {};
+            items.forEach(item => {
+                const cat = item.category || 'Uncategorized';
+                groups[cat] = (groups[cat] || 0) + item.amount;
+            });
+
+            finalItems = Object.entries(groups).map(([cat, amount]) => ({
+                description: `${cat} Items`, // Simplified description for the group
+                quantity: 1,
+                unitPrice: amount,
+                amount: amount,
+                category: cat
+            }));
         }
 
         const data: ReceiptAnalysisResult = {
@@ -149,7 +197,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
             merchantName: merchant,
             date: date.toISOString(),
             totalAmount: totalAmount,
-            items: items,
+            items: finalItems,
             confidence: 100
         };
 
@@ -157,9 +205,31 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
             amount: totalAmount,
             date: date,
             note: note,
+            category: mainCategory,
         };
 
         await onSave(transactionBase, data, splitByCategory);
+    };
+
+    const handleCategorySelect = (categoryValue: string) => {
+        if (activeEditingItemIndex !== null) {
+            // Edit Item Category
+            const newItems = [...items];
+            newItems[activeEditingItemIndex].category = categoryValue;
+            setItems(newItems);
+            setCategoryModalVisible(false);
+            setActiveEditingItemIndex(null);
+        } else {
+            // Edit Main Category (when index is null but modal was opened)
+            // Wait, I need a flag to know if I'm editing Main Category. 
+            // I'll use a specific convention: if I open modal without setting index, it implies main category? 
+            // Better to check specific state. But here I used activeEditingItemIndex.
+            // Let's use `activeEditingItemIndex === -1` for Main Category? No, index is null.
+            // I'll add logic: if `activeEditingItemIndex` is null, it updates `mainCategory`.
+            // But I need to ensure `activeEditingItemIndex` is explicitly set to null when opening for main category.
+            setMainCategory(categoryValue);
+            setCategoryModalVisible(false);
+        }
     };
 
     if (loading) {
@@ -197,7 +267,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                 ]);
             }}
         >
-            <View style={{ flex: 1, backgroundColor: colors.background }}>
+            <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
                 <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Review Receipt</Text>
                     {/* Split Toggle */}
@@ -212,7 +282,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                     </View>
                 </View>
 
-                <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+                <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 150 }}>
                     {/* Global Info */}
                     <View style={{ gap: 12 }}>
                         {/* Date & Time Selection (Styled like TransactionForm) */}
@@ -285,6 +355,42 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                         </View>
                     </View>
 
+                    {/* Main Category Selection (Only if NOT splitting) */}
+                    {!splitByCategory && (
+                        <View style={{ marginBottom: 20, marginTop: 10 }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Main Category</Text>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setActiveEditingItemIndex(null); // Null implies Main Category
+                                    setCategoryModalVisible(true);
+                                }}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: colors.surface,
+                                    padding: 12,
+                                    borderRadius: 12,
+                                    borderWidth: 1,
+                                    borderColor: colors.border
+                                }}
+                            >
+                                <View style={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: 16,
+                                    backgroundColor: colors.primary + '20',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginRight: 12
+                                }}>
+                                    <Ionicons name="folder-open" size={16} color={colors.primary} />
+                                </View>
+                                <Text style={{ color: colors.text, fontSize: 16, flex: 1, fontWeight: '600' }}>{mainCategory}</Text>
+                                <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
                     {/* Categories & Items */}
                     <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 12, marginTop: 8 }}>
                         Items by Category
@@ -332,6 +438,23 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                                                 justifyContent: 'space-between',
                                                 alignItems: 'center'
                                             }}>
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        setActiveEditingItemIndex(realIndex);
+                                                        setCategoryModalVisible(true);
+                                                    }}
+                                                    style={{
+                                                        marginRight: 12,
+                                                        width: 32,
+                                                        height: 32,
+                                                        borderRadius: 16,
+                                                        backgroundColor: colors.primary + '15',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }}
+                                                >
+                                                    <Ionicons name="folder-open" size={16} color={colors.primary} />
+                                                </TouchableOpacity>
                                                 <View style={{ flex: 1, marginRight: 8 }}>
                                                     <TextInput
                                                         value={item.description}
@@ -403,13 +526,21 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                     ))}
 
                     {/* Total Summary */}
-                    <View style={{ marginTop: 20, marginBottom: 20, alignItems: 'center' }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>Total Estimate</Text>
-                        <Text style={{ color: colors.text, fontSize: 32, fontWeight: 'bold' }}>
+                    <View style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        backgroundColor: colors.surface,
+                        padding: 16,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: colors.border
+                    }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 16 }}>Total Estimate</Text>
+                        <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>
                             {currencySymbol} {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Text>
                     </View>
-
                 </ScrollView>
 
                 {/* Footer Actions */}
@@ -459,6 +590,13 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                     />
                 )}
             </View>
+
+            <CategorySelectModal
+                visible={categoryModalVisible}
+                onClose={() => setCategoryModalVisible(false)}
+                onSelect={handleCategorySelect}
+                categoryGroups={EXPENSE_CATEGORY_GROUPS}
+            />
         </Modal>
     );
 };
