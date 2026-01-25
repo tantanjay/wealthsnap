@@ -14,7 +14,7 @@ import { restoreFromBackup } from '../../services/backupService';
 import RestoreModal from '../../components/profile/data/RestoreModal';
 import { CONFIG } from '../../constants/config';
 import { generateDummyData } from '../../services/dummyDataService';
-import OnboardingGuide from './OnboardingGuideScreen';
+import HelpCenterScreen from './HelpCenterScreen';
 import { useAlert } from '../../context/AlertContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import TermsContent from '../../components/onboarding/TermsContent';
@@ -502,9 +502,9 @@ const SetupScreen = ({ navigation }: any) => {
                     </View>
                 )}
 
-                {/* Step 4: Onboarding Guide */}
+                {/* Step 4: Help Center / Guide */}
                 {step === 4 && (
-                    <OnboardingGuide onFinish={handleFinalizeOnboarding} mode="onboarding" />
+                    <HelpCenterScreen onFinish={handleFinalizeOnboarding} mode="onboarding" />
                 )}
 
                 {/* Step 2: Profile Setup (Existing Logic) */}
