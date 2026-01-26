@@ -129,7 +129,7 @@ export const scheduleReminderNotifications = async (reminder: Reminder) => {
 
         if (nextDate) {
             const randomPrefix = REMINDER_PREFIXES[Math.floor(Math.random() * REMINDER_PREFIXES.length)];
-            const identifier = await Notifications.scheduleNotificationAsync({
+            await Notifications.scheduleNotificationAsync({
                 content: {
                     title: randomPrefix,
                     body: reminder.title,
