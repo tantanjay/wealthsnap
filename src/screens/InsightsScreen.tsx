@@ -92,7 +92,6 @@ const InsightsScreen = ({ navigation }: any) => {
         // Core Metrics
         const totals = Metrics.calculateTotals(currentMonthTrans);
         const savingsRate = Metrics.calculateSavingsRate(totals.income, totals.expense);
-        const burnRate = Metrics.calculateBurnRate(currentTransactions);
 
         // Breakdowns
         const incomeBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'INCOME', 'SUB_CATEGORY');
@@ -105,6 +104,21 @@ const InsightsScreen = ({ navigation }: any) => {
         const lastMonthTotals = Metrics.calculateTotals(lastMonthTrans);
         const average6Month = Metrics.calculateBurnRate(currentTransactions, 6);
         const average1Year = Metrics.calculateBurnRate(currentTransactions, 12);
+
+        // Smart Burn Rate Logic for Runway
+        // If the standard 6-month burn rate is 0 (new user or sparse history), fall back to shorter terms
+        const burnRate3m = Metrics.calculateBurnRate(currentTransactions, 3);
+
+        let burnRate = average6Month;
+        if (burnRate === 0) {
+            if (burnRate3m > 0) {
+                burnRate = burnRate3m;
+            } else if (lastMonthTotals.expense > 0) {
+                burnRate = lastMonthTotals.expense;
+            } else if (totals.expense > 0) {
+                burnRate = totals.expense;
+            }
+        }
 
         // Anomalies
         const anomalies = Metrics.detectAnomalies(currentMonthTrans, currentTransactions);
