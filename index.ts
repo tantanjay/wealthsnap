@@ -1,6 +1,6 @@
 import { registerRootComponent } from 'expo';
-import './src/services/backgroundTasks'; // Register background tasks (notifications, etc)
-import { setupNotificationListeners } from './src/services/notificationService';
+import './src/services/background/backgroundTasks'; // Register background tasks (notifications, etc)
+import { setupNotificationListeners } from './src/services/background';
 
 // Ensure notification listeners are set up immediately
 setupNotificationListeners();

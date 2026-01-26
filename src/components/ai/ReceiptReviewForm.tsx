@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, BackHandler, TextInput, ActivityIndicator, Platform, Modal, Switch } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImageManipulator from 'expo-image-manipulator';
-import { useTheme } from '../../context/ThemeContext';
-import { Button } from '../index';
-import { analyzeReceiptImage } from '../../services/geminiService';
-import { getUserProfile } from '../../services/storageService';
-import { ReceiptAnalysisResult, ReceiptItem } from '../../types';
-import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { View, Text, ScrollView, TouchableOpacity, BackHandler, TextInput, ActivityIndicator, Platform, Modal, Switch } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Button } from '../index';
 import { useAlert } from '../../context/AlertContext';
+import { useTheme } from '../../context/ThemeContext';
+import { analyzeReceiptImage } from '../../services/integrations';
+import { getUserProfile } from '../../services/core/storageService';
+import { ReceiptAnalysisResult, ReceiptItem } from '../../types';
 import { CategorySelectModal } from '../record/CategorySelectModal';
 import { EXPENSE_CATEGORY_GROUPS } from '../../constants/categories';
 
@@ -44,10 +45,6 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
 
     // Guard against repeated analysis calls if dependencies change
     const analysisStartedRef = React.useRef<string | null>(null);
-
-    // ... (rest of code)
-
-
 
     // Block Back Button
     useEffect(() => {
@@ -175,7 +172,6 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
         let finalItems = items;
 
         // Consolidate items by category if splitting is enabled
-        // User requested: "doble check if it will do a sum of all same category"
         if (splitByCategory) {
             const groups: { [key: string]: number } = {};
             items.forEach(item => {
@@ -220,13 +216,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
             setCategoryModalVisible(false);
             setActiveEditingItemIndex(null);
         } else {
-            // Edit Main Category (when index is null but modal was opened)
-            // Wait, I need a flag to know if I'm editing Main Category. 
-            // I'll use a specific convention: if I open modal without setting index, it implies main category? 
-            // Better to check specific state. But here I used activeEditingItemIndex.
-            // Let's use `activeEditingItemIndex === -1` for Main Category? No, index is null.
-            // I'll add logic: if `activeEditingItemIndex` is null, it updates `mainCategory`.
-            // But I need to ensure `activeEditingItemIndex` is explicitly set to null when opening for main category.
+            // Edit Main Category 
             setMainCategory(categoryValue);
             setCategoryModalVisible(false);
         }
@@ -285,7 +275,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                 <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 150 }}>
                     {/* Global Info */}
                     <View style={{ gap: 12 }}>
-                        {/* Date & Time Selection (Styled like TransactionForm) */}
+                        {/* Date & Time Selection */}
                         <View style={{ flexDirection: 'row', gap: 10 }}>
                             <TouchableOpacity
                                 onPress={() => setShowDatePicker(true)}

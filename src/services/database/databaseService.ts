@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+
 import { createTables, setDatabaseVersion, getDatabaseVersion, DATABASE_NAME, DATABASE_VERSION } from './databaseSchema';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;

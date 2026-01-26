@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, BackHandler, Dimensions } from 'react-native';
-import { ScreenWrapper } from '../../components/common/ScreenWrapper';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../context/ThemeContext';
-import { Button } from '../../components';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CommonActions } from '@react-navigation/native';
-import { saveAcceptedTermsVersion } from '../../services/storageService';
-import { CONFIG } from '../../constants/config';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import TermsContent from '../../components/onboarding/TermsContent';
+import { Button } from '../../components';
+import { ScreenWrapper } from '../../components/common/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
+import { saveAcceptedTermsVersion } from '../../services/core/storageService';
+import { CONFIG } from '../../constants/config';
 
 const { height } = Dimensions.get('window');
 

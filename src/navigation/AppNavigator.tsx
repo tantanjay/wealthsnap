@@ -3,18 +3,19 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../context/ThemeContext';
 
-import HomeScreen from '../screens/HomeScreen';
-import InvestmentScreen from '../screens/InvestmentScreen';
-import RecordScreen from '../screens/RecordScreen';
-import HistoryScreen from '../screens/HistoryScreen';
-import ProfileScreen from '../screens/ProfileScreen';
 import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
 import SetupScreen from '../screens/onboarding/SetupScreen';
-import InsightsScreen from '../screens/InsightsScreen';
 import TermsAndPrivacyScreen from '../screens/onboarding/TermsAndPrivacyScreen';
 import LegalAcceptanceScreen from '../screens/onboarding/LegalAcceptanceScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import InsightsScreen from '../screens/InsightsScreen';
+import HomeScreen from '../screens/HomeScreen';
+import InvestmentScreen from '../screens/InvestmentScreen';
+import HistoryScreen from '../screens/HistoryScreen';
+import RecordScreen from '../screens/RecordScreen';
+
+import { useTheme } from '../context/ThemeContext';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();

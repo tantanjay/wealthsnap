@@ -1,24 +1,10 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import JSZip from 'jszip';
-import {
-    getUserProfile,
-    getAllTransactions,
-    getAllInvestments,
-    getAllCategories,
-    getAllRecurrenceRules,
-    getAIConfig,
-    saveUserProfile,
-    bulkSaveTransactions,
-    bulkSaveInvestments,
-    bulkSaveCategories,
-    bulkSaveRecurrenceRules,
-    saveAIConfig,
-    clearAllData,
-    setOnboardingComplete
-} from './storageService';
-import { getBudgets, setBudget, clearBudgets, Budget } from './budgetService';
-import { encryptData, decryptData } from './encryptionService';
-import { UserProfile, Transaction, Investment, Category, RecurrenceRule, AIConfig } from '../types';
+
+import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget } from '../../types';
+import { decryptData, encryptData } from '../core/encryptionService';
+import { getUserProfile, saveUserProfile, clearAllData, setOnboardingComplete } from '../core/storageService';
+import * as SQLite from '../domain';
 
 export interface BackupData {
     version: string;
@@ -28,8 +14,8 @@ export interface BackupData {
     investments: Investment[];
     categories: Category[];
     recurrenceRules: RecurrenceRule[];
-    aiConfig: AIConfig | null;
     budgets: Budget[];
+    reminders?: Reminder[];
 }
 
 /**
@@ -44,12 +30,12 @@ export const createBackup = async (password: string): Promise<string> => {
 
     // 1. Gather all data
     const profile = await getUserProfile();
-    const transactions = await getAllTransactions();
-    const investments = await getAllInvestments();
-    const categories = await getAllCategories();
-    const recurrenceRules = await getAllRecurrenceRules();
-    const aiConfig = await getAIConfig();
-    const budgets = await getBudgets();
+    const transactions = await SQLite.getAllTransactions();
+    const investments = await SQLite.getAllInvestments();
+    const categories = await SQLite.getAllCategories();
+    const recurrenceRules = await SQLite.getAllRecurrenceRules();
+    const budgets = await SQLite.getAllBudgets();
+    const reminders = await SQLite.getAllReminders();
 
     const backupData: BackupData = {
         version: '2.0', // Schema version 2.0 (SQLite Support)
@@ -59,8 +45,8 @@ export const createBackup = async (password: string): Promise<string> => {
         investments,
         categories,
         recurrenceRules,
-        aiConfig: aiConfig ? { ...aiConfig, apiKey: undefined } : null,
-        budgets
+        budgets,
+        reminders
     };
 
     // 2. Create zip archive
@@ -147,29 +133,30 @@ export const restoreFromBackup = async (
         }
     }
 
-    if (backupData.budgets) {
-        await clearBudgets();
-        for (const b of backupData.budgets) await setBudget(b.category, b.amount);
-    }
+    await safeBulkSave(backupData.transactions, SQLite.bulkSaveTransactions);
+    await safeBulkSave(backupData.investments, SQLite.bulkSaveInvestments);
+    await safeBulkSave(backupData.categories, SQLite.bulkSaveCategories);
+    await safeBulkSave(backupData.recurrenceRules, SQLite.bulkSaveRecurrenceRules);
+    await safeBulkSave(backupData.budgets, SQLite.bulkSaveBudgets);
+    await safeBulkSave(backupData.reminders, SQLite.bulkSaveReminders);
+};
 
-    // Bulk save all data for maximum performance
-    if (backupData.transactions.length > 0) {
-        await bulkSaveTransactions(backupData.transactions);
-    }
-    if (backupData.investments.length > 0) {
-        await bulkSaveInvestments(backupData.investments);
-    }
-    if (backupData.categories.length > 0) {
-        await bulkSaveCategories(backupData.categories);
-    }
-    if (backupData.recurrenceRules.length > 0) {
-        await bulkSaveRecurrenceRules(backupData.recurrenceRules);
-    }
-
-    if (backupData.aiConfig) {
-        await saveAIConfig(backupData.aiConfig);
-    } else if ((backupData as any).geminiConfig) {
-        // Legacy support
-        await saveAIConfig((backupData as any).geminiConfig);
+/**
+ * Safely executes a bulk save operation if the data is a valid non-empty array.
+ * @param data - The array of data to save (could be undefined or null from old backups)
+ * @param saveFn - The bulk save function from your storage service
+ */
+const safeBulkSave = async <T>(
+    data: T[] | undefined | null,
+    saveFn: (items: T[]) => Promise<void>
+): Promise<void> => {
+    if (data && Array.isArray(data) && data.length > 0) {
+        try {
+            await saveFn(data);
+        } catch (error) {
+            console.error(`Bulk save failed for data:`, error);
+            // Optionally re-throw or handle based on your app's needs
+            throw error;
+        }
     }
 };

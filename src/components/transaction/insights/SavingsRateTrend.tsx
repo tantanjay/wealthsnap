@@ -3,12 +3,13 @@ import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-nati
 import { LineChart } from 'react-native-chart-kit';
 import { Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../../context/ThemeContext';
+
+import BottomModal from '../../common/BottomModal';
 import { Card } from '../../../components';
+import { Skeleton } from '../../common/Skeleton';
+import { useTheme } from '../../../context/ThemeContext';
 import { Transaction } from '../../../types';
 import { getSavingsRateTrend } from '../../../utils/financialMetrics';
-import { Skeleton } from '../../common/Skeleton';
-import BottomModal from '../../common/BottomModal';
 
 interface SavingsRateTrendProps {
     transactions: Transaction[];
@@ -132,23 +133,8 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
             const candidateMax = candidateMin + (step * SEGMENTS);
 
             if (candidateMax >= dataMax) {
-                // Found the tightest fit!
                 let finalMin = candidateMin;
                 let finalMax = candidateMax;
-
-                // Smart Adjustment:
-                // Sometimes Max is WAY higher than dataMax. Can we shift the window down?
-                // We can increase n (shift Min down) as long as Min + 4*Step >= dataMax? 
-                // No, shifting down reduces Max. We want to shift UP?
-                // Shifting up means decreasing n. But we picked minimal n to cover dataMin.
-                // So we cannot shift up.
-
-                // However, we effectively check smallest steps first.
-                // So this IS the tightest range bandwidth (Range = 4*Step).
-                // We just need to ensure the window placement is best.
-                // Our logic fixes Min at the highest possible value (tightest to dataMin).
-                // This minimizes whitespace at the bottom.
-                // By definition of small steps, we also minimize bandwidth, so whitespace at top is minimized too relative to Step size.
 
                 const range = finalMax - finalMin;
                 const zeroOffset = finalMax / range;
@@ -599,13 +585,8 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                             return dataPoint < 0 ? '#F44336' : colors.primary;
                         }}
                         decorator={({ width, height }: any) => {
-                            // The chart library doesn't expose the y-scaler in decorator.
-                            // We fall back to manual padding calibration which was visually verified.
-                            // Since the chart height is fixed (200), these absolute values should be consistent.
                             const paddingTop = 16;
                             const paddingBottom = 36;
-
-                            // Use height from args or fallback to 200
                             const chartHeight = height || 200;
 
                             return (

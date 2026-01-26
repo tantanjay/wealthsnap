@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { View, Text, Modal, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
+
 import { useTheme } from '../../context/ThemeContext';
-import { useAlert } from '../../context/AlertContext';
 import { useSecurity } from '../../context/SecurityContext';
+import { useAlert } from '../../context/AlertContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -113,9 +114,6 @@ export const CustomAlert: React.FC = () => {
                                             hideAlert();
                                         }
 
-                                        // If allow dismiss is not false (default behavior is to dismiss)
-                                        // But we probably want to enforce closing unless the callback returned false?
-                                        // For simplicity, let's just close it.
                                         hideAlert();
                                     }}
                                 >

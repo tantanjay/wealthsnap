@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { migrateFromAsyncStorage, isMigrationNeeded, hasAsyncStorageData } from '../../services/database/migrationService';
+
 import { useTheme } from '../../context/ThemeContext';
+import { migrateFromAsyncStorage, isMigrationNeeded, hasAsyncStorageData } from '../../services/database/migrationService';
 
 interface MigrationScreenProps {
     onComplete: () => void;
@@ -30,7 +31,6 @@ export const MigrationScreen: React.FC<MigrationScreenProps> = ({ onComplete }) 
                 return;
             }
 
-            // Perform migration
             // Perform migration
             const result = await migrateFromAsyncStorage((step, current, total) => {
                 setProgress({ step, current, total });

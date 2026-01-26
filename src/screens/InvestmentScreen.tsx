@@ -1,8 +1,9 @@
 import React from 'react';
 import { Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
-import { Ionicons } from '@expo/vector-icons';
 
 const InvestmentScreen = () => {
     const { colors } = useTheme();
@@ -41,8 +42,6 @@ const InvestmentScreen = () => {
                 }}>
                     We&apos;re working on building a powerful portfolio tracker for your stocks, crypto, and assets. Stay tuned!
                 </Text>
-
-                {/* Optional: Add a small decorative card or visual element if desired, but user asked for "no page" / simple */}
             </View>
         </ScreenWrapper>
     );

@@ -1,30 +1,24 @@
 import React, { useState, useCallback } from 'react';
 import { Text, View, TouchableOpacity, StyleSheet, Modal, BackHandler } from 'react-native';
-import { useTheme } from '../../../context/ThemeContext';
-import { useAlert } from '../../../context/AlertContext';
-import { useSecurity } from '../../../context/SecurityContext';
-import { Card } from '../../index';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, CommonActions, NavigationProp } from '@react-navigation/native';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+
 import BackupModal from './BackupModal';
 import RestoreModal from './RestoreModal';
 import ImportDataModal from './ImportDataModal';
 import ImportProcessScreen from './ImportProcessScreen';
-import { clearAllData, getUserProfile, getAllTransactions, bulkSaveTransactions } from '../../../services/storageService';
-import { createBackup, restoreFromBackup } from '../../../services/backupService';
-import {
-    parseCSV,
-    validateHeaders,
-    validateImportData,
-    prepareTransactions,
-    calculateImportSummary,
-    formatValidationErrors,
-    ImportSummary
-} from '../../../services/importService';
+import { Card } from '../../index';
+import { useTheme } from '../../../context/ThemeContext';
+import { useAlert } from '../../../context/AlertContext';
+import { useSecurity } from '../../../context/SecurityContext';
 import { Transaction } from '../../../types';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
+import { clearAllData, getUserProfile } from '../../../services/core/storageService';
+import { createBackup, restoreFromBackup } from '../../../services/integrations';
+import { bulkSaveTransactions, getAllTransactions } from '../../../services/domain';
+import * as Import from '../../../services/integrations';
 
 interface DataManagementCardProps {
     navigation: NavigationProp<any>;
@@ -45,7 +39,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
     const [showImportProcess, setShowImportProcess] = useState(false);
     const [isImportProcessing, setIsImportProcessing] = useState(false);
     const [isImportSaving, setIsImportSaving] = useState(false);
-    const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+    const [importSummary, setImportSummary] = useState<Import.ImportSummary | null>(null);
     const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
     const [currency, setCurrency] = useState('PHP');
 
@@ -247,10 +241,10 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
             const content = await FileSystem.readAsStringAsync(fileUri);
 
             // Parse CSV/TSV
-            const { headers, rows } = parseCSV(content);
+            const { headers, rows } = Import.parseCSV(content);
 
             // Validate headers
-            const headerError = validateHeaders(headers);
+            const headerError = Import.validateHeaders(headers);
             if (headerError) {
                 setIsImportProcessing(false);
                 setShowImportProcess(false);
@@ -269,13 +263,13 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
             const existingTransactions = await getAllTransactions();
 
             // Validate data
-            const validationResult = validateImportData(rows, existingTransactions);
+            const validationResult = Import.validateImportData(rows, existingTransactions);
 
             if (!validationResult.isValid) {
                 setIsImportProcessing(false);
                 setShowImportProcess(false);
 
-                const errorDetails = formatValidationErrors(validationResult.errors);
+                const errorDetails = Import.formatValidationErrors(validationResult.errors);
                 const errorCount = validationResult.errors.length;
 
                 showAlert(
@@ -288,8 +282,8 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
             }
 
             // Prepare transactions
-            const transactions = prepareTransactions(validationResult.validRows);
-            const summary = calculateImportSummary(transactions);
+            const transactions = Import.prepareTransactions(validationResult.validRows);
+            const summary = Import.calculateImportSummary(transactions);
 
             setPendingTransactions(transactions);
             setImportSummary(summary);

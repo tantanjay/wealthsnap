@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useTheme } from '../../../context/ThemeContext';
-import { Button } from '../../index';
 import { Ionicons } from '@expo/vector-icons';
-import { ImportSummary } from '../../../services/importService';
+
+import { Button } from '../../index';
+import { useTheme } from '../../../context/ThemeContext';
+import { ImportSummary } from '../../../services/integrations';
 
 interface ImportProcessScreenProps {
     isProcessing: boolean;

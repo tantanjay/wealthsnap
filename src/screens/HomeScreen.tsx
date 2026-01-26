@@ -1,22 +1,20 @@
 import React, { useCallback, useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+
+import BottomModal from '../components/common/BottomModal';
+import HomeTransactionsCard from '../components/home/HomeTransactionsCard';
+import { Card } from '../components';
+import { Skeleton } from '../components/common/Skeleton';
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
-import { Card } from '../components';
-import { processRecurrenceRules } from '../services/recurrenceService';
-import { getUserProfile, getCachedTransactions, getCachedInvestments, saveHomeDisplayMode, getHomeDisplayMode } from '../services/storageService';
-import { UserProfile, Transaction, Investment } from '../types';
-import { Ionicons } from '@expo/vector-icons';
 import { usePrivacy } from '../context/PrivacyContext';
-
-import { formatCurrencyAmount } from '../utils/currencyUtils';
+import { UserProfile, Transaction, Investment } from '../types';
 import { getTopTransactions } from '../utils/financialMetrics';
-import HomeTransactionsCard from '../components/home/HomeTransactionsCard';
-import { Skeleton } from '../components/common/Skeleton';
-import BottomModal from '../components/common/BottomModal';
-
-
+import { processRecurrenceRules } from '../services/domain/recurrenceService';
+import { formatCurrencyAmount } from '../utils/currencyUtils';
+import * as Storage from '../services/core/storageService';
 
 const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -46,7 +44,7 @@ const HomeScreen = ({ navigation }: any) => {
         setIsLoading(true);
 
         // Load persisted display mode
-        const savedMode = await getHomeDisplayMode();
+        const savedMode = await Storage.getHomeDisplayMode();
         if (savedMode) {
             setDisplayMode(savedMode);
         }
@@ -54,9 +52,9 @@ const HomeScreen = ({ navigation }: any) => {
         // Process recurring rules first to ensure we fetch the latest transactions
         await processRecurrenceRules();
 
-        const p = await getUserProfile();
-        const t = await getCachedTransactions();
-        const inv = await getCachedInvestments();
+        const p = await Storage.getUserProfile();
+        const t = await Storage.getCachedTransactions();
+        const inv = await Storage.getCachedInvestments();
 
         setProfile(p);
         setTransactions(t);
@@ -86,7 +84,6 @@ const HomeScreen = ({ navigation }: any) => {
         setMonthIncome(mInc);
         setMonthExpense(mExp);
 
-
         const totalInv = inv.reduce((sum: number, item: Investment) => sum + (item.quantity * (item.currentPrice || item.averageBuyPrice)), 0);
         setInvestmentTotal(totalInv);
         setIsLoading(false);
@@ -108,14 +105,7 @@ const HomeScreen = ({ navigation }: any) => {
 
     const handleModeChange = async (newMode: 'Overall' | 'Month') => {
         setDisplayMode(newMode);
-        await saveHomeDisplayMode(newMode);
-    };
-
-    const handleScroll = (event: any) => {
-        const contentOffsetX = event.nativeEvent.contentOffset.x;
-        const width = event.nativeEvent.layoutMeasurement.width;
-
-        // Simple debouncing/snap detection could be done, but momentumScrollEnd is safer for page change
+        await Storage.saveHomeDisplayMode(newMode);
     };
 
     const handleMomentumScrollEnd = (event: any) => {
@@ -129,14 +119,10 @@ const HomeScreen = ({ navigation }: any) => {
         }
     };
 
-
     const formatCurrency = (amount: number) => {
         if (isPrivacyEnabled) return '****';
         return formatCurrencyAmount(amount, profile?.currency || 'USD');
     };
-
-    // Determine values to show based on current displayMode (for other parts of UI if needed, though we map directly in ScrollView now)
-    // Actually we render both cards in ScrollView.
 
     return (
         <ScreenWrapper>

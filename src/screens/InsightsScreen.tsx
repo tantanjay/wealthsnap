@@ -1,35 +1,24 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, ScrollView, TouchableOpacity, Text, RefreshControl } from 'react-native';
-import { ScreenWrapper } from '../components/common/ScreenWrapper';
-import { useTheme } from '../context/ThemeContext';
-import { usePrivacy } from '../context/PrivacyContext';
-
-import { Transaction } from '../types';
-import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Metrics from '../utils/financialMetrics';
-import { getBudgets } from '../services/budgetService';
-import {
-    getInsightsCardOrder,
-    saveInsightsCardOrder,
-    getInsightsSectionOrder,
-    saveInsightsSectionOrder,
-    getCachedTransactions,
-    getUserProfile
-} from '../services/storageService';
+import { useFocusEffect } from '@react-navigation/native';
+
 import BottomModal from '../components/common/BottomModal';
 import ReorderModal from '../components/common/ReorderModal';
-
-
-// Sub-components
 import InsightsOverviewCards from '../components/transaction/insights/InsightsOverviewCards';
 import IncomeAnalysis from '../components/transaction/insights/IncomeAnalysis';
 import ExpenseAnalysis from '../components/transaction/insights/ExpenseAnalysis';
 import ComparisonChart from '../components/transaction/insights/ComparisonChart';
 import SmartAlerts from '../components/transaction/insights/SmartAlerts';
-
 import SavingsRateTrend from '../components/transaction/insights/SavingsRateTrend';
 import CumulativeSpendingChart from '../components/transaction/insights/CumulativeSpendingChart';
+import { ScreenWrapper } from '../components/common/ScreenWrapper';
+import { useTheme } from '../context/ThemeContext';
+import { usePrivacy } from '../context/PrivacyContext';
+import { Transaction } from '../types';
+import { getAllBudgets } from '../services/domain';
+import * as Metrics from '../utils/financialMetrics';
+import * as Storage from '../services/core/storageService';
 
 const InsightsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -63,7 +52,6 @@ const InsightsScreen = ({ navigation }: any) => {
         average6Month: 0,
         average1Year: 0,
         anomalies: [] as Metrics.Anomaly[],
-        // New metrics for additional cards
         currentBalance: 0,
         budgetPerformance: 0,
         topExpenseCategory: { name: 'None', amount: 0, percentage: 0 },
@@ -73,19 +61,19 @@ const InsightsScreen = ({ navigation }: any) => {
     const fetchTransactions = async () => {
         setIsLoading(true);
         try {
-            const profile = await getUserProfile();
+            const profile = await Storage.getUserProfile();
             if (profile?.currency) setCurrency(profile.currency);
-            const allTransactions = await getCachedTransactions();
+            const allTransactions = await Storage.getCachedTransactions();
             setTransactions(allTransactions);
 
             // Explicitly calculate metrics with the new data
             await calculateMetrics(allTransactions);
 
             // Load orders
-            const savedCardOrder = await getInsightsCardOrder();
+            const savedCardOrder = await Storage.getInsightsCardOrder();
             if (savedCardOrder) setCardOrder(savedCardOrder);
 
-            const savedSectionOrder = await getInsightsSectionOrder();
+            const savedSectionOrder = await Storage.getInsightsSectionOrder();
             if (savedSectionOrder) setSectionOrder(savedSectionOrder);
         } catch (error) {
             console.error("Error loading insights:", error);
@@ -121,13 +109,13 @@ const InsightsScreen = ({ navigation }: any) => {
         // Anomalies
         const anomalies = Metrics.detectAnomalies(currentMonthTrans, currentTransactions);
 
-        // NEW: Calculate current balance (all-time income - all-time expense)
+        // Calculate current balance (all-time income - all-time expense)
         const allTimeTotals = Metrics.calculateTotals(currentTransactions);
         const currentBalance = allTimeTotals.income - allTimeTotals.expense;
 
-        // NEW: Budget Performance (always use SUB_CATEGORY for budgets)
+        // Budget Performance (always use SUB_CATEGORY for budgets)
         const specificCategoryBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'SUB_CATEGORY');
-        const budgets = await getBudgets();
+        const budgets = await getAllBudgets();
         let budgetPerformance = 0;
         if (budgets.length > 0) {
             // Calculate total spent in budgeted categories using the specific breakdown
@@ -139,12 +127,12 @@ const InsightsScreen = ({ navigation }: any) => {
             budgetPerformance = totalBudget > 0 ? (budgetedCategorySpent / totalBudget) * 100 : 0;
         }
 
-        // NEW: Top Expense Category (always use individual category for better insight)
+        // Top Expense Category (always use individual category for better insight)
         const topExpenseCategory = specificCategoryBreakdown.length > 0
             ? specificCategoryBreakdown[0]
             : { name: 'None', amount: 0, percentage: 0 };
 
-        // NEW: Days in current month
+        // Days in current month
         const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
 
         setData({
@@ -162,13 +150,11 @@ const InsightsScreen = ({ navigation }: any) => {
             average6Month,
             average1Year,
             anomalies,
-            // New metrics
             currentBalance,
             budgetPerformance,
             topExpenseCategory,
             daysInMonth
         });
-        // Removed setIsLoading(false) from here since it's now handled by fetchTransactions
     }, [transactions, expenseGrouping]);
 
     useFocusEffect(
@@ -408,7 +394,7 @@ const InsightsScreen = ({ navigation }: any) => {
                 onReorder={async (newItems) => {
                     const newOrder = newItems.map(i => i.id);
                     setCardOrder(newOrder);
-                    await saveInsightsCardOrder(newOrder);
+                    await Storage.saveInsightsCardOrder(newOrder);
                 }}
             />
 
@@ -440,7 +426,7 @@ const InsightsScreen = ({ navigation }: any) => {
                 onReorder={async (newItems) => {
                     const newOrder = newItems.map(i => i.id);
                     setSectionOrder(newOrder);
-                    await saveInsightsSectionOrder(newOrder);
+                    await Storage.saveInsightsSectionOrder(newOrder);
                 }}
             />
         </ScreenWrapper>
