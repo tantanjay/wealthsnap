@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet, ViewStyle, DimensionValue, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { useTheme } from '../../context/ThemeContext';
 import { useSecurity } from '../../context/SecurityContext';
-import { Ionicons } from '@expo/vector-icons';
 
 interface BottomModalProps {
     visible: boolean;

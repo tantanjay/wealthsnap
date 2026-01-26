@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Button } from '../../components';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../styles/theme';
-import { Button } from '../../components';
-import { HELP_TOPICS, HelpTopic, HelpSlide } from '../../data/helpContent';
+import { HELP_TOPICS, HelpTopic, HelpSlide } from '../../constants/helpContent';
 
 interface HelpCenterProps {
     onFinish: () => void;
@@ -17,11 +18,6 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
     const insets = useSafeAreaInsets();
     const [selectedTopic, setSelectedTopic] = useState<HelpTopic | null>(null);
     const [currentSlide, setCurrentSlide] = useState(0);
-
-    // If in onboarding mode, we might want to default to 'Getting Started' slides
-    // but the plan says it should be a menu first.
-    // However, for first-time users, maybe the slides are better.
-    // Given the user request "put that on the very first menu", menu seems preferred.
 
     useEffect(() => {
         const backAction = () => {

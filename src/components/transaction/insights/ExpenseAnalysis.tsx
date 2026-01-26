@@ -2,16 +2,16 @@ import React from 'react';
 import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
+
+import AllExpensesModal from '../modals/AllExpensesModal';
 import CategoryTrendModal from '../modals/CategoryTrendModal';
 import RecurringExpensesSummaryModal from '../modals/RecurringExpensesSummaryModal';
-import AllExpensesModal from '../modals/AllExpensesModal';
-import { useTheme } from '../../../context/ThemeContext';
-import { RecurrenceRule, Transaction } from '../../../types';
-import { Budget, checkBudgetStatus, getBudgets } from '../../../services/budgetService';
-import { getAllRecurrenceRules } from '../../../services/storageService';
 import { Card } from '../../../components';
-import { formatCompactCurrency } from '../../../utils/currencyUtils';
 import { Skeleton } from '../../common/Skeleton';
+import { useTheme } from '../../../context/ThemeContext';
+import { Budget, RecurrenceRule, Transaction } from '../../../types';
+import { formatCompactCurrency } from '../../../utils/currencyUtils';
+import { checkBudgetStatus, getAllBudgets, getAllRecurrenceRules } from '../../../services/domain';
 
 interface ExpenseAnalysisProps {
     categoryBreakdown: {
@@ -42,7 +42,7 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
 
     const loadData = async () => {
         const [budgetsData, recurrenceData] = await Promise.all([
-            getBudgets(),
+            getAllBudgets(),
             getAllRecurrenceRules()
         ]);
         setBudgets(budgetsData);

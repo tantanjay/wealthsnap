@@ -1,7 +1,8 @@
 import 'react-native-get-random-values';
-import * as SecureStore from 'expo-secure-store';
 import CryptoJS from 'crypto-js';
-import { SECURE_KEYS } from '../constants/config';
+import * as SecureStore from 'expo-secure-store';
+
+import { SECURE_KEYS } from '../../constants/config';
 
 // In-memory cache for the encryption key to avoid repeated SecureStore I/O
 let cachedKey: string | null = null;

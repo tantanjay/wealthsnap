@@ -1,15 +1,33 @@
-import { getDatabase } from './database/databaseService';
-import { encryptField, decryptField } from './encryptionService';
+import { Budget } from '../../types';
+import { getDatabase } from '../database/databaseService';
+import { encryptField, decryptField } from '../core/encryptionService';
 
-export interface Budget {
-    category: string;
-    amount: number;
-}
+/**
+ * Bulk save budgets (for restore)
+ */
+export const bulkSaveBudgets = async (budgets: Budget[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        await db.withTransactionAsync(async () => {
+            for (const budget of budgets) {
+                const encryptedAmount = await encryptField(budget.amount);
+                await db.runAsync(
+                    'INSERT OR REPLACE INTO budgets (category, amount) VALUES (?, ?)',
+                    [budget.category, encryptedAmount]
+                );
+            }
+        });
+    } catch (error) {
+        console.error('Error bulk saving budgets:', error);
+        throw error;
+    }
+};
+
 
 /**
  * Get all budgets
  */
-export const getBudgets = async (): Promise<Budget[]> => {
+export const getAllBudgets = async (): Promise<Budget[]> => {
     try {
         const db = await getDatabase();
         const rows = await db.getAllAsync<any>('SELECT category, amount FROM budgets');
@@ -98,37 +116,4 @@ export const checkBudgetStatus = (spent: number, budget: number): {
     }
 
     return { percentage, status };
-};
-
-/**
- * Clear all budgets
- */
-export const clearBudgets = async (): Promise<void> => {
-    try {
-        const db = await getDatabase();
-        await db.runAsync('DELETE FROM budgets');
-    } catch (error) {
-        console.error('Error clearing budgets:', error);
-    }
-};
-
-/**
- * Bulk save budgets (for restore)
- */
-export const bulkSaveBudgets = async (budgets: Budget[]): Promise<void> => {
-    try {
-        const db = await getDatabase();
-        await db.withTransactionAsync(async () => {
-            for (const budget of budgets) {
-                const encryptedAmount = await encryptField(budget.amount);
-                await db.runAsync(
-                    'INSERT OR REPLACE INTO budgets (category, amount) VALUES (?, ?)',
-                    [budget.category, encryptedAmount]
-                );
-            }
-        });
-    } catch (error) {
-        console.error('Error bulk saving budgets:', error);
-        throw error;
-    }
 };

@@ -1,16 +1,16 @@
 import React, { useMemo } from 'react';
 import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
-import { PieChart } from 'react-native-chart-kit';
-import { useTheme } from '../../../context/ThemeContext';
-import { Card } from '../../../components';
-import { CURRENCY_SYMBOLS, formatCompactCurrency } from '../../../utils/currencyUtils';
-import MonthEndProjectionModal from '../modals/MonthEndProjectionModal';
-import { Transaction } from '../../../types';
 import { Ionicons } from '@expo/vector-icons';
-import { Skeleton } from '../../common/Skeleton';
-import BottomModal from '../../common/BottomModal';
-import { getMonthlyTrends } from '../../../utils/financialMetrics';
+import { PieChart } from 'react-native-chart-kit';
 
+import BottomModal from '../../common/BottomModal';
+import MonthEndProjectionModal from '../modals/MonthEndProjectionModal';
+import { Card } from '../../../components';
+import { Skeleton } from '../../common/Skeleton';
+import { useTheme } from '../../../context/ThemeContext';
+import { Transaction } from '../../../types';
+import { getMonthlyTrends } from '../../../utils/financialMetrics';
+import { CURRENCY_SYMBOLS, formatCompactCurrency } from '../../../utils/currencyUtils';
 
 interface IncomeAnalysisProps {
     monthlyTrends: {

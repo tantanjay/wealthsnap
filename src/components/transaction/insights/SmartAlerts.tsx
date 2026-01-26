@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
 import BottomModal from '../../common/BottomModal';
+import { Card } from '../../../components';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAlert } from '../../../context/AlertContext';
-import { Card } from '../../../components';
 import { Anomaly } from '../../../utils/financialMetrics';
-import { getPermissionStatus, openSettings } from '../../../services/notificationService';
+import { getPermissionStatus, openSettings } from '../../../services/background';
 
 interface SmartAlertsProps {
     anomalies: Anomaly[];

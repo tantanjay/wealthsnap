@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import {
-    View,
-    StyleSheet,
-} from 'react-native';
-import { Reminder } from '../../types';
-import { ReminderList } from './ReminderList';
+import { View, StyleSheet, } from 'react-native';
+
 import { ReminderForm } from './ReminderForm';
+import { ReminderList } from './ReminderList';
+import { Reminder } from '../../types';
 
 interface ReminderManagerProps {
     onClose: () => void;

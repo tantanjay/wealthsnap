@@ -1,4 +1,4 @@
-import { Transaction, Investment, Category, RecurrenceRule } from '../types';
+import { Transaction, Investment, Category, RecurrenceRule, Reminder, Budget } from '../../types';
 
 // Cache configuration
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -11,8 +11,6 @@ interface CacheEntry<T> {
 
 let transactionCache: CacheEntry<Transaction[]> | null = null;
 let investmentCache: CacheEntry<Investment[]> | null = null;
-let categoryCache: CacheEntry<Category[]> | null = null;
-let recurrenceRuleCache: CacheEntry<RecurrenceRule[]> | null = null;
 
 // Cache validity checker
 export const isValid = <T>(cache: CacheEntry<T> | null): boolean => {
@@ -111,45 +109,9 @@ export const invalidateInvestmentCache = (): void => {
     investmentCache = null;
 };
 
-// ============= Categories =============
-
-export const getCategoryCache = (): CacheEntry<Category[]> | null => {
-    return categoryCache;
-};
-
-export const setCategoryCache = (data: Category[]): void => {
-    categoryCache = {
-        data,
-        timestamp: Date.now()
-    };
-};
-
-export const invalidateCategoryCache = (): void => {
-    categoryCache = null;
-};
-
-// ============= Recurrence Rules =============
-
-export const getRecurrenceRuleCache = (): CacheEntry<RecurrenceRule[]> | null => {
-    return recurrenceRuleCache;
-};
-
-export const setRecurrenceRuleCache = (data: RecurrenceRule[]): void => {
-    recurrenceRuleCache = {
-        data,
-        timestamp: Date.now()
-    };
-};
-
-export const invalidateRecurrenceRuleCache = (): void => {
-    recurrenceRuleCache = null;
-};
-
 // ============= Clear All Caches =============
 
 export const invalidateAllCaches = (): void => {
     transactionCache = null;
     investmentCache = null;
-    categoryCache = null;
-    recurrenceRuleCache = null;
 };

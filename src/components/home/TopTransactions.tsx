@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
-import { Card } from '../../components';
-import { Transaction } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
+
+import { Card } from '../../components';
+import { useTheme } from '../../context/ThemeContext';
+import { Transaction } from '../../types';
 import { formatCurrencyAmount } from '../../utils/currencyUtils';
 
 interface TopTransactionsProps {

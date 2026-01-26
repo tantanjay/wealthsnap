@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Switch, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
 import BottomModal from '../common/BottomModal';
 import { Card } from '..';
 import { useTheme } from '../../context/ThemeContext';

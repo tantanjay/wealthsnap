@@ -1,5 +1,5 @@
-import { Transaction, TransactionType } from '../types';
-import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORY_GROUPS } from '../constants/categories';
+import { Transaction, TransactionType } from '../../types';
+import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORY_GROUPS } from '../../constants/categories';
 
 // Expected headers in exact order (case-insensitive)
 const EXPECTED_HEADERS = ['date', 'category', 'income', 'expense', 'notes'];

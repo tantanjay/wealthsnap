@@ -12,6 +12,7 @@ export const SECURE_KEYS = {
 
 export const ASYNC_KEYS = {
     USER_PROFILE: '@wealthsnap_user_profile',
+    THEME_MODE: '@wealthsnap_theme_mode',
     NOTIFIED_ALERTS: '@wealthsnap_notified_alerts',
     SECURITY: {
         PRIVACY_ENABLED: '@wealthsnap_privacy_enabled',

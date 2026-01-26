@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import * as ScreenCapture from 'expo-screen-capture';
 import { usePrivacy } from '../context/PrivacyContext';
+import * as ScreenCapture from 'expo-screen-capture';
 
 /**
  * Hook to manage screen capture protection based on privacy settings.

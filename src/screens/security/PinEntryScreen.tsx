@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Vibration } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../context/ThemeContext';
-import * as securityService from '../../services/securityService';
 
-// This screen should be rendered conditionally via Context or a Modal
+import { useTheme } from '../../context/ThemeContext';
+import { authenticateBiometrics, getBiometricType, hasBiometrics, verifyPin } from '../../services/core/securityService';
+
 interface PinEntryScreenProps {
     onSuccess: () => void;
 }
@@ -19,18 +19,18 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
     const [biometricType, setBiometricType] = useState<'FINGERPRINT' | 'FACIAL_RECOGNITION' | 'IRIS' | 'UNKNOWN'>('UNKNOWN');
 
     const triggerBiometricAuth = useCallback(async () => {
-        const success = await securityService.authenticateBiometrics();
+        const success = await authenticateBiometrics();
         if (success) {
             onSuccess();
         }
     }, [onSuccess]);
 
     const checkBiometrics = useCallback(async () => {
-        const available = await securityService.hasBiometrics();
+        const available = await hasBiometrics();
         setBiometricsAvailable(available);
 
         if (available) {
-            const type = await securityService.getBiometricType();
+            const type = await getBiometricType();
             setBiometricType(type);
             triggerBiometricAuth(); // Still auto-trigger
         }
@@ -53,7 +53,7 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
     };
 
     const checkPin = useCallback(async (currentPin: string) => {
-        const isValid = await securityService.verifyPin(currentPin);
+        const isValid = await verifyPin(currentPin);
         if (isValid) {
             onSuccess();
         } else {
