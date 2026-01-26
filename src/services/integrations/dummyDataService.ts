@@ -1,7 +1,7 @@
-import { UserProfile, Transaction, TransactionType } from '../../types';
-import { saveCategory, saveTransaction } from '../domain';
-import { saveUserProfile, setOnboardingComplete, clearAllData } from '../core/storageService';
-import { CONFIG } from '../../constants/config';
+import { UserProfile, Transaction, TransactionType } from '@types';
+import { saveCategory, saveTransaction } from '@services/domain';
+import { saveUserProfile, setOnboardingComplete, clearAllData } from '@services/core/storageService';
+import { CONFIG } from '@constants/config';
 
 const EXPENSE_CATEGORIES = [
     { name: 'Food', type: 'EXPENSE' as TransactionType, icon: 'fast-food' },

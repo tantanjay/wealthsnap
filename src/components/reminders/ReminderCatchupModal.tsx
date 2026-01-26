@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useTheme } from '../../context/ThemeContext';
-import { useAlert } from '../../context/AlertContext';
-import { Reminder } from '../../types';
-import { handleReminderNotificationAction } from '../../services/domain/reminderService';
+import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
+import { Reminder } from '@types';
+import { handleReminderNotificationAction } from '@services/domain/reminderService';
 
 interface ReminderCatchupModalProps {
     pendingReminders: Reminder[];

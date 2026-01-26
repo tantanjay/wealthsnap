@@ -1,4 +1,4 @@
-import { Transaction, Investment, Category, RecurrenceRule, Reminder, Budget } from '../../types';
+import { Transaction, Investment, Category, RecurrenceRule, Reminder, Budget } from '@types';
 
 // Cache configuration
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes

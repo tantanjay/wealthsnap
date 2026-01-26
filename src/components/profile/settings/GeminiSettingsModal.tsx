@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Text, TextInput, View, TouchableOpacity, ScrollView, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import BottomModal from '../../common/BottomModal';
-import { Button } from '../../index';
-import { useTheme } from '../../../context/ThemeContext';
-import { useAlert } from '../../../context/AlertContext';
-import { saveAIConfig } from '../../../services/core/storageService';
-import { SPACING } from '../../../styles/theme';
+import BottomModal from '@components/common/BottomModal';
+import { Button } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
+import { saveAIConfig } from '@services/core/storageService';
+import { SPACING } from '@styles/theme';
 
 interface GeminiSettingsModalProps {
     visible: boolean;

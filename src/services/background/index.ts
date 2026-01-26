@@ -1,2 +1,2 @@
-export * from './backgroundService';
-export * from './notificationService';
+export * from '@services/background/backgroundService';
+export * from '@services/background/notificationService';

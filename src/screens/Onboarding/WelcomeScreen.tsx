@@ -3,8 +3,8 @@ import { Text, View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { Button } from '../../components';
-import { useTheme } from '../../context/ThemeContext';
+import { Button } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
 
 const FeatureItem = ({ icon, text, color }: { icon: string; text: string; color: string }) => (
     <View style={styles.featureItem}>

@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Vibration } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useTheme } from '../../context/ThemeContext';
-import { authenticateBiometrics, getBiometricType, hasBiometrics, verifyPin } from '../../services/core/securityService';
+import { useTheme } from '@context/ThemeContext';
+import { authenticateBiometrics, getBiometricType, hasBiometrics, verifyPin } from '@services/core/securityService';
 
 interface PinEntryScreenProps {
     onSuccess: () => void;

@@ -1,10 +1,10 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import JSZip from 'jszip';
 
-import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget } from '../../types';
-import { decryptData, encryptData } from '../core/encryptionService';
-import { getUserProfile, saveUserProfile, clearAllData, setOnboardingComplete } from '../core/storageService';
-import * as SQLite from '../domain';
+import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget } from '@types';
+import { decryptData, encryptData } from '@services/core/encryptionService';
+import { getUserProfile, saveUserProfile, clearAllData, setOnboardingComplete } from '@services/core/storageService';
+import * as SQLite from '@services/domain';
 
 export interface BackupData {
     version: string;
