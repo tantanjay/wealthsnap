@@ -62,7 +62,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
     handleRestart = async () => {
         try {
             await Updates.reloadAsync();
-        } catch (e) {
+        } catch {
             // Fallback if reloadAsync fails or not available in dev client sometimes
             this.setState({ hasError: false, error: null, errorInfo: null });
         }
@@ -76,7 +76,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                         <Ionicons name="alert-circle" size={64} color="#FF6B6B" />
                         <Text style={styles.title}>Oops! Something went wrong.</Text>
                         <Text style={styles.subtitle}>
-                            We're sorry, but the app has encountered an unexpected error.
+                            We&apos;re sorry, but the app has encountered an unexpected error.
                         </Text>
 
                         <ScrollView style={styles.errorContainer}>
