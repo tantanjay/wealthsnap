@@ -161,25 +161,7 @@ export const handleReminderNotificationAction = async (reminderId: string, actio
     };
     await saveReminderLog(log);
 
-    if (action === 'SNOOZED') {
-        const snoozeTime = 15; // minutes
-        const trigger = new Date();
-        trigger.setMinutes(trigger.getMinutes() + snoozeTime);
-
-        // Fetch reminder for title
-        const reminders = await getAllReminders();
-        const reminder = reminders.find(r => r.id === reminderId);
-
-        await Notifications.scheduleNotificationAsync({
-            content: {
-                title: `${reminder?.title || 'Reminder'} (Snoozed)`,
-                body: `Snoozed for ${snoozeTime} minutes`,
-                data: { reminderId, type: 'REMINDER' },
-                categoryIdentifier: 'REMINDER_ACTIONS',
-            },
-            trigger: { type: 'date', date: trigger } as Notifications.DateTriggerInput,
-        });
-    } else if (action === 'COMPLETED') {
+    if (action === 'COMPLETED') {
         // Update lastTriggered for the reminder to prevent double-firing
         const reminders = await getAllReminders();
         const reminder = reminders.find(r => r.id === reminderId);
@@ -194,6 +176,8 @@ export const handleReminderNotificationAction = async (reminderId: string, actio
             await scheduleReminderNotifications(updatedReminder);
         }
     }
+
+    // NO SNOOZE LOGIC
 };
 
 /**
@@ -280,12 +264,12 @@ export const initReminderCategories = async () => {
         {
             identifier: 'COMPLETE',
             buttonTitle: 'Complete ✅',
-            options: { opensAppToForeground: true },
+            options: { opensAppToForeground: false },
         },
         {
             identifier: 'SNOOZE',
-            buttonTitle: 'Snooze (15m) ⏰',
-            options: { opensAppToForeground: true },
+            buttonTitle: 'Snooze ⏰',
+            options: { opensAppToForeground: false },
         },
     ]);
 };
