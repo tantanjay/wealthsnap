@@ -1,8 +1,14 @@
-import * as Notifications from 'expo-notifications';
-import { Reminder, ReminderAction, ReminderLog } from '../types';
-import { saveReminder, saveReminderLog, getAllReminders } from './storageService';
 import { Platform } from 'react-native';
-import { REMINDER_PREFIXES } from '../constants/reminders';
+import * as Notifications from 'expo-notifications';
+
+import { Reminder, ReminderAction, ReminderLog } from '../../types';
+import { getDatabase } from "../database/databaseService";
+import { decryptField, encryptField } from "../core/encryptionService";
+import { REMINDER_PREFIXES } from '../../constants/reminders';
+
+// =============================================================================
+// DOMAIN LOGIC
+// =============================================================================
 
 /**
  * Handle "The 31st Problem": If a user sets a monthly reminder for the 31st, 
@@ -272,4 +278,138 @@ export const initReminderCategories = async () => {
             options: { opensAppToForeground: false },
         },
     ]);
+};
+
+// =============================================================================
+// DATA ACCESS (CRUD)
+// =============================================================================
+
+export const bulkSaveReminders = async (reminders: Reminder[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        await db.withTransactionAsync(async () => {
+            for (const reminder of reminders) {
+                const encryptedTitle = await encryptField(reminder.title);
+                await db.runAsync(
+                    `INSERT OR REPLACE INTO reminders 
+                     (id, title, frequency, startDate, times, isActive, lastTriggered, createdAt, updatedAt)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        reminder.id,
+                        encryptedTitle,
+                        reminder.frequency,
+                        reminder.startDate,
+                        JSON.stringify(reminder.times),
+                        reminder.isActive ? 1 : 0,
+                        reminder.lastTriggered || null,
+                        reminder.createdAt || new Date().toISOString(),
+                        new Date().toISOString()
+                    ]
+                );
+            }
+        });
+    } catch (error) {
+        console.error('Error bulk saving reminders:', error);
+        throw new Error('Failed to bulk save reminders');
+    }
+};
+
+export const saveReminder = async (reminder: Reminder): Promise<void> => {
+    try {
+        const db = await getDatabase();
+
+        // Encrypt the title
+        const encryptedTitle = await encryptField(reminder.title);
+
+        await db.runAsync(
+            `INSERT OR REPLACE INTO reminders 
+             (id, title, frequency, startDate, times, isActive, lastTriggered, createdAt, updatedAt)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                reminder.id,
+                encryptedTitle,
+                reminder.frequency,
+                reminder.startDate,
+                JSON.stringify(reminder.times),
+                reminder.isActive ? 1 : 0,
+                reminder.lastTriggered || null,
+                reminder.createdAt || new Date().toISOString(),
+                new Date().toISOString()
+            ]
+        );
+    } catch (error) {
+        console.error('Error saving reminder:', error);
+        throw new Error('Failed to save reminder');
+    }
+};
+
+export const getAllReminders = async (): Promise<Reminder[]> => {
+    try {
+        const db = await getDatabase();
+        const rows = await db.getAllAsync<any>('SELECT * FROM reminders ORDER BY createdAt DESC');
+
+        const reminders = await Promise.all(rows.map(async (row) => {
+            const decryptedTitle = await decryptField(row.title);
+            return {
+                id: row.id,
+                title: decryptedTitle || 'Untitled Reminder',
+                frequency: row.frequency,
+                startDate: row.startDate,
+                times: JSON.parse(row.times),
+                isActive: row.isActive === 1,
+                lastTriggered: row.lastTriggered,
+                createdAt: row.createdAt,
+                updatedAt: row.updatedAt
+            };
+        }));
+
+        return reminders;
+    } catch (error) {
+        console.error('Error getting reminders:', error);
+        return [];
+    }
+};
+
+export const deleteReminder = async (id: string): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        await db.runAsync('DELETE FROM reminders WHERE id = ?', [id]);
+    } catch (error) {
+        console.error('Error deleting reminder:', error);
+        throw new Error('Failed to delete reminder');
+    }
+};
+
+export const saveReminderLog = async (log: ReminderLog): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        await db.runAsync(
+            `INSERT INTO reminder_logs (id, reminderId, action, timestamp) VALUES (?, ?, ?, ?)`,
+            [log.id, log.reminderId, log.action, log.timestamp]
+        );
+    } catch (error) {
+        console.error('Error saving reminder log:', error);
+    }
+};
+
+export const getReminderLogs = async (reminderId?: string, limit: number = 50): Promise<ReminderLog[]> => {
+    try {
+        const db = await getDatabase();
+        let sql = 'SELECT * FROM reminder_logs';
+        let params: any[] = [];
+
+        if (reminderId) {
+            sql += ' WHERE reminderId = ?';
+            params.push(reminderId);
+        }
+
+        sql += ' ORDER BY timestamp DESC LIMIT ?';
+        params.push(limit);
+
+        const rows = await db.getAllAsync<any>(sql, params);
+        return rows as ReminderLog[];
+    } catch (error) {
+        console.error('Error getting reminder logs:', error);
+        return [];
+    }
 };

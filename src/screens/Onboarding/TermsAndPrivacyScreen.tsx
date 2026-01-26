@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { ScreenWrapper } from '../../components/common/ScreenWrapper';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../context/ThemeContext';
-import { Button } from '../../components';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import TermsContent from '../../components/onboarding/TermsContent';
+import { ScreenWrapper } from '../../components/common/ScreenWrapper';
+import { Button } from '../../components';
+import { useTheme } from '../../context/ThemeContext';
 
 const TermsAndPrivacyScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     const { colors } = useTheme();

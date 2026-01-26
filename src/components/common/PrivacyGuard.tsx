@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, AppState, StyleSheet } from 'react-native';
+
 import { usePrivacy } from '../../context/PrivacyContext';
 import { useScreenshotProtection } from '../../hooks/useScreenshotProtection';
 

@@ -1,28 +1,29 @@
 import React, { useState, useCallback } from 'react';
 import { Text, View, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { ScreenWrapper } from '../components/common/ScreenWrapper';
-import { useTheme } from '../context/ThemeContext';
-import { Button, Card } from '../components';
-import BudgetManagementModal from '../components/profile/BudgetManagementModal';
-import SupportModal from '../components/profile/settings/SupportModal';
-
-import { getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule, getUserProfile } from '../services/storageService';
-import { RecurrenceRule } from '../types';
-import { useFocusEffect } from '@react-navigation/native';
-import HelpCenterScreen from './onboarding/HelpCenterScreen';
-import appJson from '../../app.json';
-import SecurityCard from '../components/profile/SecurityCard';
-import DataManagementCard from '../components/profile/data/DataManagementCard';
-import { RecurringRulesListModal } from '../components/profile/RecurringRulesListModal';
-import { useAlert } from '../context/AlertContext';
-import BottomModal from '../components/common/BottomModal';
-import { ReminderManager } from '../components/reminders/ReminderManager';
-import { CONFIG, ASYNC_KEYS } from '../constants/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
+
+import appJson from '../../app.json';
+import BottomModal from '../components/common/BottomModal';
+import SecurityCard from '../components/profile/SecurityCard';
+import HelpCenterScreen from './onboarding/HelpCenterScreen';
+import BudgetManagementModal from '../components/profile/BudgetManagementModal';
+import DataManagementCard from '../components/profile/data/DataManagementCard';
+import SupportModal from '../components/profile/settings/SupportModal';
+import { Button, Card } from '../components';
+import { ScreenWrapper } from '../components/common/ScreenWrapper';
+import { ReminderManager } from '../components/reminders/ReminderManager';
+import { RecurringRulesListModal } from '../components/profile/RecurringRulesListModal';
+import { useTheme } from '../context/ThemeContext';
 import { useSecurity } from '../context/SecurityContext';
+import { useAlert } from '../context/AlertContext';
+import { RecurrenceRule } from '../types';
+import { getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule } from '../services/domain';
+import { getUserProfile } from '../services/core/storageService';
+import { CONFIG, ASYNC_KEYS } from '../constants/config';
 
 const ProfileScreen = ({ navigation }: any) => {
     const { colors, setMode, mode } = useTheme();
@@ -64,8 +65,6 @@ const ProfileScreen = ({ navigation }: any) => {
         }
     }
 
-
-
     const handleManageRecurring = async () => {
         const rules = await getAllRecurrenceRules();
         setRecurrenceRules(rules);
@@ -76,6 +75,7 @@ const ProfileScreen = ({ navigation }: any) => {
         try {
             const updatedRule = { ...rule, isActive: !rule.isActive };
             await saveRecurrenceRule(updatedRule);
+
             // Refresh list
             const rules = await getAllRecurrenceRules();
             setRecurrenceRules(rules);

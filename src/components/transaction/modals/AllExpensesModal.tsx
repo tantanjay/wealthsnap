@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Budget, checkBudgetStatus } from '../../../services/budgetService';
-import { useTheme } from '../../../context/ThemeContext';
-import { formatCompactCurrency } from '../../../utils/currencyUtils';
+
 import BottomModal from '../../common/BottomModal';
+import { useTheme } from '../../../context/ThemeContext';
+import { Budget } from '../../../types';
+import { checkBudgetStatus } from '../../../services/domain';
+import { formatCompactCurrency } from '../../../utils/currencyUtils';
 
 interface AllExpensesModalProps {
     visible: boolean;

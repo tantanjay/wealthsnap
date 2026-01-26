@@ -1,16 +1,18 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Text, View, SectionList, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+
+import TransactionOptionsModal from '../components/transaction/modals/TransactionOptionsModal';
+import { Card } from '../components';
+import { Skeleton } from '../components/common/Skeleton';
 import { ScreenWrapper } from '../components/common/ScreenWrapper';
 import { useTheme } from '../context/ThemeContext';
-import { useFocusEffect } from '@react-navigation/native';
-import { deleteTransaction, saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile, getCachedTransactions } from '../services/storageService';
-import { Transaction, UserProfile } from '../types';
-import { Ionicons } from '@expo/vector-icons';
-import { Card } from '../components';
 import { usePrivacy } from '../context/PrivacyContext';
+import { Transaction, UserProfile } from '../types';
+import { deleteTransaction } from '../services/domain';
 import { formatCurrencyAmount } from '../utils/currencyUtils';
-import TransactionOptionsModal from '../components/transaction/modals/TransactionOptionsModal';
-import { Skeleton } from '../components/common/Skeleton';
+import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile, getCachedTransactions } from '../services/core/storageService';
 
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
@@ -225,8 +227,6 @@ const HistoryScreen = ({ navigation }: any) => {
     // --- Actions ---
 
     const handleDelete = async (id: string) => {
-        // The confirmation is handled in the modal, but just in case we wanted it here,
-        // we can assume the caller has confirmed if they reached here via the Modal's destructive action.
         await deleteTransaction(id);
         loadTransactions();
     };

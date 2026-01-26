@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
 import { useTheme } from '../../context/ThemeContext';
-import { setPin } from '../../services/securityService';
 import { useAlert } from '../../context/AlertContext';
+import { setPin } from '../../services/core/securityService';
 
 interface PinCreationScreenProps {
     onSuccess: () => void;

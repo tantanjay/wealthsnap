@@ -59,6 +59,11 @@ export interface RecurrenceRule {
     isActive: boolean;
 }
 
+export interface Budget {
+    category: string;
+    amount: number;
+}
+
 export interface AIConfig {
     apiKey?: string;
     modelId?: string;

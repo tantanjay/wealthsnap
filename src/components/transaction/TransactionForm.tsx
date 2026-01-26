@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
-import { useTheme } from '../../context/ThemeContext';
-import { Button, Card } from '..';
-import { saveTransaction, saveRecurrenceRule } from '../../services/storageService';
-import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency } from '../../types';
-import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '../../constants/categories';
-import { Ionicons } from '@expo/vector-icons';
-import { CalculatorModal } from '../record/CalculatorModal';
-import { RecurringOptions } from '../transaction/RecurringOptions';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+import { Button, Card } from '..';
+import { CalculatorModal } from '../record/CalculatorModal';
 import { CategorySelectModal } from '../record/CategorySelectModal';
+import { RecurringOptions } from '../transaction/RecurringOptions';
+import { useTheme } from '../../context/ThemeContext';
 import { useAlert } from '../../context/AlertContext';
+import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency } from '../../types';
+import { saveTransaction, saveRecurrenceRule } from '../../services/domain';
+import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '../../constants/categories';
 
 interface TransactionFormProps {
     transactionType: TransactionType;

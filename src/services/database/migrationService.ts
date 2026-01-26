@@ -1,15 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getDatabase } from './databaseService';
-import { decryptData, encryptField } from '../encryptionService';
+
 import { Transaction, Investment, Category, RecurrenceRule } from '../../types';
-import { Budget } from '../budgetService';
+import { getDatabase } from './databaseService';
+import { decryptData, encryptField } from '../core/encryptionService';
 
 const ASYNC_STORAGE_KEYS = {
     TRANSACTIONS: '@wealthsnap_transactions',
     INVESTMENTS: '@wealthsnap_investments',
     CATEGORIES: '@wealthsnap_categories',
-    RECURRENCE_RULES: '@wealthsnap_recurrence_rules',
-    BUDGETS: '@budgets',
+    RECURRENCE_RULES: '@wealthsnap_recurrence_rules'
 };
 
 /**
@@ -109,8 +108,6 @@ const migrateTransactions = async (db: any): Promise<number> => {
         );
     }
 
-
-
     return transactions.length;
 };
 
@@ -148,8 +145,6 @@ const migrateInvestments = async (db: any): Promise<number> => {
         );
     }
 
-
-
     return investments.length;
 };
 
@@ -176,8 +171,6 @@ const migrateCategories = async (db: any): Promise<number> => {
             ]
         );
     }
-
-
 
     return categories.length;
 };
@@ -216,32 +209,7 @@ const migrateRecurrenceRules = async (db: any): Promise<number> => {
         );
     }
 
-
-
     return rules.length;
-};
-
-/**
- * Migrate budgets from AsyncStorage to SQLite
- */
-const migrateBudgets = async (db: any): Promise<number> => {
-    const budgets = await readAsyncStorageData<Budget>(ASYNC_STORAGE_KEYS.BUDGETS);
-
-    if (budgets.length === 0) {
-        return 0;
-    }
-
-    for (const budget of budgets) {
-        const encryptedAmount = await encryptField(budget.amount);
-        await db.runAsync(
-            `INSERT OR REPLACE INTO budgets (category, amount) VALUES (?, ?)`,
-            [budget.category, encryptedAmount]
-        );
-    }
-
-
-
-    return budgets.length;
 };
 
 /**
@@ -266,7 +234,6 @@ export const migrateV1ToV2 = async (db: any): Promise<void> => {
                 );
             }
         });
-
 
     } catch (error) {
         console.error('[Migration] ❌ V1 -> V2 migration failed:', error);
@@ -331,20 +298,17 @@ export const migrateFromAsyncStorage = async (
 
         // Migrate all data in a single transaction for atomicity
         await db.withTransactionAsync(async () => {
-            onProgress?.('Migrating transactions...', 1, 5);
+            onProgress?.('Migrating transactions...', 1, 4);
             counts.transactions = await migrateTransactions(db);
 
-            onProgress?.('Migrating investments...', 2, 5);
+            onProgress?.('Migrating investments...', 2, 4);
             counts.investments = await migrateInvestments(db);
 
-            onProgress?.('Migrating categories...', 3, 5);
+            onProgress?.('Migrating categories...', 3, 4);
             counts.categories = await migrateCategories(db);
 
-            onProgress?.('Migrating recurrence rules...', 4, 5);
+            onProgress?.('Migrating recurrence rules...', 4, 4);
             counts.recurrenceRules = await migrateRecurrenceRules(db);
-
-            onProgress?.('Migrating budgets...', 5, 5);
-            counts.budgets = await migrateBudgets(db);
         });
 
         // Validate migration

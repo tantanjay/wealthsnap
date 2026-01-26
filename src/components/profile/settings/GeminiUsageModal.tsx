@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, useColorScheme } from 'react-native';
-import { getAIUsageLogs } from '../../../services/storageService';
-import { AIUsageLog } from '../../../types';
-import { useTheme } from '../../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { SPACING, FONT_SIZES } from '../../../styles/theme';
+
 import BottomModal from '../../common/BottomModal';
+import { useTheme } from '../../../context/ThemeContext';
+import { AIUsageLog } from '../../../types';
+import { getAIUsageLogs } from '../../../services/domain';
+import { SPACING, FONT_SIZES } from '../../../styles/theme';
 
 interface GeminiUsageModalProps {
     visible: boolean;

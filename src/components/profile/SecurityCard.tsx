@@ -1,21 +1,22 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../context/ThemeContext';
-import { Card } from '../../components';
-import { isPinSet, getTimeoutSetting, saveTimeoutSetting, TimeoutOption, TIMEOUT_OPTIONS } from '../../services/securityService';
-import { getAIConfig } from '../../services/storageService';
+import { useFocusEffect } from '@react-navigation/native';
+
+import BottomModal from '../common/BottomModal';
 import PinCreationScreen from '../../screens/security/PinCreationScreen';
 import GeminiSettingsModal from './settings/GeminiSettingsModal';
 import GeminiUsageModal from './settings/GeminiUsageModal';
-import BottomModal from '../common/BottomModal';
+import { Card } from '../../components';
+import { useTheme } from '../../context/ThemeContext';
+import { getAIConfig } from '../../services/core/storageService';
+import * as Security from '../../services/core/securityService';
 
 const SecurityCard = () => {
     const { colors } = useTheme();
     const [hasPin, setHasPin] = useState(false);
     const [hasApiKey, setHasApiKey] = useState(false);
-    const [timeoutSetting, setTimeoutSetting] = useState<TimeoutOption>('daily');
+    const [timeoutSetting, setTimeoutSetting] = useState<Security.TimeoutOption>('daily');
     const [showPinModal, setShowPinModal] = useState(false);
     const [showTimeoutModal, setShowTimeoutModal] = useState(false);
 
@@ -24,9 +25,9 @@ const SecurityCard = () => {
     const [showGeminiUsage, setShowGeminiUsage] = useState(false);
 
     const checkSecuritySettings = async () => {
-        const pinSet = await isPinSet();
+        const pinSet = await Security.isPinSet();
         setHasPin(pinSet);
-        const timeout = await getTimeoutSetting();
+        const timeout = await Security.getTimeoutSetting();
         setTimeoutSetting(timeout);
 
         const config = await getAIConfig();
@@ -39,8 +40,8 @@ const SecurityCard = () => {
         }, [])
     );
 
-    const handleSetTimeout = async (option: TimeoutOption) => {
-        await saveTimeoutSetting(option);
+    const handleSetTimeout = async (option: Security.TimeoutOption) => {
+        await Security.saveTimeoutSetting(option);
         setTimeoutSetting(option);
         setShowTimeoutModal(false);
     };
@@ -83,8 +84,8 @@ const SecurityCard = () => {
         </TouchableOpacity>
     );
 
-    const getTimeoutLabel = (value: TimeoutOption) => {
-        const option = TIMEOUT_OPTIONS.find(o => o.value === value);
+    const getTimeoutLabel = (value: Security.TimeoutOption) => {
+        const option = Security.TIMEOUT_OPTIONS.find(o => o.value === value);
         return option ? option.label : 'Select';
     };
 
@@ -167,7 +168,7 @@ const SecurityCard = () => {
                 title="Auto-Lock Timeout"
             >
                 <View style={{ gap: 8 }}>
-                    {TIMEOUT_OPTIONS.map(opt => (
+                    {Security.TIMEOUT_OPTIONS.map(opt => (
                         <TouchableOpacity
                             key={opt.value}
                             onPress={() => handleSetTimeout(opt.value)}

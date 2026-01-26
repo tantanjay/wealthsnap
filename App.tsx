@@ -2,27 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
 import AppNavigator from './src/navigation/AppNavigator';
-import { ThemeProvider } from './src/context/ThemeContext';
-import { isOnboardingComplete, getAcceptedTermsVersion } from './src/services/storageService';
+import BottomModal from './src/components/common/BottomModal';
 import { SecurityProvider } from './src/context/SecurityContext';
 import { PrivacyProvider } from './src/context/PrivacyContext';
-import { CONFIG } from './src/constants/config';
-import { MigrationScreen } from './src/screens/onboarding/MigrationScreen';
-import { PrivacyGuard } from './src/components/common/PrivacyGuard';
 import { AlertProvider } from './src/context/AlertContext';
-import { CustomAlert } from './src/components/common/CustomAlert';
-import { Reminder } from './src/types';
-import { getPendingReminders } from './src/services/reminderService';
-import BottomModal from './src/components/common/BottomModal';
-import { ReminderCatchupModal } from './src/components/reminders/ReminderCatchupModal';
+import { ThemeProvider } from './src/context/ThemeContext';
 import { GlobalErrorBoundary } from './src/components/common/GlobalErrorBoundary';
-
-
+import { PrivacyGuard } from './src/components/common/PrivacyGuard';
+import { CustomAlert } from './src/components/common/CustomAlert';
+import { MigrationScreen } from './src/screens/onboarding/MigrationScreen';
+import { ReminderCatchupModal } from './src/components/reminders/ReminderCatchupModal';
+import { Reminder } from './src/types';
 import { getDatabase } from './src/services/database/databaseService';
-
-import { initNotifications, requestPermissions } from './src/services/notificationService';
-import { registerBackgroundFetchAsync } from './src/services/backgroundService';
+import { getPendingReminders } from './src/services/domain/reminderService';
+import { isOnboardingComplete, getAcceptedTermsVersion } from './src/services/core/storageService';
+import { initNotifications, requestPermissions, registerBackgroundFetchAsync } from './src/services/background';
+import { CONFIG } from './src/constants/config';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
