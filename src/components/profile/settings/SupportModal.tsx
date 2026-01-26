@@ -2,9 +2,9 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import BottomModal from '../../common/BottomModal';
-import { Button } from '../../index';
-import { useTheme } from '../../../context/ThemeContext';
+import BottomModal from '@components/common/BottomModal';
+import { Button } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
 
 interface SupportModalProps {
     visible: boolean;

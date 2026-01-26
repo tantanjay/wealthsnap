@@ -1,7 +1,7 @@
-import { RecurrenceRule, Transaction, RecurrenceFrequency } from '../../types';
-import { getDatabase } from "../database/databaseService";
-import { saveTransaction } from './transactionService';
-import { decryptField, encryptField } from "../core/encryptionService";
+import { RecurrenceRule, Transaction, RecurrenceFrequency } from '@types';
+import { getDatabase } from "@services/database/databaseService";
+import { saveTransaction } from '@services/domain/transactionService';
+import { decryptField, encryptField } from "@services/core/encryptionService";
 
 // =============================================================================
 // DOMAIN LOGIC

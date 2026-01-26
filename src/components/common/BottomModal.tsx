@@ -3,8 +3,8 @@ import { View, Text, Modal, TouchableOpacity, StyleSheet, ViewStyle, DimensionVa
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTheme } from '../../context/ThemeContext';
-import { useSecurity } from '../../context/SecurityContext';
+import { useTheme } from '@context/ThemeContext';
+import { useSecurity } from '@context/SecurityContext';
 
 interface BottomModalProps {
     visible: boolean;

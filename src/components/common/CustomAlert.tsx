@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { View, Text, Modal, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 
-import { useTheme } from '../../context/ThemeContext';
-import { useSecurity } from '../../context/SecurityContext';
-import { useAlert } from '../../context/AlertContext';
+import { useTheme } from '@context/ThemeContext';
+import { useSecurity } from '@context/SecurityContext';
+import { useAlert } from '@context/AlertContext';
 
 const { width, height } = Dimensions.get('window');
 

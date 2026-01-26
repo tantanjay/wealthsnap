@@ -1,5 +1,5 @@
-import { AIUsageLog } from "../../types";
-import { getDatabase } from "../database/databaseService";
+import { AIUsageLog } from "@types";
+import { getDatabase } from "@services/database/databaseService";
 
 export const saveAIUsageLog = async (log: AIUsageLog): Promise<void> => {
     try {

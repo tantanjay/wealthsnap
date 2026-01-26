@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, BackHandler } fro
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button } from '../../components';
-import { useTheme } from '../../context/ThemeContext';
-import { SPACING } from '../../styles/theme';
-import { HELP_TOPICS, HelpTopic, HelpSlide } from '../../constants/helpContent';
+import { Button } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
+import { SPACING } from '@styles/theme';
+import { HELP_TOPICS, HelpTopic, HelpSlide } from '@constants/helpContent';
 
 interface HelpCenterProps {
     onFinish: () => void;

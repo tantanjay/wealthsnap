@@ -1,6 +1,6 @@
-import { Budget } from '../../types';
-import { getDatabase } from '../database/databaseService';
-import { encryptField, decryptField } from '../core/encryptionService';
+import { Budget } from '@types';
+import { getDatabase } from '@services/database/databaseService';
+import { encryptField, decryptField } from '@services/core/encryptionService';
 
 /**
  * Bulk save budgets (for restore)

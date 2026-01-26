@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { AppState, AppStateStatus, View } from 'react-native';
 
-import PinEntryScreen from '../screens/security/PinEntryScreen';
-import { isOnboardingComplete } from '../services/core/storageService';
-import { shouldLockApp, updateLastActiveTime } from '../services/core/securityService';
+import PinEntryScreen from '@screens/security/PinEntryScreen';
+import { isOnboardingComplete } from '@services/core/storageService';
+import { shouldLockApp, updateLastActiveTime } from '@services/core/securityService';
 
 interface SecurityContextType {
     isLocked: boolean;

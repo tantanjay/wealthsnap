@@ -1,7 +1,7 @@
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 
-import { processRecurrenceRules } from '../domain/recurrenceService';
+import { processRecurrenceRules } from '@services/domain/recurrenceService';
 
 const BACKGROUND_FETCH_TASK = 'BACKGROUND_FETCH_TASK';
 

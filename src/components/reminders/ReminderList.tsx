@@ -2,12 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Switch, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Card } from '../index';
-import { useTheme } from '../../context/ThemeContext';
-import { useAlert } from '../../context/AlertContext';
-import { Reminder } from '../../types';
-import { getAllReminders, saveReminder, deleteReminder } from '../../services/domain';
-import { scheduleReminderNotifications, cancelReminderNotifications, calculateNextOccurrence } from '../../services/domain/reminderService';
+import { Card } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
+import { Reminder } from '@types';
+import { getAllReminders, saveReminder, deleteReminder } from '@services/domain';
+import { scheduleReminderNotifications, cancelReminderNotifications, calculateNextOccurrence } from '@services/domain/reminderService';
 
 interface ReminderListProps {
     onEdit: (reminder: Reminder) => void;
