@@ -16,6 +16,8 @@ import { Reminder } from './src/types';
 import { getPendingReminders } from './src/services/reminderService';
 import BottomModal from './src/components/common/BottomModal';
 import { ReminderCatchupModal } from './src/components/reminders/ReminderCatchupModal';
+import { GlobalErrorBoundary } from './src/components/common/GlobalErrorBoundary';
+
 
 import { getDatabase } from './src/services/database/databaseService';
 
@@ -110,33 +112,35 @@ export default function App() {
   // Finally show the app
   return (
     <ThemeProvider>
-      <SecurityProvider>
-        <PrivacyProvider>
-          <AlertProvider>
-            <PrivacyGuard />
-            <SafeAreaProvider>
-              <StatusBar style="auto" />
-              <AppNavigator initialRoute={initialRoute} />
-              <CustomAlert />
-              <BottomModal
-                visible={showCatchup}
-                onClose={() => setShowCatchup(false)}
-                title="Reminder Catch-up"
-                maxHeight="85%"
-                style={{ height: '85%' }}
-                contentStyle={{ flex: 1 }}
-              >
-                {showCatchup && (
-                  <ReminderCatchupModal
-                    pendingReminders={pendingReminders}
-                    onClose={() => setShowCatchup(false)}
-                  />
-                )}
-              </BottomModal>
-            </SafeAreaProvider>
-          </AlertProvider>
-        </PrivacyProvider>
-      </SecurityProvider>
+      <GlobalErrorBoundary>
+        <SecurityProvider>
+          <PrivacyProvider>
+            <AlertProvider>
+              <PrivacyGuard />
+              <SafeAreaProvider>
+                <StatusBar style="auto" />
+                <AppNavigator initialRoute={initialRoute} />
+                <CustomAlert />
+                <BottomModal
+                  visible={showCatchup}
+                  onClose={() => setShowCatchup(false)}
+                  title="Reminder Catch-up"
+                  maxHeight="85%"
+                  style={{ height: '85%' }}
+                  contentStyle={{ flex: 1 }}
+                >
+                  {showCatchup && (
+                    <ReminderCatchupModal
+                      pendingReminders={pendingReminders}
+                      onClose={() => setShowCatchup(false)}
+                    />
+                  )}
+                </BottomModal>
+              </SafeAreaProvider>
+            </AlertProvider>
+          </PrivacyProvider>
+        </SecurityProvider>
+      </GlobalErrorBoundary>
     </ThemeProvider>
   );
 }
