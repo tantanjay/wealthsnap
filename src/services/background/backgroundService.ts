@@ -7,7 +7,6 @@ const BACKGROUND_FETCH_TASK = 'BACKGROUND_FETCH_TASK';
 
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
     try {
-        const now = new Date();
         // Process recurring rules - this will internally call saveTransaction -> checkAndNotifyAnomalies
         const processedCount = await processRecurrenceRules();
 
