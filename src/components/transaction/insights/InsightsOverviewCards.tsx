@@ -2,11 +2,11 @@ import React, { useRef, useState, useMemo } from 'react';
 import { View, Text, Dimensions, FlatList, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import BottomModal from '../../common/BottomModal';
-import { Card } from '../../../components';
-import { Skeleton } from '../../common/Skeleton';
-import { useTheme } from '../../../context/ThemeContext';
-import { formatCurrencyAmount } from '../../../utils/currencyUtils';
+import BottomModal from '@components/common/BottomModal';
+import { Card } from '@components/index';
+import { Skeleton } from '@components/common/Skeleton';
+import { useTheme } from '@context/ThemeContext';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface InsightsOverviewCardsProps {
     netCashFlow: number;

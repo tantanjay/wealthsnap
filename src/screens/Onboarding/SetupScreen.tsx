@@ -5,19 +5,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 
-import RestoreModal from '../../components/profile/data/RestoreModal';
-import PinCreationScreen from '../security/PinCreationScreen';
-import TermsContent from '../../components/onboarding/TermsContent';
-import OnboardingGuide from './OnboardingGuideScreen';
-import { Button, Card } from '../../components';
-import { ScreenWrapper } from '../../components/common/ScreenWrapper';
-import { useTheme } from '../../context/ThemeContext';
-import { useAlert } from '../../context/AlertContext';
-import { UserProfile } from '../../types';
-import { restoreFromBackup, generateDummyData } from '../../services/integrations';
-import { saveUserProfile, setOnboardingComplete, saveAcceptedTermsVersion } from '../../services/core/storageService';
-import { CONFIG } from '../../constants/config';
-import { SPACING } from '../../styles/theme';
+import RestoreModal from '@components/profile/data/RestoreModal';
+import PinCreationScreen from '@screens/security/PinCreationScreen';
+import TermsContent from '@components/onboarding/TermsContent';
+import OnboardingGuide from '@screens/onboarding/OnboardingGuideScreen';
+import { Button, Card } from '@components/index';
+import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
+import { UserProfile } from '@types';
+import { restoreFromBackup, generateDummyData } from '@services/integrations';
+import { saveUserProfile, setOnboardingComplete, saveAcceptedTermsVersion } from '@services/core/storageService';
+import { CONFIG } from '@constants/config';
+import { SPACING } from '@styles/theme';
 
 const { height } = Dimensions.get('window');
 

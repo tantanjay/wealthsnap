@@ -2,11 +2,11 @@ import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Switch, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import BottomModal from '../common/BottomModal';
-import { Card } from '..';
-import { useTheme } from '../../context/ThemeContext';
-import { RecurrenceRule } from '../../types';
-import { formatCurrencyAmount } from '../../utils/currencyUtils';
+import BottomModal from '@components/common/BottomModal';
+import { Card } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
+import { RecurrenceRule } from '@types';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface RecurringRulesListModalProps {
     visible: boolean;

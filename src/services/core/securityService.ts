@@ -1,10 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
+
+import { ASYNC_KEYS, SECURE_KEYS } from '@constants/config';
 
 // ============= Biometrics =============
-
-import * as LocalAuthentication from 'expo-local-authentication';
-import { ASYNC_KEYS, SECURE_KEYS } from '../../constants/config';
 
 export type TimeoutOption = 'immediately' | 'daily' | 'weekly' | 'monthly';
 

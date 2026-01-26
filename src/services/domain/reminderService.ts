@@ -1,10 +1,10 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
-import { Reminder, ReminderAction, ReminderLog } from '../../types';
-import { getDatabase } from "../database/databaseService";
-import { decryptField, encryptField } from "../core/encryptionService";
-import { REMINDER_PREFIXES } from '../../constants/reminders';
+import { Reminder, ReminderAction, ReminderLog } from '@types';
+import { getDatabase } from "@services/database/databaseService";
+import { decryptField, encryptField } from "@services/core/encryptionService";
+import { REMINDER_PREFIXES } from '@constants/reminders';
 
 // =============================================================================
 // DOMAIN LOGIC

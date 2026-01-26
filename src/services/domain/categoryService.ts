@@ -1,5 +1,5 @@
-import { Category } from "../../types";
-import { getDatabase } from "../database/databaseService";
+import { Category } from "@types";
+import { getDatabase } from "@services/database/databaseService";
 
 export const bulkSaveCategories = async (categories: Category[]): Promise<void> => {
     try {

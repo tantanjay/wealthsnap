@@ -1,11 +1,11 @@
 import { registerRootComponent } from 'expo';
-import './src/services/background/backgroundTasks'; // Register background tasks (notifications, etc)
-import { setupNotificationListeners } from './src/services/background';
+import '@services/background/backgroundTasks'; // Register background tasks (notifications, etc)
+import { setupNotificationListeners } from '@services/background';
 
 // Ensure notification listeners are set up immediately
 setupNotificationListeners();
 
-import App from './App';
+import App from '@app';
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
 // It also ensures that whether you load the app in Expo Go or in a native build,

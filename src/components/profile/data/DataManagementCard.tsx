@@ -6,19 +6,19 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
-import BackupModal from './BackupModal';
-import RestoreModal from './RestoreModal';
-import ImportDataModal from './ImportDataModal';
-import ImportProcessScreen from './ImportProcessScreen';
-import { Card } from '../../index';
-import { useTheme } from '../../../context/ThemeContext';
-import { useAlert } from '../../../context/AlertContext';
-import { useSecurity } from '../../../context/SecurityContext';
-import { Transaction } from '../../../types';
-import { clearAllData, getUserProfile } from '../../../services/core/storageService';
-import { createBackup, restoreFromBackup } from '../../../services/integrations';
-import { bulkSaveTransactions, getAllTransactions } from '../../../services/domain';
-import * as Import from '../../../services/integrations';
+import BackupModal from '@components/profile/data/BackupModal';
+import RestoreModal from '@components/profile/data/RestoreModal';
+import ImportDataModal from '@components/profile/data/ImportDataModal';
+import ImportProcessScreen from '@components/profile/data/ImportProcessScreen';
+import { Card } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
+import { useSecurity } from '@context/SecurityContext';
+import { Transaction } from '@types';
+import { clearAllData, getUserProfile } from '@services/core/storageService';
+import { createBackup, restoreFromBackup } from '@services/integrations';
+import { bulkSaveTransactions, getAllTransactions } from '@services/domain';
+import * as Import from '@services/integrations';
 
 interface DataManagementCardProps {
     navigation: NavigationProp<any>;

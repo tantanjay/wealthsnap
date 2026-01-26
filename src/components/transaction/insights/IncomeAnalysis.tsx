@@ -3,14 +3,14 @@ import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-chart-kit';
 
-import BottomModal from '../../common/BottomModal';
-import MonthEndProjectionModal from '../modals/MonthEndProjectionModal';
-import { Card } from '../../../components';
-import { Skeleton } from '../../common/Skeleton';
-import { useTheme } from '../../../context/ThemeContext';
-import { Transaction } from '../../../types';
-import { getMonthlyTrends } from '../../../utils/financialMetrics';
-import { CURRENCY_SYMBOLS, formatCompactCurrency } from '../../../utils/currencyUtils';
+import BottomModal from '@components/common/BottomModal';
+import MonthEndProjectionModal from '@components/transaction/modals/MonthEndProjectionModal';
+import { Card } from '@components/index';
+import { Skeleton } from '@components/common/Skeleton';
+import { useTheme } from '@context/ThemeContext';
+import { Transaction } from '@types';
+import { getMonthlyTrends } from '@utils/financialMetrics';
+import { CURRENCY_SYMBOLS, formatCompactCurrency } from '@utils/currencyUtils';
 
 interface IncomeAnalysisProps {
     monthlyTrends: {

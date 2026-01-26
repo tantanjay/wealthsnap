@@ -1,5 +1,5 @@
-import { Transaction, TransactionType } from '../types';
-import { getCategoryGroup } from '../constants/categories';
+import { Transaction, TransactionType } from '@types';
+import { getCategoryGroup } from '@constants/categories';
 
 export const getTransactionsByMonth = (transactions: Transaction[], date: Date = new Date()) => {
     return transactions.filter(t => {

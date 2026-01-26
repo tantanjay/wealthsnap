@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import BottomModal from '../../common/BottomModal';
-import { Card } from '../..';
-import { Skeleton } from '../../common/Skeleton';
-import { useTheme } from '../../../context/ThemeContext';
-import { CURRENCY_SYMBOLS, formatCurrencyAmount } from '../../../utils/currencyUtils';
+import BottomModal from '@components/common/BottomModal';
+import { Card } from '@components/index';
+import { Skeleton } from '@components/common/Skeleton';
+import { useTheme } from '@context/ThemeContext';
+import { CURRENCY_SYMBOLS, formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface ComparisonChartProps {
     currentMonthExpense: number;

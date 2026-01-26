@@ -5,12 +5,12 @@ import { CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import TermsContent from '../../components/onboarding/TermsContent';
-import { Button } from '../../components';
-import { ScreenWrapper } from '../../components/common/ScreenWrapper';
-import { useTheme } from '../../context/ThemeContext';
-import { saveAcceptedTermsVersion } from '../../services/core/storageService';
-import { CONFIG } from '../../constants/config';
+import TermsContent from '@components/onboarding/TermsContent';
+import { Button } from '@components/index';
+import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { useTheme } from '@context/ThemeContext';
+import { saveAcceptedTermsVersion } from '@services/core/storageService';
+import { CONFIG } from '@constants/config';
 
 const { height } = Dimensions.get('window');
 

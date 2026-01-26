@@ -3,16 +3,16 @@ import { Text, View, SectionList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
-import TransactionOptionsModal from '../components/transaction/modals/TransactionOptionsModal';
-import { Card } from '../components';
-import { Skeleton } from '../components/common/Skeleton';
-import { ScreenWrapper } from '../components/common/ScreenWrapper';
-import { useTheme } from '../context/ThemeContext';
-import { usePrivacy } from '../context/PrivacyContext';
-import { Transaction, UserProfile } from '../types';
-import { deleteTransaction } from '../services/domain';
-import { formatCurrencyAmount } from '../utils/currencyUtils';
-import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile, getCachedTransactions } from '../services/core/storageService';
+import TransactionOptionsModal from '@components/transaction/modals/TransactionOptionsModal';
+import { Card } from '@components/index';
+import { Skeleton } from '@components/common/Skeleton';
+import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { useTheme } from '@context/ThemeContext';
+import { usePrivacy } from '@context/PrivacyContext';
+import { Transaction, UserProfile } from '@types';
+import { deleteTransaction } from '@services/domain';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile, getCachedTransactions } from '@services/core/storageService';
 
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 

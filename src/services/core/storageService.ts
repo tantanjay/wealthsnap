@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 
-import { UserProfile, Transaction, Investment, AIConfig } from '../../types';
-import { getDatabase } from '../database/databaseService';
-import { getAllTransactions, getAllInvestments } from '../domain';
-import { encryptData, decryptData } from './encryptionService';
-import { ALL_ASYNC_KEYS, ASYNC_KEYS, SECURE_KEYS } from '../../constants/config';
-import * as DataCache from './dataCache';
+import { UserProfile, Transaction, Investment, AIConfig } from '@types';
+import { getDatabase } from '@services/database/databaseService';
+import { getAllTransactions, getAllInvestments } from '@services/domain';
+import { encryptData, decryptData } from '@services/core/encryptionService';
+import { ALL_ASYNC_KEYS, ASYNC_KEYS, SECURE_KEYS } from '@constants/config';
+import * as DataCache from '@services/core/dataCache';
 
 /**
  * Storage Architecture:

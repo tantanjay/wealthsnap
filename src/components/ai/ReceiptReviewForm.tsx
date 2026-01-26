@@ -5,14 +5,14 @@ import { View, Text, ScrollView, TouchableOpacity, BackHandler, TextInput, Activ
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button } from '../index';
-import { useAlert } from '../../context/AlertContext';
-import { useTheme } from '../../context/ThemeContext';
-import { analyzeReceiptImage } from '../../services/integrations';
-import { getUserProfile } from '../../services/core/storageService';
-import { ReceiptAnalysisResult, ReceiptItem } from '../../types';
-import { CategorySelectModal } from '../record/CategorySelectModal';
-import { EXPENSE_CATEGORY_GROUPS } from '../../constants/categories';
+import { Button } from '@components/index';
+import { useAlert } from '@context/AlertContext';
+import { useTheme } from '@context/ThemeContext';
+import { analyzeReceiptImage } from '@services/integrations';
+import { getUserProfile } from '@services/core/storageService';
+import { ReceiptAnalysisResult, ReceiptItem } from '@types';
+import { CategorySelectModal } from '@components/record/CategorySelectModal';
+import { EXPENSE_CATEGORY_GROUPS } from '@constants/categories';
 
 interface ReceiptReviewFormProps {
     imageUri: string;

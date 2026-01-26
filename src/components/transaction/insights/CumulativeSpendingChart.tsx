@@ -3,13 +3,13 @@ import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-nati
 import { LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 
-import BottomModal from '../../common/BottomModal';
-import { Card } from '../../../components';
-import { Skeleton } from '../../common/Skeleton';
-import { useTheme } from '../../../context/ThemeContext';
-import { Transaction } from '../../../types';
-import { formatCompactCurrency } from '../../../utils/currencyUtils';
-import { getCumulativeSpendingCurve, getCurrentMonthCumulative, getTransactionsByMonth } from '../../../utils/financialMetrics';
+import BottomModal from '@components/common/BottomModal';
+import { Card } from '@components/index';
+import { Skeleton } from '@components/common/Skeleton';
+import { useTheme } from '@context/ThemeContext';
+import { Transaction } from '@types';
+import { formatCompactCurrency } from '@utils/currencyUtils';
+import { getCumulativeSpendingCurve, getCurrentMonthCumulative, getTransactionsByMonth } from '@utils/financialMetrics';
 
 interface CumulativeSpendingChartProps {
     transactions: Transaction[];
