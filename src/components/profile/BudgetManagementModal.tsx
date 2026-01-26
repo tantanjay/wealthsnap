@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, TextInput, FlatList, ScrollView } from 'react-native';
-import BottomModal from '../common/BottomModal';
-import { useTheme } from '../../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { getBudgets, setBudget, deleteBudget, Budget } from '../../services/budgetService';
-import { EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '../../constants/categories';
-import { formatCurrencyAmount } from '../../utils/currencyUtils';
+
+import BottomModal from '../common/BottomModal';
 import { CategorySelectModal } from '../record/CategorySelectModal';
+import { useTheme } from '../../context/ThemeContext';
 import { useAlert } from '../../context/AlertContext';
+import { Budget } from '../../types';
+import { getAllBudgets, setBudget, deleteBudget } from '../../services/domain';
+import { formatCurrencyAmount } from '../../utils/currencyUtils';
+import { EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '../../constants/categories';
 
 interface BudgetManagementProps {
     visible: boolean;
@@ -43,7 +45,7 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
     }, [visible]);
 
     const loadBudgets = async () => {
-        const data = await getBudgets();
+        const data = await getAllBudgets();
         setBudgetsList(data);
     };
 

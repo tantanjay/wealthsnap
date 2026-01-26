@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+import BottomModal from '../../common/BottomModal';
+import { useTheme } from '../../../context/ThemeContext';
 import { RecurrenceRule } from '../../../types';
 import { formatCurrencyAmount } from '../../../utils/currencyUtils';
-import { useTheme } from '../../../context/ThemeContext';
-import BottomModal from '../../common/BottomModal';
 
 interface RecurringExpensesSummaryProps {
     visible: boolean;
@@ -41,8 +42,6 @@ const RecurringExpensesSummaryModal: React.FC<RecurringExpensesSummaryProps> = (
     }, [recurrences]);
 
     const upcoming = useMemo(() => {
-        // Simple logic: sort active recurring by next due date
-
         return recurrences
             .filter(r => r.isActive && r.transactionTemplate.type === 'EXPENSE')
             .sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime())

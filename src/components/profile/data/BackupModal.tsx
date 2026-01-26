@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
 import BottomModal from '../../common/BottomModal';
 import { Button } from '../../index';
 import { useTheme } from '../../../context/ThemeContext';
-import { Ionicons } from '@expo/vector-icons';
 
 interface BackupModalProps {
     visible: boolean;

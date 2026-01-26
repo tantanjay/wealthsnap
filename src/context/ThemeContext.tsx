@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useColorScheme } from 'react-native';
+
 import { lightTheme, darkTheme } from '../styles/theme';
+import { ASYNC_KEYS } from '../constants/config';
 
 type ThemeType = typeof lightTheme;
 type ThemeMode = 'light' | 'dark' | 'system';
@@ -37,7 +39,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const loadThemePreference = async () => {
         try {
-            const storedMode = await AsyncStorage.getItem('@wealthsnap_theme_mode');
+            const storedMode = await AsyncStorage.getItem(ASYNC_KEYS.THEME_MODE);
             if (storedMode) {
                 setModeState(storedMode as ThemeMode);
             }
@@ -57,7 +59,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const setMode = async (newMode: ThemeMode) => {
         setModeState(newMode);
         try {
-            await AsyncStorage.setItem('@wealthsnap_theme_mode', newMode);
+            await AsyncStorage.setItem(ASYNC_KEYS.THEME_MODE, newMode);
         } catch (error) {
             console.error('Failed to save theme preference', error);
         }

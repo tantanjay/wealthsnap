@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    FlatList
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Reminder } from '../../types';
-import { handleReminderNotificationAction } from '../../services/reminderService';
+
 import { useTheme } from '../../context/ThemeContext';
 import { useAlert } from '../../context/AlertContext';
+import { Reminder } from '../../types';
+import { handleReminderNotificationAction } from '../../services/domain/reminderService';
 
 interface ReminderCatchupModalProps {
     pendingReminders: Reminder[];
@@ -66,14 +61,14 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
             </View>
             <View style={styles.cardActions}>
                 <TouchableOpacity
-                    style={[styles.actionBtn, styles.snoozeBtn, { backgroundColor: '#F5F5F5' }]}
+                    style={[styles.actionBtn, { backgroundColor: '#F5F5F5' }]}
                     onPress={() => handleAction(item.id, 'SNOOZED')}
                 >
                     <Ionicons name="notifications-off-outline" size={18} color={colors.textSecondary} style={styles.btnIcon} />
                     <Text style={[styles.snoozeText, { color: colors.textSecondary }]}>Snooze</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.actionBtn, styles.completeBtn, { backgroundColor: colors.primary }]}
+                    style={[styles.actionBtn, { backgroundColor: colors.primary }]}
                     onPress={() => handleAction(item.id, 'COMPLETED')}
                 >
                     <Ionicons name="checkmark-circle-outline" size={18} color="#fff" style={styles.btnIcon} />
@@ -212,12 +207,6 @@ const styles = StyleSheet.create({
     },
     btnIcon: {
         marginRight: 6,
-    },
-    snoozeBtn: {
-        // backgroundColor set inline
-    },
-    completeBtn: {
-        // backgroundColor set inline
     },
     snoozeText: {
         fontSize: 15,

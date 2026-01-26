@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import DocumentScanner from 'react-native-document-scanner-plugin';
-import { useTheme } from '../../context/ThemeContext';
-import BottomModal from '../common/BottomModal';
+import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 
+import BottomModal from '../common/BottomModal';
+import { useTheme } from '../../context/ThemeContext';
 import { useSecurity } from '../../context/SecurityContext';
 import { useAlert } from '../../context/AlertContext';
 

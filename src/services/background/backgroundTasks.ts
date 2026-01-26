@@ -1,6 +1,7 @@
 import * as TaskManager from 'expo-task-manager';
 import * as Notifications from 'expo-notifications';
-import { handleReminderNotificationAction } from './reminderService';
+
+import { handleReminderNotificationAction } from '../domain/reminderService';
 
 // Must match the task name registered in notificationService
 export const REMINDER_BACKGROUND_TASK = 'REMINDER_BACKGROUND_TASK';
