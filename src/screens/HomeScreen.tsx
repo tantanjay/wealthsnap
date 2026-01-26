@@ -3,18 +3,18 @@ import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
-import BottomModal from '../components/common/BottomModal';
-import HomeTransactionsCard from '../components/home/HomeTransactionsCard';
-import { Card } from '../components';
-import { Skeleton } from '../components/common/Skeleton';
-import { ScreenWrapper } from '../components/common/ScreenWrapper';
-import { useTheme } from '../context/ThemeContext';
-import { usePrivacy } from '../context/PrivacyContext';
-import { UserProfile, Transaction, Investment } from '../types';
-import { getTopTransactions } from '../utils/financialMetrics';
-import { processRecurrenceRules } from '../services/domain/recurrenceService';
-import { formatCurrencyAmount } from '../utils/currencyUtils';
-import * as Storage from '../services/core/storageService';
+import BottomModal from '@components/common/BottomModal';
+import HomeTransactionsCard from '@components/home/HomeTransactionsCard';
+import { Card } from '@components/index';
+import { Skeleton } from '@components/common/Skeleton';
+import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { useTheme } from '@context/ThemeContext';
+import { usePrivacy } from '@context/PrivacyContext';
+import { UserProfile, Transaction, Investment } from '@types';
+import { getTopTransactions } from '@utils/financialMetrics';
+import { processRecurrenceRules } from '@services/domain/recurrenceService';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
+import * as Storage from '@services/core/storageService';
 
 const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();

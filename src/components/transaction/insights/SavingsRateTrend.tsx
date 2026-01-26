@@ -4,12 +4,12 @@ import { LineChart } from 'react-native-chart-kit';
 import { Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 
-import BottomModal from '../../common/BottomModal';
-import { Card } from '../../../components';
-import { Skeleton } from '../../common/Skeleton';
-import { useTheme } from '../../../context/ThemeContext';
-import { Transaction } from '../../../types';
-import { getSavingsRateTrend } from '../../../utils/financialMetrics';
+import BottomModal from '@components/common/BottomModal';
+import { Card } from '@components/index';
+import { Skeleton } from '@components/common/Skeleton';
+import { useTheme } from '@context/ThemeContext';
+import { Transaction } from '@types';
+import { getSavingsRateTrend } from '@utils/financialMetrics';
 
 interface SavingsRateTrendProps {
     transactions: Transaction[];

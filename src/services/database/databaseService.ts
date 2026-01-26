@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
-import { createTables, setDatabaseVersion, getDatabaseVersion, DATABASE_NAME, DATABASE_VERSION } from './databaseSchema';
+import { createTables, setDatabaseVersion, getDatabaseVersion, DATABASE_NAME, DATABASE_VERSION } from '@services/database/databaseSchema';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -52,13 +52,13 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
             // This handles users jumping multiple versions (e.g. v1 -> v3)
 
             if (currentVersion < 2) {
-                const { migrateV1ToV2 } = await import('./migrationService');
+                const { migrateV1ToV2 } = await import('@services/database/migrationService');
                 await migrateV1ToV2(db);
             }
 
             // Future migrations:
             // if (currentVersion < 3) {
-            //     const { migrateV2ToV3 } = require('./migrationService');
+            //     const { migrateV2ToV3 } = import('@services/database/migrationService');
             //     await migrateV2ToV3(db);
             // }
 

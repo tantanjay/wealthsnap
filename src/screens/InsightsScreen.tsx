@@ -3,22 +3,22 @@ import { View, ScrollView, TouchableOpacity, Text, RefreshControl } from 'react-
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
-import BottomModal from '../components/common/BottomModal';
-import ReorderModal from '../components/common/ReorderModal';
-import InsightsOverviewCards from '../components/transaction/insights/InsightsOverviewCards';
-import IncomeAnalysis from '../components/transaction/insights/IncomeAnalysis';
-import ExpenseAnalysis from '../components/transaction/insights/ExpenseAnalysis';
-import ComparisonChart from '../components/transaction/insights/ComparisonChart';
-import SmartAlerts from '../components/transaction/insights/SmartAlerts';
-import SavingsRateTrend from '../components/transaction/insights/SavingsRateTrend';
-import CumulativeSpendingChart from '../components/transaction/insights/CumulativeSpendingChart';
-import { ScreenWrapper } from '../components/common/ScreenWrapper';
-import { useTheme } from '../context/ThemeContext';
-import { usePrivacy } from '../context/PrivacyContext';
-import { Transaction } from '../types';
-import { getAllBudgets } from '../services/domain';
-import * as Metrics from '../utils/financialMetrics';
-import * as Storage from '../services/core/storageService';
+import BottomModal from '@components/common/BottomModal';
+import ReorderModal from '@components/common/ReorderModal';
+import InsightsOverviewCards from '@components/transaction/insights/InsightsOverviewCards';
+import IncomeAnalysis from '@components/transaction/insights/IncomeAnalysis';
+import ExpenseAnalysis from '@components/transaction/insights/ExpenseAnalysis';
+import ComparisonChart from '@components/transaction/insights/ComparisonChart';
+import SmartAlerts from '@components/transaction/insights/SmartAlerts';
+import SavingsRateTrend from '@components/transaction/insights/SavingsRateTrend';
+import CumulativeSpendingChart from '@components/transaction/insights/CumulativeSpendingChart';
+import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { useTheme } from '@context/ThemeContext';
+import { usePrivacy } from '@context/PrivacyContext';
+import { Transaction } from '@types';
+import { getAllBudgets } from '@services/domain';
+import * as Metrics from '@utils/financialMetrics';
+import * as Storage from '@services/core/storageService';
 
 const InsightsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();

@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, TextInput, FlatList, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import BottomModal from '../common/BottomModal';
-import { CategorySelectModal } from '../record/CategorySelectModal';
-import { useTheme } from '../../context/ThemeContext';
-import { useAlert } from '../../context/AlertContext';
-import { Budget } from '../../types';
-import { getAllBudgets, setBudget, deleteBudget } from '../../services/domain';
-import { formatCurrencyAmount } from '../../utils/currencyUtils';
-import { EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '../../constants/categories';
+import BottomModal from '@components/common/BottomModal';
+import { CategorySelectModal } from '@components/record/CategorySelectModal';
+import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
+import { Budget } from '@types';
+import { getAllBudgets, setBudget, deleteBudget } from '@services/domain';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '@constants/categories';
 
 interface BudgetManagementProps {
     visible: boolean;

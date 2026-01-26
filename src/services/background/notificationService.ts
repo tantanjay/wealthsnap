@@ -2,11 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
-import { Transaction } from '../../types';
-import { detectAnomalies } from '../../utils/financialMetrics';
-import { initReminderCategories } from '../domain/reminderService';
-import { ASYNC_KEYS } from '../../constants/config';
-import { REMINDER_BACKGROUND_TASK } from './backgroundTasks';
+import { Transaction } from '@types';
+import { detectAnomalies } from '@utils/financialMetrics';
+import { initReminderCategories } from '@services/domain/reminderService';
+import { ASYNC_KEYS } from '@constants/config';
+import { REMINDER_BACKGROUND_TASK } from '@services/background/backgroundTasks';
 
 // Export a setup function to be called at app launch (index.ts)
 export const setupNotificationListeners = () => {

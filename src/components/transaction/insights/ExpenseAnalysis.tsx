@@ -3,15 +3,15 @@ import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 
-import AllExpensesModal from '../modals/AllExpensesModal';
-import CategoryTrendModal from '../modals/CategoryTrendModal';
-import RecurringExpensesSummaryModal from '../modals/RecurringExpensesSummaryModal';
-import { Card } from '../../../components';
-import { Skeleton } from '../../common/Skeleton';
-import { useTheme } from '../../../context/ThemeContext';
-import { Budget, RecurrenceRule, Transaction } from '../../../types';
-import { formatCompactCurrency } from '../../../utils/currencyUtils';
-import { checkBudgetStatus, getAllBudgets, getAllRecurrenceRules } from '../../../services/domain';
+import AllExpensesModal from '@components/transaction/modals/AllExpensesModal';
+import CategoryTrendModal from '@components/transaction/modals/CategoryTrendModal';
+import RecurringExpensesSummaryModal from '@components/transaction/modals/RecurringExpensesSummaryModal';
+import { Card } from '@components/index';
+import { Skeleton } from '@components/common/Skeleton';
+import { useTheme } from '@context/ThemeContext';
+import { Budget, RecurrenceRule, Transaction } from '@types';
+import { formatCompactCurrency } from '@utils/currencyUtils';
+import { checkBudgetStatus, getAllBudgets, getAllRecurrenceRules } from '@services/domain';
 
 interface ExpenseAnalysisProps {
     categoryBreakdown: {

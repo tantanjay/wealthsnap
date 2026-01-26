@@ -3,10 +3,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useAlert } from '../../context/AlertContext';
-import { Reminder, ReminderFrequency } from '../../types';
-import { saveReminder } from '../../services/domain';
-import { scheduleReminderNotifications } from '../../services/domain/reminderService';
+import { useAlert } from '@context/AlertContext';
+import { Reminder, ReminderFrequency } from '@types';
+import { saveReminder } from '@services/domain';
+import { scheduleReminderNotifications } from '@services/domain/reminderService';
 
 interface ReminderFormProps {
     reminder?: Reminder;

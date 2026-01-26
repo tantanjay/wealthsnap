@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button } from '../../components';
-import { useTheme } from '../../context/ThemeContext';
-import { SPACING } from '../../styles/theme';
+import { Button } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
+import { SPACING } from '@styles/theme';
 
 interface OnboardingGuideProps {
     onFinish: () => void;

@@ -3,9 +3,9 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { View, Text, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Card } from '../index';
-import { useTheme } from '../../context/ThemeContext';
-import { RECURRENCE_OPTIONS } from '../../constants/categories';
+import { Card } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
+import { RECURRENCE_OPTIONS } from '@constants/categories';
 
 interface RecurringOptionsProps {
     isRecurring: boolean;

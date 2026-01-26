@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 
-import BottomModal from '../../common/BottomModal';
-import { Button } from '../../index';
-import { useTheme } from '../../../context/ThemeContext';
-import { useAlert } from '../../../context/AlertContext';
+import BottomModal from '@components/common/BottomModal';
+import { Button } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
 
 interface ImportDataModalProps {
     visible: boolean;

@@ -3,11 +3,11 @@ import { View, Text, Dimensions, ScrollView } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 
-import BottomModal from '../../common/BottomModal';
-import { useTheme } from '../../../context/ThemeContext';
-import { Transaction } from '../../../types';
-import { getCategoryTrend } from '../../../utils/financialMetrics';
-import { formatCurrencyAmount } from '../../../utils/currencyUtils';
+import BottomModal from '@components/common/BottomModal';
+import { useTheme } from '@context/ThemeContext';
+import { Transaction } from '@types';
+import { getCategoryTrend } from '@utils/financialMetrics';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface CategoryTrendModalProps {
     visible: boolean;

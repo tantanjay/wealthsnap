@@ -2,10 +2,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 
-import { AIUsageLog, ReceiptAnalysisResult } from '../../types';
-import { getAIConfig } from '../core/storageService';
-import { saveAIUsageLog } from '../domain';
-import { EXPENSE_CATEGORIES } from '../../constants/categories';
+import { AIUsageLog, ReceiptAnalysisResult } from '@types';
+import { getAIConfig } from '@services/core/storageService';
+import { saveAIUsageLog } from '@services/domain';
+import { EXPENSE_CATEGORIES } from '@constants/categories';
 
 // Dynamic Configuration
 let genAIInstance: GoogleGenerativeAI | null = null;

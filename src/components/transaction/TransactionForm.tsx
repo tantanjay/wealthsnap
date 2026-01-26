@@ -3,15 +3,15 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button, Card } from '..';
-import { CalculatorModal } from '../record/CalculatorModal';
-import { CategorySelectModal } from '../record/CategorySelectModal';
-import { RecurringOptions } from '../transaction/RecurringOptions';
-import { useTheme } from '../../context/ThemeContext';
-import { useAlert } from '../../context/AlertContext';
-import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency } from '../../types';
-import { saveTransaction, saveRecurrenceRule } from '../../services/domain';
-import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '../../constants/categories';
+import { Button, Card } from '@components/index';
+import { CalculatorModal } from '@components/record/CalculatorModal';
+import { CategorySelectModal } from '@components/record/CategorySelectModal';
+import { RecurringOptions } from '@components/transaction/RecurringOptions';
+import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
+import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency } from '@types';
+import { saveTransaction, saveRecurrenceRule } from '@services/domain';
+import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '@constants/categories';
 
 interface TransactionFormProps {
     transactionType: TransactionType;

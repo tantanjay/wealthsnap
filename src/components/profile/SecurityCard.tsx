@@ -3,14 +3,14 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
-import BottomModal from '../common/BottomModal';
-import PinCreationScreen from '../../screens/security/PinCreationScreen';
-import GeminiSettingsModal from './settings/GeminiSettingsModal';
-import GeminiUsageModal from './settings/GeminiUsageModal';
-import { Card } from '../../components';
-import { useTheme } from '../../context/ThemeContext';
-import { getAIConfig } from '../../services/core/storageService';
-import * as Security from '../../services/core/securityService';
+import BottomModal from '@components/common/BottomModal';
+import PinCreationScreen from '@screens/security/PinCreationScreen';
+import GeminiSettingsModal from '@components/profile/settings/GeminiSettingsModal';
+import GeminiUsageModal from '@components/profile/settings/GeminiUsageModal';
+import { Card } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
+import { getAIConfig } from '@services/core/storageService';
+import * as Security from '@services/core/securityService';
 
 const SecurityCard = () => {
     const { colors } = useTheme();

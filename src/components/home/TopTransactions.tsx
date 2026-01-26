@@ -2,10 +2,10 @@ import React from 'react';
 import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Card } from '../../components';
-import { useTheme } from '../../context/ThemeContext';
-import { Transaction } from '../../types';
-import { formatCurrencyAmount } from '../../utils/currencyUtils';
+import { Card } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
+import { Transaction } from '@types';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface TopTransactionsProps {
     transactions: Transaction[];

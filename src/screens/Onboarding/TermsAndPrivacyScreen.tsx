@@ -4,10 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import TermsContent from '../../components/onboarding/TermsContent';
-import { ScreenWrapper } from '../../components/common/ScreenWrapper';
-import { Button } from '../../components';
-import { useTheme } from '../../context/ThemeContext';
+import TermsContent from '@components/onboarding/TermsContent';
+import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { Button } from '@components/index';
+import { useTheme } from '@context/ThemeContext';
 
 const TermsAndPrivacyScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     const { colors } = useTheme();

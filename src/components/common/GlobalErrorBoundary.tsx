@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import * as Updates from 'expo-updates';
 
-import { ASYNC_KEYS } from '../../constants/config';
+import { ASYNC_KEYS } from '@constants/config';
 
 interface Props {
     children: ReactNode;
