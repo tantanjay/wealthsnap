@@ -130,6 +130,7 @@ const SetupScreen = ({ navigation }: any) => {
         };
 
         await saveUserProfile(profile);
+
         // show guide
         setStep(4);
     }, [name, currency, goals, showAlert]);

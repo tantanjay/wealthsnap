@@ -57,7 +57,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
         {
             id: 'financial-runway',
             title: "Financial Runway",
-            value: burnRate > 0 ? `${(currentBalance / burnRate).toFixed(1)} months` : "∞ months",
+            value: currentBalance <= 0 ? "0.0 months" : burnRate > 0 ? `${(currentBalance / burnRate).toFixed(1)} months` : "∞ months",
             subValue: "Financial Safety Net",
             color: (currentBalance / burnRate) >= 6 ? '#4CAF50' : (currentBalance / burnRate) >= 3 ? '#FF9800' : '#F44336',
             hasInfo: true,
