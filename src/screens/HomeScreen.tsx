@@ -191,6 +191,7 @@ const HomeScreen = ({ navigation }: any) => {
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
                                             </View>
                                         </View>
+                                        <Ionicons name="swap-vertical" size={24} color={colors.white} />
                                     </View>
                                     <Text style={{ color: colors.white, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
                                         {isLoading ? (
@@ -210,21 +211,25 @@ const HomeScreen = ({ navigation }: any) => {
                                         </View>
                                     </View>
                                     {/* Insight Button */}
-                                    <TouchableOpacity
-                                        onPress={() => navigation.navigate('Insights')}
-                                        style={{
-                                            marginTop: 15,
-                                            backgroundColor: 'rgba(255,255,255,0.2)',
-                                            paddingVertical: 10,
-                                            borderRadius: 8,
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
-                                        <Ionicons name="analytics" size={20} color={colors.white} style={{ marginRight: 8 }} />
-                                        <Text style={{ color: colors.white, fontWeight: '600' }}>View Financial Insights</Text>
-                                    </TouchableOpacity>
+                                    {isLoading ? (
+                                        <Skeleton width="100%" height={44} style={{ marginTop: 15, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                                    ) : (
+                                        <TouchableOpacity
+                                            onPress={() => navigation.navigate('Insights')}
+                                            style={{
+                                                marginTop: 15,
+                                                backgroundColor: 'rgba(255,255,255,0.2)',
+                                                paddingVertical: 10,
+                                                borderRadius: 8,
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                        >
+                                            <Ionicons name="analytics" size={20} color={colors.white} style={{ marginRight: 8 }} />
+                                            <Text style={{ color: colors.white, fontWeight: '600' }}>View Financial Insights</Text>
+                                        </TouchableOpacity>
+                                    )}
                                 </Card>
                             </View>
 
@@ -240,6 +245,7 @@ const HomeScreen = ({ navigation }: any) => {
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white }} />
                                             </View>
                                         </View>
+                                        <Ionicons name="swap-vertical" size={24} color={colors.white} />
                                     </View>
                                     <Text style={{ color: colors.white, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
                                         {isLoading ? (
@@ -259,21 +265,25 @@ const HomeScreen = ({ navigation }: any) => {
                                         </View>
                                     </View>
                                     {/* Insight Button */}
-                                    <TouchableOpacity
-                                        onPress={() => navigation.navigate('Insights')}
-                                        style={{
-                                            marginTop: 15,
-                                            backgroundColor: 'rgba(255,255,255,0.2)',
-                                            paddingVertical: 10,
-                                            borderRadius: 8,
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
-                                        <Ionicons name="analytics" size={20} color={colors.white} style={{ marginRight: 8 }} />
-                                        <Text style={{ color: colors.white, fontWeight: '600' }}>View Financial Insights</Text>
-                                    </TouchableOpacity>
+                                    {isLoading ? (
+                                        <Skeleton width="100%" height={44} style={{ marginTop: 15, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                                    ) : (
+                                        <TouchableOpacity
+                                            onPress={() => navigation.navigate('Insights')}
+                                            style={{
+                                                marginTop: 15,
+                                                backgroundColor: 'rgba(255,255,255,0.2)',
+                                                paddingVertical: 10,
+                                                borderRadius: 8,
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                        >
+                                            <Ionicons name="analytics" size={20} color={colors.white} style={{ marginRight: 8 }} />
+                                            <Text style={{ color: colors.white, fontWeight: '600' }}>View Financial Insights</Text>
+                                        </TouchableOpacity>
+                                    )}
                                 </Card>
                             </View>
 
@@ -296,18 +306,22 @@ const HomeScreen = ({ navigation }: any) => {
                                 isPrivacyEnabled ? '****' : formatCurrencyAmount(investmentTotal, profile?.currency || 'USD')
                             )}
                         </Text>
-                        <TouchableOpacity
-                            style={{
-                                marginTop: 15,
-                                backgroundColor: 'rgba(255,255,255,0.2)',
-                                paddingVertical: 8,
-                                alignItems: 'center',
-                                borderRadius: 8
-                            }}
-                            onPress={() => navigation.navigate('Investment')}
-                        >
-                            <Text style={{ color: colors.white, fontWeight: '600' }}>View Portfolio</Text>
-                        </TouchableOpacity>
+                        {isLoading ? (
+                            <Skeleton width="100%" height={36} style={{ marginTop: 15, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                        ) : (
+                            <TouchableOpacity
+                                style={{
+                                    marginTop: 15,
+                                    backgroundColor: 'rgba(255,255,255,0.2)',
+                                    paddingVertical: 8,
+                                    alignItems: 'center',
+                                    borderRadius: 8
+                                }}
+                                onPress={() => navigation.navigate('Investment')}
+                            >
+                                <Text style={{ color: colors.white, fontWeight: '600' }}>View Portfolio</Text>
+                            </TouchableOpacity>
+                        )}
                     </Card>
                 </View>
 
@@ -326,20 +340,24 @@ const HomeScreen = ({ navigation }: any) => {
                                 isPrivacyEnabled ? '****' : formatCurrencyAmount(debtTotal, profile?.currency || 'USD')
                             )}
                         </Text>
-                        <TouchableOpacity
-                            style={{
-                                marginTop: 15,
-                                backgroundColor: 'rgba(255,255,255,0.2)',
-                                paddingVertical: 8,
-                                alignItems: 'center',
-                                borderRadius: 8
-                            }}
-                            onPress={() => {
-                                // navigation.navigate('Debt') // Placeholder for future screen
-                            }}
-                        >
-                            <Text style={{ color: colors.white, fontWeight: '600' }}>View Debts</Text>
-                        </TouchableOpacity>
+                        {isLoading ? (
+                            <Skeleton width="100%" height={36} style={{ marginTop: 15, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                        ) : (
+                            <TouchableOpacity
+                                style={{
+                                    marginTop: 15,
+                                    backgroundColor: 'rgba(255,255,255,0.2)',
+                                    paddingVertical: 8,
+                                    alignItems: 'center',
+                                    borderRadius: 8
+                                }}
+                                onPress={() => {
+                                    // navigation.navigate('Debt') // Placeholder for future screen
+                                }}
+                            >
+                                <Text style={{ color: colors.white, fontWeight: '600' }}>View Debts</Text>
+                            </TouchableOpacity>
+                        )}
                     </Card>
                 </View>
 
