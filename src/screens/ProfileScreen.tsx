@@ -18,11 +18,16 @@ import { RecurringRulesListModal } from '../components/profile/RecurringRulesLis
 import { useAlert } from '../context/AlertContext';
 import BottomModal from '../components/common/BottomModal';
 import { ReminderManager } from '../components/reminders/ReminderManager';
-
+import { CONFIG, ASYNC_KEYS } from '../constants/config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
+import { useSecurity } from '../context/SecurityContext';
 
 const ProfileScreen = ({ navigation }: any) => {
     const { colors, setMode, mode } = useTheme();
     const { showAlert } = useAlert();
+    const { temporarilyDisableLock } = useSecurity();
 
     // Recurring Rules State
     const [showRecurringModal, setShowRecurringModal] = useState(false);
@@ -39,6 +44,12 @@ const ProfileScreen = ({ navigation }: any) => {
     const [showDevMessageModal, setShowDevMessageModal] = useState(false);
     const [showRemindersModal, setShowRemindersModal] = useState(false);
 
+    // Crash Simulation State
+    const [shouldCrash, setShouldCrash] = useState(false);
+
+    if (shouldCrash) {
+        throw new Error('This is a simulated crash for testing purposes.');
+    }
 
     useFocusEffect(
         useCallback(() => {
@@ -220,6 +231,62 @@ const ProfileScreen = ({ navigation }: any) => {
                         <ThemeOption icon="phone-portrait" title="System" value="system" current={mode} />
                     </View>
                 </Card>
+
+                {CONFIG.SHOW_DEVELOPER_OPTIONS && (
+                    <Card style={{ marginBottom: 16 }}>
+                        <View style={styles.cardHeader}>
+                            <View style={[styles.headerIcon, { backgroundColor: colors.error + '20' }]}>
+                                <Ionicons name="bug" size={22} color={colors.error} />
+                            </View>
+                            <Text style={[styles.cardTitle, { color: colors.text }]}>Developer Options</Text>
+                        </View>
+
+                        <TouchableOpacity
+                            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
+                            onPress={async () => {
+                                try {
+                                    const logs = await AsyncStorage.getItem(ASYNC_KEYS.CRASH_REPORT);
+                                    if (!logs) {
+                                        showAlert('No Logs', 'No crash logs found.');
+                                        return;
+                                    }
+
+                                    const path = FileSystem.documentDirectory + 'crash_report.json';
+                                    await FileSystem.writeAsStringAsync(path, logs);
+
+                                    if (await Sharing.isAvailableAsync()) {
+                                        temporarilyDisableLock();
+                                        await Sharing.shareAsync(path);
+                                    } else {
+                                        showAlert('Error', 'Sharing is not available on this device');
+                                    }
+                                } catch (error) {
+                                    console.error(error);
+                                    showAlert('Error', 'Failed to share logs');
+                                }
+                            }}
+                        >
+                            <Ionicons name="share-social-outline" size={18} color={colors.text} />
+                            <Text style={{ color: colors.text, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
+                                Share Crash Log
+                            </Text>
+                        </TouchableOpacity>
+
+                        <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 15 }} />
+
+                        <TouchableOpacity
+                            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}
+                            onPress={() => {
+                                setShouldCrash(true);
+                            }}
+                        >
+                            <Ionicons name="warning" size={18} color={colors.error} />
+                            <Text style={{ color: colors.error, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
+                                Simulate Crash
+                            </Text>
+                        </TouchableOpacity>
+                    </Card>
+                )}
 
                 {/* Help & Documentation  */}
                 <Card style={{ marginBottom: 16, backgroundColor: colors.info, padding: 20 }}>
