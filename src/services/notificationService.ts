@@ -4,10 +4,11 @@ import { Platform, Linking } from 'react-native';
 import { Transaction, ReminderAction } from '../types';
 import { detectAnomalies } from '../utils/financialMetrics';
 import { initReminderCategories, handleReminderNotificationAction } from './reminderService';
+import { ASYNC_KEYS } from '../constants/config';
+import { REMINDER_BACKGROUND_TASK } from './backgroundTasks';
 
-const NOTIFIED_ALERTS_KEY = '@wealthsnap_notified_alerts';
-
-export const initNotifications = () => {
+// Export a setup function to be called at app launch (index.ts)
+export const setupNotificationListeners = () => {
     Notifications.setNotificationHandler({
         handleNotification: async () => ({
             shouldShowAlert: true,
@@ -18,31 +19,17 @@ export const initNotifications = () => {
         }),
     });
 
-    // Initialize reminder-specific categories (Snooze, Complete)
+    // Initialize categories
     initReminderCategories();
 
-    // Handle background/foreground notification actions
-    Notifications.addNotificationResponseReceivedListener(response => {
-        const { actionIdentifier, notification } = response;
-        const data = notification.request.content.data;
-
-        if (data.type === 'REMINDER' && data.reminderId) {
-            let action: ReminderAction | null = null;
-            if (actionIdentifier === 'COMPLETE') {
-                action = 'COMPLETED';
-            } else if (actionIdentifier === 'SNOOZE') {
-                action = 'SNOOZED';
-            } else if (actionIdentifier === 'expo.modules.notifications.actions.DEFAULT') {
-                // User just tapped the notification without choosing an action
-                // We can treat this as "Dismissed" or just open the app (handled by Expo)
-            }
-
-            if (action) {
-                handleReminderNotificationAction(data.reminderId as string, action);
-            }
-        }
-    });
+    // Register background task (for remote/background fetch triggers)
+    Notifications.registerTaskAsync(REMINDER_BACKGROUND_TASK);
 };
+
+// Keep for backward compatibility or UI-specific init if needed
+export const initNotifications = setupNotificationListeners;
+
+
 
 export const requestPermissions = async () => {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -77,7 +64,7 @@ export const checkAndNotifyAnomalies = async (currentMonthTransactions: Transact
         if (anomalies.length === 0) return;
 
         // Get already notified alerts
-        const notifiedRaw = await AsyncStorage.getItem(NOTIFIED_ALERTS_KEY);
+        const notifiedRaw = await AsyncStorage.getItem(ASYNC_KEYS.NOTIFIED_ALERTS);
         const notifiedAlerts = notifiedRaw ? JSON.parse(notifiedRaw) : {};
         const now = new Date();
         const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
@@ -117,9 +104,9 @@ export const checkAndNotifyAnomalies = async (currentMonthTransactions: Transact
         if (keys.length > 3) {
             const newAlerts: any = {};
             keys.slice(-3).forEach(k => newAlerts[k] = notifiedAlerts[k]);
-            await AsyncStorage.setItem(NOTIFIED_ALERTS_KEY, JSON.stringify(newAlerts));
+            await AsyncStorage.setItem(ASYNC_KEYS.NOTIFIED_ALERTS, JSON.stringify(newAlerts));
         } else if (hasNewNotifications) {
-            await AsyncStorage.setItem(NOTIFIED_ALERTS_KEY, JSON.stringify(notifiedAlerts));
+            await AsyncStorage.setItem(ASYNC_KEYS.NOTIFIED_ALERTS, JSON.stringify(notifiedAlerts));
         }
 
     } catch (error) {
