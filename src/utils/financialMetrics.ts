@@ -55,7 +55,7 @@ export const getSavingsRateTrend = (transactions: Transaction[], months: number 
     });
 };
 
-export const getTopTransactions = (transactions: Transaction[], limit: number = 5) => {
+export const getTopExpenses = (transactions: Transaction[], limit: number = 5) => {
     const currentMonth = new Date();
     const currentMonthTransactions = getTransactionsByMonth(transactions, currentMonth);
 
