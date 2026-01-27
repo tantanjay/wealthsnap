@@ -157,7 +157,7 @@ export const cancelReminderNotifications = async (reminderId: string) => {
 /**
  * Handle notification response (Snooze/Complete)
  */
-export const handleReminderNotificationAction = async (reminderId: string, action: ReminderAction) => {
+export const handleReminderNotificationAction = async (reminderId: string, action: ReminderAction, snoozeMinutes: number = 0) => {
     const id = Date.now().toString();
     const log: ReminderLog = {
         id,
@@ -181,9 +181,37 @@ export const handleReminderNotificationAction = async (reminderId: string, actio
             // Reschedule next one
             await scheduleReminderNotifications(updatedReminder);
         }
-    }
+    } else if (action === 'SNOOZED' && snoozeMinutes > 0) {
+        // Calculate snooze time
+        const snoozeDate = new Date(Date.now() + snoozeMinutes * 60 * 1000);
 
-    // NO SNOOZE LOGIC
+        // Schedule a one-off notification
+        const randomPrefix = REMINDER_PREFIXES[Math.floor(Math.random() * REMINDER_PREFIXES.length)];
+        const reminders = await getAllReminders();
+        const reminder = reminders.find(r => r.id === reminderId);
+
+        if (reminder) {
+            await Notifications.scheduleNotificationAsync({
+                content: {
+                    title: randomPrefix,
+                    body: reminder.title,
+                    data: { reminderId: reminder.id, type: 'REMINDER' },
+                    categoryIdentifier: 'REMINDER_ACTIONS',
+                },
+                trigger: { type: 'date', date: snoozeDate } as Notifications.DateTriggerInput,
+            });
+
+            // Mark as "handled" for now so it disappears from the catch-up list
+            // We treat it similar to COMPLETED by updating lastTriggered
+            // This ensures it doesn't show up in pending reminders until the next recurrence (or the snoozed notification fires)
+            const updatedReminder = {
+                ...reminder,
+                lastTriggered: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+            await saveReminder(updatedReminder);
+        }
+    }
 };
 
 /**
