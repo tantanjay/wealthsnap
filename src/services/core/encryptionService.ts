@@ -7,6 +7,16 @@ import { SECURE_KEYS } from '@constants/config';
 // In-memory cache for the encryption key to avoid repeated SecureStore I/O
 let cachedKey: string | null = null;
 
+const decryptFieldSync = (ciphertext: string | null | undefined, key: string): string | null => {
+    if (!ciphertext) return null;
+    try {
+        const bytes = CryptoJS.AES.decrypt(ciphertext, key);
+        return bytes.toString(CryptoJS.enc.Utf8) || null;
+    } catch (error) {
+        return null;
+    }
+};
+
 /**
  * Generate or retrieve the device-specific encryption key from SecureStore.
  * Uses in-memory caching to avoid repeated I/O operations during bulk operations.
@@ -104,4 +114,42 @@ export const decryptField = async (ciphertext: string | null | undefined): Promi
         console.error('Error decrypting field:', error);
         return null;
     }
+};
+
+/**
+ *  Bulk decrypts a list of objects while keeping the UI responsive.
+ * @param items The array of encrypted objects from SQLite
+ * @param fieldsToDecrypt Array of keys that need decryption (e.g., ['amount', 'note'])
+ * @param onProgress Optional callback to track loading progress
+ */
+export const bulkDecryptItems = async <T>(
+    items: any[],
+    fieldsToDecrypt: string[],
+    onProgress?: (progress: number) => void
+): Promise<T[]> => {
+    const key = await getStorageKey();
+    const decryptedResults: T[] = [];
+    const CHUNK_SIZE = 500;
+
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const decryptedItem = { ...item };
+
+        // Decrypt only the specified fields
+        for (const field of fieldsToDecrypt) {
+            if (item[field]) {
+                decryptedItem[field] = decryptFieldSync(item[field], key);
+            }
+        }
+
+        decryptedResults.push(decryptedItem as T);
+
+        // Yield control to the UI thread every CHUNK_SIZE items
+        if (i > 0 && i % CHUNK_SIZE === 0) {
+            if (onProgress) onProgress(i / items.length);
+            await new Promise(resolve => setTimeout(resolve, 0));
+        }
+    }
+
+    return decryptedResults;
 };
