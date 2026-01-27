@@ -1,5 +1,5 @@
 import React from 'react';
-import BigNumber from 'bignumber.js';
+import { BigNumber } from 'bignumber.js';
 import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';

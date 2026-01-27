@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import BigNumber from 'bignumber.js';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { BigNumber } from 'bignumber.js';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 

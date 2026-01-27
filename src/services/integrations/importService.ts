@@ -1,4 +1,4 @@
-import BigNumber from 'bignumber.js';
+import { BigNumber } from 'bignumber.js';
 import { Transaction, TransactionType } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORY_GROUPS } from '@constants/categories';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import BigNumber from 'bignumber.js';
+import { BigNumber } from 'bignumber.js';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
