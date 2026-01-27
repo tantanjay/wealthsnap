@@ -3,8 +3,9 @@ import JSZip from 'jszip';
 
 import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget } from '@types';
 import { decryptData, encryptData } from '@services/core/encryptionService';
-import { getUserProfile, saveUserProfile, clearAllData, setOnboardingComplete } from '@services/core/storageService';
+import * as Storage from '@services/core/storageService';
 import * as SQLite from '@services/domain';
+import { CONFIG } from '@constants/config';
 
 export interface BackupData {
     version: string;
@@ -29,7 +30,7 @@ export const createBackup = async (password: string): Promise<string> => {
     }
 
     // 1. Gather all data
-    const profile = await getUserProfile();
+    const profile = await Storage.getUserProfile();
     const transactions = await SQLite.getAllTransactions();
     const investments = await SQLite.getAllInvestments();
     const categories = await SQLite.getAllCategories();
@@ -122,14 +123,15 @@ export const restoreFromBackup = async (
 
     // Restore Data
     // We clear all existing data first to ensure the restore is a complete replacement/clean slate.
-    await clearAllData();
+    await Storage.clearAllData();
 
     if (backupData.profile) {
-        await saveUserProfile(backupData.profile);
+        await Storage.saveUserProfile(backupData.profile);
         // Explicitly restore the onboarding flag if the profile suggests it is complete, 
         // or generally assume a restored backup implies completed onboarding.
         if (backupData.profile.isOnboardingComplete) {
-            await setOnboardingComplete();
+            await Storage.saveAcceptedTermsVersion(CONFIG.TERMS_VERSION);
+            await Storage.setOnboardingComplete();
         }
     }
 
@@ -139,6 +141,19 @@ export const restoreFromBackup = async (
     await safeBulkSave(backupData.recurrenceRules, SQLite.bulkSaveRecurrenceRules);
     await safeBulkSave(backupData.budgets, SQLite.bulkSaveBudgets);
     await safeBulkSave(backupData.reminders, SQLite.bulkSaveReminders);
+
+    // Reschedule Notifications
+    if (backupData.reminders && Array.isArray(backupData.reminders) && backupData.reminders.length > 0) {
+        for (const reminder of backupData.reminders) {
+            if (reminder.isActive) {
+                // scheduleReminderNotifications calculates the next occurrence starting from NOW,
+                // so it correctly handles old reminders by finding their next future date.
+                await SQLite.scheduleReminderNotifications(reminder).catch(err => {
+                    console.error(`Failed to schedule notification for reminder ${reminder.id}:`, err);
+                });
+            }
+        }
+    }
 };
 
 /**

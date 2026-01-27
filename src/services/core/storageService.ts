@@ -7,6 +7,7 @@ import { getAllTransactions, getAllInvestments } from '@services/domain';
 import { encryptData, decryptData } from '@services/core/encryptionService';
 import { ALL_ASYNC_KEYS, ASYNC_KEYS, SECURE_KEYS } from '@constants/config';
 import * as DataCache from '@services/core/dataCache';
+import { clearAllNotifications } from '@services/background/notificationService';
 
 /**
  * Storage Architecture:
@@ -249,6 +250,7 @@ export const clearAllData = async (): Promise<void> => {
         `);
 
         DataCache.invalidateAllCaches();
+        await clearAllNotifications();
     } catch (error) {
         console.error('Error clearing data:', error);
     }
