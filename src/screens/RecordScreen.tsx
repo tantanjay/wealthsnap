@@ -8,6 +8,7 @@ import { TransactionForm } from '@components/transaction/TransactionForm';
 import { ReceiptReviewForm } from '@components/ai/ReceiptReviewForm';
 import { useAlert } from '@context/AlertContext';
 import { Transaction, TransactionType, ReceiptAnalysisResult } from '@types';
+import { generateUUID } from '@utils/uuid';
 import { saveTransactionWithReceipt } from '@services/domain';
 
 type ViewMode = 'MENU' | 'TRANSACTION' | 'INVESTMENT' | 'AI' | 'AI_REVIEW';
@@ -181,7 +182,7 @@ const RecordScreen = ({ navigation, route }: any) => {
             } else {
                 // Single Transaction Mode (Original Logic)
                 const newTransaction: Transaction = {
-                    id: Date.now().toString(),
+                    id: generateUUID(),
                     type: 'EXPENSE',
                     amount: transactionBase.amount,
 

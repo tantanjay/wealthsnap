@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAlert } from '@context/AlertContext';
 import { Reminder, ReminderFrequency } from '@types';
 import { saveReminder } from '@services/domain';
+import { generateUUID } from '@utils/uuid';
 import { scheduleReminderNotifications } from '@services/domain/reminderService';
 
 interface ReminderFormProps {
@@ -49,7 +50,7 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
         }
 
         const newReminder: Reminder = {
-            id: initialReminder?.id || Date.now().toString(),
+            id: initialReminder?.id || generateUUID(),
             title: title.trim(),
             frequency,
             startDate: startDate.toISOString(),
