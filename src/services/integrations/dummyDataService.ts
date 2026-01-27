@@ -1,4 +1,4 @@
-import BigNumber from 'bignumber.js';
+import { BigNumber } from 'bignumber.js';
 import { UserProfile, Transaction, TransactionType } from '@types';
 import { saveCategory, saveTransaction } from '@services/domain';
 import { saveUserProfile, setOnboardingComplete, clearAllData } from '@services/core/storageService';

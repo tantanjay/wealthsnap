@@ -1,7 +1,7 @@
 import 'react-native-get-random-values';
-import BigNumber from 'bignumber.js';
 import CryptoJS from 'crypto-js';
 import * as SecureStore from 'expo-secure-store';
+import { BigNumber } from 'bignumber.js';
 
 import { SECURE_KEYS } from '@constants/config';
 
@@ -13,7 +13,7 @@ const decryptFieldSync = (ciphertext: string | null | undefined, key: string): s
     try {
         const bytes = CryptoJS.AES.decrypt(ciphertext, key);
         return bytes.toString(CryptoJS.enc.Utf8) || null;
-    } catch (error) {
+    } catch {
         return null;
     }
 };
