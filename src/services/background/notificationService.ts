@@ -114,3 +114,18 @@ export const checkAndNotifyAnomalies = async (currentMonthTransactions: Transact
         console.error('Error in checkAndNotifyAnomalies:', error);
     }
 };
+
+/**
+ * Clear all scheduled and displayed notifications from the OS.
+ * Used during data reset to ensure no stale notifications remain.
+ */
+export const clearAllNotifications = async () => {
+    try {
+        // Cancel all scheduled notifications (reminders, etc.)
+        await Notifications.cancelAllScheduledNotificationsAsync();
+        // Dismiss all currently displayed notifications in the tray
+        await Notifications.dismissAllNotificationsAsync();
+    } catch (error) {
+        console.error('Error clearing notifications:', error);
+    }
+};
