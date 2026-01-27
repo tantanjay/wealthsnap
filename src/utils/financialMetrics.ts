@@ -1,4 +1,4 @@
-import BigNumber from 'bignumber.js';
+import { BigNumber } from 'bignumber.js';
 import { Transaction, TransactionType } from '@types';
 import { getCategoryGroup } from '@constants/categories';
 
