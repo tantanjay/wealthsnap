@@ -4,6 +4,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 
 import { AIUsageLog, ReceiptAnalysisResult } from '@types';
 import { getAIConfig } from '@services/core/storageService';
+import { generateUUID } from '@utils/uuid';
 import { saveAIUsageLog } from '@services/domain';
 import { EXPENSE_CATEGORIES } from '@constants/categories';
 
@@ -109,7 +110,7 @@ const logUsage = async (endpoint: string, promptText: string, responseText: stri
         const totalCost = status === 'error' ? 0 : (inputCost + outputCost);
 
         const log: AIUsageLog = {
-            id: Date.now().toString(),
+            id: generateUUID(),
             timestamp: new Date().toISOString(),
             endpoint,
             provider: 'gemini',
