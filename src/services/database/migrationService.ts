@@ -242,6 +242,52 @@ export const migrateV1ToV2 = async (db: any): Promise<void> => {
 };
 
 /**
+ * Migrate from V2 to V5: Add costUSD to ai_usage_logs
+ */
+export const migrateV2ToV5 = async (db: any): Promise<void> => {
+    try {
+        // 1. Check if we actually need to migrate by checking column type
+        const tableInfo = await db.getAllAsync("PRAGMA table_info(ai_usage_logs)");
+        const costCol = tableInfo.find((col: any) => col.name === 'costUSD');
+
+        // If column is already TEXT, we're done.
+        if (costCol && costCol.type.toUpperCase() === 'TEXT') return;
+
+        // 2. Start a transaction for safety
+        await db.runAsync('BEGIN TRANSACTION');
+
+        // 3. Create a new table with the desired schema
+        // Note: Replace "..." with your other existing columns
+        await db.runAsync(`
+            CREATE TABLE ai_usage_logs_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                other_col TEXT,
+                costUSD TEXT DEFAULT "0"
+            )
+        `);
+
+        // 4. Copy data, casting the old REAL values to TEXT
+        await db.runAsync(`
+            INSERT INTO ai_usage_logs_new (id, other_col, costUSD)
+            SELECT id, other_col, CAST(costUSD AS TEXT)
+            FROM ai_usage_logs
+        `);
+
+        // 5. Drop old table and rename new one
+        await db.runAsync('DROP TABLE ai_usage_logs');
+        await db.runAsync('ALTER TABLE ai_usage_logs_new RENAME TO ai_usage_logs');
+
+        await db.runAsync('COMMIT');
+        console.log('[Migration] ✅ V2 -> V5: costUSD converted to TEXT');
+
+    } catch (error: any) {
+        await db.runAsync('ROLLBACK');
+        console.error('[Migration] ❌ V2 -> V5 migration failed:', error);
+        throw error;
+    }
+};
+
+/**
  * Validate migration by comparing counts
  */
 const validateMigration = async (db: any, counts: { [key: string]: number }): Promise<boolean> => {

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import BigNumber from 'bignumber.js';
 import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-chart-kit';
@@ -15,12 +16,12 @@ import { CURRENCY_SYMBOLS, formatCompactCurrency } from '@utils/currencyUtils';
 interface IncomeAnalysisProps {
     monthlyTrends: {
         labels: string[];
-        incomeData: number[];
+        incomeData: BigNumber[];
     };
     categoryBreakdown: {
         name: string;
-        amount: number;
-        percentage: number;
+        amount: BigNumber;
+        percentage: BigNumber;
     }[];
     currency: string;
     isPrivacyEnabled: boolean;
@@ -70,17 +71,30 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
     // Generate smart insight (using active trends)
     const getInsight = () => {
         if (isPrivacyEnabled) return "Income insights hidden in privacy mode.";
-        if (activeMonthlyTrends.incomeData.length < 2) return "Great start! Keep tracking to see income trends.";
-        const lastMonth = activeMonthlyTrends.incomeData[activeMonthlyTrends.incomeData.length - 1];
-        const prevMonth = activeMonthlyTrends.incomeData[activeMonthlyTrends.incomeData.length - 2];
 
-        if (lastMonth > prevMonth) {
-            const growth = prevMonth === 0 ? 100 : ((lastMonth - prevMonth) / prevMonth) * 100;
+        const data = activeMonthlyTrends.incomeData;
+        if (data.length < 2) return "Great start! Keep tracking to see income trends.";
+
+        const lastMonth = data[data.length - 1]; // BigNumber
+        const prevMonth = data[data.length - 2]; // BigNumber
+
+        // 1. Comparison using BigNumber methods
+        if (lastMonth.isGreaterThan(prevMonth)) {
+            // Handle division by zero if prevMonth was 0
+            const growth = prevMonth.isZero()
+                ? new BigNumber(100)
+                : lastMonth.minus(prevMonth).dividedBy(prevMonth).times(100);
+
             return `Your income grew by ${growth.toFixed(1)}% compared to last month.`;
-        } else if (lastMonth < prevMonth) {
-            const drop = prevMonth === 0 ? 0 : ((prevMonth - lastMonth) / prevMonth) * 100;
+
+        } else if (lastMonth.isLessThan(prevMonth)) {
+            const drop = prevMonth.isZero()
+                ? new BigNumber(0)
+                : prevMonth.minus(lastMonth).dividedBy(prevMonth).times(100);
+
             return `Income is down by ${drop.toFixed(1)}% compared to last month.`;
         }
+
         return "Your income has been stable.";
     };
 
@@ -207,13 +221,21 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
 
                                 // Calculate Average from historical months (exclude current)
                                 const historicalData = rawData.slice(0, rawData.length - 1);
-                                const historicalTotal = historicalData.reduce((sum, val) => sum + val, 0);
-                                const averageIncome = historicalData.length > 0 ? historicalTotal / historicalData.length : currentMonthIncome;
+                                // 1. Sum up the history using .plus()
+                                const historicalTotal = historicalData.reduce(
+                                    (sum, val) => sum.plus(val),
+                                    new BigNumber(0)
+                                );
+
+                                // 2. Calculate average using .dividedBy()
+                                const averageIncome = historicalData.length > 0
+                                    ? historicalTotal.dividedBy(historicalData.length)
+                                    : currentMonthIncome; // currentMonthIncome should also be a BigNumber
 
                                 // Projection = Max(Current, Average)
                                 // If current < average, project we will reach the average.
                                 // If current > average, projection is just the current income (no extra bar).
-                                const proRatedIncome = Math.max(currentMonthIncome, averageIncome);
+                                const proRatedIncome = BigNumber.max(currentMonthIncome, averageIncome);
 
                                 // Replace last label with * indicator
                                 if (labels.length > 0) {
@@ -237,9 +259,9 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                     };
                                 });
 
-                                const maxValue = Math.max(...barData.map(b => b.value), 1); // Prevent 0 division
+                                const maxValue = BigNumber.max(...barData.map(b => b.value), 1); // Prevent 0 division
                                 const yMin = 0;
-                                const yMax = maxValue * 1.05; // 5% padding
+                                const yMax = maxValue.toNumber() * 1.05; // 5% padding
                                 const yRange = yMax - yMin;
                                 const chartHeight = 150;
 
@@ -271,8 +293,8 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                         {/* Bars */}
                                         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around' }}>
                                             {barData.map((bar, index) => {
-                                                const totalHeight = yRange > 0 ? ((bar.value - yMin) / yRange) * chartHeight : 0;
-                                                const actualHeight = yRange > 0 ? ((bar.actual - yMin) / yRange) * chartHeight : 0;
+                                                const totalHeight = yRange > 0 ? ((bar.value.toNumber() - yMin) / yRange) * chartHeight : 0;
+                                                const actualHeight = yRange > 0 ? ((bar.actual.toNumber() - yMin) / yRange) * chartHeight : 0;
                                                 // If projected < actual, prevent overflow
                                                 const projectedHeight = bar.isProjected ? Math.max(0, totalHeight - actualHeight) : 0;
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BigNumber from 'bignumber.js';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -25,14 +26,17 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
 
     const [logs, setLogs] = useState<AIUsageLog[]>([]);
     const [refreshing, setRefreshing] = useState(false);
-    const [totalCost, setTotalCost] = useState(0);
+    const [totalCost, setTotalCost] = useState(new BigNumber(0));
 
     const loadLogs = async () => {
         const data = await getAIUsageLogs();
         // Sort newest first
         const sorted = data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         setLogs(sorted);
-        const total = sorted.reduce((acc, log) => acc + (log.costUSD || 0), 0);
+        const total = sorted.reduce((acc, log) => {
+            const cost = new BigNumber(log.costUSD || 0);
+            return acc.plus(cost);
+        }, new BigNumber(0));
         setTotalCost(total);
         setRefreshing(false);
     };

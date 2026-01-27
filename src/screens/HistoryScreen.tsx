@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import BigNumber from 'bignumber.js';
 import { Text, View, SectionList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -19,15 +20,15 @@ type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 interface TransactionSection {
     title: string;
     data: Transaction[];
-    totalAmount: number;
+    totalAmount: BigNumber;
     count: number;
     originalDate: Date;
 }
 
 interface FinancialSummary {
-    totalIncome: number;
-    totalExpense: number;
-    balance: number;
+    totalIncome: BigNumber;
+    totalExpense: BigNumber;
+    balance: BigNumber;
 }
 
 const HistoryScreen = ({ navigation }: any) => {
@@ -76,7 +77,7 @@ const HistoryScreen = ({ navigation }: any) => {
         setIsLoading(false);
     };
 
-    const formatCurrency = (amount: number) => {
+    const formatCurrency = (amount: BigNumber) => {
         if (isPrivacyEnabled) return '****';
         return formatCurrencyAmount(amount, profile?.currency || 'USD');
     };
@@ -163,21 +164,21 @@ const HistoryScreen = ({ navigation }: any) => {
     }, [allTransactions, currentDate, timeFrame]);
 
     const summary = useMemo((): FinancialSummary => {
-        let totalIncome = 0;
-        let totalExpense = 0;
+        let totalIncome = new BigNumber(0);
+        let totalExpense = new BigNumber(0);
 
         filteredData.forEach(t => {
             if (t.type === 'INCOME') {
-                totalIncome += t.amount;
+                totalIncome.plus(t.amount);
             } else {
-                totalExpense += t.amount;
+                totalExpense.plus(t.amount);
             }
         });
 
         return {
             totalIncome,
             totalExpense,
-            balance: totalIncome - totalExpense
+            balance: totalIncome.minus(totalExpense)
         };
     }, [filteredData]);
 
@@ -195,8 +196,10 @@ const HistoryScreen = ({ navigation }: any) => {
         const newSections: TransactionSection[] = Object.keys(grouped).map(dateKey => {
             const transactions = grouped[dateKey];
             const totalAmount = transactions.reduce((sum, t) => {
-                return sum + (t.type === 'INCOME' ? t.amount : -t.amount);
-            }, 0);
+                return t.type === 'INCOME'
+                    ? sum.plus(t.amount)
+                    : sum.minus(t.amount);
+            }, new BigNumber(0));
 
             // Helper to get nice label for the section header
             const getSectionLabel = (dKey: string) => {
@@ -304,8 +307,8 @@ const HistoryScreen = ({ navigation }: any) => {
             <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>
                 {title} <Text style={{ color: colors.textSecondary, fontWeight: 'normal' }}>({count})</Text>
             </Text>
-            <Text style={{ color: totalAmount >= 0 ? colors.success : colors.text, fontSize: 14, fontWeight: 'bold' }}>
-                {totalAmount >= 0 ? '+' : ''}{formatCurrency(totalAmount)}
+            <Text style={{ color: totalAmount.isGreaterThanOrEqualTo(0) ? colors.success : colors.text, fontSize: 14, fontWeight: 'bold' }}>
+                {totalAmount.isGreaterThanOrEqualTo(0) ? '+' : ''}{formatCurrency(totalAmount)}
             </Text>
         </View>
     );
@@ -361,7 +364,7 @@ const HistoryScreen = ({ navigation }: any) => {
                         {isLoading ? (
                             <Skeleton width={120} height={32} />
                         ) : (
-                            <Text style={{ color: summary.balance >= 0 ? colors.success : colors.error, fontSize: 24, fontWeight: 'bold' }}>
+                            <Text style={{ color: summary.balance.isGreaterThanOrEqualTo(0) ? colors.success : colors.error, fontSize: 24, fontWeight: 'bold' }}>
                                 {formatCurrency(summary.balance)}
                             </Text>
                         )}

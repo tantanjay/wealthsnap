@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import BigNumber from 'bignumber.js';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -123,7 +124,7 @@ const SetupScreen = ({ navigation }: any) => {
             id: generateUUID(),
             name,
             currency,
-            monthlySalary: 0,
+            monthlySalary: new BigNumber(0),
             financialGoals: goals,
             isOnboardingComplete: true,
             createdAt: new Date().toISOString(),

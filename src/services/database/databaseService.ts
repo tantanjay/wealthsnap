@@ -56,11 +56,14 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
                 await migrateV1ToV2(db);
             }
 
-            // Future migrations:
-            // if (currentVersion < 3) {
-            //     const { migrateV2ToV3 } = import('@services/database/migrationService');
-            //     await migrateV2ToV3(db);
-            // }
+            /**
+             * Jump to v5
+             * Hard to say what version is users used just to make sure we cover all cases
+             */
+            if (currentVersion < 5) {
+                const { migrateV2ToV5 } = await import('@services/database/migrationService');
+                await migrateV2ToV5(db);
+            }
 
             // Update to latest version after all migrations complete
             await setDatabaseVersion(db, DATABASE_VERSION);

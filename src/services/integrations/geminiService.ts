@@ -1,3 +1,4 @@
+import BigNumber from 'bignumber.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -120,7 +121,7 @@ const logUsage = async (endpoint: string, promptText: string, responseText: stri
             outputTokens,
             imageCount,
             durationMs,
-            costUSD: totalCost
+            costUSD: new BigNumber(totalCost)
         };
 
         await saveAIUsageLog(log);
