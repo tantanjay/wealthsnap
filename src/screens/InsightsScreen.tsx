@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import BigNumber from 'bignumber.js';
 import { View, ScrollView, TouchableOpacity, Text, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -38,23 +39,23 @@ const InsightsScreen = ({ navigation }: any) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
     const [data, setData] = useState({
-        netCashFlow: 0,
-        income: 0,
-        expense: 0,
-        savingsRate: 0,
-        burnRate: 0,
-        incomeTrends: { labels: [], incomeData: [] as number[], expenseData: [] as number[] } as { labels: string[], incomeData: number[], expenseData: number[] }, // Correct type
+        netCashFlow: new BigNumber(0),
+        income: new BigNumber(0),
+        expense: new BigNumber(0),
+        savingsRate: new BigNumber(0),
+        burnRate: new BigNumber(0),
+        incomeTrends: { labels: [], incomeData: [] as BigNumber[], expenseData: [] as BigNumber[] } as { labels: string[], incomeData: BigNumber[], expenseData: BigNumber[] }, // Correct type
         incomeBreakdown: [] as any[],
         expenseBreakdown: [] as any[],
-        currentMonthExpense: 0,
-        lastMonthExpense: 0,
-        averageExpense: 0,
-        average6Month: 0,
-        average1Year: 0,
+        currentMonthExpense: new BigNumber(0),
+        lastMonthExpense: new BigNumber(0),
+        averageExpense: new BigNumber(0),
+        average6Month: new BigNumber(0),
+        average1Year: new BigNumber(0),
         anomalies: [] as Metrics.Anomaly[],
-        currentBalance: 0,
-        budgetPerformance: 0,
-        topExpenseCategory: { name: 'None', amount: 0, percentage: 0 },
+        currentBalance: new BigNumber(0),
+        budgetPerformance: new BigNumber(0),
+        topExpenseCategory: { name: 'None', amount: new BigNumber(0), percentage: new BigNumber(0) },
         daysInMonth: 30
     });
 
@@ -110,12 +111,12 @@ const InsightsScreen = ({ navigation }: any) => {
         const burnRate3m = Metrics.calculateBurnRate(currentTransactions, 3);
 
         let burnRate = average6Month;
-        if (burnRate === 0) {
-            if (burnRate3m > 0) {
+        if (burnRate.isLessThanOrEqualTo(0)) {
+            if (burnRate3m.isGreaterThan(0)) {
                 burnRate = burnRate3m;
-            } else if (lastMonthTotals.expense > 0) {
+            } else if (lastMonthTotals.expense.isGreaterThan(0)) {
                 burnRate = lastMonthTotals.expense;
-            } else if (totals.expense > 0) {
+            } else if (totals.expense.isGreaterThan(0)) {
                 burnRate = totals.expense;
             }
         }
@@ -125,26 +126,32 @@ const InsightsScreen = ({ navigation }: any) => {
 
         // Calculate current balance (all-time income - all-time expense)
         const allTimeTotals = Metrics.calculateTotals(currentTransactions);
-        const currentBalance = allTimeTotals.income - allTimeTotals.expense;
+        const currentBalance = allTimeTotals.income.minus(allTimeTotals.expense);
 
         // Budget Performance (always use SUB_CATEGORY for budgets)
         const specificCategoryBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'SUB_CATEGORY');
         const budgets = await getAllBudgets();
-        let budgetPerformance = 0;
+        let budgetPerformance = new BigNumber(0);
         if (budgets.length > 0) {
-            // Calculate total spent in budgeted categories using the specific breakdown
+            // 1. Calculate total spent in budgeted categories
             const budgetedCategorySpent = specificCategoryBreakdown
                 .filter(cat => budgets.some(b => b.category === cat.name))
-                .reduce((sum, cat) => sum + cat.amount, 0);
+                .reduce((sum, cat) => sum.plus(cat.amount), new BigNumber(0));
 
-            const totalBudget = budgets.reduce((sum, b) => sum + b.amount, 0);
-            budgetPerformance = totalBudget > 0 ? (budgetedCategorySpent / totalBudget) * 100 : 0;
+            // 2. Calculate total budget amount
+            const totalBudget = budgets.reduce((sum, b) => sum.plus(b.amount), new BigNumber(0));
+
+            // 3. Calculate performance percentage with a zero-check
+            // totalBudget.isGreaterThan(0) replaces totalBudget > 0
+            budgetPerformance = totalBudget.isGreaterThan(0)
+                ? budgetedCategorySpent.div(totalBudget).times(100)
+                : new BigNumber(0);
         }
 
         // Top Expense Category (always use individual category for better insight)
         const topExpenseCategory = specificCategoryBreakdown.length > 0
             ? specificCategoryBreakdown[0]
-            : { name: 'None', amount: 0, percentage: 0 };
+            : { name: 'None', amount: new BigNumber(0), percentage: new BigNumber(0) };
 
         // Days in current month
         const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();

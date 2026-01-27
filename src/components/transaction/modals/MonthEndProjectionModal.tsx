@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import BigNumber from 'bignumber.js';
 import { View, Text, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -27,9 +28,11 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
         return getMonthEndProjection(transactions);
     }, [transactions]);
 
-    const savingsRate = projection.projectedIncome > 0
-        ? ((projection.projectedSavings / projection.projectedIncome) * 100)
-        : 0;
+    const savingsRate = projection.projectedIncome.isGreaterThan(0)
+        ? projection.projectedSavings
+            .dividedBy(projection.projectedIncome)
+            .times(100)
+        : new BigNumber(0);
 
     return (
         <BottomModal
@@ -122,7 +125,7 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
                                 Projected Savings
                             </Text>
                             <Text style={{
-                                color: projection.projectedSavings >= 0 ? '#4CAF50' : '#F44336',
+                                color: projection.projectedSavings.isGreaterThanOrEqualTo(0) ? '#4CAF50' : '#F44336',
                                 fontSize: 24,
                                 fontWeight: 'bold'
                             }}>
@@ -134,7 +137,7 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
                                 Savings Rate
                             </Text>
                             <Text style={{
-                                color: savingsRate >= 0 ? '#4CAF50' : '#F44336',
+                                color: savingsRate.isGreaterThanOrEqualTo(0) ? '#4CAF50' : '#F44336',
                                 fontSize: 20,
                                 fontWeight: 'bold'
                             }}>

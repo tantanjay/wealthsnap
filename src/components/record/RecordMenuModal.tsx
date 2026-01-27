@@ -5,14 +5,16 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import * as ImagePicker from 'expo-image-picker';
 
 import BottomModal from '@components/common/BottomModal';
+import { TransactionType } from '@types';
 import { useTheme } from '@context/ThemeContext';
 import { useSecurity } from '@context/SecurityContext';
 import { useAlert } from '@context/AlertContext';
 
+
 export interface RecordMenuModalProps {
     visible: boolean;
     onClose: () => void;
-    onSelectTransaction: (type: 'EXPENSE' | 'INCOME') => void;
+    onSelectTransaction: (type: TransactionType) => void;
     onSelectInvestment: (type: 'STOCKS' | 'BONDS' | 'CRYPTO' | 'FUNDS' | 'COMMODITIES') => void;
     // Pass raw URI, optimization happens in next screen
     onSelectAI: (type: 'BROWSE' | 'CAPTURE', imageUri?: string) => void;

@@ -1,3 +1,5 @@
+import { TransactionType } from "@types";
+
 // Expense Category Groups with Subcategories
 export const EXPENSE_CATEGORY_GROUPS = [
     {
@@ -154,7 +156,7 @@ export const EXPENSE_CATEGORIES = EXPENSE_CATEGORY_GROUPS.flatMap(g => g.items);
 export const INCOME_CATEGORIES = INCOME_CATEGORY_GROUPS.flatMap(g => g.items);
 
 // Helper to get category group from value
-export const getCategoryGroup = (value: string, type: 'EXPENSE' | 'INCOME'): string => {
+export const getCategoryGroup = (value: string, type: TransactionType): string => {
     const groups = type === 'EXPENSE' ? EXPENSE_CATEGORY_GROUPS : INCOME_CATEGORY_GROUPS;
     for (const group of groups) {
         if (group.items.some(item => item.value === value)) {

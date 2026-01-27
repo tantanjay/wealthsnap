@@ -1,5 +1,10 @@
+import BigNumber from 'bignumber.js';
 import { Transaction, TransactionType } from '@types';
 import { getCategoryGroup } from '@constants/categories';
+
+const parseDate = (date: string | Date): Date => {
+    return typeof date === 'string' ? new Date(date) : date;
+};
 
 export const getTransactionsByMonth = (transactions: Transaction[], date: Date = new Date()) => {
     return transactions.filter(t => {
@@ -9,24 +14,26 @@ export const getTransactionsByMonth = (transactions: Transaction[], date: Date =
 };
 
 export const calculateTotals = (transactions: Transaction[]) => {
-    let income = 0;
-    let expense = 0;
+    let income = new BigNumber(0);
+    let expense = new BigNumber(0);
 
     transactions.forEach(t => {
         if (t.type === 'INCOME') {
-            income += t.amount;
+            income = income.plus(t.amount);
         } else if (t.type === 'EXPENSE') {
-            expense += t.amount;
+            // Always store the total expense as a positive "bucket"
+            expense = expense.plus(t.amount.abs());
         }
     });
 
-    return { income, expense, net: income - expense };
+    return { income, expense, net: income.minus(expense) };
 };
 
-export const calculateSavingsRate = (income: number, expense: number) => {
-    if (income === 0) return 0;
-    const savings = income - expense;
-    return (savings / income) * 100;
+export const calculateSavingsRate = (income: BigNumber, expense: BigNumber): BigNumber => {
+    if (income.isZero() || income.isLessThan(0)) return new BigNumber(0);
+    // (Income - Expense) / Income * 100
+    const savings = income.minus(expense);
+    return savings.dividedBy(income).times(100);
 };
 
 export const getSavingsRateTrend = (transactions: Transaction[], months: number = 6) => {
@@ -39,10 +46,11 @@ export const getSavingsRateTrend = (transactions: Transaction[], months: number 
 
         return {
             month,
-            rate: Math.round(savingsRate * 10) / 10, // Round to 1 decimal
+            // .dp(1) is the BigNumber way to round to 1 decimal place safely
+            rate: savingsRate.dp(1).toNumber(),
             income,
             expense,
-            savings: income - expense
+            savings: income.minus(expense)
         };
     });
 };
@@ -52,18 +60,18 @@ export const getTopTransactions = (transactions: Transaction[], limit: number = 
     const currentMonthTransactions = getTransactionsByMonth(transactions, currentMonth);
 
     return currentMonthTransactions
-        //.filter(t => t.type !== 'TRANSFER') // Exclude transfers - TRANSFER type does not exist yet
-        .sort((a, b) => b.amount - a.amount) // Sort by amount descending
+        .filter(t => t.type !== 'TRANSFER')
+        .filter(t => t.type !== 'INCOME')
+        // Sort by magnitude (absolute value)
+        .sort((a, b) => b.amount.abs().comparedTo(a.amount.abs()) ?? 0)
         .slice(0, limit);
 };
 
 export const getCategoryTrend = (transactions: Transaction[], category: string, months: number = 6, grouping: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
     const result = {
         labels: [] as string[],
-        data: [] as number[]
+        data: [] as BigNumber[]
     };
-
-
 
     const today = new Date();
     for (let i = months - 1; i >= 0; i--) {
@@ -83,7 +91,7 @@ export const getCategoryTrend = (transactions: Transaction[], category: string, 
                     return key === category;
                 }
             })
-            .reduce((sum, t) => sum + t.amount, 0);
+            .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
 
         result.data.push(categoryTotal);
     }
@@ -93,82 +101,60 @@ export const getCategoryTrend = (transactions: Transaction[], category: string, 
 
 export const getMonthEndProjection = (transactions: Transaction[]) => {
     const today = new Date();
-    const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthlyTransactions = getTransactionsByMonth(transactions, currentMonth);
-
-    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const currentDay = today.getDate();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const daysRemaining = daysInMonth - currentDay;
 
-    const { income, expense } = calculateTotals(monthlyTransactions);
+    const currentMonthTrans = getTransactionsByMonth(transactions, today);
+    const { income, expense } = calculateTotals(currentMonthTrans);
 
-    // --- SMART PROJECTION LOGIC ---
-    // 1. Calculate Linear Projection (Fallback)
-    const linearProjectedIncome = income + ((income / currentDay) * daysRemaining);
-    const linearProjectedExpense = expense + ((expense / currentDay) * daysRemaining);
+    // 1. Linear Fallback
+    const dailyIncome = income.dividedBy(currentDay || 1);
+    const dailyExpense = expense.dividedBy(currentDay || 1);
 
-    // 2. Calculate Historical Pace (Smart)
-    let smartProjectedExpense = linearProjectedExpense;
+    const linearProjectedIncome = income.plus(dailyIncome.times(daysRemaining));
+    const linearProjectedExpense = expense.plus(dailyExpense.times(daysRemaining));
 
-    // Get previous months (go back up to 6 months)
+    // 2. Smart Pacing
+    let totalHistExpenseEnd = new BigNumber(0);
+    let totalHistExpenseToDate = new BigNumber(0);
     let historyMonthsCount = 0;
-    let totalHistoricalExpenseEnd = 0;
-    let totalHistoricalExpenseToDate = 0;
-
-    // We only care about Expense for "Smart" usually, as Income is often irregular (bi-weekly)
-    // making daily-pace less useful, but we can try basic pacing for income too.
 
     for (let i = 1; i <= 6; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const histTrans = getTransactionsByMonth(transactions, d);
-        if (histTrans.length === 0) continue; // Skip empty months
+        const histTrans = getTransactionsByMonth(transactions, d).filter(t => t.type !== 'TRANSFER');
+        if (histTrans.length === 0) continue;
 
         const histTotals = calculateTotals(histTrans);
+        const histToDate = histTrans
+            .filter(t => parseDate(t.date).getDate() <= currentDay)
+            .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
 
-        // Calculate how much was spent by this day in that month
-        const histToDate = histTrans.filter(t => new Date(t.date).getDate() <= currentDay)
-            .reduce((sum, t) => sum + (t.type === 'EXPENSE' ? t.amount : 0), 0);
-
-        totalHistoricalExpenseEnd += histTotals.expense;
-        totalHistoricalExpenseToDate += histToDate;
+        totalHistExpenseEnd = totalHistExpenseEnd.plus(histTotals.expense);
+        totalHistExpenseToDate = totalHistExpenseToDate.plus(histToDate);
         historyMonthsCount++;
     }
 
-    // Apply Smart Logic if we have enough history and non-zero pacing
-    if (historyMonthsCount >= 1 && totalHistoricalExpenseToDate > 0) {
-        // Average spend by "Today's Date" across history
-        const avgExpenseToDate = totalHistoricalExpenseToDate / historyMonthsCount;
-        // Average total spend per month across history
-        const avgExpenseEnd = totalHistoricalExpenseEnd / historyMonthsCount;
-
-        // Multiplier: "Am I spending faster or slower than usual?"
-        // Example: Usually spend $1000 by Day 15. Today spent $1200. Multiplier = 1.2
-        const paceMultiplier = expense / avgExpenseToDate;
-
-        // Project: Normal Month Total * Multiplier
-        smartProjectedExpense = avgExpenseEnd * paceMultiplier;
+    let smartProjectedExpense = linearProjectedExpense;
+    if (historyMonthsCount > 0 && totalHistExpenseToDate.isGreaterThan(0)) {
+        const paceMultiplier = expense.dividedBy(totalHistExpenseToDate.dividedBy(historyMonthsCount));
+        const avgExpenseEnd = totalHistExpenseEnd.dividedBy(historyMonthsCount);
+        smartProjectedExpense = avgExpenseEnd.times(paceMultiplier);
     }
-
-    // 3. Final Calculation
-    // For income, linear is usually "okay" or we should stick to linear for safety unless we do cycle detection.
-    // Let's stick to linear for Income, and use Smart for Expense.
 
     return {
         currentIncome: income,
         currentExpense: expense,
         projectedIncome: linearProjectedIncome,
         projectedExpense: smartProjectedExpense,
-        projectedSavings: linearProjectedIncome - smartProjectedExpense,
+        projectedSavings: linearProjectedIncome.minus(smartProjectedExpense),
         daysRemaining,
-        progress: (currentDay / daysInMonth) * 100
+        progress: new BigNumber(currentDay).dividedBy(daysInMonth).times(100).dp(1).toNumber()
     };
 };
 
-
-
-
-export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: number = 6) => {
-    if (allTransactions.length === 0) return 0;
+export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: number = 6): BigNumber => {
+    if (allTransactions.length === 0) return new BigNumber(0);
 
     const today = new Date();
     const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -190,61 +176,56 @@ export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: nu
     // We ensure it's at least 1 month
     const effectiveMonths = Math.max(1, Math.min(monthsBack, monthDiff));
 
-    let totalExpense = 0;
+    let totalExpense = new BigNumber(0);
 
     // Sum expenses for the effective window
     for (let i = 0; i < effectiveMonths; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
         const { expense } = calculateTotals(monthlyTransactions);
-        totalExpense += expense;
+        totalExpense = totalExpense.plus(expense);
     }
 
-    return totalExpense / effectiveMonths;
+    return totalExpense.dividedBy(effectiveMonths);
 };
 
 export const getCategoryBreakdown = (transactions: Transaction[], type: TransactionType, groupBy: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
-    const breakdown: { [key: string]: number } = {};
-    let total = 0;
+    const breakdown: { [key: string]: BigNumber } = {};
+    let total = new BigNumber(0);
 
     const filteredTransactions = transactions.filter(t => t.type === type);
 
     filteredTransactions.forEach(t => {
         let key: string;
-
         if (groupBy === 'CATEGORY') {
-            // Group mode: Group by category group (e.g., "Family & Home", "Food & Lifestyle")
-            // We need to get the group for this category
-            // Import getCategoryGroup from categories.ts
             key = getCategoryGroup(t.category, t.type);
         } else {
-            // Item mode (SUB_CATEGORY): Group by individual category/item (e.g., "Groceries", "Food")
-            // If subCategory exists and is valid, use it; otherwise use category
-            if (t.subCategory && t.subCategory !== 'undefined') {
-                key = t.subCategory;
-            } else {
-                key = t.category;
-            }
+            key = (t.subCategory && t.subCategory !== 'undefined') ? t.subCategory : t.category;
         }
 
-        breakdown[key] = (breakdown[key] || 0) + t.amount;
-        total += t.amount;
+        // Use absolute value for the total and breakdown if you want positive bars/charts
+        const absAmount = t.amount.abs();
+        breakdown[key] = (breakdown[key] || new BigNumber(0)).plus(absAmount);
+        total = total.plus(absAmount);
     });
 
     return Object.entries(breakdown)
         .map(([name, amount]) => ({
             name,
             amount,
-            percentage: total > 0 ? (amount / total) * 100 : 0
+            percentage: total.isGreaterThan(0)
+                ? amount.dividedBy(total).times(100)
+                : new BigNumber(0)
         }))
-        .sort((a, b) => b.amount - a.amount);
+        // Sorts largest magnitude to smallest
+        .sort((a, b) => b.amount.comparedTo(a.amount) ?? 0);
 };
 
 export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: number = 6) => {
     const result = {
         labels: [] as string[],
-        incomeData: [] as number[],
-        expenseData: [] as number[]
+        incomeData: [] as BigNumber[],
+        expenseData: [] as BigNumber[]
     };
 
     const today = new Date();
@@ -264,52 +245,63 @@ export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: num
 
 export const getCumulativeSpendingCurve = (allTransactions: Transaction[], monthsBack: number): number[] => {
     const today = new Date();
-    // 1. Identify which completed months we are looking at
-    // We want the average of the last X *completed* months, OR we can include current month if careful.
-    // Usually "Average" means "Historical Average", so let's skip current month.
+    const dailySums: BigNumber[] = new Array(31).fill(null).map(() => new BigNumber(0));
     let count = 0;
-    const dailySums: number[] = new Array(31).fill(0);
 
     for (let i = 1; i <= monthsBack; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         const monthlyTrans = getTransactionsByMonth(allTransactions, d);
         if (monthlyTrans.length === 0) continue;
 
-        // Sum up this month's daily usage
-        const daysInThisMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-        let monthRunningTotal = 0;
+        const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        let runningTotal = new BigNumber(0);
 
-        // We only up to day 28/30/31 depending on month length, but we fill our array to 31
-        for (let day = 1; day <= 31; day++) {
-            // If day exceeds month length, just carry over the last value (cumulative stays flat)
-            if (day <= daysInThisMonth) {
-                const daysTrans = monthlyTrans.filter(t => new Date(t.date).getDate() === day && t.type === 'EXPENSE');
-                const daySum = daysTrans.reduce((acc, t) => acc + t.amount, 0);
-                monthRunningTotal += daySum;
+        // Pre-index days for performance
+        const dayMap = monthlyTrans.reduce((acc, t) => {
+            if (t.type === 'EXPENSE') {
+                const day = parseDate(t.date).getDate();
+                acc[day] = (acc[day] || new BigNumber(0)).plus(t.amount.abs());
             }
-            dailySums[day - 1] += monthRunningTotal;
+            return acc;
+        }, {} as Record<number, BigNumber>);
+
+        for (let day = 1; day <= 31; day++) {
+            if (day <= daysInMonth) {
+                runningTotal = runningTotal.plus(dayMap[day] || 0);
+            }
+            dailySums[day - 1] = dailySums[day - 1].plus(runningTotal);
         }
         count++;
     }
 
-    if (count === 0) return []; // No history
-
-    // Average the sums
-    return dailySums.map(sum => sum / count);
+    return count === 0 ? [] : dailySums.map(s => s.dividedBy(count).toNumber());
 };
 
 export const getCurrentMonthCumulative = (currentMonthTransactions: Transaction[]): number[] => {
     const today = new Date();
     const currentDay = today.getDate();
     const result: number[] = [];
-    let runningTotal = 0;
+    let runningTotal = new BigNumber(0);
 
+    // Optimization: Group transactions by day first so we don't .filter() in a loop
+    const dailyExpenses = currentMonthTransactions
+        .filter(t => t.type === 'EXPENSE')
+        .reduce((acc, t) => {
+            const d = typeof t.date === 'string' ? new Date(t.date) : t.date;
+            const dayNum = d.getDate();
+            acc[dayNum] = (acc[dayNum] || new BigNumber(0)).plus(t.amount.abs());
+            return acc;
+        }, {} as Record<number, BigNumber>);
+
+    // Build the cumulative array up to 'today'
     for (let day = 1; day <= currentDay; day++) {
-        const daysTrans = currentMonthTransactions.filter(t => new Date(t.date).getDate() === day && t.type === 'EXPENSE');
-        const daySum = daysTrans.reduce((acc, t) => acc + t.amount, 0);
-        runningTotal += daySum;
-        result.push(runningTotal);
+        const daySum = dailyExpenses[day] || new BigNumber(0);
+        runningTotal = runningTotal.plus(daySum);
+
+        // Push as a number for the charting library
+        result.push(runningTotal.toNumber());
     }
+
     return result;
 };
 
@@ -322,38 +314,45 @@ export interface Anomaly {
 export const detectAnomalies = (currentMonthTransactions: Transaction[], allTransactions: Transaction[]): Anomaly[] => {
     const anomalies: Anomaly[] = [];
 
-    // Only detect anomalies if we have enough historical data
-    if (allTransactions.length < 10) {
-        return anomalies; // Not enough data to detect meaningful patterns
-    }
+    if (allTransactions.length < 10) return anomalies;
 
-    const historyTransactions = allTransactions.filter(t => !currentMonthTransactions.includes(t));
+    // Use a Set for faster lookup when filtering out current transactions
+    const currentIds = new Set(currentMonthTransactions.map(t => t.id));
+    const historyTransactions = allTransactions.filter(t => !currentIds.has(t.id));
 
-    // Check for significant spending spikes (50%+ increase vs historical average)
+    // currentBreakdown amounts are already Absolute and BigNumber from our previous update
     const currentBreakdown = getCategoryBreakdown(currentMonthTransactions, 'EXPENSE');
 
     currentBreakdown.forEach(item => {
-        // Only check categories that exist in history
-        const catHistory = historyTransactions.filter(t => t.category === item.name && t.type === 'EXPENSE');
-        if (catHistory.length < 3) return; // Need at least 3 historical transactions
+        const catHistory = historyTransactions.filter(t =>
+            t.category === item.name && t.type === 'EXPENSE'
+        );
 
-        // Calculate historical average
-        const historicalTotal = catHistory.reduce((sum, t) => sum + t.amount, 0);
+        if (catHistory.length < 3) return;
 
-        // Prevent division by zero if historicalTotal is 0
-        if (historicalTotal === 0) return;
+        // 1. Calculate historical average using absolute values
+        const historicalTotal = catHistory.reduce(
+            (sum, t) => sum.plus(t.amount.abs()),
+            new BigNumber(0)
+        );
 
-        const historicalAverage = historicalTotal / catHistory.length;
+        if (historicalTotal.isZero()) return;
 
-        // Flag if current month is 50% higher than average AND the difference is significant
-        const percentIncrease = ((item.amount - historicalAverage) / historicalAverage) * 100;
-        const difference = item.amount - historicalAverage;
+        const historicalAverage = historicalTotal.dividedBy(catHistory.length);
 
-        if (percentIncrease > 50 && difference > 1000) { // 50% increase AND at least 1000 difference
+        // 2. Calculate Difference: (Current - Average)
+        const difference = item.amount.minus(historicalAverage);
+
+        // 3. Calculate Percent Increase: (Difference / Average) * 100
+        const percentIncrease = difference.dividedBy(historicalAverage).times(100);
+
+        // 4. Threshold Checks
+        // Note: .toNumber() is fine here because we are just comparing for logic gates
+        if (percentIncrease.toNumber() > 50 && difference.toNumber() > 100) {
             anomalies.push({
                 type: 'SPIKE',
                 message: `${item.name} spending is ${percentIncrease.toFixed(0)}% higher than usual`,
-                severity: percentIncrease > 100 ? 'HIGH' : 'MEDIUM'
+                severity: percentIncrease.isGreaterThan(100) ? 'HIGH' : 'MEDIUM'
             });
         }
     });
@@ -363,26 +362,39 @@ export const detectAnomalies = (currentMonthTransactions: Transaction[], allTran
 
 export const getCategoryAverages = (allTransactions: Transaction[], monthsBack: number = 3) => {
     const today = new Date();
-    const totalsByCategory: { [key: string]: number } = {};
+    const totalsByCategory: { [key: string]: BigNumber } = {};
 
-    // Filter for last N months excluding current
+    // 1. Define date boundaries
     const startHistory = new Date(today.getFullYear(), today.getMonth() - monthsBack, 1);
-    const endHistory = new Date(today.getFullYear(), today.getMonth(), 0); // End of last month
+    const endHistory = new Date(today.getFullYear(), today.getMonth(), 0);
 
-    const historyParams = allTransactions.filter(
-        t => {
-            const d = new Date(t.date);
-            return d >= startHistory && d <= endHistory && t.type === 'EXPENSE';
+    // 2. Filter history and track which months actually had transactions
+    const uniqueMonths = new Set<string>();
+
+    const historyTransactions = allTransactions.filter(t => {
+        const d = typeof t.date === 'string' ? new Date(t.date) : t.date;
+        const isMatch = d >= startHistory && d <= endHistory && t.type === 'EXPENSE';
+
+        if (isMatch) {
+            uniqueMonths.add(`${d.getFullYear()}-${d.getMonth()}`);
         }
-    );
-
-    historyParams.forEach(t => {
-        totalsByCategory[t.category] = (totalsByCategory[t.category] || 0) + t.amount;
+        return isMatch;
     });
 
+    // 3. Aggregate totals using absolute values
+    historyTransactions.forEach(t => {
+        totalsByCategory[t.category] = (totalsByCategory[t.category] || new BigNumber(0)).plus(t.amount.abs());
+    });
+
+    // 4. Calculate averages
     const averages: { [key: string]: number } = {};
+
+    // We divide by the actual number of months found, or the requested monthsBack
+    // This prevents "diluting" averages for new users
+    const divisor = uniqueMonths.size > 0 ? uniqueMonths.size : monthsBack;
+
     Object.keys(totalsByCategory).forEach(key => {
-        averages[key] = totalsByCategory[key] / monthsBack;
+        averages[key] = totalsByCategory[key].dividedBy(divisor).toNumber();
     });
 
     return averages;

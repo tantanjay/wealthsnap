@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import BigNumber from 'bignumber.js';
 import { View, Text, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -26,34 +27,44 @@ const RecurringExpensesSummaryModal: React.FC<RecurringExpensesSummaryProps> = (
         return recurrences
             .filter(r => r.isActive && r.transactionTemplate.type === 'EXPENSE')
             .reduce((sum, r) => {
-                const amount = r.transactionTemplate.amount;
-                let monthlyAmount = 0;
+                const amount = new BigNumber(r.transactionTemplate.amount || 0);
+                let monthlyAmount = new BigNumber(0);
                 switch (r.frequency) {
-                    case 'DAILY': monthlyAmount = amount * 30; break;
-                    case 'WEEKLY': monthlyAmount = amount * 4.333; break;
-                    case 'SEMI_MONTHLY': monthlyAmount = amount * 2; break;
+                    case 'DAILY': monthlyAmount = amount.multipliedBy(30); break;
+                    case 'WEEKLY': monthlyAmount = amount.multipliedBy(4.333); break;
+                    case 'SEMI_MONTHLY': monthlyAmount = amount.multipliedBy(2); break;
                     case 'MONTHLY': monthlyAmount = amount; break;
-                    case 'QUARTERLY': monthlyAmount = amount / 3; break;
-                    case 'YEARLY': monthlyAmount = amount / 12; break;
+                    case 'QUARTERLY': monthlyAmount = amount.dividedBy(3); break;
+                    case 'YEARLY': monthlyAmount = amount.dividedBy(12); break;
                     default: monthlyAmount = amount;
                 }
-                return sum + monthlyAmount;
-            }, 0);
+                return sum.plus(monthlyAmount);
+            }, new BigNumber(0));
     }, [recurrences]);
 
     const upcoming = useMemo(() => {
         return recurrences
             .filter(r => r.isActive && r.transactionTemplate.type === 'EXPENSE')
-            .sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime())
-            .slice(0, 3); // Top 3 upcoming
+            .sort((a, b) => {
+                return new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime();
+            })
+            .slice(0, 3);
     }, [recurrences]);
 
     const categoryBreakdown = useMemo(() => {
-        const groups: Record<string, number> = {};
-        recurrences.filter(r => r.isActive && r.transactionTemplate.type === 'EXPENSE').forEach(r => {
-            groups[r.transactionTemplate.category] = (groups[r.transactionTemplate.category] || 0) + r.transactionTemplate.amount;
+        const groups: Record<string, BigNumber> = {};
+
+        recurrences
+            .filter(r => r.isActive && r.transactionTemplate.type === 'EXPENSE')
+            .forEach(r => {
+                const category = r.transactionTemplate.category;
+                const amount = r.transactionTemplate.amount;
+
+                groups[category] = (groups[category] || new BigNumber(0)).plus(amount);
+            });
+        return Object.entries(groups).sort((a, b) => {
+            return b[1].comparedTo(a[1]) ?? 0;
         });
-        return Object.entries(groups).sort((a, b) => b[1] - a[1]);
     }, [recurrences]);
 
     return (

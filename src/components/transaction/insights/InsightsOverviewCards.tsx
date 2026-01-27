@@ -1,4 +1,5 @@
 import React, { useRef, useState, useMemo } from 'react';
+import BigNumber from 'bignumber.js';
 import { View, Text, Dimensions, FlatList, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -9,18 +10,17 @@ import { useTheme } from '@context/ThemeContext';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface InsightsOverviewCardsProps {
-    netCashFlow: number;
-    income: number;
-    expense: number;
-    savingsRate: number;
-    burnRate: number;
+    netCashFlow: BigNumber;
+    income: BigNumber;
+    expense: BigNumber;
+    savingsRate: BigNumber;
+    burnRate: BigNumber;
     currency: string;
     isPrivacyEnabled: boolean;
     isLoading?: boolean;
-    // New props
-    currentBalance: number;
-    budgetPerformance: number;
-    topExpenseCategory: { name: string; amount: number; percentage: number };
+    currentBalance: BigNumber;
+    budgetPerformance: BigNumber;
+    topExpenseCategory: { name: string; amount: BigNumber; percentage: BigNumber };
     daysInMonth: number;
     cardOrder?: string[];
     onReorderCards?: (newOrder: string[]) => void;
@@ -57,18 +57,18 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
         {
             id: 'financial-runway',
             title: "Financial Runway",
-            value: currentBalance <= 0 ? "0.0 months" : burnRate > 0 ? `${(currentBalance / burnRate).toFixed(1)} months` : "∞ months",
+            value: currentBalance.isLessThanOrEqualTo(0) ? "0.0 months" : burnRate.isGreaterThan(0) ? `${currentBalance.dividedBy(burnRate).toFixed(1)} months` : "∞ months",
             subValue: "Financial Safety Net",
-            color: (currentBalance / burnRate) >= 6 ? '#4CAF50' : (currentBalance / burnRate) >= 3 ? '#FF9800' : '#F44336',
+            color: currentBalance.dividedBy(burnRate).isGreaterThanOrEqualTo(6) ? '#4CAF50' : currentBalance.dividedBy(burnRate).isGreaterThanOrEqualTo(3) ? '#FF9800' : '#F44336',
             hasInfo: true,
             onInfoPress: () => setIsRunwayModalVisible(true)
         },
         {
             id: 'budget-performance',
             title: "Budget Health",
-            value: budgetPerformance > 0 ? `${budgetPerformance.toFixed(0)}%` : "N/A",
-            subValue: budgetPerformance === 0 ? "No Budgets Set" : budgetPerformance <= 100 ? "Under Budget" : "Over Budget",
-            color: budgetPerformance === 0 ? undefined : budgetPerformance <= 70 ? '#4CAF50' : budgetPerformance <= 90 ? '#FF9800' : '#F44336',
+            value: budgetPerformance.isGreaterThan(0) ? `${budgetPerformance.toFixed(0)}%` : "N/A",
+            subValue: budgetPerformance.isEqualTo(0) ? "No Budgets Set" : budgetPerformance.isLessThanOrEqualTo(100) ? "Under Budget" : "Over Budget",
+            color: budgetPerformance.isEqualTo(0) ? undefined : budgetPerformance.isLessThanOrEqualTo(70) ? '#4CAF50' : budgetPerformance.isLessThanOrEqualTo(90) ? '#FF9800' : '#F44336',
             hasInfo: true,
             onInfoPress: () => setIsBudgetModalVisible(true)
         },
@@ -77,14 +77,14 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
             title: "Net Cash Flow",
             value: formatCurrencyAmount(netCashFlow, currency),
             subValue: "This Month",
-            color: netCashFlow >= 0 ? '#4CAF50' : '#F44336'
+            color: netCashFlow.isGreaterThanOrEqualTo(0) ? '#4CAF50' : '#F44336'
         },
         {
             id: 'savings-rate',
             title: "Savings Rate",
             value: `${savingsRate.toFixed(1)}%`,
-            subValue: savingsRate < 20 ? "Below Goal" : "Healthy",
-            color: savingsRate >= 20 ? '#4CAF50' : '#FF9800'
+            subValue: savingsRate.isLessThan(20) ? "Below Goal" : "Healthy",
+            color: savingsRate.isGreaterThanOrEqualTo(20) ? '#4CAF50' : '#FF9800'
         },
         {
             id: 'total-income',
@@ -110,7 +110,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
         {
             id: 'avg-daily-spending',
             title: "Daily Average",
-            value: formatCurrencyAmount(expense / daysInMonth, currency),
+            value: formatCurrencyAmount(expense.dividedBy(daysInMonth), currency),
             subValue: "This Month",
             color: undefined,
             hasInfo: true,
@@ -119,7 +119,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
         {
             id: 'annual-spending',
             title: "Annualized Exp.",
-            value: formatCurrencyAmount(burnRate * 12, currency),
+            value: formatCurrencyAmount(burnRate.multipliedBy(12), currency),
             subValue: "Based on Burn Rate",
             color: undefined
         },
