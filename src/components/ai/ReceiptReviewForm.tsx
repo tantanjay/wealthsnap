@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import BigNumber from 'bignumber.js';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { View, Text, ScrollView, TouchableOpacity, BackHandler, TextInput, ActivityIndicator, Platform, Modal, Switch } from 'react-native';
@@ -12,6 +13,7 @@ import { analyzeReceiptImage } from '@services/integrations';
 import { getUserProfile } from '@services/core/storageService';
 import { ReceiptAnalysisResult, ReceiptItem } from '@types';
 import { CategorySelectModal } from '@components/record/CategorySelectModal';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { EXPENSE_CATEGORY_GROUPS } from '@constants/categories';
 
 interface ReceiptReviewFormProps {
@@ -32,7 +34,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
     const [merchant, setMerchant] = useState('');
     const [items, setItems] = useState<ReceiptItem[]>([]);
     const [note, setNote] = useState('');
-    const [currencySymbol, setCurrencySymbol] = useState('$');
+    const [currency, setCurrency] = useState('PHP');
     const [splitByCategory, setSplitByCategory] = useState(false);
 
     // UI State
@@ -73,7 +75,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                 // Fetch Currency
                 const profile = await getUserProfile();
                 if (isMounted && profile && profile.currency) {
-                    setCurrencySymbol(profile.currency);
+                    setCurrency(profile.currency);
                 }
 
                 // Optimize Image
@@ -100,15 +102,15 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                     setItems(result.items);
 
                     // Determine Main Category (Highest Sum)
-                    const catSums: { [key: string]: number } = {};
+                    const catSums: { [key: string]: BigNumber } = {};
                     result.items.forEach(item => {
                         const cat = item.category || 'Uncategorized';
-                        catSums[cat] = (catSums[cat] || 0) + item.amount;
+                        catSums[cat] = (catSums[cat] || new BigNumber(0)).plus(item.amount);
                     });
                     let maxCat = 'Uncategorized';
-                    let maxVal = -1;
+                    let maxVal = new BigNumber(-1);
                     Object.entries(catSums).forEach(([c, v]) => {
-                        if (v > maxVal) {
+                        if (v.gt(maxVal)) {
                             maxVal = v;
                             maxCat = c;
                         }
@@ -145,15 +147,15 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
 
     // Group Items by Category
     const groupedItems = useMemo(() => {
-        const groups: { [key: string]: { items: ReceiptItem[], total: number, count: number } } = {};
+        const groups: { [key: string]: { items: ReceiptItem[], total: BigNumber, count: number } } = {};
 
         items.forEach(item => {
             const cat = item.category || 'Uncategorized';
             if (!groups[cat]) {
-                groups[cat] = { items: [], total: 0, count: 0 };
+                groups[cat] = { items: [], total: new BigNumber(0), count: 0 };
             }
             groups[cat].items.push(item);
-            groups[cat].total += item.amount;
+            groups[cat].total = groups[cat].total.plus(item.amount);
             groups[cat].count += 1;
         });
 
@@ -161,11 +163,11 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
     }, [items]);
 
     const totalAmount = useMemo(() => {
-        return items.reduce((sum, item) => sum + item.amount, 0);
+        return items.reduce((sum, item) => sum.plus(item.amount), new BigNumber(0));
     }, [items]);
 
     const handleSave = async () => {
-        if (totalAmount <= 0) {
+        if (totalAmount.isLessThanOrEqualTo(0)) {
             return;
         }
 
@@ -173,10 +175,10 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
 
         // Consolidate items by category if splitting is enabled
         if (splitByCategory) {
-            const groups: { [key: string]: number } = {};
+            const groups: { [key: string]: BigNumber } = {};
             items.forEach(item => {
                 const cat = item.category || 'Uncategorized';
-                groups[cat] = (groups[cat] || 0) + item.amount;
+                groups[cat] = (groups[cat] || new BigNumber(0)).plus(item.amount);
             });
 
             finalItems = Object.entries(groups).map(([cat, amount]) => ({
@@ -407,7 +409,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                                 </View>
                                 <View style={{ alignItems: 'flex-end' }}>
                                     <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>
-                                        {currencySymbol} {data.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        {formatCurrencyAmount(data.total, currency)}
                                     </Text>
                                     <Ionicons name={expandedCategory === category ? "chevron-up" : "chevron-down"} size={16} color={colors.textSecondary} />
                                 </View>
@@ -464,7 +466,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                                                                 const qty = parseFloat(txt) || 0;
                                                                 const newItems = [...items];
                                                                 newItems[realIndex].quantity = qty;
-                                                                newItems[realIndex].amount = qty * newItems[realIndex].unitPrice;
+                                                                newItems[realIndex].amount = newItems[realIndex].unitPrice.multipliedBy(qty);
                                                                 setItems(newItems);
                                                             }}
                                                             style={{ color: colors.textSecondary, fontSize: 12, borderBottomWidth: 1, borderColor: colors.border, marginHorizontal: 4, minWidth: 20, textAlign: 'center' }}
@@ -476,11 +478,12 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                                                         value={item.amount.toString()}
                                                         keyboardType="numeric"
                                                         onChangeText={(txt) => {
-                                                            const amt = parseFloat(txt) || 0;
+                                                            const rawBn = new BigNumber(txt);
+                                                            const amt = rawBn.isNaN() ? new BigNumber(0) : rawBn;
                                                             const newItems = [...items];
                                                             newItems[realIndex].amount = amt;
                                                             if (newItems[realIndex].quantity > 0)
-                                                                newItems[realIndex].unitPrice = amt / newItems[realIndex].quantity;
+                                                                newItems[realIndex].unitPrice = amt.dividedBy(newItems[realIndex].quantity);
                                                             setItems(newItems);
                                                         }}
                                                         style={{ color: colors.text, fontWeight: 'bold', borderBottomWidth: 1, borderColor: colors.border, textAlign: 'right' }}
@@ -500,8 +503,8 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                                             const newItem: ReceiptItem = {
                                                 description: "New Item",
                                                 quantity: 1,
-                                                unitPrice: 0,
-                                                amount: 0,
+                                                unitPrice: new BigNumber(0),
+                                                amount: new BigNumber(0),
                                                 category: category
                                             };
                                             setItems([...items, newItem]);
@@ -528,7 +531,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                     }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 16 }}>Total Estimate</Text>
                         <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>
-                            {currencySymbol} {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {formatCurrencyAmount(totalAmount, currency)}
                         </Text>
                     </View>
                 </ScrollView>

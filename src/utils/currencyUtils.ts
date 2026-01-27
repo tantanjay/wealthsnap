@@ -1,3 +1,5 @@
+import BigNumber from 'bignumber.js';
+
 /**
  * Maps currency codes to their respective symbols.
  */
@@ -10,32 +12,34 @@ export const CURRENCY_SYMBOLS: Record<string, string> = {
 };
 
 /**
- * Formats a numeric amount into a currency string with the correct symbol and comma separators.
- * @param amount The numeric amount to format.
- * @param currencyCode The currency code (e.g., 'USD', 'PHP').
- * @returns The formatted currency string (e.g., "₱1,234.56").
+ * Formats a high-precision amount into a currency string.
  */
-export const formatCurrencyAmount = (amount: number, currencyCode: string = 'USD'): string => {
+export const formatCurrencyAmount = (
+    amount: BigNumber | string | number,
+    currencyCode: string = 'PHP'
+): string => {
     const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
 
-    // Format options: 2 decimal places, adds commas
+    // Ensure we are working with a BigNumber instance
+    const bn = new BigNumber(amount);
+
     const formattedNumber = new Intl.NumberFormat('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format(amount);
+    }).format(bn.toNumber()); // Convert to number for the Intl formatter
 
     return `${symbol}${formattedNumber}`;
 };
 
 /**
- * Formats a numeric amount into a compact currency string (e.g., 80K, 1.2M).
- * Useful for charts where space is limited.
- * @param amount The numeric amount to format.
- * @param currencyCode The currency code (e.g., 'USD', 'PHP').
- * @returns The formatted compact string (e.g., "₱80K").
+ * Formats a high-precision amount into a compact currency string (e.g., 80K, 1.2M).
  */
-export const formatCompactCurrency = (amount: number, currencyCode: string = 'USD'): string => {
+export const formatCompactCurrency = (
+    amount: BigNumber | string | number,
+    currencyCode: string = 'PHP'
+): string => {
     const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
+    const bn = new BigNumber(amount);
 
     const formatter = new Intl.NumberFormat('en-US', {
         notation: 'compact',
@@ -43,22 +47,20 @@ export const formatCompactCurrency = (amount: number, currencyCode: string = 'US
         maximumFractionDigits: 1
     });
 
-    return `${symbol}${formatter.format(amount)}`;
+    return `${symbol}${formatter.format(bn.toNumber())}`;
 };
 
 /**
- * Formats a numeric amount into a compact number string without currency symbol (e.g., 80K, 1.2M).
- * Useful for chart Y-axis labels where the currency symbol is added separately.
- * @param amount The numeric amount to format.
- * @returns The formatted compact number string (e.g., "80K", "1.2M").
+ * Formats a high-precision amount into a compact number string without currency symbol.
  */
-export const formatCompactNumber = (amount: number): string => {
+export const formatCompactNumber = (amount: BigNumber | string | number): string => {
+    const bn = new BigNumber(amount);
+
     const formatter = new Intl.NumberFormat('en-US', {
         notation: 'compact',
         compactDisplay: 'short',
         maximumFractionDigits: 1
     });
 
-    return formatter.format(amount);
+    return formatter.format(bn.toNumber());
 };
-

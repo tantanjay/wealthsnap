@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import BigNumber from 'bignumber.js';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -101,7 +102,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 nextDueDate: nextDue.toISOString(),
                 transactionTemplate: {
                     type,
-                    amount: parseFloat(amount),
+                    amount: new BigNumber(amount),
                     category,
                     subCategory: subCategory || undefined,
                     note: note || undefined,
@@ -121,7 +122,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         const newTransaction: Transaction = {
             id: newId,
             type,
-            amount: parseFloat(amount),
+            amount: new BigNumber(amount),
             category,
             subCategory: subCategory || undefined,
             note: note || undefined,

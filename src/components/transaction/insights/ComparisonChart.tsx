@@ -1,4 +1,5 @@
 import React from 'react';
+import BigNumber from 'bignumber.js';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -9,11 +10,11 @@ import { useTheme } from '@context/ThemeContext';
 import { CURRENCY_SYMBOLS, formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface ComparisonChartProps {
-    currentMonthExpense: number;
-    lastMonthExpense: number;
-    averageExpense: number;
-    average6Month: number;
-    average1Year: number;
+    currentMonthExpense: BigNumber;
+    lastMonthExpense: BigNumber;
+    averageExpense: BigNumber;
+    average6Month: BigNumber;
+    average1Year: BigNumber;
     currency: string;
     isPrivacyEnabled: boolean;
     isLoading?: boolean;
@@ -28,18 +29,19 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
     const today = new Date();
     const currentDay = today.getDate();
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-    const proRatedExpense = currentDay > 0 ? (currentMonthExpense / currentDay) * daysInMonth : currentMonthExpense;
+    const proRatedExpense = currentDay > 0 ?
+        currentMonthExpense.dividedBy(currentDay).multipliedBy(daysInMonth) : currentMonthExpense;
 
     const getComparisonInsight = () => {
         if (isPrivacyEnabled) return "Spending comparison hidden in privacy mode.";
-        if (Math.abs(proRatedExpense - averageExpense) < 0.01) {
+        if (proRatedExpense.minus(averageExpense).abs().isLessThan(0.01)) {
             return "On track to match your 3-month average.*";
         }
-        if (proRatedExpense > averageExpense) {
-            const diff = proRatedExpense - averageExpense;
+        if (proRatedExpense.isGreaterThan(averageExpense)) {
+            const diff = proRatedExpense.minus(averageExpense);
             return `On track to spend ${formatCurrencyAmount(diff, currency)} more than your 3-month average.*`;
         } else {
-            const diff = averageExpense - proRatedExpense;
+            const diff = averageExpense.minus(proRatedExpense);
             return `Great job! On track to spend ${formatCurrencyAmount(diff, currency)} less than average.*`;
         }
     };
@@ -112,8 +114,18 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                 { label: "Avg 1Y", value: average1Year, actual: average1Year, isProjected: false },
                             ];
 
-                            const maxValue = Math.max(...barData.map(b => b.value));
-                            const minValue = Math.min(...barData.map(b => b.isProjected ? b.actual : b.value));
+                            // Calculate Max Value safely
+                            const maxValue = BigNumber.max(
+                                ...barData.map(b => b.value),
+                                new BigNumber(0) // Fallback to 0 if no data
+                            ).toNumber();
+
+                            // Calculate Min Value safely
+                            const minValue = BigNumber.min(
+                                ...barData.map(b => b.isProjected ? b.actual : b.value),
+                                maxValue // Fallback to maxValue if no data, or new BigNumber(0)
+                            ).toNumber();
+
                             // Start Y-axis 15% below minimum
                             const yMin = Math.max(0, minValue * 0.85);
                             const yMax = maxValue * 1.05; // 5% padding on top
@@ -149,8 +161,14 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                     <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around' }}>
                                         {barData.map((bar, index) => {
                                             // Calculate heights relative to yMin-yMax range
-                                            const totalHeight = yRange > 0 ? ((bar.value - yMin) / yRange) * chartHeight : 0;
-                                            const actualHeight = yRange > 0 ? ((bar.actual - yMin) / yRange) * chartHeight : 0;
+                                            const totalHeight = (yRange > 0
+                                                ? bar.value.minus(yMin).dividedBy(yRange).times(chartHeight)
+                                                : new BigNumber(0)).toNumber();
+
+                                            const actualHeight = (yRange > 0
+                                                ? bar.actual.minus(yMin).dividedBy(yRange).times(chartHeight)
+                                                : new BigNumber(0)).toNumber();
+
                                             const projectedHeight = bar.isProjected ? Math.max(0, totalHeight - actualHeight) : 0;
 
                                             return (

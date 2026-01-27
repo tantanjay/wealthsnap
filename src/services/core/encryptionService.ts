@@ -1,4 +1,5 @@
 import 'react-native-get-random-values';
+import BigNumber from 'bignumber.js';
 import CryptoJS from 'crypto-js';
 import * as SecureStore from 'expo-secure-store';
 
@@ -86,11 +87,29 @@ export const decryptData = async (ciphertext: string, secret?: string): Promise<
  * @param value The value to encrypt (string or number)
  * @returns Encrypted string, or null if value is null/undefined
  */
-export const encryptField = async (value: string | number | null | undefined): Promise<string | null> => {
+export const encryptField = async (
+    value: string | number | BigNumber | null | undefined
+): Promise<string | null> => {
     if (value === null || value === undefined) return null;
+
     try {
         const key = await getStorageKey();
-        const stringValue = typeof value === 'number' ? value.toString() : value;
+        let stringValue: string;
+
+        // 1. Handle BigNumber explicitly
+        if (BigNumber.isBigNumber(value)) {
+            // Use toFixed() to avoid scientific notation (1e-8) in your DB strings
+            stringValue = value.toFixed();
+        }
+        // 2. Handle native numbers
+        else if (typeof value === 'number') {
+            stringValue = value.toString();
+        }
+        // 3. Already a string
+        else {
+            stringValue = value;
+        }
+
         return CryptoJS.AES.encrypt(stringValue, key).toString();
     } catch (error) {
         console.error('Error encrypting field:', error);

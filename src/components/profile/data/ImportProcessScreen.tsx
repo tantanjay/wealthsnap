@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { ImportSummary } from '@services/integrations';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface ImportProcessScreenProps {
     isProcessing: boolean;
@@ -24,11 +25,6 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
     onCancel
 }) => {
     const { colors } = useTheme();
-
-    // Format currency
-    const formatAmount = (amount: number) => {
-        return `${currency} ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    };
 
     // Loading state
     if (isProcessing) {
@@ -66,7 +62,7 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
 
     // Summary state  
     if (summary) {
-        const isPositive = summary.netBalance >= 0;
+        const isPositive = summary.netBalance.isGreaterThanOrEqualTo(0);
 
         return (
             <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -93,20 +89,20 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
                         />
                         <StatRow
                             label="Total Income"
-                            value={formatAmount(summary.totalIncome)}
+                            value={formatCurrencyAmount(summary.totalIncome, currency)}
                             valueColor={colors.success}
                             colors={colors}
                         />
                         <StatRow
                             label="Total Expense"
-                            value={formatAmount(summary.totalExpense)}
+                            value={formatCurrencyAmount(summary.totalExpense, currency)}
                             valueColor={colors.error}
                             colors={colors}
                         />
                         <View style={[styles.divider, { backgroundColor: colors.border }]} />
                         <StatRow
                             label="Net Balance"
-                            value={formatAmount(summary.netBalance)}
+                            value={formatCurrencyAmount(summary.netBalance, currency)}
                             valueColor={isPositive ? colors.success : colors.error}
                             isBold
                             colors={colors}
