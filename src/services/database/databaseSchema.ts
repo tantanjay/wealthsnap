@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 3;
+export const DATABASE_VERSION = 5;
 
 /**
  * Create all database tables and indexes
@@ -113,7 +113,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             outputTokens INTEGER DEFAULT 0,
             imageCount INTEGER DEFAULT 0,
             durationMs INTEGER DEFAULT 0,
-            costUSD REAL DEFAULT 0
+            costUSD TEXT DEFAULT 0
         );
 
         CREATE INDEX IF NOT EXISTS idx_ai_logs_timestamp ON ai_usage_logs(timestamp DESC);

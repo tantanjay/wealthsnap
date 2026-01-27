@@ -1,3 +1,4 @@
+import BigNumber from 'bignumber.js';
 import { UserProfile, Transaction, TransactionType } from '@types';
 import { saveCategory, saveTransaction } from '@services/domain';
 import { saveUserProfile, setOnboardingComplete, clearAllData } from '@services/core/storageService';
@@ -35,7 +36,7 @@ export const generateDummyData = async () => {
             id: generateRandomId(),
             name: 'Alex Doe',
             currency: 'USD',
-            monthlySalary: 5000,
+            monthlySalary: new BigNumber(5000),
             financialGoals: ['Save $10k', 'Buy a Car'],
             isOnboardingComplete: true,
             createdAt: new Date().toISOString(),
@@ -113,7 +114,7 @@ export const generateDummyData = async () => {
                 transactions.push({
                     id: generateRandomId(),
                     type: 'INCOME',
-                    amount: 2500,
+                    amount: new BigNumber(2500),
                     category: 'Salary',
                     date: incomeDate15.toISOString(),
                     isRecurring: true,
@@ -129,7 +130,7 @@ export const generateDummyData = async () => {
                 transactions.push({
                     id: generateRandomId(),
                     type: 'INCOME',
-                    amount: 2500,
+                    amount: new BigNumber(2500),
                     category: 'Salary',
                     date: incomeDateEOM.toISOString(),
                     isRecurring: true,
@@ -181,7 +182,7 @@ export const generateDummyData = async () => {
                 transactions.push({
                     id: generateRandomId(),
                     type: 'EXPENSE',
-                    amount: expenseAmount,
+                    amount: new BigNumber(expenseAmount),
                     category: randomCategory.name,
                     date: expenseDate.toISOString(),
                     isRecurring: false,

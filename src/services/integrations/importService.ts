@@ -1,4 +1,6 @@
+import BigNumber from 'bignumber.js';
 import { Transaction, TransactionType } from '@types';
+import { generateUUID } from '@utils/uuid';
 import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORY_GROUPS } from '@constants/categories';
 
 // Expected headers in exact order (case-insensitive)
@@ -26,9 +28,9 @@ export interface ValidationResult {
 
 export interface ImportSummary {
     totalTransactions: number;
-    totalIncome: number;
-    totalExpense: number;
-    netBalance: number;
+    totalIncome: BigNumber;
+    totalExpense: BigNumber;
+    netBalance: BigNumber;
 }
 
 /**
@@ -156,7 +158,7 @@ const parseAmount = (value: string): number => {
 /**
  * Create a unique key for duplicate detection
  */
-const createTransactionKey = (date: string, amount: number, category: string, notes: string): string => {
+const createTransactionKey = (date: string, amount: BigNumber, category: string, notes: string): string => {
     return `${date}|${amount.toFixed(2)}|${category.toLowerCase()}|${(notes || '').toLowerCase()}`;
 };
 
@@ -230,7 +232,7 @@ export const validateImportData = (
 
         // Check for duplicates (only if other validations pass)
         if (rowErrors.length === 0) {
-            const amount = hasIncome ? parseAmount(row.income) : parseAmount(row.expense);
+            const amount = hasIncome ? new BigNumber(parseAmount(row.income)) : new BigNumber(parseAmount(row.expense));
             const key = createTransactionKey(row.date, amount, row.category, row.notes);
 
             if (existingKeys.has(key)) {
@@ -265,10 +267,9 @@ export const validateImportData = (
 export const prepareTransactions = (rows: ParsedRow[]): Transaction[] => {
     const now = new Date().toISOString();
 
-
-    return rows.map((row, index) => {
+    return rows.map((row) => {
         const hasIncome = row.income !== '-' && row.income !== '';
-        const amount = hasIncome ? parseAmount(row.income) : parseAmount(row.expense);
+        const amount = hasIncome ? new BigNumber(parseAmount(row.income)) : new BigNumber(parseAmount(row.expense));
         const type: TransactionType = hasIncome ? 'INCOME' : 'EXPENSE';
 
         // Find the correct casing for the category
@@ -285,7 +286,7 @@ export const prepareTransactions = (rows: ParsedRow[]): Transaction[] => {
         }
 
         return {
-            id: `import_${Date.now()}_${index}`,
+            id: generateUUID(),
             type,
             amount,
             category,
@@ -303,22 +304,22 @@ export const prepareTransactions = (rows: ParsedRow[]): Transaction[] => {
  * Calculate import summary from prepared transactions
  */
 export const calculateImportSummary = (transactions: Transaction[]): ImportSummary => {
-    let totalIncome = 0;
-    let totalExpense = 0;
+    let totalIncome = new BigNumber(0);
+    let totalExpense = new BigNumber(0);
 
     transactions.forEach(txn => {
         if (txn.type === 'INCOME') {
-            totalIncome += txn.amount;
+            totalIncome.plus(txn.amount);
         } else {
-            totalExpense += txn.amount;
+            totalExpense.plus(txn.amount);
         }
     });
 
     return {
         totalTransactions: transactions.length,
-        totalIncome,
-        totalExpense,
-        netBalance: totalIncome - totalExpense
+        totalIncome: totalIncome,
+        totalExpense: totalExpense,
+        netBalance: totalIncome.minus(totalExpense)
     };
 };
 

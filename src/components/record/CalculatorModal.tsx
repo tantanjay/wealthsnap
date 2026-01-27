@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, useWindowDimensions } from 'r
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import { TransactionType } from '@types';
 import { useTheme } from '@context/ThemeContext';
 
 interface CalculatorModalProps {
@@ -10,7 +11,7 @@ interface CalculatorModalProps {
     onClose: () => void;
     initialValue: string;
     onApply: (value: string) => void;
-    type: 'EXPENSE' | 'INCOME';
+    type: TransactionType;
 }
 
 export const CalculatorModal: React.FC<CalculatorModalProps> = ({

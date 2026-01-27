@@ -1,4 +1,5 @@
 import React from 'react';
+import BigNumber from 'bignumber.js';
 import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +17,7 @@ import { checkBudgetStatus, getAllBudgets, getAllRecurrenceRules } from '@servic
 interface ExpenseAnalysisProps {
     categoryBreakdown: {
         name: string;
-        amount: number;
+        amount: BigNumber;
         percentage: number;
     }[];
     currency: string;
@@ -57,7 +58,7 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
 
     const pieData = categoryBreakdown.map((item, index) => ({
         name: item.name,
-        population: item.amount,
+        population: item.amount.toNumber(),
         color: CHART_COLORS[index % CHART_COLORS.length],
         legendFontColor: colors.textSecondary,
         legendFontSize: 12
@@ -65,28 +66,31 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
 
     const topCategory = categoryBreakdown[0];
 
-    // Sort: Over-budget items first, then Budgeted items, then by amount
     const sortedCategories = React.useMemo(() => {
-        return [...categoryBreakdown].sort((a, b) => {
-            const budgetA = budgets.find(budget => budget.category === a.name);
-            const budgetB = budgets.find(budget => budget.category === b.name);
+        // budgets.amount is already BigNumber, so we just map it.
+        const budgetMap = new Map(budgets.map(b => [b.category, b.amount]));
 
-            const isOverA = budgetA ? a.amount > budgetA.amount : false;
-            const isOverB = budgetB ? b.amount > budgetB.amount : false;
+        return [...categoryBreakdown].sort((a, b) => {
+            const budgetAmount = budgetMap.get(a.name);
+            const targetBudgetAmount = budgetMap.get(b.name);
+
+            // Both 'amount' and 'budgetAmount' are BigNumber objects
+            const isOverA = budgetAmount ? a.amount.isGreaterThan(budgetAmount) : false;
+            const isOverB = targetBudgetAmount ? b.amount.isGreaterThan(targetBudgetAmount) : false;
 
             // 1. Priority: Over Budget
             if (isOverA && !isOverB) return -1;
             if (!isOverA && isOverB) return 1;
 
-            // 2. Priority: Has Budget (but not necessarily over)
-            const hasBudgetA = !!budgetA;
-            const hasBudgetB = !!budgetB;
+            // 2. Priority: Has Budget
+            const hasBudgetA = budgetAmount !== undefined;
+            const hasBudgetB = targetBudgetAmount !== undefined;
 
             if (hasBudgetA && !hasBudgetB) return -1;
             if (!hasBudgetA && hasBudgetB) return 1;
 
             // 3. Fallback: Amount Descending
-            return b.amount - a.amount;
+            return b.amount.comparedTo(a.amount) ?? 0;
         });
     }, [categoryBreakdown, budgets]);
 

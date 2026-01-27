@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import BigNumber from 'bignumber.js';
 import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Defs, LinearGradient, Stop } from 'react-native-svg';
@@ -155,7 +156,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
     // Calculate consecutive positive/negative streak
     const streak = useMemo(() => {
         // Filter out months with no transaction data
-        const data = savingsData.rawData.filter(d => d.income !== 0 || d.expense !== 0);
+        const data = savingsData.rawData.filter(d => !d.income.isZero() || !d.expense.isZero());
         if (data.length === 0) return { count: 0, type: 'neutral' as const };
 
         const lastRate = data[data.length - 1].rate;
@@ -180,7 +181,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
     // Calculate historical stats for selected range
     const historicalStats = useMemo(() => {
         // Filter out months with no transaction data
-        const data = savingsData.rawData.filter(d => d.income !== 0 || d.expense !== 0);
+        const data = savingsData.rawData.filter(d => !d.income.isZero() || !d.expense.isZero());
         if (data.length === 0) return { positiveCount: 0, negativeCount: 0, longestPositiveStreak: 0, longestNegativeStreak: 0 };
 
         let positiveCount = 0;

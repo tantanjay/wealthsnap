@@ -1,3 +1,4 @@
+import BigNumber from 'bignumber.js';
 import { Budget } from '@types';
 import { getDatabase } from '@services/database/databaseService';
 import { encryptField, decryptField } from '@services/core/encryptionService';
@@ -34,7 +35,7 @@ export const getAllBudgets = async (): Promise<Budget[]> => {
 
         const budgets = await Promise.all(rows.map(async (row) => ({
             category: row.category,
-            amount: parseFloat((await decryptField(row.amount)) || '0')
+            amount: new BigNumber((await decryptField(row.amount)) || '0')
         })));
 
         return budgets;
@@ -100,20 +101,20 @@ export const getBudgetForCategory = async (category: string): Promise<number | n
 /**
  * Check if spending exceeds budget for a category
  */
-export const checkBudgetStatus = (spent: number, budget: number): {
+export const checkBudgetStatus = (spent: BigNumber, budget: BigNumber): {
     percentage: number;
     status: 'safe' | 'warning' | 'over'
 } => {
-    const percentage = (spent / budget) * 100;
+    const percentage = spent.div(budget).times(100);
 
     let status: 'safe' | 'warning' | 'over';
-    if (percentage > 100) {
+    if (percentage.isGreaterThan(100)) {
         status = 'over';
-    } else if (percentage > 80) {
+    } else if (percentage.isGreaterThan(80)) {
         status = 'warning';
     } else {
         status = 'safe';
     }
 
-    return { percentage, status };
+    return { percentage: percentage.toNumber(), status };
 };

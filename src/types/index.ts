@@ -1,21 +1,23 @@
+import BigNumber from 'bignumber.js';
+
 export interface UserProfile {
     id: string;
     name: string;
     currency: string;
-    monthlySalary?: number;
+    monthlySalary?: BigNumber;
     financialGoals?: string[]; // stored as JSON string or array
     isOnboardingComplete: boolean;
     createdAt: string;
     updatedAt: string;
 }
 
-export type TransactionType = 'INCOME' | 'EXPENSE';
+export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
 
 export interface Transaction {
     id: string;
     type: TransactionType;
-    amount: number;
+    amount: BigNumber;
     category: string;
     subCategory?: string;
     date: string; // ISO string
@@ -61,7 +63,7 @@ export interface RecurrenceRule {
 
 export interface Budget {
     category: string;
-    amount: number;
+    amount: BigNumber;
 }
 
 export interface AIConfig {
@@ -80,14 +82,14 @@ export interface AIUsageLog {
     outputTokens: number;
     imageCount: number;
     durationMs: number;
-    costUSD: number;
+    costUSD: BigNumber;
 }
 
 export interface ReceiptItem {
     description: string;
     quantity: number;
-    unitPrice: number;
-    amount: number;
+    unitPrice: BigNumber;
+    amount: BigNumber;
     category?: string; // Suggested category
 }
 
@@ -96,8 +98,8 @@ export interface ReceiptAnalysisResult {
     receiptType?: string;
     merchantName?: string;
     date?: string;
-    totalAmount?: number;
-    totalDiscount?: number;
+    totalAmount?: BigNumber;
+    totalDiscount?: BigNumber;
     currency?: string;
     items?: ReceiptItem[];
     confidence: number; // 0-100

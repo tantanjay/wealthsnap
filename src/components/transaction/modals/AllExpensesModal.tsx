@@ -1,4 +1,5 @@
 import React from 'react';
+import BigNumber from 'bignumber.js';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -13,7 +14,7 @@ interface AllExpensesModalProps {
     onClose: () => void;
     categoryBreakdown: {
         name: string;
-        amount: number;
+        amount: BigNumber;
         percentage: number;
     }[];
     budgets: Budget[];

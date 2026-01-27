@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import BigNumber from 'bignumber.js';
 import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -104,7 +105,7 @@ const RecordScreen = ({ navigation, route }: any) => {
         }, [route.params, navigation])
     );
 
-    const handleTransactionSelect = (selectedType: 'EXPENSE' | 'INCOME') => {
+    const handleTransactionSelect = (selectedType: TransactionType) => {
         setTransactionType(selectedType);
         setViewMode('TRANSACTION');
         setModalVisible(false); // Hide modal after selection
@@ -143,7 +144,7 @@ const RecordScreen = ({ navigation, route }: any) => {
                 for (let i = 0; i < groupKeys.length; i++) {
                     const cat = groupKeys[i];
                     const items = groups[cat];
-                    const total = items.reduce((sum, item) => sum + item.amount, 0);
+                    const total = items.reduce((sum, item) => sum.plus(item.amount), new BigNumber(0));
 
                     const newTransaction: Transaction = {
                         id: (Date.now() + i).toString(), // Ensure unique ID
@@ -198,15 +199,15 @@ const RecordScreen = ({ navigation, route }: any) => {
 
                 // Calculate primary category
                 if (receiptData.items) {
-                    const categorySums: { [key: string]: number } = {};
+                    const categorySums: { [key: string]: BigNumber } = {};
                     receiptData.items.forEach(item => {
                         const cat = item.category || 'Uncategorized';
-                        categorySums[cat] = (categorySums[cat] || 0) + item.amount;
+                        categorySums[cat] = (categorySums[cat] || new BigNumber(0)).plus(item.amount);
                     });
 
-                    let maxSum = 0;
+                    let maxSum = new BigNumber(0);
                     Object.entries(categorySums).forEach(([cat, sum]) => {
-                        if (sum > maxSum) {
+                        if (sum.gt(maxSum)) {
                             maxSum = sum;
                             newTransaction.category = cat;
                         }

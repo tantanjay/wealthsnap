@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import BigNumber from 'bignumber.js';
 import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -23,13 +24,13 @@ const HomeScreen = ({ navigation }: any) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
     // Calculated values for both modes
-    const [overallIncome, setOverallIncome] = useState(0);
-    const [overallExpense, setOverallExpense] = useState(0);
-    const [monthIncome, setMonthIncome] = useState(0);
-    const [monthExpense, setMonthExpense] = useState(0);
+    const [overallIncome, setOverallIncome] = useState(new BigNumber(0));
+    const [overallExpense, setOverallExpense] = useState(new BigNumber(0));
+    const [monthIncome, setMonthIncome] = useState(new BigNumber(0));
+    const [monthExpense, setMonthExpense] = useState(new BigNumber(0));
 
-    const [investmentTotal, setInvestmentTotal] = useState(0);
-    const [debtTotal, setDebtTotal] = useState(0); // Placeholder for Debt
+    const [investmentTotal, setInvestmentTotal] = useState(new BigNumber(0));
+    const [debtTotal, setDebtTotal] = useState(new BigNumber(0));
     const [isLoading, setIsLoading] = useState(true);
 
     // Settings Modal State
@@ -40,7 +41,7 @@ const HomeScreen = ({ navigation }: any) => {
     const screenWidth = React.useRef(0);
 
     const loadData = async () => {
-        setDebtTotal(0); // to remove lint
+        setDebtTotal(new BigNumber(0)); // to remove lint
         setIsLoading(true);
 
         // Load persisted display mode
@@ -60,7 +61,7 @@ const HomeScreen = ({ navigation }: any) => {
         setTransactions(t);
 
         // Calculate both Overall and Month totals once
-        let oInc = 0, oExp = 0, mInc = 0, mExp = 0;
+        let oInc = new BigNumber(0), oExp = new BigNumber(0), mInc = new BigNumber(0), mExp = new BigNumber(0);
 
         const now = new Date();
         const currentMonth = now.getMonth();
@@ -68,14 +69,14 @@ const HomeScreen = ({ navigation }: any) => {
 
         t.forEach((tx: Transaction) => {
             // Overall
-            if (tx.type === 'INCOME') oInc += tx.amount;
-            else oExp += tx.amount;
+            if (tx.type === 'INCOME') oInc = oInc.plus(tx.amount);
+            else oExp = oExp.plus(tx.amount);
 
             // Month
             const tDate = new Date(tx.date);
             if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
-                if (tx.type === 'INCOME') mInc += tx.amount;
-                else mExp += tx.amount;
+                if (tx.type === 'INCOME') mInc = mInc.plus(tx.amount);
+                else mExp = mExp.plus(tx.amount);
             }
         });
 
@@ -84,7 +85,12 @@ const HomeScreen = ({ navigation }: any) => {
         setMonthIncome(mInc);
         setMonthExpense(mExp);
 
-        const totalInv = inv.reduce((sum: number, item: Investment) => sum + (item.quantity * (item.currentPrice || item.averageBuyPrice)), 0);
+        const totalInv = inv.reduce((sum: BigNumber, item: Investment) => {
+            const price = new BigNumber(item.currentPrice || item.averageBuyPrice || 0);
+            const positionValue = new BigNumber(item.quantity || 0).times(price);
+            return sum.plus(positionValue);
+        }, new BigNumber(0));
+
         setInvestmentTotal(totalInv);
         setIsLoading(false);
     };
@@ -119,9 +125,9 @@ const HomeScreen = ({ navigation }: any) => {
         }
     };
 
-    const formatCurrency = (amount: number) => {
+    const formatCurrency = (amount: BigNumber) => {
         if (isPrivacyEnabled) return '****';
-        return formatCurrencyAmount(amount, profile?.currency || 'USD');
+        return formatCurrencyAmount(amount, profile?.currency || 'PHP');
     };
 
     return (
@@ -197,7 +203,7 @@ const HomeScreen = ({ navigation }: any) => {
                                         {isLoading ? (
                                             <Skeleton width={150} height={40} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
                                         ) : (
-                                            formatCurrency(overallIncome - overallExpense)
+                                            formatCurrency(overallIncome.minus(overallExpense))
                                         )}
                                     </Text>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
@@ -251,7 +257,7 @@ const HomeScreen = ({ navigation }: any) => {
                                         {isLoading ? (
                                             <Skeleton width={150} height={40} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
                                         ) : (
-                                            formatCurrency(monthIncome - monthExpense)
+                                            formatCurrency(monthIncome.minus(monthExpense))
                                         )}
                                     </Text>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>

@@ -19,7 +19,7 @@ export const saveAIUsageLog = async (log: AIUsageLog): Promise<void> => {
                 log.outputTokens,
                 log.imageCount,
                 log.durationMs,
-                log.costUSD
+                log.costUSD.toFixed()
             ]
         );
     } catch (error) {

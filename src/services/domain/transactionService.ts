@@ -1,3 +1,4 @@
+import BigNumber from 'bignumber.js';
 import { Transaction } from "@types";
 import { getDatabase } from "@services/database/databaseService";
 import { bulkDecryptItems, decryptField, encryptData, encryptField } from "@services/core/encryptionService";
@@ -173,11 +174,11 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
         return decryptedRows.map(row => ({
             id: row.id,
             date: row.date,
-            amount: parseFloat(row.amount || '0'),
+            amount: new BigNumber(row.amount || 0),
             type: row.type,
             category: row.category,
             subCategory: row.subCategory,
-            note: row.note || undefined,
+            note: row.note || '',
             creationMethod: row.creationMethod,
             isRecurring: row.isRecurring === 1,
             recurrenceId: row.recurrenceId,
