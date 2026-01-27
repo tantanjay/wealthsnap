@@ -1,6 +1,6 @@
 import { Transaction } from "@types";
 import { getDatabase } from "@services/database/databaseService";
-import { decryptField, encryptData, encryptField } from "@services/core/encryptionService";
+import { bulkDecryptItems, decryptField, encryptData, encryptField } from "@services/core/encryptionService";
 import { chunkArray } from "@utils/index";
 import * as DataCache from '@services/core/dataCache';
 
@@ -154,31 +154,37 @@ export const saveTransactionWithReceipt = async (transaction: Transaction, recei
     }
 };
 
+/**
+ * Use non-blocking bulk decryption to prevent Main Thread / UI freezing.
+ * This processes records in chunks (e.g., 500) and yields control back to the 
+ * JS event loop using setTimeout(0), ensuring the UI remains interactive 
+ * (e.g., "Add Transaction" button) even during heavy cryptographic loads.
+ */
 export const getAllTransactions = async (): Promise<Transaction[]> => {
     try {
         const db = await getDatabase();
         const rows = await db.getAllAsync<any>('SELECT * FROM transactions ORDER BY date DESC');
 
-        // Decrypt sensitive fields for each transaction
-        const decrypted = await Promise.all(rows.map(async (row) => {
-            const decryptedNote = await decryptField(row.note);
-            return {
-                id: row.id,
-                date: row.date,
-                amount: parseFloat((await decryptField(row.amount)) || '0'),
-                type: row.type,
-                category: row.category,
-                subCategory: row.subCategory,
-                note: decryptedNote || undefined,
-                creationMethod: row.creationMethod,
-                isRecurring: row.isRecurring === 1,
-                recurrenceId: row.recurrenceId,
-                createdAt: row.createdAt,
-                updatedAt: row.updatedAt
-            };
+        // 1. Decrypt the bulk data (Handles the background/non-blocking logic)
+        const decryptedRows = await bulkDecryptItems<any>(rows, ['amount', 'note']);
+
+        // 2. Map the results to your specific Transaction type
+        // This part is fast because the strings are already decrypted!
+        return decryptedRows.map(row => ({
+            id: row.id,
+            date: row.date,
+            amount: parseFloat(row.amount || '0'),
+            type: row.type,
+            category: row.category,
+            subCategory: row.subCategory,
+            note: row.note || undefined,
+            creationMethod: row.creationMethod,
+            isRecurring: row.isRecurring === 1,
+            recurrenceId: row.recurrenceId,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt
         }));
 
-        return decrypted;
     } catch (error) {
         console.error('Error getting transactions:', error);
         return [];
@@ -194,39 +200,5 @@ export const deleteTransaction = async (id: string): Promise<void> => {
     } catch (error) {
         console.error('Error deleting transaction:', error);
         throw new Error('Failed to delete transaction');
-    }
-};
-
-export const getTransactionsByDateRange = async (startDate: string, endDate: string): Promise<Transaction[]> => {
-    try {
-        const db = await getDatabase();
-        const rows = await db.getAllAsync<any>(
-            'SELECT * FROM transactions WHERE date BETWEEN ? AND ? ORDER BY date DESC',
-            [startDate, endDate]
-        );
-
-        // Decrypt sensitive fields
-        const decrypted = await Promise.all(rows.map(async (row) => {
-            const decryptedNote = await decryptField(row.note);
-            return {
-                id: row.id,
-                date: row.date,
-                amount: parseFloat((await decryptField(row.amount)) || '0'),
-                type: row.type,
-                category: row.category,
-                subCategory: row.subCategory,
-                note: decryptedNote || undefined,
-                creationMethod: row.creationMethod,
-                isRecurring: row.isRecurring === 1,
-                recurrenceId: row.recurrenceId,
-                createdAt: row.createdAt,
-                updatedAt: row.updatedAt
-            };
-        }));
-
-        return decrypted;
-    } catch (error) {
-        console.error('Error getting transactions by date range:', error);
-        return [];
     }
 };
