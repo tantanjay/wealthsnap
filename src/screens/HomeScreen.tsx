@@ -12,7 +12,7 @@ import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { UserProfile, Transaction, Investment } from '@types';
-import { getTopTransactions } from '@utils/financialMetrics';
+import { getTopExpenses } from '@utils/financialMetrics';
 import { processRecurrenceRules } from '@services/domain/recurrenceService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import * as Storage from '@services/core/storageService';
@@ -372,7 +372,7 @@ const HomeScreen = ({ navigation }: any) => {
                 <View style={{ marginBottom: 20 }}>
                     <HomeTransactionsCard
                         recentTransactions={transactions.slice(0, 5)}
-                        topTransactions={getTopTransactions(transactions.filter(t => t.type === 'EXPENSE'), 5)}
+                        topExpenses={getTopExpenses(transactions.filter(t => t.type === 'EXPENSE'), 5)}
                         currency={profile?.currency || 'USD'}
                         onTransactionPress={() => navigation.navigate('History')}
                         isPrivacyEnabled={isPrivacyEnabled}
