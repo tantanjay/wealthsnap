@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Reminder } from '@types';
@@ -19,14 +20,25 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
     const { colors } = useTheme();
     const { showAlert } = useAlert();
     const [reminders, setReminders] = useState<Reminder[]>(initialReminders);
+    // State for snooze menu
+    const [snoozingReminderId, setSnoozingReminderId] = useState<string | null>(null);
+
+    const SNOOZE_OPTIONS = [
+        { label: '15 mins', minutes: 15 },
+        { label: '1 hour', minutes: 60 },
+        { label: '4 hours', minutes: 240 },
+        { label: '8 hours', minutes: 480 },
+        { label: '1 day', minutes: 1440 },
+        { label: '3 days', minutes: 4320 },
+    ];
 
     useEffect(() => {
         setReminders(initialReminders);
     }, [initialReminders]);
 
-    const handleAction = async (reminderId: string, action: 'COMPLETED' | 'SNOOZED') => {
+    const handleAction = async (reminderId: string, action: 'COMPLETED' | 'SNOOZED', snoozeMinutes: number = 15) => {
         try {
-            await handleReminderNotificationAction(reminderId, action);
+            await handleReminderNotificationAction(reminderId, action, snoozeMinutes);
             const remaining = reminders.filter(r => r.id !== reminderId);
             setReminders(remaining);
             if (remaining.length === 0) {
@@ -34,6 +46,13 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
             }
         } catch {
             showAlert('Error', 'Failed to process reminder');
+        }
+    };
+
+    const handleSnoozeOption = (minutes: number) => {
+        if (snoozingReminderId) {
+            handleAction(snoozingReminderId, 'SNOOZED', minutes);
+            setSnoozingReminderId(null);
         }
     };
 
@@ -60,15 +79,26 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
                 </View>
             </View>
             <View style={styles.cardActions}>
+                {/* Snooze Split Button */}
+                <View style={[styles.snoozeContainer, { backgroundColor: '#F5F5F5' }]}>
+                    <TouchableOpacity
+                        style={styles.snoozeMainBtn}
+                        onPress={() => handleAction(item.id, 'SNOOZED', 15)}
+                    >
+                        <Ionicons name="notifications-off-outline" size={18} color={colors.textSecondary} style={styles.btnIcon} />
+                        <Text style={[styles.snoozeText, { color: colors.textSecondary }]}>Snooze 15m</Text>
+                    </TouchableOpacity>
+                    <View style={[styles.snoozeSeparator, { backgroundColor: colors.border }]} />
+                    <TouchableOpacity
+                        style={styles.snoozeMenuBtn}
+                        onPress={() => setSnoozingReminderId(item.id)}
+                    >
+                        <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                </View>
+
                 <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: '#F5F5F5' }]}
-                    onPress={() => handleAction(item.id, 'SNOOZED')}
-                >
-                    <Ionicons name="notifications-off-outline" size={18} color={colors.textSecondary} style={styles.btnIcon} />
-                    <Text style={[styles.snoozeText, { color: colors.textSecondary }]}>Snooze</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: colors.primary }]}
+                    style={[styles.actionBtn, { backgroundColor: colors.primary, flex: 1 }]}
                     onPress={() => handleAction(item.id, 'COMPLETED')}
                 >
                     <Ionicons name="checkmark-circle-outline" size={18} color="#fff" style={styles.btnIcon} />
@@ -111,6 +141,31 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
                     <Text style={[styles.dismissText, { color: colors.text }]}>Handle Later</Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Snooze Duration Modal */}
+            <BottomModal
+                visible={!!snoozingReminderId}
+                onClose={() => setSnoozingReminderId(null)}
+                title="Snooze Reminder"
+                subtitle="Choose how long to snooze this reminder"
+                maxHeight="60%"
+            >
+                <View style={styles.snoozeOptionsContainer}>
+                    {SNOOZE_OPTIONS.map((option) => (
+                        <TouchableOpacity
+                            key={option.minutes}
+                            style={[styles.snoozeOption, { borderBottomColor: colors.border }]}
+                            onPress={() => handleSnoozeOption(option.minutes)}
+                        >
+                            <Text style={[styles.snoozeOptionText, { color: colors.text }]}>{option.label}</Text>
+                            {option.minutes === 15 && (
+                                <Text style={{ fontSize: 12, color: colors.textSecondary, marginRight: 8 }}>Default</Text>
+                            )}
+                            <Ionicons name="time-outline" size={20} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </BottomModal>
         </View>
     );
 };
@@ -198,10 +253,36 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     actionBtn: {
-        flex: 1,
+        // flex: 1, // Removed flex: 1 from base style as it's added conditionally
         flexDirection: 'row',
         paddingVertical: 12,
         borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    snoozeContainer: {
+        flex: 1.2, // Give more space to snooze button
+        flexDirection: 'row',
+        borderRadius: 14,
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
+    snoozeMainBtn: {
+        flex: 1,
+        flexDirection: 'row',
+        paddingVertical: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingLeft: 8,
+    },
+    snoozeSeparator: {
+        width: 1,
+        height: '60%',
+        backgroundColor: '#ccc',
+    },
+    snoozeMenuBtn: {
+        paddingHorizontal: 10,
+        paddingVertical: 12,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -216,4 +297,18 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: 'bold',
     },
+    snoozeOptionsContainer: {
+        paddingBottom: 20,
+    },
+    snoozeOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+    },
+    snoozeOptionText: {
+        fontSize: 16,
+        fontWeight: '600',
+    }
 });

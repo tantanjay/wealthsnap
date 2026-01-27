@@ -58,8 +58,7 @@
       "expo-notifications",
       "expo-background-fetch",
       "expo-task-manager",
-      "react-native-document-scanner-plugin",
-      "react-native-edge-to-edge"
+      "react-native-document-scanner-plugin"
     ],
     "extra": {
       "eas": {
