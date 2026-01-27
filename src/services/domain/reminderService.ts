@@ -3,6 +3,7 @@ import * as Notifications from 'expo-notifications';
 
 import { Reminder, ReminderAction, ReminderLog } from '@types';
 import { getDatabase } from "@services/database/databaseService";
+import { generateUUID } from '@utils/uuid';
 import { decryptField, encryptField } from "@services/core/encryptionService";
 import { REMINDER_PREFIXES } from '@constants/reminders';
 
@@ -158,7 +159,7 @@ export const cancelReminderNotifications = async (reminderId: string) => {
  * Handle notification response (Snooze/Complete)
  */
 export const handleReminderNotificationAction = async (reminderId: string, action: ReminderAction, snoozeMinutes: number = 0) => {
-    const id = Date.now().toString();
+    const id = generateUUID();
     const log: ReminderLog = {
         id,
         reminderId,

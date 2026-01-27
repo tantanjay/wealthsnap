@@ -14,6 +14,7 @@ import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { UserProfile } from '@types';
+import { generateUUID } from '@utils/uuid';
 import { restoreFromBackup, generateDummyData } from '@services/integrations';
 import { saveUserProfile, setOnboardingComplete, saveAcceptedTermsVersion } from '@services/core/storageService';
 import { CONFIG } from '@constants/config';
@@ -119,7 +120,7 @@ const SetupScreen = ({ navigation }: any) => {
         }
 
         const profile: UserProfile = {
-            id: Date.now().toString(),
+            id: generateUUID(),
             name,
             currency,
             monthlySalary: 0,

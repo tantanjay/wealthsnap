@@ -10,6 +10,7 @@ import { RecurringOptions } from '@components/transaction/RecurringOptions';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency } from '@types';
+import { generateUUID } from '@utils/uuid';
 import { saveTransaction, saveRecurrenceRule } from '@services/domain';
 import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '@constants/categories';
 
@@ -61,11 +62,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             return;
         }
 
-        const newId = initialTransaction?.id || Date.now().toString();
+        const newId = initialTransaction?.id || generateUUID();
         let recurrenceRuleId: string | undefined = initialTransaction?.recurrenceId;
 
         if (isRecurring) {
-            const ruleId = initialTransaction?.recurrenceId || `rule_${Date.now()}`;
+            const ruleId = initialTransaction?.recurrenceId || generateUUID();
             const start = startDate;
 
             // Calculate the next due date
