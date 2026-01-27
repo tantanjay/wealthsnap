@@ -10,7 +10,7 @@ import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface HomeTransactionsCardProps {
     recentTransactions: Transaction[];
-    topTransactions: Transaction[];
+    topExpenses: Transaction[];
     currency: string;
     onTransactionPress?: (transaction: Transaction) => void;
     isPrivacyEnabled?: boolean;
@@ -19,7 +19,7 @@ interface HomeTransactionsCardProps {
 
 const HomeTransactionsCard: React.FC<HomeTransactionsCardProps> = ({
     recentTransactions,
-    topTransactions,
+    topExpenses,
     currency,
     onTransactionPress,
     isPrivacyEnabled = false,
@@ -42,7 +42,7 @@ const HomeTransactionsCard: React.FC<HomeTransactionsCardProps> = ({
         return iconMap[category] || 'wallet';
     };
 
-    const currentData = activeTab === 'RECENT' ? recentTransactions : topTransactions;
+    const currentData = activeTab === 'RECENT' ? recentTransactions : topExpenses;
     const isEmpty = currentData.length === 0;
 
     const renderHeader = () => (
