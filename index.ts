@@ -1,3 +1,4 @@
+import 'react-native-get-random-values';
 import { registerRootComponent } from 'expo';
 import '@services/background/backgroundTasks'; // Register background tasks (notifications, etc)
 import { setupNotificationListeners } from '@services/background';

@@ -1,6 +1,7 @@
 import { RecurrenceRule, Transaction, RecurrenceFrequency } from '@types';
 import { getDatabase } from "@services/database/databaseService";
 import { saveTransaction } from '@services/domain/transactionService';
+import { generateUUID } from '@utils/uuid';
 import { decryptField, encryptField } from "@services/core/encryptionService";
 
 // =============================================================================
@@ -55,7 +56,7 @@ export const processRecurrenceRules = async (): Promise<number> => {
 
                 const newTransaction: Transaction = {
                     ...rule.transactionTemplate,
-                    id: Date.now().toString() + Math.random().toString(36).substr(2, 5), // Unique ID
+                    id: generateUUID(),
                     date: nextDueDate.toISOString(),
                     note: rule.name || rule.transactionTemplate.note,
                     createdAt: new Date().toISOString(),
