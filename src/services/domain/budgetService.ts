@@ -1,4 +1,4 @@
-import BigNumber from 'bignumber.js';
+import { BigNumber } from 'bignumber.js';
 import { Budget } from '@types';
 import { getDatabase } from '@services/database/databaseService';
 import { encryptField, decryptField } from '@services/core/encryptionService';

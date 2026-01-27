@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import BigNumber from 'bignumber.js';
 import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Defs, LinearGradient, Stop } from 'react-native-svg';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import BigNumber from 'bignumber.js';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { BigNumber } from 'bignumber.js';
 import { View, Text, ScrollView, TouchableOpacity, BackHandler, TextInput, ActivityIndicator, Platform, Modal, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

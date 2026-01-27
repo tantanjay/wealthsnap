@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import BigNumber from 'bignumber.js';
+import { BigNumber } from 'bignumber.js';
 import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
