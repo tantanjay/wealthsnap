@@ -148,7 +148,6 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
                 onClose={() => setSnoozingReminderId(null)}
                 title="Snooze Reminder"
                 subtitle="Choose how long to snooze this reminder"
-                maxHeight="60%"
             >
                 <View style={styles.snoozeOptionsContainer}>
                     {SNOOZE_OPTIONS.map((option) => (

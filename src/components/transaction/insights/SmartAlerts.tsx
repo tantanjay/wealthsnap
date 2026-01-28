@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
@@ -89,35 +89,36 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
                 visible={showInfo}
                 onClose={() => setShowInfo(false)}
                 title="About Smart Alerts"
-                maxHeight="45%"
             >
-                <View>
-                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                        WealthSnap analyzes your spending patterns to detect unusual activity.
-                    </Text>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <View>
+                        <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
+                            WealthSnap analyzes your spending patterns to detect unusual activity.
+                        </Text>
 
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5 }}>
-                        <View style={{ flexDirection: 'row', marginBottom: 8 }}>
-                            <Text style={{ fontSize: 16, marginRight: 8 }}>📈</Text>
-                            <View style={{ flex: 1 }}>
-                                <Text style={{ color: colors.text, fontWeight: 'bold' }}>Spikes</Text>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                    We alert you when a category&apos;s spending is significantly higher than your 3-month average.
-                                </Text>
+                        <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5 }}>
+                            <View style={{ flexDirection: 'row', marginBottom: 8 }}>
+                                <Text style={{ fontSize: 16, marginRight: 8 }}>📈</Text>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>Spikes</Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                        We alert you when a category&apos;s spending is significantly higher than your 3-month average.
+                                    </Text>
+                                </View>
+                            </View>
+                            <View style={{ flexDirection: 'row' }}>
+                                <Text style={{ fontSize: 16, marginRight: 8 }}>🛡️</Text>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>Detection</Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                        Alerts are triggered simply by deviation. They are not judgments, just observations to help you stay aware!
+                                    </Text>
+                                </View>
                             </View>
                         </View>
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={{ fontSize: 16, marginRight: 8 }}>🛡️</Text>
-                            <View style={{ flex: 1 }}>
-                                <Text style={{ color: colors.text, fontWeight: 'bold' }}>Detection</Text>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                    Alerts are triggered simply by deviation. They are not judgments, just observations to help you stay aware!
-                                </Text>
-                            </View>
-                        </View>
+                        <View style={{ height: 20 }} />
                     </View>
-                    <View style={{ height: 20 }} />
-                </View>
+                </ScrollView>
             </BottomModal>
         </View>
     );

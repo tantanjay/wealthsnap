@@ -1,6 +1,6 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, Dimensions, FlatList, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity } from 'react-native';
+import { View, Text, Dimensions, FlatList, NativeSyntheticEvent, NativeScrollEvent, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
@@ -234,26 +234,28 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                 onClose={() => setIsRunwayModalVisible(false)}
                 title="How is this Calculated?"
             >
-                <View style={{ padding: 20, paddingBottom: 40 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
-                        Financial Runway shows how many months you can sustain your current lifestyle based on your net tracked balance and average monthly expenses (burn rate).
-                    </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
-                            &quot;Essentially, if your income stopped today, this is how long you could live without changing your spending habits.&quot;
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={{ padding: 20, paddingBottom: 40 }}>
+                        <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
+                            Financial Runway shows how many months you can sustain your current lifestyle based on your net tracked balance and average monthly expenses (burn rate).
+                        </Text>
+                        <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
+                                &quot;Essentially, if your income stopped today, this is how long you could live without changing your spending habits.&quot;
+                            </Text>
+                        </View>
+                        <View style={{ backgroundColor: '#FF9800' + '20', padding: 12, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: '#FF9800', marginBottom: 15 }}>
+                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 6 }}>⚠️ Important Note</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
+                                This calculation uses your <Text style={{ fontWeight: 'bold' }}>tracked balance</Text> (lifetime income - expenses from your transactions), not your actual bank account balance.{"\n\n"}
+                                For accurate runway, ensure your starting balance is recorded as an initial income transaction.
+                            </Text>
+                        </View>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                            Calculation: Net Tracked Balance ÷ Average Monthly Expense
                         </Text>
                     </View>
-                    <View style={{ backgroundColor: '#FF9800' + '20', padding: 12, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: '#FF9800', marginBottom: 15 }}>
-                        <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 6 }}>⚠️ Important Note</Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
-                            This calculation uses your <Text style={{ fontWeight: 'bold' }}>tracked balance</Text> (lifetime income - expenses from your transactions), not your actual bank account balance.{"\n\n"}
-                            For accurate runway, ensure your starting balance is recorded as an initial income transaction.
-                        </Text>
-                    </View>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                        Calculation: Net Tracked Balance ÷ Average Monthly Expense
-                    </Text>
-                </View>
+                </ScrollView>
             </BottomModal>
 
             {/* Budget Performance Modal */}
@@ -262,31 +264,33 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                 onClose={() => setIsBudgetModalVisible(false)}
                 title="How is this Calculated?"
             >
-                <View style={{ padding: 20, paddingBottom: 40 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
-                        Budget Health shows what percentage of your total budgets you&apos;ve spent this month.
-                    </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
-                            &quot;Track your spending against budgets to stay on target and avoid overspending.&quot;
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={{ padding: 20, paddingBottom: 40 }}>
+                        <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
+                            Budget Health shows what percentage of your total budgets you&apos;ve spent this month.
+                        </Text>
+                        <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
+                                &quot;Track your spending against budgets to stay on target and avoid overspending.&quot;
+                            </Text>
+                        </View>
+                        <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>Color Guide:</Text>
+                        <View style={{ marginLeft: 8, marginBottom: 15 }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 4 }}>
+                                • <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>Green (&lt;70%)</Text>: Healthy - plenty of budget remaining
+                            </Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 4 }}>
+                                • <Text style={{ color: '#FF9800', fontWeight: 'bold' }}>Orange (70-90%)</Text>: Warning - approaching budget limit
+                            </Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                                • <Text style={{ color: '#F44336', fontWeight: 'bold' }}>Red (&gt;90%)</Text>: Danger - over budget or very close
+                            </Text>
+                        </View>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                            Calculation: (Total Spent in Budgeted Categories ÷ Total Budget Amounts) × 100
                         </Text>
                     </View>
-                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>Color Guide:</Text>
-                    <View style={{ marginLeft: 8, marginBottom: 15 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 4 }}>
-                            • <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>Green (&lt;70%)</Text>: Healthy - plenty of budget remaining
-                        </Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 4 }}>
-                            • <Text style={{ color: '#FF9800', fontWeight: 'bold' }}>Orange (70-90%)</Text>: Warning - approaching budget limit
-                        </Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                            • <Text style={{ color: '#F44336', fontWeight: 'bold' }}>Red (&gt;90%)</Text>: Danger - over budget or very close
-                        </Text>
-                    </View>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                        Calculation: (Total Spent in Budgeted Categories ÷ Total Budget Amounts) × 100
-                    </Text>
-                </View>
+                </ScrollView>
             </BottomModal>
 
             {/* Daily Average Modal */}
@@ -295,31 +299,33 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                 onClose={() => setIsDailyAvgModalVisible(false)}
                 title="How is this Calculated?"
             >
-                <View style={{ padding: 20, paddingBottom: 40 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
-                        Daily Average shows how much you&apos;re spending per day on average this month.
-                    </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
-                            &quot;Understanding your daily spending helps you stay mindful of expenses throughout the month.&quot;
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={{ padding: 20, paddingBottom: 40 }}>
+                        <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
+                            Daily Average shows how much you&apos;re spending per day on average this month.
+                        </Text>
+                        <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
+                                &quot;Understanding your daily spending helps you stay mindful of expenses throughout the month.&quot;
+                            </Text>
+                        </View>
+                        <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>Use Cases:</Text>
+                        <View style={{ marginLeft: 8, marginBottom: 15 }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 4 }}>
+                                • Compare daily spending across different months
+                            </Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 4 }}>
+                                • Set daily spending goals for better control
+                            </Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                                • Identify if you&apos;re spending more on certain days
+                            </Text>
+                        </View>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                            Calculation: Total Monthly Expenses ÷ Days in Month
                         </Text>
                     </View>
-                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>Use Cases:</Text>
-                    <View style={{ marginLeft: 8, marginBottom: 15 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 4 }}>
-                            • Compare daily spending across different months
-                        </Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 4 }}>
-                            • Set daily spending goals for better control
-                        </Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                            • Identify if you&apos;re spending more on certain days
-                        </Text>
-                    </View>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                        Calculation: Total Monthly Expenses ÷ Days in Month
-                    </Text>
-                </View>
+                </ScrollView>
             </BottomModal>
         </View>
     );
