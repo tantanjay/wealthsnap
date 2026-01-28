@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet, ScrollView, Linking, ToastAndroid, TouchableWithoutFeedback } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -44,6 +44,11 @@ const ProfileScreen = ({ navigation }: any) => {
     const [showWhyFreeModal, setShowWhyFreeModal] = useState(false);
     const [showDevMessageModal, setShowDevMessageModal] = useState(false);
     const [showRemindersModal, setShowRemindersModal] = useState(false);
+    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
+    // Developer Mode State
+    const [isDevMode, setIsDevMode] = useState(false);
+    const [devTapCount, setDevTapCount] = useState(0);
 
     // Crash Simulation State
     const [shouldCrash, setShouldCrash] = useState(false);
@@ -55,8 +60,18 @@ const ProfileScreen = ({ navigation }: any) => {
     useFocusEffect(
         useCallback(() => {
             checkCurrency();
+            checkDevMode();
         }, [])
     );
+
+    const checkDevMode = async () => {
+        try {
+            const enabled = await AsyncStorage.getItem(ASYNC_KEYS.DEVELOPER_MODE);
+            setIsDevMode(enabled === 'true');
+        } catch (error) {
+            console.error('Failed to check dev mode', error);
+        }
+    };
 
     const checkCurrency = async () => {
         const profile = await getUserProfile();
@@ -101,6 +116,26 @@ const ProfileScreen = ({ navigation }: any) => {
                 }
             ]
         );
+    };
+
+    const handleDevTap = async () => {
+        if (isDevMode) return;
+
+        const newCount = devTapCount + 1;
+        setDevTapCount(newCount);
+
+        if (newCount >= 7) {
+            try {
+                await AsyncStorage.setItem(ASYNC_KEYS.DEVELOPER_MODE, 'true');
+                setIsDevMode(true);
+                ToastAndroid.show("You are now a tester!", ToastAndroid.SHORT);
+            } catch (error) {
+                console.error('Failed to enable dev mode', error);
+            }
+        } else if (newCount >= 4) {
+            const remaining = 7 - newCount;
+            ToastAndroid.show(`You are ${remaining} steps away from being a tester`, ToastAndroid.SHORT);
+        }
     };
 
     const ThemeOption = ({ icon, title, value, current }: { icon: string, title: string, value: 'light' | 'dark' | 'system', current: string }) => (
@@ -232,7 +267,7 @@ const ProfileScreen = ({ navigation }: any) => {
                     </View>
                 </Card>
 
-                {CONFIG.SHOW_DEVELOPER_OPTIONS && (
+                {(CONFIG.SHOW_DEVELOPER_OPTIONS || isDevMode) && (
                     <Card style={{ marginBottom: 16 }}>
                         <View style={styles.cardHeader}>
                             <View style={[styles.headerIcon, { backgroundColor: colors.error + '20' }]}>
@@ -317,16 +352,26 @@ const ProfileScreen = ({ navigation }: any) => {
                         <Ionicons name="shield-checkmark-outline" size={18} color={colors.info} />
                         <Text style={[styles.aiButtonText, { color: colors.info }]}>Terms of Use & Privacy</Text>
                     </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.aiButton, { marginTop: 12 }]}
+                        onPress={() => setShowFeedbackModal(true)}
+                    >
+                        <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.info} />
+                        <Text style={[styles.aiButtonText, { color: colors.info }]}>Provide Feedback</Text>
+                    </TouchableOpacity>
                 </Card>
 
                 {/* About Card */}
                 <Card>
-                    <View style={styles.cardHeader}>
-                        <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
-                            <Ionicons name="information-circle" size={22} color={colors.primary} />
+                    <TouchableWithoutFeedback onPress={handleDevTap}>
+                        <View style={styles.cardHeader}>
+                            <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
+                                <Ionicons name="information-circle" size={22} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.cardTitle, { color: colors.text }]}>About WealthSnap</Text>
                         </View>
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>About WealthSnap</Text>
-                    </View>
+                    </TouchableWithoutFeedback>
 
                     <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 15 }}>
                         WealthSnap is a free, ad-free personal finance tracker with AI-powered receipt scanning. Your data stays private and secure on your device.
@@ -465,6 +510,37 @@ const ProfileScreen = ({ navigation }: any) => {
             >
                 <View style={{ height: '100%' }}>
                     <HelpCenterScreen onFinish={() => setShowGuide(false)} mode="view" />
+                </View>
+            </BottomModal>
+
+            {/* Feedback Modal */}
+            <BottomModal
+                visible={showFeedbackModal}
+                onClose={() => setShowFeedbackModal(false)}
+                title="Provide Feedback 💬"
+            >
+                <View style={{ paddingVertical: 10 }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 22 }}>
+                        Since WealthSnap is an offline-first app, I don't track your usage or collect any data. This ensures your privacy, but it also means I don't automatically know when things go wrong.
+                    </Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 15 }}>
+                        Your feedback via Google Forms helps me understand bugs, quirks, and which updates you'd like to see next. It's the best way to help improve the app while keeping it private!
+                    </Text>
+
+                    <Button
+                        title="Take me to Google Form"
+                        onPress={() => {
+                            setShowFeedbackModal(false);
+                            Linking.openURL('https://forms.gle/rS6kdufy6uBMLMjf6');
+                        }}
+                        style={{ marginTop: 24 }}
+                    />
+                    <Button
+                        title="Maybe later"
+                        onPress={() => setShowFeedbackModal(false)}
+                        variant="outline"
+                        style={{ marginTop: 12 }}
+                    />
                 </View>
             </BottomModal>
         </ScreenWrapper >
