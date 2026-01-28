@@ -170,7 +170,7 @@ const HistoryScreen = ({ navigation }: any) => {
         filteredData.forEach(t => {
             if (t.type === 'INCOME') {
                 totalIncome.plus(t.amount);
-            } else {
+            } else if (t.type === 'EXPENSE') {
                 totalExpense.plus(t.amount);
             }
         });
@@ -196,12 +196,15 @@ const HistoryScreen = ({ navigation }: any) => {
         const newSections: TransactionSection[] = Object.keys(grouped).map(dateKey => {
             const transactions = grouped[dateKey];
             const totalAmount = transactions.reduce((sum, t) => {
-                return t.type === 'INCOME'
-                    ? sum.plus(t.amount)
-                    : sum.minus(t.amount);
+                if (t.type === 'INCOME') {
+                    return sum.plus(t.amount.abs());
+                }
+                if (t.type === 'EXPENSE') {
+                    return sum.minus(t.amount.abs());
+                }
+                return sum;
             }, new BigNumber(0));
 
-            // Helper to get nice label for the section header
             const getSectionLabel = (dKey: string) => {
                 const d = new Date(dKey);
                 const now = new Date();
