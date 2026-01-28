@@ -69,14 +69,14 @@ const HomeScreen = ({ navigation }: any) => {
 
         t.forEach((tx: Transaction) => {
             // Overall
-            if (tx.type === 'INCOME') oInc = oInc.plus(tx.amount);
-            else oExp = oExp.plus(tx.amount);
+            if (tx.type === 'INCOME') oInc = oInc.plus(tx.amount.abs());
+            else if (tx.type === 'EXPENSE') oExp = oExp.plus(tx.amount.abs());
 
             // Month
             const tDate = new Date(tx.date);
             if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
-                if (tx.type === 'INCOME') mInc = mInc.plus(tx.amount);
-                else mExp = mExp.plus(tx.amount);
+                if (tx.type === 'INCOME') mInc = mInc.plus(tx.amount.abs());
+                else if (tx.type === 'EXPENSE') mExp = mExp.plus(tx.amount.abs());
             }
         });
 
@@ -372,7 +372,7 @@ const HomeScreen = ({ navigation }: any) => {
                 <View style={{ marginBottom: 20 }}>
                     <HomeTransactionsCard
                         recentTransactions={transactions.slice(0, 5)}
-                        topExpenses={getTopExpenses(transactions.filter(t => t.type === 'EXPENSE'), 5)}
+                        topExpenses={getTopExpenses(transactions, 5)}
                         currency={profile?.currency || 'USD'}
                         onTransactionPress={() => navigation.navigate('History')}
                         isPrivacyEnabled={isPrivacyEnabled}
