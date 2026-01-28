@@ -1,7 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 import { Transaction, TransactionReceipt } from "@types";
 import { getDatabase } from "@services/database/databaseService";
-import { bulkDecryptItems, decryptData, encryptData, encryptField } from "@services/core/encryptionService";
+import { bulkDecryptItems, encryptData, encryptField } from "@services/core/encryptionService";
 import { chunkArray } from "@utils/index";
 import * as DataCache from '@services/core/dataCache';
 
