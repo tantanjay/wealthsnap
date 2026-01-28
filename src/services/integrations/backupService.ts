@@ -1,11 +1,12 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import JSZip from 'jszip';
 
-import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget } from '@types';
+import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget, TransactionReceipt } from '@types';
 import { decryptData, encryptData } from '@services/core/encryptionService';
 import * as Storage from '@services/core/storageService';
 import * as SQLite from '@services/domain';
 import { CONFIG } from '@constants/config';
+import { generateUUID, isUUID } from '@utils/uuid';
 
 export interface BackupData {
     version: string;
@@ -16,8 +17,17 @@ export interface BackupData {
     categories: Category[];
     recurrenceRules: RecurrenceRule[];
     budgets: Budget[];
-    reminders?: Reminder[];
+    reminders: Reminder[];
+    transactionReceipts: TransactionReceipt[];
 }
+
+interface BaseEntity {
+    id: string;
+    [key: string]: any; // Allows for other properties like categoryId, amount, etc.
+}
+
+// A map to keep track of changed IDs: { [oldId]: newId }
+type IdMap = Record<string, string>;
 
 /**
  * Create a backup with all data, encrypted with a password
@@ -37,6 +47,7 @@ export const createBackup = async (password: string): Promise<string> => {
     const recurrenceRules = await SQLite.getAllRecurrenceRules();
     const budgets = await SQLite.getAllBudgets();
     const reminders = await SQLite.getAllReminders();
+    const transactionReceipts = await SQLite.getAllTransactionReceipts();
 
     const backupData: BackupData = {
         version: '2.0', // Schema version 2.0 (SQLite Support)
@@ -47,7 +58,8 @@ export const createBackup = async (password: string): Promise<string> => {
         categories,
         recurrenceRules,
         budgets,
-        reminders
+        reminders,
+        transactionReceipts,
     };
 
     // 2. Create zip archive
@@ -74,6 +86,68 @@ export const createBackup = async (password: string): Promise<string> => {
     });
 
     return fileUri;
+};
+
+/**
+ * Ensures all entities in an array have valid UUIDs.
+ * Returns the sanitized array and a map of old IDs to new IDs.
+ */
+export function sanitizeIds<T extends BaseEntity>(data: T[] | null | undefined): { sanitized: T[], map: IdMap } {
+    const map: IdMap = {};
+
+    // 1. Check if data is missing or not an array
+    if (!data || !Array.isArray(data)) {
+        console.warn('sanitizeIds: Input data is null, undefined, or not an array. Returning empty results.');
+        return { sanitized: [], map: {} };
+    }
+
+    const sanitized = data.map((item, index) => {
+        // 2. Check if the item itself is null/undefined
+        if (!item) {
+            console.error(`sanitizeIds: Item at index ${index} is null or undefined. Skipping.`);
+            return item;
+        }
+
+        const newItem = { ...item };
+
+        // 3. Ensure the item has an ID property to check
+        if (typeof newItem.id !== 'string') {
+            console.error(`sanitizeIds: Item at index ${index} is missing a string ID. Generating a new one.`);
+            newItem.id = generateUUID();
+            // We can't map from an old ID if it didn't exist, 
+            // but we ensure the record is now valid.
+            return newItem;
+        }
+
+        // 4. Validate existing UUID
+        if (!isUUID(newItem.id)) {
+            const newId = generateUUID();
+            map[newItem.id] = newId; // Track the change for foreign key updates
+            newItem.id = newId;
+        }
+
+        return newItem;
+    });
+
+    return { sanitized, map };
+}
+
+const updateForeignKeys = <T>(
+    data: T[] | null | undefined,
+    foreignKeyName: keyof T,
+    idMap: Record<string, string>
+): T[] => {
+    if (!data || !Array.isArray(data)) return [];
+
+    return data.map(item => {
+        const oldForeignKey = String(item[foreignKeyName]);
+
+        // If the old foreign key exists in our map, replace it with the new UUID
+        if (idMap[oldForeignKey]) {
+            return { ...item, [foreignKeyName]: idMap[oldForeignKey] };
+        }
+        return item;
+    });
 };
 
 /**
@@ -135,12 +209,20 @@ export const restoreFromBackup = async (
         }
     }
 
-    await safeBulkSave(backupData.transactions, SQLite.bulkSaveTransactions);
-    await safeBulkSave(backupData.investments, SQLite.bulkSaveInvestments);
-    await safeBulkSave(backupData.categories, SQLite.bulkSaveCategories);
-    await safeBulkSave(backupData.recurrenceRules, SQLite.bulkSaveRecurrenceRules);
+    const { sanitized: cleanTransactions, map: transactionIdMap } = sanitizeIds(backupData.transactions);
+    const { sanitized: cleanInvestments } = sanitizeIds(backupData.investments);
+    const { sanitized: cleanCategories } = sanitizeIds(backupData.categories);
+    const { sanitized: cleanRecurrenceRules } = sanitizeIds(backupData.recurrenceRules);
+    const { sanitized: cleanReminders } = sanitizeIds(backupData.reminders);
+    const cleanTransactionReceipts = updateForeignKeys(backupData.transactionReceipts, 'transactionId', transactionIdMap);
+
+    await safeBulkSave(cleanTransactions, SQLite.bulkSaveTransactions);
+    await safeBulkSave(cleanInvestments, SQLite.bulkSaveInvestments);
+    await safeBulkSave(cleanCategories, SQLite.bulkSaveCategories);
+    await safeBulkSave(cleanRecurrenceRules, SQLite.bulkSaveRecurrenceRules);
+    await safeBulkSave(cleanReminders, SQLite.bulkSaveReminders);
     await safeBulkSave(backupData.budgets, SQLite.bulkSaveBudgets);
-    await safeBulkSave(backupData.reminders, SQLite.bulkSaveReminders);
+    await safeBulkSave(cleanTransactionReceipts, SQLite.bulkSaveTransactionReceipts);
 
     // Reschedule Notifications
     if (backupData.reminders && Array.isArray(backupData.reminders) && backupData.reminders.length > 0) {
