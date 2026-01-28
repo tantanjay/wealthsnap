@@ -38,7 +38,7 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
             title="Recurring Transactions"
             maxHeight="85%"
         >
-            <ScrollView>
+            <ScrollView showsVerticalScrollIndicator={false}>
                 <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 10, paddingHorizontal: 20 }}>
                     Your Recurring Expenses ({sortedRules.length})
                 </Text>

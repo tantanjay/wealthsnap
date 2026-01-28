@@ -386,62 +386,64 @@ const HomeScreen = ({ navigation }: any) => {
                 onClose={() => setIsSettingsModalVisible(false)}
                 title="Home Settings"
             >
-                <View style={{ paddingTop: 10 }}>
-                    {/* Expense & Income Display Section */}
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
-                        Expense & Income Display
-                    </Text>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={{ paddingTop: 10 }}>
+                        {/* Expense & Income Display Section */}
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
+                            Expense & Income Display
+                        </Text>
 
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 12, overflow: 'hidden', marginBottom: 20 }}>
-                        <TouchableOpacity
-                            style={{
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: 16,
-                                borderBottomWidth: 1,
-                                borderBottomColor: colors.border
-                            }}
-                            onPress={() => handleModeChange('Overall')}
-                        >
-                            <Text style={{ color: colors.text, fontSize: 16 }}>Overall</Text>
-                            {displayMode === 'Overall' && (
-                                <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                            )}
-                        </TouchableOpacity>
+                        <View style={{ backgroundColor: colors.surface, borderRadius: 12, overflow: 'hidden', marginBottom: 20 }}>
+                            <TouchableOpacity
+                                style={{
+                                    flexDirection: 'row',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: 16,
+                                    borderBottomWidth: 1,
+                                    borderBottomColor: colors.border
+                                }}
+                                onPress={() => handleModeChange('Overall')}
+                            >
+                                <Text style={{ color: colors.text, fontSize: 16 }}>Overall</Text>
+                                {displayMode === 'Overall' && (
+                                    <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                                )}
+                            </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={{
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: 16
-                            }}
-                            onPress={() => handleModeChange('Month')}
-                        >
-                            <Text style={{ color: colors.text, fontSize: 16 }}>This Month</Text>
-                            {displayMode === 'Month' && (
-                                <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
-                            )}
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={{
+                                    flexDirection: 'row',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: 16
+                                }}
+                                onPress={() => handleModeChange('Month')}
+                            >
+                                <Text style={{ color: colors.text, fontSize: 16 }}>This Month</Text>
+                                {displayMode === 'Month' && (
+                                    <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                                )}
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Investment Settings Placeholder */}
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
+                            Investments
+                        </Text>
+                        <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 20, opacity: 0.6 }}>
+                            <Text style={{ color: colors.text, fontStyle: 'italic' }}>No options available yet</Text>
+                        </View>
+
+                        {/* Debt Settings Placeholder */}
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
+                            Debts & Liabilities
+                        </Text>
+                        <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 20, opacity: 0.6 }}>
+                            <Text style={{ color: colors.text, fontStyle: 'italic' }}>No options available yet</Text>
+                        </View>
                     </View>
-
-                    {/* Investment Settings Placeholder */}
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
-                        Investments
-                    </Text>
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 20, opacity: 0.6 }}>
-                        <Text style={{ color: colors.text, fontStyle: 'italic' }}>No options available yet</Text>
-                    </View>
-
-                    {/* Debt Settings Placeholder */}
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
-                        Debts & Liabilities
-                    </Text>
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 20, opacity: 0.6 }}>
-                        <Text style={{ color: colors.text, fontStyle: 'italic' }}>No options available yet</Text>
-                    </View>
-                </View>
+                </ScrollView>
             </BottomModal>
         </ScreenWrapper>
     );

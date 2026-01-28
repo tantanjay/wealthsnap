@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -167,34 +167,36 @@ const SecurityCard = () => {
                 onClose={() => setShowTimeoutModal(false)}
                 title="Auto-Lock Timeout"
             >
-                <View style={{ gap: 8 }}>
-                    {Security.TIMEOUT_OPTIONS.map(opt => (
-                        <TouchableOpacity
-                            key={opt.value}
-                            onPress={() => handleSetTimeout(opt.value)}
-                            style={{
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                paddingVertical: 14,
-                                paddingHorizontal: 4,
-                                borderBottomWidth: 1,
-                                borderBottomColor: colors.border
-                            }}
-                        >
-                            <Text style={{
-                                color: colors.text,
-                                fontSize: 16,
-                                fontWeight: timeoutSetting === opt.value ? '600' : '400'
-                            }}>
-                                {opt.label}
-                            </Text>
-                            {timeoutSetting === opt.value && (
-                                <Ionicons name="checkmark" size={20} color={colors.primary} />
-                            )}
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={{ gap: 8 }}>
+                        {Security.TIMEOUT_OPTIONS.map(opt => (
+                            <TouchableOpacity
+                                key={opt.value}
+                                onPress={() => handleSetTimeout(opt.value)}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    paddingVertical: 14,
+                                    paddingHorizontal: 4,
+                                    borderBottomWidth: 1,
+                                    borderBottomColor: colors.border
+                                }}
+                            >
+                                <Text style={{
+                                    color: colors.text,
+                                    fontSize: 16,
+                                    fontWeight: timeoutSetting === opt.value ? '600' : '400'
+                                }}>
+                                    {opt.label}
+                                </Text>
+                                {timeoutSetting === opt.value && (
+                                    <Ionicons name="checkmark" size={20} color={colors.primary} />
+                                )}
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </ScrollView>
             </BottomModal>
 
             {/* Gemini Settings Modal */}
