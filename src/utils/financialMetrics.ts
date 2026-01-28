@@ -2,6 +2,11 @@ import { BigNumber } from 'bignumber.js';
 import { Transaction, TransactionType } from '@types';
 import { getCategoryGroup } from '@constants/categories';
 
+type BreakdownType = Exclude<TransactionType, 'TRANSFER'>;
+
+const isExpense = (t: Transaction) => t.type === 'EXPENSE';
+const isIncome = (t: Transaction) => t.type === 'INCOME';
+
 const parseDate = (date: string | Date): Date => {
     return typeof date === 'string' ? new Date(date) : date;
 };
@@ -18,9 +23,9 @@ export const calculateTotals = (transactions: Transaction[]) => {
     let expense = new BigNumber(0);
 
     transactions.forEach(t => {
-        if (t.type === 'INCOME') {
+        if (isIncome(t)) {
             income = income.plus(t.amount);
-        } else if (t.type === 'EXPENSE') {
+        } else if (isExpense(t)) {
             // Always store the total expense as a positive "bucket"
             expense = expense.plus(t.amount.abs());
         }
@@ -60,14 +65,18 @@ export const getTopExpenses = (transactions: Transaction[], limit: number = 5) =
     const currentMonthTransactions = getTransactionsByMonth(transactions, currentMonth);
 
     return currentMonthTransactions
-        .filter(t => t.type !== 'TRANSFER')
-        .filter(t => t.type !== 'INCOME')
-        // Sort by magnitude (absolute value)
+        .filter(isExpense)
         .sort((a, b) => b.amount.abs().comparedTo(a.amount.abs()) ?? 0)
         .slice(0, limit);
 };
 
-export const getCategoryTrend = (transactions: Transaction[], category: string, months: number = 6, grouping: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
+export const getCategoryTrend = (
+    transactions: Transaction[],
+    category: string,
+    type: BreakdownType = 'EXPENSE',
+    months: number = 6,
+    grouping: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY'
+) => {
     const result = {
         labels: [] as string[],
         data: [] as BigNumber[]
@@ -80,13 +89,12 @@ export const getCategoryTrend = (transactions: Transaction[], category: string, 
 
         const monthlyTransactions = getTransactionsByMonth(transactions, d);
         const categoryTotal = monthlyTransactions
+            .filter(t => t.type === type)
             .filter(t => {
                 if (grouping === 'CATEGORY') {
-                    // Group mode: check against category group
                     const group = getCategoryGroup(t.category, t.type);
                     return group === category;
                 } else {
-                    // Item mode (SUB_CATEGORY): check against subCategory (or category if sub is missing)
                     const key = (t.subCategory && t.subCategory !== 'undefined') ? t.subCategory : t.category;
                     return key === category;
                 }
@@ -122,7 +130,7 @@ export const getMonthEndProjection = (transactions: Transaction[]) => {
 
     for (let i = 1; i <= 6; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const histTrans = getTransactionsByMonth(transactions, d).filter(t => t.type !== 'TRANSFER');
+        const histTrans = getTransactionsByMonth(transactions, d).filter(isExpense);
         if (histTrans.length === 0) continue;
 
         const histTotals = calculateTotals(histTrans);
@@ -189,7 +197,7 @@ export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: nu
     return totalExpense.dividedBy(effectiveMonths);
 };
 
-export const getCategoryBreakdown = (transactions: Transaction[], type: TransactionType, groupBy: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
+export const getCategoryBreakdown = (transactions: Transaction[], type: BreakdownType, groupBy: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
     const breakdown: { [key: string]: BigNumber } = {};
     let total = new BigNumber(0);
 
@@ -258,7 +266,7 @@ export const getCumulativeSpendingCurve = (allTransactions: Transaction[], month
 
         // Pre-index days for performance
         const dayMap = monthlyTrans.reduce((acc, t) => {
-            if (t.type === 'EXPENSE') {
+            if (isExpense(t)) {
                 const day = parseDate(t.date).getDate();
                 acc[day] = (acc[day] || new BigNumber(0)).plus(t.amount.abs());
             }
@@ -285,7 +293,7 @@ export const getCurrentMonthCumulative = (currentMonthTransactions: Transaction[
 
     // Optimization: Group transactions by day first so we don't .filter() in a loop
     const dailyExpenses = currentMonthTransactions
-        .filter(t => t.type === 'EXPENSE')
+        .filter(isExpense)
         .reduce((acc, t) => {
             const d = typeof t.date === 'string' ? new Date(t.date) : t.date;
             const dayNum = d.getDate();
@@ -325,7 +333,7 @@ export const detectAnomalies = (currentMonthTransactions: Transaction[], allTran
 
     currentBreakdown.forEach(item => {
         const catHistory = historyTransactions.filter(t =>
-            t.category === item.name && t.type === 'EXPENSE'
+            t.category === item.name && isExpense(t)
         );
 
         if (catHistory.length < 3) return;
@@ -373,7 +381,7 @@ export const getCategoryAverages = (allTransactions: Transaction[], monthsBack: 
 
     const historyTransactions = allTransactions.filter(t => {
         const d = typeof t.date === 'string' ? new Date(t.date) : t.date;
-        const isMatch = d >= startHistory && d <= endHistory && t.type === 'EXPENSE';
+        const isMatch = d >= startHistory && d <= endHistory && isExpense(t);
 
         if (isMatch) {
             uniqueMonths.add(`${d.getFullYear()}-${d.getMonth()}`);
