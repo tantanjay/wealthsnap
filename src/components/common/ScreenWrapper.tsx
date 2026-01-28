@@ -1,9 +1,9 @@
 import React from 'react';
-import { StyleProp, ViewStyle, KeyboardAvoidingView, ScrollView, Platform, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import { StyleProp, ViewStyle, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@context/ThemeContext';
+import { StatusBar } from 'expo-status-bar';
 
 interface Props {
     children: React.ReactNode;
@@ -18,22 +18,13 @@ export const ScreenWrapper: React.FC<Props> = ({ children, style, noPadding, scr
 
     const content = scrollable ? (
         <ScrollView
-            // Use insets.bottom here to ensure content isn't hidden behind the nav bar
-            contentContainerStyle={{
-                flexGrow: 1,
-                paddingBottom: insets.bottom + 20
-            }}
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
         >
             {children}
         </ScrollView>
-    ) : (
-        // For non-scrollable views, we wrap in a View to apply the bottom inset
-        <View style={{ flex: 1, paddingBottom: insets.bottom }}>
-            {children}
-        </View>
-    );
+    ) : children;
 
     return (
         <KeyboardAvoidingView
@@ -44,7 +35,7 @@ export const ScreenWrapper: React.FC<Props> = ({ children, style, noPadding, scr
                 paddingHorizontal: noPadding ? 0 : 16,
             }, style]}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            keyboardVerticalOffset={0}
         >
             <StatusBar style={mode === 'dark' ? 'light' : 'dark'} translucent />
             {content}
