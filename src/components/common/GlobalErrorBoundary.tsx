@@ -48,12 +48,47 @@ export class GlobalErrorBoundary extends Component<Props, State> {
     saveCrashReport = async (error: Error, errorInfo: ErrorInfo) => {
         try {
             const report = {
+                id: Date.now().toString(),
                 timestamp: new Date().toISOString(),
                 message: error.message,
                 stack: error.stack,
                 componentStack: errorInfo.componentStack
             };
-            await AsyncStorage.setItem(ASYNC_KEYS.CRASH_REPORT, JSON.stringify(report));
+
+            const existingData = await AsyncStorage.getItem(ASYNC_KEYS.CRASH_REPORT);
+            let reports = [];
+
+            if (existingData) {
+                try {
+                    const parsed = JSON.parse(existingData);
+                    if (Array.isArray(parsed)) {
+                        reports = parsed;
+                    } else if (typeof parsed === 'object' && parsed !== null) {
+                        // Migrate old single object structure to array
+                        reports = [parsed];
+                    }
+                } catch (e) {
+                    console.error('Failed to parse existing crash reports', e);
+                }
+            }
+
+            // Add new report
+            reports.push(report);
+
+            // Retention strategy: Keep reports from the last 7 days
+            const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+            reports = reports.filter(r => {
+                const reportTime = new Date(r.timestamp).getTime();
+                return (now - reportTime) < SEVEN_DAYS_MS;
+            });
+
+            // Limit to last 20 reports total to prevent storage bloat
+            if (reports.length > 20) {
+                reports = reports.slice(-20);
+            }
+
+            await AsyncStorage.setItem(ASYNC_KEYS.CRASH_REPORT, JSON.stringify(reports));
         } catch (e) {
             console.error('Failed to save crash report', e);
         }
