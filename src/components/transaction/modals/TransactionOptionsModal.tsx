@@ -115,6 +115,11 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
                         <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                 </View>
+
+                {/* Subtle ID */}
+                <Text style={[styles.transactionId, { color: colors.textSecondary }]}>
+                    ID: {transaction.id}
+                </Text>
             </View>
         </BottomModal>
     );
@@ -175,6 +180,13 @@ const styles = StyleSheet.create({
     separator: {
         height: 1,
         width: '100%',
+    },
+    transactionId: {
+        fontSize: 10,
+        opacity: 0.8,
+        textAlign: 'center',
+        marginTop: 12,
+        fontFamily: 'monospace',
     }
 });
 
