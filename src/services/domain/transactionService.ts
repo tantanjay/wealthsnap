@@ -1,7 +1,7 @@
 import { BigNumber } from 'bignumber.js';
-import { Transaction } from "@types";
+import { Transaction, TransactionReceipt } from "@types";
 import { getDatabase } from "@services/database/databaseService";
-import { bulkDecryptItems, encryptData, encryptField } from "@services/core/encryptionService";
+import { bulkDecryptItems, decryptData, encryptData, encryptField } from "@services/core/encryptionService";
 import { chunkArray } from "@utils/index";
 import * as DataCache from '@services/core/dataCache';
 
@@ -55,6 +55,36 @@ export const bulkSaveTransactions = async (transactions: Transaction[]): Promise
     } catch (error) {
         console.error('Error bulk saving transactions:', error);
         throw new Error('Failed to bulk save transactions');
+    }
+};
+
+export const bulkSaveTransactionReceipts = async (receipts: TransactionReceipt[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+
+        // 1. Prepare all encrypted data first
+        const preparedReceipts = await Promise.all(receipts.map(async (receipt) => {
+            const encryptedReceiptData = await encryptData(receipt.receiptData);
+            return {
+                ...receipt,
+                receiptData: encryptedReceiptData
+            };
+        }));
+
+        // 2. Run EVERYTHING in one single atomic transaction
+        await db.withTransactionAsync(async () => {
+            const query = `INSERT OR REPLACE INTO transaction_receipts (transactionId, receiptData) VALUES (?, ?)`;
+            for (const receipt of preparedReceipts) {
+                await db.runAsync(query, [receipt.transactionId, receipt.receiptData]);
+            }
+        });
+
+        // 3. Optional: Invalidate cache if you have one for receipts
+        // DataCache.invalidateReceiptCache(); 
+
+    } catch (error) {
+        console.error('Error bulk saving transaction receipts:', error);
+        throw new Error('Failed to bulk save transaction receipts');
     }
 };
 
@@ -201,5 +231,23 @@ export const deleteTransaction = async (id: string): Promise<void> => {
     } catch (error) {
         console.error('Error deleting transaction:', error);
         throw new Error('Failed to delete transaction');
+    }
+};
+
+export const getAllTransactionReceipts = async (): Promise<TransactionReceipt[]> => {
+    try {
+        const db = await getDatabase();
+        const rows = await db.getAllAsync<any>('SELECT * FROM transaction_receipts');
+
+        const decryptedRows = await bulkDecryptItems<any>(rows, ['receiptData']);
+
+        return decryptedRows.map(row => ({
+            transactionId: row.transactionId,
+            receiptData: row.receiptData,
+            createdAt: row.createdAt,
+        }));
+    } catch (error) {
+        console.error('Error getting transaction receipts:', error);
+        return [];
     }
 };

@@ -235,7 +235,13 @@ const HistoryScreen = ({ navigation }: any) => {
     };
 
     const handleEdit = (transaction: Transaction) => {
-        navigation.navigate('Record', { transaction });
+        // Serialize BigNumber before navigation to avoid non-serializable warning
+        navigation.navigate('Record', {
+            transaction: {
+                ...transaction,
+                amount: transaction.amount.toString()
+            }
+        });
     };
 
     // --- Renderers ---

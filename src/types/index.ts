@@ -29,6 +29,12 @@ export interface Transaction {
     updatedAt: string;
 }
 
+export interface TransactionReceipt {
+    transactionId: string;
+    receiptData: string;
+    createdAt: string;
+}
+
 export interface Investment {
     id: string;
     symbol: string; // e.g., AAPL, BTC
