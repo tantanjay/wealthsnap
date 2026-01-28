@@ -1,7 +1,7 @@
 export const CONFIG = {
-    ENABLE_DUMMY_DATA: false,
     TERMS_VERSION: 2,
-    SHOW_DEVELOPER_OPTIONS: true,
+    ENABLE_DUMMY_DATA: false,
+    SHOW_DEVELOPER_OPTIONS: false,
 };
 
 export const SECURE_KEYS = {
@@ -37,7 +37,8 @@ export const ASYNC_KEYS = {
     HISTORY_SCREEN: {
         PREFERENCE: '@wealthsnap_history_prefs'
     },
-    CRASH_REPORT: '@wealthsnap_crash_report'
+    CRASH_REPORT: '@wealthsnap_crash_report',
+    DEVELOPER_MODE: '@wealthsnap_developer_mode',
 };
 
 /**
