@@ -85,7 +85,12 @@ const RecordScreen = ({ navigation, route }: any) => {
 
             if (transaction) {
                 // Editing existing transaction - go straight to form
-                setEditingTransaction(transaction);
+                // Deserialize amount if it's a string (from navigation params)
+                const deserializedTransaction = {
+                    ...transaction,
+                    amount: typeof transaction.amount === 'string' ? new BigNumber(transaction.amount) : transaction.amount
+                };
+                setEditingTransaction(deserializedTransaction);
                 setTransactionType(transaction.type);
                 setViewMode('TRANSACTION');
                 setModalVisible(false); // Hide modal when editing
