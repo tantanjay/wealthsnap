@@ -24,7 +24,7 @@ import * as Storage from '@services/core/storageService';
 const InsightsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled } = usePrivacy();
-    const [currency, setCurrency] = useState('USD');
+    const [currency, setCurrency] = useState('PHP');
     const [refreshing, setRefreshing] = useState(false);
     const [expenseGrouping, setExpenseGrouping] = useState<'CATEGORY' | 'SUB_CATEGORY'>('CATEGORY');
     const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +44,7 @@ const InsightsScreen = ({ navigation }: any) => {
         expense: new BigNumber(0),
         savingsRate: new BigNumber(0),
         burnRate: new BigNumber(0),
-        incomeTrends: { labels: [], incomeData: [] as BigNumber[], expenseData: [] as BigNumber[] } as { labels: string[], incomeData: BigNumber[], expenseData: BigNumber[] }, // Correct type
+        incomeTrends: { labels: [], incomeData: [], expenseData: [] } as { labels: string[], incomeData: BigNumber[], expenseData: BigNumber[] },
         incomeBreakdown: [] as any[],
         expenseBreakdown: [] as any[],
         currentMonthExpense: new BigNumber(0),
@@ -59,147 +59,121 @@ const InsightsScreen = ({ navigation }: any) => {
         daysInMonth: 30
     });
 
-    const fetchTransactions = async () => {
-        setIsLoading(true);
-        try {
-            const profile = await Storage.getUserProfile();
-            if (profile?.currency) setCurrency(profile.currency);
-            const allTransactions = await Storage.getCachedTransactions();
-            setTransactions(allTransactions);
-
-            // Explicitly calculate metrics with the new data
-            await calculateMetrics(allTransactions);
-
-            // Load orders
-            const savedCardOrder = await Storage.getInsightsCardOrder();
-            if (savedCardOrder) setCardOrder(savedCardOrder);
-
-            const savedSectionOrder = await Storage.getInsightsSectionOrder();
-            if (savedSectionOrder) setSectionOrder(savedSectionOrder);
-        } catch (error) {
-            console.error("Error loading insights:", error);
-        } finally {
+    const calculateMetrics = useCallback(async (currentTransactions: Transaction[], grouping: 'CATEGORY' | 'SUB_CATEGORY') => {
+        if (!currentTransactions || currentTransactions.length === 0) {
             setIsLoading(false);
+            return;
         }
-    };
 
-    const calculateMetrics = useCallback(async (currentTransactions: Transaction[] = transactions) => {
         const today = new Date();
         const currentMonthTrans = Metrics.getTransactionsByMonth(currentTransactions, today);
-
         const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         const lastMonthTrans = Metrics.getTransactionsByMonth(currentTransactions, lastMonthDate);
 
-        // Core Metrics
+        // Core Totals
         const totals = Metrics.calculateTotals(currentMonthTrans);
-        const savingsRate = Metrics.calculateSavingsRate(totals.income, totals.expense);
+        const lastMonthTotals = Metrics.calculateTotals(lastMonthTrans);
 
-        // Breakdowns
+        // Breakdowns & Trends
         const incomeBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'INCOME', 'SUB_CATEGORY');
-        const expenseBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', expenseGrouping);
-
-        // Trends
+        const expenseBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', grouping);
         const monthlyTrends = Metrics.getMonthlyTrends(currentTransactions, 6);
 
-        // Comparison
-        const lastMonthTotals = Metrics.calculateTotals(lastMonthTrans);
+        // Averages for Runway
         const average6Month = Metrics.calculateBurnRate(currentTransactions, 6);
         const average1Year = Metrics.calculateBurnRate(currentTransactions, 12);
+        const average3Month = Metrics.calculateBurnRate(currentTransactions, 3);
 
-        // Smart Burn Rate Logic for Runway
-        // If the standard 6-month burn rate is 0 (new user or sparse history), fall back to shorter terms
-        const burnRate3m = Metrics.calculateBurnRate(currentTransactions, 3);
-
+        // Burn Rate logic: Fallback hierarchy to ensure Runway doesn't show NaN
         let burnRate = average6Month;
         if (burnRate.isLessThanOrEqualTo(0)) {
-            if (burnRate3m.isGreaterThan(0)) {
-                burnRate = burnRate3m;
-            } else if (lastMonthTotals.expense.isGreaterThan(0)) {
-                burnRate = lastMonthTotals.expense;
-            } else if (totals.expense.isGreaterThan(0)) {
-                burnRate = totals.expense;
-            }
+            burnRate = average3Month.isGreaterThan(0) ? average3Month : totals.expense;
         }
 
-        // Anomalies
-        const anomalies = Metrics.detectAnomalies(currentMonthTrans, currentTransactions);
-
-        // Calculate current balance (all-time income - all-time expense)
         const allTimeTotals = Metrics.calculateTotals(currentTransactions);
         const currentBalance = allTimeTotals.income.minus(allTimeTotals.expense);
 
-        // Budget Performance (always use SUB_CATEGORY for budgets)
-        const specificCategoryBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'SUB_CATEGORY');
+        // Budget Performance
         const budgets = await getAllBudgets();
         let budgetPerformance = new BigNumber(0);
         if (budgets.length > 0) {
-            // 1. Calculate total spent in budgeted categories
+            const specificCategoryBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'SUB_CATEGORY');
             const budgetedCategorySpent = specificCategoryBreakdown
                 .filter(cat => budgets.some(b => b.category === cat.name))
                 .reduce((sum, cat) => sum.plus(cat.amount), new BigNumber(0));
 
-            // 2. Calculate total budget amount
             const totalBudget = budgets.reduce((sum, b) => sum.plus(b.amount), new BigNumber(0));
-
-            // 3. Calculate performance percentage with a zero-check
-            // totalBudget.isGreaterThan(0) replaces totalBudget > 0
             budgetPerformance = totalBudget.isGreaterThan(0)
                 ? budgetedCategorySpent.div(totalBudget).times(100)
                 : new BigNumber(0);
         }
 
-        // Top Expense Category (always use individual category for better insight)
-        const topExpenseCategory = specificCategoryBreakdown.length > 0
-            ? specificCategoryBreakdown[0]
-            : { name: 'None', amount: new BigNumber(0), percentage: new BigNumber(0) };
-
-        // Days in current month
-        const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        const specificBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'SUB_CATEGORY');
 
         setData({
             netCashFlow: totals.net,
             income: totals.income,
             expense: totals.expense,
-            savingsRate,
+            savingsRate: Metrics.calculateSavingsRate(totals.income, totals.expense),
             burnRate,
             incomeTrends: monthlyTrends,
             incomeBreakdown,
             expenseBreakdown,
             currentMonthExpense: totals.expense,
             lastMonthExpense: lastMonthTotals.expense,
-            averageExpense: Metrics.calculateBurnRate(currentTransactions, 3), // 3-month average
+            averageExpense: average3Month,
             average6Month,
             average1Year,
-            anomalies,
+            anomalies: Metrics.detectAnomalies(currentMonthTrans, currentTransactions),
             currentBalance,
             budgetPerformance,
-            topExpenseCategory,
-            daysInMonth
+            topExpenseCategory: specificBreakdown[0] || { name: 'None', amount: new BigNumber(0), percentage: new BigNumber(0) },
+            daysInMonth: new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
         });
-    }, [transactions, expenseGrouping]);
+    }, []);
+
+    const fetchAllData = useCallback(async (isManualRefresh = false) => {
+        if (!isManualRefresh) setIsLoading(true);
+        try {
+            const [profile, allTransactions, savedCardOrder, savedSectionOrder] = await Promise.all([
+                Storage.getUserProfile(),
+                Storage.getCachedTransactions(),
+                Storage.getInsightsCardOrder(),
+                Storage.getInsightsSectionOrder()
+            ]);
+
+            if (profile?.currency) setCurrency(profile.currency);
+            if (savedCardOrder) setCardOrder(savedCardOrder);
+            if (savedSectionOrder) setSectionOrder(savedSectionOrder);
+
+            setTransactions(allTransactions);
+            // We pass variables directly here to bypass the React state update delay
+            await calculateMetrics(allTransactions, expenseGrouping);
+        } catch (error) {
+            console.error("Error loading insights:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [calculateMetrics, expenseGrouping]);
 
     useFocusEffect(
         useCallback(() => {
-            fetchTransactions();
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [])
+            fetchAllData();
+        }, [fetchAllData])
     );
 
-    // Re-calculate when grouping changes (but not on mount as fetchTransactions handles that)
+    // Only re-calculate breakdown if grouping changes specifically
     useEffect(() => {
-        const recalc = async () => {
-            await calculateMetrics();
-        };
-        recalc();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [expenseGrouping]);
+        if (transactions.length > 0) {
+            calculateMetrics(transactions, expenseGrouping);
+        }
+    }, [expenseGrouping, calculateMetrics, transactions]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await fetchTransactions();
+        await fetchAllData(true);
         setRefreshing(false);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [fetchAllData]);
 
     return (
         <ScreenWrapper>
