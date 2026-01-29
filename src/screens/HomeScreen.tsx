@@ -88,18 +88,18 @@ const HomeScreen = ({ navigation }: any) => {
             const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
 
             if (tx.type === 'INCOME') {
-                oInc = oInc.plus(val);
-                if (isMonth) mInc = mInc.plus(val);
+                oInc = oInc.plus(val.abs());
+                if (isMonth) mInc = mInc.plus(val.abs());
             } else if (tx.type === 'EXPENSE') {
-                oExp = oExp.plus(val);
-                if (isMonth) mExp = mExp.plus(val);
+                oExp = oExp.plus(val.abs());
+                if (isMonth) mExp = mExp.plus(val.abs());
             } else if (tx.type === 'TRANSFER') {
                 if (!tx.transferDest) {
-                    oTransIn = oTransIn.plus(val);
-                    if (isMonth) mTransIn = mTransIn.plus(val);
+                    oTransIn = oTransIn.plus(val.abs());
+                    if (isMonth) mTransIn = mTransIn.plus(val.abs());
                 } else {
-                    oTransOut = oTransOut.plus(val);
-                    if (isMonth) mTransOut = mTransOut.plus(val);
+                    oTransOut = oTransOut.plus(val.abs());
+                    if (isMonth) mTransOut = mTransOut.plus(val.abs());
                 }
             }
         });

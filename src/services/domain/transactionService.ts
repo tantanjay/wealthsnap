@@ -50,14 +50,29 @@ const prepareTransactionValues = async (txn: Transaction) => {
 export const bulkSaveTransactions = async (transactions: Transaction[]): Promise<void> => {
     try {
         const db = await getDatabase();
-        // Encrypt everything in parallel first
-        const preparedRows = await Promise.all(transactions.map(prepareTransactionValues));
 
-        await db.withTransactionAsync(async () => {
-            for (const values of preparedRows) {
-                await db.runAsync(UPSERT_TRANSACTION_QUERY, values);
+        // Process in chunks to prevent UI blocking
+        // A chunk size of 50-100 is usually a good balance between throughput and responsiveness
+        const CHUNK_SIZE = 50;
+        const chunks = chunkArray(transactions, CHUNK_SIZE);
+
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+
+            // Encrypt current chunk
+            const preparedRows = await Promise.all(chunk.map(prepareTransactionValues));
+
+            await db.withTransactionAsync(async () => {
+                for (const values of preparedRows) {
+                    await db.runAsync(UPSERT_TRANSACTION_QUERY, values);
+                }
+            });
+
+            // Yield to event loop to allow UI updates (spinner animation)
+            if (i < chunks.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 0));
             }
-        });
+        }
 
         DataCache.invalidateTransactionCache();
     } catch (error) {
