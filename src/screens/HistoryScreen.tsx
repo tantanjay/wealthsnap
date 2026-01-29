@@ -211,7 +211,7 @@ const HistoryScreen = ({ navigation }: any) => {
         let statusColor = isExpense ? colors.error : colors.success;
 
         if (isTransfer) {
-            statusColor = colors.primary; // Use primary (indigo/blue) for transfers
+            statusColor = isTransferIn ? colors.error : colors.success;
             iconName = isTransferIn ? "arrow-down-circle-outline" : "arrow-up-circle-outline";
         } else if (item.creationMethod === 'AI') {
             iconName = "sparkles";
@@ -221,7 +221,13 @@ const HistoryScreen = ({ navigation }: any) => {
 
         const getDisplayName = () => {
             if (isTransfer) {
-                return isTransferIn ? "Transfer In" : `To ${item.transferDest?.replace('_', ' ')}`;
+                const toTitleCase = (value?: string) =>
+                    value
+                        ?.toLowerCase()
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, c => c.toUpperCase());
+
+                return isTransferIn ? "Transfer In" : `To ${toTitleCase(item.transferDest)}`;
             }
             return item.category;
         };
