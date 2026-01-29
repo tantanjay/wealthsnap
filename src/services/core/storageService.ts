@@ -266,6 +266,15 @@ export const getCachedTransactions = async (): Promise<Transaction[]> => {
     }
 
     const data = await getAllTransactions();
+
+    // Check if the cache became valid while we were waiting (e.g., via optimistic update from a new transaction).
+    // If so, the cache contains the user's latest change, while 'data' (the snapshot) might have missed it
+    // because the read started before the write. In this local-first architecture, we prefer the cache.
+    const currentCache = DataCache.getTransactionCache();
+    if (DataCache.isValid(currentCache)) {
+        return currentCache!.data;
+    }
+
     DataCache.setTransactionCache(data);
     return data;
 };
