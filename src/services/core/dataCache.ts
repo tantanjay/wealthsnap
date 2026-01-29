@@ -4,6 +4,7 @@ import { Transaction, Investment } from '@types';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // Cache storage
+// Cache storage
 interface CacheEntry<T> {
     data: T;
     timestamp: number;
@@ -11,6 +12,12 @@ interface CacheEntry<T> {
 
 let transactionCache: CacheEntry<Transaction[]> | null = null;
 let investmentCache: CacheEntry<Investment[]> | null = null;
+
+// Track the last time a write operation occurred to prevent stale overwrites
+let lastTransactionWriteTime = 0;
+
+// Queue for actions that occur while cache is not yet initialized
+let pendingTransactionActions: ((data: Transaction[]) => Transaction[])[] = [];
 
 // Cache validity checker
 export const isValid = <T>(cache: CacheEntry<T> | null): boolean => {
@@ -25,72 +32,96 @@ export const getTransactionCache = (): CacheEntry<Transaction[]> | null => {
     return transactionCache;
 };
 
+export const getLastTransactionWriteTime = (): number => {
+    return lastTransactionWriteTime;
+};
+
 export const setTransactionCache = (data: Transaction[]): void => {
+    let finalData = [...data];
+
+    // Apply any pending actions that occurred during load
+    if (pendingTransactionActions.length > 0) {
+        pendingTransactionActions.forEach(action => {
+            finalData = action(finalData);
+        });
+        pendingTransactionActions = [];
+    }
+
     transactionCache = {
-        data,
+        data: finalData,
         timestamp: Date.now()
     };
 };
 
 export const invalidateTransactionCache = (): void => {
     transactionCache = null;
+    pendingTransactionActions = [];
 };
 
 /**
- * Optimistically add a transaction to the cache without refetching.
- * Inserts at the correct position based on date (descending order).
+ * Optimistically upsert (add or update) a transaction in the cache.
+ * If cache is not ready, queues the action.
  */
-export const addTransactionToCache = (transaction: Transaction): void => {
-    if (!transactionCache) return;
+export const upsertTransaction = (transaction: Transaction): void => {
+    lastTransactionWriteTime = Date.now();
 
-    // Insert at correct position (sorted by date DESC)
-    const newData = [...transactionCache.data];
-    const insertIndex = newData.findIndex(t => new Date(t.date) < new Date(transaction.date));
+    const action = (currentData: Transaction[]): Transaction[] => {
+        const newData = [...currentData];
+        const index = newData.findIndex(t => t.id === transaction.id);
 
-    if (insertIndex === -1) {
-        newData.push(transaction); // Oldest transaction
-    } else {
-        newData.splice(insertIndex, 0, transaction);
-    }
+        if (index !== -1) {
+            // Update existing
+            newData[index] = transaction;
+        } else {
+            // Add new - Insert at correct position (sorted by date DESC)
+            const insertIndex = newData.findIndex(t => new Date(t.date) < new Date(transaction.date));
+            if (insertIndex === -1) {
+                newData.push(transaction);
+            } else {
+                newData.splice(insertIndex, 0, transaction);
+            }
+        }
 
-    transactionCache = {
-        data: newData,
-        timestamp: Date.now()
+        // Ensure sort consistency
+        return newData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     };
-};
 
-/**
- * Optimistically update a transaction in the cache without refetching.
- */
-export const updateTransactionInCache = (transaction: Transaction): void => {
-    if (!transactionCache) return;
-
-    const index = transactionCache.data.findIndex(t => t.id === transaction.id);
-    if (index !== -1) {
-        const newData = [...transactionCache.data];
-        newData[index] = transaction;
-
-        // Re-sort by date DESC in case date changed
-        newData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
+    if (transactionCache) {
+        const newData = action(transactionCache.data);
         transactionCache = {
             data: newData,
             timestamp: Date.now()
         };
+    } else {
+        pendingTransactionActions.push(action);
     }
 };
 
 /**
- * Optimistically remove a transaction from the cache without refetching.
+ * Optimistically remove a transaction from the cache.
+ * If cache is not ready, queues the action.
  */
 export const deleteTransactionFromCache = (id: string): void => {
-    if (!transactionCache) return;
+    lastTransactionWriteTime = Date.now();
 
-    transactionCache = {
-        data: transactionCache.data.filter(t => t.id !== id),
-        timestamp: Date.now()
+    const action = (currentData: Transaction[]): Transaction[] => {
+        return currentData.filter(t => t.id !== id);
     };
+
+    if (transactionCache) {
+        const newData = action(transactionCache.data);
+        transactionCache = {
+            data: newData,
+            timestamp: Date.now()
+        };
+    } else {
+        pendingTransactionActions.push(action);
+    }
 };
+
+// Legacy support (redirect to upsert)
+export const addTransactionToCache = (transaction: Transaction) => upsertTransaction(transaction);
+export const updateTransactionInCache = (transaction: Transaction) => upsertTransaction(transaction);
 
 // ============= Investments =============
 
