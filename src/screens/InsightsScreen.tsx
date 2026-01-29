@@ -124,7 +124,7 @@ const InsightsScreen = ({ navigation }: any) => {
             averageExpense: average3Month,
             average6Month,
             average1Year,
-            anomalies: Metrics.detectAnomalies(currentMonthTrans, currentTransactions),
+            anomalies: Metrics.detectAnomalies(currentMonthTrans, currentTransactions, budgets),
             currentBalance,
             budgetPerformance,
             topExpenseCategory: specificBreakdown[0] || { name: 'None', amount: new BigNumber(0), percentage: new BigNumber(0) },

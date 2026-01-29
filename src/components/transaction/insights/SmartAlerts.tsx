@@ -43,6 +43,35 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
         );
     };
 
+    const getAnomalyConfig = (type: Anomaly['type']) => {
+        switch (type) {
+            case 'BUDGET_EXCEEDED':
+                return {
+                    icon: 'wallet-outline' as const,
+                    color: '#F44336', // Red
+                    title: 'Budget Exceeded'
+                };
+            case 'SPIKE':
+                return {
+                    icon: 'trending-up-outline' as const,
+                    color: '#FF9800', // Orange
+                    title: 'Spending Spike'
+                };
+            case 'NEW_CATEGORY':
+                return {
+                    icon: 'pricetag-outline' as const,
+                    color: '#2196F3', // Blue
+                    title: 'New Category'
+                };
+            default:
+                return {
+                    icon: 'alert-circle-outline' as const,
+                    color: colors.textSecondary,
+                    title: 'Alert'
+                };
+        }
+    };
+
     return (
         <View style={{ marginTop: 20 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
@@ -72,17 +101,26 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
                     </Text>
                 </Card>
             ) : (
-                anomalies.map((anomaly, index) => (
-                    <Card key={index} style={{ marginBottom: 10, borderLeftWidth: 4, borderLeftColor: anomaly.severity === 'HIGH' ? '#F44336' : '#FF9800' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Text style={{ fontSize: 24, marginRight: 15 }}>📈</Text>
-                            <View style={{ flex: 1 }}>
-                                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>Spending Spike</Text>
-                                <Text style={{ color: colors.textSecondary, marginTop: 4 }}>{anomaly.message}</Text>
+                anomalies.map((anomaly, index) => {
+                    const config = getAnomalyConfig(anomaly.type);
+                    return (
+                        <Card key={index} style={{ marginBottom: 10, borderLeftWidth: 4, borderLeftColor: config.color }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{
+                                    width: 40, height: 40, borderRadius: 20,
+                                    backgroundColor: config.color + '15', // 15% opacity hex
+                                    alignItems: 'center', justifyContent: 'center', marginRight: 15
+                                }}>
+                                    <Ionicons name={config.icon} size={24} color={config.color} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{config.title}</Text>
+                                    <Text style={{ color: colors.textSecondary, marginTop: 4 }}>{anomaly.message}</Text>
+                                </View>
                             </View>
-                        </View>
-                    </Card>
-                ))
+                        </Card>
+                    );
+                })
             )}
 
             <BottomModal
@@ -93,25 +131,44 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
                 <ScrollView showsVerticalScrollIndicator={false}>
                     <View>
                         <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                            WealthSnap analyzes your spending patterns to detect unusual activity.
+                            WealthSnap helps you stay on top of your finances by detecting two types of events:
                         </Text>
 
                         <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5 }}>
-                            <View style={{ flexDirection: 'row', marginBottom: 8 }}>
-                                <Text style={{ fontSize: 16, marginRight: 8 }}>📈</Text>
+                            {/* Budget Exceeded */}
+                            <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+                                <View style={{ width: 32, alignItems: 'center', marginRight: 12 }}>
+                                    <Ionicons name="wallet-outline" size={24} color="#F44336" />
+                                </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>Spikes</Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                        We alert you when a category&apos;s spending is significantly higher than your 3-month average.
+                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>Budget Limit</Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
+                                        Triggered when your current spending exceeds the monthly budget you set for a category.
                                     </Text>
                                 </View>
                             </View>
-                            <View style={{ flexDirection: 'row' }}>
-                                <Text style={{ fontSize: 16, marginRight: 8 }}>🛡️</Text>
+
+                            {/* Spending Spike */}
+                            <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+                                <View style={{ width: 32, alignItems: 'center', marginRight: 12 }}>
+                                    <Ionicons name="trending-up-outline" size={24} color="#FF9800" />
+                                </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>Detection</Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                        Alerts are triggered simply by deviation. They are not judgments, just observations to help you stay aware!
+                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>Spending Spike</Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
+                                        Triggered when spending is significantly higher (&gt;50%) than your average monthly spending for that category.
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View style={{ flexDirection: 'row' }}>
+                                <View style={{ width: 32, alignItems: 'center', marginRight: 12 }}>
+                                    <Ionicons name="notifications-off-outline" size={24} color={colors.textSecondary} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>Smart Suppression</Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
+                                        To avoid spam, we only send one push notification per category each month, even if multiple alerts are detected.
                                     </Text>
                                 </View>
                             </View>
