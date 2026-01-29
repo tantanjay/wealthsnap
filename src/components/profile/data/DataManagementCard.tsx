@@ -302,6 +302,9 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
     const handleConfirmImport = async () => {
         setIsImportSaving(true);
 
+        // Short delay to allow the UI to render the loading state before heavy processing begins
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         try {
             await bulkSaveTransactions(pendingTransactions);
 

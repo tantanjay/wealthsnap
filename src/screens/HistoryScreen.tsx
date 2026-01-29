@@ -144,13 +144,13 @@ const HistoryScreen = ({ navigation }: any) => {
 
         filteredData.forEach(t => {
             if (t.type === 'INCOME') {
-                totalIncome = totalIncome.plus(t.amount);
+                totalIncome = totalIncome.plus(t.amount.abs());
             } else if (t.type === 'EXPENSE') {
-                totalExpense = totalExpense.plus(t.amount);
+                totalExpense = totalExpense.plus(t.amount.abs());
             } else if (t.type === 'TRANSFER') {
                 // If no transferDest, it's money coming IN
-                if (!t.transferDest) netTransfer = netTransfer.plus(t.amount);
-                else netTransfer = netTransfer.minus(t.amount);
+                if (!t.transferDest) netTransfer = netTransfer.plus(t.amount.abs());
+                else netTransfer = netTransfer.minus(t.amount.abs());
             }
         });
 

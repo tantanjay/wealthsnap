@@ -60,7 +60,7 @@ const RecurringExpensesSummaryModal: React.FC<RecurringExpensesSummaryProps> = (
                 const category = r.transactionTemplate.category;
                 const amount = r.transactionTemplate.amount;
 
-                groups[category] = (groups[category] || new BigNumber(0)).plus(amount);
+                groups[category] = (groups[category] || new BigNumber(0)).plus(amount.abs());
             });
         return Object.entries(groups).sort((a, b) => {
             return b[1].comparedTo(a[1]) ?? 0;

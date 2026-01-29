@@ -309,9 +309,9 @@ export const calculateImportSummary = (transactions: Transaction[]): ImportSumma
 
     transactions.forEach(txn => {
         if (txn.type === 'INCOME') {
-            totalIncome.plus(txn.amount.abs());
+            totalIncome = totalIncome.plus(txn.amount.abs());
         } else if (txn.type === 'EXPENSE') {
-            totalExpense.plus(txn.amount.abs());
+            totalExpense = totalExpense.plus(txn.amount.abs());
         }
     });
 
