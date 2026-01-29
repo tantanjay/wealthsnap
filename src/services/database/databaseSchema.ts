@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 5;
+export const DATABASE_VERSION = 6;
 
 /**
  * Create all database tables and indexes
@@ -19,13 +19,15 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             id TEXT PRIMARY KEY,
             date TEXT NOT NULL,
             amount REAL NOT NULL,
-            type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE')),
+            type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'TRANSFER')),
             category TEXT,
             subCategory TEXT,
             note TEXT,
             creationMethod TEXT,
             isRecurring INTEGER DEFAULT 0,
             recurrenceId TEXT,
+            transferDest TEXT CHECK(transferDest IN ('OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT')),
+            transferRelatedId TEXT,
             createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
             updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
         );

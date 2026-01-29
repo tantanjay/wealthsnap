@@ -91,8 +91,8 @@ const migrateTransactions = async (db: any): Promise<number> => {
 
         await db.runAsync(
             `INSERT OR REPLACE INTO transactions 
-             (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferDest, transferRelatedId)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 txn.id,
                 txn.date,
@@ -103,7 +103,9 @@ const migrateTransactions = async (db: any): Promise<number> => {
                 encryptedNote,
                 txn.creationMethod || null,
                 txn.isRecurring ? 1 : 0,
-                txn.recurrenceId || null
+                txn.recurrenceId || null,
+                txn.transferDest || null,
+                txn.transferRelatedId || null
             ]
         );
     }
@@ -283,6 +285,73 @@ export const migrateV2ToV5 = async (db: any): Promise<void> => {
     } catch (error: any) {
         await db.runAsync('ROLLBACK');
         console.error('[Migration] ❌ V2 -> V5 migration failed:', error);
+        throw error;
+    }
+};
+
+/**
+ * Migrate from V5 to V6: Add transfer support
+ * - Add TRANSFER to transaction type CHECK constraint
+ * - Add transferDest and transferRelatedId columns
+ */
+export const migrateV5ToV6 = async (db: any): Promise<void> => {
+    try {
+        console.log('[Migration] Starting V5 -> V6 migration...');
+
+        // 1. Start transaction
+        await db.runAsync('BEGIN TRANSACTION');
+
+        // 2. Create new table with updated schema
+        await db.runAsync(`
+            CREATE TABLE IF NOT EXISTS transactions_new (
+                id TEXT PRIMARY KEY,
+                date TEXT NOT NULL,
+                amount REAL NOT NULL,
+                type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'TRANSFER')),
+                category TEXT,
+                subCategory TEXT,
+                note TEXT,
+                creationMethod TEXT,
+                isRecurring INTEGER DEFAULT 0,
+                recurrenceId TEXT,
+                transferDest TEXT CHECK(transferDest IN ('OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT')),
+                transferRelatedId TEXT,
+                createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+                updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // 3. Copy existing data
+        await db.runAsync(`
+            INSERT INTO transactions_new (
+                id, date, amount, type, category, subCategory, note, 
+                creationMethod, isRecurring, recurrenceId, createdAt, updatedAt
+            )
+            SELECT 
+                id, date, amount, type, category, subCategory, note, 
+                creationMethod, isRecurring, recurrenceId, createdAt, updatedAt
+            FROM transactions
+        `);
+
+        // 4. Drop old table
+        await db.runAsync('DROP TABLE transactions');
+
+        // 5. Rename new table
+        await db.runAsync('ALTER TABLE transactions_new RENAME TO transactions');
+
+        // 6. Recreate indexes
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC)');
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type)');
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category)');
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_transactions_recurring ON transactions(isRecurring)');
+
+        // 7. Commit
+        await db.runAsync('COMMIT');
+        console.log('[Migration] ✅ V5 -> V6: Transactions table updated with transfer support');
+
+    } catch (error: any) {
+        await db.runAsync('ROLLBACK');
+        console.error('[Migration] ❌ V5 -> V6 migration failed:', error);
         throw error;
     }
 };
