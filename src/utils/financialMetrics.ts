@@ -7,14 +7,17 @@ type BreakdownType = Exclude<TransactionType, 'TRANSFER'>;
 const isExpense = (t: Transaction) => t.type === 'EXPENSE';
 const isIncome = (t: Transaction) => t.type === 'INCOME';
 
-const parseDate = (date: string | Date): Date => {
+export const parseDate = (date: string | Date): Date => {
     return typeof date === 'string' ? new Date(date) : date;
 };
 
 export const getTransactionsByMonth = (transactions: Transaction[], date: Date = new Date()) => {
+    const targetMonth = date.getMonth();
+    const targetYear = date.getFullYear();
+
     return transactions.filter(t => {
-        const tDate = new Date(t.date);
-        return tDate.getMonth() === date.getMonth() && tDate.getFullYear() === date.getFullYear();
+        const tDate = parseDate(t.date);
+        return tDate.getMonth() === targetMonth && tDate.getFullYear() === targetYear;
     });
 };
 
@@ -165,36 +168,42 @@ export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: nu
     if (allTransactions.length === 0) return new BigNumber(0);
 
     const today = new Date();
-    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    // Start from LAST month to avoid using partial current data which lowers the average artificially
+    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
     // Find the earliest transaction date to determine account age
-    // We treat the "start" as the 1st of the month of the first transaction
     const firstTxDate = allTransactions.reduce((earliest, t) => {
-        const tDate = new Date(t.date);
+        const tDate = parseDate(t.date);
         return tDate < earliest ? tDate : earliest;
     }, new Date());
 
     const firstTxMonthStart = new Date(firstTxDate.getFullYear(), firstTxDate.getMonth(), 1);
 
-    // Calculate months since start (inclusive of current month)
-    const monthDiff = (currentMonthStart.getFullYear() - firstTxMonthStart.getFullYear()) * 12 +
-        (currentMonthStart.getMonth() - firstTxMonthStart.getMonth()) + 1;
+    // Calculate full months of history available (up to last month)
+    const monthDiff = (lastMonthStart.getFullYear() - firstTxMonthStart.getFullYear()) * 12 +
+        (lastMonthStart.getMonth() - firstTxMonthStart.getMonth()) + 1;
 
-    // The effective window is the smaller of: requested history OR actual history depth
-    // We ensure it's at least 1 month
+    // If less than 1 month of history (i.e., new user in their first month), return 0
+    // The UI handles this 0 fallback by showing "Calculating..." or falling back to current month logic
+    if (monthDiff < 1) return new BigNumber(0);
+
     const effectiveMonths = Math.max(1, Math.min(monthsBack, monthDiff));
-
     let totalExpense = new BigNumber(0);
+    let monthsWithData = 0;
 
-    // Sum expenses for the effective window
+    // Sum expenses for the effective window (excluding current month)
     for (let i = 0; i < effectiveMonths; i++) {
-        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const d = new Date(today.getFullYear(), today.getMonth() - 1 - i, 1); // Start from previous month
         const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
+
+        // Only count months where we actually had activity if we want to be strict,
+        // but for burn rate, "0 spend" is valid if the account existed.
         const { expense } = calculateTotals(monthlyTransactions);
         totalExpense = totalExpense.plus(expense);
+        monthsWithData++;
     }
 
-    return totalExpense.dividedBy(effectiveMonths);
+    return monthsWithData > 0 ? totalExpense.dividedBy(monthsWithData) : new BigNumber(0);
 };
 
 export const getCategoryBreakdown = (transactions: Transaction[], type: BreakdownType, groupBy: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
@@ -295,7 +304,7 @@ export const getCurrentMonthCumulative = (currentMonthTransactions: Transaction[
     const dailyExpenses = currentMonthTransactions
         .filter(isExpense)
         .reduce((acc, t) => {
-            const d = typeof t.date === 'string' ? new Date(t.date) : t.date;
+            const d = parseDate(t.date);
             const dayNum = d.getDate();
             acc[dayNum] = (acc[dayNum] || new BigNumber(0)).plus(t.amount.abs());
             return acc;
@@ -380,7 +389,7 @@ export const getCategoryAverages = (allTransactions: Transaction[], monthsBack: 
     const uniqueMonths = new Set<string>();
 
     const historyTransactions = allTransactions.filter(t => {
-        const d = typeof t.date === 'string' ? new Date(t.date) : t.date;
+        const d = parseDate(t.date);
         const isMatch = d >= startHistory && d <= endHistory && isExpense(t);
 
         if (isMatch) {
