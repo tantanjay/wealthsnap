@@ -4,7 +4,7 @@ import * as Notifications from 'expo-notifications';
 
 import { Transaction } from '@types';
 import { detectAnomalies } from '@utils/financialMetrics';
-import { initReminderCategories } from '@services/domain/reminderService';
+import { initReminderCategories, getAllBudgets } from '@services/domain';
 import { ASYNC_KEYS } from '@constants/config';
 import { REMINDER_BACKGROUND_TASK } from '@services/background/backgroundTasks';
 
@@ -61,7 +61,8 @@ export const checkAndNotifyAnomalies = async (currentMonthTransactions: Transact
         if (status !== 'granted') return;
 
         // Detect anomalies
-        const anomalies = detectAnomalies(currentMonthTransactions, allTransactions);
+        const budgets = await getAllBudgets();
+        const anomalies = detectAnomalies(currentMonthTransactions, allTransactions, budgets);
         if (anomalies.length === 0) return;
 
         // Get already notified alerts
@@ -79,9 +80,9 @@ export const checkAndNotifyAnomalies = async (currentMonthTransactions: Transact
 
         for (const anomaly of anomalies) {
             // Create a unique ID for this specific anomaly instance
-            // e.g. "SPIKE-Groceries-High" for this month
-            // We use the message as part of the key since it contains the category and details
-            const anomalyId = `${anomaly.type}-${anomaly.message}`;
+            // User Request: "I want notification to be only once per category item"
+            // So we key off the CATEGORY solely.
+            const anomalyId = anomaly.category;
 
             if (!notifiedAlerts[currentMonthKey].includes(anomalyId)) {
                 // Schedule notification
