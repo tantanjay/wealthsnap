@@ -45,21 +45,6 @@ const prepareTransactionValues = async (txn: Transaction) => {
     ];
 };
 
-/**
- * Updates or adds to the transaction cache
- */
-const updateTransactionCache = (transaction: Transaction) => {
-    const cache = DataCache.getTransactionCache();
-    if (!cache) return;
-
-    const existsInCache = cache.data.some(t => t.id === transaction.id);
-    if (existsInCache) {
-        DataCache.updateTransactionInCache(transaction);
-    } else {
-        DataCache.addTransactionToCache(transaction);
-    }
-};
-
 // --- Exported Functions ---
 
 export const bulkSaveTransactions = async (transactions: Transaction[]): Promise<void> => {
@@ -105,7 +90,7 @@ export const saveTransaction = async (transaction: Transaction): Promise<void> =
         const db = await getDatabase();
         const values = await prepareTransactionValues(transaction);
         await db.runAsync(UPSERT_TRANSACTION_QUERY, values);
-        updateTransactionCache(transaction);
+        DataCache.upsertTransaction(transaction);
     } catch (error) {
         console.error('Error saving transaction:', error);
         throw new Error('Failed to save transaction');
@@ -125,7 +110,7 @@ export const saveTransactionWithReceipt = async (transaction: Transaction, recei
             await db.runAsync(UPSERT_RECEIPT_QUERY, [transaction.id, encryptedReceipt]);
         });
 
-        updateTransactionCache(transaction);
+        DataCache.upsertTransaction(transaction);
     } catch (error) {
         console.error('Error saving transaction with receipt:', error);
         throw new Error('Failed to save transaction with receipt');
