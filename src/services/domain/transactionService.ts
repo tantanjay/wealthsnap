@@ -10,44 +10,67 @@ interface PreparedTransaction extends Transaction {
     encryptedNote: string | null;
 }
 
+// --- Constants & Helpers ---
+
+const UPSERT_TRANSACTION_QUERY = `
+  INSERT OR REPLACE INTO transactions 
+  (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferDest, transferRelatedId)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
+const UPSERT_RECEIPT_QUERY = `
+  INSERT OR REPLACE INTO transaction_receipts (transactionId, receiptData) VALUES (?, ?)
+`;
+
+/**
+ * Encrypts fields and returns the array of values in the correct SQL order
+ */
+const prepareTransactionValues = async (txn: Transaction) => {
+    const encryptedAmount = await encryptField(txn.amount);
+    const encryptedNote = txn.note ? await encryptField(txn.note) : null;
+
+    return [
+        txn.id,
+        txn.date,
+        encryptedAmount,
+        txn.type,
+        txn.category || null,
+        txn.subCategory || null,
+        encryptedNote,
+        txn.creationMethod || null,
+        txn.isRecurring ? 1 : 0,
+        txn.recurrenceId || null,
+        txn.transferDest || null,
+        txn.transferRelatedId || null
+    ];
+};
+
+/**
+ * Updates or adds to the transaction cache
+ */
+const updateTransactionCache = (transaction: Transaction) => {
+    const cache = DataCache.getTransactionCache();
+    if (!cache) return;
+
+    const existsInCache = cache.data.some(t => t.id === transaction.id);
+    if (existsInCache) {
+        DataCache.updateTransactionInCache(transaction);
+    } else {
+        DataCache.addTransactionToCache(transaction);
+    }
+};
+
+// --- Exported Functions ---
+
 export const bulkSaveTransactions = async (transactions: Transaction[]): Promise<void> => {
     try {
         const db = await getDatabase();
-        const chunks = chunkArray(transactions, 100);
-        const preparedData: PreparedTransaction[] = [];
-
-        for (const chunk of chunks) {
-            const processedChunk = await Promise.all(chunk.map(async (txn) => {
-                const encryptedAmount = await encryptField(txn.amount);
-                const encryptedNote = txn.note ? await encryptField(txn.note) : null;
-
-                return {
-                    ...txn,
-                    encryptedAmount,
-                    encryptedNote
-                };
-            }));
-            preparedData.push(...processedChunk);
-        }
+        // Encrypt everything in parallel first
+        const preparedRows = await Promise.all(transactions.map(prepareTransactionValues));
 
         await db.withTransactionAsync(async () => {
-            const query = `INSERT OR REPLACE INTO transactions 
-                           (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-            for (const txn of preparedData) {
-                await db.runAsync(query, [
-                    txn.id,
-                    txn.date,
-                    txn.encryptedAmount,
-                    txn.type,
-                    txn.category || null,
-                    txn.subCategory || null,
-                    txn.encryptedNote,
-                    txn.creationMethod || null,
-                    txn.isRecurring ? 1 : 0,
-                    txn.recurrenceId || null
-                ]);
+            for (const values of preparedRows) {
+                await db.runAsync(UPSERT_TRANSACTION_QUERY, values);
             }
         });
 
@@ -61,29 +84,18 @@ export const bulkSaveTransactions = async (transactions: Transaction[]): Promise
 export const bulkSaveTransactionReceipts = async (receipts: TransactionReceipt[]): Promise<void> => {
     try {
         const db = await getDatabase();
+        const preparedReceipts = await Promise.all(receipts.map(async (receipt) => ({
+            id: receipt.transactionId,
+            data: await encryptData(receipt.receiptData)
+        })));
 
-        // 1. Prepare all encrypted data first
-        const preparedReceipts = await Promise.all(receipts.map(async (receipt) => {
-            const encryptedReceiptData = await encryptData(receipt.receiptData);
-            return {
-                ...receipt,
-                receiptData: encryptedReceiptData
-            };
-        }));
-
-        // 2. Run EVERYTHING in one single atomic transaction
         await db.withTransactionAsync(async () => {
-            const query = `INSERT OR REPLACE INTO transaction_receipts (transactionId, receiptData) VALUES (?, ?)`;
             for (const receipt of preparedReceipts) {
-                await db.runAsync(query, [receipt.transactionId, receipt.receiptData]);
+                await db.runAsync(UPSERT_RECEIPT_QUERY, [receipt.id, receipt.data]);
             }
         });
-
-        // 3. Optional: Invalidate cache if you have one for receipts
-        // DataCache.invalidateReceiptCache(); 
-
     } catch (error) {
-        console.error('Error bulk saving transaction receipts:', error);
+        console.error('Error bulk saving receipts:', error);
         throw new Error('Failed to bulk save transaction receipts');
     }
 };
@@ -91,38 +103,9 @@ export const bulkSaveTransactionReceipts = async (receipts: TransactionReceipt[]
 export const saveTransaction = async (transaction: Transaction): Promise<void> => {
     try {
         const db = await getDatabase();
-
-        const encryptedAmount = await encryptField(transaction.amount);
-        const encryptedNote = transaction.note ? await encryptField(transaction.note) : null;
-
-        await db.runAsync(
-            `INSERT OR REPLACE INTO transactions 
-             (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                transaction.id,
-                transaction.date,
-                encryptedAmount,
-                transaction.type,
-                transaction.category || null,
-                transaction.subCategory || null,
-                encryptedNote,
-                transaction.creationMethod || null,
-                transaction.isRecurring ? 1 : 0,
-                transaction.recurrenceId || null
-            ]
-        );
-
-        // Optimistic cache update: check if it's a new or existing transaction
-        const cache = DataCache.getTransactionCache();
-        if (cache) {
-            const existsInCache = cache.data.some(t => t.id === transaction.id);
-            if (existsInCache) {
-                DataCache.updateTransactionInCache(transaction);
-            } else {
-                DataCache.addTransactionToCache(transaction);
-            }
-        }
+        const values = await prepareTransactionValues(transaction);
+        await db.runAsync(UPSERT_TRANSACTION_QUERY, values);
+        updateTransactionCache(transaction);
     } catch (error) {
         console.error('Error saving transaction:', error);
         throw new Error('Failed to save transaction');
@@ -132,53 +115,17 @@ export const saveTransaction = async (transaction: Transaction): Promise<void> =
 export const saveTransactionWithReceipt = async (transaction: Transaction, receiptData: any): Promise<void> => {
     try {
         const db = await getDatabase();
+        const [transactionValues, encryptedReceipt] = await Promise.all([
+            prepareTransactionValues(transaction),
+            encryptData(receiptData)
+        ]);
 
         await db.withTransactionAsync(async () => {
-            // 1. Save Transaction (Duplicate logic to ensure atomicity within this transaction block)
-            // Or reuse saveTransaction if we can guarantee transaction context? 
-            // SQLite `runAsync` usually auto-commits if not in `withTransactionAsync`.
-            // Let's replicate logic locally to be safe inside `withTransactionAsync`.
-
-            // Encrypt sensitive fields
-            const encryptedAmount = await encryptField(transaction.amount);
-            const encryptedNote = transaction.note ? await encryptField(transaction.note) : null;
-
-            await db.runAsync(
-                `INSERT OR REPLACE INTO transactions 
-                 (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
-                    transaction.id,
-                    transaction.date,
-                    encryptedAmount,
-                    transaction.type,
-                    transaction.category || null,
-                    transaction.subCategory || null,
-                    encryptedNote,
-                    transaction.creationMethod || null,
-                    transaction.isRecurring ? 1 : 0,
-                    transaction.recurrenceId || null
-                ]
-            );
-
-            // 2. Save Encrypted Receipt
-            const encryptedReceipt = await encryptData(receiptData);
-            await db.runAsync(
-                `INSERT OR REPLACE INTO transaction_receipts (transactionId, receiptData) VALUES (?, ?)`,
-                [transaction.id, encryptedReceipt]
-            );
+            await db.runAsync(UPSERT_TRANSACTION_QUERY, transactionValues);
+            await db.runAsync(UPSERT_RECEIPT_QUERY, [transaction.id, encryptedReceipt]);
         });
 
-        // Optimistic cache update: check if it's a new or existing transaction
-        const cache = DataCache.getTransactionCache();
-        if (cache) {
-            const existsInCache = cache.data.some(t => t.id === transaction.id);
-            if (existsInCache) {
-                DataCache.updateTransactionInCache(transaction);
-            } else {
-                DataCache.addTransactionToCache(transaction);
-            }
-        }
+        updateTransactionCache(transaction);
     } catch (error) {
         console.error('Error saving transaction with receipt:', error);
         throw new Error('Failed to save transaction with receipt');
@@ -212,6 +159,8 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
             creationMethod: row.creationMethod,
             isRecurring: row.isRecurring === 1,
             recurrenceId: row.recurrenceId,
+            transferDest: row.transferDest,
+            transferRelatedId: row.transferRelatedId,
             createdAt: row.createdAt,
             updatedAt: row.updatedAt
         }));

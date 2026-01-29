@@ -1,0 +1,333 @@
+import React, { useState } from 'react';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { BigNumber } from 'bignumber.js';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+import { Button, Card } from '@components/index';
+import { CalculatorModal } from '@components/record/CalculatorModal';
+import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
+import { Transaction } from '@types';
+import { generateUUID } from '@utils/uuid';
+import { saveTransaction } from '@services/domain';
+
+interface TransferFormProps {
+    onSave: () => void;
+    onCancel: () => void;
+    initialTransaction?: Transaction;
+}
+
+type TransferDirection = 'IN' | 'OUT';
+type TransferDest = 'OTHER_ACCOUNT' | 'INVESTMENTS' | 'DEBT';
+
+export const TransferForm: React.FC<TransferFormProps> = ({
+    onSave,
+    onCancel,
+    initialTransaction
+}) => {
+    const { colors } = useTheme();
+    const { showAlert } = useAlert();
+
+    // Determine initial direction based on logic:
+    // If it's a transfer type, and transferDest is NULL, it's IN.
+    // If transferDest is NOT NULL, it's OUT.
+    const getInitialDirection = (): TransferDirection => {
+        if (!initialTransaction) return 'OUT';
+        if (initialTransaction.type === 'TRANSFER' && !initialTransaction.transferDest) return 'IN';
+        return 'OUT';
+    };
+
+    // Form state
+    const [direction, setDirection] = useState<TransferDirection>(getInitialDirection());
+    const [destination, setDestination] = useState<TransferDest | null>(initialTransaction?.transferDest || null);
+
+    // Default destination if switching to OUT and none selected
+    const [selectedDestOption, setSelectedDestOption] = useState<TransferDest>(
+        initialTransaction?.transferDest || 'OTHER_ACCOUNT'
+    );
+
+    const [amount, setAmount] = useState(initialTransaction?.amount.toString() || '');
+    const [note, setNote] = useState(initialTransaction?.note || '');
+    const [transactionDate, setTransactionDate] = useState<Date>(
+        initialTransaction?.date ? new Date(initialTransaction.date) : new Date()
+    );
+
+    // UI state
+    const [showTransactionDatePicker, setShowTransactionDatePicker] = useState(false);
+    const [showTransactionTimePicker, setShowTransactionTimePicker] = useState(false);
+    const [showCalculator, setShowCalculator] = useState(false);
+
+    const handleSave = async () => {
+        if (!amount) {
+            showAlert('Missing Info', 'Please enter an amount.');
+            return;
+        }
+
+        if (direction === 'OUT' && !destination) {
+            // Should be covered by UI but safety check
+            // Effectively force set destination if logic fails, though UI handles this.
+            setDestination(selectedDestOption);
+        }
+
+        const newId = initialTransaction?.id || generateUUID();
+
+        // Prepare Transfer Data
+        // IN: type=TRANSFER, transferDest=null
+        // OUT: type=TRANSFER, transferDest=SELECTED
+        const finalDest = direction === 'IN' ? undefined : (destination || selectedDestOption);
+
+        const newTransaction: Transaction = {
+            id: newId,
+            type: 'TRANSFER',
+            amount: new BigNumber(amount),
+            category: 'Transfer', // Default category for transfers
+            subCategory: direction === 'IN' ? 'Incoming' : 'Outgoing',
+            note: note || undefined,
+            date: transactionDate.toISOString(),
+            isRecurring: false, // Initial version doesn't support recurring transfers yet
+            creationMethod: initialTransaction?.creationMethod || 'MANUAL',
+            transferDest: finalDest,
+            createdAt: initialTransaction?.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+
+        try {
+            await saveTransaction(newTransaction);
+
+            showAlert('Success', 'Transfer saved!', [
+                {
+                    text: 'OK',
+                    onPress: onSave
+                }
+            ]);
+        } catch (error) {
+            console.error('Failed to save transfer', error);
+            showAlert('Error', 'Failed to save transfer');
+        }
+    };
+
+    const handleDirectionChange = (newDir: TransferDirection) => {
+        setDirection(newDir);
+        if (newDir === 'IN') {
+            setDestination(null);
+        } else {
+            setDestination(selectedDestOption);
+        }
+    };
+
+    return (
+        <View style={{ flex: 1 }}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 20 }}>
+                    {initialTransaction ? 'Edit Transfer' : 'New Transfer'}
+                </Text>
+
+                {/* Date and Time Selection */}
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+                    <TouchableOpacity
+                        onPress={() => setShowTransactionDatePicker(true)}
+                        style={{
+                            flex: 1,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            backgroundColor: colors.surface,
+                            padding: 12,
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: colors.border
+                        }}
+                    >
+                        <Ionicons name="calendar-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                        <View>
+                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Date</Text>
+                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                                {transactionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => setShowTransactionTimePicker(true)}
+                        style={{
+                            flex: 1,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            backgroundColor: colors.surface,
+                            padding: 12,
+                            borderRadius: 12,
+                            borderWidth: 1,
+                            borderColor: colors.border
+                        }}
+                    >
+                        <Ionicons name="time-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                        <View>
+                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Time</Text>
+                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                                {transactionDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+
+                {showTransactionDatePicker && (
+                    <DateTimePicker
+                        value={transactionDate}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event: DateTimePickerEvent, date?: Date) => {
+                            setShowTransactionDatePicker(Platform.OS === 'ios');
+                            if (date) {
+                                const newDate = new Date(transactionDate);
+                                newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+                                setTransactionDate(newDate);
+                            }
+                        }}
+                    />
+                )}
+
+                {showTransactionTimePicker && (
+                    <DateTimePicker
+                        value={transactionDate}
+                        mode="time"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event: DateTimePickerEvent, date?: Date) => {
+                            setShowTransactionTimePicker(Platform.OS === 'ios');
+                            if (date) {
+                                const newDate = new Date(transactionDate);
+                                newDate.setHours(date.getHours(), date.getMinutes());
+                                setTransactionDate(newDate);
+                            }
+                        }}
+                    />
+                )}
+
+                {/* Direction Toggle */}
+                <View style={{ flexDirection: 'row', marginBottom: 20, backgroundColor: colors.surface, borderRadius: 12, padding: 4 }}>
+                    <TouchableOpacity
+                        style={{ flex: 1, padding: 12, alignItems: 'center', backgroundColor: direction === 'IN' ? colors.success : 'transparent', borderRadius: 8 }}
+                        onPress={() => handleDirectionChange('IN')}
+                    >
+                        <Text style={{ color: direction === 'IN' ? '#FFF' : colors.text, fontWeight: 'bold' }}>IN (Receive)</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={{ flex: 1, padding: 12, alignItems: 'center', backgroundColor: direction === 'OUT' ? colors.error : 'transparent', borderRadius: 8 }}
+                        onPress={() => handleDirectionChange('OUT')}
+                    >
+                        <Text style={{ color: direction === 'OUT' ? '#FFF' : colors.text, fontWeight: 'bold' }}>OUT (Send)</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Destination Selection (Only for OUT) */}
+                {direction === 'OUT' && (
+                    <Card style={{ marginBottom: 20 }}>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 12 }}>Transfer To</Text>
+                        <View style={{ gap: 8 }}>
+                            {(['OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT'] as TransferDest[]).map((opt) => (
+                                <TouchableOpacity
+                                    key={opt}
+                                    onPress={() => {
+                                        setSelectedDestOption(opt);
+                                        setDestination(opt);
+                                    }}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        padding: 12,
+                                        borderRadius: 8,
+                                        borderWidth: 1,
+                                        borderColor: selectedDestOption === opt ? colors.primary : colors.border,
+                                        backgroundColor: selectedDestOption === opt ? colors.primary + '10' : 'transparent'
+                                    }}
+                                >
+                                    <View style={{
+                                        width: 20,
+                                        height: 20,
+                                        borderRadius: 10,
+                                        borderWidth: 2,
+                                        borderColor: selectedDestOption === opt ? colors.primary : colors.gray500,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginRight: 10
+                                    }}>
+                                        {selectedDestOption === opt && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />}
+                                    </View>
+                                    <Text style={{ color: colors.text, fontWeight: selectedDestOption === opt ? '600' : '400' }}>
+                                        {opt.replace('_', ' ')}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </Card>
+                )}
+
+                {/* Amount */}
+                <Card>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <Text style={{ color: colors.textSecondary }}>Amount</Text>
+                        <TouchableOpacity onPress={() => setShowCalculator(true)} style={{ padding: 4 }}>
+                            <Ionicons name="calculator" size={24} color={colors.primary} />
+                        </TouchableOpacity>
+                    </View>
+                    <TextInput
+                        style={{ color: direction === 'OUT' ? colors.error : colors.success, fontSize: 32, fontWeight: 'bold', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
+                        value={amount}
+                        onChangeText={setAmount}
+                        keyboardType="numeric"
+                        placeholder="0.00"
+                        placeholderTextColor={colors.gray300}
+                    />
+                </Card>
+
+                {/* Note */}
+                <Card>
+                    <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Note (Optional)</Text>
+                    <TextInput
+                        style={{ color: colors.text, fontSize: 16, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
+                        value={note}
+                        onChangeText={setNote}
+                        placeholder="Check reference, bank transfer ID, etc."
+                        placeholderTextColor={colors.gray500}
+                    />
+                </Card>
+
+                {/* Modals */}
+                <CalculatorModal
+                    visible={showCalculator}
+                    onClose={() => setShowCalculator(false)}
+                    initialValue={amount}
+                    onApply={setAmount}
+                    type={direction === 'IN' ? 'INCOME' : 'EXPENSE'} // Reuse income/expense styling for calculator
+                />
+            </ScrollView>
+
+            {/* Fixed Footer Actions */}
+            <View style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                paddingTop: 16,
+                paddingHorizontal: 16,
+                paddingBottom: 16,
+                backgroundColor: colors.surface,
+                borderTopWidth: 1,
+                borderColor: colors.border,
+                flexDirection: 'row',
+                gap: 12
+            }}>
+                <Button
+                    title="Cancel"
+                    variant="outline"
+                    onPress={onCancel}
+                    style={{ flex: 1 }}
+                />
+                <Button
+                    title="Save Transfer"
+                    onPress={handleSave}
+                    style={{ flex: 1 }}
+                />
+            </View>
+        </View>
+    );
+};
