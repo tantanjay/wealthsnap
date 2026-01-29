@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import RecordMenuModal from '@components/record/RecordMenuModal';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { TransactionForm } from '@components/transaction/TransactionForm';
+import { TransferForm } from '@components/transaction/TransferForm';
 import { ReceiptReviewForm } from '@components/ai/ReceiptReviewForm';
 import { useAlert } from '@context/AlertContext';
 import { Transaction, TransactionType, ReceiptAnalysisResult } from '@types';
@@ -120,6 +121,10 @@ const RecordScreen = ({ navigation, route }: any) => {
 
     const handleInvestmentSelect = (investmentType: 'STOCKS' | 'BONDS' | 'CRYPTO' | 'FUNDS' | 'COMMODITIES') => {
         showAlert('Coming Soon', `${investmentType} recording will be available in a future update.`);
+    };
+
+    const handleDebtSelect = (debtType: 'LOAN' | 'CREDIT_CARD' | 'MORTGAGE') => {
+        showAlert('Coming Soon', `${debtType} recording will be available in a future update.`);
     };
 
     const handleAISelect = (aiType: 'BROWSE' | 'CAPTURE', imageUri?: string) => {
@@ -250,10 +255,20 @@ const RecordScreen = ({ navigation, route }: any) => {
     return (
         <ScreenWrapper scrollable={viewMode !== 'TRANSACTION' && viewMode !== 'AI_REVIEW'}>
             {/* Transaction Form */}
-            {viewMode === 'TRANSACTION' && (
+            {viewMode === 'TRANSACTION' && transactionType !== 'TRANSFER' && (
                 <TransactionForm
                     key={`${transactionType}-${editingTransaction?.id || 'new'}`}
                     transactionType={transactionType}
+                    initialTransaction={editingTransaction || undefined}
+                    onSave={handleTransactionSave}
+                    onCancel={handleTransactionCancel}
+                />
+            )}
+
+            {/* Transfer Form */}
+            {viewMode === 'TRANSACTION' && transactionType === 'TRANSFER' && (
+                <TransferForm
+                    key={`TRANSFER-${editingTransaction?.id || 'new'}`}
                     initialTransaction={editingTransaction || undefined}
                     onSave={handleTransactionSave}
                     onCancel={handleTransactionCancel}
@@ -282,6 +297,7 @@ const RecordScreen = ({ navigation, route }: any) => {
                 onSelectTransaction={handleTransactionSelect}
                 onSelectInvestment={handleInvestmentSelect}
                 onSelectAI={handleAISelect}
+                onSelectDebt={handleDebtSelect}
             />
         </ScreenWrapper>
     );

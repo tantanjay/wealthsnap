@@ -56,11 +56,8 @@ const HistoryScreen = ({ navigation }: any) => {
 
     const loadTimeFramePref = async () => {
         const saved = await getHistoryTimeFrame();
-        if (saved) {
-            // Validate it is a valid TimeFrame
-            if (['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'].includes(saved)) {
-                setTimeFrame(saved as TimeFrame);
-            }
+        if (saved && ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'].includes(saved)) {
+            setTimeFrame(saved as TimeFrame);
         }
     };
 
@@ -72,7 +69,6 @@ const HistoryScreen = ({ navigation }: any) => {
     const loadTransactions = async () => {
         setIsLoading(true);
         const data = await getCachedTransactions();
-        // Data is already sorted by storageService
         setAllTransactions(data);
         setIsLoading(false);
     };
@@ -87,33 +83,22 @@ const HistoryScreen = ({ navigation }: any) => {
     const getStartEndOfPeriod = (date: Date, mode: TimeFrame): { start: Date; end: Date } => {
         const start = new Date(date);
         const end = new Date(date);
-
         if (mode === 'DAILY') {
             start.setHours(0, 0, 0, 0);
             end.setHours(23, 59, 59, 999);
         } else if (mode === 'WEEKLY') {
-            const day = start.getDay(); // 0 is Sunday
-            // Start of Week = Sunday
+            const day = start.getDay();
             start.setDate(start.getDate() - day);
             start.setHours(0, 0, 0, 0);
-
             end.setDate(start.getDate() + 6);
             end.setHours(23, 59, 59, 999);
         } else if (mode === 'MONTHLY') {
-            start.setDate(1);
-            start.setHours(0, 0, 0, 0);
-
-            end.setMonth(end.getMonth() + 1);
-            end.setDate(0); // Last day of previous month (which is current month since we added 1)
-            end.setHours(23, 59, 59, 999);
+            start.setDate(1); start.setHours(0, 0, 0, 0);
+            end.setMonth(end.getMonth() + 1); end.setDate(0); end.setHours(23, 59, 59, 999);
         } else if (mode === 'YEARLY') {
-            start.setMonth(0, 1);
-            start.setHours(0, 0, 0, 0);
-
-            end.setMonth(11, 31);
-            end.setHours(23, 59, 59, 999);
+            start.setMonth(0, 1); start.setHours(0, 0, 0, 0);
+            end.setMonth(11, 31); end.setHours(23, 59, 59, 999);
         }
-
         return { start, end };
     };
 
@@ -122,34 +107,23 @@ const HistoryScreen = ({ navigation }: any) => {
             const now = new Date();
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-
             if (date.toDateString() === now.toDateString()) return 'Today';
             if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        } else if (mode === 'WEEKLY') {
-            const { start, end } = getStartEndOfPeriod(date, mode);
-            return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-        } else if (mode === 'MONTHLY') {
-            return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-        } else if (mode === 'YEARLY') {
-            return date.getFullYear().toString();
         }
-        return '';
+        if (mode === 'MONTHLY') return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        if (mode === 'YEARLY') return date.getFullYear().toString();
+        const { start, end } = getStartEndOfPeriod(date, mode);
+        return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
     };
 
     const navigateDate = (direction: 'prev' | 'next') => {
         const newDate = new Date(currentDate);
         const adder = direction === 'next' ? 1 : -1;
-
-        if (timeFrame === 'DAILY') {
-            newDate.setDate(newDate.getDate() + adder);
-        } else if (timeFrame === 'WEEKLY') {
-            newDate.setDate(newDate.getDate() + (adder * 7));
-        } else if (timeFrame === 'MONTHLY') {
-            newDate.setMonth(newDate.getMonth() + adder);
-        } else if (timeFrame === 'YEARLY') {
-            newDate.setFullYear(newDate.getFullYear() + adder);
-        }
+        if (timeFrame === 'DAILY') newDate.setDate(newDate.getDate() + adder);
+        else if (timeFrame === 'WEEKLY') newDate.setDate(newDate.getDate() + (adder * 7));
+        else if (timeFrame === 'MONTHLY') newDate.setMonth(newDate.getMonth() + adder);
+        else if (timeFrame === 'YEARLY') newDate.setFullYear(newDate.getFullYear() + adder);
         setCurrentDate(newDate);
     };
 
@@ -166,19 +140,24 @@ const HistoryScreen = ({ navigation }: any) => {
     const summary = useMemo((): FinancialSummary => {
         let totalIncome = new BigNumber(0);
         let totalExpense = new BigNumber(0);
+        let netTransfer = new BigNumber(0);
 
         filteredData.forEach(t => {
             if (t.type === 'INCOME') {
-                totalIncome.plus(t.amount);
+                totalIncome = totalIncome.plus(t.amount);
             } else if (t.type === 'EXPENSE') {
-                totalExpense.plus(t.amount);
+                totalExpense = totalExpense.plus(t.amount);
+            } else if (t.type === 'TRANSFER') {
+                // If no transferDest, it's money coming IN
+                if (!t.transferDest) netTransfer = netTransfer.plus(t.amount);
+                else netTransfer = netTransfer.minus(t.amount);
             }
         });
 
         return {
             totalIncome,
             totalExpense,
-            balance: totalIncome.minus(totalExpense)
+            balance: totalIncome.minus(totalExpense).plus(netTransfer)
         };
     }, [filteredData]);
 
@@ -187,37 +166,28 @@ const HistoryScreen = ({ navigation }: any) => {
 
         filteredData.forEach(transaction => {
             const dateKey = new Date(transaction.date).toDateString();
-            if (!grouped[dateKey]) {
-                grouped[dateKey] = [];
-            }
+            if (!grouped[dateKey]) grouped[dateKey] = [];
             grouped[dateKey].push(transaction);
         });
 
         const newSections: TransactionSection[] = Object.keys(grouped).map(dateKey => {
             const transactions = grouped[dateKey];
             const totalAmount = transactions.reduce((sum, t) => {
-                if (t.type === 'INCOME') {
-                    return sum.plus(t.amount.abs());
-                }
-                if (t.type === 'EXPENSE') {
-                    return sum.minus(t.amount.abs());
+                if (t.type === 'INCOME') return sum.plus(t.amount.abs());
+                if (t.type === 'EXPENSE') return sum.minus(t.amount.abs());
+                if (t.type === 'TRANSFER') {
+                    return !t.transferDest ? sum.plus(t.amount.abs()) : sum.minus(t.amount.abs());
                 }
                 return sum;
             }, new BigNumber(0));
 
-            const getSectionLabel = (dKey: string) => {
-                const d = new Date(dKey);
-                const now = new Date();
-                const yesterday = new Date();
-                yesterday.setDate(yesterday.getDate() - 1);
-
-                if (d.toDateString() === now.toDateString()) return 'Today';
-                if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            };
+            const d = new Date(dateKey);
+            const title = d.toDateString() === new Date().toDateString() ? 'Today' :
+                d.toDateString() === new Date(Date.now() - 86400000).toDateString() ? 'Yesterday' :
+                    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
             return {
-                title: getSectionLabel(dateKey),
+                title,
                 data: transactions,
                 totalAmount,
                 count: transactions.length,
@@ -225,78 +195,63 @@ const HistoryScreen = ({ navigation }: any) => {
             };
         });
 
-        // Ensure sections are sorted by date desc
-        newSections.sort((a, b) => b.originalDate.getTime() - a.originalDate.getTime());
-        return newSections;
+        return newSections.sort((a, b) => b.originalDate.getTime() - a.originalDate.getTime());
     }, [filteredData]);
-
-    // --- Actions ---
-
-    const handleDelete = async (id: string) => {
-        await deleteTransaction(id);
-        loadTransactions();
-    };
-
-    const handleEdit = (transaction: Transaction) => {
-        // Serialize BigNumber before navigation to avoid non-serializable warning
-        navigation.navigate('Record', {
-            transaction: {
-                ...transaction,
-                amount: transaction.amount.toString()
-            }
-        });
-    };
 
     // --- Renderers ---
 
     const renderItem = ({ item }: { item: Transaction }) => {
         const isExpense = item.type === 'EXPENSE';
-        const isRecurring = item.creationMethod === 'RECURRENCE' || item.isRecurring;
+        const isTransfer = item.type === 'TRANSFER';
+        const isTransferIn = isTransfer && !item.transferDest;
+        const isNegativeFlow = isExpense || (isTransfer && !isTransferIn);
+
+        // Determine Icon and Color based on logic
+        let iconName: any = "wallet";
+        let statusColor = isExpense ? colors.error : colors.success;
+
+        if (isTransfer) {
+            statusColor = colors.primary; // Use primary (indigo/blue) for transfers
+            iconName = isTransferIn ? "arrow-down-circle-outline" : "arrow-up-circle-outline";
+        } else if (item.creationMethod === 'AI') {
+            iconName = "sparkles";
+        } else if (item.isRecurring) {
+            iconName = "repeat";
+        }
+
+        const getDisplayName = () => {
+            if (isTransfer) {
+                return isTransferIn ? "Transfer In" : `To ${item.transferDest?.replace('_', ' ')}`;
+            }
+            return item.category;
+        };
 
         return (
-            <TouchableOpacity
-                onPress={() => setSelectedTransaction(item)}
-                style={{ marginBottom: 8 }}
-                activeOpacity={0.7}
-            >
+            <TouchableOpacity onPress={() => setSelectedTransaction(item)} style={{ marginBottom: 8 }} activeOpacity={0.7}>
                 <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                             <View style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 18,
-                                backgroundColor: isExpense ? colors.error + '20' : colors.success + '20',
-                                justifyContent: 'center',
-                                alignItems: 'center'
+                                width: 36, height: 36, borderRadius: 18,
+                                backgroundColor: statusColor + '15',
+                                justifyContent: 'center', alignItems: 'center'
                             }}>
-                                <Ionicons
-                                    name={isRecurring ? "repeat" : (item.creationMethod === 'AI' ? "sparkles" : "wallet")}
-                                    size={18}
-                                    color={isExpense ? colors.error : colors.success}
-                                />
+                                <Ionicons name={iconName} size={18} color={statusColor} />
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-                                    {item.category}
+                                    {getDisplayName()}
                                 </Text>
-                                <Text
-                                    style={{ color: colors.textSecondary, fontSize: 12 }}
-                                    numberOfLines={1}
-                                    ellipsizeMode="tail"
-                                >
-                                    {item.note || (item.subCategory ? item.subCategory : item.type)}
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
+                                    {item.note || item.subCategory || item.type}
                                 </Text>
                             </View>
                         </View>
                         <Text style={{
-                            color: isExpense ? colors.error : colors.success,
-                            fontSize: 16,
-                            fontWeight: 'bold',
-                            flexShrink: 0,
-                            marginLeft: 8
+                            color: isNegativeFlow ? colors.error : colors.success,
+                            fontSize: 16, fontWeight: 'bold'
                         }}>
-                            {isExpense ? '-' : '+'}{formatCurrency(item.amount)}
+                            {isNegativeFlow ? '-' : '+'}{formatCurrency(item.amount)}
                         </Text>
                     </View>
                 </Card>
@@ -305,14 +260,7 @@ const HistoryScreen = ({ navigation }: any) => {
     };
 
     const renderSectionHeader = ({ section: { title, count, totalAmount } }: { section: TransactionSection }) => (
-        <View style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 10,
-            marginTop: 10,
-            paddingHorizontal: 4
-        }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, marginTop: 10, paddingHorizontal: 4 }}>
             <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>
                 {title} <Text style={{ color: colors.textSecondary, fontWeight: 'normal' }}>({count})</Text>
             </Text>
@@ -323,123 +271,100 @@ const HistoryScreen = ({ navigation }: any) => {
     );
 
     return (
-        <ScreenWrapper>
-            {/* Header */}
-            <View style={{ marginBottom: 20 }}>
-                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginBottom: 16 }}>History</Text>
+        <ScreenWrapper scrollable={false}>
+            <SectionList
+                sections={isLoading ? [] : sections}
+                keyExtractor={item => item.id}
+                renderItem={renderItem}
+                renderSectionHeader={renderSectionHeader}
+                stickySectionHeadersEnabled={false}
+                contentContainerStyle={{ paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
+                ListHeaderComponent={
+                    <View style={{ marginBottom: 20 }}>
+                        <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginBottom: 16 }}>History</Text>
 
-                {/* TimeFrame Tabs */}
-                <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, marginBottom: 16 }}>
-                    {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as TimeFrame[]).map((tf) => (
-                        <TouchableOpacity
-                            key={tf}
-                            onPress={() => handleSetTimeFrame(tf)}
-                            style={{
-                                flex: 1,
-                                paddingVertical: 8,
-                                alignItems: 'center',
-                                backgroundColor: timeFrame === tf ? colors.primary : 'transparent',
-                                borderRadius: 8
-                            }}
-                        >
-                            <Text style={{
-                                color: timeFrame === tf ? '#FFF' : colors.textSecondary,
-                                fontSize: 12,
-                                fontWeight: 'bold'
-                            }}>
-                                {tf.charAt(0) + tf.slice(1).toLowerCase()}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                {/* Date Navigator */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <TouchableOpacity onPress={() => navigateDate('prev')} style={{ padding: 8 }}>
-                        <Ionicons name="chevron-back" size={24} color={colors.primary} />
-                    </TouchableOpacity>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
-                        {getDateRangeLabel(currentDate, timeFrame)}
-                    </Text>
-                    <TouchableOpacity onPress={() => navigateDate('next')} style={{ padding: 8 }}>
-                        <Ionicons name="chevron-forward" size={24} color={colors.primary} />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Summary Dashboard */}
-                <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16 }}>
-                    <View style={{ marginBottom: 12 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Balance</Text>
-                        {isLoading ? (
-                            <Skeleton width={120} height={32} />
-                        ) : (
-                            <Text style={{ color: summary.balance.isGreaterThanOrEqualTo(0) ? colors.success : colors.error, fontSize: 24, fontWeight: 'bold' }}>
-                                {formatCurrency(summary.balance)}
-                            </Text>
-                        )}
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <View>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Total Income</Text>
-                            {isLoading ? (
-                                <Skeleton width={80} height={20} />
-                            ) : (
-                                <Text style={{ color: colors.success, fontSize: 16, fontWeight: '600' }}>
-                                    +{formatCurrency(summary.totalIncome)}
-                                </Text>
-                            )}
+                        {/* TimeFrame Tabs */}
+                        <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, marginBottom: 16 }}>
+                            {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as TimeFrame[]).map((tf) => (
+                                <TouchableOpacity key={tf} onPress={() => handleSetTimeFrame(tf)} style={{
+                                    flex: 1, paddingVertical: 8, alignItems: 'center',
+                                    backgroundColor: timeFrame === tf ? colors.primary : 'transparent', borderRadius: 8
+                                }}>
+                                    <Text style={{ color: timeFrame === tf ? '#FFF' : colors.textSecondary, fontSize: 12, fontWeight: 'bold' }}>
+                                        {tf.charAt(0) + tf.slice(1).toLowerCase()}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
                         </View>
-                        <View>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Total Expense</Text>
-                            {isLoading ? (
-                                <Skeleton width={80} height={20} />
-                            ) : (
-                                <Text style={{ color: colors.error, fontSize: 16, fontWeight: '600' }}>
-                                    -{formatCurrency(summary.totalExpense)}
-                                </Text>
-                            )}
-                        </View>
-                    </View>
-                </View>
-            </View>
 
-            {/* Transactions List */}
-            {isLoading ? (
-                <View style={{ marginTop: 10 }}>
-                    {[1, 2, 3, 4, 5].map(i => (
-                        <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
-                            <Skeleton width={36} height={36} borderRadius={18} style={{ marginRight: 12 }} />
-                            <View style={{ flex: 1 }}>
-                                <Skeleton width={120} height={16} style={{ marginBottom: 6 }} />
-                                <Skeleton width={80} height={12} />
+                        {/* Date Navigator */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                            <TouchableOpacity onPress={() => navigateDate('prev')} style={{ padding: 8 }}>
+                                <Ionicons name="chevron-back" size={24} color={colors.primary} />
+                            </TouchableOpacity>
+                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
+                                {getDateRangeLabel(currentDate, timeFrame)}
+                            </Text>
+                            <TouchableOpacity onPress={() => navigateDate('next')} style={{ padding: 8 }}>
+                                <Ionicons name="chevron-forward" size={24} color={colors.primary} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Summary Dashboard */}
+                        <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16 }}>
+                            <View style={{ marginBottom: 12 }}>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Period Balance</Text>
+                                {isLoading ? <Skeleton width={120} height={32} /> : (
+                                    <Text style={{ color: summary.balance.isGreaterThanOrEqualTo(0) ? colors.success : colors.error, fontSize: 24, fontWeight: 'bold' }}>
+                                        {formatCurrency(summary.balance)}
+                                    </Text>
+                                )}
                             </View>
-                            <Skeleton width={60} height={16} />
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                <View>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Income</Text>
+                                    <Text style={{ color: colors.success, fontSize: 16, fontWeight: '600' }}>
+                                        +{formatCurrency(summary.totalIncome)}
+                                    </Text>
+                                </View>
+                                <View>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Expenses</Text>
+                                    <Text style={{ color: colors.error, fontSize: 16, fontWeight: '600' }}>
+                                        -{formatCurrency(summary.totalExpense)}
+                                    </Text>
+                                </View>
+                            </View>
                         </View>
-                    ))}
-                </View>
-            ) : sections.length === 0 ? (
-                <View style={{ alignItems: 'center', marginTop: 30 }}>
-                    <Ionicons name="documents-outline" size={64} color={colors.textSecondary} />
-                    <Text style={{ color: colors.textSecondary, marginTop: 10 }}>No transactions in this period.</Text>
-                </View>
-            ) : (
-                <SectionList
-                    sections={sections}
-                    keyExtractor={item => item.id}
-                    renderItem={renderItem}
-                    renderSectionHeader={renderSectionHeader}
-                    scrollEnabled={false}
-                    contentContainerStyle={{ paddingBottom: 20 }}
-                    showsVerticalScrollIndicator={false}
-                />
-            )}
+                    </View>
+                }
+                ListEmptyComponent={
+                    isLoading ? (
+                        <View style={{ marginTop: 10 }}>
+                            {[1, 2, 3].map(i => (
+                                <View key={i} style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
+                                    <Skeleton width={36} height={36} borderRadius={18} style={{ marginRight: 12 }} />
+                                    <View style={{ flex: 1 }}>
+                                        <Skeleton width={120} height={16} style={{ marginBottom: 6 }} /><Skeleton width={80} height={12} />
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
+                    ) : (
+                        <View style={{ alignItems: 'center', marginTop: 30 }}>
+                            <Ionicons name="documents-outline" size={64} color={colors.textSecondary} />
+                            <Text style={{ color: colors.textSecondary, marginTop: 10 }}>No transactions for this period.</Text>
+                        </View>
+                    )
+                }
+            />
 
             <TransactionOptionsModal
                 visible={!!selectedTransaction}
                 transaction={selectedTransaction}
                 onClose={() => setSelectedTransaction(null)}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
+                onEdit={(t) => { setSelectedTransaction(null); navigation.navigate('Record', { transaction: { ...t, amount: t.amount.toString() } }); }}
+                onDelete={async (id) => { await deleteTransaction(id); loadTransactions(); setSelectedTransaction(null); }}
                 currency={profile?.currency}
             />
         </ScreenWrapper>
