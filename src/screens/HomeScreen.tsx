@@ -29,13 +29,19 @@ const HomeScreen = ({ navigation }: any) => {
     const [monthIncome, setMonthIncome] = useState(new BigNumber(0));
     const [monthExpense, setMonthExpense] = useState(new BigNumber(0));
 
+    // Transfer States
+    const [overallTransferIn, setOverallTransferIn] = useState(new BigNumber(0));
+    const [overallTransferOut, setOverallTransferOut] = useState(new BigNumber(0));
+    const [monthTransferIn, setMonthTransferIn] = useState(new BigNumber(0));
+    const [monthTransferOut, setMonthTransferOut] = useState(new BigNumber(0));
+
     const [investmentTotal, setInvestmentTotal] = useState(new BigNumber(0));
     const [debtTotal, setDebtTotal] = useState(new BigNumber(0));
     const [isLoading, setIsLoading] = useState(true);
 
     // Settings Modal State
     const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
-    const [displayMode, setDisplayMode] = useState<'Overall' | 'Month'>('Overall');
+    const [displayMode, setDisplayMode] = useState<Storage.HomeDisplayMode>('Overall');
     const [cardWidth, setCardWidth] = useState(0);
     const scrollRef = React.useRef<ScrollView>(null);
     const screenWidth = React.useRef(0);
@@ -60,23 +66,32 @@ const HomeScreen = ({ navigation }: any) => {
         setProfile(p);
         setTransactions(t);
 
-        // Calculate both Overall and Month totals once
+        // Calculate metrics
         let oInc = new BigNumber(0), oExp = new BigNumber(0), mInc = new BigNumber(0), mExp = new BigNumber(0);
+        let oTransIn = new BigNumber(0), oTransOut = new BigNumber(0), mTransIn = new BigNumber(0), mTransOut = new BigNumber(0);
 
         const now = new Date();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
 
         t.forEach((tx: Transaction) => {
-            // Overall
-            if (tx.type === 'INCOME') oInc = oInc.plus(tx.amount.abs());
-            else if (tx.type === 'EXPENSE') oExp = oExp.plus(tx.amount.abs());
+            const val = tx.amount.abs();
+            const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
 
-            // Month
-            const tDate = new Date(tx.date);
-            if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
-                if (tx.type === 'INCOME') mInc = mInc.plus(tx.amount.abs());
-                else if (tx.type === 'EXPENSE') mExp = mExp.plus(tx.amount.abs());
+            if (tx.type === 'INCOME') {
+                oInc = oInc.plus(val);
+                if (isMonth) mInc = mInc.plus(val);
+            } else if (tx.type === 'EXPENSE') {
+                oExp = oExp.plus(val);
+                if (isMonth) mExp = mExp.plus(val);
+            } else if (tx.type === 'TRANSFER') {
+                if (!tx.transferDest) {
+                    oTransIn = oTransIn.plus(val);
+                    if (isMonth) mTransIn = mTransIn.plus(val);
+                } else {
+                    oTransOut = oTransOut.plus(val);
+                    if (isMonth) mTransOut = mTransOut.plus(val);
+                }
             }
         });
 
@@ -84,6 +99,10 @@ const HomeScreen = ({ navigation }: any) => {
         setOverallExpense(oExp);
         setMonthIncome(mInc);
         setMonthExpense(mExp);
+        setOverallTransferIn(oTransIn);
+        setOverallTransferOut(oTransOut);
+        setMonthTransferIn(mTransIn);
+        setMonthTransferOut(mTransOut);
 
         const totalInv = inv.reduce((sum: BigNumber, item: Investment) => {
             const price = new BigNumber(item.currentPrice || item.averageBuyPrice || 0);
@@ -104,12 +123,16 @@ const HomeScreen = ({ navigation }: any) => {
     // Sync ScrollView with displayMode change (e.g. from Modal)
     React.useEffect(() => {
         if (cardWidth > 0 && scrollRef.current) {
-            const pageIndex = displayMode === 'Overall' ? 0 : 1;
-            scrollRef.current.scrollTo({ x: pageIndex * cardWidth, animated: true });
+            if (cardWidth > 0 && scrollRef.current) {
+                let pageIndex = 0;
+                if (displayMode === 'Month') pageIndex = 1;
+                else if (displayMode === 'MonthIncomeExpense') pageIndex = 2;
+                scrollRef.current.scrollTo({ x: pageIndex * cardWidth, animated: true });
+            }
         }
     }, [displayMode, cardWidth]);
 
-    const handleModeChange = async (newMode: 'Overall' | 'Month') => {
+    const handleModeChange = async (newMode: Storage.HomeDisplayMode) => {
         setDisplayMode(newMode);
         await Storage.saveHomeDisplayMode(newMode);
     };
@@ -119,7 +142,7 @@ const HomeScreen = ({ navigation }: any) => {
         const width = event.nativeEvent.layoutMeasurement.width;
         const pageIndex = Math.round(contentOffsetX / width);
 
-        const newMode = pageIndex === 0 ? 'Overall' : 'Month';
+        const newMode: Storage.HomeDisplayMode = pageIndex === 0 ? 'Overall' : pageIndex === 1 ? 'Month' : 'MonthIncomeExpense';
         if (newMode !== displayMode) {
             handleModeChange(newMode);
         }
@@ -185,35 +208,38 @@ const HomeScreen = ({ navigation }: any) => {
                             }}
                             scrollEventThrottle={16}
                         >
-                            {/* Card 1: Overall */}
+                            {/* Card 1: Total Assets (Overall with Transfers) */}
                             <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
                                 <Card style={{ backgroundColor: colors.primary, padding: 20, marginBottom: 10, width: '100%' }}>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 8 }}>Total Balance</Text>
-                                            {/* Dots for pagination indication */}
+                                            <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 8 }}>Total Assets</Text>
                                             <View style={{ flexDirection: 'row', gap: 4 }}>
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white }} />
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
+                                                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
                                             </View>
                                         </View>
-                                        <Ionicons name="swap-vertical" size={24} color={colors.white} />
+                                        <Ionicons name="wallet-outline" size={24} color={colors.white} />
                                     </View>
                                     <Text style={{ color: colors.white, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
                                         {isLoading ? (
                                             <Skeleton width={150} height={40} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
                                         ) : (
-                                            formatCurrency(overallIncome.minus(overallExpense))
+                                            formatCurrency(
+                                                overallIncome.plus(overallTransferIn)
+                                                    .minus(overallExpense.plus(overallTransferOut))
+                                            )
                                         )}
                                     </Text>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
                                         <View>
-                                            <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Income</Text>
-                                            <Text style={{ color: colors.white, fontWeight: 'bold' }}>{isLoading ? '...' : `+${formatCurrency(overallIncome)}`}</Text>
+                                            <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Money In</Text>
+                                            <Text style={{ color: colors.white, fontWeight: 'bold' }}>{isLoading ? '...' : `+${formatCurrency(overallIncome.plus(overallTransferIn))}`}</Text>
                                         </View>
                                         <View>
-                                            <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Expense</Text>
-                                            <Text style={{ color: colors.white, fontWeight: 'bold' }}>{isLoading ? '...' : `-${formatCurrency(overallExpense)}`}</Text>
+                                            <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Money Out</Text>
+                                            <Text style={{ color: colors.white, fontWeight: 'bold' }}>{isLoading ? '...' : `-${formatCurrency(overallExpense.plus(overallTransferOut))}`}</Text>
                                         </View>
                                     </View>
                                     {/* Insight Button */}
@@ -239,14 +265,71 @@ const HomeScreen = ({ navigation }: any) => {
                                 </Card>
                             </View>
 
-                            {/* Card 2: Current Month */}
+                            {/* Card 2: Monthly Balance (Month with Transfers) */}
                             <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
                                 <Card style={{ backgroundColor: colors.primary, padding: 20, marginBottom: 10, width: '100%' }}>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 8 }}>Monthly Balance</Text>
-                                            {/* Dots for pagination indication */}
                                             <View style={{ flexDirection: 'row', gap: 4 }}>
+                                                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
+                                                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white }} />
+                                                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
+                                            </View>
+                                        </View>
+                                        <Ionicons name="calendar-outline" size={24} color={colors.white} />
+                                    </View>
+                                    <Text style={{ color: colors.white, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
+                                        {isLoading ? (
+                                            <Skeleton width={150} height={40} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                                        ) : (
+                                            formatCurrency(
+                                                monthIncome.plus(monthTransferIn)
+                                                    .minus(monthExpense.plus(monthTransferOut))
+                                            )
+                                        )}
+                                    </Text>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                                        <View>
+                                            <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Money In</Text>
+                                            <Text style={{ color: colors.white, fontWeight: 'bold' }}>{isLoading ? '...' : `+${formatCurrency(monthIncome.plus(monthTransferIn))}`}</Text>
+                                        </View>
+                                        <View>
+                                            <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Money Out</Text>
+                                            <Text style={{ color: colors.white, fontWeight: 'bold' }}>{isLoading ? '...' : `-${formatCurrency(monthExpense.plus(monthTransferOut))}`}</Text>
+                                        </View>
+                                    </View>
+                                    {/* Insight Button */}
+                                    {isLoading ? (
+                                        <Skeleton width="100%" height={44} style={{ marginTop: 15, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                                    ) : (
+                                        <TouchableOpacity
+                                            onPress={() => navigation.navigate('Insights')}
+                                            style={{
+                                                marginTop: 15,
+                                                backgroundColor: 'rgba(255,255,255,0.2)',
+                                                paddingVertical: 10,
+                                                borderRadius: 8,
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                        >
+                                            <Ionicons name="analytics" size={20} color={colors.white} style={{ marginRight: 8 }} />
+                                            <Text style={{ color: colors.white, fontWeight: '600' }}>View Financial Insights</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </Card>
+                            </View>
+
+                            {/* Card 3: Monthly Income & Expense (Pure, no Transfers) */}
+                            <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
+                                <Card style={{ backgroundColor: colors.primary, padding: 20, marginBottom: 10, width: '100%' }}>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 8 }}>Monthly Income & Expense</Text>
+                                            <View style={{ flexDirection: 'row', gap: 4 }}>
+                                                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white }} />
                                             </View>
@@ -416,7 +499,9 @@ const HomeScreen = ({ navigation }: any) => {
                                     flexDirection: 'row',
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
-                                    padding: 16
+                                    padding: 16,
+                                    borderBottomWidth: 1,
+                                    borderBottomColor: colors.border
                                 }}
                                 onPress={() => handleModeChange('Month')}
                             >
@@ -425,7 +510,22 @@ const HomeScreen = ({ navigation }: any) => {
                                     <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
                                 )}
                             </TouchableOpacity>
+                            <TouchableOpacity
+                                style={{
+                                    flexDirection: 'row',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: 16
+                                }}
+                                onPress={() => handleModeChange('MonthIncomeExpense')}
+                            >
+                                <Text style={{ color: colors.text, fontSize: 16 }}>Monthly Income & Expense</Text>
+                                {displayMode === 'MonthIncomeExpense' && (
+                                    <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+                                )}
+                            </TouchableOpacity>
                         </View>
+
 
                         {/* Investment Settings Placeholder */}
                         <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
