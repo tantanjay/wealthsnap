@@ -280,8 +280,6 @@ export const migrateV2ToV5 = async (db: any): Promise<void> => {
         await db.runAsync('ALTER TABLE ai_usage_logs_new RENAME TO ai_usage_logs');
 
         await db.runAsync('COMMIT');
-        console.log('[Migration] ✅ V2 -> V5: costUSD converted to TEXT');
-
     } catch (error: any) {
         await db.runAsync('ROLLBACK');
         console.error('[Migration] ❌ V2 -> V5 migration failed:', error);
@@ -296,8 +294,6 @@ export const migrateV2ToV5 = async (db: any): Promise<void> => {
  */
 export const migrateV5ToV6 = async (db: any): Promise<void> => {
     try {
-        console.log('[Migration] Starting V5 -> V6 migration...');
-
         // 1. Start transaction
         await db.runAsync('BEGIN TRANSACTION');
 
@@ -347,7 +343,6 @@ export const migrateV5ToV6 = async (db: any): Promise<void> => {
 
         // 7. Commit
         await db.runAsync('COMMIT');
-        console.log('[Migration] ✅ V5 -> V6: Transactions table updated with transfer support');
 
     } catch (error: any) {
         await db.runAsync('ROLLBACK');
