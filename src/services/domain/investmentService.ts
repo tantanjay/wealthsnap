@@ -14,7 +14,7 @@ export const bulkSaveInvestments = async (investments: Investment[]): Promise<vo
     try {
         const db = await getDatabase();
 
-        const chunks = chunkArray(investments, 100);
+        const chunks = chunkArray(investments);
         const preparedData: PreparedInvestment[] = [];
 
         for (const chunk of chunks) {
