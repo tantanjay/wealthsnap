@@ -170,8 +170,9 @@ export const getHistoryTimeFrame = async (): Promise<string | null> => {
 };
 
 // ============= Home Display Preferences (AsyncStorage) =============
+export type HomeDisplayMode = 'Overall' | 'Month' | 'MonthIncomeExpense';
 
-export const saveHomeDisplayMode = async (mode: 'Overall' | 'Month'): Promise<void> => {
+export const saveHomeDisplayMode = async (mode: HomeDisplayMode): Promise<void> => {
     try {
         await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.DISPLAY_MODE, mode);
     } catch (error) {
@@ -179,10 +180,10 @@ export const saveHomeDisplayMode = async (mode: 'Overall' | 'Month'): Promise<vo
     }
 };
 
-export const getHomeDisplayMode = async (): Promise<'Overall' | 'Month' | null> => {
+export const getHomeDisplayMode = async (): Promise<HomeDisplayMode | null> => {
     try {
         const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.DISPLAY_MODE);
-        return (mode === 'Overall' || mode === 'Month') ? mode : null;
+        return (mode === 'Overall' || mode === 'Month' || mode === 'MonthIncomeExpense') ? mode as HomeDisplayMode : null;
     } catch (error) {
         console.error('Failed to get home display mode:', error);
         return null;
