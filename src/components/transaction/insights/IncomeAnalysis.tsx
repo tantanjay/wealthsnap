@@ -217,7 +217,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                 const rawData = [...activeMonthlyTrends.incomeData];
 
                                 // Last element is current month
-                                const currentMonthIncome = rawData[rawData.length - 1] || 0;
+                                const currentMonthIncome = rawData[rawData.length - 1] || new BigNumber(0);
 
                                 // Calculate Average from historical months (exclude current)
                                 const historicalData = rawData.slice(0, rawData.length - 1);
