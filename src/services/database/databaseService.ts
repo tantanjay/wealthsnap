@@ -65,11 +65,15 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
                 await migrateV2ToV5(db);
             }
 
-            // Update to latest version after all migrations complete
-            await setDatabaseVersion(db, DATABASE_VERSION);
+            if (currentVersion < 6) {
+                const { migrateV5ToV6 } = await import('@services/database/migrationService');
+                await migrateV5ToV6(db);
+            }
         }
+
+        // Update to latest version after all migrations complete
+        await setDatabaseVersion(db, DATABASE_VERSION);
     } catch (error) {
-        console.error('[Database] Initialization error:', error);
         throw error;
     }
 };

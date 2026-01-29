@@ -31,7 +31,7 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
     const screenWidth = Dimensions.get('window').width;
 
     const trendData = useMemo(() => {
-        return getCategoryTrend(transactions, category, 6, grouping);
+        return getCategoryTrend(transactions, category, 'EXPENSE', 6, grouping);
     }, [transactions, category, grouping]);
 
     const chartData = {
