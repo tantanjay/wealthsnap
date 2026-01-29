@@ -3,7 +3,7 @@ import CryptoJS from 'crypto-js';
 import * as SecureStore from 'expo-secure-store';
 import { BigNumber } from 'bignumber.js';
 
-import { SECURE_KEYS } from '@constants/config';
+import { CONFIG, SECURE_KEYS } from '@constants/config';
 
 // In-memory cache for the encryption key to avoid repeated SecureStore I/O
 let cachedKey: string | null = null;
@@ -148,7 +148,6 @@ export const bulkDecryptItems = async <T>(
 ): Promise<T[]> => {
     const key = await getStorageKey();
     const decryptedResults: T[] = [];
-    const CHUNK_SIZE = 500;
 
     for (let i = 0; i < items.length; i++) {
         const item = items[i];
@@ -164,7 +163,7 @@ export const bulkDecryptItems = async <T>(
         decryptedResults.push(decryptedItem as T);
 
         // Yield control to the UI thread every CHUNK_SIZE items
-        if (i > 0 && i % CHUNK_SIZE === 0) {
+        if (i > 0 && i % CONFIG.CHUNK_SIZE === 0) {
             if (onProgress) onProgress(i / items.length);
             await new Promise(resolve => setTimeout(resolve, 0));
         }

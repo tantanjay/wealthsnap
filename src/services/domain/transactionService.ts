@@ -50,11 +50,7 @@ const prepareTransactionValues = async (txn: Transaction) => {
 export const bulkSaveTransactions = async (transactions: Transaction[]): Promise<void> => {
     try {
         const db = await getDatabase();
-
-        // Process in chunks to prevent UI blocking
-        // A chunk size of 50-100 is usually a good balance between throughput and responsiveness
-        const CHUNK_SIZE = 50;
-        const chunks = chunkArray(transactions, CHUNK_SIZE);
+        const chunks = chunkArray(transactions);
 
         for (let i = 0; i < chunks.length; i++) {
             const chunk = chunks[i];
