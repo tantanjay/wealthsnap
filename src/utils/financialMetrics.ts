@@ -323,12 +323,13 @@ export const getCurrentMonthCumulative = (currentMonthTransactions: Transaction[
 };
 
 export interface Anomaly {
-    type: 'SPIKE' | 'NEW_CATEGORY' | 'HIGH_SPENDING';
+    type: 'SPIKE' | 'NEW_CATEGORY' | 'HIGH_SPENDING' | 'BUDGET_EXCEEDED';
+    category: string;
     message: string;
     severity: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
-export const detectAnomalies = (currentMonthTransactions: Transaction[], allTransactions: Transaction[]): Anomaly[] => {
+export const detectAnomalies = (currentMonthTransactions: Transaction[], allTransactions: Transaction[], budgets: import('@types').Budget[] = []): Anomaly[] => {
     const anomalies: Anomaly[] = [];
 
     if (allTransactions.length < 10) return anomalies;
@@ -337,38 +338,69 @@ export const detectAnomalies = (currentMonthTransactions: Transaction[], allTran
     const currentIds = new Set(currentMonthTransactions.map(t => t.id));
     const historyTransactions = allTransactions.filter(t => !currentIds.has(t.id));
 
-    // currentBreakdown amounts are already Absolute and BigNumber from our previous update
-    const currentBreakdown = getCategoryBreakdown(currentMonthTransactions, 'EXPENSE');
+    // 1. Group Current Month by Category Item (e.g., "Water", "Rent")
+    const currentBreakdown: { [key: string]: BigNumber } = {};
 
-    currentBreakdown.forEach(item => {
+    currentMonthTransactions.filter(isExpense).forEach(t => {
+        // Use the raw category name (e.g., "Water") directly
+        currentBreakdown[t.category] = (currentBreakdown[t.category] || new BigNumber(0)).plus(t.amount.abs());
+    });
+
+    Object.entries(currentBreakdown).forEach(([categoryName, currentAmount]) => {
+        // --- 1. BUDGET CHECK ---
+        const budget = budgets.find(b => b.category === categoryName);
+        if (budget && currentAmount.isGreaterThan(budget.amount)) {
+            const percentOver = currentAmount.minus(budget.amount).div(budget.amount).times(100);
+            anomalies.push({
+                type: 'BUDGET_EXCEEDED',
+                category: categoryName,
+                message: `${categoryName} has exceeded your monthly budget by ${percentOver.toFixed(0)}%`,
+                severity: 'HIGH'
+            });
+        }
+
+        // --- 2. SPIKE CHECK (HISTORY) ---
+        // Filter History for this specific Category Item
         const catHistory = historyTransactions.filter(t =>
-            t.category === item.name && isExpense(t)
+            t.category === categoryName && isExpense(t)
         );
 
+        // We need enough historical data points for this specific item to be meaningful
         if (catHistory.length < 3) return;
 
-        // 1. Calculate historical average using absolute values
-        const historicalTotal = catHistory.reduce(
-            (sum, t) => sum.plus(t.amount.abs()),
+        // 3. Calculate Stats (Monthly Average)
+        // We must group by month first, otherwise we are comparing "Monthly Total" vs "Per Transaction Average"
+        const monthlyTotals: { [key: string]: BigNumber } = {};
+
+        catHistory.forEach(t => {
+            const date = new Date(t.date); // specific transaction date
+            const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+            monthlyTotals[monthKey] = (monthlyTotals[monthKey] || new BigNumber(0)).plus(t.amount.abs());
+        });
+
+        const monthsCount = Object.keys(monthlyTotals).length;
+        if (monthsCount < 1) return; // Need at least 1 month of history (though catHistory.length < 3 check above implies we have data)
+
+        const historicalTotal = Object.values(monthlyTotals).reduce(
+            (sum, val) => sum.plus(val),
             new BigNumber(0)
         );
 
-        if (historicalTotal.isZero()) return;
+        const historicalAverage = historicalTotal.dividedBy(monthsCount);
 
-        const historicalAverage = historicalTotal.dividedBy(catHistory.length);
+        // Avoid alerts for very small amounts where high % variance is common/irrelevant
+        if (historicalAverage.isLessThan(50)) return;
 
-        // 2. Calculate Difference: (Current - Average)
-        const difference = item.amount.minus(historicalAverage);
-
-        // 3. Calculate Percent Increase: (Difference / Average) * 100
+        const difference = currentAmount.minus(historicalAverage);
         const percentIncrease = difference.dividedBy(historicalAverage).times(100);
 
-        // 4. Threshold Checks
-        // Note: .toNumber() is fine here because we are just comparing for logic gates
+        // Threshold Checks
+        // Trigger if > 50% increase AND > 100 nominal increase
         if (percentIncrease.toNumber() > 50 && difference.toNumber() > 100) {
             anomalies.push({
                 type: 'SPIKE',
-                message: `${item.name} spending is ${percentIncrease.toFixed(0)}% higher than usual`,
+                category: categoryName,
+                message: `${categoryName} spending is ${percentIncrease.toFixed(0)}% higher than usual`,
                 severity: percentIncrease.isGreaterThan(100) ? 'HIGH' : 'MEDIUM'
             });
         }
