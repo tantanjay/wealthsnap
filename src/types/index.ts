@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
 
 export interface UserProfile {
@@ -15,6 +16,7 @@ export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 export type InvestmentType = 'STOCKS' | 'FUNDS' | 'BONDS' | 'CRYPTO' | 'COMMODITIES';
 export type DebtType = 'LOAN' | 'CREDIT_CARD' | 'MORTGAGE';
 export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+export type TransferDestination = 'OTHER_ACCOUNT' | 'INVESTMENTS' | 'DEBT' | 'CASH_ATM' | 'DIGITAL_WALLET' | 'CRYPTO' | 'RECEIVABLE' | 'TIME_DEPOSIT';
 
 export interface Transaction {
     id: string;
@@ -27,7 +29,7 @@ export interface Transaction {
     isRecurring: boolean;
     recurrenceId?: string; // Link to recurrence rule
     creationMethod?: 'MANUAL' | 'RECURRENCE' | 'AI';
-    transferDest?: 'OTHER_ACCOUNT' | 'INVESTMENTS' | 'DEBT';
+    transferDest?: TransferDestination;
     transferRelatedId?: string;
     createdAt: string;
     updatedAt: string;
