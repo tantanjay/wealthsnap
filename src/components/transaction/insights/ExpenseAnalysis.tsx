@@ -58,7 +58,7 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
 
     const pieData = categoryBreakdown.map((item, index) => ({
         name: item.name,
-        population: item.amount.toNumber(),
+        population: BigNumber.isBigNumber(item.amount) ? item.amount.toNumber() : 0,
         color: CHART_COLORS[index % CHART_COLORS.length],
         legendFontColor: colors.textSecondary,
         legendFontSize: 12
