@@ -46,6 +46,15 @@ const HomeScreen = ({ navigation }: any) => {
     const scrollRef = React.useRef<ScrollView>(null);
     const screenWidth = React.useRef(0);
 
+    // Info Modal State
+    const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+    const [infoModalMode, setInfoModalMode] = useState<'Overall' | 'Month' | 'MonthIncomeExpense'>('Overall');
+
+    const handleInfoPress = (mode: 'Overall' | 'Month' | 'MonthIncomeExpense') => {
+        setInfoModalMode(mode);
+        setIsInfoModalVisible(true);
+    };
+
     const loadData = async () => {
         setDebtTotal(new BigNumber(0)); // to remove lint
         setIsLoading(true);
@@ -153,6 +162,70 @@ const HomeScreen = ({ navigation }: any) => {
         return formatCurrencyAmount(amount, profile?.currency || 'PHP');
     };
 
+    const renderInfoModalContent = () => {
+        if (infoModalMode === 'Overall') {
+            return (
+                <View>
+                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
+                        "Cash Balance" represents your <Text style={{ fontWeight: 'bold' }}>total available funds</Text> across all accounts.
+                    </Text>
+                    <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
+                        <Text style={{ color: colors.text, fontFamily: 'monospace', fontSize: 14 }}>
+                            (Income + Transfers In) - (Expense + Transfers Out)
+                        </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
+                        <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginTop: 2, marginRight: 8 }} />
+                        <Text style={{ color: colors.textSecondary, flex: 1, fontSize: 14 }}>
+                            This includes all historical transactions since you started using the app.
+                        </Text>
+                    </View>
+                </View>
+            );
+        } else if (infoModalMode === 'Month') {
+            return (
+                <View>
+                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
+                        "Monthly Balance" shows the <Text style={{ fontWeight: 'bold' }}>net change</Text> in your funds for the current month.
+                    </Text>
+                    <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
+                        <Text style={{ color: colors.text, fontFamily: 'monospace', fontSize: 14 }}>
+                            (Income + Transfers In) - (Expense + Transfers Out)
+                        </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
+                        <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginTop: 2, marginRight: 8 }} />
+                        <Text style={{ color: colors.textSecondary, flex: 1, fontSize: 14 }}>
+                            Use this to see if you are net positive or negative for this month, considering all money movements.
+                        </Text>
+                    </View>
+                </View>
+            );
+        } else {
+            return (
+                <View>
+                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
+                        "Monthly Net" shows your <Text style={{ fontWeight: 'bold' }}>pure savings</Text> from income vs. expenses this month.
+                    </Text>
+                    <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
+                        <Text style={{ color: colors.text, fontFamily: 'monospace', fontSize: 14 }}>
+                            Income - Expense
+                        </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
+                        <Ionicons name="swap-horizontal-outline" size={20} color={colors.warning} style={{ marginTop: 2, marginRight: 8 }} />
+                        <Text style={{ color: colors.textSecondary, flex: 1, fontSize: 14 }}>
+                            <Text style={{ fontWeight: 'bold', color: colors.warning }}>Excludes Transfers.</Text> This gives you a clearer picture of your actual earnings versus spending, ignoring money moved between your own accounts.
+                        </Text>
+                    </View>
+                </View>
+            );
+        }
+    };
+
     return (
         <ScreenWrapper>
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -183,7 +256,7 @@ const HomeScreen = ({ navigation }: any) => {
                 <View style={{ marginBottom: 20 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
-                            Expense & Income
+                            Cash Flow
                         </Text>
                     </View>
 
@@ -213,8 +286,11 @@ const HomeScreen = ({ navigation }: any) => {
                                 <Card style={{ backgroundColor: colors.primary, padding: 20, marginBottom: 10, width: '100%' }}>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 8 }}>Total Assets</Text>
-                                            <View style={{ flexDirection: 'row', gap: 4 }}>
+                                            <TouchableOpacity onPress={() => handleInfoPress('Overall')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Cash Balance</Text>
+                                                <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
+                                            </TouchableOpacity>
+                                            <View style={{ flexDirection: 'row', gap: 4, marginLeft: 10 }}>
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white }} />
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
@@ -270,8 +346,11 @@ const HomeScreen = ({ navigation }: any) => {
                                 <Card style={{ backgroundColor: colors.primary, padding: 20, marginBottom: 10, width: '100%' }}>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 8 }}>Monthly Balance</Text>
-                                            <View style={{ flexDirection: 'row', gap: 4 }}>
+                                            <TouchableOpacity onPress={() => handleInfoPress('Month')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Monthly Balance</Text>
+                                                <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
+                                            </TouchableOpacity>
+                                            <View style={{ flexDirection: 'row', gap: 4, marginLeft: 10 }}>
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white }} />
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
@@ -322,13 +401,16 @@ const HomeScreen = ({ navigation }: any) => {
                                 </Card>
                             </View>
 
-                            {/* Card 3: Monthly Income & Expense (Pure, no Transfers) */}
+                            {/* Card 3: Monthly Net (Pure, no Transfers) */}
                             <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
                                 <Card style={{ backgroundColor: colors.primary, padding: 20, marginBottom: 10, width: '100%' }}>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 8 }}>Monthly Income & Expense</Text>
-                                            <View style={{ flexDirection: 'row', gap: 4 }}>
+                                            <TouchableOpacity onPress={() => handleInfoPress('MonthIncomeExpense')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Monthly Net</Text>
+                                                <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
+                                            </TouchableOpacity>
+                                            <View style={{ flexDirection: 'row', gap: 4, marginLeft: 10 }}>
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
                                                 <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white }} />
@@ -463,6 +545,15 @@ const HomeScreen = ({ navigation }: any) => {
                     />
                 </View>
             </ScrollView>
+            {/* Info Modal */}
+            <BottomModal
+                visible={isInfoModalVisible}
+                onClose={() => setIsInfoModalVisible(false)}
+                title="How is this calculated?"
+            >
+                {renderInfoModalContent()}
+            </BottomModal>
+
             {/* Settings Modal */}
             <BottomModal
                 visible={isSettingsModalVisible}
@@ -519,7 +610,7 @@ const HomeScreen = ({ navigation }: any) => {
                                 }}
                                 onPress={() => handleModeChange('MonthIncomeExpense')}
                             >
-                                <Text style={{ color: colors.text, fontSize: 16 }}>Monthly Income & Expense</Text>
+                                <Text style={{ color: colors.text, fontSize: 16 }}>Monthly Net</Text>
                                 {displayMode === 'MonthIncomeExpense' && (
                                     <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
                                 )}
