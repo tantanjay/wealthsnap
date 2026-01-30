@@ -227,7 +227,7 @@ const HistoryScreen = ({ navigation }: any) => {
                         .replace(/_/g, ' ')
                         .replace(/\b\w/g, c => c.toUpperCase());
 
-                return isTransferIn ? "Transfer In" : `To ${toTitleCase(item.transferAccount)}`;
+                return isTransferIn ? `From ${toTitleCase(item.transferAccount)}` : `To ${toTitleCase(item.transferAccount)}`;
             }
             return item.category;
         };
