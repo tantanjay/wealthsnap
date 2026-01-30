@@ -58,9 +58,15 @@ const RecurringExpensesSummaryModal: React.FC<RecurringExpensesSummaryProps> = (
             .filter(r => r.isActive && r.transactionTemplate.type === 'EXPENSE')
             .forEach(r => {
                 const category = r.transactionTemplate.category;
-                const amount = r.transactionTemplate.amount;
 
-                groups[category] = (groups[category] || new BigNumber(0)).plus(amount.abs());
+                // 1. Ensure we have a valid BigNumber instance from the template amount
+                // 2. Default to 0 if amount is null/undefined/invalid
+                const rawAmount = new BigNumber(r.transactionTemplate.amount ?? 0);
+
+                // 3. Check if the BigNumber is valid (isNaN check)
+                const amount = rawAmount.isNaN() ? new BigNumber(0) : rawAmount.abs();
+
+                groups[category] = (groups[category] || new BigNumber(0)).plus(amount);
             });
         return Object.entries(groups).sort((a, b) => {
             return b[1].comparedTo(a[1]) ?? 0;
