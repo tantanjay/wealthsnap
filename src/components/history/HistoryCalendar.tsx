@@ -183,6 +183,14 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
 
         const heatmapColor = getHeatmapColor();
 
+        // Helper for log scale flex: Makes small transactions visible against large ones
+        const getLogFlex = (amount: BigNumber) => {
+            const val = amount.toNumber();
+            if (val <= 0) return 0;
+            // distinct enough for small vs large, but ensures visibility
+            return Math.max(Math.log10(val + 1), 0.5);
+        };
+
         return (
             <TouchableOpacity
                 key={date.toISOString()}
@@ -190,8 +198,8 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     styles.dayCell,
                     {
                         backgroundColor: heatmapColor !== 'transparent' ? heatmapColor : (isCurrentMonth ? colors.surface : 'transparent'),
-                        borderColor: isToday ? colors.accent : 'transparent',
-                        borderWidth: isToday ? 2 : 0
+                        borderColor: 'transparent',
+                        borderWidth: 0
                     }
                 ]}
                 onPress={() => onSelectDate(date)}
@@ -203,25 +211,33 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                 )}
 
                 <View style={styles.cellTop}>
-                    <Text style={[
-                        styles.dateText,
-                        {
-                            color: isCurrentMonth ? colors.text : colors.textSecondary + '40',
-                            fontWeight: isToday ? 'bold' : '500',
-                        }
+                    <View style={[
+                        isToday && { backgroundColor: colors.primary, borderRadius: 20 } // Apply circle if today
                     ]}>
-                        {date.getDate()}
-                    </Text>
+                        <Text style={[
+                            styles.dateText,
+                            {
+                                color: isToday
+                                    ? '#FFFFFF' // Contrast text color for the circle
+                                    : (isCurrentMonth ? colors.text : colors.textSecondary + '40'),
+                                fontWeight: isToday ? 'bold' : '500',
+                                fontSize: isToday ? 10 : 12,
+                                padding: isToday ? 2 : 0,
+                            }
+                        ]}>
+                            {date.getDate()}
+                        </Text>
+                    </View>
                 </View>
 
-                {/* Data Representation: The Progress Strip */}
+                {/* Data Representation: The Progress Strip (Logarithmic) */}
                 <View style={styles.statsStripContainer}>
                     {stat && stat.totalVol.isGreaterThan(0) ? (
                         <View style={styles.statsStripInner}>
-                            {stat.income.isGreaterThan(0) && <View style={{ flex: stat.income.toNumber(), backgroundColor: colors.success }} />}
-                            {stat.transferIn.isGreaterThan(0) && <View style={{ flex: stat.transferIn.toNumber(), backgroundColor: '#4F46E5' }} />}
-                            {stat.transferOut.isGreaterThan(0) && <View style={{ flex: stat.transferOut.toNumber(), backgroundColor: '#F59E0B' }} />}
-                            {stat.expense.isGreaterThan(0) && <View style={{ flex: stat.expense.toNumber(), backgroundColor: colors.error }} />}
+                            {stat.income.isGreaterThan(0) && <View style={{ flex: getLogFlex(stat.income), backgroundColor: colors.success }} />}
+                            {stat.transferIn.isGreaterThan(0) && <View style={{ flex: getLogFlex(stat.transferIn), backgroundColor: '#4F46E5' }} />}
+                            {stat.transferOut.isGreaterThan(0) && <View style={{ flex: getLogFlex(stat.transferOut), backgroundColor: '#F59E0B' }} />}
+                            {stat.expense.isGreaterThan(0) && <View style={{ flex: getLogFlex(stat.expense), backgroundColor: colors.error }} />}
                         </View>
                     ) : (
                         <View style={[styles.emptyStrip, { backgroundColor: colors.border + '30' }]} />
