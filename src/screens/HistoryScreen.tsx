@@ -93,7 +93,7 @@ const HistoryScreen = ({ navigation }: any) => {
 
     const formatCurrency = (amount: BigNumber) => {
         if (isPrivacyEnabled) return '****';
-        return formatCurrencyAmount(amount, profile?.currency || 'USD');
+        return formatCurrencyAmount(amount, profile?.currency || 'PHP');
     };
 
     // --- Date Logic Helpers ---
@@ -178,30 +178,45 @@ const HistoryScreen = ({ navigation }: any) => {
         });
     }, [allTransactions, currentDate]);
 
+    const globalBalance = useMemo(() => {
+        return allTransactions.reduce((acc, t) => {
+            if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') return acc.plus(t.amount);
+            if (t.type === 'EXPENSE' || t.type === 'TRANSFER_OUT') return acc.minus(t.amount);
+            return acc;
+        }, new BigNumber(0));
+    }, [allTransactions]);
+
+    const dashboardTransactions = useMemo(() => {
+        // In Calendar Mode, Dashboard shows MONTHLY stats, while List shows DAILY
+        if (viewMode === 'CALENDAR') {
+            return calendarTransactions;
+        }
+        return filteredData;
+    }, [viewMode, calendarTransactions, filteredData]);
+
     const summary = useMemo((): FinancialSummary => {
         let totalIncome = new BigNumber(0);
         let totalExpense = new BigNumber(0);
-        let netTransfer = new BigNumber(0);
+        // We track net period flow mainly for Income/Expense cards
+        // Balance card will use Global Balance
 
-        filteredData.forEach(t => {
+        dashboardTransactions.forEach(t => {
             if (t.type === 'INCOME') {
                 totalIncome = totalIncome.plus(t.amount.abs());
             } else if (t.type === 'EXPENSE') {
                 totalExpense = totalExpense.plus(t.amount.abs());
-            } else if (t.type === 'TRANSFER_IN') {
-                netTransfer = netTransfer.plus(t.amount.abs());
-            } else if (t.type === 'TRANSFER_OUT') {
-                netTransfer = netTransfer.minus(t.amount.abs());
             }
+            // Transfers usually don't count as Spending/Income for the stats cards unless we want them to
+            // But usually Income card = Earned, Expense card = Spent
         });
 
         return {
             totalIncome,
             totalExpense,
-            balance: totalIncome.minus(totalExpense).plus(netTransfer),
-            safeToSpend: totalIncome.minus(totalExpense).plus(netTransfer) // Initialize with balance
+            balance: globalBalance, // Use Global Balance for 'Actual Balance'
+            safeToSpend: globalBalance // Initialize
         };
-    }, [filteredData]);
+    }, [dashboardTransactions, globalBalance]);
 
     // Calculate Safe To Spend (Effective Balance)
     const safeToSpend = useMemo(() => {
@@ -240,7 +255,9 @@ const HistoryScreen = ({ navigation }: any) => {
             });
         }
 
-        return summary.balance.minus(upcomingBills);
+        // User prefers Safe-to-Spend to be based on Monthly Income/Budget, not Total Wealth
+        const periodNet = summary.totalIncome.minus(summary.totalExpense);
+        return periodNet.minus(upcomingBills);
     }, [summary, recurrenceRules, currentDate, timeFrame, viewMode]);
 
     const sections = useMemo((): TransactionSection[] => {
@@ -532,7 +549,7 @@ const HistoryScreen = ({ navigation }: any) => {
                         </Text>
                         <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center', marginBottom: 6 }}>
-                                Current Balance - <Text style={{ color: colors.text }}>Future Bills</Text> =
+                                (Month Income - Expenses) - <Text style={{ color: colors.text }}>Future Bills</Text> =
                             </Text>
                             <Text style={{ color: '#4CAF50', fontSize: 20, fontWeight: 'bold', textAlign: 'center' }}>
                                 Safe Amount
@@ -577,15 +594,18 @@ const HistoryScreen = ({ navigation }: any) => {
                             See the future before it happens.
                         </Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 12 }}>
-                            <View style={{
-                                backgroundColor: '#9CA3AF', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginRight: 12
-                            }}>
-                                <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>${'120'}</Text>
+                            <View style={{ marginRight: 12, gap: 4 }}>
+                                <View style={{ backgroundColor: colors.success, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                                    <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>+$2k</Text>
+                                </View>
+                                <View style={{ backgroundColor: '#F44336', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                                    <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>-$500</Text>
+                                </View>
                             </View>
                             <View style={{ flex: 1 }}>
-                                <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Future Badge</Text>
+                                <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Future Badges</Text>
                                 <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                    Appears on future dates to show the total of upcoming bills.
+                                    Green for upcoming Income, Red for Bills.
                                 </Text>
                             </View>
                         </View>

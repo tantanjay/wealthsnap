@@ -25,7 +25,7 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
     selectedDate,
     onSelectDate,
     recurrenceRules = [],
-    currency = 'USD'
+    currency = 'PHP'
 }) => {
     const { colors } = useTheme();
 
@@ -70,7 +70,8 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                 transferOut: BigNumber;
                 totalVol: BigNumber;
                 recurringCount: number;
-                futureCommitmentAmount: BigNumber; // For Ghost Forecast
+                futureIncomeAmount: BigNumber; // Ghost Income
+                futureExpenseAmount: BigNumber; // Ghost Expense
             }
         } = {};
 
@@ -85,7 +86,8 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     transferOut: new BigNumber(0),
                     totalVol: new BigNumber(0),
                     recurringCount: 0,
-                    futureCommitmentAmount: new BigNumber(0)
+                    futureIncomeAmount: new BigNumber(0),
+                    futureExpenseAmount: new BigNumber(0)
                 };
             }
             return stats[key];
@@ -136,7 +138,12 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
 
                         // Ghost Forecast: Only sum amount if it's strictly in the future
                         if (pointer > today) {
-                            stat.futureCommitmentAmount = stat.futureCommitmentAmount.plus(new BigNumber(rule.transactionTemplate.amount).abs());
+                            const amount = new BigNumber(rule.transactionTemplate.amount).abs();
+                            if (rule.transactionTemplate.type === 'INCOME') {
+                                stat.futureIncomeAmount = stat.futureIncomeAmount.plus(amount);
+                            } else {
+                                stat.futureExpenseAmount = stat.futureExpenseAmount.plus(amount);
+                            }
                         }
                     }
 
@@ -181,7 +188,11 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                 key={date.toISOString()}
                 style={[
                     styles.dayCell,
-                    { backgroundColor: heatmapColor !== 'transparent' ? heatmapColor : (isCurrentMonth ? colors.surface : 'transparent') }
+                    {
+                        backgroundColor: heatmapColor !== 'transparent' ? heatmapColor : (isCurrentMonth ? colors.surface : 'transparent'),
+                        borderColor: isToday ? colors.accent : 'transparent',
+                        borderWidth: isToday ? 2 : 0
+                    }
                 ]}
                 onPress={() => onSelectDate(date)}
                 activeOpacity={0.8}
@@ -201,9 +212,6 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     ]}>
                         {date.getDate()}
                     </Text>
-                    {isToday && !isSelected && (
-                        <View style={[styles.todayDot, { backgroundColor: colors.primary }]} />
-                    )}
                 </View>
 
                 {/* Data Representation: The Progress Strip */}
@@ -220,10 +228,19 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     )}
                 </View>
 
-                {/* Future Ghost Badge: Show Amount */}
-                {stat && stat.futureCommitmentAmount.isGreaterThan(0) && date > new Date() ? (
-                    <View style={styles.ghostBadge}>
-                        <Text style={styles.ghostText}>{formatCompactCurrency(stat.futureCommitmentAmount, currency)}</Text>
+                {/* Future Ghost Badges: Stacked if multiples */}
+                {date > new Date() && stat && (stat.futureIncomeAmount.gt(0) || stat.futureExpenseAmount.gt(0)) ? (
+                    <View style={styles.ghostBadgeContainer}>
+                        {stat.futureIncomeAmount.gt(0) && (
+                            <View style={[styles.ghostBadge, { backgroundColor: colors.success }]}>
+                                <Text style={styles.ghostText}>{formatCompactCurrency(stat.futureIncomeAmount, currency)}</Text>
+                            </View>
+                        )}
+                        {stat.futureExpenseAmount.gt(0) && (
+                            <View style={[styles.ghostBadge, { backgroundColor: '#F44336' }]}>
+                                <Text style={styles.ghostText}>{formatCompactCurrency(stat.futureExpenseAmount, currency)}</Text>
+                            </View>
+                        )}
                     </View>
                 ) : (
                     /* Recurring Count Badge (Past/Present or Future mixed) */
@@ -343,11 +360,14 @@ const styles = StyleSheet.create({
         fontSize: 7,
         fontWeight: 'bold',
     },
-    ghostBadge: {
+    ghostBadgeContainer: {
         position: 'absolute',
         top: 2,
         right: 2,
-        backgroundColor: '#9CA3AF', // Grey-400
+        alignItems: 'flex-end',
+        gap: 1,
+    },
+    ghostBadge: {
         borderRadius: 4,
         paddingHorizontal: 2,
         paddingVertical: 1,

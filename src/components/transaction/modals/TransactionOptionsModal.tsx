@@ -23,7 +23,7 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
     transaction,
     onEdit,
     onDelete,
-    currency = 'USD'
+    currency = 'PHP'
 }) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();

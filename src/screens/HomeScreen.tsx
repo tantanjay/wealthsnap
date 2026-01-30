@@ -472,7 +472,7 @@ const HomeScreen = ({ navigation }: any) => {
                             {isLoading ? (
                                 <Skeleton width={120} height={36} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
                             ) : (
-                                isPrivacyEnabled ? '****' : formatCurrencyAmount(investmentTotal, profile?.currency || 'USD')
+                                isPrivacyEnabled ? '****' : formatCurrencyAmount(investmentTotal, profile?.currency || 'PHP')
                             )}
                         </Text>
                         {isLoading ? (
@@ -506,7 +506,7 @@ const HomeScreen = ({ navigation }: any) => {
                             {isLoading ? (
                                 <Skeleton width={120} height={36} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
                             ) : (
-                                isPrivacyEnabled ? '****' : formatCurrencyAmount(debtTotal, profile?.currency || 'USD')
+                                isPrivacyEnabled ? '****' : formatCurrencyAmount(debtTotal, profile?.currency || 'PHP')
                             )}
                         </Text>
                         {isLoading ? (
@@ -536,7 +536,7 @@ const HomeScreen = ({ navigation }: any) => {
                     <HomeTransactionsCard
                         recentTransactions={transactions.slice(0, 5)}
                         topExpenses={getTopExpenses(transactions, 5)}
-                        currency={profile?.currency || 'USD'}
+                        currency={profile?.currency || 'PHP'}
                         onTransactionPress={() => navigation.navigate('History')}
                         isPrivacyEnabled={isPrivacyEnabled}
                         isLoading={isLoading}
