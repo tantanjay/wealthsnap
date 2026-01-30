@@ -1,5 +1,5 @@
 import { BigNumber } from 'bignumber.js';
-import { Transaction, TransactionReceipt } from "@types";
+import { Transaction, TransactionReceipt, TransactionType } from "@types";
 import { getDatabase } from "@services/database/databaseService";
 import { bulkDecryptItems, encryptData, encryptField } from "@services/core/encryptionService";
 import { chunkArray } from "@utils/index";
@@ -197,6 +197,31 @@ export const getAllTransactionReceipts = async (): Promise<TransactionReceipt[]>
         }));
     } catch (error) {
         console.error('Error getting transaction receipts:', error);
+        return [];
+    }
+};
+
+export const getRecentCategories = async (type: TransactionType, limit: number = 20): Promise<string[]> => {
+    try {
+        const db = await getDatabase();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const dateStr = thirtyDaysAgo.toISOString();
+
+        // Query for unique categories used in the last 30 days, ordered by usage frequency (most used first)
+        const rows = await db.getAllAsync<{ category: string }>(
+            `SELECT category, COUNT(*) as usage_count, MAX(date) as last_used 
+             FROM transactions 
+             WHERE type = ? AND date >= ? AND category IS NOT NULL AND category != ''
+             GROUP BY category 
+             ORDER BY usage_count DESC, last_used DESC 
+             LIMIT ?`,
+            [type, dateStr, limit]
+        );
+
+        return rows.map(r => r.category);
+    } catch (error) {
+        console.error('Error getting recent categories:', error);
         return [];
     }
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { BigNumber } from 'bignumber.js';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
@@ -12,7 +12,7 @@ import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency } from '@types';
 import { generateUUID } from '@utils/uuid';
-import { saveTransaction, saveRecurrenceRule } from '@services/domain';
+import { saveTransaction, saveRecurrenceRule, getRecentCategories } from '@services/domain';
 import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '@constants/categories';
 
 interface TransactionFormProps {
@@ -55,7 +55,17 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     const [showCalculator, setShowCalculator] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
 
+    const [recentCategories, setRecentCategories] = useState<string[]>([]);
+
     const categoryGroups = type === 'EXPENSE' ? EXPENSE_CATEGORY_GROUPS : INCOME_CATEGORY_GROUPS;
+
+    useEffect(() => {
+        const fetchRecent = async () => {
+            const categories = await getRecentCategories(type);
+            setRecentCategories(categories);
+        };
+        fetchRecent();
+    }, [type]);
 
     const handleSave = async () => {
         if (!amount || !category) {
@@ -264,52 +274,89 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     />
                 </Card>
 
-                {/* Category Selection Button */}
-                <Card>
-                    <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Category</Text>
-                    <TouchableOpacity
-                        onPress={() => setShowCategoryModal(true)}
-                        style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            backgroundColor: colors.background,
-                            padding: 12,
-                            borderRadius: 12,
-                            borderWidth: 1,
-                            borderColor: category ? colors.primary : colors.border,
-                        }}
+                {/* Category Selection */}
+                <View style={{ marginBottom: 20 }}>
+                    <Text style={{ color: colors.textSecondary, marginBottom: 8, marginLeft: 4 }}>Category</Text>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: 8 }}
                     >
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            {category ? (
-                                <>
-                                    <View style={{
-                                        width: 36,
-                                        height: 36,
-                                        borderRadius: 18,
-                                        backgroundColor: colors.primary + '20',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginRight: 12
-                                    }}>
+                        {/* Search Button */}
+                        <TouchableOpacity
+                            onPress={() => setShowCategoryModal(true)}
+                            style={{
+                                width: 90,
+                                paddingVertical: 12,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                borderRadius: 12,
+                                borderWidth: 1.5,
+                                borderColor: colors.primary,
+                                backgroundColor: colors.surface,
+                            }}
+                        >
+                            <Ionicons name="search" size={22} color={colors.primary} />
+                            <Text style={{
+                                color: colors.primary,
+                                fontSize: 10,
+                                fontWeight: '700',
+                                marginTop: 6,
+                                textAlign: 'center'
+                            }}>Search</Text>
+                        </TouchableOpacity>
+
+                        {/* Recent Categories */}
+                        {(() => {
+                            const params = [category];
+                            const categoriesToDisplay = [...recentCategories];
+                            if (category && !categoriesToDisplay.includes(category)) {
+                                categoriesToDisplay.unshift(category);
+                            }
+
+                            return categoriesToDisplay.map((cat) => {
+                                const isActive = category === cat;
+                                const catGroupItem = categoryGroups.flatMap(g => g.items).find(c => c.value === cat);
+                                const icon = catGroupItem?.icon || 'ellipsis-horizontal';
+
+                                return (
+                                    <TouchableOpacity
+                                        key={cat}
+                                        onPress={() => {
+                                            setCategory(cat);
+                                            setSubCategory('');
+                                        }}
+                                        style={{
+                                            width: 90,
+                                            paddingVertical: 12,
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            borderRadius: 12,
+                                            borderWidth: 1.5,
+                                            borderColor: isActive ? colors.primary : 'transparent',
+                                            backgroundColor: isActive ? colors.primary + '15' : colors.surface || '#f5f5f5',
+                                        }}
+                                    >
                                         <Ionicons
-                                            name={categoryGroups.flatMap(g => g.items).find(c => c.value === category)?.icon as any || 'ellipsis-horizontal'}
-                                            size={20}
-                                            color={colors.primary}
+                                            name={icon as any}
+                                            size={22}
+                                            color={isActive ? colors.primary : colors.textSecondary}
                                         />
-                                    </View>
-                                    <View>
-                                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{category}</Text>
-                                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{getCategoryGroup(category, type)}</Text>
-                                    </View>
-                                </>
-                            ) : (
-                                <Text style={{ color: colors.gray500, fontSize: 16 }}>Select a category</Text>
-                            )}
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </Card>
+                                        <Text style={{
+                                            color: isActive ? colors.primary : colors.text,
+                                            fontSize: 10,
+                                            fontWeight: isActive ? '700' : '500',
+                                            marginTop: 6,
+                                            textAlign: 'center'
+                                        }} numberOfLines={1}>
+                                            {cat}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            });
+                        })()}
+                    </ScrollView>
+                </View>
 
                 {/* Note */}
                 <Card>
