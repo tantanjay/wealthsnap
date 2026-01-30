@@ -313,6 +313,7 @@ export const migrateV5ToV6 = async (db: any): Promise<void> => {
                 date TEXT NOT NULL,
                 symbol TEXT NOT NULL,
                 type TEXT NOT NULL CHECK(type IN ('STOCKS', 'FUNDS', 'BONDS', 'CRYPTO', 'COMMODITIES', 'OTHERS')),
+                action TEXT NOT NULL CHECK(action IN ('BUY', 'SELL', 'DIVIDEND', 'INTEREST')),
                 quantity TEXT NOT NULL,
                 price TEXT NOT NULL,
                 fees TEXT,
@@ -328,6 +329,7 @@ export const migrateV5ToV6 = async (db: any): Promise<void> => {
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_date ON investments(date DESC)');
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_symbol ON investments(symbol)');
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_type ON investments(type)');
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_action ON investments(action)');
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_recurring ON investments(isRecurring)');
 
         // 9. Commit

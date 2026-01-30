@@ -189,7 +189,6 @@ const SetupScreen = ({ navigation }: any) => {
         },
         stepDescription: {
             fontSize: 16,
-            marginBottom: 20,
             textAlign: 'center',
             opacity: 0.8,
         },
