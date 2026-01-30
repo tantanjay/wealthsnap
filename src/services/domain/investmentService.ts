@@ -11,8 +11,8 @@ import { invalidateInvestmentCache } from "@services/core/dataCache";
 
 const UPSERT_INVESTMENT_QUERY = `
   INSERT OR REPLACE INTO investments 
-  (id, date, symbol, type, quantity, price, fees, notes, creationMethod, isRecurring, recurrenceId)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (id, date, symbol, type, action, quantity, price, fees, notes, creationMethod, isRecurring, recurrenceId)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 /**
@@ -31,6 +31,7 @@ const prepareInvestmentValues = async (inv: Investment) => {
         inv.date,
         inv.symbol,
         inv.type,
+        inv.action,
         encryptedQty,
         encryptedPrice,
         encryptedFees,
@@ -105,9 +106,10 @@ export const getAllInvestments = async (): Promise<Investment[]> => {
             date: row.date,
             symbol: row.symbol,
             type: row.type,
-            quantity: new BigNumber(row.quantity || new BigNumber(0)),
-            price: new BigNumber(row.price || new BigNumber(0)),
-            fees: new BigNumber(row.fees || new BigNumber(0)),
+            action: row.action,
+            quantity: new BigNumber(row.quantity || 0),
+            price: new BigNumber(row.price || 0),
+            fees: new BigNumber(row.fees || 0),
             notes: row.notes || '',
             creationMethod: row.creationMethod,
             isRecurring: row.isRecurring === 1,
