@@ -33,7 +33,7 @@ const ProfileScreen = ({ navigation }: any) => {
     // Recurring Rules State
     const [showRecurringModal, setShowRecurringModal] = useState(false);
     const [recurrenceRules, setRecurrenceRules] = useState<RecurrenceRule[]>([]);
-    const [currency, setCurrency] = useState('USD');
+    const [currency, setCurrency] = useState('PHP');
 
     // Budget State
     const [showBudgetModal, setShowBudgetModal] = useState(false);
