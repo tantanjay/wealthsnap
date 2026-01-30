@@ -63,15 +63,8 @@ export const calculateNextOccurrence = (reminder: Reminder, fromDate: Date = new
             }
             break;
         case 'SEMI_WEEKLY':
-            // Every 3.5 days is complex, usually means twice a week. 
-            // Let's assume every Monday and Thursday (3 and 4 days apart) if Monday was start.
-            // Or simpler: just add 3 or 4 days. 
-            // Given the requirement "Logic: Use this to determine the anchor day", 
-            // let's assume SEMI_WEEKLY means every 3 or 4 days alternating, 
-            // but a better interpretation is two fixed days a week.
-            // For now, let's treat SEMI_WEEKLY as every 3 days for simplicity or ask.
-            // Re-reading: "Semi-Weekly" -> let's do every 3 or 4 days to hit ~2 times a week.
-            // Actually, let's just do every 3 days.
+            // SEMI_WEEKLY is simplified to trigger every 3 days.
+            // This ensures roughly 2 reminders per week.
             while ((next.getTime() - start.getTime()) % (3 * 24 * 60 * 60 * 1000) !== 0) {
                 next.setDate(next.getDate() + 1);
             }
