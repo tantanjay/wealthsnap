@@ -5,12 +5,7 @@ import { bulkDecryptItems, encryptField } from "@services/core/encryptionService
 import { chunkArray } from "@utils/index";
 import { invalidateInvestmentCache } from "@services/core/dataCache";
 
-interface PreparedInvestment extends Investment {
-    encryptedQty: string | null;
-    encryptedPrice: string | null;
-    encryptedFees: string | null;
-    encryptedNotes: string | null;
-}
+
 
 // --- Constants & Helpers ---
 
