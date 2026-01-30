@@ -150,16 +150,16 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
 
     const onMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const contentOffset = event.nativeEvent.contentOffset.x;
-        const viewWidth = cardWidth * 2 + 12; // Two cards + gap
+        const viewWidth = cardWidth * 2 + 24; // Two cards + gap
         const page = Math.round(contentOffset / viewWidth);
         setCurrentPage(page);
     };
 
     const renderItem = ({ item }: { item: any }) => (
         <View style={{ width: cardWidth, marginRight: 12 }}>
-            <Card style={{ padding: 16, height: 120, justifyContent: 'space-between', backgroundColor: colors.surface }}>
+            <Card style={{ padding: 16, height: 100, justifyContent: 'center', backgroundColor: colors.surface }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600' }}>{item.title.toUpperCase()}</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600', flex: 1 }} numberOfLines={1}>{item.title.toUpperCase()}</Text>
                     {item.hasInfo && (
                         <TouchableOpacity onPress={item.onInfoPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                             <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
@@ -204,7 +204,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                 contentContainerStyle={{ paddingHorizontal: 0 }}
                 onMomentumScrollEnd={onMomentumScrollEnd}
                 decelerationRate="fast"
-                snapToInterval={cardWidth * 2 + 12} // Two cards + gap for page snapping
+                snapToInterval={cardWidth * 2 + 24} // Two cards + gap + side padding compensation
                 snapToAlignment="start"
                 getItemLayout={(data, index) => (
                     { length: cardWidth + 12, offset: (cardWidth + 12) * index, index }
