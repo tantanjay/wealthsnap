@@ -112,7 +112,7 @@ const HomeScreen = ({ navigation }: any) => {
         setMonthTransferOut(mTransOut);
 
         const totalInv = inv.reduce((sum: BigNumber, item: Investment) => {
-            const price = new BigNumber(item.currentPrice || item.averageBuyPrice || 0);
+            const price = new BigNumber(item.price || 0);
             const positionValue = new BigNumber(item.quantity || 0).times(price);
             return sum.plus(positionValue);
         }, new BigNumber(0));

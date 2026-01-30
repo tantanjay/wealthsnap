@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { Transaction, Investment, Category, RecurrenceRule } from '@types';
+import { Transaction, Category, RecurrenceRule } from '@types';
 import { getDatabase } from '@services/database/databaseService';
 import { decryptData, encryptField } from '@services/core/encryptionService';
 
@@ -91,8 +91,8 @@ const migrateTransactions = async (db: any): Promise<number> => {
 
         await db.runAsync(
             `INSERT OR REPLACE INTO transactions 
-             (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, transferRelatedId)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 txn.id,
                 txn.date,
@@ -105,49 +105,14 @@ const migrateTransactions = async (db: any): Promise<number> => {
                 txn.isRecurring ? 1 : 0,
                 txn.recurrenceId || null,
                 txn.transferAccount || null,
-                txn.transferRelatedId || null
+                txn.linkedTransactionId || null,
+                txn.investmentId || null,
+                txn.debtId || null
             ]
         );
     }
 
     return transactions.length;
-};
-
-/**
- * Migrate investments from AsyncStorage to SQLite
- */
-const migrateInvestments = async (db: any): Promise<number> => {
-    const investments = await readAsyncStorageData<Investment>(ASYNC_STORAGE_KEYS.INVESTMENTS);
-
-    if (investments.length === 0) {
-        return 0;
-    }
-
-    for (const inv of investments) {
-        // Encrypt sensitive fields
-        const encryptedQuantity = await encryptField(inv.quantity);
-        const encryptedAvgPrice = await encryptField(inv.averageBuyPrice);
-        const encryptedNotes = inv.notes ? await encryptField(inv.notes) : null;
-
-        await db.runAsync(
-            `INSERT OR REPLACE INTO investments 
-             (id, symbol, name, type, quantity, averageBuyPrice, currentPrice, lastUpdated, notes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                inv.id,
-                inv.symbol,
-                inv.name,
-                inv.type,
-                encryptedQuantity,
-                encryptedAvgPrice,
-                inv.currentPrice || null,
-                inv.lastUpdated || null,
-                encryptedNotes
-            ]
-        );
-    }
-
-    return investments.length;
 };
 
 /**
@@ -287,11 +252,6 @@ export const migrateV2ToV5 = async (db: any): Promise<void> => {
     }
 };
 
-/**
- * Migrate from V5 to V6: Add transfer support
- * - Add TRANSFER to transaction type CHECK constraint
- * - Add transferAccount and transferRelatedId columns
- */
 export const migrateV5ToV6 = async (db: any): Promise<void> => {
     try {
         // 1. Start transaction
@@ -302,7 +262,7 @@ export const migrateV5ToV6 = async (db: any): Promise<void> => {
             CREATE TABLE IF NOT EXISTS transactions_new (
                 id TEXT PRIMARY KEY,
                 date TEXT NOT NULL,
-                amount REAL NOT NULL,
+                amount TEXT NOT NULL,
                 type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'TRANSFER_IN', 'TRANSFER_OUT')),
                 category TEXT,
                 subCategory TEXT,
@@ -311,7 +271,9 @@ export const migrateV5ToV6 = async (db: any): Promise<void> => {
                 isRecurring INTEGER DEFAULT 0,
                 recurrenceId TEXT,
                 transferAccount TEXT CHECK(transferAccount IN ('OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT', 'CASH_ATM', 'DIGITAL_WALLET', 'CRYPTO', 'RECEIVABLE', 'TIME_DEPOSIT')),
-                transferRelatedId TEXT,
+                linkedTransactionId TEXT,
+                investmentId TEXT,
+                debtId TEXT,
                 createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
                 updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
             )
@@ -341,7 +303,34 @@ export const migrateV5ToV6 = async (db: any): Promise<void> => {
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category)');
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_transactions_recurring ON transactions(isRecurring)');
 
-        // 7. Commit
+        // 7. Drop investments table
+        await db.runAsync('DROP TABLE investments');
+
+        // 8. Create investments table
+        await db.runAsync(`
+            CREATE TABLE IF NOT EXISTS investments (
+                id TEXT PRIMARY KEY,
+                date TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                type TEXT NOT NULL CHECK(type IN ('STOCKS', 'FUNDS', 'BONDS', 'CRYPTO', 'COMMODITIES', 'OTHERS')),
+                quantity TEXT NOT NULL,
+                price TEXT NOT NULL,
+                fees TEXT,
+                notes TEXT,
+                creationMethod TEXT,
+                isRecurring INTEGER DEFAULT 0,
+                recurrenceId TEXT,
+                createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+                updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_date ON investments(date DESC)');
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_symbol ON investments(symbol)');
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_type ON investments(type)');
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_recurring ON investments(isRecurring)');
+
+        // 9. Commit
         await db.runAsync('COMMIT');
 
     } catch (error: any) {
@@ -408,16 +397,13 @@ export const migrateFromAsyncStorage = async (
 
         // Migrate all data in a single transaction for atomicity
         await db.withTransactionAsync(async () => {
-            onProgress?.('Migrating transactions...', 1, 4);
+            onProgress?.('Migrating transactions...', 1, 3);
             counts.transactions = await migrateTransactions(db);
 
-            onProgress?.('Migrating investments...', 2, 4);
-            counts.investments = await migrateInvestments(db);
-
-            onProgress?.('Migrating categories...', 3, 4);
+            onProgress?.('Migrating categories...', 2, 3);
             counts.categories = await migrateCategories(db);
 
-            onProgress?.('Migrating recurrence rules...', 4, 4);
+            onProgress?.('Migrating recurrence rules...', 3, 3);
             counts.recurrenceRules = await migrateRecurrenceRules(db);
         });
 
