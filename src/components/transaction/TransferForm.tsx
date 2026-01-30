@@ -119,12 +119,12 @@ export const TransferForm: React.FC<TransferFormProps> = ({
     return (
         <View style={{ flex: 1 }}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 20 }}>
+                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 10 }}>
                     {initialTransaction ? 'Edit Transfer' : 'New Transfer'}
                 </Text>
 
                 {/* Date and Time Selection */}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
                     <TouchableOpacity
                         onPress={() => setShowTransactionDatePicker(true)}
                         style={{
@@ -203,22 +203,22 @@ export const TransferForm: React.FC<TransferFormProps> = ({
                 )}
 
                 {/* Direction Toggle */}
-                <View style={{ flexDirection: 'row', marginBottom: 20, backgroundColor: colors.surface, borderRadius: 12, padding: 4 }}>
-                    <TouchableOpacity
-                        style={{ flex: 1, padding: 12, alignItems: 'center', backgroundColor: direction === 'IN' ? colors.success : 'transparent', borderRadius: 8 }}
-                        onPress={() => handleDirectionChange('IN')}
-                    >
-                        <Text style={{ color: direction === 'IN' ? '#FFF' : colors.text, fontWeight: 'bold' }}>IN (Receive)</Text>
-                    </TouchableOpacity>
+                <View style={{ flexDirection: 'row', marginBottom: 10, backgroundColor: colors.surface, borderRadius: 12, padding: 4 }}>
                     <TouchableOpacity
                         style={{ flex: 1, padding: 12, alignItems: 'center', backgroundColor: direction === 'OUT' ? colors.error : 'transparent', borderRadius: 8 }}
                         onPress={() => handleDirectionChange('OUT')}
                     >
-                        <Text style={{ color: direction === 'OUT' ? '#FFF' : colors.text, fontWeight: 'bold' }}>OUT (Send)</Text>
+                        <Text style={{ color: direction === 'OUT' ? '#FFF' : colors.text, fontWeight: 'bold' }}>Send</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={{ flex: 1, padding: 12, alignItems: 'center', backgroundColor: direction === 'IN' ? colors.success : 'transparent', borderRadius: 8 }}
+                        onPress={() => handleDirectionChange('IN')}
+                    >
+                        <Text style={{ color: direction === 'IN' ? '#FFF' : colors.text, fontWeight: 'bold' }}>Receive</Text>
                     </TouchableOpacity>
                 </View>
 
-                <Card style={{ marginBottom: 20, paddingHorizontal: 16 }}>
+                <Card style={{ marginBottom: 10, paddingHorizontal: 16 }}>
                     <Text style={{
                         color: colors.textSecondary,
                         fontSize: 12,
@@ -279,7 +279,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({
 
                 {/* Amount */}
                 <Card>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text style={{ color: colors.textSecondary }}>Amount</Text>
                         <TouchableOpacity onPress={() => setShowCalculator(true)} style={{ padding: 4 }}>
                             <Ionicons name="calculator" size={24} color={colors.primary} />
@@ -297,7 +297,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({
 
                 {/* Note */}
                 <Card>
-                    <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Note (Optional)</Text>
+                    <Text style={{ color: colors.textSecondary }}>Note (Optional)</Text>
                     <TextInput
                         style={{ color: colors.text, fontSize: 16, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
                         value={note}
