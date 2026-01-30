@@ -148,21 +148,39 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
         showAlert('Success', 'Transaction saved!', [
             {
-                text: 'OK',
-                onPress: onSave
+                text: 'Add More',
+                onPress: () => {
+                    setAmount('');
+                    setCategory('');
+                    setSubCategory('');
+                    setNote('');
+                    // Keep type and date for rapid entry
+                    setIsRecurring(false);
+                    setRecurringLabel('');
+                    setFrequency('MONTHLY');
+                    setStartDate(new Date());
+                    setEndsNever(true);
+                    setEndDate(new Date());
+                },
+                style: 'default'
+            },
+            {
+                text: 'Home',
+                onPress: onSave,
+                style: 'cancel'
             }
-        ]);
+        ], { cancelable: false });
     };
 
     return (
         <View style={{ flex: 1 }}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 20 }}>
+                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 10 }}>
                     {initialTransaction ? 'Edit Transaction' : 'New Transaction'}
                 </Text>
 
                 {/* Date and Time Selection */}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
                     <TouchableOpacity
                         onPress={() => setShowTransactionDatePicker(true)}
                         style={{
@@ -241,7 +259,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 )}
 
                 {/* Type Toggle */}
-                <View style={{ flexDirection: 'row', marginBottom: 20, backgroundColor: colors.surface, borderRadius: 12, padding: 4 }}>
+                <View style={{ flexDirection: 'row', marginBottom: 10, backgroundColor: colors.surface, borderRadius: 12, padding: 4 }}>
                     <TouchableOpacity
                         style={{ flex: 1, padding: 12, alignItems: 'center', backgroundColor: type === 'EXPENSE' ? colors.error : 'transparent', borderRadius: 8 }}
                         onPress={() => setType('EXPENSE')}
@@ -258,7 +276,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
                 {/* Amount */}
                 <Card>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text style={{ color: colors.textSecondary }}>Amount</Text>
                         <TouchableOpacity onPress={() => setShowCalculator(true)} style={{ padding: 4 }}>
                             <Ionicons name="calculator" size={24} color={colors.primary} />
@@ -275,7 +293,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 </Card>
 
                 {/* Category Selection */}
-                <View style={{ marginBottom: 20 }}>
+                <View style={{ marginBottom: 10 }}>
                     <Text style={{ color: colors.textSecondary, marginBottom: 8, marginLeft: 4 }}>Category</Text>
                     <ScrollView
                         horizontal
@@ -292,13 +310,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                 alignItems: 'center',
                                 borderRadius: 12,
                                 borderWidth: 1.5,
-                                borderColor: colors.primary,
+                                borderColor: 'transparent',
                                 backgroundColor: colors.surface,
                             }}
                         >
-                            <Ionicons name="search" size={22} color={colors.primary} />
+                            <Ionicons name="search" size={22} color={colors.textSecondary} />
                             <Text style={{
-                                color: colors.primary,
+                                color: colors.text,
                                 fontSize: 10,
                                 fontWeight: '700',
                                 marginTop: 6,
@@ -360,7 +378,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
                 {/* Note */}
                 <Card>
-                    <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Note (Optional)</Text>
+                    <Text style={{ color: colors.textSecondary }}>Note (Optional)</Text>
                     <TextInput
                         style={{ color: colors.text, fontSize: 16, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
                         value={note}
