@@ -268,7 +268,7 @@ const RecordScreen = ({ navigation, route }: any) => {
             {/* Transfer Form */}
             {viewMode === 'TRANSACTION' && (transactionType === 'TRANSFER_IN' || transactionType === 'TRANSFER_OUT') && (
                 <TransferForm
-                    key={`TRANSFER-${editingTransaction?.id || 'new'}`}
+                    key={`TRANSFER-${transactionType}-${editingTransaction?.id || 'new'}`}
                     initialType={transactionType as 'TRANSFER_IN' | 'TRANSFER_OUT'}
                     initialTransaction={editingTransaction || undefined}
                     onSave={handleTransactionSave}
