@@ -255,7 +255,7 @@ const RecordScreen = ({ navigation, route }: any) => {
     return (
         <ScreenWrapper scrollable={viewMode !== 'TRANSACTION' && viewMode !== 'AI_REVIEW'}>
             {/* Transaction Form */}
-            {viewMode === 'TRANSACTION' && transactionType !== 'TRANSFER' && (
+            {viewMode === 'TRANSACTION' && transactionType !== 'TRANSFER_IN' && transactionType !== 'TRANSFER_OUT' && (
                 <TransactionForm
                     key={`${transactionType}-${editingTransaction?.id || 'new'}`}
                     transactionType={transactionType}
@@ -266,9 +266,10 @@ const RecordScreen = ({ navigation, route }: any) => {
             )}
 
             {/* Transfer Form */}
-            {viewMode === 'TRANSACTION' && transactionType === 'TRANSFER' && (
+            {viewMode === 'TRANSACTION' && (transactionType === 'TRANSFER_IN' || transactionType === 'TRANSFER_OUT') && (
                 <TransferForm
                     key={`TRANSFER-${editingTransaction?.id || 'new'}`}
+                    initialType={transactionType as 'TRANSFER_IN' | 'TRANSFER_OUT'}
                     initialTransaction={editingTransaction || undefined}
                     onSave={handleTransactionSave}
                     onCancel={handleTransactionCancel}
