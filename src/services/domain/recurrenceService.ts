@@ -1,3 +1,4 @@
+import { BigNumber } from 'bignumber.js';
 import { RecurrenceRule, Transaction, RecurrenceFrequency } from '@types';
 import { getDatabase } from "@services/database/databaseService";
 import { saveTransaction } from '@services/domain/transactionService';
@@ -180,6 +181,11 @@ export const getAllRecurrenceRules = async (): Promise<RecurrenceRule[]> => {
                 } catch {
                     console.error('Failed to parse transaction template');
                 }
+            }
+
+            // Ensure amount is a BigNumber (JSON.parse returns number/string)
+            if (template && template.amount) {
+                template.amount = new BigNumber(template.amount);
             }
 
             const decryptedName = await decryptField(row.name);

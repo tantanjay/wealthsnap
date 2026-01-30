@@ -14,8 +14,8 @@ interface PreparedTransaction extends Transaction {
 
 const UPSERT_TRANSACTION_QUERY = `
   INSERT OR REPLACE INTO transactions 
-  (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, transferRelatedId)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 const UPSERT_RECEIPT_QUERY = `
@@ -41,7 +41,9 @@ const prepareTransactionValues = async (txn: Transaction) => {
         txn.isRecurring ? 1 : 0,
         txn.recurrenceId || null,
         txn.transferAccount || null,
-        txn.transferRelatedId || null
+        txn.linkedTransactionId || null,
+        txn.investmentId || null,
+        txn.debtId || null
     ];
 };
 
@@ -156,7 +158,9 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
             isRecurring: row.isRecurring === 1,
             recurrenceId: row.recurrenceId,
             transferAccount: row.transferAccount,
-            transferRelatedId: row.transferRelatedId,
+            linkedTransactionId: row.linkedTransactionId,
+            investmentId: row.investmentId,
+            debtId: row.debtId,
             createdAt: row.createdAt,
             updatedAt: row.updatedAt
         }));

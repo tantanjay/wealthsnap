@@ -13,7 +13,7 @@ export interface UserProfile {
 }
 
 export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER_IN' | 'TRANSFER_OUT';
-export type InvestmentType = 'STOCKS' | 'FUNDS' | 'BONDS' | 'CRYPTO' | 'COMMODITIES';
+export type InvestmentType = 'STOCKS' | 'FUNDS' | 'BONDS' | 'CRYPTO' | 'COMMODITIES' | 'OTHERS';
 export type DebtType = 'LOAN' | 'CREDIT_CARD' | 'MORTGAGE';
 export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
 export type TransferAccount = 'OTHER_ACCOUNT' | 'INVESTMENTS' | 'DEBT' | 'CASH_ATM' | 'DIGITAL_WALLET' | 'CRYPTO' | 'RECEIVABLE' | 'TIME_DEPOSIT';
@@ -30,7 +30,9 @@ export interface Transaction {
     recurrenceId?: string; // Link to recurrence rule
     creationMethod?: 'MANUAL' | 'RECURRENCE' | 'AI';
     transferAccount?: TransferAccount;
-    transferRelatedId?: string;
+    linkedTransactionId?: string;
+    investmentId?: string;
+    debtId?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -43,14 +45,18 @@ export interface TransactionReceipt {
 
 export interface Investment {
     id: string;
-    symbol: string; // e.g., AAPL, BTC
-    name: string;
-    type: 'STOCK' | 'CRYPTO' | 'ETF' | 'OTHER';
-    quantity: number;
-    averageBuyPrice: number;
-    currentPrice?: number;
-    lastUpdated?: string;
+    type: InvestmentType;
+    date: string; // ISO string
+    symbol: string;
+    quantity: BigNumber;
+    price: BigNumber;
+    fees?: BigNumber;
     notes?: string;
+    isRecurring: boolean;
+    recurrenceId?: string;
+    creationMethod?: 'MANUAL' | 'RECURRENCE' | 'AI';
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Category {
