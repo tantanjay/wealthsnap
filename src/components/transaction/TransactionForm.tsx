@@ -13,7 +13,7 @@ import { useAlert } from '@context/AlertContext';
 import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveTransaction, saveRecurrenceRule, getRecentCategories } from '@services/domain';
-import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '@constants/categories';
+import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS } from '@constants/categories';
 
 interface TransactionFormProps {
     transactionType: TransactionType;
@@ -326,7 +326,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
                         {/* Recent Categories */}
                         {(() => {
-                            const params = [category];
                             const categoriesToDisplay = [...recentCategories];
                             if (category && !categoriesToDisplay.includes(category)) {
                                 categoriesToDisplay.unshift(category);

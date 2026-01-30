@@ -165,7 +165,7 @@ const HomeScreen = ({ navigation }: any) => {
             return (
                 <View>
                     <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                        "Cash Balance" represents your <Text style={{ fontWeight: 'bold' }}>total available funds</Text> across all accounts.
+                        &quot;Cash Balance&quot; represents your <Text style={{ fontWeight: 'bold' }}>total available funds</Text> across all accounts.
                     </Text>
                     <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
                         <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
@@ -185,7 +185,7 @@ const HomeScreen = ({ navigation }: any) => {
             return (
                 <View>
                     <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                        "Monthly Balance" shows the <Text style={{ fontWeight: 'bold' }}>net change</Text> in your funds for the current month.
+                        &quot;Monthly Balance&quot; shows the <Text style={{ fontWeight: 'bold' }}>net change</Text> in your funds for the current month.
                     </Text>
                     <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
                         <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
@@ -205,7 +205,7 @@ const HomeScreen = ({ navigation }: any) => {
             return (
                 <View>
                     <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                        "Monthly Net" shows your <Text style={{ fontWeight: 'bold' }}>pure savings</Text> from income vs. expenses this month.
+                        &quot;Monthly Net&quot; shows your <Text style={{ fontWeight: 'bold' }}>pure savings</Text> from income vs. expenses this month.
                     </Text>
                     <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
                         <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
