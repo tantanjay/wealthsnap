@@ -100,7 +100,8 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
             items: [
                 { id: 'exp', icon: 'arrow-down-circle', label: 'Expense', color: colors.error, onPress: () => onSelectTransaction('EXPENSE') },
                 { id: 'inc', icon: 'arrow-up-circle', label: 'Income', color: colors.success, onPress: () => onSelectTransaction('INCOME') },
-                { id: 'trans', icon: 'swap-horizontal', label: 'Transfer', color: colors.primary, onPress: () => onSelectTransaction('TRANSFER') },
+                { id: 'trout', icon: 'log-out-outline', label: 'Transfer Out', color: colors.error, onPress: () => onSelectTransaction('TRANSFER_OUT') },
+                { id: 'trin', icon: 'log-in-outline', label: 'Transfer In', color: colors.success, onPress: () => onSelectTransaction('TRANSFER_IN') },
             ]
         },
         {

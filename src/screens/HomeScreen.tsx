@@ -93,14 +93,12 @@ const HomeScreen = ({ navigation }: any) => {
             } else if (tx.type === 'EXPENSE') {
                 oExp = oExp.plus(val.abs());
                 if (isMonth) mExp = mExp.plus(val.abs());
-            } else if (tx.type === 'TRANSFER') {
-                if (!tx.transferDest) {
-                    oTransIn = oTransIn.plus(val.abs());
-                    if (isMonth) mTransIn = mTransIn.plus(val.abs());
-                } else {
-                    oTransOut = oTransOut.plus(val.abs());
-                    if (isMonth) mTransOut = mTransOut.plus(val.abs());
-                }
+            } else if (tx.type === 'TRANSFER_IN') {
+                oTransIn = oTransIn.plus(val.abs());
+                if (isMonth) mTransIn = mTransIn.plus(val.abs());
+            } else if (tx.type === 'TRANSFER_OUT') {
+                oTransOut = oTransOut.plus(val.abs());
+                if (isMonth) mTransOut = mTransOut.plus(val.abs());
             }
         });
 
