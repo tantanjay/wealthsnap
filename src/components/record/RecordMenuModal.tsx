@@ -100,8 +100,8 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
             items: [
                 { id: 'exp', icon: 'arrow-down-circle', label: 'Expense', color: colors.error, onPress: () => onSelectTransaction('EXPENSE') },
                 { id: 'inc', icon: 'arrow-up-circle', label: 'Income', color: colors.success, onPress: () => onSelectTransaction('INCOME') },
-                { id: 'trout', icon: 'log-out-outline', label: 'Transfer Out', color: colors.error, onPress: () => onSelectTransaction('TRANSFER_OUT') },
-                { id: 'trin', icon: 'log-in-outline', label: 'Transfer In', color: colors.success, onPress: () => onSelectTransaction('TRANSFER_IN') },
+                { id: 'trout', icon: 'log-out-outline', label: 'Send', color: colors.error, onPress: () => onSelectTransaction('TRANSFER_OUT') },
+                { id: 'trin', icon: 'log-in-outline', label: 'Receive', color: colors.success, onPress: () => onSelectTransaction('TRANSFER_IN') },
             ]
         },
         {
@@ -118,7 +118,7 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
             title: 'Debt & Liabilities',
             items: [
                 { id: 'loan', icon: 'cash-outline', label: 'Loan', color: '#F59E0B', onPress: () => onSelectDebt?.('LOAN') },
-                { id: 'card', icon: 'card-outline', label: 'Credit Card', color: '#F59E0B', onPress: () => onSelectDebt?.('CREDIT_CARD') },
+                { id: 'card', icon: 'card-outline', label: 'Card', color: '#F59E0B', onPress: () => onSelectDebt?.('CREDIT_CARD') },
                 { id: 'mort', icon: 'home-outline', label: 'Mortgage', color: '#F59E0B', onPress: () => onSelectDebt?.('MORTGAGE') },
             ]
         }
@@ -198,13 +198,11 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: 'bold',
         marginBottom: 10,
-        paddingHorizontal: 16,
         opacity: 0.5,
         textTransform: 'uppercase',
         letterSpacing: 1,
     },
     horizontalScrollContent: {
-        paddingHorizontal: 16,
         gap: 12,
     },
     menuItem: {
