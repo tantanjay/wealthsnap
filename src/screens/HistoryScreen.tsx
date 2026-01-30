@@ -147,10 +147,10 @@ const HistoryScreen = ({ navigation }: any) => {
                 totalIncome = totalIncome.plus(t.amount.abs());
             } else if (t.type === 'EXPENSE') {
                 totalExpense = totalExpense.plus(t.amount.abs());
-            } else if (t.type === 'TRANSFER') {
-                // If no transferDest, it's money coming IN
-                if (!t.transferDest) netTransfer = netTransfer.plus(t.amount.abs());
-                else netTransfer = netTransfer.minus(t.amount.abs());
+            } else if (t.type === 'TRANSFER_IN') {
+                netTransfer = netTransfer.plus(t.amount.abs());
+            } else if (t.type === 'TRANSFER_OUT') {
+                netTransfer = netTransfer.minus(t.amount.abs());
             }
         });
 
@@ -175,9 +175,8 @@ const HistoryScreen = ({ navigation }: any) => {
             const totalAmount = transactions.reduce((sum, t) => {
                 if (t.type === 'INCOME') return sum.plus(t.amount.abs());
                 if (t.type === 'EXPENSE') return sum.minus(t.amount.abs());
-                if (t.type === 'TRANSFER') {
-                    return !t.transferDest ? sum.plus(t.amount.abs()) : sum.minus(t.amount.abs());
-                }
+                if (t.type === 'TRANSFER_IN') return sum.plus(t.amount.abs());
+                if (t.type === 'TRANSFER_OUT') return sum.minus(t.amount.abs());
                 return sum;
             }, new BigNumber(0));
 
@@ -202,9 +201,10 @@ const HistoryScreen = ({ navigation }: any) => {
 
     const renderItem = ({ item }: { item: Transaction }) => {
         const isExpense = item.type === 'EXPENSE';
-        const isTransfer = item.type === 'TRANSFER';
-        const isTransferIn = isTransfer && !item.transferDest;
-        const isNegativeFlow = isExpense || (isTransfer && !isTransferIn);
+        const isTransferIn = item.type === 'TRANSFER_IN';
+        const isTransferOut = item.type === 'TRANSFER_OUT';
+        const isTransfer = isTransferIn || isTransferOut;
+        const isNegativeFlow = isExpense || isTransferOut;
 
         // Determine Icon and Color based on logic
         let iconName: any = "wallet";
@@ -227,7 +227,7 @@ const HistoryScreen = ({ navigation }: any) => {
                         .replace(/_/g, ' ')
                         .replace(/\b\w/g, c => c.toUpperCase());
 
-                return isTransferIn ? "Transfer In" : `To ${toTitleCase(item.transferDest)}`;
+                return isTransferIn ? "Transfer In" : `To ${toTitleCase(item.transferAccount)}`;
             }
             return item.category;
         };
