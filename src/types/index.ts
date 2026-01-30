@@ -12,11 +12,11 @@ export interface UserProfile {
     updatedAt: string;
 }
 
-export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
+export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER_IN' | 'TRANSFER_OUT';
 export type InvestmentType = 'STOCKS' | 'FUNDS' | 'BONDS' | 'CRYPTO' | 'COMMODITIES';
 export type DebtType = 'LOAN' | 'CREDIT_CARD' | 'MORTGAGE';
 export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
-export type TransferDestination = 'OTHER_ACCOUNT' | 'INVESTMENTS' | 'DEBT' | 'CASH_ATM' | 'DIGITAL_WALLET' | 'CRYPTO' | 'RECEIVABLE' | 'TIME_DEPOSIT';
+export type TransferAccount = 'OTHER_ACCOUNT' | 'INVESTMENTS' | 'DEBT' | 'CASH_ATM' | 'DIGITAL_WALLET' | 'CRYPTO' | 'RECEIVABLE' | 'TIME_DEPOSIT';
 
 export interface Transaction {
     id: string;
@@ -29,7 +29,7 @@ export interface Transaction {
     isRecurring: boolean;
     recurrenceId?: string; // Link to recurrence rule
     creationMethod?: 'MANUAL' | 'RECURRENCE' | 'AI';
-    transferDest?: TransferDestination;
+    transferAccount?: TransferAccount;
     transferRelatedId?: string;
     createdAt: string;
     updatedAt: string;

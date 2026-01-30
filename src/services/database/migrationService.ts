@@ -91,7 +91,7 @@ const migrateTransactions = async (db: any): Promise<number> => {
 
         await db.runAsync(
             `INSERT OR REPLACE INTO transactions 
-             (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferDest, transferRelatedId)
+             (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, transferRelatedId)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 txn.id,
@@ -104,7 +104,7 @@ const migrateTransactions = async (db: any): Promise<number> => {
                 txn.creationMethod || null,
                 txn.isRecurring ? 1 : 0,
                 txn.recurrenceId || null,
-                txn.transferDest || null,
+                txn.transferAccount || null,
                 txn.transferRelatedId || null
             ]
         );
@@ -290,7 +290,7 @@ export const migrateV2ToV5 = async (db: any): Promise<void> => {
 /**
  * Migrate from V5 to V6: Add transfer support
  * - Add TRANSFER to transaction type CHECK constraint
- * - Add transferDest and transferRelatedId columns
+ * - Add transferAccount and transferRelatedId columns
  */
 export const migrateV5ToV6 = async (db: any): Promise<void> => {
     try {
@@ -303,14 +303,14 @@ export const migrateV5ToV6 = async (db: any): Promise<void> => {
                 id TEXT PRIMARY KEY,
                 date TEXT NOT NULL,
                 amount REAL NOT NULL,
-                type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'TRANSFER')),
+                type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'TRANSFER_IN', 'TRANSFER_OUT')),
                 category TEXT,
                 subCategory TEXT,
                 note TEXT,
                 creationMethod TEXT,
                 isRecurring INTEGER DEFAULT 0,
                 recurrenceId TEXT,
-                transferDest TEXT CHECK(transferDest IN ('OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT')),
+                transferAccount TEXT CHECK(transferAccount IN ('OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT', 'CASH_ATM', 'DIGITAL_WALLET', 'CRYPTO', 'RECEIVABLE', 'TIME_DEPOSIT')),
                 transferRelatedId TEXT,
                 createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
                 updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
