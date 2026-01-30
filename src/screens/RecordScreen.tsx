@@ -9,7 +9,7 @@ import { TransactionForm } from '@components/transaction/TransactionForm';
 import { TransferForm } from '@components/transaction/TransferForm';
 import { ReceiptReviewForm } from '@components/ai/ReceiptReviewForm';
 import { useAlert } from '@context/AlertContext';
-import { Transaction, TransactionType, ReceiptAnalysisResult } from '@types';
+import { Transaction, TransactionType, ReceiptAnalysisResult, InvestmentType, DebtType } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveTransactionWithReceipt } from '@services/domain';
 
@@ -119,11 +119,11 @@ const RecordScreen = ({ navigation, route }: any) => {
 
     const { showAlert } = useAlert();
 
-    const handleInvestmentSelect = (investmentType: 'STOCKS' | 'BONDS' | 'CRYPTO' | 'FUNDS' | 'COMMODITIES') => {
+    const handleInvestmentSelect = (investmentType: InvestmentType) => {
         showAlert('Coming Soon', `${investmentType} recording will be available in a future update.`);
     };
 
-    const handleDebtSelect = (debtType: 'LOAN' | 'CREDIT_CARD' | 'MORTGAGE') => {
+    const handleDebtSelect = (debtType: DebtType) => {
         showAlert('Coming Soon', `${debtType} recording will be available in a future update.`);
     };
 

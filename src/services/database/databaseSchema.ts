@@ -18,7 +18,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
         CREATE TABLE IF NOT EXISTS transactions (
             id TEXT PRIMARY KEY,
             date TEXT NOT NULL,
-            amount REAL NOT NULL,
+            amount TEXT NOT NULL,
             type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'TRANSFER_IN', 'TRANSFER_OUT')),
             category TEXT,
             subCategory TEXT,
@@ -27,7 +27,9 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             isRecurring INTEGER DEFAULT 0,
             recurrenceId TEXT,
             transferAccount TEXT CHECK(transferAccount IN ('OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT', 'CASH_ATM', 'DIGITAL_WALLET', 'CRYPTO', 'RECEIVABLE', 'TIME_DEPOSIT')),
-            transferRelatedId TEXT,
+            linkedTransactionId TEXT,
+            investmentId TEXT,
+            debtId TEXT,
             createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
             updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
         );
@@ -40,19 +42,24 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
         -- Investments table
         CREATE TABLE IF NOT EXISTS investments (
             id TEXT PRIMARY KEY,
+            date TEXT NOT NULL,
             symbol TEXT NOT NULL,
-            name TEXT NOT NULL,
-            type TEXT NOT NULL CHECK(type IN ('STOCK', 'CRYPTO', 'ETF', 'BOND', 'FUND', 'OTHER')),
-            quantity REAL NOT NULL DEFAULT 0,
-            averageBuyPrice REAL NOT NULL DEFAULT 0,
-            currentPrice REAL,
-            lastUpdated TEXT,
+            type TEXT NOT NULL CHECK(type IN ('STOCKS', 'FUNDS', 'BONDS', 'CRYPTO', 'COMMODITIES', 'OTHERS')),
+            quantity TEXT NOT NULL,
+            price TEXT NOT NULL,
+            fees TEXT,
             notes TEXT,
-            createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+            creationMethod TEXT,
+            isRecurring INTEGER DEFAULT 0,
+            recurrenceId TEXT,
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
+        CREATE INDEX IF NOT EXISTS idx_investments_date ON investments(date DESC);
         CREATE INDEX IF NOT EXISTS idx_investments_symbol ON investments(symbol);
         CREATE INDEX IF NOT EXISTS idx_investments_type ON investments(type);
+        CREATE INDEX IF NOT EXISTS idx_investments_recurring ON investments(isRecurring);
 
         -- Categories table
         CREATE TABLE IF NOT EXISTS categories (

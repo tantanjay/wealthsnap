@@ -1,94 +1,88 @@
+import { BigNumber } from 'bignumber.js';
 import { Investment } from "@types";
 import { getDatabase } from "@services/database/databaseService";
-import { decryptField, encryptField } from "@services/core/encryptionService";
-import { invalidateInvestmentCache } from "@services/core/dataCache";
+import { bulkDecryptItems, encryptField } from "@services/core/encryptionService";
 import { chunkArray } from "@utils/index";
+import { invalidateInvestmentCache } from "@services/core/dataCache";
 
 interface PreparedInvestment extends Investment {
     encryptedQty: string | null;
     encryptedPrice: string | null;
+    encryptedFees: string | null;
     encryptedNotes: string | null;
 }
+
+// --- Constants & Helpers ---
+
+const UPSERT_INVESTMENT_QUERY = `
+  INSERT OR REPLACE INTO investments 
+  (id, date, symbol, type, quantity, price, fees, notes, creationMethod, isRecurring, recurrenceId)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
+/**
+ * Encrypts fields and returns the array of values in the correct SQL order
+ */
+const prepareInvestmentValues = async (inv: Investment) => {
+    const [encryptedQty, encryptedPrice, encryptedFees, encryptedNotes] = await Promise.all([
+        encryptField(inv.quantity),
+        encryptField(inv.price),
+        inv.fees ? encryptField(inv.fees) : Promise.resolve(null),
+        inv.notes ? encryptField(inv.notes) : Promise.resolve(null)
+    ]);
+
+    return [
+        inv.id,
+        inv.date,
+        inv.symbol,
+        inv.type,
+        encryptedQty,
+        encryptedPrice,
+        encryptedFees,
+        encryptedNotes,
+        inv.creationMethod || null,
+        inv.isRecurring ? 1 : 0,
+        inv.recurrenceId || null
+    ];
+};
+
+// --- Exported Functions ---
 
 export const bulkSaveInvestments = async (investments: Investment[]): Promise<void> => {
     try {
         const db = await getDatabase();
-
         const chunks = chunkArray(investments);
-        const preparedData: PreparedInvestment[] = [];
 
-        for (const chunk of chunks) {
-            const processedChunk = await Promise.all(chunk.map(async (inv) => {
-                const [encryptedQty, encryptedPrice, encryptedNotes] = await Promise.all([
-                    encryptField(inv.quantity),
-                    encryptField(inv.averageBuyPrice),
-                    inv.notes ? encryptField(inv.notes) : Promise.resolve(null)
-                ]);
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
 
-                return {
-                    ...inv,
-                    encryptedQty,
-                    encryptedPrice,
-                    encryptedNotes
-                };
-            }));
-            preparedData.push(...processedChunk);
-        }
+            // Encrypt current chunk
+            const preparedRows = await Promise.all(chunk.map(prepareInvestmentValues));
 
-        await db.withTransactionAsync(async () => {
-            const query = `
-                INSERT OR REPLACE INTO investments 
-                (id, symbol, name, type, quantity, averageBuyPrice, currentPrice, lastUpdated, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `;
+            await db.withTransactionAsync(async () => {
+                for (const values of preparedRows) {
+                    await db.runAsync(UPSERT_INVESTMENT_QUERY, values);
+                }
+            });
 
-            for (const inv of preparedData) {
-                await db.runAsync(query, [
-                    inv.id,
-                    inv.symbol,
-                    inv.name,
-                    inv.type,
-                    inv.encryptedQty,
-                    inv.encryptedPrice,
-                    inv.currentPrice || null,
-                    inv.lastUpdated || null,
-                    inv.encryptedNotes
-                ]);
+            // Yield to event loop to allow UI updates (spinner animation)
+            if (i < chunks.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 0));
             }
-        });
+        }
 
         invalidateInvestmentCache();
     } catch (error) {
         console.error('Error bulk saving investments:', error);
-        throw error;
+        throw new Error('Failed to bulk save investments');
     }
 };
 
 export const saveInvestment = async (investment: Investment): Promise<void> => {
     try {
         const db = await getDatabase();
-
-        // Encrypt sensitive fields
-        const encryptedQuantity = await encryptField(investment.quantity);
-        const encryptedAvgPrice = await encryptField(investment.averageBuyPrice);
-        const encryptedNotes = investment.notes ? await encryptField(investment.notes) : null;
-
-        await db.runAsync(
-            `INSERT OR REPLACE INTO investments 
-             (id, symbol, name, type, quantity, averageBuyPrice, currentPrice, lastUpdated, notes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                investment.id,
-                investment.symbol,
-                investment.name,
-                investment.type,
-                encryptedQuantity,
-                encryptedAvgPrice,
-                investment.currentPrice || null,
-                investment.lastUpdated || null,
-                encryptedNotes
-            ]
-        );
+        const values = await prepareInvestmentValues(investment);
+        await db.runAsync(UPSERT_INVESTMENT_QUERY, values);
         invalidateInvestmentCache();
     } catch (error) {
         console.error('Error saving investment:', error);
@@ -96,28 +90,37 @@ export const saveInvestment = async (investment: Investment): Promise<void> => {
     }
 };
 
+/**
+ * Use non-blocking bulk decryption to prevent Main Thread / UI freezing.
+ * This processes records in chunks (e.g., 500) and yields control back to the 
+ * JS event loop using setTimeout(0), ensuring the UI remains interactive.
+ */
 export const getAllInvestments = async (): Promise<Investment[]> => {
     try {
         const db = await getDatabase();
-        const rows = await db.getAllAsync<any>('SELECT * FROM investments ORDER BY symbol');
+        const rows = await db.getAllAsync<any>('SELECT * FROM investments ORDER BY date DESC');
 
-        // Decrypt sensitive fields
-        const decrypted = await Promise.all(rows.map(async (row) => {
-            const decryptedNotes = await decryptField(row.notes);
-            return {
-                id: row.id,
-                symbol: row.symbol,
-                name: row.name,
-                type: row.type,
-                quantity: parseFloat((await decryptField(row.quantity)) || '0'),
-                averageBuyPrice: parseFloat((await decryptField(row.averageBuyPrice)) || '0'),
-                currentPrice: row.currentPrice,
-                lastUpdated: row.lastUpdated,
-                notes: decryptedNotes || undefined
-            };
+        // 1. Decrypt the bulk data (Handles the background/non-blocking logic)
+        // Decrypted fields: quantity, price, fees, notes
+        const decryptedRows = await bulkDecryptItems<any>(rows, ['quantity', 'price', 'fees', 'notes']);
+
+        // 2. Map the results to your specific Investment type
+        return decryptedRows.map(row => ({
+            id: row.id,
+            date: row.date,
+            symbol: row.symbol,
+            type: row.type,
+            quantity: new BigNumber(row.quantity || new BigNumber(0)),
+            price: new BigNumber(row.price || new BigNumber(0)),
+            fees: new BigNumber(row.fees || new BigNumber(0)),
+            notes: row.notes || '',
+            creationMethod: row.creationMethod,
+            isRecurring: row.isRecurring === 1,
+            recurrenceId: row.recurrenceId,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt
         }));
 
-        return decrypted;
     } catch (error) {
         console.error('Error getting investments:', error);
         return [];
