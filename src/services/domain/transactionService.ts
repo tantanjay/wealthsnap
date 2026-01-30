@@ -5,10 +5,7 @@ import { bulkDecryptItems, encryptData, encryptField } from "@services/core/encr
 import { chunkArray } from "@utils/index";
 import * as DataCache from '@services/core/dataCache';
 
-interface PreparedTransaction extends Transaction {
-    encryptedAmount: string | null;
-    encryptedNote: string | null;
-}
+
 
 // --- Constants & Helpers ---
 

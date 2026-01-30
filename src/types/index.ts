@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+
 import { BigNumber } from 'bignumber.js';
 
 export interface UserProfile {
