@@ -14,6 +14,7 @@ export interface UserProfile {
 
 export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER_IN' | 'TRANSFER_OUT';
 export type InvestmentType = 'STOCKS' | 'FUNDS' | 'BONDS' | 'CRYPTO' | 'COMMODITIES' | 'OTHERS';
+export type InvestmentAction = 'BUY' | 'SELL' | 'DIVIDEND' | 'INTEREST';
 export type DebtType = 'LOAN' | 'CREDIT_CARD' | 'MORTGAGE';
 export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
 export type TransferAccount = 'OTHER_ACCOUNT' | 'INVESTMENTS' | 'DEBT' | 'CASH_ATM' | 'DIGITAL_WALLET' | 'CRYPTO' | 'RECEIVABLE' | 'TIME_DEPOSIT';
@@ -45,9 +46,10 @@ export interface TransactionReceipt {
 
 export interface Investment {
     id: string;
+    symbol: string;
     type: InvestmentType;
     date: string; // ISO string
-    symbol: string;
+    action: InvestmentAction;
     quantity: BigNumber;
     price: BigNumber;
     fees?: BigNumber;

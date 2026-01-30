@@ -45,6 +45,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             date TEXT NOT NULL,
             symbol TEXT NOT NULL,
             type TEXT NOT NULL CHECK(type IN ('STOCKS', 'FUNDS', 'BONDS', 'CRYPTO', 'COMMODITIES', 'OTHERS')),
+            action TEXT NOT NULL CHECK(action IN ('BUY', 'SELL', 'DIVIDEND', 'INTEREST')),
             quantity TEXT NOT NULL,
             price TEXT NOT NULL,
             fees TEXT,
@@ -59,6 +60,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
         CREATE INDEX IF NOT EXISTS idx_investments_date ON investments(date DESC);
         CREATE INDEX IF NOT EXISTS idx_investments_symbol ON investments(symbol);
         CREATE INDEX IF NOT EXISTS idx_investments_type ON investments(type);
+        CREATE INDEX IF NOT EXISTS idx_investments_action ON investments(action);
         CREATE INDEX IF NOT EXISTS idx_investments_recurring ON investments(isRecurring);
 
         -- Categories table
