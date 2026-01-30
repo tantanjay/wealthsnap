@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { Text, View, SectionList, TouchableOpacity } from 'react-native';
+import { Text, View, SectionList, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -8,13 +8,18 @@ import TransactionOptionsModal from '@components/transaction/modals/TransactionO
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { Transaction, UserProfile } from '@types';
 import { deleteTransaction } from '@services/domain';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile, getCachedTransactions } from '@services/core/storageService';
+import { HistoryCalendar } from '../components/history/HistoryCalendar';
 
+
+import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
+import { RecurrenceRule } from '@types';
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
 interface TransactionSection {
@@ -29,25 +34,38 @@ interface FinancialSummary {
     totalIncome: BigNumber;
     totalExpense: BigNumber;
     balance: BigNumber;
+    safeToSpend?: BigNumber;
 }
 
 const HistoryScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled } = usePrivacy();
+
+
     const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+    const [recurrenceRules, setRecurrenceRules] = useState<RecurrenceRule[]>([]);
     const [timeFrame, setTimeFrame] = useState<TimeFrame>('DAILY');
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [viewMode, setViewMode] = useState<'LIST' | 'CALENDAR'>('LIST');
+    const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(new Date());
+    const [showInfoModal, setShowInfoModal] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
             loadTransactions();
             loadTimeFramePref();
             loadProfile();
+            loadRecurrenceRules();
         }, [])
     );
+
+    const loadRecurrenceRules = async () => {
+        const rules = await getAllRecurrenceRules();
+        setRecurrenceRules(rules);
+    };
 
     const loadProfile = async () => {
         const p = await getUserProfile();
@@ -63,7 +81,7 @@ const HistoryScreen = ({ navigation }: any) => {
 
     const handleSetTimeFrame = (tf: TimeFrame) => {
         setTimeFrame(tf);
-        saveHistoryTimeFrame(tf);
+        if (viewMode === 'LIST') saveHistoryTimeFrame(tf);
     };
 
     const loadTransactions = async () => {
@@ -120,22 +138,45 @@ const HistoryScreen = ({ navigation }: any) => {
     const navigateDate = (direction: 'prev' | 'next') => {
         const newDate = new Date(currentDate);
         const adder = direction === 'next' ? 1 : -1;
-        if (timeFrame === 'DAILY') newDate.setDate(newDate.getDate() + adder);
-        else if (timeFrame === 'WEEKLY') newDate.setDate(newDate.getDate() + (adder * 7));
-        else if (timeFrame === 'MONTHLY') newDate.setMonth(newDate.getMonth() + adder);
-        else if (timeFrame === 'YEARLY') newDate.setFullYear(newDate.getFullYear() + adder);
+
+        if (viewMode === 'CALENDAR') {
+            newDate.setMonth(newDate.getMonth() + adder);
+        } else {
+            if (timeFrame === 'DAILY') newDate.setDate(newDate.getDate() + adder);
+            else if (timeFrame === 'WEEKLY') newDate.setDate(newDate.getDate() + (adder * 7));
+            else if (timeFrame === 'MONTHLY') newDate.setMonth(newDate.getMonth() + adder);
+            else if (timeFrame === 'YEARLY') newDate.setFullYear(newDate.getFullYear() + adder);
+        }
         setCurrentDate(newDate);
     };
 
     // --- Computed Data ---
 
     const filteredData = useMemo(() => {
+        if (viewMode === 'CALENDAR') {
+            // In calendar mode, list shows selected date's transactions
+            const start = new Date(selectedCalendarDate); start.setHours(0, 0, 0, 0);
+            const end = new Date(selectedCalendarDate); end.setHours(23, 59, 59, 999);
+            return allTransactions.filter(t => {
+                const tDate = new Date(t.date);
+                return tDate >= start && tDate <= end;
+            });
+        }
         const { start, end } = getStartEndOfPeriod(currentDate, timeFrame);
         return allTransactions.filter(t => {
             const tDate = new Date(t.date);
             return tDate >= start && tDate <= end;
         });
-    }, [allTransactions, currentDate, timeFrame]);
+    }, [allTransactions, currentDate, timeFrame, viewMode, selectedCalendarDate]);
+
+    const calendarTransactions = useMemo(() => {
+        // Transactions for the currently displayed month in calendar
+        const { start, end } = getStartEndOfPeriod(currentDate, 'MONTHLY');
+        return allTransactions.filter(t => {
+            const tDate = new Date(t.date);
+            return tDate >= start && tDate <= end;
+        });
+    }, [allTransactions, currentDate]);
 
     const summary = useMemo((): FinancialSummary => {
         let totalIncome = new BigNumber(0);
@@ -157,9 +198,50 @@ const HistoryScreen = ({ navigation }: any) => {
         return {
             totalIncome,
             totalExpense,
-            balance: totalIncome.minus(totalExpense).plus(netTransfer)
+            balance: totalIncome.minus(totalExpense).plus(netTransfer),
+            safeToSpend: totalIncome.minus(totalExpense).plus(netTransfer) // Initialize with balance
         };
     }, [filteredData]);
+
+    // Calculate Safe To Spend (Effective Balance)
+    const safeToSpend = useMemo(() => {
+        let upcomingBills = new BigNumber(0);
+        const { end } = getStartEndOfPeriod(currentDate, viewMode === 'CALENDAR' ? 'MONTHLY' : timeFrame);
+        const now = new Date();
+
+        if (end > now && recurrenceRules.length > 0) {
+            recurrenceRules.forEach(rule => {
+                if (!rule.isActive) return;
+                let pointer = new Date(rule.nextDueDate);
+
+                // Only count bills due between NOW and END OF PERIOD
+                while (pointer <= end) {
+                    if (pointer > now) {
+                        // Assume rules are expenses/transfers out for "safety" check?
+                        // Or check transactionTemplate type? 
+                        // Start with Type check.
+                        const type = rule.transactionTemplate.type;
+                        if (type === 'EXPENSE' || type === 'TRANSFER_OUT') {
+                            upcomingBills = upcomingBills.plus(new BigNumber(rule.transactionTemplate.amount).abs());
+                        }
+                    }
+
+                    // Advance
+                    const next = new Date(pointer);
+                    if (rule.frequency === 'DAILY') next.setDate(next.getDate() + 1);
+                    else if (rule.frequency === 'WEEKLY') next.setDate(next.getDate() + 7);
+                    else if (rule.frequency === 'SEMI_MONTHLY') next.setDate(next.getDate() + 15);
+                    else if (rule.frequency === 'MONTHLY') next.setMonth(next.getMonth() + 1);
+                    else if (rule.frequency === 'QUARTERLY') next.setMonth(next.getMonth() + 3);
+                    else if (rule.frequency === 'YEARLY') next.setFullYear(next.getFullYear() + 1);
+                    else break;
+                    pointer = next;
+                }
+            });
+        }
+
+        return summary.balance.minus(upcomingBills);
+    }, [summary, recurrenceRules, currentDate, timeFrame, viewMode]);
 
     const sections = useMemo((): TransactionSection[] => {
         const grouped: { [key: string]: Transaction[] } = {};
@@ -288,21 +370,61 @@ const HistoryScreen = ({ navigation }: any) => {
                 showsVerticalScrollIndicator={false}
                 ListHeaderComponent={
                     <View style={{ marginBottom: 20 }}>
-                        <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginBottom: 16 }}>History</Text>
-
-                        {/* TimeFrame Tabs */}
-                        <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, marginBottom: 16 }}>
-                            {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as TimeFrame[]).map((tf) => (
-                                <TouchableOpacity key={tf} onPress={() => handleSetTimeFrame(tf)} style={{
-                                    flex: 1, paddingVertical: 8, alignItems: 'center',
-                                    backgroundColor: timeFrame === tf ? colors.primary : 'transparent', borderRadius: 8
-                                }}>
-                                    <Text style={{ color: timeFrame === tf ? '#FFF' : colors.textSecondary, fontSize: 12, fontWeight: 'bold' }}>
-                                        {tf.charAt(0) + tf.slice(1).toLowerCase()}
-                                    </Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>History</Text>
+                                {viewMode === 'CALENDAR' && (
+                                    <TouchableOpacity
+                                        onPress={() => setShowInfoModal(true)}
+                                        style={{ padding: 4, backgroundColor: 'transparent', borderRadius: 12 }}
+                                    >
+                                        <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                            <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 8, padding: 2 }}>
+                                <TouchableOpacity
+                                    onPress={() => setViewMode('LIST')}
+                                    style={{
+                                        paddingHorizontal: 12, paddingVertical: 6,
+                                        backgroundColor: viewMode === 'LIST' ? colors.primary : 'transparent',
+                                        borderRadius: 6
+                                    }}
+                                >
+                                    <Ionicons name="list" size={20} color={viewMode === 'LIST' ? '#FFF' : colors.textSecondary} />
                                 </TouchableOpacity>
-                            ))}
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setViewMode('CALENDAR');
+                                        // Ensure we are in a mode that makes sense for calendar navigation if needed, 
+                                        // or just rely on currentDate which is shared.
+                                    }}
+                                    style={{
+                                        paddingHorizontal: 12, paddingVertical: 6,
+                                        backgroundColor: viewMode === 'CALENDAR' ? colors.primary : 'transparent',
+                                        borderRadius: 6
+                                    }}
+                                >
+                                    <Ionicons name="calendar" size={20} color={viewMode === 'CALENDAR' ? '#FFF' : colors.textSecondary} />
+                                </TouchableOpacity>
+                            </View>
                         </View>
+
+                        {/* Mode Specific Controls */}
+                        {viewMode === 'LIST' ? (
+                            <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, marginBottom: 16 }}>
+                                {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as TimeFrame[]).map((tf) => (
+                                    <TouchableOpacity key={tf} onPress={() => handleSetTimeFrame(tf)} style={{
+                                        flex: 1, paddingVertical: 8, alignItems: 'center',
+                                        backgroundColor: timeFrame === tf ? colors.primary : 'transparent', borderRadius: 8
+                                    }}>
+                                        <Text style={{ color: timeFrame === tf ? '#FFF' : colors.textSecondary, fontSize: 12, fontWeight: 'bold' }}>
+                                            {tf.charAt(0) + tf.slice(1).toLowerCase()}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        ) : null}
 
                         {/* Date Navigator */}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -310,21 +432,40 @@ const HistoryScreen = ({ navigation }: any) => {
                                 <Ionicons name="chevron-back" size={24} color={colors.primary} />
                             </TouchableOpacity>
                             <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
-                                {getDateRangeLabel(currentDate, timeFrame)}
+                                {viewMode === 'CALENDAR'
+                                    ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                                    : getDateRangeLabel(currentDate, timeFrame)
+                                }
                             </Text>
                             <TouchableOpacity onPress={() => navigateDate('next')} style={{ padding: 8 }}>
                                 <Ionicons name="chevron-forward" size={24} color={colors.primary} />
                             </TouchableOpacity>
                         </View>
 
-                        {/* Summary Dashboard */}
+                        {viewMode === 'CALENDAR' && (
+                            <HistoryCalendar
+                                currentDate={currentDate}
+                                transactions={calendarTransactions}
+                                recurrenceRules={recurrenceRules}
+                                selectedDate={selectedCalendarDate}
+                                onSelectDate={setSelectedCalendarDate}
+                                currency={profile?.currency}
+                            />
+                        )}
+
+                        {/* Summary Dashboard - Show for List Mode or for Selected Date in Calendar Mode */}
                         <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16 }}>
                             <View style={{ marginBottom: 12 }}>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Period Balance</Text>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Safe to Spend</Text>
                                 {isLoading ? <Skeleton width={120} height={32} /> : (
-                                    <Text style={{ color: summary.balance.isGreaterThanOrEqualTo(0) ? colors.success : colors.error, fontSize: 24, fontWeight: 'bold' }}>
-                                        {formatCurrency(summary.balance)}
-                                    </Text>
+                                    <View>
+                                        <Text style={{ color: safeToSpend.isGreaterThanOrEqualTo(0) ? colors.success : colors.error, fontSize: 28, fontWeight: 'bold' }}>
+                                            {formatCurrency(safeToSpend)}
+                                        </Text>
+                                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                            Actual Balance: {formatCurrency(summary.balance)}
+                                        </Text>
+                                    </View>
                                 )}
                             </View>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -373,6 +514,86 @@ const HistoryScreen = ({ navigation }: any) => {
                 onDelete={async (id) => { await deleteTransaction(id); loadTransactions(); setSelectedTransaction(null); }}
                 currency={profile?.currency}
             />
+            {/* Info Modal */}
+            <BottomModal
+                visible={showInfoModal}
+                onClose={() => setShowInfoModal(false)}
+                title="Understand Your Calendar"
+                maxHeight="80%"
+            >
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    {/* Safe to Spend */}
+                    <View style={{ marginBottom: 20 }}>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
+                            💰 Safe-to-Spend
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 10 }}>
+                            Know exactly what you can spend without worrying about bills.
+                        </Text>
+                        <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12 }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center', marginBottom: 6 }}>
+                                Current Balance - <Text style={{ color: colors.text }}>Future Bills</Text> =
+                            </Text>
+                            <Text style={{ color: '#4CAF50', fontSize: 20, fontWeight: 'bold', textAlign: 'center' }}>
+                                Safe Amount
+                            </Text>
+                        </View>
+                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 8 }}>
+                            *Calculated based on recurring bills due before the end of the current period.
+                        </Text>
+                    </View>
+
+                    {/* Guilt Filter */}
+                    <View style={{ marginBottom: 20 }}>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
+                            🌡️ Guilt Filter (Heatmap)
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 10 }}>
+                            Spot your <Text style={{ fontWeight: 'bold' }}>discretionary</Text> spending habits at a glance.
+                        </Text>
+                        <View style={{ flexDirection: 'row', gap: 12 }}>
+                            <View style={{ flex: 1, backgroundColor: 'rgba(220, 38, 38, 0.1)', padding: 12, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                                <Text style={{ color: colors.text, fontSize: 12, marginBottom: 4 }}>Light Red</Text>
+                                <Text style={{ color: colors.textSecondary, fontSize: 10, textAlign: 'center' }}>Small treat ☕</Text>
+                            </View>
+                            <View style={{ flex: 1, backgroundColor: 'rgba(220, 38, 38, 0.4)', padding: 12, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: 'bold', marginBottom: 4 }}>Bright Red</Text>
+                                <Text style={{ color: colors.textSecondary, fontSize: 10, textAlign: 'center' }}>Big splurge 🛍️</Text>
+                            </View>
+                        </View>
+                        <View style={{ marginTop: 10, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                <Ionicons name="bulb-outline" size={12} color={colors.primary} /> <Text style={{ fontWeight: 'bold' }}>Pro Tip:</Text> Recurring bills like Rent don't trigger the red heat, so you only feel "guilty" about things you can control!
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Ghost Forecast */}
+                    <View style={{ marginBottom: 24 }}>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
+                            👻 Ghost Forecast
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 10 }}>
+                            See the future before it happens.
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 12 }}>
+                            <View style={{
+                                backgroundColor: '#9CA3AF', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginRight: 12
+                            }}>
+                                <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>${'120'}</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Future Badge</Text>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                    Appears on future dates to show the total of upcoming bills.
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    <View style={{ height: 20 }} />
+                </ScrollView>
+            </BottomModal>
         </ScreenWrapper>
     );
 };
