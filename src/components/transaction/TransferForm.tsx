@@ -8,7 +8,7 @@ import { Button, Card } from '@components/index';
 import { CalculatorModal } from '@components/record/CalculatorModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
-import { Transaction, TransferDestination } from '@types';
+import { Transaction, TransferAccount } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveTransaction } from '@services/domain';
 
@@ -16,11 +16,12 @@ interface TransferFormProps {
     onSave: () => void;
     onCancel: () => void;
     initialTransaction?: Transaction;
+    initialType?: 'TRANSFER_IN' | 'TRANSFER_OUT';
 }
 
 type TransferDirection = 'IN' | 'OUT';
 
-const DEST_CONFIG: Record<TransferDestination, { icon: string; label: string }> = {
+const DEST_CONFIG: Record<TransferAccount, { icon: string; label: string }> = {
     OTHER_ACCOUNT: { icon: 'swap-horizontal', label: 'Account' },
     INVESTMENTS: { icon: 'trending-up', label: 'Invest' },
     DEBT: { icon: 'card-outline', label: 'Debt' },
@@ -33,27 +34,28 @@ const DEST_CONFIG: Record<TransferDestination, { icon: string; label: string }> 
 export const TransferForm: React.FC<TransferFormProps> = ({
     onSave,
     onCancel,
-    initialTransaction
+    initialTransaction,
+    initialType
 }) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
 
-    // Determine initial direction based on logic:
-    // If it's a transfer type, and transferDest is NULL, it's IN.
-    // If transferDest is NOT NULL, it's OUT.
     const getInitialDirection = (): TransferDirection => {
-        if (!initialTransaction) return 'OUT';
-        if (initialTransaction.type === 'TRANSFER' && !initialTransaction.transferDest) return 'IN';
+        if (initialTransaction) {
+            if (initialTransaction.type === 'TRANSFER_IN') return 'IN';
+            if (initialTransaction.type === 'TRANSFER_OUT') return 'OUT';
+        }
+        if (initialType === 'TRANSFER_IN') return 'IN';
         return 'OUT';
     };
 
     // Form state
     const [direction, setDirection] = useState<TransferDirection>(getInitialDirection());
-    const [destination, setDestination] = useState<TransferDestination | null>(initialTransaction?.transferDest || null);
+    const [destination, setDestination] = useState<TransferAccount | null>(initialTransaction?.transferAccount || null);
 
     // Default destination if switching to OUT and none selected
-    const [selectedDestOption, setSelectedDestOption] = useState<TransferDestination>(
-        initialTransaction?.transferDest || 'OTHER_ACCOUNT'
+    const [selectedDestOption, setSelectedDestOption] = useState<TransferAccount>(
+        initialTransaction?.transferAccount || 'OTHER_ACCOUNT'
     );
 
     const [amount, setAmount] = useState(initialTransaction?.amount.toString() || '');
@@ -73,22 +75,11 @@ export const TransferForm: React.FC<TransferFormProps> = ({
             return;
         }
 
-        if (direction === 'OUT' && !destination) {
-            // Should be covered by UI but safety check
-            // Effectively force set destination if logic fails, though UI handles this.
-            setDestination(selectedDestOption);
-        }
-
         const newId = initialTransaction?.id || generateUUID();
-
-        // Prepare Transfer Data
-        // IN: type=TRANSFER, transferDest=null
-        // OUT: type=TRANSFER, transferDest=SELECTED
-        const finalDest = direction === 'IN' ? undefined : (destination || selectedDestOption);
 
         const newTransaction: Transaction = {
             id: newId,
-            type: 'TRANSFER',
+            type: direction === 'IN' ? 'TRANSFER_IN' : 'TRANSFER_OUT',
             amount: new BigNumber(amount),
             category: 'Transfer', // Default category for transfers
             subCategory: direction === 'IN' ? 'Incoming' : 'Outgoing',
@@ -96,7 +87,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({
             date: transactionDate.toISOString(),
             isRecurring: false, // Initial version doesn't support recurring transfers yet
             creationMethod: initialTransaction?.creationMethod || 'MANUAL',
-            transferDest: finalDest,
+            transferAccount: (destination || selectedDestOption),
             createdAt: initialTransaction?.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
@@ -227,67 +218,64 @@ export const TransferForm: React.FC<TransferFormProps> = ({
                     </TouchableOpacity>
                 </View>
 
-                {/* Destination Selection (Only for OUT) */}
-                {direction === 'OUT' && (
-                    <Card style={{ marginBottom: 20, paddingHorizontal: 16 }}>
-                        <Text style={{
-                            color: colors.textSecondary,
-                            fontSize: 12,
-                            textTransform: 'uppercase',
-                            letterSpacing: 1,
-                            marginBottom: 16
-                        }}>
-                            Transfer Destination
-                        </Text>
+                <Card style={{ marginBottom: 20, paddingHorizontal: 16 }}>
+                    <Text style={{
+                        color: colors.textSecondary,
+                        fontSize: 12,
+                        textTransform: 'uppercase',
+                        letterSpacing: 1,
+                        marginBottom: 16
+                    }}>
+                        Transfer Destination
+                    </Text>
 
-                        <View style={{
-                            flexDirection: 'row',
-                            flexWrap: 'wrap',
-                            justifyContent: 'space-between'
-                        }}>
-                            {(Object.keys(DEST_CONFIG) as TransferDestination[]).map((opt) => {
-                                const isActive = selectedDestOption === opt;
-                                const config = DEST_CONFIG[opt];
+                    <View style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        justifyContent: 'space-between'
+                    }}>
+                        {(Object.keys(DEST_CONFIG) as TransferAccount[]).map((opt) => {
+                            const isActive = selectedDestOption === opt;
+                            const config = DEST_CONFIG[opt];
 
-                                return (
-                                    <TouchableOpacity
-                                        key={opt}
-                                        activeOpacity={0.7}
-                                        onPress={() => {
-                                            setSelectedDestOption(opt);
-                                            setDestination(opt);
-                                        }}
-                                        style={{
-                                            width: '23%', // 4 columns; change to '31%' for 3 columns
-                                            paddingVertical: 12,
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            borderRadius: 12,
-                                            borderWidth: 1.5,
-                                            borderColor: isActive ? colors.primary : 'transparent',
-                                            backgroundColor: isActive ? colors.primary + '15' : colors.surface || '#f5f5f5',
-                                        }}
-                                    >
-                                        <Ionicons
-                                            name={config.icon as any}
-                                            size={22}
-                                            color={isActive ? colors.primary : colors.textSecondary}
-                                        />
-                                        <Text style={{
-                                            color: isActive ? colors.primary : colors.text,
-                                            fontSize: 10,
-                                            fontWeight: isActive ? '700' : '500',
-                                            marginTop: 6,
-                                            textAlign: 'center'
-                                        }}>
-                                            {config.label}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </View>
-                    </Card>
-                )}
+                            return (
+                                <TouchableOpacity
+                                    key={opt}
+                                    activeOpacity={0.7}
+                                    onPress={() => {
+                                        setSelectedDestOption(opt);
+                                        setDestination(opt);
+                                    }}
+                                    style={{
+                                        width: '23%', // 4 columns; change to '31%' for 3 columns
+                                        paddingVertical: 12,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        borderRadius: 12,
+                                        borderWidth: 1.5,
+                                        borderColor: isActive ? colors.primary : 'transparent',
+                                        backgroundColor: isActive ? colors.primary + '15' : colors.surface || '#f5f5f5',
+                                    }}
+                                >
+                                    <Ionicons
+                                        name={config.icon as any}
+                                        size={22}
+                                        color={isActive ? colors.primary : colors.textSecondary}
+                                    />
+                                    <Text style={{
+                                        color: isActive ? colors.primary : colors.text,
+                                        fontSize: 10,
+                                        fontWeight: isActive ? '700' : '500',
+                                        marginTop: 6,
+                                        textAlign: 'center'
+                                    }}>
+                                        {config.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                </Card>
 
                 {/* Amount */}
                 <Card>
