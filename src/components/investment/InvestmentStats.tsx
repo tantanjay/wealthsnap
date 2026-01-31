@@ -8,7 +8,6 @@ interface InvestmentStatsProps {
     realizedPL: number;
     unrealizedPL: number;
     unrealizedPLPercent: number;
-    projAnnualIncome: number;
     totalDividends: number;
 }
 
@@ -41,7 +40,6 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
     realizedPL,
     unrealizedPL,
     unrealizedPLPercent,
-    projAnnualIncome,
     totalDividends
 }) => {
     const { colors } = useTheme();
@@ -101,12 +99,6 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
                     {unrealizedPL >= 0 ? '+' : ''}{unrealizedPLPercent.toFixed(2)}%
                 </Text>
             )
-        },
-        {
-            id: 'income',
-            label: "Est. Annual Income",
-            value: formatMoney(projAnnualIncome),
-            color: colors.success
         },
         {
             id: 'dividends',
