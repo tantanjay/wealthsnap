@@ -112,7 +112,7 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={{ marginBottom: 20 }}>
                     <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 16 }}>
-                        Smart Advisor continuously analyzes market data and your portfolio to identify high-potential investing opportunities.
+                        Smart Alerts continuously analyze market data and your portfolio to highlight significant market movements.
                     </Text>
 
                     {/* Visual Examples */}
@@ -120,18 +120,18 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
                         {/* Crash */}
                         <View style={{ width: '48%', backgroundColor: colors.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
                             <Ionicons name="flame" size={24} color={colors.error} style={{ marginBottom: 8 }} />
-                            <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Market Crash</Text>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Significant Drop</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, lineHeight: 14 }}>
-                                Detected when a stock drops significantly (&gt;10%). Good for long-term entry.
+                                Detected when a stock drops significantly (&gt;10%) from recent highs.
                             </Text>
                         </View>
 
                         {/* Dip */}
                         <View style={{ width: '48%', backgroundColor: colors.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
                             <Ionicons name="trending-down" size={24} color={colors.warning} style={{ marginBottom: 8 }} />
-                            <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Buying The Dip</Text>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Recent Dip</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, lineHeight: 14 }}>
-                                Short-term price drop. Opportunity to lower your average cost.
+                                Short-term price drop observed relative to 30-day trends.
                             </Text>
                         </View>
 
@@ -140,7 +140,7 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
                             <Ionicons name="cash" size={24} color="#4CAF50" style={{ marginBottom: 8 }} />
                             <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Dividends</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, lineHeight: 14 }}>
-                                Companies paying out dividends soon. Secure your payout date.
+                                Companies paying out dividends soon. Upcoming payout date detected.
                             </Text>
                         </View>
 
@@ -185,7 +185,7 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
                         <View style={{ flexDirection: 'row', backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8 }}>
                             <Ionicons name="alert-circle-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
                             <Text style={{ flex: 1, color: colors.text, fontSize: 12, lineHeight: 18 }}>
-                                <Text style={{ fontWeight: 'bold' }}>Note:</Text> This feature requires at least <Text style={{ fontWeight: 'bold' }}>30 days of price history</Text> to work accurately. Regular price updates ensure the best suggestions.
+                                <Text style={{ fontWeight: 'bold' }}>Note:</Text> This feature requires at least <Text style={{ fontWeight: 'bold' }}>30 days of price history</Text> to work accurately. Regular price updates ensure the most accurate insights.
                             </Text>
                         </View>
                     </View>
