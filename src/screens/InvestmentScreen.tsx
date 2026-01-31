@@ -8,10 +8,16 @@ import { HoldingsList } from '@components/investment/HoldingsList';
 import { SmartAdvisor, Suggestion } from '@components/investment/SmartAdvisor';
 import { AllocationChart } from '@components/investment/AllocationChart';
 import { DividendChart } from '@components/investment/DividendChart';
+import * as Storage from '@services/core/storageService';
+
+import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
+
+
 
 const InvestmentScreen = () => {
     const { colors } = useTheme();
     const [refreshing, setRefreshing] = useState(false);
+    const [currency, setCurrency] = useState('PHP');
 
     const [portfolioStats, setPortfolioStats] = useState({
         totalEquity: 0,
@@ -22,30 +28,40 @@ const InvestmentScreen = () => {
     });
 
     const [holdings, setHoldings] = useState<PortfolioHolding[]>([]);
+    const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+    const [activePriority, setActivePriority] = useState<Priority>('all');
 
     const loadStats = useCallback(async () => {
         try {
+            const profile = await Storage.getUserProfile();
+            if (profile?.currency) {
+                setCurrency(profile.currency);
+            }
+
             const stats = await getPortfolioStats();
             setPortfolioStats(stats);
 
             const portfolioHoldings = await getPortfolioHoldings();
             setHoldings(portfolioHoldings);
+
+            // Initial Suggestions fetch
+            const newSuggestions = await getSmartSuggestions(activePriority);
+            setSuggestions(newSuggestions);
         } catch (error) {
             console.error("Failed to load investment stats", error);
         }
-    }, []);
+    }, [activePriority]); // Re-fetch when priority changes? Ideally separate effect.
 
     useEffect(() => {
         loadStats();
     }, [loadStats]);
 
-
-    const suggestions: Suggestion[] = [
-        { ticker: 'MER', reason: '🔥 CRASH(-15.2%)', type: 'crash', price: 380.00, hasDivSoon: true },
-        { ticker: 'GLO', reason: '🔻 DIP(-4.5%)', type: 'dip', price: 1850.00 },
-        { ticker: 'AREIT', reason: '⚖️ BALANCE', type: 'balance', price: 34.50 },
-        { ticker: 'DMC', reason: '📅 DIV SOON', type: 'balance', price: 10.20, hasDivSoon: true },
-    ];
+    // Separate effect for priority change to avoid reloading everything
+    const updateSuggestions = async (priority: Priority) => {
+        setActivePriority(priority);
+        const newSuggestions = await getSmartSuggestions(priority);
+        setSuggestions(newSuggestions);
+    };
 
     // const allocationData = [
     //     { name: 'Banks', population: 321000, color: '#2563eb', legendFontColor: colors.textSecondary, legendFontSize: 12 },
@@ -63,6 +79,8 @@ const InvestmentScreen = () => {
         await loadStats();
         setRefreshing(false);
     }, [loadStats]);
+
+
 
     return (
         <ScreenWrapper style={{ paddingHorizontal: 0 }}>
@@ -83,17 +101,23 @@ const InvestmentScreen = () => {
                     unrealizedPL={portfolioStats.unrealizedPL}
                     unrealizedPLPercent={portfolioStats.unrealizedPLPercent}
                     totalDividends={portfolioStats.totalDividends}
+                    currency={currency}
                 />
 
                 {/* Smart Advisor */}
-                <SmartAdvisor suggestions={suggestions} />
+                <SmartAdvisor
+                    suggestions={suggestions}
+                    activePriority={activePriority}
+                    onPriorityChange={updateSuggestions}
+                    currency={currency}
+                />
 
                 {/* Charts Area */}
                 <AllocationChart holdingsData={holdings} />
-                <DividendChart labels={dividendLabels} data={dividendData} />
+                <DividendChart labels={dividendLabels} data={dividendData} currency={currency} />
 
                 {/* Holdings List */}
-                <HoldingsList holdings={holdings} />
+                <HoldingsList holdings={holdings} currency={currency} />
 
             </ScrollView>
         </ScreenWrapper>
