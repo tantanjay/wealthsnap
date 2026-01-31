@@ -440,7 +440,7 @@ const SetupScreen = ({ navigation }: any) => {
                 {step === 1 && (
                     <View style={styles.stepContainer}>
                         <Text style={[styles.stepTitle, { color: colors.text }]}>Welcome to WealthSnap! 🎉</Text>
-                        <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
+                        <Text style={[styles.stepDescription, { color: colors.textSecondary, paddingBottom: 10 }]}>
                             Start your journey to financial freedom
                         </Text>
 
