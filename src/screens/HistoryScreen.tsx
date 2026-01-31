@@ -522,30 +522,26 @@ const HistoryScreen = ({ navigation }: any) => {
                                     </TouchableOpacity>
                                 )}
                             </View>
-                            <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 8, padding: 2 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <TouchableOpacity
                                     onPress={() => setViewMode('LIST')}
-                                    style={{
-                                        paddingHorizontal: 12, paddingVertical: 6,
-                                        backgroundColor: viewMode === 'LIST' ? colors.primary : 'transparent',
-                                        borderRadius: 6
-                                    }}
+                                    style={{ padding: 8 }}
                                 >
-                                    <Ionicons name="list" size={20} color={viewMode === 'LIST' ? '#FFF' : colors.textSecondary} />
+                                    <Ionicons
+                                        name="list"
+                                        size={24}
+                                        color={viewMode === 'LIST' ? colors.primary : colors.text}
+                                    />
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    onPress={() => {
-                                        setViewMode('CALENDAR');
-                                        // Ensure we are in a mode that makes sense for calendar navigation if needed, 
-                                        // or just rely on currentDate which is shared.
-                                    }}
-                                    style={{
-                                        paddingHorizontal: 12, paddingVertical: 6,
-                                        backgroundColor: viewMode === 'CALENDAR' ? colors.primary : 'transparent',
-                                        borderRadius: 6
-                                    }}
+                                    onPress={() => setViewMode('CALENDAR')}
+                                    style={{ padding: 8 }}
                                 >
-                                    <Ionicons name="calendar" size={20} color={viewMode === 'CALENDAR' ? '#FFF' : colors.textSecondary} />
+                                    <Ionicons
+                                        name="calendar"
+                                        size={24}
+                                        color={viewMode === 'CALENDAR' ? colors.primary : colors.text}
+                                    />
                                 </TouchableOpacity>
                             </View>
                         </View>
