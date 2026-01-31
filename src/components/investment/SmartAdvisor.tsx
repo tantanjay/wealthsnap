@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, FlatList, ScrollView } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
+import BottomModal from '@components/common/BottomModal';
 
 export interface Suggestion {
     ticker: string;
@@ -67,6 +68,7 @@ const SuggestionItem = ({ item, width, currency }: { item: Suggestion, width: nu
 export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPriorityChange, activePriority, currency = 'PHP' }) => {
     const { colors } = useTheme();
     const [currentPage, setCurrentPage] = React.useState(0);
+    const [showInfoModal, setShowInfoModal] = useState(false);
 
     // --- MATH RECALIBRATION ---
     const screenWidth = Dimensions.get('window').width;
@@ -100,12 +102,112 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
         { label: 'Bal', value: 'balance', icon: 'scale' },
     ];
 
+    const renderInfoModal = () => (
+        <BottomModal
+            visible={showInfoModal}
+            onClose={() => setShowInfoModal(false)}
+            title="How Smart Alerts Work"
+            maxHeight="85%"
+        >
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={{ marginBottom: 20 }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 16 }}>
+                        Smart Advisor continuously analyzes market data and your portfolio to identify high-potential investing opportunities.
+                    </Text>
+
+                    {/* Visual Examples */}
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between', marginBottom: 16 }}>
+                        {/* Crash */}
+                        <View style={{ width: '48%', backgroundColor: colors.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
+                            <Ionicons name="flame" size={24} color={colors.error} style={{ marginBottom: 8 }} />
+                            <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Market Crash</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 11, lineHeight: 14 }}>
+                                Detected when a stock drops significantly (&gt;10%). Good for long-term entry.
+                            </Text>
+                        </View>
+
+                        {/* Dip */}
+                        <View style={{ width: '48%', backgroundColor: colors.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
+                            <Ionicons name="trending-down" size={24} color={colors.warning} style={{ marginBottom: 8 }} />
+                            <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Buying The Dip</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 11, lineHeight: 14 }}>
+                                Short-term price drop. Opportunity to lower your average cost.
+                            </Text>
+                        </View>
+
+                        {/* Dividends */}
+                        <View style={{ width: '48%', backgroundColor: colors.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
+                            <Ionicons name="cash" size={24} color="#4CAF50" style={{ marginBottom: 8 }} />
+                            <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Dividends</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 11, lineHeight: 14 }}>
+                                Companies paying out dividends soon. Secure your payout date.
+                            </Text>
+                        </View>
+
+                        {/* Balance */}
+                        <View style={{ width: '48%', backgroundColor: colors.surface, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
+                            <Ionicons name="scale" size={24} color={colors.primary} style={{ marginBottom: 8 }} />
+                            <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Rebalancing</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 11, lineHeight: 14 }}>
+                                Assets that are underweight in your portfolio target allocation.
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Logic Explanation with colorful graphs/visuals representation */}
+                <View style={{ marginBottom: 24 }}>
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 12 }}>📊 Detection Logic</Text>
+
+                    <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16 }}>
+                        {/* 30-Day Peak Graph Representation */}
+                        <View style={{ marginBottom: 16 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13, flex: 1 }}>30-Day Peak Comparison</Text>
+                                <Text style={{ color: colors.textSecondary, fontSize: 11 }}>30D High 🆚 Current</Text>
+                            </View>
+                            <View style={{ height: 50, backgroundColor: colors.background, borderRadius: 8, justifyContent: 'center', paddingHorizontal: 12, position: 'relative' }}>
+                                {/* Simplified visual for price drop */}
+                                <View style={{ position: 'absolute', top: 15, left: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.textSecondary }} />
+                                <View style={{ position: 'absolute', top: 15, right: 10, width: '90%', height: 2, backgroundColor: colors.border, borderStyle: 'dashed', borderRadius: 1 }} />
+
+                                <View style={{ position: 'absolute', bottom: 15, right: 30, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary }} />
+                                <Ionicons name="arrow-down" size={16} color={colors.error} style={{ position: 'absolute', right: 32, bottom: 25 }} />
+                            </View>
+                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 8 }}>
+                                We identify the highest price in the last 30 days and compare it to the current price to detect significant drops (&gt;5% or &gt;15%).
+                            </Text>
+                        </View>
+
+                        <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 16 }} />
+
+                        {/* Data Requirement Note */}
+                        <View style={{ flexDirection: 'row', backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8 }}>
+                            <Ionicons name="alert-circle-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                            <Text style={{ flex: 1, color: colors.text, fontSize: 12, lineHeight: 18 }}>
+                                <Text style={{ fontWeight: 'bold' }}>Note:</Text> This feature requires at least <Text style={{ fontWeight: 'bold' }}>30 days of price history</Text> to work accurately. Regular price updates ensure the best suggestions.
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+                <View style={{ height: 20 }} />
+            </ScrollView>
+        </BottomModal>
+    );
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons name="bulb" size={20} color={colors.primary} style={{ marginRight: 8 }} />
                     <Text style={[styles.headerTitle, { color: colors.text }]}>Smart Alerts</Text>
+                    <TouchableOpacity
+                        onPress={() => setShowInfoModal(true)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        style={{ marginLeft: 8 }}
+                    >
+                        <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -190,6 +292,7 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
                     </>
                 )}
             </View>
+            {renderInfoModal()}
         </View>
     );
 };
