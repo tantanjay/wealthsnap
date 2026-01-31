@@ -307,7 +307,6 @@ export const generateDummyData = async () => {
         await saveTransactionsAndInvestments(transactions, investments);
 
         // Save Aux Data
-        console.log(`Saving ${priceHistoryBuffer.length} price history entries...`);
         // Batching would be better but services are single-insert. 
         // We will just do it in parallel chunks to speed up?
         // Or just iterate.
@@ -320,7 +319,6 @@ export const generateDummyData = async () => {
             });
         }
 
-        console.log(`Saving ${dividendHistoryBuffer.length} dividend entries...`);
         for (const dh of dividendHistoryBuffer) {
             await addDividendHistory({
                 symbol: dh.symbol,

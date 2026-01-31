@@ -119,8 +119,6 @@ const InvestmentScreen = () => {
 
             // 3. Call AI Service (Background)
             fetchHistoricalPrices(assetRequests, durationPrompt).then(async (prices) => {
-                console.log(`Fetched ${prices.length} price points.`);
-
                 // 4. Save to DB
                 let savedCount = 0;
                 for (const p of prices) {
