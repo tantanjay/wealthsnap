@@ -3,6 +3,7 @@ import { UserProfile, Transaction, TransactionType, Investment } from '@types';
 import { saveCategory, saveTransaction } from '@services/domain';
 import { bulkSaveInvestments } from '@services/domain/investmentService';
 import { saveUserProfile, setOnboardingComplete, clearAllData } from '@services/core/storageService';
+import { calculatePortfolioMetrics } from '@utils/investmentMetrics';
 import { CONFIG } from '@constants/config';
 
 const EXPENSE_CATEGORIES = [
@@ -37,8 +38,8 @@ export const generateDummyData = async () => {
             id: generateRandomId(),
             name: 'Alex Doe',
             currency: 'USD',
-            monthlySalary: new BigNumber(5000),
-            financialGoals: ['Save $10k', 'Buy a Car'],
+            monthlySalary: new BigNumber(8500),
+            financialGoals: ['Save $100k', 'Early Retirement', 'Buy a House'],
             isOnboardingComplete: true,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -60,159 +61,10 @@ export const generateDummyData = async () => {
             });
         }
 
-        // 3. Generate Transactions for last 24 months
+        // 3. Simulation Constants
         const today = new Date();
-        const transactions: Transaction[] = [];
-
-        // Pre-calculate savings rates for each month to ensure constraints
-        const monthlyIncome = 5000;
-        const minAverageSavingsRate = 0.2; // 20% minimum average
-        const savingsRates: number[] = [];
-
-        // First pass: Generate random savings rates
-        for (let i = 0; i < 24; i++) {
-            const rand = Math.random();
-
-            // 60% chance of positive savings, 40% chance of negative
-            if (rand < 0.60) {
-                // Positive savings - range from 5% to 60%
-                // Add some months with high savings (50%+) to balance negatives
-                if (Math.random() < 0.3) {
-                    // 30% of positive months have high savings (50-60%)
-                    savingsRates.push(0.50 + Math.random() * 0.10);
-                } else {
-                    // Regular positive savings (5-45%)
-                    savingsRates.push(0.05 + Math.random() * 0.40);
-                }
-            } else {
-                // Negative savings - range from -5% to -40%
-                savingsRates.push(-0.05 - Math.random() * 0.35);
-            }
-        }
-
-        // Second pass: Adjust to ensure average >= 10%
-        let currentAverage = savingsRates.reduce((sum, rate) => sum + rate, 0) / savingsRates.length;
-
-        if (currentAverage < minAverageSavingsRate) {
-            const deficit = minAverageSavingsRate - currentAverage;
-            // Boost some months to meet the minimum
-            for (let i = 0; i < savingsRates.length; i++) {
-                if (savingsRates[i] > 0 && deficit > 0) {
-                    const boost = Math.min(deficit * 2, 0.30); // Adjust up to 30%
-                    savingsRates[i] += boost;
-                }
-            }
-        }
-
-        for (let i = 0; i < 24; i++) {
-            const currentMonth = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            const year = currentMonth.getFullYear();
-            const month = currentMonth.getMonth();
-
-            // Income on 15th
-            const incomeDate15 = new Date(year, month, 15);
-            if (incomeDate15 <= today) {
-                transactions.push({
-                    id: generateRandomId(),
-                    type: 'INCOME',
-                    amount: new BigNumber(2500),
-                    category: 'Salary',
-                    date: incomeDate15.toISOString(),
-                    isRecurring: true,
-                    note: 'Salary payment 1',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                });
-            }
-
-            // Income on End of Month
-            const incomeDateEOM = new Date(year, month + 1, 0); // Last day of month
-            if (incomeDateEOM <= today) {
-                transactions.push({
-                    id: generateRandomId(),
-                    type: 'INCOME',
-                    amount: new BigNumber(2500),
-                    category: 'Salary',
-                    date: incomeDateEOM.toISOString(),
-                    isRecurring: true,
-                    note: 'Salary payment 2',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                });
-            }
-
-            // Calculate target expense based on savings rate
-            // Savings = Income - Expenses, so Expenses = Income * (1 - savingsRate)
-            const savingsRate = savingsRates[i];
-            let targetExpense = Math.floor(monthlyIncome * (1 - savingsRate));
-
-            // Ensure expenses are at least 0
-            targetExpense = Math.max(0, targetExpense);
-
-            // Scale target expense for partial current month
-            if (month === today.getMonth() && year === today.getFullYear()) {
-                const dayOfMonth = today.getDate();
-                const totalDaysInMonth = incomeDateEOM.getDate();
-                const progress = dayOfMonth / totalDaysInMonth;
-                targetExpense = Math.floor(targetExpense * progress);
-            }
-
-            let currentExpense = 0;
-
-            while (currentExpense < targetExpense) {
-                const remaining = targetExpense - currentExpense;
-
-                if (remaining <= 20) {
-                    currentExpense = targetExpense;
-                    break;
-                }
-
-                // Ensure max isn't less than min (20)
-                const maxExpense = Math.max(20, Math.min(remaining, 1500));
-                const expenseAmount = getRandomAmount(20, maxExpense);
-
-                if (currentExpense + expenseAmount > targetExpense) break;
-
-                const randomDay = getRandomAmount(1, incomeDateEOM.getDate());
-                const expenseDate = new Date(year, month, randomDay);
-
-                if (expenseDate > today) continue;
-
-                const randomCategory = EXPENSE_CATEGORIES[Math.floor(Math.random() * EXPENSE_CATEGORIES.length)];
-
-                transactions.push({
-                    id: generateRandomId(),
-                    type: 'EXPENSE',
-                    amount: new BigNumber(expenseAmount),
-                    category: randomCategory.name,
-                    date: expenseDate.toISOString(),
-                    isRecurring: false,
-                    note: `Dummy ${randomCategory.name} expense`,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                });
-
-                currentExpense += expenseAmount;
-            }
-        }
-
-        // Save all transactions
-        for (const t of transactions) {
-            await saveTransaction(t);
-        }
-
-        // 4. Generate Investment Data
-        await generateDummyInvestments();
-
-    } catch (error) {
-        console.error('Error generating dummy data:', error);
-    }
-};
-
-const generateDummyInvestments = async () => {
-    try {
-        const investments: Investment[] = []; // Changed type from any[] to Investment[]
-
+        const monthlySalary = 8500;
+        const semiMonthlySalary = monthlySalary / 2;
         const STOCKS = [
             { symbol: 'AAPL', name: 'Apple Inc.', basePrice: 150 },
             { symbol: 'MSFT', name: 'Microsoft Corp.', basePrice: 280 },
@@ -222,65 +74,210 @@ const generateDummyInvestments = async () => {
             { symbol: 'NVDA', name: 'NVIDIA Corp.', basePrice: 200 }
         ];
 
-        const today = new Date();
-        const threeYearsAgo = new Date(today.getFullYear() - 3, today.getMonth(), today.getDate());
+        // State for simulation
+        const transactions: Transaction[] = [];
+        const investments: Investment[] = [];
+        const symbolHoldings: Record<string, Investment[]> = {};
+        const stockPrices: Record<string, number> = {};
 
-        for (const stock of STOCKS) {
-            let currentQuantity = 0;
-            let currentPrice = stock.basePrice;
+        // Initialize stock prices
+        STOCKS.forEach(s => stockPrices[s.symbol] = s.basePrice);
 
-            // Generate trades over 3 years
-            for (let i = 0; i < 30; i++) { // ~10 trades per year per stock
-                const randomDays = Math.floor(Math.random() * (365 * 3));
-                const tradeDate = new Date(threeYearsAgo.getTime() + randomDays * 24 * 60 * 60 * 1000);
+        // 4. Chronological Simulation (36 months)
+        for (let i = 35; i >= 0; i--) {
+            const currentMonth = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            const eomDate = new Date(year, month + 1, 0).getDate();
 
-                if (tradeDate > today) continue;
+            // Stock price volatility for this month
+            STOCKS.forEach(stock => {
+                const volatility = (Math.random() * 0.1) - 0.04; // -4% to +6% per month
+                stockPrices[stock.symbol] *= (1 + volatility);
+            });
 
-                // Randomize price movement (-10% to +15%)
-                const priceChange = (Math.random() * 0.25) - 0.10;
-                currentPrice = currentPrice * (1 + priceChange);
+            // --- INCOME AND INVESTMENT EVENTS ---
+            // Income dates: 15th and Last Day
+            const payDates = [15, eomDate];
 
-                const isBuy = currentQuantity === 0 || Math.random() > 0.5;
+            for (const day of payDates) {
+                const payDate = new Date(year, month, day);
+                if (payDate > today) continue;
 
-                if (isBuy) {
-                    const quantity = Math.floor(Math.random() * 10) + 1;
-                    investments.push({
-                        id: generateRandomId(),
+                // 1. Receive Salary
+                const incomeId = generateRandomId();
+                transactions.push({
+                    id: incomeId,
+                    type: 'INCOME',
+                    amount: new BigNumber(semiMonthlySalary),
+                    category: 'Salary',
+                    date: payDate.toISOString(),
+                    isRecurring: true,
+                    note: `Salary Payment (${day === 15 ? 'Mid' : 'End'} Month)`,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                });
+
+                // 2. Decide to Invest (80% chance for each paycheck)
+                if (Math.random() < 0.8) {
+                    const investAmount = semiMonthlySalary * (0.1 + Math.random() * 0.2); // 10-30% of paycheck
+                    const stock = STOCKS[Math.floor(Math.random() * STOCKS.length)];
+                    const currentPrice = stockPrices[stock.symbol];
+                    const quantity = investAmount / currentPrice;
+                    const fees = 5.00;
+
+                    const invId = generateRandomId();
+                    const investment: Investment = {
+                        id: invId,
                         symbol: stock.symbol,
                         type: 'STOCKS',
-                        date: tradeDate.toISOString(),
+                        date: payDate.toISOString(),
                         action: 'BUY',
                         quantity: new BigNumber(quantity),
                         price: new BigNumber(currentPrice),
-                        fees: new BigNumber(5), // Flat fee
-                        notes: `Bought ${stock.symbol}`,
+                        fees: new BigNumber(fees),
+                        notes: `Automated investment from salary deduction`,
                         isRecurring: false,
                         creationMethod: 'MANUAL',
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
-                    });
-                    currentQuantity += quantity;
-                } else if (currentQuantity > 0) {
-                    // Sell
-                    const quantityToSell = Math.max(1, Math.floor(Math.random() * currentQuantity));
-                    investments.push({
+                    };
+
+                    investments.push(investment);
+                    if (!symbolHoldings[stock.symbol]) symbolHoldings[stock.symbol] = [];
+                    symbolHoldings[stock.symbol].push(investment);
+
+                    // Add linked transaction for the "Deduction" (Transfer to Broker)
+                    transactions.push({
                         id: generateRandomId(),
-                        symbol: stock.symbol,
-                        type: 'STOCKS',
-                        date: tradeDate.toISOString(),
-                        action: 'SELL',
-                        quantity: new BigNumber(quantityToSell),
-                        price: new BigNumber(currentPrice),
-                        fees: new BigNumber(5),
-                        notes: `Sold ${stock.symbol}`,
+                        type: 'TRANSFER_OUT',
+                        amount: new BigNumber(investAmount + fees),
+                        category: 'Investment',
+                        date: payDate.toISOString(),
+                        note: `Invested in ${stock.symbol}`,
                         isRecurring: false,
-                        creationMethod: 'MANUAL',
+                        transferAccount: 'INVESTMENTS',
+                        investmentId: invId,
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
                     });
-                    currentQuantity -= quantityToSell;
                 }
             }
+
+            // --- RANDOM SELL EVENTS ---
+            // 20% chance per month to sell some stocks
+            if (Math.random() < 0.2) {
+                const ownedSymbols = Object.keys(symbolHoldings).filter(s => {
+                    const metrics = calculatePortfolioMetrics(symbolHoldings[s]);
+                    return metrics.currentQuantity.isGreaterThan(0);
+                });
+
+                if (ownedSymbols.length > 0) {
+                    const symbolToSell = ownedSymbols[Math.floor(Math.random() * ownedSymbols.length)];
+                    const currentPrice = stockPrices[symbolToSell];
+                    const holdings = symbolHoldings[symbolToSell];
+                    const metricsBefore = calculatePortfolioMetrics(holdings);
+
+                    const qtyToSell = metricsBefore.currentQuantity.times(0.3 + Math.random() * 0.7); // Sell 30-100%
+                    const fees = 5.00;
+                    const sellDate = new Date(year, month, getRandomAmount(1, eomDate));
+
+                    if (sellDate <= today) {
+                        const invId = generateRandomId();
+                        const sellInvestment: Investment = {
+                            id: invId,
+                            symbol: symbolToSell,
+                            type: 'STOCKS',
+                            date: sellDate.toISOString(),
+                            action: 'SELL',
+                            quantity: qtyToSell,
+                            price: new BigNumber(currentPrice),
+                            fees: new BigNumber(fees),
+                            notes: `Profit taking / Rebalancing`,
+                            isRecurring: false,
+                            creationMethod: 'MANUAL',
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                        };
+
+                        investments.push(sellInvestment);
+                        holdings.push(sellInvestment);
+
+                        // Calculate realized P/L for this specific sell
+                        // P/L = (SellPrice * Qty) - Fees - (AvgPrice * Qty)
+                        const proceeds = sellInvestment.price.times(sellInvestment.quantity).minus(sellInvestment.fees || 0);
+                        const costBasisOfSoldShares = metricsBefore.averagePrice.times(sellInvestment.quantity);
+                        const realizedPL = proceeds.minus(costBasisOfSoldShares);
+
+                        // 1. Transaction: Cash inflow from sale
+                        transactions.push({
+                            id: generateRandomId(),
+                            type: 'TRANSFER_IN',
+                            amount: proceeds,
+                            category: 'Investment',
+                            date: sellDate.toISOString(),
+                            note: `Sold ${symbolToSell} - Proceeds`,
+                            isRecurring: false,
+                            transferAccount: 'INVESTMENTS',
+                            investmentId: invId,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                        });
+
+                        // 2. Transaction: Capital Gain/Loss
+                        transactions.push({
+                            id: generateRandomId(),
+                            type: realizedPL.isGreaterThanOrEqualTo(0) ? 'CAPITAL_GAIN' : 'CAPITAL_LOSS',
+                            amount: realizedPL.abs(),
+                            category: 'Investment',
+                            date: sellDate.toISOString(),
+                            note: `Realized ${realizedPL.isGreaterThanOrEqualTo(0) ? 'Gain' : 'Loss'} from ${symbolToSell}`,
+                            isRecurring: false,
+                            investmentId: invId,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString(),
+                        });
+                    }
+                }
+            }
+
+            // --- EXPENSES ---
+            // Target monthly savings rate (after investments): 20-40%
+            // So monthly expenses = (Salary - monthlyInvestments) * (1 - savingsRate)
+            const targetExpense = monthlySalary * (0.4 + Math.random() * 0.3);
+            let currentExpense = 0;
+
+            while (currentExpense < targetExpense) {
+                const remaining = targetExpense - currentExpense;
+                if (remaining <= 20) break;
+
+                const maxExpense = Math.max(20, Math.min(remaining, 1200));
+                const expenseAmount = getRandomAmount(20, maxExpense);
+                const randomDay = getRandomAmount(1, eomDate);
+                const expenseDate = new Date(year, month, randomDay);
+
+                if (expenseDate > today) continue;
+
+                const randomCategory = EXPENSE_CATEGORIES[Math.floor(Math.random() * EXPENSE_CATEGORIES.length)];
+                transactions.push({
+                    id: generateRandomId(),
+                    type: 'EXPENSE',
+                    amount: new BigNumber(expenseAmount),
+                    category: randomCategory.name,
+                    date: expenseDate.toISOString(),
+                    isRecurring: false,
+                    note: `Monthly ${randomCategory.name} payment`,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                });
+
+                currentExpense += expenseAmount;
+            }
+        }
+
+        // 5. Save everything
+        for (const t of transactions) {
+            await saveTransaction(t);
         }
 
         if (investments.length > 0) {
@@ -288,6 +285,8 @@ const generateDummyInvestments = async () => {
         }
 
     } catch (error) {
-        console.error('Error in generateDummyInvestments:', error);
+        console.error('Error generating dummy data:', error);
     }
 };
+
+
