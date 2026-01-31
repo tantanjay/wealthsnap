@@ -1,6 +1,7 @@
 import { BigNumber } from 'bignumber.js';
-import { UserProfile, Transaction, TransactionType } from '@types';
+import { UserProfile, Transaction, TransactionType, Investment } from '@types';
 import { saveCategory, saveTransaction } from '@services/domain';
+import { bulkSaveInvestments } from '@services/domain/investmentService';
 import { saveUserProfile, setOnboardingComplete, clearAllData } from '@services/core/storageService';
 import { CONFIG } from '@constants/config';
 
@@ -200,9 +201,93 @@ export const generateDummyData = async () => {
             await saveTransaction(t);
         }
 
-
+        // 4. Generate Investment Data
+        await generateDummyInvestments();
 
     } catch (error) {
         console.error('Error generating dummy data:', error);
+    }
+};
+
+const generateDummyInvestments = async () => {
+    try {
+        const investments: Investment[] = []; // Changed type from any[] to Investment[]
+
+        const STOCKS = [
+            { symbol: 'AAPL', name: 'Apple Inc.', basePrice: 150 },
+            { symbol: 'MSFT', name: 'Microsoft Corp.', basePrice: 280 },
+            { symbol: 'GOOGL', name: 'Alphabet Inc.', basePrice: 2500 },
+            { symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 3300 },
+            { symbol: 'TSLA', name: 'Tesla Inc.', basePrice: 700 },
+            { symbol: 'NVDA', name: 'NVIDIA Corp.', basePrice: 200 }
+        ];
+
+        const today = new Date();
+        const threeYearsAgo = new Date(today.getFullYear() - 3, today.getMonth(), today.getDate());
+
+        for (const stock of STOCKS) {
+            let currentQuantity = 0;
+            let currentPrice = stock.basePrice;
+
+            // Generate trades over 3 years
+            for (let i = 0; i < 30; i++) { // ~10 trades per year per stock
+                const randomDays = Math.floor(Math.random() * (365 * 3));
+                const tradeDate = new Date(threeYearsAgo.getTime() + randomDays * 24 * 60 * 60 * 1000);
+
+                if (tradeDate > today) continue;
+
+                // Randomize price movement (-10% to +15%)
+                const priceChange = (Math.random() * 0.25) - 0.10;
+                currentPrice = currentPrice * (1 + priceChange);
+
+                const isBuy = currentQuantity === 0 || Math.random() > 0.5;
+
+                if (isBuy) {
+                    const quantity = Math.floor(Math.random() * 10) + 1;
+                    investments.push({
+                        id: generateRandomId(),
+                        symbol: stock.symbol,
+                        type: 'STOCKS',
+                        date: tradeDate.toISOString(),
+                        action: 'BUY',
+                        quantity: new BigNumber(quantity),
+                        price: new BigNumber(currentPrice),
+                        fees: new BigNumber(5), // Flat fee
+                        notes: `Bought ${stock.symbol}`,
+                        isRecurring: false,
+                        creationMethod: 'MANUAL',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    });
+                    currentQuantity += quantity;
+                } else if (currentQuantity > 0) {
+                    // Sell
+                    const quantityToSell = Math.max(1, Math.floor(Math.random() * currentQuantity));
+                    investments.push({
+                        id: generateRandomId(),
+                        symbol: stock.symbol,
+                        type: 'STOCKS',
+                        date: tradeDate.toISOString(),
+                        action: 'SELL',
+                        quantity: new BigNumber(quantityToSell),
+                        price: new BigNumber(currentPrice),
+                        fees: new BigNumber(5),
+                        notes: `Sold ${stock.symbol}`,
+                        isRecurring: false,
+                        creationMethod: 'MANUAL',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    });
+                    currentQuantity -= quantityToSell;
+                }
+            }
+        }
+
+        if (investments.length > 0) {
+            await bulkSaveInvestments(investments);
+        }
+
+    } catch (error) {
+        console.error('Error in generateDummyInvestments:', error);
     }
 };

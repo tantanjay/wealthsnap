@@ -1,6 +1,6 @@
 export const CONFIG = {
     TERMS_VERSION: 2,
-    ENABLE_DUMMY_DATA: false,
+    ENABLE_DUMMY_DATA: true,
     SHOW_DEVELOPER_OPTIONS: false,
     CHUNK_SIZE: 100,
 };
