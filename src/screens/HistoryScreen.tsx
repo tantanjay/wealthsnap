@@ -11,10 +11,10 @@ import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
-import { Transaction, UserProfile } from '@types';
+import { Transaction, UserProfile, Investment } from '@types';
 import { deleteTransaction } from '@services/domain';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
-import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile, getCachedTransactions } from '@services/core/storageService';
+import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile, getCachedTransactions, getCachedInvestments } from '@services/core/storageService';
 import { HistoryCalendar } from '../components/history/HistoryCalendar';
 
 
@@ -22,9 +22,19 @@ import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
 import { RecurrenceRule } from '@types';
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
+type HistoryItem = Transaction | Investment;
+
+const isTransaction = (item: HistoryItem): item is Transaction => {
+    return (item as Transaction).amount !== undefined && (item as Transaction).category !== undefined;
+};
+
+const isInvestment = (item: HistoryItem): item is Investment => {
+    return (item as Investment).symbol !== undefined && (item as Investment).action !== undefined;
+};
+
 interface TransactionSection {
     title: string;
-    data: Transaction[];
+    data: HistoryItem[];
     totalAmount: BigNumber;
     count: number;
     originalDate: Date;
@@ -43,6 +53,7 @@ const HistoryScreen = ({ navigation }: any) => {
 
 
     const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+    const [allInvestments, setAllInvestments] = useState<Investment[]>([]);
     const [recurrenceRules, setRecurrenceRules] = useState<RecurrenceRule[]>([]);
     const [timeFrame, setTimeFrame] = useState<TimeFrame>('DAILY');
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -55,7 +66,7 @@ const HistoryScreen = ({ navigation }: any) => {
 
     useFocusEffect(
         useCallback(() => {
-            loadTransactions();
+            loadData();
             loadTimeFramePref();
             loadProfile();
             loadRecurrenceRules();
@@ -84,10 +95,14 @@ const HistoryScreen = ({ navigation }: any) => {
         if (viewMode === 'LIST') saveHistoryTimeFrame(tf);
     };
 
-    const loadTransactions = async () => {
+    const loadData = async () => {
         setIsLoading(true);
-        const data = await getCachedTransactions();
-        setAllTransactions(data);
+        const [transactions, investments] = await Promise.all([
+            getCachedTransactions(),
+            getCachedInvestments()
+        ]);
+        setAllTransactions(transactions);
+        setAllInvestments(investments);
         setIsLoading(false);
     };
 
@@ -152,31 +167,51 @@ const HistoryScreen = ({ navigation }: any) => {
 
     // --- Computed Data ---
 
+    // --- Computed Data ---
+
+    // Combine Transactions and Investments
+    const allHistoryItems = useMemo((): HistoryItem[] => {
+        return [...allTransactions, ...allInvestments].sort((a, b) => {
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
+        });
+    }, [allTransactions, allInvestments]);
+
     const filteredData = useMemo(() => {
         if (viewMode === 'CALENDAR') {
             // In calendar mode, list shows selected date's transactions
             const start = new Date(selectedCalendarDate); start.setHours(0, 0, 0, 0);
             const end = new Date(selectedCalendarDate); end.setHours(23, 59, 59, 999);
-            return allTransactions.filter(t => {
+            return allHistoryItems.filter(t => {
                 const tDate = new Date(t.date);
                 return tDate >= start && tDate <= end;
             });
         }
         const { start, end } = getStartEndOfPeriod(currentDate, timeFrame);
-        return allTransactions.filter(t => {
+        return allHistoryItems.filter(t => {
             const tDate = new Date(t.date);
             return tDate >= start && tDate <= end;
         });
-    }, [allTransactions, currentDate, timeFrame, viewMode, selectedCalendarDate]);
+    }, [allHistoryItems, currentDate, timeFrame, viewMode, selectedCalendarDate]);
 
     const calendarTransactions = useMemo(() => {
         // Transactions for the currently displayed month in calendar
+        // Note: Calendar component likely expects specific Transaction type, 
+        // need to check if it handles Investments. For now, passing only transactions to Calendar 
+        // to avoid type errors unless we update Calendar component.
         const { start, end } = getStartEndOfPeriod(currentDate, 'MONTHLY');
         return allTransactions.filter(t => {
             const tDate = new Date(t.date);
             return tDate >= start && tDate <= end;
         });
     }, [allTransactions, currentDate]);
+
+    const calendarInvestments = useMemo(() => {
+        const { start, end } = getStartEndOfPeriod(currentDate, 'MONTHLY');
+        return allInvestments.filter(inv => {
+            const iDate = new Date(inv.date);
+            return iDate >= start && iDate <= end;
+        });
+    }, [allInvestments, currentDate]);
 
     const globalBalance = useMemo(() => {
         return allTransactions.reduce((acc, t) => {
@@ -192,11 +227,18 @@ const HistoryScreen = ({ navigation }: any) => {
 
     const dashboardTransactions = useMemo(() => {
         // In Calendar Mode, Dashboard shows MONTHLY stats, while List shows DAILY
+        // We only use Transactions for the main summary dashboard as per user request
         if (viewMode === 'CALENDAR') {
             return calendarTransactions;
         }
-        return filteredData;
-    }, [viewMode, calendarTransactions, filteredData]);
+
+        // Filter out investments for the summary calculation
+        const { start, end } = getStartEndOfPeriod(currentDate, timeFrame);
+        return allTransactions.filter(t => {
+            const tDate = new Date(t.date);
+            return tDate >= start && tDate <= end;
+        });
+    }, [viewMode, calendarTransactions, allTransactions, currentDate, timeFrame]);
 
     const summary = useMemo((): FinancialSummary => {
         let totalIncome = new BigNumber(0);
@@ -265,17 +307,20 @@ const HistoryScreen = ({ navigation }: any) => {
     }, [summary, recurrenceRules, currentDate, timeFrame, viewMode]);
 
     const sections = useMemo((): TransactionSection[] => {
-        const grouped: { [key: string]: Transaction[] } = {};
+        const grouped: { [key: string]: HistoryItem[] } = {};
 
-        filteredData.forEach(transaction => {
-            const dateKey = new Date(transaction.date).toDateString();
+        filteredData.forEach(item => {
+            const dateKey = new Date(item.date).toDateString();
             if (!grouped[dateKey]) grouped[dateKey] = [];
-            grouped[dateKey].push(transaction);
+            grouped[dateKey].push(item);
         });
 
         const newSections: TransactionSection[] = Object.keys(grouped).map(dateKey => {
-            const transactions = grouped[dateKey];
-            const totalAmount = transactions.reduce((sum, t) => {
+            const items = grouped[dateKey];
+            const totalAmount = items.reduce((sum, item) => {
+                if (isInvestment(item)) return sum; // Don't include investments in daily total sum for now to keep it clean, or maybe track separately?
+
+                const t = item as Transaction;
                 if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') {
                     return sum.plus(t.amount.abs());
                 }
@@ -292,10 +337,10 @@ const HistoryScreen = ({ navigation }: any) => {
 
             return {
                 title,
-                data: transactions,
+                data: items,
                 totalAmount,
-                count: transactions.length,
-                originalDate: new Date(transactions[0].date)
+                count: items.length,
+                originalDate: new Date(items[0].date)
             };
         });
 
@@ -304,10 +349,82 @@ const HistoryScreen = ({ navigation }: any) => {
 
     // --- Renderers ---
 
-    const renderItem = ({ item }: { item: Transaction }) => {
-        const isExpense = item.type === 'EXPENSE';
-        const isTransferIn = item.type === 'TRANSFER_IN';
-        const isTransferOut = item.type === 'TRANSFER_OUT';
+    const renderItem = ({ item }: { item: HistoryItem }) => {
+        if (isInvestment(item)) {
+            // Render Investment Item
+            const inv = item as Investment;
+            const isBuy = inv.action === 'BUY';
+            // Distinct color for investments (Purple/Blue)
+            const iconColor = '#8E24AA';
+
+            // Calculate total value if possible (price * quantity)
+            const totalValue = inv.price.multipliedBy(inv.quantity);
+            const isPositiveAction = inv.action === 'SELL' || inv.action === 'DIVIDEND' || inv.action === 'INTEREST';
+
+            // Find linked P/L for SELL actions
+            let plElement = null;
+            if (inv.action === 'SELL') {
+                const linkedTx = allTransactions.find(t =>
+                    (t.type === 'CAPITAL_GAIN' || t.type === 'CAPITAL_LOSS') &&
+                    t.investmentId === inv.id
+                );
+                if (linkedTx) {
+                    const isGain = linkedTx.type === 'CAPITAL_GAIN';
+                    plElement = (
+                        <Text>
+                            {" • "}<Text style={{ color: isGain ? colors.success : colors.error, fontWeight: 'bold' }}>
+                                {isGain ? '+' : '-'}{formatCurrency(linkedTx.amount.abs())}
+                            </Text>
+                        </Text>
+                    );
+                }
+            }
+
+            return (
+                <TouchableOpacity style={{ marginBottom: 8 }} activeOpacity={0.9}>
+                    <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0, borderLeftWidth: 4, borderLeftColor: iconColor }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                                <View style={{
+                                    width: 36, height: 36, borderRadius: 18,
+                                    backgroundColor: iconColor + '15',
+                                    justifyContent: 'center', alignItems: 'center'
+                                }}>
+                                    <Ionicons name="stats-chart" size={18} color={iconColor} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
+                                        {inv.symbol} <Text style={{ fontSize: 14, color: colors.textSecondary }}>({inv.action})</Text>
+                                    </Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
+                                        {inv.quantity.toString()} units @ {formatCurrency(inv.price)}
+                                        {plElement}
+                                    </Text>
+                                </View>
+                            </View>
+                            <View style={{ alignItems: 'flex-end' }}>
+                                <Text style={{
+                                    color: colors.text, // Neutral color for value, or Green/Red if we want to imply cash flow impact? 
+                                    // User said "investments and debts can also be no link". 
+                                    // Let's keep it simple.
+                                    fontSize: 16, fontWeight: 'bold'
+                                }}>
+                                    {formatCurrency(totalValue)}
+                                </Text>
+                                <View style={{ backgroundColor: iconColor + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
+                                    <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>INVESTMENT</Text>
+                                </View>
+                            </View>
+                        </View>
+                    </Card>
+                </TouchableOpacity>
+            );
+        }
+
+        const t = item as Transaction;
+        const isExpense = t.type === 'EXPENSE';
+        const isTransferIn = t.type === 'TRANSFER_IN';
+        const isTransferOut = t.type === 'TRANSFER_OUT';
         const isTransfer = isTransferIn || isTransferOut;
         const isNegativeFlow = isExpense || isTransferOut;
 
@@ -318,9 +435,9 @@ const HistoryScreen = ({ navigation }: any) => {
         if (isTransfer) {
             statusColor = isTransferIn ? colors.error : colors.success;
             iconName = isTransferIn ? "arrow-down-circle-outline" : "arrow-up-circle-outline";
-        } else if (item.creationMethod === 'AI') {
+        } else if (t.creationMethod === 'AI') {
             iconName = "sparkles";
-        } else if (item.isRecurring) {
+        } else if (t.isRecurring) {
             iconName = "repeat";
         }
 
@@ -332,13 +449,13 @@ const HistoryScreen = ({ navigation }: any) => {
                         .replace(/_/g, ' ')
                         .replace(/\b\w/g, c => c.toUpperCase());
 
-                return isTransferIn ? `From ${toTitleCase(item.transferAccount)}` : `To ${toTitleCase(item.transferAccount)}`;
+                return isTransferIn ? `From ${toTitleCase(t.transferAccount)}` : `To ${toTitleCase(t.transferAccount)}`;
             }
-            return item.category;
+            return t.category;
         };
 
         return (
-            <TouchableOpacity onPress={() => setSelectedTransaction(item)} style={{ marginBottom: 8 }} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => setSelectedTransaction(t)} style={{ marginBottom: 8 }} activeOpacity={0.7}>
                 <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
@@ -354,7 +471,7 @@ const HistoryScreen = ({ navigation }: any) => {
                                     {getDisplayName()}
                                 </Text>
                                 <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                                    {item.note || item.subCategory || item.type}
+                                    {t.note || t.subCategory || t.type}
                                 </Text>
                             </View>
                         </View>
@@ -362,7 +479,7 @@ const HistoryScreen = ({ navigation }: any) => {
                             color: isNegativeFlow ? colors.error : colors.success,
                             fontSize: 16, fontWeight: 'bold'
                         }}>
-                            {isNegativeFlow ? '-' : '+'}{formatCurrency(item.amount)}
+                            {isNegativeFlow ? '-' : '+'}{formatCurrency(t.amount)}
                         </Text>
                     </View>
                 </Card>
@@ -469,6 +586,7 @@ const HistoryScreen = ({ navigation }: any) => {
                             <HistoryCalendar
                                 currentDate={currentDate}
                                 transactions={calendarTransactions}
+                                investments={calendarInvestments}
                                 recurrenceRules={recurrenceRules}
                                 selectedDate={selectedCalendarDate}
                                 onSelectDate={setSelectedCalendarDate}
@@ -534,7 +652,7 @@ const HistoryScreen = ({ navigation }: any) => {
                 transaction={selectedTransaction}
                 onClose={() => setSelectedTransaction(null)}
                 onEdit={(t) => { setSelectedTransaction(null); navigation.navigate('Record', { transaction: { ...t, amount: t.amount.toString() } }); }}
-                onDelete={async (id) => { await deleteTransaction(id); loadTransactions(); setSelectedTransaction(null); }}
+                onDelete={async (id) => { await deleteTransaction(id); loadData(); setSelectedTransaction(null); }}
                 currency={profile?.currency}
             />
             {/* Info Modal */}
@@ -612,6 +730,30 @@ const HistoryScreen = ({ navigation }: any) => {
                                 <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Future Badges</Text>
                                 <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
                                     Green for upcoming Income, Red for Bills.
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Investment Indicators */}
+                    <View style={{ marginBottom: 24 }}>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
+                            📈 Investments
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 10 }}>
+                            Track your Buy and Sell signals directly on the calendar.
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 12, borderRadius: 12 }}>
+                            <View style={{ marginRight: 16, gap: 8 }}>
+                                <Ionicons name="caret-up" size={20} color={colors.primary} />
+                                <Ionicons name="caret-down" size={20} color={colors.primary} />
+                            </View>
+                            <View style={{ flex: 1, gap: 8 }}>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                    <Text style={{ fontWeight: 'bold', color: colors.primary }}>Buy</Text> - You <Text style={{ fontWeight: 'bold', color: colors.success }}>▲ bought</Text> an asset.
+                                </Text>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                    <Text style={{ fontWeight: 'bold', color: colors.primary }}>Sell</Text> - <Text style={{ fontWeight: 'bold', color: '#FFD700' }}>▼ Gold</Text> means Profit, <Text style={{ fontWeight: 'bold', color: colors.error }}>▼ Red</Text> means Loss.
                                 </Text>
                             </View>
                         </View>
