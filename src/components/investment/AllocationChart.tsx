@@ -4,7 +4,7 @@ import { useTheme } from '@context/ThemeContext';
 
 // --- Interfaces ---
 interface Holding {
-    ticker: string;
+    symbol: string;
     shares: number;
     price: number;
     totalValue: number;
@@ -110,9 +110,9 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData }
                     : `rgba(239, 68, 68, ${0.5 + (Math.min(Math.abs(h.gainLossPercent), 15) / 40)})`;
 
                 return {
-                    id: h.ticker,
+                    id: h.symbol,
                     value: h.totalValue,
-                    label: h.ticker,
+                    label: h.symbol,
                     weight: `${((h.totalValue / totalPortfolioValue) * 100).toFixed(1)}%`,
                     performance: `${glSign}${h.gainLossPercent.toFixed(1)}%`,
                     color,

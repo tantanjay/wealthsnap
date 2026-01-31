@@ -267,7 +267,7 @@ export const deleteInvestment = async (id: string): Promise<void> => {
  * Get detailed portfolio holdings for the UI
  */
 export interface PortfolioHolding {
-    ticker: string;
+    symbol: string;
     shares: number;
     price: number;
     totalValue: number;
@@ -323,7 +323,7 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
             : 0;
 
         return {
-            ticker: m.symbol,
+            symbol: m.symbol,
             shares: m.currentQuantity.toNumber(),
             price: priceMap[m.symbol] ? priceMap[m.symbol].toNumber() : 0,
             totalValue: m.totalMarketValue.toNumber(),
