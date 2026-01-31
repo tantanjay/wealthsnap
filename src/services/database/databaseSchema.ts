@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 6;
+export const DATABASE_VERSION = 7;
 
 /**
  * Create all database tables and indexes
@@ -19,7 +19,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             id TEXT PRIMARY KEY,
             date TEXT NOT NULL,
             amount TEXT NOT NULL,
-            type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'TRANSFER_IN', 'TRANSFER_OUT')),
+            type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'TRANSFER_IN', 'TRANSFER_OUT', 'CAPITAL_LOSS', 'CAPITAL_GAIN')),
             category TEXT,
             subCategory TEXT,
             note TEXT,
@@ -101,16 +101,18 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
         -- Price history table (for future investment features)
         CREATE TABLE IF NOT EXISTS price_history (
             id TEXT PRIMARY KEY,
-            assetId TEXT NOT NULL,
-            price REAL NOT NULL,
+            symbol TEXT NOT NULL,
+            price TEXT NOT NULL,
+            high TEXT,
+            low TEXT,
+            volume TEXT,
             timestamp TEXT NOT NULL,
-            source TEXT,
-            FOREIGN KEY (assetId) REFERENCES investments(id) ON DELETE CASCADE
+            source TEXT
         );
 
-        CREATE INDEX IF NOT EXISTS idx_price_history_asset ON price_history(assetId);
+        CREATE INDEX IF NOT EXISTS idx_price_history_symbol ON price_history(symbol);
         CREATE INDEX IF NOT EXISTS idx_price_history_timestamp ON price_history(timestamp DESC);
-        CREATE INDEX IF NOT EXISTS idx_price_history_asset_timestamp ON price_history(assetId, timestamp DESC);
+        CREATE INDEX IF NOT EXISTS idx_price_history_symbol_timestamp ON price_history(symbol, timestamp DESC);
 
         -- AI Usage logs table
         CREATE TABLE IF NOT EXISTS ai_usage_logs (
