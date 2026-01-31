@@ -121,7 +121,7 @@ export const calculatePortfolioMetrics = (
 /**
  * Helper to group investments by symbol and calculate metrics for each
  */
-export const getAllPortfolioMetrics = (investments: Investment[], marketPrices: Record<string, number> = {}) => {
+export const getAllPortfolioMetrics = (investments: Investment[], marketPrices: Record<string, BigNumber | number | string> = {}) => {
     const grouped: Record<string, Investment[]> = {};
 
     investments.forEach(inv => {
@@ -130,6 +130,12 @@ export const getAllPortfolioMetrics = (investments: Investment[], marketPrices: 
     });
 
     return Object.keys(grouped).map(symbol => {
-        return calculatePortfolioMetrics(grouped[symbol], marketPrices[symbol] || 0);
+        // Ensure price is BigNumber or number
+        const priceInput = marketPrices[symbol];
+        const currentPrice = priceInput !== undefined
+            ? (BigNumber.isBigNumber(priceInput) ? priceInput : new BigNumber(priceInput))
+            : 0;
+
+        return calculatePortfolioMetrics(grouped[symbol], currentPrice);
     });
 };

@@ -12,7 +12,7 @@ export interface UserProfile {
     updatedAt: string;
 }
 
-export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER_IN' | 'TRANSFER_OUT';
+export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER_IN' | 'TRANSFER_OUT' | 'CAPITAL_LOSS' | 'CAPITAL_GAIN';
 export type InvestmentType = 'STOCKS' | 'FUNDS' | 'BONDS' | 'CRYPTO' | 'COMMODITIES' | 'OTHERS';
 export type InvestmentAction = 'BUY' | 'SELL' | 'DIVIDEND' | 'INTEREST';
 export type DebtType = 'LOAN' | 'CREDIT_CARD' | 'MORTGAGE';

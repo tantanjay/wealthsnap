@@ -16,6 +16,8 @@ import { getTopExpenses } from '@utils/financialMetrics';
 import { processRecurrenceRules } from '@services/domain/recurrenceService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import * as Storage from '@services/core/storageService';
+import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
+import { getLatestPrices } from '@services/domain/priceHistoryService';
 
 const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -36,6 +38,8 @@ const HomeScreen = ({ navigation }: any) => {
     const [monthTransferOut, setMonthTransferOut] = useState(new BigNumber(0));
 
     const [investmentTotal, setInvestmentTotal] = useState(new BigNumber(0));
+    const [realizedPL, setRealizedPL] = useState(new BigNumber(0));
+    const [unrealizedPL, setUnrealizedPL] = useState(new BigNumber(0));
     const [debtTotal, setDebtTotal] = useState(new BigNumber(0));
     const [isLoading, setIsLoading] = useState(true);
 
@@ -111,13 +115,54 @@ const HomeScreen = ({ navigation }: any) => {
         setMonthTransferIn(mTransIn);
         setMonthTransferOut(mTransOut);
 
-        const totalInv = inv.reduce((sum: BigNumber, item: Investment) => {
-            const price = new BigNumber(item.price || 0);
-            const positionValue = new BigNumber(item.quantity || 0).times(price);
-            return sum.plus(positionValue);
-        }, new BigNumber(0));
+        // --- Investment Computation ---
+        // 1. Group investments to find symbols
+        const uniqueSymbols = Array.from(new Set(inv.map(i => i.symbol)));
 
-        setInvestmentTotal(totalInv);
+        // 2. Fetch latest prices from Price History
+        const priceHistoryMap = await getLatestPrices(uniqueSymbols);
+
+        // 3. Build a comprehensive "Current Price Map"
+        // Priority: Price History > Latest Transaction Price > 0
+        const currentPriceMap: Record<string, BigNumber> = {};
+
+        uniqueSymbols.forEach(symbol => {
+            if (priceHistoryMap[symbol]) {
+                currentPriceMap[symbol] = priceHistoryMap[symbol].price;
+            } else {
+                // Fallback: Find latest transaction for this symbol
+                const symbolTxns = inv
+                    .filter(i => i.symbol === symbol)
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                if (symbolTxns.length > 0) {
+                    currentPriceMap[symbol] = symbolTxns[0].price;
+                } else {
+                    currentPriceMap[symbol] = new BigNumber(0);
+                }
+            }
+        });
+
+        // 4. Calculate Portfolio Metrics (Unrealized P/L, Market Value)
+        const portfolioMetrics = getAllPortfolioMetrics(inv, currentPriceMap);
+
+        const totalMarketValue = portfolioMetrics.reduce((sum, m) => sum.plus(m.totalMarketValue), new BigNumber(0));
+        const totalUnrealizedPL = portfolioMetrics.reduce((sum, m) => sum.plus(m.unrealizedPL), new BigNumber(0));
+
+        // 5. Calculate Realized P/L from Transactions (CAPITAL_GAIN/LOSS)
+        let totalRealizedPL = new BigNumber(0);
+        t.forEach(tx => {
+            if (tx.type === 'CAPITAL_GAIN') {
+                totalRealizedPL = totalRealizedPL.plus(tx.amount);
+            } else if (tx.type === 'CAPITAL_LOSS') {
+                totalRealizedPL = totalRealizedPL.minus(tx.amount);
+            }
+        });
+
+        setInvestmentTotal(totalMarketValue);
+        setUnrealizedPL(totalUnrealizedPL);
+        setRealizedPL(totalRealizedPL);
+
         setIsLoading(false);
     };
 
@@ -475,6 +520,36 @@ const HomeScreen = ({ navigation }: any) => {
                                 isPrivacyEnabled ? '****' : formatCurrencyAmount(investmentTotal, profile?.currency || 'PHP')
                             )}
                         </Text>
+
+                        {/* Investment P/L Detail */}
+                        {!isLoading && (
+                            <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+                                <View>
+                                    <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Realized P/L</Text>
+                                    <Text style={{
+                                        color: colors.white,
+                                        fontWeight: 'bold',
+                                        opacity: isPrivacyEnabled ? 0.5 : 1
+                                    }}>
+                                        {isPrivacyEnabled ? '****' : (
+                                            (realizedPL.isGreaterThanOrEqualTo(0) ? '+' : '') + formatCurrencyAmount(realizedPL, profile?.currency || 'PHP')
+                                        )}
+                                    </Text>
+                                </View>
+                                <View>
+                                    <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Unrealized P/L</Text>
+                                    <Text style={{
+                                        color: colors.white,
+                                        fontWeight: 'bold',
+                                        opacity: isPrivacyEnabled ? 0.5 : 1
+                                    }}>
+                                        {isPrivacyEnabled ? '****' : (
+                                            (unrealizedPL.isGreaterThanOrEqualTo(0) ? '+' : '') + formatCurrencyAmount(unrealizedPL, profile?.currency || 'PHP')
+                                        )}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
                         {isLoading ? (
                             <Skeleton width="100%" height={36} style={{ marginTop: 15, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)' }} />
                         ) : (
