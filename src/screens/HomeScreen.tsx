@@ -97,10 +97,10 @@ const HomeScreen = ({ navigation }: any) => {
             } else if (tx.type === 'EXPENSE') {
                 oExp = oExp.plus(val.abs());
                 if (isMonth) mExp = mExp.plus(val.abs());
-            } else if (tx.type === 'TRANSFER_IN') {
+            } else if (tx.type === 'TRANSFER_IN' || tx.type === 'CAPITAL_GAIN') {
                 oTransIn = oTransIn.plus(val.abs());
                 if (isMonth) mTransIn = mTransIn.plus(val.abs());
-            } else if (tx.type === 'TRANSFER_OUT') {
+            } else if (tx.type === 'TRANSFER_OUT' || tx.type === 'CAPITAL_LOSS') {
                 oTransOut = oTransOut.plus(val.abs());
                 if (isMonth) mTransOut = mTransOut.plus(val.abs());
             }
@@ -116,8 +116,14 @@ const HomeScreen = ({ navigation }: any) => {
         setMonthTransferOut(mTransOut);
 
         // --- Investment Computation ---
-        // 1. Group investments to find symbols
-        const uniqueSymbols = Array.from(new Set(inv.map(i => i.symbol)));
+        // 1. Group investments to find symbols and group data
+        const groupedInvestments = inv.reduce((acc, item) => {
+            if (!acc[item.symbol]) acc[item.symbol] = [];
+            acc[item.symbol].push(item);
+            return acc;
+        }, {} as Record<string, Investment[]>);
+
+        const uniqueSymbols = Object.keys(groupedInvestments);
 
         // 2. Fetch latest prices from Price History
         const priceHistoryMap = await getLatestPrices(uniqueSymbols);
@@ -130,10 +136,8 @@ const HomeScreen = ({ navigation }: any) => {
             if (priceHistoryMap[symbol]) {
                 currentPriceMap[symbol] = priceHistoryMap[symbol].price;
             } else {
-                // Fallback: Find latest transaction for this symbol
-                const symbolTxns = inv
-                    .filter(i => i.symbol === symbol)
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                // Fallback: Find latest transaction for this symbol from the pre-grouped map
+                const symbolTxns = groupedInvestments[symbol].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
                 if (symbolTxns.length > 0) {
                     currentPriceMap[symbol] = symbolTxns[0].price;
@@ -153,9 +157,9 @@ const HomeScreen = ({ navigation }: any) => {
         let totalRealizedPL = new BigNumber(0);
         t.forEach(tx => {
             if (tx.type === 'CAPITAL_GAIN') {
-                totalRealizedPL = totalRealizedPL.plus(tx.amount);
+                totalRealizedPL = totalRealizedPL.plus(tx.amount.abs());
             } else if (tx.type === 'CAPITAL_LOSS') {
-                totalRealizedPL = totalRealizedPL.minus(tx.amount);
+                totalRealizedPL = totalRealizedPL.minus(tx.amount.abs());
             }
         });
 
