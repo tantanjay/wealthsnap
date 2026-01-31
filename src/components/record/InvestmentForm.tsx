@@ -5,13 +5,15 @@ import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform, StyleShe
 import { Ionicons } from '@expo/vector-icons';
 
 import { Button, Card } from '@components/index';
+import BottomModal from '@components/common/BottomModal';
 import { CalculatorModal } from '@components/record/CalculatorModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
-import { Investment, InvestmentType, InvestmentAction } from '@types';
+import { Investment, InvestmentType, InvestmentAction, Transaction, TransactionType } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveInvestment } from '@services/domain/investmentService';
 import { addPriceHistory } from '@services/domain/priceHistoryService';
+import { saveTransaction } from '@services/domain/transactionService';
 
 interface InvestmentFormProps {
     investmentType: InvestmentType;
@@ -39,6 +41,8 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     const [investmentDate, setInvestmentDate] = useState<Date>(
         initialInvestment?.date ? new Date(initialInvestment.date) : new Date()
     );
+    const [createTransaction, setCreateTransaction] = useState(true);
+    const [showInfoModal, setShowInfoModal] = useState(false);
 
     // UI state
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -46,14 +50,41 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     const [showPriceCalculator, setShowPriceCalculator] = useState(false);
     const [showFeesCalculator, setShowFeesCalculator] = useState(false);
 
+    const toggleCreateTransaction = () => {
+        if (createTransaction) {
+            // Unchecking - show warning
+            let message = '';
+            switch (action) {
+                case 'BUY':
+                    message = 'This will not deduct from your total assets (cash/accounts).';
+                    break;
+                case 'SELL':
+                    message = 'This will not add to your total assets. The funds will vanish.';
+                    break;
+                case 'DIVIDEND':
+                    message = 'This will not be recorded as INCOME in your financial records.';
+                    break;
+            }
+
+            showAlert('Are you sure?', message, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Yes, Skip Transaction', onPress: () => setCreateTransaction(false), style: 'destructive' }
+            ]);
+        } else {
+            setCreateTransaction(true);
+        }
+    };
+
     const handleSave = async () => {
         if (!symbol || !quantity || !price) {
             showAlert('Missing Info', 'Please enter symbol, quantity and price.');
             return;
         }
 
+        const invId = initialInvestment?.id || generateUUID();
+
         const newInvestment: Investment = {
-            id: initialInvestment?.id || generateUUID(),
+            id: invId,
             symbol: symbol.toUpperCase(),
             type: investmentType,
             action,
@@ -71,6 +102,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         try {
             await saveInvestment(newInvestment);
 
+            // Add to price history if purchasing or selling
             if (action === 'BUY' || action === 'SELL') {
                 await addPriceHistory(
                     newInvestment.symbol,
@@ -82,6 +114,54 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                 );
             }
 
+            // Create corresponding transaction if checked
+            if (createTransaction) {
+                const totalAmount = newInvestment.quantity.multipliedBy(newInvestment.price);
+                const feeAmount = newInvestment.fees ? new BigNumber(fees) : new BigNumber(0);
+
+                // Effective Amount Logic:
+                // BUY: Cost = (Price * Qty) + Fees
+                // SELL: Proceeds = (Price * Qty) - Fees
+                // DIVIDEND: Income = (Price * Qty) - Fees (Tax usually)
+                let finalAmount: BigNumber;
+                let txnType: TransactionType = 'EXPENSE'; // Default safety
+                let transferAccount: any = undefined;
+
+                if (action === 'BUY') {
+                    finalAmount = totalAmount.plus(feeAmount);
+                    txnType = 'TRANSFER_OUT';
+                    transferAccount = 'INVESTMENTS';
+                } else if (action === 'SELL') {
+                    finalAmount = totalAmount.minus(feeAmount);
+                    txnType = 'TRANSFER_IN';
+                    transferAccount = 'INVESTMENTS';
+                } else if (action === 'DIVIDEND') {
+                    finalAmount = totalAmount.minus(feeAmount);
+                    txnType = 'INCOME';
+                } else {
+                    finalAmount = totalAmount; // Fallback
+                }
+
+                // Only create transaction if amount > 0
+                if (finalAmount.gt(0)) {
+                    const newTxn: Transaction = {
+                        id: generateUUID(),
+                        date: newInvestment.date,
+                        amount: finalAmount,
+                        type: txnType,
+                        category: action === 'DIVIDEND' ? 'Dividend' : 'Investment',
+                        note: `Auto-generated from Investment (${symbol} ${action})`,
+                        creationMethod: 'MANUAL',
+                        isRecurring: false,
+                        transferAccount: transferAccount,
+                        investmentId: invId,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    };
+                    await saveTransaction(newTxn);
+                }
+            }
+
             showAlert('Success', 'Investment saved!', [
                 {
                     text: 'Add More',
@@ -91,6 +171,8 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                         setPrice('');
                         setFees('');
                         setNotes('');
+                        // Keep action and date for rapid entry
+                        setCreateTransaction(true);
                     },
                     style: 'default'
                 },
@@ -110,7 +192,6 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         { label: 'Buy', value: 'BUY', color: colors.success },
         { label: 'Sell', value: 'SELL', color: colors.error },
         { label: 'Dividend', value: 'DIVIDEND', color: colors.primary },
-        { label: 'Interest', value: 'INTEREST', color: colors.primary },
     ];
 
     return (
@@ -201,6 +282,25 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                         </TouchableOpacity>
                     ))}
                 </View>
+
+                {/* Transaction Checkbox */}
+                <TouchableOpacity
+                    onPress={toggleCreateTransaction}
+                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, padding: 8 }}
+                >
+                    <Ionicons
+                        name={createTransaction ? "checkbox" : "square-outline"}
+                        size={24}
+                        color={createTransaction ? colors.primary : colors.textSecondary}
+                        style={{ marginRight: 8 }}
+                    />
+                    <Text style={{ color: colors.text, fontSize: 14, flex: 1 }}>
+                        Add corresponding transaction?
+                    </Text>
+                    <TouchableOpacity onPress={() => setShowInfoModal(true)}>
+                        <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                </TouchableOpacity>
 
                 {/* Symbol */}
                 <Card style={{ marginBottom: 10 }}>
@@ -308,6 +408,89 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                     type="EXPENSE" // Red color for calculator
                 />
             </ScrollView>
+
+            <BottomModal
+                visible={showInfoModal}
+                onClose={() => setShowInfoModal(false)}
+                title="Syncing Your Cash Flow"
+                maxHeight="85%"
+            >
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 22, marginBottom: 20 }}>
+                        WealthSnap treats your finances as a connected ecosystem. When you buy or sell assets, money doesn't disappear—it moves.
+                    </Text>
+
+                    {/* Visual Flow Diagram */}
+                    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: colors.border }}>
+                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' }}>🔄 The Money Flow</Text>
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <View style={{ alignItems: 'center', flex: 1 }}>
+                                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                                    <Ionicons name="wallet" size={24} color={colors.primary} />
+                                </View>
+                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>Cash / Bank</Text>
+                            </View>
+
+                            <View style={{ flex: 1, alignItems: 'center' }}>
+                                <Ionicons name="swap-horizontal" size={24} color={colors.textSecondary} />
+                                <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 4 }}>Transaction</Text>
+                            </View>
+
+                            <View style={{ alignItems: 'center', flex: 1 }}>
+                                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#FFD700' + '20', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                                    <Ionicons name="bar-chart" size={24} color="#F59E0B" />
+                                </View>
+                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>Portfolio</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 12 }}>What happens if checked?</Text>
+
+                    {/* Scenario: BUY */}
+                    <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+                        <View style={{ width: 4, backgroundColor: colors.success, borderRadius: 2, marginRight: 12 }} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Buying (Transfer Out)</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
+                                We deduct cash from your "Transfer Account" so you don't double-count your net worth (Cash + Asset).
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Scenario: SELL */}
+                    <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+                        <View style={{ width: 4, backgroundColor: colors.error, borderRadius: 2, marginRight: 12 }} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Selling (Transfer In)</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
+                                Proceeds are added back to your cash balance. If you don't record this, the money effectively vanishes!
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Scenario: DIVIDEND */}
+                    <View style={{ flexDirection: 'row', marginBottom: 24 }}>
+                        <View style={{ width: 4, backgroundColor: colors.primary, borderRadius: 2, marginRight: 12 }} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Dividends (Income)</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
+                                "New money" entering your ecosystem. We record this as Income.
+                            </Text>
+                        </View>
+                    </View>
+
+                    <View style={{ backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8, flexDirection: 'row' }}>
+                        <Ionicons name="bulb-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                        <Text style={{ color: colors.primary, fontSize: 12, flex: 1, lineHeight: 18 }}>
+                            <Text style={{ fontWeight: 'bold' }}>Pro Tip:</Text> Uncheck this box only if you are manually correcting old data or if the transaction was already recorded separately.
+                        </Text>
+                    </View>
+
+                    <View style={{ height: 40 }} />
+                </ScrollView>
+            </BottomModal>
 
             {/* Fixed Footer Actions */}
             <View style={[styles.footer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
