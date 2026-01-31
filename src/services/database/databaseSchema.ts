@@ -114,6 +114,40 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
         CREATE INDEX IF NOT EXISTS idx_price_history_timestamp ON price_history(timestamp DESC);
         CREATE INDEX IF NOT EXISTS idx_price_history_symbol_timestamp ON price_history(symbol, timestamp DESC);
 
+        -- Assets table (Metadata for symbols)
+        CREATE TABLE IF NOT EXISTS assets (
+            symbol TEXT PRIMARY KEY,
+            name TEXT,
+            exchange TEXT,
+            sector TEXT,
+            type TEXT,
+            currency TEXT,
+            description TEXT,
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_assets_type ON assets(type);
+        CREATE INDEX IF NOT EXISTS idx_assets_sector ON assets(sector);
+
+        -- Dividend History table
+        CREATE TABLE IF NOT EXISTS dividend_history (
+            id TEXT PRIMARY KEY,
+            symbol TEXT NOT NULL,
+            exDate TEXT NOT NULL,
+            paymentDate TEXT,
+            recordDate TEXT,
+            amount TEXT NOT NULL,
+            type TEXT NOT NULL CHECK(type IN ('CASH', 'STOCK', 'SPECIAL', 'PROPERTY')),
+            status TEXT NOT NULL CHECK(status IN ('DECLARED', 'PAID', 'PROJECTED')),
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (symbol) REFERENCES assets(symbol) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_dividend_history_symbol ON dividend_history(symbol);
+        CREATE INDEX IF NOT EXISTS idx_dividend_history_exDate ON dividend_history(exDate DESC);
+
         -- AI Usage logs table
         CREATE TABLE IF NOT EXISTS ai_usage_logs (
             id TEXT PRIMARY KEY,
