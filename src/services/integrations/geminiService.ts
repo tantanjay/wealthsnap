@@ -345,3 +345,95 @@ RETURN FORMAT (JSON ONLY)
         return { ...failResult, validationError: "Network or API error" };
     }
 };
+
+/**
+ * Fetch historical prices for a list of symbols using Gemini.
+ * NOTE: This relies on the AI's knowledge base and may not be 100% accurate for real-time or very specific historical data without external tools.
+ */
+export interface AssetRequest {
+    symbol: string;
+    exchange?: string;
+}
+
+export interface FetchedPrice {
+    symbol: string;
+    price: number;
+    date: string; // YYYY-MM-DD
+    high?: number;
+    low?: number;
+    volume?: number;
+}
+
+export const fetchHistoricalPrices = async (assets: AssetRequest[], duration: string): Promise<FetchedPrice[]> => {
+    const startTime = Date.now();
+    let prompt = '';
+
+    // Fail fast
+    const isConfigured = await isGeminiConfigured();
+    if (!isConfigured) {
+        throw new Error("Gemini API Key is not configured");
+    }
+
+    try {
+        const { genAI, modelName } = await getGeminiClient();
+        const model = genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+                temperature: 0.2,
+                topP: 0.8,
+                topK: 40,
+                responseMimeType: "application/json",
+            }
+        });
+
+        const assetList = assets.map(a => `${a.symbol} (${a.exchange || 'Unknown Exchange'})`).join(', ');
+
+        prompt = `
+You are a financial data assistant.
+I need historical stock price data for the following assets: [${assetList}].
+
+Duration: ${duration} (relative to today, ${new Date().toISOString().split('T')[0]}).
+
+For EACH asset, provide daily price data points for the requested duration.
+If the duration is "Today", just provide the latest closing price (or current price if market open).
+If "Last 3 days", provide 3 data points, etc.
+
+RETURN JSON ONLY:
+[
+  {
+    "symbol": "AAPL",
+    "price": 150.25,
+    "date": "2023-10-27",
+    "high": 151.00,
+    "low": 149.50,
+    "volume": 50000000
+  },
+  ...
+]
+
+Notes:
+- "price" should be the closing price.
+- If data is unavailable due to cutoff, estimate based on general market knowledge for that period or fail gracefully by omitting.
+- Ensure dates are YYYY-MM-DD.
+`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        await logUsage('fetchHistoricalPrices', prompt, text, 0, 0, Date.now() - startTime, modelName, 'success');
+
+        try {
+            const parsed: FetchedPrice[] = JSON.parse(text);
+            return parsed;
+        } catch (e) {
+            console.error("Failed to parse stock price JSON:", text);
+            return [];
+        }
+
+    } catch (error) {
+        console.error('Error fetching prices:', error);
+        await logUsage('fetchHistoricalPrices', prompt, '', 0, 0, Date.now() - startTime, 'unknown', 'error');
+        throw error;
+    }
+};

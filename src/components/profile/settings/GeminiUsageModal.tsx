@@ -34,7 +34,12 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
         const sorted = data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         setLogs(sorted);
         const total = sorted.reduce((acc, log) => {
-            const cost = new BigNumber(log.costUSD || 0);
+            const rawCost = log.costUSD ?? 0;
+            const cost = new BigNumber(rawCost);
+            if (cost.isNaN()) {
+                console.warn(`Invalid cost skipped: ${rawCost}`);
+                return acc;
+            }
             return acc.plus(cost);
         }, new BigNumber(0));
         setTotalCost(total);
@@ -126,7 +131,7 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
                             </Text>
                         </View>
                         <View style={styles.col3}>
-                            <Text style={[styles.cost, { color: colors.text }]}>${log.costUSD.toFixed(5)}</Text>
+                            <Text style={[styles.cost, { color: colors.text }]}>${new BigNumber(log.costUSD || 0).toFixed(5)}</Text>
                         </View>
                     </View>
                 ))}
