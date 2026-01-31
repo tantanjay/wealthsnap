@@ -46,6 +46,8 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
         if (currentVersion === 0) {
             // Fresh install: Tables are created with latest schema by createTables()
             // Just set the version and skip migrations
+
+
             await setDatabaseVersion(db, DATABASE_VERSION);
         } else {
             // Sequential migrations (Waterfall pattern)
@@ -68,6 +70,11 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
             if (currentVersion < 6) {
                 const { migrateV5ToV6 } = await import('@services/database/migrationService');
                 await migrateV5ToV6(db);
+            }
+
+            if (currentVersion < 7) {
+                const { migrateV6ToV7 } = await import('@services/database/migrationService');
+                await migrateV6ToV7(db);
             }
         }
 
