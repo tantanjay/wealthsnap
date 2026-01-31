@@ -1,14 +1,17 @@
 import React, { useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
 
 import { useTheme } from '@context/ThemeContext';
-import { Transaction, RecurrenceRule } from '@types';
+import { Transaction, RecurrenceRule, Investment } from '@types';
 import { formatCompactCurrency } from '@utils/currencyUtils';
 
 interface HistoryCalendarProps {
     currentDate: Date;
     transactions: Transaction[];
+    investments?: Investment[];
     selectedDate: Date | null;
     onSelectDate: (date: Date) => void;
     recurrenceRules?: RecurrenceRule[];
@@ -22,6 +25,7 @@ const COLUMN_WIDTH = (SCREEN_WIDTH - 32) / 7; // Accounting for container paddin
 export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
     currentDate,
     transactions,
+    investments = [],
     selectedDate,
     onSelectDate,
     recurrenceRules = [],
@@ -72,6 +76,9 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                 recurringCount: number;
                 futureIncomeAmount: BigNumber; // Ghost Income
                 futureExpenseAmount: BigNumber; // Ghost Expense
+                hasBuy: boolean;
+                hasSell: boolean;
+                sellProfitability: 'PROFIT' | 'LOSS' | 'UNKNOWN';
             }
         } = {};
 
@@ -87,7 +94,10 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     totalVol: new BigNumber(0),
                     recurringCount: 0,
                     futureIncomeAmount: new BigNumber(0),
-                    futureExpenseAmount: new BigNumber(0)
+                    futureExpenseAmount: new BigNumber(0),
+                    hasBuy: false,
+                    hasSell: false,
+                    sellProfitability: 'UNKNOWN'
                 };
             }
             return stats[key];
@@ -112,6 +122,28 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
 
             stat.totalVol = stat.totalVol.plus(amount);
             if (t.isRecurring) stat.recurringCount += 1;
+        });
+
+        // Process Investments
+        investments.forEach(inv => {
+            const dateKey = new Date(inv.date).toDateString();
+            const stat = getStat(dateKey);
+
+            if (inv.action === 'BUY') {
+                stat.hasBuy = true;
+            } else if (inv.action === 'SELL') {
+                stat.hasSell = true;
+
+                // Determine Profitability
+                // Check if there is a linked Transaction or a generic Capital Gain/Loss on the same day
+                const daysTransactions = transactions.filter(t => new Date(t.date).toDateString() === dateKey);
+                const hasGain = daysTransactions.some(t => t.type === 'CAPITAL_GAIN' || (t.investmentId === inv.id && t.amount.isGreaterThan(0) && t.type !== 'TRANSFER_IN')); // Rough logic
+                const hasLoss = daysTransactions.some(t => t.type === 'CAPITAL_LOSS');
+
+                if (hasGain) stat.sellProfitability = 'PROFIT';
+                else if (hasLoss) stat.sellProfitability = 'LOSS';
+                else stat.sellProfitability = 'UNKNOWN'; // Neutral
+            }
         });
 
         // Process Recurring Projections (Ghost Forecast)
@@ -163,7 +195,7 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
         }
 
         return stats;
-    }, [transactions, recurrenceRules, currentDate]);
+    }, [transactions, investments, recurrenceRules, currentDate]);
 
     const renderDay = (date: Date) => {
         const dateKey = date.toDateString();
@@ -227,6 +259,21 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                         ]}>
                             {date.getDate()}
                         </Text>
+                    </View>
+
+                    {/* Investment Indicators */}
+                    {/* Investment Indicators - Horizontal Stack */}
+                    <View style={{ flexDirection: 'row', gap: 2, marginLeft: 4 }}>
+                        {stat && stat.hasBuy && (
+                            <Ionicons name="caret-up" size={14} color={colors.success} />
+                        )}
+                        {stat && stat.hasSell && (
+                            <Ionicons
+                                name="caret-down"
+                                size={14}
+                                color={stat.sellProfitability === 'PROFIT' ? '#FFD700' : stat.sellProfitability === 'LOSS' ? colors.error : '#FFA500'}
+                            />
+                        )}
                     </View>
                 </View>
 
@@ -373,7 +420,7 @@ const styles = StyleSheet.create({
     },
     recurringText: {
         color: 'white',
-        fontSize: 7,
+        fontSize: 9,
         fontWeight: 'bold',
     },
     ghostBadgeContainer: {
