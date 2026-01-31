@@ -71,16 +71,16 @@ export const generateDummyData = async () => {
 
         // Define Stocks with Metadata for Assets Table
         const STOCKS = [
-            { symbol: 'AAPL', name: 'Apple Inc.', basePrice: 150, trend: 0.005, sector: 'Technology', type: 'Common Stock' },
-            { symbol: 'MSFT', name: 'Microsoft Corp.', basePrice: 280, trend: 0.003, sector: 'Technology', type: 'Common Stock' },
-            { symbol: 'GOOGL', name: 'Alphabet Inc.', basePrice: 2500, trend: 0.002, sector: 'Technology', type: 'Common Stock' },
-            { symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 3300, trend: 0.004, sector: 'Consumer Cyclical', type: 'Common Stock' },
-            { symbol: 'TSLA', name: 'Tesla Inc.', basePrice: 700, trend: -0.01, sector: 'Automotive', type: 'Common Stock' },
-            { symbol: 'NVDA', name: 'NVIDIA Corp.', basePrice: 200, trend: 0.008, sector: 'Technology', type: 'Common Stock' },
-            { symbol: 'JPM', name: 'JPMorgan Chase', basePrice: 140, trend: 0.003, sector: 'Financial Services', type: 'Common Stock' },
-            { symbol: 'KO', name: 'Coca-Cola', basePrice: 60, trend: 0.001, sector: 'Consumer Defensive', type: 'Common Stock' },
-            { symbol: 'XOM', name: 'Exxon Mobil', basePrice: 55, trend: 0.002, sector: 'Energy', type: 'Common Stock' },
-            { symbol: 'O', name: 'Realty Income', basePrice: 65, trend: 0.001, sector: 'Real Estate', type: 'REIT' }
+            { exchange: 'NASDAQ', symbol: 'AAPL', name: 'Apple Inc.', basePrice: 150, trend: 0.005, sector: 'Technology', type: 'Common Stock' },
+            { exchange: 'NASDAQ', symbol: 'MSFT', name: 'Microsoft Corp.', basePrice: 280, trend: 0.003, sector: 'Technology', type: 'Common Stock' },
+            { exchange: 'NASDAQ', symbol: 'GOOGL', name: 'Alphabet Inc.', basePrice: 2500, trend: 0.002, sector: 'Technology', type: 'Common Stock' },
+            { exchange: 'NASDAQ', symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 3300, trend: 0.004, sector: 'Consumer Cyclical', type: 'Common Stock' },
+            { exchange: 'NASDAQ', symbol: 'TSLA', name: 'Tesla Inc.', basePrice: 700, trend: -0.01, sector: 'Automotive', type: 'Common Stock' },
+            { exchange: 'NASDAQ', symbol: 'NVDA', name: 'NVIDIA Corp.', basePrice: 200, trend: 0.008, sector: 'Technology', type: 'Common Stock' },
+            { exchange: 'NYSE', symbol: 'JPM', name: 'JPMorgan Chase', basePrice: 140, trend: 0.003, sector: 'Financial Services', type: 'Common Stock' },
+            { exchange: 'NYSE', symbol: 'KO', name: 'Coca-Cola', basePrice: 60, trend: 0.001, sector: 'Consumer Defensive', type: 'Common Stock' },
+            { exchange: 'NYSE', symbol: 'XOM', name: 'Exxon Mobil', basePrice: 55, trend: 0.002, sector: 'Energy', type: 'Common Stock' },
+            { exchange: 'NYSE', symbol: 'O', name: 'Realty Income', basePrice: 65, trend: 0.001, sector: 'Real Estate', type: 'REIT' }
         ];
 
         const transactions: Transaction[] = [];
