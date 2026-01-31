@@ -107,8 +107,8 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     stat.discretionaryExpense = stat.discretionaryExpense.plus(amount);
                 }
             }
-            else if (t.type === 'TRANSFER_IN') stat.transferIn = stat.transferIn.plus(amount);
-            else if (t.type === 'TRANSFER_OUT') stat.transferOut = stat.transferOut.plus(amount);
+            else if (t.type === 'TRANSFER_IN' || t.type === 'CAPITAL_GAIN') stat.transferIn = stat.transferIn.plus(amount);
+            else if (t.type === 'TRANSFER_OUT' || t.type === 'CAPITAL_LOSS') stat.transferOut = stat.transferOut.plus(amount);
 
             stat.totalVol = stat.totalVol.plus(amount);
             if (t.isRecurring) stat.recurringCount += 1;

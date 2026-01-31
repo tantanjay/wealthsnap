@@ -180,8 +180,12 @@ const HistoryScreen = ({ navigation }: any) => {
 
     const globalBalance = useMemo(() => {
         return allTransactions.reduce((acc, t) => {
-            if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') return acc.plus(t.amount);
-            if (t.type === 'EXPENSE' || t.type === 'TRANSFER_OUT') return acc.minus(t.amount);
+            if (t.type === 'INCOME' || t.type === 'TRANSFER_IN' || t.type === 'CAPITAL_GAIN') {
+                return acc.plus(t.amount);
+            }
+            if (t.type === 'EXPENSE' || t.type === 'TRANSFER_OUT' || t.type === 'CAPITAL_LOSS') {
+                return acc.minus(t.amount);
+            }
             return acc;
         }, new BigNumber(0));
     }, [allTransactions]);
@@ -272,10 +276,12 @@ const HistoryScreen = ({ navigation }: any) => {
         const newSections: TransactionSection[] = Object.keys(grouped).map(dateKey => {
             const transactions = grouped[dateKey];
             const totalAmount = transactions.reduce((sum, t) => {
-                if (t.type === 'INCOME') return sum.plus(t.amount.abs());
-                if (t.type === 'EXPENSE') return sum.minus(t.amount.abs());
-                if (t.type === 'TRANSFER_IN') return sum.plus(t.amount.abs());
-                if (t.type === 'TRANSFER_OUT') return sum.minus(t.amount.abs());
+                if (t.type === 'INCOME' || t.type === 'TRANSFER_IN' || t.type === 'CAPITAL_GAIN') {
+                    return sum.plus(t.amount.abs());
+                }
+                if (t.type === 'EXPENSE' || t.type === 'TRANSFER_OUT' || t.type === 'CAPITAL_LOSS') {
+                    return sum.minus(t.amount.abs());
+                }
                 return sum;
             }, new BigNumber(0));
 
