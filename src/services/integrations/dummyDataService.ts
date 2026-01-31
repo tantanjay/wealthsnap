@@ -66,12 +66,12 @@ export const generateDummyData = async () => {
         const monthlySalary = 8500;
         const semiMonthlySalary = monthlySalary / 2;
         const STOCKS = [
-            { symbol: 'AAPL', name: 'Apple Inc.', basePrice: 150 },
-            { symbol: 'MSFT', name: 'Microsoft Corp.', basePrice: 280 },
-            { symbol: 'GOOGL', name: 'Alphabet Inc.', basePrice: 2500 },
-            { symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 3300 },
-            { symbol: 'TSLA', name: 'Tesla Inc.', basePrice: 700 },
-            { symbol: 'NVDA', name: 'NVIDIA Corp.', basePrice: 200 }
+            { symbol: 'AAPL', name: 'Apple Inc.', basePrice: 150, trend: 0.005 }, // +0.5% bias
+            { symbol: 'MSFT', name: 'Microsoft Corp.', basePrice: 280, trend: 0.003 },
+            { symbol: 'GOOGL', name: 'Alphabet Inc.', basePrice: 2500, trend: 0.002 },
+            { symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 3300, trend: 0.004 },
+            { symbol: 'TSLA', name: 'Tesla Inc.', basePrice: 700, trend: -0.01 }, // -1% bias (Loss scenario)
+            { symbol: 'NVDA', name: 'NVIDIA Corp.', basePrice: 200, trend: 0.008 }
         ];
 
         // State for simulation
@@ -92,7 +92,8 @@ export const generateDummyData = async () => {
 
             // Stock price volatility for this month
             STOCKS.forEach(stock => {
-                const volatility = (Math.random() * 0.1) - 0.04; // -4% to +6% per month
+                // Volatility: Random shift (-4% to +6%) + stock's inherent trend
+                const volatility = (Math.random() * 0.1) - 0.04 + (stock.trend || 0);
                 stockPrices[stock.symbol] *= (1 + volatility);
             });
 
@@ -120,10 +121,17 @@ export const generateDummyData = async () => {
 
                 // 2. Decide to Invest (80% chance for each paycheck)
                 if (Math.random() < 0.8) {
-                    const investAmount = semiMonthlySalary * (0.1 + Math.random() * 0.2); // 10-30% of paycheck
+                    let investAmount = semiMonthlySalary * (0.1 + Math.random() * 0.2); // 10-30% of paycheck
                     const stock = STOCKS[Math.floor(Math.random() * STOCKS.length)];
                     const currentPrice = stockPrices[stock.symbol];
-                    const quantity = investAmount / currentPrice;
+
+                    // Ensure whole number allocation
+                    let quantity = Math.floor(investAmount / currentPrice);
+                    if (quantity < 1) quantity = 1; // Ensure at least 1 share if possible, or skip?
+
+                    // Recalculate exact investment amount based on whole shares
+                    investAmount = quantity * currentPrice;
+
                     const fees = 5.00;
 
                     const invId = generateRandomId();
@@ -178,7 +186,11 @@ export const generateDummyData = async () => {
                     const holdings = symbolHoldings[symbolToSell];
                     const metricsBefore = calculatePortfolioMetrics(holdings);
 
-                    const qtyToSell = metricsBefore.currentQuantity.times(0.3 + Math.random() * 0.7); // Sell 30-100%
+                    // Sell a whole number of shares
+                    let qtyToSell = Math.floor(metricsBefore.currentQuantity.toNumber() * (0.3 + Math.random() * 0.7)); // Sell 30-100%
+                    if (qtyToSell < 1) qtyToSell = 1;
+                    if (qtyToSell > metricsBefore.currentQuantity.toNumber()) qtyToSell = metricsBefore.currentQuantity.toNumber();
+
                     const fees = 5.00;
                     const sellDate = new Date(year, month, getRandomAmount(1, eomDate));
 
@@ -190,7 +202,7 @@ export const generateDummyData = async () => {
                             type: 'STOCKS',
                             date: sellDate.toISOString(),
                             action: 'SELL',
-                            quantity: qtyToSell,
+                            quantity: new BigNumber(qtyToSell),
                             price: new BigNumber(currentPrice),
                             fees: new BigNumber(fees),
                             notes: `Profit taking / Rebalancing`,
