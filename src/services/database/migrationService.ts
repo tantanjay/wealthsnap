@@ -223,26 +223,41 @@ export const migrateV2ToV5 = async (db: any): Promise<void> => {
         // 2. Start a transaction for safety
         await db.runAsync('BEGIN TRANSACTION');
 
-        // 3. Create a new table with the desired schema
-        // Note: Replace "..." with your other existing columns
+        // 3. Create a new table with the DESIRED schema (matching databaseSchema.ts)
         await db.runAsync(`
             CREATE TABLE ai_usage_logs_new (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                other_col TEXT,
-                costUSD TEXT DEFAULT "0"
+                id TEXT PRIMARY KEY,
+                timestamp TEXT NOT NULL,
+                endpoint TEXT NOT NULL,
+                provider TEXT NOT NULL,
+                model TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('success', 'error')),
+                inputTokens INTEGER DEFAULT 0,
+                outputTokens INTEGER DEFAULT 0,
+                imageCount INTEGER DEFAULT 0,
+                durationMs INTEGER DEFAULT 0,
+                costUSD TEXT DEFAULT 0
             )
         `);
 
         // 4. Copy data, casting the old REAL values to TEXT
+        // We assume the old table had compatible columns.
         await db.runAsync(`
-            INSERT INTO ai_usage_logs_new (id, other_col, costUSD)
-            SELECT id, other_col, CAST(costUSD AS TEXT)
+            INSERT INTO ai_usage_logs_new (
+                id, timestamp, endpoint, provider, model, status, 
+                inputTokens, outputTokens, imageCount, durationMs, costUSD
+            )
+            SELECT 
+                CAST(id AS TEXT), timestamp, endpoint, provider, model, status, 
+                inputTokens, outputTokens, imageCount, durationMs, CAST(costUSD AS TEXT)
             FROM ai_usage_logs
         `);
 
         // 5. Drop old table and rename new one
         await db.runAsync('DROP TABLE ai_usage_logs');
         await db.runAsync('ALTER TABLE ai_usage_logs_new RENAME TO ai_usage_logs');
+
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_ai_logs_timestamp ON ai_usage_logs(timestamp DESC)');
 
         await db.runAsync('COMMIT');
     } catch (error: any) {
@@ -257,13 +272,13 @@ export const migrateV5ToV6 = async (db: any): Promise<void> => {
         // 1. Start transaction
         await db.runAsync('BEGIN TRANSACTION');
 
-        // 2. Create new table with updated schema
+        // 2. Create new table with updated schema (Added CAPITAL_LOSS, CAPITAL_GAIN)
         await db.runAsync(`
             CREATE TABLE IF NOT EXISTS transactions_new (
                 id TEXT PRIMARY KEY,
                 date TEXT NOT NULL,
                 amount TEXT NOT NULL,
-                type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'TRANSFER_IN', 'TRANSFER_OUT')),
+                type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'TRANSFER_IN', 'TRANSFER_OUT', 'CAPITAL_LOSS', 'CAPITAL_GAIN')),
                 category TEXT,
                 subCategory TEXT,
                 note TEXT,
@@ -283,11 +298,15 @@ export const migrateV5ToV6 = async (db: any): Promise<void> => {
         await db.runAsync(`
             INSERT INTO transactions_new (
                 id, date, amount, type, category, subCategory, note, 
-                creationMethod, isRecurring, recurrenceId, createdAt, updatedAt
+                creationMethod, isRecurring, recurrenceId, transferAccount,
+                linkedTransactionId, investmentId, debtId,
+                createdAt, updatedAt
             )
             SELECT 
                 id, date, amount, type, category, subCategory, note, 
-                creationMethod, isRecurring, recurrenceId, createdAt, updatedAt
+                creationMethod, isRecurring, recurrenceId, transferAccount,
+                linkedTransactionId, investmentId, debtId,
+                createdAt, updatedAt
             FROM transactions
         `);
 
@@ -297,18 +316,17 @@ export const migrateV5ToV6 = async (db: any): Promise<void> => {
         // 5. Rename new table
         await db.runAsync('ALTER TABLE transactions_new RENAME TO transactions');
 
-        // 6. Recreate indexes
+        // 6. Recreate indexes for transactions
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC)');
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type)');
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category)');
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_transactions_recurring ON transactions(isRecurring)');
 
-        // 7. Drop investments table
-        await db.runAsync('DROP TABLE investments');
+        // --- INVESTMENTS MIGRATION ---
 
-        // 8. Create investments table
+        // 7. Create new investments table
         await db.runAsync(`
-            CREATE TABLE IF NOT EXISTS investments (
+            CREATE TABLE IF NOT EXISTS investments_new (
                 id TEXT PRIMARY KEY,
                 date TEXT NOT NULL,
                 symbol TEXT NOT NULL,
@@ -326,13 +344,40 @@ export const migrateV5ToV6 = async (db: any): Promise<void> => {
             )
         `);
 
+        // 8. Copy existing investment data
+        // Check if investments table exists first
+        const investmentTableExists = await db.getFirstAsync("SELECT name FROM sqlite_master WHERE type='table' AND name='investments'");
+
+        if (investmentTableExists) {
+            try {
+                // Try to copy compatible data
+                await db.runAsync(`
+                    INSERT INTO investments_new (
+                        id, date, symbol, type, action, quantity, price, fees, notes,
+                        creationMethod, isRecurring, recurrenceId, createdAt, updatedAt
+                    )
+                    SELECT 
+                        id, date, symbol, type, action, quantity, price, fees, notes,
+                        creationMethod, isRecurring, recurrenceId, createdAt, updatedAt
+                    FROM investments
+                `);
+            } catch (e) {
+                console.warn('[Migration] Could not copy investments data automatically:', e);
+            }
+            await db.runAsync('DROP TABLE investments');
+        }
+
+        // 9. Rename new investments table
+        await db.runAsync('ALTER TABLE investments_new RENAME TO investments');
+
+        // 10. Recreate indexes for investments
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_date ON investments(date DESC)');
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_symbol ON investments(symbol)');
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_type ON investments(type)');
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_action ON investments(action)');
         await db.runAsync('CREATE INDEX IF NOT EXISTS idx_investments_recurring ON investments(isRecurring)');
 
-        // 9. Commit
+        // 11. Commit
         await db.runAsync('COMMIT');
 
     } catch (error: any) {
