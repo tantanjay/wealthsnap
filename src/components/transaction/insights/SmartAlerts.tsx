@@ -126,7 +126,7 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
             <BottomModal
                 visible={showInfo}
                 onClose={() => setShowInfo(false)}
-                title="About Smart Alerts"
+                title="How Smart Alerts Work"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
                     <View>
