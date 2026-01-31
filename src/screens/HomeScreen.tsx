@@ -97,10 +97,10 @@ const HomeScreen = ({ navigation }: any) => {
             } else if (tx.type === 'EXPENSE') {
                 oExp = oExp.plus(val.abs());
                 if (isMonth) mExp = mExp.plus(val.abs());
-            } else if (tx.type === 'TRANSFER_IN' || tx.type === 'CAPITAL_GAIN') {
+            } else if (tx.type === 'TRANSFER_IN') {
                 oTransIn = oTransIn.plus(val.abs());
                 if (isMonth) mTransIn = mTransIn.plus(val.abs());
-            } else if (tx.type === 'TRANSFER_OUT' || tx.type === 'CAPITAL_LOSS') {
+            } else if (tx.type === 'TRANSFER_OUT') {
                 oTransOut = oTransOut.plus(val.abs());
                 if (isMonth) mTransOut = mTransOut.plus(val.abs());
             }
