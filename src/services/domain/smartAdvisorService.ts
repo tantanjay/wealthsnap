@@ -35,7 +35,7 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
                 const drop = (currentPrice - high30) / high30; // e.g., -0.15 for 15% drop
 
                 // Check if we hold this asset and what our average price is
-                const holding = holdings.find(h => h.ticker === asset.symbol);
+                const holding = holdings.find(h => h.symbol === asset.symbol);
                 let isAvgDown = false;
                 let avgDownPct = 0;
 
@@ -112,7 +112,7 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
                 const value = h.totalValue;
                 // We need to fetch asset metadata for holding to get sector
                 // For efficiency, we can map from 'assets' array
-                const asset = assets.find(a => a.symbol === h.ticker);
+                const asset = assets.find(a => a.symbol === h.symbol);
                 const sector = asset?.sector || 'Other';
 
                 sectorAlloc[sector] = (sectorAlloc[sector] || 0) + value;
