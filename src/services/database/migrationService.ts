@@ -342,6 +342,40 @@ export const migrateV5ToV6 = async (db: any): Promise<void> => {
     }
 };
 
+export const migrateV6ToV7 = async (db: any): Promise<void> => {
+    try {
+        await db.runAsync('BEGIN TRANSACTION');
+
+        // Drop price_history table if it exists
+        await db.runAsync('DROP TABLE IF EXISTS price_history');
+
+        // Recreate price_history table with new schema
+        await db.runAsync(`
+            CREATE TABLE IF NOT EXISTS price_history (
+                id TEXT PRIMARY KEY,
+                symbol TEXT NOT NULL,
+                price TEXT NOT NULL,
+                high TEXT,
+                low TEXT,
+                volume TEXT,
+                timestamp TEXT NOT NULL,
+                source TEXT
+            )
+        `);
+
+        // Recreate indexes
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_price_history_symbol ON price_history(symbol)');
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_price_history_timestamp ON price_history(timestamp DESC)');
+        await db.runAsync('CREATE INDEX IF NOT EXISTS idx_price_history_symbol_timestamp ON price_history(symbol, timestamp DESC)');
+
+        await db.runAsync('COMMIT');
+    } catch (error: any) {
+        await db.runAsync('ROLLBACK');
+        console.error('[Migration] ❌ V6 -> V7 migration failed:', error);
+        throw error;
+    }
+};
+
 /**
  * Validate migration by comparing counts
  */
