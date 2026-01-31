@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { useTheme } from '@context/ThemeContext';
 import { InvestmentStats } from '@components/investment/InvestmentStats';
+import { getPortfolioStats } from '@services/domain/investmentService';
 import { HoldingsList } from '@components/investment/HoldingsList';
 import { SmartAdvisor, Suggestion } from '@components/investment/SmartAdvisor';
 import { AllocationChart } from '@components/investment/AllocationChart';
@@ -12,15 +13,26 @@ const InvestmentScreen = () => {
     const { colors } = useTheme();
     const [refreshing, setRefreshing] = useState(false);
 
-    // DUMMY DATA (Matching Web Prototype)
-    const stats = {
-        totalEquity: 1250000.50,
-        realizedPL: 45000.00,
-        unrealizedPL: 125000.50,
-        unrealizedPLPercent: 11.11,
-        projAnnualIncome: 65000.00,
-        totalDividends: 22000.00
-    };
+    const [portfolioStats, setPortfolioStats] = useState({
+        totalEquity: 0,
+        realizedPL: 0,
+        unrealizedPL: 0,
+        unrealizedPLPercent: 0,
+        totalDividends: 0
+    });
+
+    const loadStats = useCallback(async () => {
+        try {
+            const stats = await getPortfolioStats();
+            setPortfolioStats(stats);
+        } catch (error) {
+            console.error("Failed to load investment stats", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadStats();
+    }, [loadStats]);
 
     const holdings = [
         { ticker: 'BDO', shares: 2000, price: 160.50, totalValue: 321000, gainLoss: 41000, gainLossPercent: 14.64, divYield: 4.5, sector: 'Banks' },
@@ -53,13 +65,11 @@ const InvestmentScreen = () => {
     const dividendLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
     const dividendData = [1200, 3500, 800, 4500, 1500, 2200];
 
-    const onRefresh = React.useCallback(() => {
+    const onRefresh = React.useCallback(async () => {
         setRefreshing(true);
-        // Simulate network request
-        setTimeout(() => {
-            setRefreshing(false);
-        }, 1000);
-    }, []);
+        await loadStats();
+        setRefreshing(false);
+    }, [loadStats]);
 
     return (
         <ScreenWrapper style={{ paddingHorizontal: 0 }}>
@@ -75,12 +85,11 @@ const InvestmentScreen = () => {
 
                 {/* Dashboard Stats */}
                 <InvestmentStats
-                    totalEquity={stats.totalEquity}
-                    realizedPL={stats.realizedPL}
-                    unrealizedPL={stats.unrealizedPL}
-                    unrealizedPLPercent={stats.unrealizedPLPercent}
-                    projAnnualIncome={stats.projAnnualIncome}
-                    totalDividends={stats.totalDividends}
+                    totalEquity={portfolioStats.totalEquity}
+                    realizedPL={portfolioStats.realizedPL}
+                    unrealizedPL={portfolioStats.unrealizedPL}
+                    unrealizedPLPercent={portfolioStats.unrealizedPLPercent}
+                    totalDividends={portfolioStats.totalDividends}
                 />
 
                 {/* Smart Advisor */}

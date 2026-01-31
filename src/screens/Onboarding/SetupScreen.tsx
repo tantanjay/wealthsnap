@@ -97,7 +97,7 @@ const SetupScreen = ({ navigation }: any) => {
                         setStep(3); // Go to PIN creation
                     }
                 }
-            ]);
+            ], { cancelable: false });
         } catch (error) {
             setIsRestoring(false);
             const msg = (error as Error).message;
@@ -154,7 +154,7 @@ const SetupScreen = ({ navigation }: any) => {
                         setHasRestored(true); // Treat as restored so we skip profile creation
                     }
                 }
-            ]);
+            ], { cancelable: false });
         } catch {
             setIsRestoring(false);
             showAlert('Error', 'Failed to generate demo data.');
