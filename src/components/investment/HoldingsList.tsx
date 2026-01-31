@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface Holding {
-    ticker: string;
+    symbol: string;
     shares: number;
     price: number;
     totalValue: number;
@@ -27,7 +27,7 @@ const HoldingItem = ({ item, currency }: { item: Holding, currency: string }) =>
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
             <View style={styles.cardHeader}>
                 <View style={styles.tickerContainer}>
-                    <Text style={[styles.ticker, { color: colors.text }]}>{item.ticker}</Text>
+                    <Text style={[styles.ticker, { color: colors.text }]}>{item.symbol}</Text>
                     {item.divYield > 0 && (
                         <View style={styles.yieldBadge}>
                             <Text style={styles.yieldText}>{item.divYield}% Yld</Text>
