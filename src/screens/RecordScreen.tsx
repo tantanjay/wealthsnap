@@ -7,9 +7,10 @@ import RecordMenuModal from '@components/record/RecordMenuModal';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { TransactionForm } from '@components/transaction/TransactionForm';
 import { TransferForm } from '@components/transaction/TransferForm';
+import { InvestmentForm } from '@components/record/InvestmentForm';
 import { ReceiptReviewForm } from '@components/ai/ReceiptReviewForm';
 import { useAlert } from '@context/AlertContext';
-import { Transaction, TransactionType, ReceiptAnalysisResult, InvestmentType, DebtType } from '@types';
+import { Transaction, TransactionType, ReceiptAnalysisResult, InvestmentType, DebtType, Investment } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveTransactionWithReceipt } from '@services/domain';
 
@@ -19,7 +20,9 @@ const RecordScreen = ({ navigation, route }: any) => {
     const [viewMode, setViewMode] = useState<ViewMode>('MENU');
     const [modalVisible, setModalVisible] = useState<boolean>(true);
     const [transactionType, setTransactionType] = useState<TransactionType>('EXPENSE');
+    const [investmentType, setInvestmentType] = useState<InvestmentType>('STOCKS');
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+    const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
     const [capturedImageUri, setCapturedImageUri] = useState<string | null>(null);
 
     // Ref for viewMode to access current value in focus effect without triggering re-runs
@@ -54,7 +57,7 @@ const RecordScreen = ({ navigation, route }: any) => {
     // Handle Android Back Button
     useEffect(() => {
         const backAction = () => {
-            if (viewMode === 'TRANSACTION') {
+            if (viewMode === 'TRANSACTION' || viewMode === 'INVESTMENT') {
                 handleTransactionCancel();
                 return true;
             }
@@ -119,8 +122,14 @@ const RecordScreen = ({ navigation, route }: any) => {
 
     const { showAlert } = useAlert();
 
-    const handleInvestmentSelect = (investmentType: InvestmentType) => {
-        showAlert('Coming Soon', `${investmentType} recording will be available in a future update.`);
+    const handleInvestmentSelect = (type: InvestmentType) => {
+        if (type === 'STOCKS') {
+            setInvestmentType(type);
+            setViewMode('INVESTMENT');
+            setModalVisible(false);
+        } else {
+            showAlert('Coming Soon', `${type} recording will be available in a future update.`);
+        }
     };
 
     const handleDebtSelect = (debtType: DebtType) => {
@@ -247,13 +256,14 @@ const RecordScreen = ({ navigation, route }: any) => {
         // Reset and go back
         setViewMode('MENU');
         setEditingTransaction(null);
+        setEditingInvestment(null);
         navigation.goBack();
     };
 
 
 
     return (
-        <ScreenWrapper scrollable={viewMode !== 'TRANSACTION' && viewMode !== 'AI_REVIEW'}>
+        <ScreenWrapper scrollable={viewMode !== 'TRANSACTION' && viewMode !== 'AI_REVIEW' && viewMode !== 'INVESTMENT'}>
             {/* Transaction Form */}
             {viewMode === 'TRANSACTION' && transactionType !== 'TRANSFER_IN' && transactionType !== 'TRANSFER_OUT' && (
                 <TransactionForm
@@ -271,6 +281,17 @@ const RecordScreen = ({ navigation, route }: any) => {
                     key={`TRANSFER-${transactionType}-${editingTransaction?.id || 'new'}`}
                     initialType={transactionType as 'TRANSFER_IN' | 'TRANSFER_OUT'}
                     initialTransaction={editingTransaction || undefined}
+                    onSave={handleTransactionSave}
+                    onCancel={handleTransactionCancel}
+                />
+            )}
+
+            {/* Investment Form */}
+            {viewMode === 'INVESTMENT' && (
+                <InvestmentForm
+                    key={`${investmentType}-${editingInvestment?.id || 'new'}`}
+                    investmentType={investmentType}
+                    initialInvestment={editingInvestment || undefined}
                     onSave={handleTransactionSave}
                     onCancel={handleTransactionCancel}
                 />
