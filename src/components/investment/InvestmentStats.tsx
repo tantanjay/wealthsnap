@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions, FlatList } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface InvestmentStatsProps {
     totalEquity: number;
@@ -9,6 +10,7 @@ interface InvestmentStatsProps {
     unrealizedPL: number;
     unrealizedPLPercent: number;
     totalDividends: number;
+    currency?: string;
 }
 
 const StatCard = ({ label, value, subValue, color, icon, width }: any) => {
@@ -40,7 +42,8 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
     realizedPL,
     unrealizedPL,
     unrealizedPLPercent,
-    totalDividends
+    totalDividends,
+    currency = 'PHP'
 }) => {
     const { colors } = useTheme();
     const [currentPage, setCurrentPage] = React.useState(0);
@@ -59,22 +62,18 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
     // To snap 2 cards at a time, we snap by the full availableWidth + gap
     const snapInterval = availableWidth + gap;
 
-    const formatMoney = (amount: number) => {
-        return '₱' + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    };
-
     const cards = [
         {
             id: 'equity',
             label: "Total Equity",
-            value: formatMoney(totalEquity),
+            value: formatCurrencyAmount(totalEquity, currency),
             color: colors.primary,
             icon: "wallet-outline"
         },
         {
             id: 'realized',
             label: "Realized P/L",
-            value: formatMoney(realizedPL),
+            value: formatCurrencyAmount(realizedPL, currency),
             subValue: (
                 <Text style={{
                     color: realizedPL >= 0 ? colors.success : colors.error,
@@ -89,7 +88,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
         {
             id: 'unrealized',
             label: "Unrealized P/L",
-            value: formatMoney(unrealizedPL),
+            value: formatCurrencyAmount(unrealizedPL, currency),
             subValue: (
                 <Text style={{
                     color: unrealizedPL >= 0 ? colors.success : colors.error,
@@ -103,7 +102,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
         {
             id: 'dividends',
             label: "Total Divs Received",
-            value: formatMoney(totalDividends),
+            value: formatCurrencyAmount(totalDividends, currency),
             color: colors.textSecondary
         }
     ];

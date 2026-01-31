@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface Holding {
     ticker: string;
@@ -15,15 +16,12 @@ interface Holding {
 
 interface HoldingsListProps {
     holdings: Holding[];
+    currency?: string;
 }
 
-const HoldingItem = ({ item }: { item: Holding }) => {
+const HoldingItem = ({ item, currency }: { item: Holding, currency: string }) => {
     const { colors } = useTheme();
     const isProfit = item.gainLoss >= 0;
-
-    const formatMoney = (amount: number) => {
-        return '₱' + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    };
 
     return (
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
@@ -37,19 +35,19 @@ const HoldingItem = ({ item }: { item: Holding }) => {
                     )}
                 </View>
                 <Text style={[styles.value, { color: colors.text }]}>
-                    {formatMoney(item.totalValue)}
+                    {formatCurrencyAmount(item.totalValue, currency)}
                 </Text>
             </View>
 
             <View style={styles.cardBody}>
                 <View>
                     <Text style={[styles.subLabel, { color: colors.textSecondary }]}>
-                        {item.shares} sh @ {formatMoney(item.price)}
+                        {item.shares} sh @ {formatCurrencyAmount(item.price, currency)}
                     </Text>
                 </View>
                 <View style={styles.pnlContainer}>
                     <Text style={[styles.pnlValue, { color: isProfit ? colors.success : colors.error }]}>
-                        {isProfit ? '+' : ''}{formatMoney(item.gainLoss)}
+                        {isProfit ? '+' : ''}{formatCurrencyAmount(item.gainLoss, currency)}
                     </Text>
                     <Text style={[styles.pnlPercent, { color: isProfit ? colors.success : colors.error }]}>
                         ({isProfit ? '+' : ''}{item.gainLossPercent.toFixed(2)}%)
@@ -60,7 +58,7 @@ const HoldingItem = ({ item }: { item: Holding }) => {
     );
 };
 
-export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings }) => {
+export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency = 'PHP' }) => {
     const { colors } = useTheme();
 
     if (!holdings || holdings.length === 0) {
@@ -80,7 +78,7 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings }) => {
                 </TouchableOpacity>
             </View>
             {holdings.map((h, index) => (
-                <HoldingItem key={index} item={h} />
+                <HoldingItem key={index} item={h} currency={currency} />
             ))}
         </View>
     );
