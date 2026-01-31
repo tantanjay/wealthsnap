@@ -2,15 +2,18 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { useTheme } from '@context/ThemeContext';
+import { CURRENCY_SYMBOLS } from '@utils/currencyUtils';
 
 interface DividendChartProps {
     labels: string[];
     data: number[];
+    currency?: string;
 }
 
-export const DividendChart: React.FC<DividendChartProps> = ({ labels, data }) => {
+export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, currency = 'PHP' }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
+    const symbol = CURRENCY_SYMBOLS[currency] || currency;
 
     const chartConfig = {
         backgroundGradientFrom: colors.surface,
@@ -35,7 +38,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({ labels, data }) =>
                 }}
                 width={screenWidth - 48} // slightly less than container width
                 height={220}
-                yAxisLabel="₱"
+                yAxisLabel={symbol}
                 yAxisSuffix=""
                 yAxisInterval={1}
                 chartConfig={chartConfig}
