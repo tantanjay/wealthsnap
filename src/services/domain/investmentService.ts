@@ -3,7 +3,10 @@ import { Investment } from "@types";
 import { getDatabase } from "@services/database/databaseService";
 import { bulkDecryptItems, encryptField } from "@services/core/encryptionService";
 import { chunkArray } from "@utils/index";
-import { invalidateInvestmentCache } from "@services/core/dataCache";
+import { invalidateInvestmentCache, getInvestmentCache, setInvestmentCache, isValid, getTransactionCache, setTransactionCache } from "@services/core/dataCache";
+import { calculatePortfolioMetrics, getAllPortfolioMetrics } from "@utils/investmentMetrics";
+import { getLatestPrices } from "./priceHistoryService";
+import { getAllTransactions } from "./transactionService";
 
 
 
@@ -124,10 +127,134 @@ export const getAllInvestments = async (): Promise<Investment[]> => {
     }
 };
 
+/**
+ * Get investments with caching strategy
+ */
+export const getCachedInvestments = async (forceRefresh = false): Promise<Investment[]> => {
+    const cache = getInvestmentCache();
+    if (!forceRefresh && isValid(cache)) {
+        return cache!.data;
+    }
+
+    const investments = await getAllInvestments();
+
+    // Safety check just in case
+    if (investments) {
+        setInvestmentCache(investments);
+        return investments;
+    }
+    return [];
+};
+
+/**
+ * Calculate aggregated portfolio statistics
+ */
+export const getPortfolioStats = async () => {
+    // 1. Get Cached Data (Investments & Transactions)
+    const investments = await getCachedInvestments();
+
+    // We need transactions to get accurate Realized P/L (same source of truth as Home Screen)
+    // We'll mimic 'getCachedTransactions' logic here locally to avoid circular dependency
+    // if we tried to import from storageService (which imports investmentService).
+    // Or we can import from transactionService directly, but cache is better.
+    let transactions = getTransactionCache()?.data;
+    if (!transactions) {
+        // Fallback if cache empty (rare if user came from Home)
+        transactions = await getAllTransactions();
+        setTransactionCache(transactions);
+    }
+
+    // 2. Group by symbol to optimize price fetching and fallback logic
+    const groupedInvestments: Record<string, Investment[]> = {};
+    investments.forEach(inv => {
+        if (!groupedInvestments[inv.symbol]) groupedInvestments[inv.symbol] = [];
+        groupedInvestments[inv.symbol].push(inv);
+    });
+
+    const symbols = Object.keys(groupedInvestments);
+    const latestPrices = await getLatestPrices(symbols);
+
+    // 3. Convert price history to simple key-value for metrics calc
+    // With Fallback: If no price history, use the latest investment price
+    const priceMap: Record<string, BigNumber> = {};
+
+    symbols.forEach(symbol => {
+        if (latestPrices[symbol]) {
+            priceMap[symbol] = latestPrices[symbol].price;
+        } else {
+            // Fallback: Find latest transaction for this symbol
+            // Sort Descending by Date
+            const sorted = groupedInvestments[symbol].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            if (sorted.length > 0) {
+                // Use the price from the latest transaction (BUY or SELL)
+                priceMap[symbol] = sorted[0].price;
+            } else {
+                priceMap[symbol] = new BigNumber(0);
+            }
+        }
+    });
+
+    const metrics = getAllPortfolioMetrics(investments, priceMap);
+
+    // 4. Aggregate totals
+    let totalEquity = new BigNumber(0);
+    // let realizedPL = new BigNumber(0); // We will calculate this from Transactions instead
+    let unrealizedPL = new BigNumber(0);
+    let totalCostBasis = new BigNumber(0);
+    let totalDividends = new BigNumber(0);
+
+    metrics.forEach(m => {
+        totalEquity = totalEquity.plus(m.totalMarketValue);
+        // realizedPL = realizedPL.plus(m.realizedPL); // Legacy calc method
+        unrealizedPL = unrealizedPL.plus(m.unrealizedPL);
+        totalCostBasis = totalCostBasis.plus(m.totalCostBasis);
+    });
+
+    // 5. Calculate Realized P/L from Transactions (Source of Truth)
+    let totalRealizedPL = new BigNumber(0);
+    if (transactions) {
+        transactions.forEach(tx => {
+            // Only consider transactions linked to investments if we want to be strict,
+            // but CAPITAL_GAIN/LOSS types are inherently investment related in this schema.
+            // AND the HomeScreen logic sums ALL CAPITAL_GAIN/LOSS.
+            if (tx.type === 'CAPITAL_GAIN') {
+                totalRealizedPL = totalRealizedPL.plus(tx.amount);
+            } else if (tx.type === 'CAPITAL_LOSS') {
+                totalRealizedPL = totalRealizedPL.minus(tx.amount);
+            }
+        });
+    }
+
+    // 6. Calculate Dividends separately (from actions)
+    investments.forEach(inv => {
+        if (inv.action === 'DIVIDEND') {
+            const val = inv.price.times(inv.quantity);
+            totalDividends = totalDividends.plus(val);
+        }
+    });
+
+    // Unrealized PL %
+    // (Current Value - Cost Basis) / Cost Basis
+    const detailsUnrealizedPLPercent = totalCostBasis.isGreaterThan(0)
+        ? unrealizedPL.dividedBy(totalCostBasis).times(100).toNumber()
+        : 0;
+
+    return {
+        totalEquity: totalEquity.toNumber(),
+        realizedPL: totalRealizedPL.toNumber(),
+        unrealizedPL: unrealizedPL.toNumber(),
+        unrealizedPLPercent: detailsUnrealizedPLPercent,
+        totalDividends: totalDividends.toNumber()
+    };
+};
+
 export const deleteInvestment = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
         await db.runAsync('DELETE FROM investments WHERE id = ?', [id]);
+
+        // Optimistic cache update or invalidation
+        // For simplicity, just invalidate
         invalidateInvestmentCache();
     } catch (error) {
         console.error('Error deleting investment:', error);

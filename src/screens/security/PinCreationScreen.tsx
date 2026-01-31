@@ -59,7 +59,7 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
                             onSuccess();
                         }
                     }
-                ]);
+                ], { cancelable: false });
             } catch {
                 isValidating.current = false;
                 showAlert("Error", "Failed to save PIN. Please try again.");
