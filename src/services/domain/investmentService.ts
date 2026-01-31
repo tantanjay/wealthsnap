@@ -7,6 +7,7 @@ import { invalidateInvestmentCache, getInvestmentCache, setInvestmentCache, isVa
 import { calculatePortfolioMetrics, getAllPortfolioMetrics } from "@utils/investmentMetrics";
 import { getLatestPrices } from "./priceHistoryService";
 import { getAllTransactions } from "./transactionService";
+import { getAllAssets } from "./assetService";
 
 
 
@@ -260,4 +261,81 @@ export const deleteInvestment = async (id: string): Promise<void> => {
         console.error('Error deleting investment:', error);
         throw new Error('Failed to delete investment');
     }
+};
+
+/**
+ * Get detailed portfolio holdings for the UI
+ */
+export interface PortfolioHolding {
+    ticker: string;
+    shares: number;
+    price: number;
+    totalValue: number;
+    gainLoss: number;
+    gainLossPercent: number;
+    divYield: number;
+    sector: string;
+    name?: string;
+}
+
+export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
+    // 1. Get Base Investment Data
+    const investments = await getCachedInvestments();
+
+    // 2. Group by symbol and fetch prices (reusing stats logic)
+    const groupedInvestments: Record<string, Investment[]> = {};
+    investments.forEach(inv => {
+        if (!groupedInvestments[inv.symbol]) groupedInvestments[inv.symbol] = [];
+        groupedInvestments[inv.symbol].push(inv);
+    });
+
+    const symbols = Object.keys(groupedInvestments);
+    const latestPrices = await getLatestPrices(symbols);
+
+    const priceMap: Record<string, BigNumber> = {};
+    symbols.forEach(symbol => {
+        if (latestPrices[symbol]) {
+            priceMap[symbol] = latestPrices[symbol].price;
+        } else {
+            // Fallback: Find latest transaction for this symbol
+            const sorted = groupedInvestments[symbol].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            if (sorted.length > 0) {
+                priceMap[symbol] = sorted[0].price;
+            } else {
+                priceMap[symbol] = new BigNumber(0);
+            }
+        }
+    });
+
+    // 3. Calculate Core Metrics
+    const metrics = getAllPortfolioMetrics(investments, priceMap);
+
+    // 4. Fetch Asset Metadata (for Sector)
+    const allAssets = await getAllAssets();
+    const assetMap = new Map(allAssets.map(a => [a.symbol, a]));
+
+    // 5. Map to UI Model
+    const holdings: PortfolioHolding[] = metrics.map(m => {
+        const asset = assetMap.get(m.symbol);
+
+        const gainLossPercent = m.totalCostBasis.isGreaterThan(0)
+            ? m.unrealizedPL.dividedBy(m.totalCostBasis).times(100).toNumber()
+            : 0;
+
+        return {
+            ticker: m.symbol,
+            shares: m.currentQuantity.toNumber(),
+            price: priceMap[m.symbol] ? priceMap[m.symbol].toNumber() : 0,
+            totalValue: m.totalMarketValue.toNumber(),
+            gainLoss: m.unrealizedPL.toNumber(),
+            gainLossPercent: gainLossPercent,
+            divYield: 0, // Placeholder
+            sector: asset?.sector || 'Other',
+            name: asset?.name
+        };
+    });
+
+    // 6. Filter out sold positions (0 shares)
+    // Use a small epsilon for floating point comparison if needed, but BigNumber usually accurate
+    return holdings.filter(h => h.shares > 0.000001);
 };
