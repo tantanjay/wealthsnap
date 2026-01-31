@@ -43,19 +43,16 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
 
         // Check and set database version
         let currentVersion = await getDatabaseVersion(db);
-        console.log(`[Database] Current version: ${currentVersion}, Target: ${DATABASE_VERSION}`);
-
         if (currentVersion === 0) {
             // Fresh install: Tables are created with latest schema by createTables()
             // Just set the version and skip migrations
-            console.log('[Database] Fresh install detected. Setting version to', DATABASE_VERSION);
             await setDatabaseVersion(db, DATABASE_VERSION);
         } else {
             // Sequential migrations (Waterfall pattern)
             // This handles users jumping multiple versions (e.g. v1 -> v3)
 
             if (currentVersion < 2) {
-                console.log('[Database] Migrating V1 -> V2');
+                console.warn('[Database] Migrating V1 -> V2');
                 const { migrateV1ToV2 } = await import('@services/database/migrationService');
                 await migrateV1ToV2(db);
                 await setDatabaseVersion(db, 2);
@@ -67,7 +64,7 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
              * Hard to say what version is users used just to make sure we cover all cases
              */
             if (currentVersion < 5) {
-                console.log('[Database] Migrating V2 -> V5');
+                console.warn('[Database] Migrating V2 -> V5');
                 const { migrateV2ToV5 } = await import('@services/database/migrationService');
                 await migrateV2ToV5(db);
                 await setDatabaseVersion(db, 5);
@@ -75,7 +72,7 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
             }
 
             if (currentVersion < 6) {
-                console.log('[Database] Migrating V5 -> V6');
+                console.warn('[Database] Migrating V5 -> V6');
                 const { migrateV5ToV6 } = await import('@services/database/migrationService');
                 await migrateV5ToV6(db);
                 await setDatabaseVersion(db, 6);
@@ -83,7 +80,7 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
             }
 
             if (currentVersion < 7) {
-                console.log('[Database] Migrating V6 -> V7');
+                console.warn('[Database] Migrating V6 -> V7');
                 const { migrateV6ToV7 } = await import('@services/database/migrationService');
                 await migrateV6ToV7(db);
                 await setDatabaseVersion(db, 7);
@@ -126,7 +123,7 @@ export const resetDatabase = async (): Promise<void> => {
         dbPromise = null;
 
         await SQLite.deleteDatabaseAsync(DATABASE_NAME);
-        console.log('[Database] Database reset complete');
+        console.warn('[Database] Database reset complete');
     } catch (error) {
         console.error('[Database] Error resetting database:', error);
         throw error;

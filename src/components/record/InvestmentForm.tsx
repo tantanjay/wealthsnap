@@ -11,6 +11,7 @@ import { useAlert } from '@context/AlertContext';
 import { Investment, InvestmentType, InvestmentAction } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveInvestment } from '@services/domain/investmentService';
+import { addPriceHistory } from '@services/domain/priceHistoryService';
 
 interface InvestmentFormProps {
     investmentType: InvestmentType;
@@ -69,6 +70,18 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
 
         try {
             await saveInvestment(newInvestment);
+
+            if (action === 'BUY' || action === 'SELL') {
+                await addPriceHistory(
+                    newInvestment.symbol,
+                    newInvestment.price,
+                    {
+                        timestamp: newInvestment.date,
+                        source: 'MANUAL'
+                    }
+                );
+            }
+
             showAlert('Success', 'Investment saved!', [
                 {
                     text: 'Add More',
@@ -78,7 +91,6 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                         setPrice('');
                         setFees('');
                         setNotes('');
-                        // Keep action and date for rapid entry
                     },
                     style: 'default'
                 },
