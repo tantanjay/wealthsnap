@@ -98,3 +98,58 @@ export const addPriceHistory = async (
         throw new Error('Failed to add price history');
     }
 };
+
+/**
+ * Get price history for a symbol, optionally filtered by date range.
+ */
+export const getPriceHistory = async (
+    symbol: string,
+    startDate?: string,
+    endDate?: string
+): Promise<PriceHistory[]> => {
+    try {
+        const db = await getDatabase();
+        let query = `SELECT * FROM price_history WHERE symbol = ?`;
+        const params: any[] = [symbol];
+
+        if (startDate) {
+            query += ` AND timestamp >= ?`;
+            params.push(startDate);
+        }
+        if (endDate) {
+            query += ` AND timestamp <= ?`;
+            params.push(endDate);
+        }
+
+        query += ` ORDER BY timestamp DESC`;
+
+        const rows = await db.getAllAsync<any>(query, params);
+
+        return rows.map(row => ({
+            id: row.id,
+            symbol: row.symbol,
+            price: new BigNumber(row.price),
+            high: row.high ? new BigNumber(row.high) : undefined,
+            low: row.low ? new BigNumber(row.low) : undefined,
+            volume: row.volume ? new BigNumber(row.volume) : undefined,
+            timestamp: row.timestamp,
+            source: row.source
+        }));
+    } catch (error) {
+        console.error('Error getting price history:', error);
+        return [];
+    }
+};
+
+/**
+ * Delete a specific price history entry by ID.
+ */
+export const deletePriceHistory = async (id: string): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        await db.runAsync(`DELETE FROM price_history WHERE id = ?`, [id]);
+    } catch (error) {
+        console.error('Error deleting price history:', error);
+        throw new Error('Failed to delete price history');
+    }
+};
