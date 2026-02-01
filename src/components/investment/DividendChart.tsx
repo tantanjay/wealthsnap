@@ -4,14 +4,16 @@ import { BarChart } from 'react-native-chart-kit';
 
 import { useTheme } from '@context/ThemeContext';
 import { CURRENCY_SYMBOLS, formatCompactCurrency, formatCompactNumber, formatCurrencyAmount } from '@utils/currencyUtils';
+import { Skeleton } from '@components/common/Skeleton';
 
 interface DividendChartProps {
     labels: string[];
     data: number[];
     currency?: string;
+    isLoading?: boolean;
 }
 
-export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, currency = 'PHP' }) => {
+export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, currency = 'PHP', isLoading = false }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
     const symbol = CURRENCY_SYMBOLS[currency] || currency;
@@ -35,22 +37,26 @@ export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, curr
                 <Text style={[styles.title, { color: colors.text, marginBottom: 0 }]}>Proj. Dividends</Text>
                 <Text style={[styles.total, { color: colors.primary }]}>{formatCurrencyAmount(totalDividends, currency)}</Text>
             </View>
-            <BarChart
-                data={{
-                    labels: labels,
-                    datasets: [{ data: data }]
-                }}
-                width={screenWidth - 48}
-                height={220}
-                yAxisLabel={symbol}
-                yAxisSuffix=""
-                yAxisInterval={1}
-                chartConfig={chartConfig as any}
-                verticalLabelRotation={0}
-                showValuesOnTopOfBars
-                fromZero
-                style={{ borderRadius: 16 }}
-            />
+            {isLoading ? (
+                <Skeleton width="100%" height={220} borderRadius={16} />
+            ) : (
+                <BarChart
+                    data={{
+                        labels: labels,
+                        datasets: [{ data: data }]
+                    }}
+                    width={screenWidth - 48}
+                    height={220}
+                    yAxisLabel={symbol}
+                    yAxisSuffix=""
+                    yAxisInterval={1}
+                    chartConfig={chartConfig as any}
+                    verticalLabelRotation={0}
+                    showValuesOnTopOfBars
+                    fromZero
+                    style={{ borderRadius: 16 }}
+                />
+            )}
         </View>
     );
 };

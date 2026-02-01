@@ -23,6 +23,7 @@ const InvestmentScreen = () => {
     const { colors } = useTheme();
     // const { isPrivacyEnabled, togglePrivacy } = usePrivacy(); // Removed Eye Button
     const [refreshing, setRefreshing] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [currency, setCurrency] = useState('PHP');
 
     // Menu Modal State
@@ -67,6 +68,8 @@ const InvestmentScreen = () => {
             setSuggestions(newSuggestions);
         } catch (error) {
             console.error("Failed to load investment stats", error);
+        } finally {
+            setIsLoading(false);
         }
     }, [activePriority]);
 
@@ -238,6 +241,7 @@ const InvestmentScreen = () => {
                     unrealizedPLPercent={portfolioStats.unrealizedPLPercent}
                     totalDividends={portfolioStats.totalDividends}
                     currency={currency}
+                    isLoading={isLoading}
                 />
 
                 {/* Smart Advisor */}
@@ -249,15 +253,21 @@ const InvestmentScreen = () => {
                 />
 
                 {/* Charts Area */}
-                <AllocationChart holdingsData={holdings} />
+                <AllocationChart holdingsData={holdings} isLoading={isLoading} />
                 <DividendChart
                     labels={dividendChartData.labels.length > 0 ? dividendChartData.labels : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]}
                     data={dividendChartData.data.length > 0 ? dividendChartData.data : [0, 0, 0, 0, 0, 0]}
                     currency={currency}
+                    isLoading={isLoading}
                 />
 
                 {/* Holdings List */}
-                <HoldingsList holdings={holdings} currency={currency} />
+                <HoldingsList
+                    holdings={holdings}
+                    currency={currency}
+                    totalPortfolioValue={portfolioStats.totalEquity}
+                    isLoading={isLoading}
+                />
 
             </ScrollView>
 
