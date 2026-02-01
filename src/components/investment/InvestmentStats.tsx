@@ -2,9 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
-import { Skeleton } from '@components/common/Skeleton';
 
 interface InvestmentStatsProps {
     totalEquity: number;

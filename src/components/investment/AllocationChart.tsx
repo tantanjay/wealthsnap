@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, LayoutChangeEvent } from 'react-native';
 
-import { useTheme } from '@context/ThemeContext';
 import { Skeleton } from '@components/common/Skeleton';
+import { useTheme } from '@context/ThemeContext';
 
 // --- Interfaces ---
 interface Holding {

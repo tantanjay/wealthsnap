@@ -1,5 +1,4 @@
 import { getDatabase } from "@services/database/databaseService";
-import { generateUUID } from "@utils/uuid";
 
 export interface Asset {
     symbol: string;
