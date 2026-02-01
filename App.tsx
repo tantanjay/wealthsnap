@@ -12,7 +12,7 @@ import { ThemeProvider } from '@context/ThemeContext';
 import { GlobalErrorBoundary } from '@components/common/GlobalErrorBoundary';
 import { PrivacyGuard } from '@components/common/PrivacyGuard';
 import { CustomAlert } from '@components/common/CustomAlert';
-import { MigrationScreen } from '@screens/onboarding/MigrationScreen';
+
 import { ReminderCatchupModal } from '@components/reminders/ReminderCatchupModal';
 import { Reminder } from '@types';
 import { getDatabase } from '@services/database/databaseService';
@@ -23,7 +23,7 @@ import { CONFIG } from '@constants/config';
 
 export default function App() {
   const [loading, setLoading] = useState(true);
-  const [migrating, setMigrating] = useState(true);
+
   const [initialRoute, setInitialRoute] = useState<'Onboarding' | 'Main' | 'LegalAcceptance'>('Onboarding');
   const [pendingReminders, setPendingReminders] = useState<Reminder[]>([]);
   const [showCatchup, setShowCatchup] = useState(false);
@@ -40,8 +40,43 @@ export default function App() {
       }
     };
 
-    // Initial check
+    const checkOnboarding = async () => {
+      try {
+        console.log('[App] Starting database initialization...');
+        // Ensure database is initialized and migrations are run
+        await getDatabase();
+        console.log('[App] Database initialized.');
+
+        // Request notification permission once on launch
+        console.log('[App] Requesting permissions...');
+        await requestPermissions();
+        console.log('[App] Permissions requested.');
+
+      } catch (error) {
+        console.error('[App] Database initialization failed:', error);
+      }
+
+      console.log('[App] Checking onboarding status...');
+      const completed = await isOnboardingComplete();
+      console.log('[App] Onboarding complete:', completed);
+
+      const acceptedVersion = await getAcceptedTermsVersion();
+      console.log('[App] Terms version:', acceptedVersion);
+
+      if (!completed) {
+        setInitialRoute('Onboarding');
+      } else if (acceptedVersion < CONFIG.TERMS_VERSION) {
+        setInitialRoute('LegalAcceptance');
+      } else {
+        setInitialRoute('Main');
+      }
+
+      setLoading(false);
+    };
+
+    // Initial checks
     checkCatchup();
+    checkOnboarding();
 
     // Foreground check
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
@@ -54,48 +89,6 @@ export default function App() {
       subscription.remove();
     };
   }, []);
-
-  const handleMigrationComplete = async () => {
-    setMigrating(false);
-    await checkOnboarding();
-  };
-
-  const checkOnboarding = async () => {
-    try {
-      // Ensure database is initialized and migrations are run
-      await getDatabase();
-
-      // Request notification permission once on launch
-      await requestPermissions();
-
-    } catch (error) {
-      console.error('[App] Database initialization failed:', error);
-    }
-
-    const completed = await isOnboardingComplete();
-    const acceptedVersion = await getAcceptedTermsVersion();
-
-    if (!completed) {
-      setInitialRoute('Onboarding');
-    } else if (acceptedVersion < CONFIG.TERMS_VERSION) {
-      setInitialRoute('LegalAcceptance');
-    } else {
-      setInitialRoute('Main');
-    }
-
-    setLoading(false);
-  };
-
-  // Show migration screen first
-  if (migrating) {
-    return (
-      <ThemeProvider>
-        <SafeAreaProvider>
-          <MigrationScreen onComplete={handleMigrationComplete} />
-        </SafeAreaProvider>
-      </ThemeProvider>
-    );
-  }
 
   // Then show loading while checking onboarding
   if (loading) {

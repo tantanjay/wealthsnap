@@ -186,6 +186,10 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                 <View style={{ height: chartHeight, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.border + '20', marginHorizontal: 16, marginBottom: 16, borderRadius: 12 }}>
                     <Text style={{ color: colors.textSecondary }}>🔒 Chart hidden for privacy</Text>
                 </View>
+            ) : (!holdingsData || holdingsData.length === 0) ? (
+                <View style={{ height: chartHeight, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.border + '20', marginHorizontal: 16, marginBottom: 16, borderRadius: 12 }}>
+                    <Text style={{ color: colors.textSecondary, fontStyle: 'italic' }}>No active holdings.</Text>
+                </View>
             ) : (
                 <View style={styles.chartWrapper} onLayout={onLayout}>
                     <View style={[styles.chartContainer, { height: chartHeight }]}>

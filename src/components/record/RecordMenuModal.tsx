@@ -135,7 +135,7 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
             onClose={onClose}
             title="New Record"
             subtitle="Choose what you want to record"
-            maxHeight="90%"
+            maxHeight="85%"
             style={{ width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center' }}
         >
             <ScrollView
