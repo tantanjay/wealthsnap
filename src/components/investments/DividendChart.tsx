@@ -46,6 +46,10 @@ export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, curr
                 <View style={{ height: 220, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.border + '20', borderRadius: 16 }}>
                     <Text style={{ color: colors.textSecondary }}>🔒 Chart hidden for privacy</Text>
                 </View>
+            ) : (!data || data.length === 0 || data.every(d => d === 0)) ? (
+                <View style={{ height: 220, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.border + '20', borderRadius: 16 }}>
+                    <Text style={{ color: colors.textSecondary, fontStyle: 'italic' }}>No active holdings.</Text>
+                </View>
             ) : (
                 <BarChart
                     data={{

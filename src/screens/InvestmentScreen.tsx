@@ -5,11 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
-import { InvestmentStats } from '@components/investment/InvestmentStats';
-import { HoldingsList } from '@components/investment/HoldingsList';
-import { SmartAdvisor, Suggestion } from '@components/investment/SmartAdvisor';
-import { AllocationChart } from '@components/investment/AllocationChart';
-import { DividendChart } from '@components/investment/DividendChart';
+import { InvestmentStats } from '@components/investments/InvestmentStats';
+import { HoldingsList } from '@components/investments/HoldingsList';
+import { SmartAdvisor, Suggestion } from '@components/investments/SmartAdvisor';
+import { AllocationChart } from '@components/investments/AllocationChart';
+import { DividendChart } from '@components/investments/DividendChart';
 import { useTheme } from '@context/ThemeContext';
 import { getAllAssets } from '@services/domain/assetService';
 import { addPriceHistory } from '@services/domain/priceHistoryService';
