@@ -1,5 +1,5 @@
 export const CONFIG = {
-    TERMS_VERSION: 2,
+    TERMS_VERSION: 3,
     ENABLE_DUMMY_DATA: true,
     SHOW_DEVELOPER_OPTIONS: false,
     CHUNK_SIZE: 100,
