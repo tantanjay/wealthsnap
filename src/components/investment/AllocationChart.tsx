@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, LayoutChangeEvent } from 'react-native';
 
 import { useTheme } from '@context/ThemeContext';
+import { Skeleton } from '@components/common/Skeleton';
 
 // --- Interfaces ---
 interface Holding {
@@ -17,6 +18,7 @@ interface Holding {
 
 interface AllocationChartProps {
     holdingsData: Holding[];
+    isLoading?: boolean;
 }
 
 interface TreeMapItem {
@@ -87,7 +89,7 @@ const getTreemapLayout = (data: any[], width: number, height: number): TreeMapIt
 };
 
 // --- Main Component ---
-export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData }) => {
+export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, isLoading = false }) => {
     const { colors } = useTheme();
     const [selectedTab, setSelectedTab] = useState<'stocks' | 'sector'>('stocks');
     const [containerWidth, setContainerWidth] = useState(0);
@@ -175,65 +177,71 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData }
                 </View>
             </View>
 
-            <View style={styles.chartWrapper} onLayout={onLayout}>
-                <View style={[styles.chartContainer, { height: chartHeight }]}>
-                    {layout.map((item) => {
-                        const isPortrait = item.height > item.width * 1.2;
-                        const showLabel = item.width > 28 && item.height > 18;
-                        const showWeight = item.width > 40 && item.height > 35;
-                        // Performance (% gain/loss) is hidden if the box is very small
-                        const showPerf = item.width > 55 && item.height > 45;
-
-                        return (
-                            <View
-                                key={item.id}
-                                style={[
-                                    styles.box,
-                                    {
-                                        left: item.x,
-                                        top: item.y,
-                                        width: item.width,
-                                        height: item.height,
-                                        backgroundColor: item.color,
-                                        borderColor: colors.surface,
-                                    }
-                                ]}
-                            >
-                                {showLabel && (
-                                    <Text
-                                        style={[styles.boxLabel, { fontSize: Math.min(12, item.width / 4.5) }]}
-                                        numberOfLines={1}
-                                        adjustsFontSizeToFit
-                                    >
-                                        {item.label}
-                                    </Text>
-                                )}
-
-                                {(showWeight || showPerf) && (
-                                    <View style={[
-                                        styles.subLabelContainer,
-                                        { flexDirection: isPortrait ? 'column' : 'row' }
-                                    ]}>
-                                        {showWeight && (
-                                            <Text style={[styles.boxSubLabel, { fontSize: Math.min(10, item.width / 7) }]}>
-                                                {item.weight}
-                                            </Text>
-                                        )}
-                                        {showWeight && showPerf && !isPortrait && (
-                                            <Text style={styles.boxSubLabel}> </Text>
-                                        )}
-                                        {showPerf && (
-                                            <Text style={[styles.boxSubLabel, { fontSize: Math.min(10, item.width / 7), opacity: 0.9 }]}>
-                                                ({item.performance})
-                                            </Text>
-                                        )}
-                                    </View>
-                                )}
-                            </View>
-                        );
-                    })}
+            {isLoading ? (
+                <View style={{ padding: 16 }}>
+                    <Skeleton width="100%" height={chartHeight} borderRadius={12} />
                 </View>
-            </View>
+            ) : (
+                <View style={styles.chartWrapper} onLayout={onLayout}>
+                    <View style={[styles.chartContainer, { height: chartHeight }]}>
+                        {layout.map((item) => {
+                            const isPortrait = item.height > item.width * 1.2;
+                            const showLabel = item.width > 28 && item.height > 18;
+                            const showWeight = item.width > 40 && item.height > 35;
+                            // Performance (% gain/loss) is hidden if the box is very small
+                            const showPerf = item.width > 55 && item.height > 45;
+
+                            return (
+                                <View
+                                    key={item.id}
+                                    style={[
+                                        styles.box,
+                                        {
+                                            left: item.x,
+                                            top: item.y,
+                                            width: item.width,
+                                            height: item.height,
+                                            backgroundColor: item.color,
+                                            borderColor: colors.surface,
+                                        }
+                                    ]}
+                                >
+                                    {showLabel && (
+                                        <Text
+                                            style={[styles.boxLabel, { fontSize: Math.min(12, item.width / 4.5) }]}
+                                            numberOfLines={1}
+                                            adjustsFontSizeToFit
+                                        >
+                                            {item.label}
+                                        </Text>
+                                    )}
+
+                                    {(showWeight || showPerf) && (
+                                        <View style={[
+                                            styles.subLabelContainer,
+                                            { flexDirection: isPortrait ? 'column' : 'row' }
+                                        ]}>
+                                            {showWeight && (
+                                                <Text style={[styles.boxSubLabel, { fontSize: Math.min(10, item.width / 7) }]}>
+                                                    {item.weight}
+                                                </Text>
+                                            )}
+                                            {showWeight && showPerf && !isPortrait && (
+                                                <Text style={styles.boxSubLabel}> </Text>
+                                            )}
+                                            {showPerf && (
+                                                <Text style={[styles.boxSubLabel, { fontSize: Math.min(10, item.width / 7), opacity: 0.9 }]}>
+                                                    ({item.performance})
+                                                </Text>
+                                            )}
+                                        </View>
+                                    )}
+                                </View>
+                            );
+                        })}
+                    </View>
+                </View>
+            )}
         </View>
     );
 };

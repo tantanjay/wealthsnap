@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { Skeleton } from '@components/common/Skeleton';
 
 interface InvestmentStatsProps {
     totalEquity: number;
@@ -12,7 +13,24 @@ interface InvestmentStatsProps {
     unrealizedPLPercent: number;
     totalDividends: number;
     currency?: string;
+    isLoading?: boolean;
 }
+
+const StatCardSkeleton = ({ width }: { width: number }) => {
+    const { colors } = useTheme();
+    return (
+        <View style={[styles.card, { backgroundColor: colors.surface, width }]}>
+            <View style={{ gap: 8 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Skeleton width={80} height={12} />
+                    <Skeleton width={16} height={16} borderRadius={8} />
+                </View>
+                <Skeleton width={120} height={24} />
+                <Skeleton width={60} height={12} />
+            </View>
+        </View>
+    );
+};
 
 const StatCard = ({ label, value, subValue, color, icon, width }: any) => {
     const { colors } = useTheme();
@@ -44,7 +62,8 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
     unrealizedPL,
     unrealizedPLPercent,
     totalDividends,
-    currency = 'PHP'
+    currency = 'PHP',
+    isLoading = false
 }) => {
     const { colors } = useTheme();
     const [currentPage, setCurrentPage] = React.useState(0);
@@ -119,16 +138,21 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
         setCurrentPage(clampedPage);
     };
 
-    const renderItem = ({ item }: { item: any }) => (
-        <StatCard
-            label={item.label}
-            value={item.value}
-            subValue={item.subValue}
-            color={item.color}
-            icon={item.icon}
-            width={cardWidth}
-        />
-    );
+    const renderItem = ({ item }: { item: any }) => {
+        if (isLoading) {
+            return <StatCardSkeleton width={cardWidth} />;
+        }
+        return (
+            <StatCard
+                label={item.label}
+                value={item.value}
+                subValue={item.subValue}
+                color={item.color}
+                icon={item.icon}
+                width={cardWidth}
+            />
+        );
+    };
 
     return (
         <View style={styles.container}>
