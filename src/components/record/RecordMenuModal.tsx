@@ -11,6 +11,7 @@ import { useSecurity } from '@context/SecurityContext';
 import { useAlert } from '@context/AlertContext';
 import { DebtType, InvestmentType, TransactionType } from '@types';
 import { useAIConsent } from '@hooks/useAIConsent';
+import { getAllAssets } from '@services/domain/assetService';
 
 export interface RecordMenuModalProps {
     visible: boolean;
@@ -92,6 +93,29 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
         });
     };
 
+    const handleInvestmentSelect = async (type: InvestmentType) => {
+        try {
+            const assets = await getAllAssets();
+            if (assets.length === 0) {
+                showAlert(
+                    'No Assets Found',
+                    'Please add an asset in the Profile > Asset Dictionary before recording an investment.',
+                    [
+                        { text: 'OK', style: 'cancel' }
+                    ]
+                );
+                return;
+            }
+            onSelectInvestment(type);
+        } catch (error) {
+            console.error('Failed to check assets:', error);
+            showAlert(
+                'Error',
+                'Could not verify assets. Please try again.'
+            );
+        }
+    };
+
     const sections = [
         {
             title: 'AI Assistant',
@@ -112,11 +136,11 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
         {
             title: 'Investment',
             items: [
-                { id: 'stk', icon: 'trending-up', label: 'Stocks', color: colors.primary, onPress: () => onSelectInvestment('STOCKS') },
-                { id: 'fnd', icon: 'briefcase', label: 'Funds', color: colors.primary, onPress: () => onSelectInvestment('FUNDS') },
-                { id: 'bnd', icon: 'bar-chart', label: 'Bonds', color: colors.primary, onPress: () => onSelectInvestment('BONDS') },
-                { id: 'cry', icon: 'logo-bitcoin', label: 'Crypto', color: colors.primary, onPress: () => onSelectInvestment('CRYPTO') },
-                { id: 'com', icon: 'diamond', label: 'Commodities', color: colors.primary, onPress: () => onSelectInvestment('COMMODITIES') },
+                { id: 'stk', icon: 'trending-up', label: 'Stocks', color: colors.primary, onPress: () => handleInvestmentSelect('STOCKS') },
+                { id: 'fnd', icon: 'briefcase', label: 'Funds', color: colors.primary, onPress: () => handleInvestmentSelect('FUNDS') },
+                { id: 'bnd', icon: 'bar-chart', label: 'Bonds', color: colors.primary, onPress: () => handleInvestmentSelect('BONDS') },
+                { id: 'cry', icon: 'logo-bitcoin', label: 'Crypto', color: colors.primary, onPress: () => handleInvestmentSelect('CRYPTO') },
+                { id: 'com', icon: 'diamond', label: 'Commodities', color: colors.primary, onPress: () => handleInvestmentSelect('COMMODITIES') },
             ]
         },
         {

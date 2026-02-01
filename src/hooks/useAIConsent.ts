@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { AIConsentService } from '@services/core/AIConsentService';
 import { useAlert } from '@context/AlertContext';
+import { isGeminiConfigured } from '@services/integrations';
 
 export const useAIConsent = () => {
     const { showAlert } = useAlert();
@@ -11,6 +12,16 @@ export const useAIConsent = () => {
      * @param onDeny Optional callback if user denies consent.
      */
     const checkConsent = useCallback(async (onConsent: () => void, onDeny?: () => void) => {
+        const isConfigured = await isGeminiConfigured();
+        if (!isConfigured) {
+            showAlert(
+                "Missing API Key",
+                "You have not configured your Gemini API Key. Please go to settings and input your API key to continue.",
+                [{ text: "OK", onPress: onDeny }]
+            );
+            return;
+        }
+
         const hasConsented = await AIConsentService.hasConsented();
 
         if (hasConsented) {
