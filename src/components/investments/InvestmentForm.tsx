@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 
 import BottomModal from '@components/common/BottomModal';
 import { CalculatorModal } from '@components/record/CalculatorModal';
 import { Button, Card } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
-import { Investment, InvestmentType, InvestmentAction, Transaction, TransactionType } from '@types';
+import { Investment, InvestmentType, InvestmentAction, Transaction, TransactionType, Asset } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveInvestment } from '@services/domain/investmentService';
+import { getAllAssets } from '@services/domain/assetService';
 import { addPriceHistory } from '@services/domain/priceHistoryService';
 import { saveTransaction } from '@services/domain/transactionService';
 
@@ -43,6 +45,33 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     );
     const [createTransaction, setCreateTransaction] = useState(true);
     const [showInfoModal, setShowInfoModal] = useState(false);
+
+    // Asset fetching state
+    const [assets, setAssets] = useState<Asset[]>([]);
+    const [loadingAssets, setLoadingAssets] = useState(false);
+
+    useEffect(() => {
+        const fetchAssets = async () => {
+            setLoadingAssets(true);
+            try {
+                const data = await getAllAssets();
+                setAssets(data);
+                // If editing, symbol is already set. If new and data exists, maybe set first?
+                // Or leave empty to force user to select.
+                // Actually, since we block entry if no assets, we assume at least one exists.
+                // But generally good UX to let them pick manually or default to first if none selected?
+                if (!initialInvestment && data.length > 0 && !symbol) {
+                    setSymbol(data[0].symbol);
+                }
+            } catch (error) {
+                console.error('Failed to load assets for picker:', error);
+                showAlert('Error', 'Failed to load assets dictionary.');
+            } finally {
+                setLoadingAssets(false);
+            }
+        };
+        fetchAssets();
+    }, []);
 
     // UI state
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -162,26 +191,12 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                 }
             }
 
-            showAlert('Success', 'Investment saved!', [
-                {
-                    text: 'Add More',
-                    onPress: () => {
-                        setSymbol('');
-                        setQuantity('');
-                        setPrice('');
-                        setFees('');
-                        setNotes('');
-                        // Keep action and date for rapid entry
-                        setCreateTransaction(true);
-                    },
-                    style: 'default'
-                },
-                {
-                    text: 'Home',
-                    onPress: onSave,
-                    style: 'cancel'
-                }
-            ], { cancelable: false });
+            setSymbol('');
+            setQuantity('');
+            setPrice('');
+            setFees('');
+            setNotes('');
+            setCreateTransaction(true);
         } catch (error) {
             console.error(error);
             showAlert('Error', 'Failed to save investment.');
@@ -302,17 +317,35 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                     </TouchableOpacity>
                 </TouchableOpacity>
 
-                {/* Symbol */}
+                {/* Symbol Selection */}
                 <Card style={{ marginBottom: 10 }}>
-                    <Text style={{ color: colors.textSecondary }}>{investmentType === 'FUNDS' ? 'Identifier Title' : 'Symbol'}</Text>
-                    <TextInput
-                        style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                        value={symbol}
-                        onChangeText={setSymbol}
-                        autoCapitalize={investmentType === 'FUNDS' ? "words" : "characters"}
-                        placeholder={investmentType === 'FUNDS' ? "MP2" : "AAPL"}
-                        placeholderTextColor={colors.gray300}
-                    />
+                    <Text style={{ color: colors.textSecondary }}>{investmentType === 'FUNDS' ? 'Select Asset' : 'Select Symbol'}</Text>
+                    {loadingAssets ? (
+                        <ActivityIndicator color={colors.primary} style={{ marginTop: 10 }} />
+                    ) : (
+                        <View style={{ marginHorizontal: -10 }}>
+                            <Picker
+                                selectedValue={symbol}
+                                onValueChange={(itemValue) => setSymbol(itemValue)}
+                                style={{ color: colors.text }}
+                                dropdownIconColor={colors.text}
+                            >
+                                <Picker.Item label="Select Asset..." value="" enabled={false} />
+                                {assets.map((asset) => (
+                                    <Picker.Item
+                                        key={asset.symbol}
+                                        label={`${asset.symbol} - ${asset.name || 'Unnamed'}`}
+                                        value={asset.symbol}
+                                    />
+                                ))}
+                            </Picker>
+                        </View>
+                    )}
+                    {assets.length === 0 && !loadingAssets && (
+                        <Text style={{ color: colors.error, fontSize: 12, marginTop: 4 }}>
+                            No assets found. Please add in Profile Settings.
+                        </Text>
+                    )}
                 </Card>
 
                 {/* Quantity and Price */}

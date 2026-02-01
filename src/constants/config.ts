@@ -23,6 +23,7 @@ export const ASYNC_KEYS = {
     AI: {
         PROVIDER: '@wealthsnap_ai_provider',
         MODEL_ID: '@wealthsnap_ai_model_id',
+        CONSENT: '@wealthsnap_ai_consent',
     },
     ONBOARDING: {
         COMPLETE: '@wealthsnap_onboarding_complete',
