@@ -14,6 +14,7 @@ interface InvestmentStatsProps {
     totalDividends: number;
     currency?: string;
     isLoading?: boolean;
+    isPrivacyEnabled?: boolean;
 }
 
 const StatCardSkeleton = ({ width }: { width: number }) => {
@@ -63,7 +64,8 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
     unrealizedPLPercent,
     totalDividends,
     currency = 'PHP',
-    isLoading = false
+    isLoading = false,
+    isPrivacyEnabled = false
 }) => {
     const { colors } = useTheme();
     const [currentPage, setCurrentPage] = React.useState(0);
@@ -86,15 +88,23 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
         {
             id: 'equity',
             label: "Total Equity",
-            value: formatCurrencyAmount(totalEquity, currency),
+            value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(totalEquity, currency),
             color: colors.primary,
             icon: "wallet-outline"
         },
         {
             id: 'realized',
             label: "Realized P/L",
-            value: formatCurrencyAmount(realizedPL, currency),
-            subValue: (
+            value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(realizedPL, currency),
+            subValue: isPrivacyEnabled ? (
+                <Text style={{
+                    color: colors.textSecondary,
+                    fontWeight: 'bold',
+                    fontSize: 12
+                }}>
+                    ••••
+                </Text>
+            ) : (
                 <Text style={{
                     color: realizedPL >= 0 ? colors.success : colors.error,
                     fontWeight: 'bold',
@@ -108,8 +118,16 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
         {
             id: 'unrealized',
             label: "Unrealized P/L",
-            value: formatCurrencyAmount(unrealizedPL, currency),
-            subValue: (
+            value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(unrealizedPL, currency),
+            subValue: isPrivacyEnabled ? (
+                <Text style={{
+                    color: colors.textSecondary,
+                    fontWeight: 'bold',
+                    fontSize: 12
+                }}>
+                    ••••
+                </Text>
+            ) : (
                 <Text style={{
                     color: unrealizedPL >= 0 ? colors.success : colors.error,
                     fontWeight: 'bold',
@@ -122,7 +140,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
         {
             id: 'dividends',
             label: "Total Divs Received",
-            value: formatCurrencyAmount(totalDividends, currency),
+            value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(totalDividends, currency),
             color: colors.textSecondary
         }
     ];

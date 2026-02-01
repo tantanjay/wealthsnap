@@ -21,9 +21,10 @@ interface SmartAdvisorProps {
     onPriorityChange: (priority: Priority) => void;
     activePriority: Priority;
     currency?: string;
+    isPrivacyEnabled?: boolean;
 }
 
-const SuggestionItem = ({ item, width, currency }: { item: Suggestion, width: number, currency: string }) => {
+const SuggestionItem = ({ item, width, currency, isPrivacyEnabled }: { item: Suggestion, width: number, currency: string, isPrivacyEnabled?: boolean }) => {
     const { colors } = useTheme();
 
     let color = colors.primary;
@@ -55,7 +56,9 @@ const SuggestionItem = ({ item, width, currency }: { item: Suggestion, width: nu
                         </View>
                     )}
                 </View>
-                <Text style={[styles.price, { color: colors.text }]}>{formatCurrencyAmount(item.price, currency)}</Text>
+                <Text style={[styles.price, { color: colors.text }]}>
+                    {isPrivacyEnabled ? "••••" : formatCurrencyAmount(item.price, currency)}
+                </Text>
             </View>
 
             <View style={styles.reasonRow}>
@@ -66,7 +69,7 @@ const SuggestionItem = ({ item, width, currency }: { item: Suggestion, width: nu
     );
 };
 
-export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPriorityChange, activePriority, currency = 'PHP' }) => {
+export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPriorityChange, activePriority, currency = 'PHP', isPrivacyEnabled = false }) => {
     const { colors } = useTheme();
     const [currentPage, setCurrentPage] = React.useState(0);
     const [showInfoModal, setShowInfoModal] = useState(false);
@@ -93,7 +96,7 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
     };
 
     const renderItem = ({ item }: { item: Suggestion }) => (
-        <SuggestionItem item={item} width={cardWidth} currency={currency} />
+        <SuggestionItem item={item} width={cardWidth} currency={currency} isPrivacyEnabled={isPrivacyEnabled} />
     );
 
     const priorities: { label: string, value: Priority, icon: string }[] = [
