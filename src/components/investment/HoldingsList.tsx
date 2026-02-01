@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useTheme } from '@context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+
+import { useTheme } from '@context/ThemeContext';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface Holding {

@@ -1,6 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 import { getDatabase } from "@services/database/databaseService";
 import { generateUUID } from "@utils/uuid";
+import { PortfolioHolding } from './investmentService';
 
 export interface DividendHistory {
     id: string;
@@ -129,5 +130,75 @@ export const deleteDividendHistory = async (id: string): Promise<void> => {
     } catch (error) {
         console.error('Error deleting dividend history:', error);
         throw new Error('Failed to delete dividend history');
+    }
+};
+
+/**
+ * Calculate projected dividends for the current year based on holdings
+ */
+export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promise<{ labels: string[], data: number[] }> => {
+    try {
+        const db = await getDatabase();
+
+        // Initialize monthly aggregators (Jan-Dec)
+        const monthlyTycoonAsync = new Array(12).fill(0);
+        const currentYear = new Date().getFullYear();
+
+        for (const holding of holdings) {
+            // Get all dividend history for this symbol
+            // We get ALL history to be able to project forward if current year is missing, 
+            // but for MVP let's stick to matching months in the current year OR 
+            // if we want to be smarter: use last year's data projected to this year if this year is missing.
+            // Let's implement a "smart projection":
+            // 1. Look for confirmed/declared dividends for this year.
+            // 2. If a month has no declared dividend, look for a paid dividend from last year in the same month (approx ex-date).
+
+            const history = await db.getAllAsync<any>(GET_DIVIDEND_HISTORY_BY_SYMBOL_QUERY, [holding.symbol]);
+
+            // Map to better objects
+            const divEvents = history.map(d => ({
+                month: new Date(d.exDate).getMonth(), // 0-11
+                year: new Date(d.exDate).getFullYear(),
+                amount: new BigNumber(d.amount),
+                status: d.status
+            }));
+
+            // Group by month to avoid double counting if multiple entries (unlikely for same type but good to be safe)
+            // Strategy: For each month 0-11:
+            // - Is there an entry for CurrentYear? Use it.
+            // - If not, is there an entry for LastYear? Use it as "Projected".
+
+            for (let m = 0; m < 12; m++) {
+                // Find event for this month in current year
+                const thisYearEvent = divEvents.find(e => e.month === m && e.year === currentYear);
+
+                let dividendAmount = new BigNumber(0);
+
+                if (thisYearEvent) {
+                    dividendAmount = thisYearEvent.amount;
+                } else {
+                    // Fallback to last year
+                    const lastYearEvent = divEvents.find(e => e.month === m && e.year === currentYear - 1);
+                    if (lastYearEvent) {
+                        dividendAmount = lastYearEvent.amount;
+                    }
+                }
+
+                if (dividendAmount.isGreaterThan(0)) {
+                    // Calculate total: dividend per share * number of shares
+                    const totalProposed = dividendAmount.times(holding.shares);
+                    monthlyTycoonAsync[m] += totalProposed.toNumber();
+                }
+            }
+        }
+
+        return {
+            labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+            data: monthlyTycoonAsync
+        };
+
+    } catch (error) {
+        console.error('Error calculating projected dividends:', error);
+        return { labels: [], data: [] };
     }
 };
