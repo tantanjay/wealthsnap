@@ -3,7 +3,6 @@ import { UserProfile, Transaction, TransactionType, Investment } from '@types';
 import { saveCategory, saveTransaction } from '@services/domain';
 import { bulkSaveInvestments } from '@services/domain/investmentService';
 import { saveUserProfile, setOnboardingComplete, clearAllData } from '@services/core/storageService';
-import { calculatePortfolioMetrics } from '@utils/investmentMetrics';
 import { CONFIG } from '@constants/config';
 import { createAsset } from '@services/domain/assetService';
 import { addPriceHistory } from '@services/domain/priceHistoryService';

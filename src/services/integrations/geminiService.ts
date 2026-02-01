@@ -426,7 +426,7 @@ Notes:
         try {
             const parsed: FetchedPrice[] = JSON.parse(text);
             return parsed;
-        } catch (e) {
+        } catch {
             console.error("Failed to parse stock price JSON:", text);
             return [];
         }
@@ -506,7 +506,7 @@ Notes:
         try {
             const parsed: FetchedDividend[] = JSON.parse(text);
             return parsed;
-        } catch (e) {
+        } catch {
             console.error("Failed to parse dividend JSON:", text);
             return [];
         }

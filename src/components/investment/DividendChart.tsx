@@ -2,9 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 
+import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { CURRENCY_SYMBOLS, formatCompactCurrency, formatCompactNumber, formatCurrencyAmount } from '@utils/currencyUtils';
-import { Skeleton } from '@components/common/Skeleton';
 
 interface DividendChartProps {
     labels: string[];

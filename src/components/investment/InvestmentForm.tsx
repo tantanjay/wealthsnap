@@ -417,7 +417,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
                     <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 22, marginBottom: 20 }}>
-                        WealthSnap treats your finances as a connected ecosystem. When you buy or sell assets, money doesn't disappear—it moves.
+                        WealthSnap treats your finances as a connected ecosystem. When you buy or sell assets, money doesn&apos;t disappear—it moves.
                     </Text>
 
                     {/* Visual Flow Diagram */}
@@ -454,7 +454,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                         <View style={{ flex: 1 }}>
                             <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Buying (Transfer Out)</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
-                                We deduct cash from your "Transfer Account" so you don't double-count your net worth (Cash + Asset).
+                                We deduct cash from your &quot;Transfer Account&quot; so you don&apos;t double-count your net worth (Cash + Asset).
                             </Text>
                         </View>
                     </View>
@@ -465,7 +465,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                         <View style={{ flex: 1 }}>
                             <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Selling (Transfer In)</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
-                                Proceeds are added back to your cash balance. If you don't record this, the money effectively vanishes!
+                                Proceeds are added back to your cash balance. If you don&apos;t record this, the money effectively vanishes!
                             </Text>
                         </View>
                     </View>
@@ -476,7 +476,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                         <View style={{ flex: 1 }}>
                             <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Dividends (Income)</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
-                                "New money" entering your ecosystem. We record this as Income.
+                                &quot;New money&quot; entering your ecosystem. We record this as Income.
                             </Text>
                         </View>
                     </View>

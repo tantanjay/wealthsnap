@@ -23,7 +23,7 @@
     "babel-plugin-module-resolver": "^5.0.2",
     "bignumber.js": "^9.3.1",
     "crypto-js": "^4.2.0",
-    "expo": "~54.0.32",
+    "expo": "~54.0.33",
     "expo-av": "~16.0.8",
     "expo-background-fetch": "~14.0.9",
     "expo-clipboard": "~8.0.8",
