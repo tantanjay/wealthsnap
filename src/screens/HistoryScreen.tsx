@@ -747,6 +747,27 @@ const HistoryScreen = ({ navigation }: any) => {
                     </View>
 
                     <View style={{ height: 20 }} />
+                    {/* Connecting the Dots */}
+                    <View style={{ marginBottom: 24, backgroundColor: colors.surface, padding: 16, borderRadius: 16, borderLeftWidth: 4, borderLeftColor: colors.primary }}>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
+                            🧠 Connecting the Dots
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 22, marginBottom: 12 }}>
+                            This view brings together your <Text style={{ color: colors.error }}>Red Spending Days</Text>, <Text style={{ color: colors.text }}>Recurring Bill commitments</Text>, and <Text style={{ color: '#8E24AA' }}>Investment Moves</Text> to help you answer the big questions:
+                        </Text>
+                        <View style={{ gap: 8 }}>
+                            <Text style={{ color: colors.text, fontSize: 14, fontStyle: 'italic' }}>
+                                “Did I sell because I needed cash?”
+                            </Text>
+                            <Text style={{ color: colors.text, fontSize: 14, fontStyle: 'italic' }}>
+                                “Was I spending heavily before this bad trade?”
+                            </Text>
+                            <Text style={{ color: colors.text, fontSize: 14, fontStyle: 'italic' }}>
+                                “Why does this month feel chaotic?”
+                            </Text>
+                        </View>
+                    </View>
+
                 </ScrollView>
             </BottomModal>
         </ScreenWrapper>
