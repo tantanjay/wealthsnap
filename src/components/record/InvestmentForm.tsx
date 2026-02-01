@@ -68,7 +68,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
 
             showAlert('Are you sure?', message, [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Yes, Skip Transaction', onPress: () => setCreateTransaction(false), style: 'destructive' }
+                { text: 'Yes, Skip', onPress: () => setCreateTransaction(false), style: 'destructive' }
             ]);
         } else {
             setCreateTransaction(true);
