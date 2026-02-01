@@ -7,6 +7,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.7.0] — 2026-02-01
+
+### Added
+- **Budget-Aware Smart Alerts**
+  - Alerts now integrate directly with Budgets and trigger immediately when limits are exceeded.
+  - Category-item–level detection (e.g., *Water*, *Groceries*) for higher precision.
+
+- **Transfers System**
+  - Dedicated Transfer recording UI.
+  - Explicit Incoming / Outgoing transfer handling.
+  - Transfers are visually distinguished in History and correctly excluded/included in summaries.
+
+- **Investment Tracking**
+  - Stock Buy/Sell transactions with Quantity, Price, and Fees.
+  - Dividend and Interest income recording.
+  - Integrated calculator for investment inputs.
+  - Automatic transaction total computation.
+  - Realized and Unrealized Profit/Loss tracking.
+  - Per-transaction SELL profit/loss visibility in History.
+
+- **Investment Insights**
+  - Market monitoring with:
+    - Drop detection (>10% from 30-day peak)
+    - Dip detection
+    - Upcoming dividend alerts
+    - Portfolio balance checks
+  - Portfolio Allocation Heatmap (Treemap) with Stock and Sector views.
+  - Holdings list with live prices and daily change.
+  - AI-powered historical price & dividend fetching (Gemini).
+  - Dividend projection chart with monthly breakdown.
+
+- **Smart History Calendar**
+  - Calendar-based transaction view with daily income/expense visualization.
+  - Safe-to-Spend calculation accounting for upcoming recurring bills.
+  - Spending heatmap (Guilt Filter) excluding fixed recurring expenses.
+  - Ghost Forecast for upcoming recurring charges.
+  - BUY / SELL investment signals on calendar dates.
+
+- **Home Screen Enhancements**
+  - New **Monthly Net** card (Income vs Expense excluding transfers).
+  - Clarified “Money In / Money Out” balance labels.
+  - Formula transparency via “How is this calculated?” info panels.
+
+- **Category Selection UX**
+  - Recent category suggestions (last 30 days).
+  - Horizontal quick-select bar with integrated search.
+
+### Changed
+- Record Menu redesigned with a modern grid layout.
+- Improved tablet and landscape responsiveness.
+- Investment calculation engine optimized to O(N) grouping.
+- Automated database migrations for investment price history.
+
+### Improved
+- Concurrency-safe transaction loading during background decryption.
+- Faster portfolio loading for large investment histories.
+- Clearer visual separation of transfers across analytics.
+
+### Fixed
+- Historical anomaly detection now calculates averages per month instead of per transaction.
+- Fixed infinite loop caused by Semi-Weekly reminder date calculations.
+- Resolved race condition where optimistic UI updates could be overwritten.
+
+### Legal & Privacy
+- Added AI data transparency clauses (Section 2.4).
+- Clarified BYOK responsibility for Gemini API usage.
+- Added disclaimer for automated insights and projections.
+
+---
+
 ## [1.6.1] — 2026-01-28
 ### Fixed
 - Fixed app-wide crashes on Android caused by incompatible UUID generation.
