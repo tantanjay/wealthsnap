@@ -4,9 +4,9 @@ import { BigNumber } from 'bignumber.js';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button, Card } from '@components/index';
 import BottomModal from '@components/common/BottomModal';
 import { CalculatorModal } from '@components/record/CalculatorModal';
+import { Button, Card } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Investment, InvestmentType, InvestmentAction, Transaction, TransactionType } from '@types';

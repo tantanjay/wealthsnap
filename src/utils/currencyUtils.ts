@@ -36,15 +36,21 @@ export const formatCurrencyAmount = (
  */
 export const formatCompactCurrency = (
     amount: BigNumber | string | number,
-    currencyCode: string = 'PHP'
+    currencyCode: string = 'PHP',
+    decimalPlaces: number = 2 // Default to 2, or 0 for whole numbers
 ): string => {
     const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
-    const bn = new BigNumber(amount);
+
+    // Convert to BigNumber and apply rounding
+    // ROUND_HALF_UP is the standard "round to nearest"
+    const bn = new BigNumber(amount).decimalPlaces(decimalPlaces, BigNumber.ROUND_HALF_UP);
 
     const formatter = new Intl.NumberFormat('en-US', {
         notation: 'compact',
         compactDisplay: 'short',
-        maximumFractionDigits: 1
+        // We sync the Intl formatter with your decimalPlaces argument
+        minimumFractionDigits: 0,
+        maximumFractionDigits: decimalPlaces
     });
 
     return `${symbol}${formatter.format(bn.toNumber())}`;

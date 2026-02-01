@@ -1,24 +1,23 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { BigNumber } from 'bignumber.js';
 import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, ToastAndroid, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+import BottomModal from '@components/common/BottomModal';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
-import { useTheme } from '@context/ThemeContext';
 import { InvestmentStats } from '@components/investment/InvestmentStats';
-import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding } from '@services/domain/investmentService';
 import { HoldingsList } from '@components/investment/HoldingsList';
 import { SmartAdvisor, Suggestion } from '@components/investment/SmartAdvisor';
 import { AllocationChart } from '@components/investment/AllocationChart';
 import { DividendChart } from '@components/investment/DividendChart';
-import * as Storage from '@services/core/storageService';
-import { usePrivacy } from '@context/PrivacyContext';
-import BottomModal from '@components/common/BottomModal';
-import { fetchHistoricalPrices, AssetRequest, fetchDividendHistory } from '@services/integrations/geminiService';
-import { addPriceHistory } from '@services/domain/priceHistoryService';
+import { useTheme } from '@context/ThemeContext';
 import { getAllAssets } from '@services/domain/assetService';
+import { addPriceHistory } from '@services/domain/priceHistoryService';
+import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding } from '@services/domain/investmentService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
-import { addDividendHistory } from '@services/domain/dividendHistoryService';
-import { BigNumber } from 'bignumber.js';
-
+import { addDividendHistory, getProjectedDividends } from '@services/domain/dividendHistoryService';
+import { fetchHistoricalPrices, AssetRequest, fetchDividendHistory } from '@services/integrations/geminiService';
+import * as Storage from '@services/core/storageService';
 
 const InvestmentScreen = () => {
     const { colors } = useTheme();
@@ -44,6 +43,7 @@ const InvestmentScreen = () => {
     const [holdings, setHoldings] = useState<PortfolioHolding[]>([]);
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [activePriority, setActivePriority] = useState<Priority>('all');
+    const [dividendChartData, setDividendChartData] = useState<{ labels: string[], data: number[] }>({ labels: [], data: [] });
 
     const loadStats = useCallback(async () => {
         try {
@@ -57,6 +57,10 @@ const InvestmentScreen = () => {
 
             const portfolioHoldings = await getPortfolioHoldings();
             setHoldings(portfolioHoldings);
+
+            // Fetch Dividend Projections
+            const projectedDividends = await getProjectedDividends(portfolioHoldings);
+            setDividendChartData(projectedDividends);
 
             // Initial Suggestions fetch
             const newSuggestions = await getSmartSuggestions(activePriority);
@@ -194,8 +198,7 @@ const InvestmentScreen = () => {
             setIsFetching(false);
         }
     };
-    const dividendLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-    const dividendData = [1200, 3500, 800, 4500, 1500, 2200];
+
 
     return (
         <ScreenWrapper style={{ paddingHorizontal: 0 }}>
@@ -247,7 +250,11 @@ const InvestmentScreen = () => {
 
                 {/* Charts Area */}
                 <AllocationChart holdingsData={holdings} />
-                <DividendChart labels={dividendLabels} data={dividendData} currency={currency} />
+                <DividendChart
+                    labels={dividendChartData.labels.length > 0 ? dividendChartData.labels : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]}
+                    data={dividendChartData.data.length > 0 ? dividendChartData.data : [0, 0, 0, 0, 0, 0]}
+                    currency={currency}
+                />
 
                 {/* Holdings List */}
                 <HoldingsList holdings={holdings} currency={currency} />
