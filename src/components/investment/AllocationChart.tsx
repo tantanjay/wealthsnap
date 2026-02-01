@@ -19,6 +19,7 @@ interface Holding {
 interface AllocationChartProps {
     holdingsData: Holding[];
     isLoading?: boolean;
+    isPrivacyEnabled?: boolean;
 }
 
 interface TreeMapItem {
@@ -89,7 +90,7 @@ const getTreemapLayout = (data: any[], width: number, height: number): TreeMapIt
 };
 
 // --- Main Component ---
-export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, isLoading = false }) => {
+export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, isLoading = false, isPrivacyEnabled = false }) => {
     const { colors } = useTheme();
     const [selectedTab, setSelectedTab] = useState<'stocks' | 'sector'>('stocks');
     const [containerWidth, setContainerWidth] = useState(0);
@@ -180,6 +181,10 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
             {isLoading ? (
                 <View style={{ padding: 16 }}>
                     <Skeleton width="100%" height={chartHeight} borderRadius={12} />
+                </View>
+            ) : isPrivacyEnabled ? (
+                <View style={{ height: chartHeight, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.border + '20', marginHorizontal: 16, marginBottom: 16, borderRadius: 12 }}>
+                    <Text style={{ color: colors.textSecondary }}>🔒 Chart hidden for privacy</Text>
                 </View>
             ) : (
                 <View style={styles.chartWrapper} onLayout={onLayout}>
