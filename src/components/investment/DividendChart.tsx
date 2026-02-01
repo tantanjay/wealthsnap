@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
+
 import { useTheme } from '@context/ThemeContext';
-import { CURRENCY_SYMBOLS } from '@utils/currencyUtils';
+import { CURRENCY_SYMBOLS, formatCompactCurrency, formatCompactNumber, formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface DividendChartProps {
     labels: string[];
@@ -15,33 +16,36 @@ export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, curr
     const screenWidth = Dimensions.get('window').width;
     const symbol = CURRENCY_SYMBOLS[currency] || currency;
 
+    const totalDividends = data.reduce((acc, curr) => acc + curr, 0);
+
     const chartConfig = {
         backgroundGradientFrom: colors.surface,
         backgroundGradientTo: colors.surface,
         decimalPlaces: 0,
-        color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`, // Green
+        color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
         labelColor: (opacity = 1) => colors.textSecondary,
         barPercentage: 0.5,
+        formatYLabel: (value: string) => formatCompactNumber(value),
+        formatTopBarValue: (value: number) => formatCompactCurrency(value.toString(), currency, 0),
     };
 
     return (
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.title, { color: colors.text }]}>Proj. Dividends</Text>
+            <View style={styles.headerRow}>
+                <Text style={[styles.title, { color: colors.text, marginBottom: 0 }]}>Proj. Dividends</Text>
+                <Text style={[styles.total, { color: colors.primary }]}>{formatCurrencyAmount(totalDividends, currency)}</Text>
+            </View>
             <BarChart
                 data={{
                     labels: labels,
-                    datasets: [
-                        {
-                            data: data
-                        }
-                    ]
+                    datasets: [{ data: data }]
                 }}
-                width={screenWidth - 48} // slightly less than container width
+                width={screenWidth - 48}
                 height={220}
                 yAxisLabel={symbol}
                 yAxisSuffix=""
                 yAxisInterval={1}
-                chartConfig={chartConfig}
+                chartConfig={chartConfig as any}
                 verticalLabelRotation={0}
                 showValuesOnTopOfBars
                 fromZero
@@ -67,5 +71,15 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         marginBottom: 8
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8
+    },
+    total: {
+        fontSize: 16,
+        fontWeight: 'bold'
     }
 });
