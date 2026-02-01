@@ -437,3 +437,83 @@ Notes:
         throw error;
     }
 };
+
+export interface FetchedDividend {
+    symbol: string;
+    exDate: string;
+    paymentDate?: string;
+    recordDate?: string;
+    amount: number;
+    type: 'CASH' | 'STOCK' | 'SPECIAL' | 'PROPERTY';
+}
+
+export const fetchDividendHistory = async (assets: AssetRequest[], duration: string): Promise<FetchedDividend[]> => {
+    const startTime = Date.now();
+    let prompt = '';
+
+    const isConfigured = await isGeminiConfigured();
+    if (!isConfigured) {
+        throw new Error("Gemini API Key is not configured");
+    }
+
+    try {
+        const { genAI, modelName } = await getGeminiClient();
+        const model = genAI.getGenerativeModel({
+            model: modelName,
+            generationConfig: {
+                temperature: 0.2,
+                topP: 0.8,
+                topK: 40,
+                responseMimeType: "application/json",
+            }
+        });
+
+        const assetList = assets.map(a => `${a.symbol} (${a.exchange || 'Unknown Exchange'})`).join(', ');
+
+        prompt = `
+You are a financial data assistant.
+I need historical DIVIDEND data for the following assets: [${assetList}].
+
+Duration: ${duration} (relative to today, ${new Date().toISOString().split('T')[0]}).
+
+For EACH asset, provide dividend events that occurred within the requested duration.
+
+RETURN JSON ONLY:
+[
+  {
+    "symbol": "AAPL",
+    "exDate": "2023-11-10",
+    "paymentDate": "2023-11-16",
+    "recordDate": "2023-11-13",
+    "amount": 0.24,
+    "type": "CASH" 
+  },
+  ...
+]
+
+Notes:
+- "type" must be one of: 'CASH', 'STOCK', 'SPECIAL', 'PROPERTY'. Default to 'CASH' if unsure.
+- Ensure dates are YYYY-MM-DD.
+- "amount" should be the dividend amount per share.
+`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        await logUsage('fetchDividendHistory', prompt, text, 0, 0, Date.now() - startTime, modelName, 'success');
+
+        try {
+            const parsed: FetchedDividend[] = JSON.parse(text);
+            return parsed;
+        } catch (e) {
+            console.error("Failed to parse dividend JSON:", text);
+            return [];
+        }
+
+    } catch (error) {
+        console.error('Error fetching dividends:', error);
+        await logUsage('fetchDividendHistory', prompt, '', 0, 0, Date.now() - startTime, 'unknown', 'error');
+        throw error;
+    }
+};
