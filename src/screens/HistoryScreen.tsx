@@ -4,7 +4,7 @@ import { Text, View, SectionList, TouchableOpacity, ScrollView } from 'react-nat
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
-import TransactionOptionsModal from '@components/transaction/modals/TransactionOptionsModal';
+import TransactionOptionsModal from '@components/transaction/TransactionOptionsModal';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
