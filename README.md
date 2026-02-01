@@ -1,6 +1,12 @@
-# WealthSnap — Private Budget & Expense Tracker
+# WealthSnap — Private Budget, Expense & Investment Tracker
 
-**WealthSnap** is a privacy-first, offline personal finance app built for people who want **full control over their money and their data**—without subscriptions, ads, cloud accounts, or hidden trade-offs.
+**README Version:** v1.7.0  
+**Last Updated:** February 1, 2026  
+**App Version Covered:** WealthSnap v1.7.0+
+
+---
+
+**WealthSnap** is a privacy-first, offline personal finance app built for people who want **full control over their money and their data** — without subscriptions, ads, cloud accounts, or hidden trade-offs.
 
 It combines **bank-grade security**, **high-precision financial computation**, and **clear, educational insights** in a way that’s powerful for advanced users, yet understandable for non-technical users.
 
@@ -10,12 +16,13 @@ It combines **bank-grade security**, **high-precision financial computation**, a
 
 WealthSnap helps you:
 
-* Track income, expenses, and budgets
-* Understand where your money goes
-* Plan ahead with projections and alerts
-* Do all of this **entirely on your device**
+- Track income, expenses, transfers, and investments
+- Understand where your money goes
+- Monitor budgets and receive intelligent alerts
+- Plan ahead with projections, reminders, and forecasts
+- Do all of this **entirely on your device**
 
-There are **no servers**, **no accounts**, and **no tracking**.
+There are **no servers**, **no accounts**, and **no tracking**.  
 Your financial data never leaves your phone unless *you* explicitly export it.
 
 ---
@@ -26,22 +33,22 @@ Privacy is not a feature — it’s the foundation.
 
 ### Offline-First Architecture
 
-* All data is stored locally using **SQLite**
-* No cloud sync, no remote servers
-* Works fully offline
+- All data is stored locally using **SQLite**
+- No cloud sync, no remote servers
+- Works fully offline
 
 ### Hybrid Encryption Model
 
-* **AES-256 encryption** for sensitive data (amounts, notes, private fields)
-* Non-sensitive metadata remains searchable for performance
-* Encryption keys are stored securely using the device’s secure hardware enclave
+- **AES-256 encryption** for sensitive data (amounts, notes, private fields)
+- Non-sensitive metadata remains searchable for performance
+- Encryption keys are stored securely using the device’s secure hardware enclave
 
 ### App-Level Protection
 
-* Biometric security (Face ID / Fingerprint)
-* App-specific PIN
-* Screenshot & app-switcher protection
-* Global **Privacy Mode** to instantly hide all values
+- Biometric security (Face ID / Fingerprint)
+- App-specific PIN
+- Screenshot & app-switcher protection
+- Global **Privacy Mode** to instantly hide all values
 
 > Even the developer cannot see or collect your data — because it never leaves your device.
 
@@ -53,15 +60,15 @@ Privacy is not a feature — it’s the foundation.
 
 Starting **v1.6.0**, WealthSnap uses a **BigNumber-based computation engine**:
 
-* Eliminates floating-point rounding errors
-* Ensures accuracy for long histories and large totals
-* Critical for projections, savings rate, and lifetime metrics
+- Eliminates floating-point rounding errors
+- Ensures accuracy for long histories and large totals
+- Critical for projections, savings rate, and lifetime metrics
 
 This means:
 
-* Charts stay mathematically consistent
-* Monthly and lifetime totals always reconcile
-* No “off by a few cents” drift over time
+- Charts stay mathematically consistent
+- Monthly and lifetime totals always reconcile
+- No “off by a few cents” drift over time
 
 ---
 
@@ -71,90 +78,150 @@ WealthSnap provides **advanced financial analytics** usually locked behind subsc
 
 ### Core Insights
 
-* Net Cash Flow
-* Savings Rate (with trend analysis)
-* Burn Rate
-* Financial Runway
-* Budget Health
-* Daily Average Spending
-* Annualized Expense Projection
-* Top Spending Category
+- Net Cash Flow
+- Savings Rate (with trend analysis)
+- Burn Rate
+- Financial Runway
+- Budget Health
+- Daily Average Spending
+- Annualized Expense Projection
+- Top Spending Category
 
 ### Predictive Analytics
 
-* **Monthly Pulse** with historical-based projections
-* Pro-rated income & expense comparisons
-* Fair month-to-month comparisons even mid-month
+- **Monthly Pulse** with historical-based projections
+- Pro-rated income & expense comparisons
+- Fair month-to-month comparisons even mid-month
+
+### Smart Alerts (Budget-Aware)
+
+- Budget breach detection even without historical data
+- Category-item level precision (e.g., “Water”, “Groceries”)
+- Instant notifications when limits are exceeded
+- Fully local evaluation logic
 
 ### Educational by Default
 
-* Every major metric includes an **info modal**
-* Plain-language explanations
-* Visual examples
-* Clear disclosure of assumptions and limitations
+- Every major metric includes an **info modal**
+- Plain-language explanations
+- Visual examples
+- Clear disclosure of assumptions and limitations
 
 No finance background required.
 
 ---
 
-## 🤖 AI Receipt Scanning (User-Controlled by Design)
+## 📅 Smart History & Calendar Analytics
 
-WealthSnap includes optional AI-powered receipt scanning, designed to **preserve privacy and architectural integrity**.
+Starting **v1.7.0**, WealthSnap introduces a powerful **Calendar View**:
 
-* Uses **Google ML Kit** for on-device document detection
-* AI extracts amount, category, date, and line items
-* Supports discounts and item consolidation
-* Receipt images are **not permanently stored**
+- Daily breakdown of Income, Expense, and Transfers
+- Color-coded visual bars per date
+- **Safe-to-Spend** calculation (balance minus upcoming bills)
+- **Guilt Filter** heatmap highlighting discretionary spending
+- **Ghost Forecast** badges for future recurring bills
+- Visual BUY / SELL investment signals
+- Interactive guides explaining each smart stat
 
-### 🔑 About the AI API Key (Important Clarification)
+All analytics run **entirely on-device**.
 
-You provide **your own Google Gemini API key**. This is **not a marketing feature** — it is a direct consequence of WealthSnap’s architecture.
+---
 
-* WealthSnap has **no backend servers** to proxy AI requests
-* The app does **not store, manage, or rotate API keys**
-* AI requests are executed **directly from your device**
-* All AI usage runs under **your own contract with Google**
+## 📈 Investments & Portfolio Tracking
 
-This approach is sometimes described as **BYOK (Bring Your Own Key)**, but in WealthSnap:
+WealthSnap includes a fully integrated **offline investment tracker**.
 
-* BYOK is **not optional**
-* BYOK is **not positioned as innovation**
-* BYOK is the **only viable design** for a zero-backend, offline-first app
+### Supported Records
 
-AI is treated as a **user-initiated extension**, not a platform service.
+- Stock BUY / SELL transactions
+- Dividends
+- Interest income
+- Fees and cost basis tracking
+
+### Portfolio Computation
+
+- Total Portfolio Value (based on latest known prices)
+- Unrealized Profit / Loss
+- Realized Capital Gains & Losses
+- Per-transaction P/L visibility in history
+
+### Investment Insights
+
+- Market Drop Detection (>10% from 30-day peak)
+- Short-term Dip Detection
+- Dividend Event Alerts
+- Portfolio Balance & Allocation Checks
+
+### Allocation Heatmap
+
+- Interactive Treemap visualization
+- Size = portfolio value
+- Color = performance (Green / Red)
+- Toggle between **Stock View** and **Sector View**
+
+---
+
+## 🤖 AI Price Fetch & Receipt Scanning (User-Controlled)
+
+WealthSnap includes optional AI-powered tools, designed to **preserve privacy and architectural integrity**.
+
+### AI Price Fetch (Investments)
+
+- Fetch historical stock prices and dividend data
+- Smart estimation when live APIs are unavailable
+- Background syncing without blocking the UI
+- Flexible fetch ranges (Today, 3D, 7D, 30D)
+
+### AI Receipt Scanning
+
+- Uses **Google ML Kit** for on-device document detection
+- Extracts amount, date, category, and line items
+- Supports discounts and item consolidation
+- Receipt images are **not permanently stored**
+
+### 🔑 About the AI API Key (BYOK)
+
+You provide **your own Google Gemini API key**.
+
+- No backend servers
+- No key storage or rotation
+- Requests run directly from your device
+- You operate under your own Google API contract
+
+BYOK is not a feature — it is a **technical necessity** of a zero-backend, offline-first architecture.
 
 ---
 
 ## ⚡ Performance at Scale
 
-Designed to remain fast even with **thousands of transactions**:
+Designed to remain fast even with **thousands of records**:
 
-* Chunked background decryption
-* Optimistic cache updates for instant UI feedback
-* Skeleton loading states for smooth transitions
-* Cached encryption keys to reduce I/O overhead
-
-> Large datasets load quickly without freezing the app.
+- Chunked background decryption
+- Optimistic UI updates with race-condition safety
+- O(N) investment grouping for fast portfolio loads
+- Skeleton loading states for smooth transitions
+- Cached encryption keys to reduce I/O overhead
 
 ---
 
-## 🔔 Smart Reminders & Background Tasks
+## 🔔 Reminders & Background Tasks
 
-* Recurring reminders for bills, habits, and budgets
-* Background notification actions (Complete / Snooze)
-* Catch-up mode for missed reminders
-* Intelligent alert throttling (no spam)
+- Recurring reminders for bills, habits, and budgets
+- Background notification actions (Complete / Snooze)
+- Catch-up mode for missed reminders
+- Intelligent alert throttling
 
-All reminder logic runs **locally on-device**.
+All logic runs **locally on-device**.
 
 ---
 
 ## 📥 Data Ownership & Portability
 
-* CSV / TSV bulk import with validation & duplicate detection
-* Encrypted local backups
-* Restore with automatic reminder rescheduling
-* No proprietary lock-in
+- CSV / TSV bulk import with validation
+- Duplicate detection
+- Encrypted local backups
+- Restore with automatic reminder rescheduling
+- No proprietary lock-in
 
 Your data is yours — always.
 
@@ -163,7 +230,7 @@ Your data is yours — always.
 ## 🧱 Technical Architecture (High-Level)
 
 | Layer            | Technology                             |
-| ---------------- | -------------------------------------- |
+|------------------|----------------------------------------|
 | UI               | React Native + Expo (New Architecture) |
 | Storage          | SQLite (local-only)                    |
 | Encryption       | AES-256 + SecureStore                  |
@@ -171,42 +238,32 @@ Your data is yours — always.
 | AI               | Google Gemini API (user-provided key)  |
 | Background Tasks | Headless JS (Android)                  |
 
-The architecture favors:
-
-* Deterministic logic
-* Explicit state transitions
-* Crash safety and graceful failure
-* Long-term maintainability
-
 ---
 
 ## 🧪 Stability & Transparency
 
-* Waterfall database migrations (safe version skipping)
-* Global error boundary with local crash logs
-* Clear release notes for every version
-* Mandatory legal versioning for Terms & Privacy updates
-
-If something breaks, it’s documented — and fixed fast.
+- Waterfall database migrations
+- Concurrency-safe optimistic updates
+- Global error boundary with local crash logs
+- Clear release notes per version
+- Mandatory legal versioning for Terms & Privacy updates
 
 ---
 
 ## 📱 Project Status
 
-* Currently in **Google Play Closed Testing**
-* Actively used daily by the developer
-* Rapid iteration based on real-world usage
-* No monetization pressure influencing design decisions
+- Google Play Closed Testing
+- Actively used daily by the developer
+- Rapid iteration from real-world usage
+- No monetization pressure influencing design
 
 ---
 
 ## 💡 Why This App Is Free
 
-WealthSnap was built out of necessity.
-
-No servers → no operating costs
-No data collection → nothing to sell
-No subscriptions → no dark patterns
+No servers → no operating costs  
+No data collection → nothing to sell  
+No subscriptions → no dark patterns  
 
 > Build the finance app the developer personally wanted to use — and share it.
 
@@ -214,10 +271,10 @@ No subscriptions → no dark patterns
 
 ## 📌 Philosophy
 
-> **Your money is private.**
-> **Your data is yours.**
-> **Accuracy matters.**
+> **Your money is private.**  
+> **Your data is yours.**  
+> **Accuracy matters.**  
 > **Transparency builds trust.**
 
-WealthSnap is not just a budgeting app —
+WealthSnap is not just a budgeting app —  
 it’s a statement against data exploitation in personal finance software.

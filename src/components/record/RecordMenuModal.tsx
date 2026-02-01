@@ -10,6 +10,7 @@ import { useTheme } from '@context/ThemeContext';
 import { useSecurity } from '@context/SecurityContext';
 import { useAlert } from '@context/AlertContext';
 import { DebtType, InvestmentType, TransactionType } from '@types';
+import { useAIConsent } from '@hooks/useAIConsent';
 
 export interface RecordMenuModalProps {
     visible: boolean;
@@ -38,53 +39,57 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
     const { colors } = useTheme();
     const { showAlert } = useAlert();
     const { temporarilyDisableLock } = useSecurity();
+    const { checkConsent } = useAIConsent();
     const insets = useSafeAreaInsets(); // Hook for notch/home-bar detection
 
     const [status, requestPermission] = ImagePicker.useMediaLibraryPermissions();
     const [cameraStatus, requestCameraPermission] = ImagePicker.useCameraPermissions();
 
-    // ... (Keep handleBrowse and handleCapture same as before)
     const handleBrowse = async () => {
-        if (status?.status !== 'granted') {
-            const response = await requestPermission();
-            if (!response.granted) {
-                showAlert('Permission needed', 'Please grant photo library access.');
-                return;
+        checkConsent(async () => {
+            if (status?.status !== 'granted') {
+                const response = await requestPermission();
+                if (!response.granted) {
+                    showAlert('Permission needed', 'Please grant photo library access.');
+                    return;
+                }
             }
-        }
-        try {
-            temporarilyDisableLock();
-            const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ['images'],
-                allowsEditing: false,
-                quality: 0.8,
-            });
-            if (!result.canceled && result.assets?.[0]) {
-                onClose();
-                setTimeout(() => onSelectAI('BROWSE', result.assets[0].uri), 100);
-            }
-        } catch (e) { console.error(e); }
+            try {
+                temporarilyDisableLock();
+                const result = await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: ['images'],
+                    allowsEditing: false,
+                    quality: 0.8,
+                });
+                if (!result.canceled && result.assets?.[0]) {
+                    onClose();
+                    setTimeout(() => onSelectAI('BROWSE', result.assets[0].uri), 100);
+                }
+            } catch (e) { console.error(e); }
+        });
     };
 
     const handleCapture = async () => {
-        if (cameraStatus?.status !== 'granted') {
-            const response = await requestCameraPermission();
-            if (!response.granted) {
-                showAlert('Permission needed', 'Please grant camera access.');
-                return;
+        checkConsent(async () => {
+            if (cameraStatus?.status !== 'granted') {
+                const response = await requestCameraPermission();
+                if (!response.granted) {
+                    showAlert('Permission needed', 'Please grant camera access.');
+                    return;
+                }
             }
-        }
-        try {
-            temporarilyDisableLock();
-            const { scannedImages } = await DocumentScanner.scanDocument({
-                maxNumDocuments: 1,
-                croppedImageQuality: 100
-            });
-            if (scannedImages?.[0]) {
-                onClose();
-                setTimeout(() => onSelectAI('CAPTURE', scannedImages[0]), 100);
-            }
-        } catch (e) { console.error(e); }
+            try {
+                temporarilyDisableLock();
+                const { scannedImages } = await DocumentScanner.scanDocument({
+                    maxNumDocuments: 1,
+                    croppedImageQuality: 100
+                });
+                if (scannedImages?.[0]) {
+                    onClose();
+                    setTimeout(() => onSelectAI('CAPTURE', scannedImages[0]), 100);
+                }
+            } catch (e) { console.error(e); }
+        });
     };
 
     const sections = [
