@@ -8,6 +8,7 @@ import { calculatePortfolioMetrics, getAllPortfolioMetrics } from "@utils/invest
 import { getLatestPrices } from "./priceHistoryService";
 import { getAllTransactions } from "./transactionService";
 import { getAllAssets } from "./assetService";
+import { getAnnualDividend } from "./dividendHistoryService"; // Import this
 
 
 
@@ -315,6 +316,12 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
     const assetMap = new Map(allAssets.map(a => [a.symbol, a]));
 
     // 5. Map to UI Model
+    // We need to fetch annual dividends for all symbols to calculate yield
+    // This could be N+1 so ideally we'd bulk fetch, but for now we iterate (local DB is fast)
+    const annualDividends = await Promise.all(metrics.map(m => getAnnualDividend(m.symbol)));
+    const dividendMap = new Map(metrics.map((m, i) => [m.symbol, annualDividends[i]]));
+
+
     const holdings: PortfolioHolding[] = metrics.map(m => {
         const asset = assetMap.get(m.symbol);
 
@@ -322,14 +329,20 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
             ? m.unrealizedPL.dividedBy(m.totalCostBasis).times(100).toNumber()
             : 0;
 
+        const currentPrice = priceMap[m.symbol] ? priceMap[m.symbol].toNumber() : 0;
+        const annualDiv = dividendMap.get(m.symbol) || 0;
+
+        // Yield = (Annual Div / Current Price) * 100
+        const divYield = currentPrice > 0 ? (annualDiv / currentPrice) * 100 : 0;
+
         return {
             symbol: m.symbol,
             shares: m.currentQuantity.toNumber(),
-            price: priceMap[m.symbol] ? priceMap[m.symbol].toNumber() : 0,
+            price: currentPrice,
             totalValue: m.totalMarketValue.toNumber(),
             gainLoss: m.unrealizedPL.toNumber(),
             gainLossPercent: gainLossPercent,
-            divYield: 0, // Placeholder
+            divYield: parseFloat(divYield.toFixed(2)), // Format to 2 decimal places
             sector: asset?.sector || 'Other',
             name: asset?.name
         };
