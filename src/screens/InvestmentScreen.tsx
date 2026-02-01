@@ -12,10 +12,12 @@ import { DividendChart } from '@components/investment/DividendChart';
 import * as Storage from '@services/core/storageService';
 import { usePrivacy } from '@context/PrivacyContext';
 import BottomModal from '@components/common/BottomModal';
-import { fetchHistoricalPrices, AssetRequest } from '@services/integrations/geminiService';
+import { fetchHistoricalPrices, AssetRequest, fetchDividendHistory } from '@services/integrations/geminiService';
 import { addPriceHistory } from '@services/domain/priceHistoryService';
 import { getAllAssets } from '@services/domain/assetService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
+import { addDividendHistory } from '@services/domain/dividendHistoryService';
+import { BigNumber } from 'bignumber.js';
 
 
 const InvestmentScreen = () => {
@@ -26,6 +28,9 @@ const InvestmentScreen = () => {
 
     // Menu Modal State
     const [isMenuVisible, setIsMenuVisible] = useState(false);
+    const [modalStep, setModalStep] = useState<'selection' | 'options'>('selection');
+    const [activeMode, setActiveMode] = useState<'price' | 'dividend'>('price');
+
     const [isFetching, setIsFetching] = useState(false);
 
     const [portfolioStats, setPortfolioStats] = useState({
@@ -77,9 +82,19 @@ const InvestmentScreen = () => {
         setRefreshing(false);
     }, [loadStats]);
 
-    // --- AI Price Fetch Logic ---
-    const handleFetchPrices = async (durationLabel: string) => {
+    // --- AI Fetch Logic ---
+    const handleOptionSelect = (mode: 'price' | 'dividend') => {
+        setActiveMode(mode);
+        setModalStep('options');
+    };
+
+    const handleBackToSelection = () => {
+        setModalStep('selection');
+    };
+
+    const executeFetch = async (durationLabel: string) => {
         setIsMenuVisible(false); // Close modal immediately
+        setModalStep('selection'); // Reset for next time
 
         // 1. Determine prompt duration string
         let durationPrompt = '';
@@ -88,10 +103,13 @@ const InvestmentScreen = () => {
         else if (durationLabel === 'Last 7 days') durationPrompt = 'Last 7 days';
         else if (durationLabel === 'Last 14 days') durationPrompt = 'Last 14 days';
         else if (durationLabel === 'Last 31 days') durationPrompt = 'Last 31 days';
+        else if (durationLabel === 'Last 3 months') durationPrompt = 'Last 3 months';
+        else if (durationLabel === 'Last 6 months') durationPrompt = 'Last 6 months';
+        else if (durationLabel === 'Last 1 year') durationPrompt = 'Last 1 year';
         else return;
 
-        // Notify user start
-        const msg = `Fetching prices for ${durationLabel}... This runs in background.`;
+        const context = activeMode === 'price' ? 'prices' : 'dividends';
+        const msg = `Fetching ${context} for ${durationLabel}... This runs in background.`;
         if (Platform.OS === 'android') ToastAndroid.show(msg, ToastAndroid.LONG);
 
         setIsFetching(true); // Start loading
@@ -107,7 +125,7 @@ const InvestmentScreen = () => {
             const symbolsToFetch = Array.from(new Set(holdings.map(h => h.symbol)));
 
             if (symbolsToFetch.length === 0) {
-                if (Platform.OS === 'android') ToastAndroid.show("No holdings to fetch prices for.", ToastAndroid.SHORT);
+                if (Platform.OS === 'android') ToastAndroid.show("No holdings to fetch for.", ToastAndroid.SHORT);
                 setIsFetching(false);
                 return;
             }
@@ -118,32 +136,58 @@ const InvestmentScreen = () => {
             }));
 
             // 3. Call AI Service (Background)
-            fetchHistoricalPrices(assetRequests, durationPrompt).then(async (prices) => {
-                // 4. Save to DB
-                let savedCount = 0;
-                for (const p of prices) {
-                    await addPriceHistory(p.symbol, p.price, {
-                        high: p.high,
-                        low: p.low,
-                        volume: p.volume,
-                        timestamp: p.date,
-                        source: 'AI_FETCH'
-                    });
-                    savedCount++;
-                }
+            if (activeMode === 'price') {
+                fetchHistoricalPrices(assetRequests, durationPrompt).then(async (prices) => {
+                    // 4. Save to DB
+                    let savedCount = 0;
+                    for (const p of prices) {
+                        await addPriceHistory(p.symbol, p.price, {
+                            high: p.high,
+                            low: p.low,
+                            volume: p.volume,
+                            timestamp: p.date,
+                            source: 'AI_FETCH'
+                        });
+                        savedCount++;
+                    }
 
-                // 5. Notify Finish & Reload
-                const successMsg = `Updated ${savedCount} prices.`;
-                if (Platform.OS === 'android') ToastAndroid.show(successMsg, ToastAndroid.SHORT);
-
-                loadStats(); // Refresh UI
-            }).catch(err => {
-                console.error("Background fetch failed", err);
-                const errMsg = "Failed to update prices.";
-                if (Platform.OS === 'android') ToastAndroid.show(errMsg, ToastAndroid.SHORT);
-            }).finally(() => {
-                setIsFetching(false); // Stop loading
-            });
+                    // 5. Notify Finish & Reload
+                    const successMsg = `Updated ${savedCount} prices.`;
+                    if (Platform.OS === 'android') ToastAndroid.show(successMsg, ToastAndroid.SHORT);
+                    loadStats(); // Refresh UI
+                }).catch(err => {
+                    console.error("Background fetch prices failed", err);
+                    const errMsg = "Failed to update prices.";
+                    if (Platform.OS === 'android') ToastAndroid.show(errMsg, ToastAndroid.SHORT);
+                }).finally(() => {
+                    setIsFetching(false);
+                });
+            } else {
+                // Fetch Dividends
+                fetchDividendHistory(assetRequests, durationPrompt).then(async (dividends: any[]) => {
+                    let savedCount = 0;
+                    for (const d of dividends) {
+                        await addDividendHistory({
+                            symbol: d.symbol,
+                            exDate: d.exDate,
+                            paymentDate: d.paymentDate,
+                            recordDate: d.recordDate,
+                            amount: new BigNumber(d.amount),
+                            type: d.type,
+                            status: 'PAID' // Assume paid if historical
+                        });
+                        savedCount++;
+                    }
+                    const successMsg = `Updated ${savedCount} dividend records.`;
+                    if (Platform.OS === 'android') ToastAndroid.show(successMsg, ToastAndroid.SHORT);
+                }).catch((err: any) => {
+                    console.error("Background fetch dividends failed", err);
+                    const errMsg = "Failed to update dividends.";
+                    if (Platform.OS === 'android') ToastAndroid.show(errMsg, ToastAndroid.SHORT);
+                }).finally(() => {
+                    setIsFetching(false);
+                });
+            }
 
         } catch (e) {
             console.error("Error initiating fetch", e);
@@ -167,14 +211,17 @@ const InvestmentScreen = () => {
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity
-                            onPress={() => setIsMenuVisible(true)}
+                            onPress={() => {
+                                setModalStep('selection');
+                                setIsMenuVisible(true);
+                            }}
                             disabled={isFetching}
                             style={{ padding: 8, marginLeft: 5 }}
                         >
                             {isFetching ? (
                                 <ActivityIndicator size="small" color={colors.primary} />
                             ) : (
-                                <Ionicons name="cloud-download-outline" size={24} color={colors.text} />
+                                <Ionicons name="sparkles" size={24} color={colors.primary} />
                             )}
                         </TouchableOpacity>
                     </View>
@@ -207,43 +254,94 @@ const InvestmentScreen = () => {
 
             </ScrollView>
 
-            {/* Fetch Prices Modal */}
+            {/* AI Settings Modal */}
             <BottomModal
                 visible={isMenuVisible}
                 onClose={() => setIsMenuVisible(false)}
-                title="Investment Settings"
+                title={modalStep === 'selection' ? "AI Options" : activeMode === 'price' ? "Fetch Price History" : "Fetch Dividend History"}
             >
-                <View>
-                    <Text style={{ color: colors.textSecondary, fontSize: 13, textTransform: 'uppercase', marginBottom: 10, letterSpacing: 1 }}>
-                        Fetch Prices (AI Powered)
-                    </Text>
-
-                    <View style={{ backgroundColor: 'rgba(255, 152, 0, 0.1)', padding: 12, borderRadius: 8, marginBottom: 15, flexDirection: 'row' }}>
-                        <Ionicons name="warning-outline" size={20} color="#FF9800" style={{ marginRight: 8, marginTop: 2 }} />
-                        <Text style={{ color: colors.text, fontSize: 13, flex: 1, lineHeight: 18 }}>
-                            AI-fetched prices are estimates and may vary from real-time market data. They depend on the AI model's training data.
-                        </Text>
+                {modalStep === 'options' && (
+                    <View style={{ marginBottom: 10 }}>
+                        <TouchableOpacity onPress={handleBackToSelection} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                            <Ionicons name="arrow-back" size={20} color={colors.primary} />
+                            <Text style={{ color: colors.primary, marginLeft: 5, fontSize: 16 }}>Back to Options</Text>
+                        </TouchableOpacity>
                     </View>
+                )}
 
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 12, overflow: 'hidden' }}>
-                        {['Today', 'Last 3 days', 'Last 7 days', 'Last 14 days', 'Last 31 days'].map((item, index, arr) => (
+                <View>
+                    {modalStep === 'selection' ? (
+                        <View style={{ gap: 10 }}>
                             <TouchableOpacity
-                                key={item}
                                 style={{
+                                    backgroundColor: colors.surface,
                                     padding: 16,
+                                    borderRadius: 12,
                                     flexDirection: 'row',
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
-                                    borderBottomWidth: index < arr.length - 1 ? 1 : 0,
-                                    borderBottomColor: colors.border
+                                    borderWidth: 1,
+                                    borderColor: colors.border
                                 }}
-                                onPress={() => handleFetchPrices(item)}
+                                onPress={() => handleOptionSelect('dividend')}
                             >
-                                <Text style={{ color: colors.text, fontSize: 16 }}>{item}</Text>
-                                <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Ionicons name="cash-outline" size={24} color={colors.primary} style={{ marginRight: 12 }} />
+                                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>Dividend History</Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                             </TouchableOpacity>
-                        ))}
-                    </View>
+
+                            <TouchableOpacity
+                                style={{
+                                    backgroundColor: colors.surface,
+                                    padding: 16,
+                                    borderRadius: 12,
+                                    flexDirection: 'row',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    borderWidth: 1,
+                                    borderColor: colors.border
+                                }}
+                                onPress={() => handleOptionSelect('price')}
+                            >
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Ionicons name="trending-up-outline" size={24} color={colors.primary} style={{ marginRight: 12 }} />
+                                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>Price History</Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <View>
+                            <View style={{ backgroundColor: 'rgba(255, 152, 0, 0.1)', padding: 12, borderRadius: 8, marginBottom: 15, flexDirection: 'row' }}>
+                                <Ionicons name="warning-outline" size={20} color="#FF9800" style={{ marginRight: 8, marginTop: 2 }} />
+                                <Text style={{ color: colors.text, fontSize: 13, flex: 1, lineHeight: 18 }}>
+                                    AI-fetched {activeMode === 'price' ? 'prices' : 'dividends'} are estimates and may vary from real-time official records.
+                                </Text>
+                            </View>
+
+                            <View style={{ backgroundColor: colors.surface, borderRadius: 12, overflow: 'hidden' }}>
+                                {['Today', 'Last 3 days', 'Last 7 days', 'Last 14 days', 'Last 31 days', 'Last 3 months', 'Last 6 months', 'Last 1 year'].map((item, index, arr) => (
+                                    <TouchableOpacity
+                                        key={item}
+                                        style={{
+                                            padding: 16,
+                                            flexDirection: 'row',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            borderBottomWidth: index < arr.length - 1 ? 1 : 0,
+                                            borderBottomColor: colors.border
+                                        }}
+                                        onPress={() => executeFetch(item)}
+                                    >
+                                        <Text style={{ color: colors.text, fontSize: 16 }}>{item}</Text>
+                                        <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    )}
                 </View>
             </BottomModal>
 
