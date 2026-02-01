@@ -11,9 +11,10 @@ interface DividendChartProps {
     data: number[];
     currency?: string;
     isLoading?: boolean;
+    isPrivacyEnabled?: boolean;
 }
 
-export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, currency = 'PHP', isLoading = false }) => {
+export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, currency = 'PHP', isLoading = false, isPrivacyEnabled = false }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
     const symbol = CURRENCY_SYMBOLS[currency] || currency;
@@ -35,10 +36,16 @@ export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, curr
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
             <View style={styles.headerRow}>
                 <Text style={[styles.title, { color: colors.text, marginBottom: 0 }]}>Proj. Dividends</Text>
-                <Text style={[styles.total, { color: colors.primary }]}>{formatCurrencyAmount(totalDividends, currency)}</Text>
+                <Text style={[styles.total, { color: colors.primary }]}>
+                    {isPrivacyEnabled ? "••••" : formatCurrencyAmount(totalDividends, currency)}
+                </Text>
             </View>
             {isLoading ? (
                 <Skeleton width="100%" height={220} borderRadius={16} />
+            ) : isPrivacyEnabled ? (
+                <View style={{ height: 220, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.border + '20', borderRadius: 16 }}>
+                    <Text style={{ color: colors.textSecondary }}>🔒 Chart hidden for privacy</Text>
+                </View>
             ) : (
                 <BarChart
                     data={{

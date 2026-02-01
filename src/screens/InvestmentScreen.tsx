@@ -18,10 +18,11 @@ import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorServ
 import { addDividendHistory, getProjectedDividends } from '@services/domain/dividendHistoryService';
 import { fetchHistoricalPrices, AssetRequest, fetchDividendHistory } from '@services/integrations/geminiService';
 import * as Storage from '@services/core/storageService';
+import { usePrivacy } from '@context/PrivacyContext';
 
 const InvestmentScreen = () => {
     const { colors } = useTheme();
-    // const { isPrivacyEnabled, togglePrivacy } = usePrivacy(); // Removed Eye Button
+    const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const [refreshing, setRefreshing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [currency, setCurrency] = useState('PHP');
@@ -217,6 +218,12 @@ const InvestmentScreen = () => {
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <TouchableOpacity
+                            onPress={togglePrivacy}
+                            style={{ padding: 8 }}
+                        >
+                            <Ionicons name={isPrivacyEnabled ? "eye-off" : "eye"} size={24} color={colors.text} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
                             onPress={() => {
                                 setModalStep('selection');
                                 setIsMenuVisible(true);
@@ -225,9 +232,9 @@ const InvestmentScreen = () => {
                             style={{ padding: 8, marginLeft: 5 }}
                         >
                             {isFetching ? (
-                                <ActivityIndicator size="small" color={colors.primary} />
+                                <ActivityIndicator size="small" color={colors.text} />
                             ) : (
-                                <Ionicons name="sparkles" size={24} color={colors.primary} />
+                                <Ionicons name="sparkles" size={24} color={colors.text} />
                             )}
                         </TouchableOpacity>
                     </View>
@@ -242,6 +249,7 @@ const InvestmentScreen = () => {
                     totalDividends={portfolioStats.totalDividends}
                     currency={currency}
                     isLoading={isLoading}
+                    isPrivacyEnabled={isPrivacyEnabled}
                 />
 
                 {/* Smart Advisor */}
@@ -250,15 +258,21 @@ const InvestmentScreen = () => {
                     activePriority={activePriority}
                     onPriorityChange={updateSuggestions}
                     currency={currency}
+                    isPrivacyEnabled={isPrivacyEnabled}
                 />
 
                 {/* Charts Area */}
-                <AllocationChart holdingsData={holdings} isLoading={isLoading} />
+                <AllocationChart
+                    holdingsData={holdings}
+                    isLoading={isLoading}
+                    isPrivacyEnabled={isPrivacyEnabled}
+                />
                 <DividendChart
                     labels={dividendChartData.labels.length > 0 ? dividendChartData.labels : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]}
                     data={dividendChartData.data.length > 0 ? dividendChartData.data : [0, 0, 0, 0, 0, 0]}
                     currency={currency}
                     isLoading={isLoading}
+                    isPrivacyEnabled={isPrivacyEnabled}
                 />
 
                 {/* Holdings List */}
@@ -267,6 +281,7 @@ const InvestmentScreen = () => {
                     currency={currency}
                     totalPortfolioValue={portfolioStats.totalEquity}
                     isLoading={isLoading}
+                    isPrivacyEnabled={isPrivacyEnabled}
                 />
 
             </ScrollView>

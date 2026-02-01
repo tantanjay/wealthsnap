@@ -23,6 +23,7 @@ interface HoldingsListProps {
     currency?: string;
     totalPortfolioValue?: number;
     isLoading?: boolean;
+    isPrivacyEnabled?: boolean;
 }
 
 const HoldingItemSkeleton = () => {
@@ -64,7 +65,7 @@ const HoldingItemSkeleton = () => {
     );
 };
 
-const HoldingItem = ({ item, currency, totalValue }: { item: Holding, currency: string, totalValue: number }) => {
+const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled }: { item: Holding, currency: string, totalValue: number, isPrivacyEnabled?: boolean }) => {
     const { colors } = useTheme();
     const isProfit = item.gainLoss >= 0;
 
@@ -91,10 +92,10 @@ const HoldingItem = ({ item, currency, totalValue }: { item: Holding, currency: 
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                     <Text style={[styles.currentPrice, { color: colors.text }]}>
-                        {formatCurrencyAmount(item.price, currency)}
+                        {isPrivacyEnabled ? "••••" : formatCurrencyAmount(item.price, currency)}
                     </Text>
                     <Text style={[styles.pnlPercent, { color: isProfit ? colors.success : colors.error }]}>
-                        {isProfit ? '+' : ''}{item.gainLossPercent.toFixed(2)}%
+                        {isPrivacyEnabled ? "••••" : `${isProfit ? '+' : ''}${item.gainLossPercent.toFixed(2)}%`}
                     </Text>
                 </View>
             </View>
@@ -110,7 +111,7 @@ const HoldingItem = ({ item, currency, totalValue }: { item: Holding, currency: 
                     />
                 </View>
                 <Text style={[styles.allocationText, { color: colors.textSecondary }]}>
-                    {allocationPercent.toFixed(1)}% Portfolio
+                    {isPrivacyEnabled ? "**%" : allocationPercent.toFixed(1)}% Portfolio
                 </Text>
             </View>
 
@@ -120,10 +121,10 @@ const HoldingItem = ({ item, currency, totalValue }: { item: Holding, currency: 
                 <View style={styles.metricItem}>
                     <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Holdings</Text>
                     <Text style={[styles.metricValue, { color: colors.text }]}>
-                        {formatCompactCurrency(item.totalValue, currency)}
+                        {isPrivacyEnabled ? "••••" : formatCompactCurrency(item.totalValue, currency)}
                     </Text>
                     <Text style={[styles.metricSub, { color: colors.textSecondary }]}>
-                        {item.shares} shares
+                        {isPrivacyEnabled ? "** shares" : `${item.shares} shares`}
                     </Text>
                 </View>
 
@@ -131,7 +132,7 @@ const HoldingItem = ({ item, currency, totalValue }: { item: Holding, currency: 
                 <View style={styles.metricItem}>
                     <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Profit/Loss</Text>
                     <Text style={[styles.metricValue, { color: isProfit ? colors.success : colors.error }]}>
-                        {isProfit ? '+' : ''}{formatCompactCurrency(item.gainLoss, currency)}
+                        {isPrivacyEnabled ? "••••" : `${isProfit ? '+' : ''}${formatCompactCurrency(item.gainLoss, currency)}`}
                     </Text>
                 </View>
 
@@ -144,7 +145,7 @@ const HoldingItem = ({ item, currency, totalValue }: { item: Holding, currency: 
                         </View>
                     </View>
                     <Text style={[styles.metricSub, { color: colors.textSecondary }]}>
-                        ~{formatCompactCurrency(estAnnualIncome, currency)} /yr
+                        ~{isPrivacyEnabled ? "••••" : formatCompactCurrency(estAnnualIncome, currency)} /yr
                     </Text>
                 </View>
             </View>
@@ -152,7 +153,7 @@ const HoldingItem = ({ item, currency, totalValue }: { item: Holding, currency: 
     );
 };
 
-export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency = 'PHP', totalPortfolioValue = 0, isLoading = false }) => {
+export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency = 'PHP', totalPortfolioValue = 0, isLoading = false, isPrivacyEnabled = false }) => {
     const { colors } = useTheme();
 
     if (isLoading) {
@@ -188,6 +189,7 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency =
                     item={h}
                     currency={currency}
                     totalValue={totalPortfolioValue}
+                    isPrivacyEnabled={isPrivacyEnabled}
                 />
             ))}
         </View>
