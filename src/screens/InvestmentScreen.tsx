@@ -132,7 +132,8 @@ const InvestmentScreen = () => {
                 return acc;
             }, {} as any);
 
-            const symbolsToFetch = Array.from(new Set(holdings.map(h => h.symbol)));
+            const symbolsToFetch = Array.from(new Set(holdings.map(h => h.symbol)))
+                .filter(s => symbolMap[s]?.type === 'STOCKS');
 
             if (symbolsToFetch.length === 0) {
                 if (Platform.OS === 'android') ToastAndroid.show("No holdings to fetch for.", ToastAndroid.SHORT);

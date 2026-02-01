@@ -198,7 +198,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         <View style={{ flex: 1 }}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
                 <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 10 }}>
-                    {initialInvestment ? 'Edit Investment' : `New ${investmentType === 'STOCKS' ? 'Stock' : 'Investment'}`}
+                    {initialInvestment ? 'Edit Investment' : `New ${investmentType === 'STOCKS' ? 'Stock' : investmentType === 'FUNDS' ? 'Fund' : 'Investment'}`}
                 </Text>
 
                 {/* Date and Time Selection */}
@@ -304,13 +304,13 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
 
                 {/* Symbol */}
                 <Card style={{ marginBottom: 10 }}>
-                    <Text style={{ color: colors.textSecondary }}>Symbol</Text>
+                    <Text style={{ color: colors.textSecondary }}>{investmentType === 'FUNDS' ? 'Identifier Title' : 'Symbol'}</Text>
                     <TextInput
                         style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
                         value={symbol}
                         onChangeText={setSymbol}
-                        autoCapitalize="characters"
-                        placeholder="AAPL"
+                        autoCapitalize={investmentType === 'FUNDS' ? "words" : "characters"}
+                        placeholder={investmentType === 'FUNDS' ? "MP2" : "AAPL"}
                         placeholderTextColor={colors.gray300}
                     />
                 </Card>
