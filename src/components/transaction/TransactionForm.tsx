@@ -146,30 +146,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
         await saveTransaction(newTransaction);
 
-        showAlert('Success', 'Transaction saved!', [
-            {
-                text: 'Add More',
-                onPress: () => {
-                    setAmount('');
-                    setCategory('');
-                    setSubCategory('');
-                    setNote('');
-                    // Keep type and date for rapid entry
-                    setIsRecurring(false);
-                    setRecurringLabel('');
-                    setFrequency('MONTHLY');
-                    setStartDate(new Date());
-                    setEndsNever(true);
-                    setEndDate(new Date());
-                },
-                style: 'default'
-            },
-            {
-                text: 'Home',
-                onPress: onSave,
-                style: 'cancel'
-            }
-        ], { cancelable: false });
+        setAmount('');
+        setCategory('');
+        setSubCategory('');
+        setNote('');
+        setIsRecurring(false);
+        setRecurringLabel('');
+        setFrequency('MONTHLY');
+        setStartDate(new Date());
+        setEndsNever(true);
+        setEndDate(new Date());
     };
 
     return (

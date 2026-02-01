@@ -1,4 +1,4 @@
-import { Suggestion } from '@components/investment/SmartAdvisor';
+import { Suggestion } from '@components/investments/SmartAdvisor';
 import { getLatestPrices, getPriceHistory } from '@services/domain/priceHistoryService';
 import { getDividendHistory } from '@services/domain/dividendHistoryService';
 import { getAllAssets } from '@services/domain/assetService';

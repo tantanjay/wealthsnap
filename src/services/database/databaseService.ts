@@ -43,57 +43,19 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
 
         // Check and set database version
         let currentVersion = await getDatabaseVersion(db);
-        if (currentVersion === 0) {
-            // Fresh install: Tables are created with latest schema by createTables()
-            // Just set the version and skip migrations
-            await setDatabaseVersion(db, DATABASE_VERSION);
-        } else {
-            // Sequential migrations (Waterfall pattern)
-            // This handles users jumping multiple versions (e.g. v1 -> v3)
 
-            if (currentVersion < 2) {
-                console.warn('[Database] Migrating V1 -> V2');
-                const { migrateV1ToV2 } = await import('@services/database/migrationService');
-                await migrateV1ToV2(db);
-                await setDatabaseVersion(db, 2);
-                currentVersion = 2;
-            }
-
-            /**
-             * Jump to v5
-             * Hard to say what version is users used just to make sure we cover all cases
-             */
-            if (currentVersion < 5) {
-                console.warn('[Database] Migrating V2 -> V5');
-                const { migrateV2ToV5 } = await import('@services/database/migrationService');
-                await migrateV2ToV5(db);
-                await setDatabaseVersion(db, 5);
-                currentVersion = 5;
-            }
-
-            if (currentVersion < 6) {
-                console.warn('[Database] Migrating V5 -> V6');
-                const { migrateV5ToV6 } = await import('@services/database/migrationService');
-                await migrateV5ToV6(db);
-                await setDatabaseVersion(db, 6);
-                currentVersion = 6;
-            }
-
-            if (currentVersion < 7) {
-                console.warn('[Database] Migrating V6 -> V7');
-                const { migrateV6ToV7 } = await import('@services/database/migrationService');
-                await migrateV6ToV7(db);
-                await setDatabaseVersion(db, 7);
-                currentVersion = 7;
-            }
-        }
-
-        // Ensure we are at target version
+        // If version is mismatch or 0, just enforce the current version
+        // This is a "fresh start" approach - we assume createTables handles schema
         if (currentVersion !== DATABASE_VERSION) {
+            console.log(`[Database] Setting DB version to ${DATABASE_VERSION} (was ${currentVersion})`);
             await setDatabaseVersion(db, DATABASE_VERSION);
+            console.log('[Database] Version set successfully');
+        } else {
+            console.log('[Database] Version matches, no action needed');
         }
 
     } catch (error) {
+        console.error('[Database] Initialization error:', error);
         throw error;
     }
 };
