@@ -66,6 +66,8 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     discretionaryExpense: new BigNumber(0),
                     totalVol: new BigNumber(0),
                     recurringCount: 0,
+                    recurringExpense: new BigNumber(0),
+                    recurringIncome: new BigNumber(0),
                     futureIncomeAmount: new BigNumber(0),
                     futureExpenseAmount: new BigNumber(0),
                     hasBuy: false,
@@ -81,10 +83,14 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
             const stat = getStat(dateKey);
             const amount = new BigNumber(t.amount).abs();
 
-            if (t.type === 'INCOME') stat.income = stat.income.plus(amount);
+            if (t.type === 'INCOME') {
+                stat.income = stat.income.plus(amount);
+                if (t.isRecurring) stat.recurringIncome = stat.recurringIncome.plus(amount);
+            }
             else if (t.type === 'EXPENSE') {
                 stat.expense = stat.expense.plus(amount);
                 if (!t.isRecurring) stat.discretionaryExpense = stat.discretionaryExpense.plus(amount);
+                else stat.recurringExpense = stat.recurringExpense.plus(amount);
             }
             stat.totalVol = stat.totalVol.plus(amount);
             if (t.isRecurring) stat.recurringCount += 1;
@@ -134,6 +140,16 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
         return stats;
     }, [transactions, investments, recurrenceRules, currentDate]);
 
+    const maxDiscretionaryExpense = useMemo(() => {
+        let max = new BigNumber(0);
+        Object.values(dailyStats).forEach(stat => {
+            if (stat.discretionaryExpense.gt(max)) {
+                max = stat.discretionaryExpense;
+            }
+        });
+        return max;
+    }, [dailyStats]);
+
     const renderDay = (date: Date) => {
         const dateKey = date.toDateString();
         const stat = dailyStats[dateKey];
@@ -141,10 +157,21 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
         const isSelected = selectedDate?.toDateString() === dateKey;
         const isCurrentMonth = date.getMonth() === currentDate.getMonth();
 
+        // Heatmap Logic
+        let backgroundColor = isCurrentMonth ? colors.surface : 'transparent';
+        if (stat && stat.discretionaryExpense.gt(0) && maxDiscretionaryExpense.gt(0)) {
+            // Calculate ratio (0 to 1)
+            const ratio = stat.discretionaryExpense.div(maxDiscretionaryExpense).toNumber();
+            // Start transparent, go up to 0.5 opacity red
+            // Min opacity 0.05 so even small spends are visible if they are non-zero
+            const opacity = Math.max(0.05, Math.min(ratio * 0.5, 0.5));
+            backgroundColor = `${colors.error}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+        }
+
         return (
             <TouchableOpacity
                 key={date.toISOString()}
-                style={[styles.dayCell, { backgroundColor: isCurrentMonth ? colors.surface : 'transparent' }]}
+                style={[styles.dayCell, { backgroundColor }]}
                 onPress={() => onSelectDate(date)}
             >
                 {isSelected && <View style={[styles.selectionOverlay, { borderColor: colors.primary, backgroundColor: colors.primary + '15' }]} />}
@@ -163,6 +190,7 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                                 color={stat.sellProfitability === 'PROFIT' ? '#FFD700' : stat.sellProfitability === 'LOSS' ? colors.error : '#FFA500'}
                             />
                         )}
+                        {/* Show Recurring Amount for Past, Badge for Count is replaced by Amount */}
                         {stat?.recurringCount > 0 && date <= new Date() && (
                             <View style={[styles.miniBadge, { backgroundColor: colors.primary }]}>
                                 <Text style={styles.miniBadgeText}>{stat.recurringCount}</Text>
@@ -173,8 +201,23 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                 <View style={styles.centerContent}>
                     {date > new Date() && stat && (stat.futureIncomeAmount.gt(0) || stat.futureExpenseAmount.gt(0)) && (
                         <View style={styles.ghostStack}>
-                            {stat.futureIncomeAmount.gt(0) && <Text style={[styles.ghostText, { color: colors.success }]}>+{formatCompactCurrency(stat.futureIncomeAmount, currency)}</Text>}
-                            {stat.futureExpenseAmount.gt(0) && <Text style={[styles.ghostText, { color: colors.error }]}>-{formatCompactCurrency(stat.futureExpenseAmount, currency)}</Text>}
+                            {stat.futureIncomeAmount.gt(0) && <Text style={[styles.ghostText, { color: colors.success }]}>{formatCompactCurrency(stat.futureIncomeAmount, currency)}</Text>}
+                            {stat.futureExpenseAmount.gt(0) && <Text style={[styles.ghostText, { color: colors.error }]}>{formatCompactCurrency(stat.futureExpenseAmount, currency)}</Text>}
+                        </View>
+                    )}
+                    {/* Past Recurring Expenses/Income - Displayed in Center */}
+                    {date <= new Date() && stat && (stat.recurringExpense.gt(0) || stat.recurringIncome.gt(0)) && (
+                        <View style={styles.ghostStack}>
+                            {stat.recurringIncome.gt(0) && (
+                                <Text style={[styles.ghostText, { color: colors.success }]}>
+                                    {formatCompactCurrency(stat.recurringIncome, currency)}
+                                </Text>
+                            )}
+                            {stat.recurringExpense.gt(0) && (
+                                <Text style={[styles.ghostText, { color: colors.error }]}>
+                                    {formatCompactCurrency(stat.recurringExpense, currency)}
+                                </Text>
+                            )}
                         </View>
                     )}
                 </View>
@@ -217,6 +260,7 @@ const styles = StyleSheet.create({
     weekdayRow: {
         flexDirection: 'row',
         marginBottom: 8,
+        paddingHorizontal: 0,
     },
     weekdayText: {
         flex: 1,
@@ -225,15 +269,20 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         letterSpacing: 1,
     },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 2 },
+    grid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+    },
     dayCell: {
-        width: Math.floor(COLUMN_WIDTH),
+        width: '14.28%',
         aspectRatio: 1,
         borderRadius: 8,
-        padding: 4,
+        padding: 2,
         justifyContent: 'space-between',
         position: 'relative',
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'transparent',
     },
     cellTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     indicatorGroup: { flexDirection: 'row', alignItems: 'center', gap: 1 },
