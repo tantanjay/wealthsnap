@@ -277,6 +277,7 @@ export interface PortfolioHolding {
     divYield: number;
     sector: string;
     name?: string;
+    type?: string;
 }
 
 export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
@@ -344,7 +345,8 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
             gainLossPercent: gainLossPercent,
             divYield: parseFloat(divYield.toFixed(2)), // Format to 2 decimal places
             sector: asset?.sector || 'Other',
-            name: asset?.name
+            name: asset?.name,
+            type: asset?.type
         };
     });
 

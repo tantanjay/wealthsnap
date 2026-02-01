@@ -123,7 +123,7 @@ const RecordScreen = ({ navigation, route }: any) => {
     const { showAlert } = useAlert();
 
     const handleInvestmentSelect = (type: InvestmentType) => {
-        if (type === 'STOCKS') {
+        if (type === 'STOCKS' || type === 'FUNDS') {
             setInvestmentType(type);
             setViewMode('INVESTMENT');
             setModalVisible(false);
