@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-chart-kit';
 
 import BottomModal from '@components/common/BottomModal';
-import MonthEndProjectionModal from '@components/transaction/modals/MonthEndProjectionModal';
+import MonthEndProjectionModal from '@components/insights/MonthEndProjectionModal';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';

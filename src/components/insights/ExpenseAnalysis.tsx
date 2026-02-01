@@ -4,9 +4,9 @@ import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 
-import AllExpensesModal from '@components/transaction/modals/AllExpensesModal';
-import CategoryTrendModal from '@components/transaction/modals/CategoryTrendModal';
-import RecurringExpensesSummaryModal from '@components/transaction/modals/RecurringExpensesSummaryModal';
+import AllExpensesModal from '@components/insights/AllExpensesModal';
+import CategoryTrendModal from '@components/insights/CategoryTrendModal';
+import RecurringExpensesSummaryModal from '@components/insights/RecurringExpensesSummaryModal';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
