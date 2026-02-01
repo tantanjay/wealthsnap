@@ -136,29 +136,69 @@ export const calculateNextOccurrence = (reminder: Reminder, fromDate: Date = new
 
         switch (reminder.frequency) {
             case 'WEEKLY':
-                // Start + 1? No, just +1 day loop is fast enough (max 7)
                 next.setDate(next.getDate() + 1);
                 break;
             case 'SEMI_WEEKLY':
-                // +1 is fine (max 3 checks)
                 next.setDate(next.getDate() + 1);
                 break;
-            case 'MONTHLY':
-            case 'QUARTERLY':
-            case 'YEARLY':
-                next.setDate(1); // Go to 1st to avoid month overflow issues when adding month
-                next.setMonth(next.getMonth() + 1);
-                if (reminder.frequency === 'YEARLY') {
-                    next.setFullYear(next.getFullYear() + 1);
-                    next.setMonth(targetMonth);
-                    next.setDate(1); // Temporarily
-                } else if (reminder.frequency === 'MONTHLY' || reminder.frequency === 'QUARTERLY') {
+            case 'MONTHLY': {
+                // If we are in the correct month (implied by previous check failing), 
+                // but before the expected day, jump to the expected day.
+                // Otherwise key off to next month.
+                const currentMonthDays = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+                const expectedDay = Math.min(targetDay, currentMonthDays);
+
+                if (next.getDate() < expectedDay) {
+                    next.setDate(expectedDay);
+                } else {
                     next.setDate(1);
                     next.setMonth(next.getMonth() + 1);
-                } else {
-                    next.setDate(next.getDate() + 1);
+                    // Re-clamp for the new month immediately? 
+                    // No, let the loop verify or jump again. 
+                    // Best to just land on 1st and let the loop logic handle it or jump to expected day in next iteration.
                 }
                 break;
+            }
+            case 'QUARTERLY': {
+                // If we are in a valid quarter month
+                const qMonthDiff = next.getMonth() - targetMonth;
+                if (qMonthDiff % 3 === 0) {
+                    const qDays = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+                    const qExpected = Math.min(targetDay, qDays);
+                    if (next.getDate() < qExpected) {
+                        next.setDate(qExpected);
+                        break; // Continue to validation
+                    }
+                }
+
+                // Otherwise move to next candidate month
+                next.setDate(1);
+                next.setMonth(next.getMonth() + 1);
+                break;
+            }
+            case 'YEARLY': {
+                if (next.getMonth() === targetMonth) {
+                    const yDays = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+                    const yExpected = Math.min(targetDay, yDays);
+                    if (next.getDate() < yExpected) {
+                        next.setDate(yExpected);
+                        break;
+                    }
+                }
+
+                // Move to next year's target month if passed, or just next month?
+                // Optimization: Jump to next year's target month
+                if (next.getMonth() >= targetMonth && next.getDate() >= targetDay) { // rough check
+                    next.setFullYear(next.getFullYear() + 1);
+                    next.setMonth(targetMonth);
+                    next.setDate(1);
+                } else {
+                    // Just safe increment
+                    next.setDate(1);
+                    next.setMonth(next.getMonth() + 1);
+                }
+                break;
+            }
             default:
                 next.setDate(next.getDate() + 1);
         }
