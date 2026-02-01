@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import JSZip from 'jszip';
 
-import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget, TransactionReceipt } from '@types';
+import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget, TransactionReceipt, Asset } from '@types';
 import { decryptData, encryptData } from '@services/core/encryptionService';
 import * as Storage from '@services/core/storageService';
 import * as SQLite from '@services/domain';
@@ -19,6 +19,7 @@ export interface BackupData {
     budgets: Budget[];
     reminders: Reminder[];
     transactionReceipts: TransactionReceipt[];
+    assets: Asset[];
 }
 
 interface BaseEntity {
@@ -48,6 +49,7 @@ export const createBackup = async (password: string): Promise<string> => {
     const budgets = await SQLite.getAllBudgets();
     const reminders = await SQLite.getAllReminders();
     const transactionReceipts = await SQLite.getAllTransactionReceipts();
+    const assets = await SQLite.getAllAssets();
 
     const backupData: BackupData = {
         version: '2.0', // Schema version 2.0 (SQLite Support)
@@ -60,6 +62,7 @@ export const createBackup = async (password: string): Promise<string> => {
         budgets,
         reminders,
         transactionReceipts,
+        assets,
     };
 
     // 2. Create zip archive
@@ -217,6 +220,7 @@ export const restoreFromBackup = async (
     const cleanTransactionReceipts = updateForeignKeys(backupData.transactionReceipts, 'transactionId', transactionIdMap);
 
     await safeBulkSave(cleanTransactions, SQLite.bulkSaveTransactions);
+    await safeBulkSave(backupData.assets, SQLite.bulkSaveAssets);
     await safeBulkSave(cleanInvestments, SQLite.bulkSaveInvestments);
     await safeBulkSave(cleanCategories, SQLite.bulkSaveCategories);
     await safeBulkSave(cleanRecurrenceRules, SQLite.bulkSaveRecurrenceRules);

@@ -1,22 +1,12 @@
 import { getDatabase } from "@services/database/databaseService";
-
-export interface Asset {
-    symbol: string;
-    name?: string;
-    exchange?: string;
-    sector?: string;
-    type?: string;
-    currency?: string;
-    description?: string;
-    createdAt?: string;
-    updatedAt?: string;
-}
+import { Asset } from '@types';
 
 // --- Queries ---
 const INSERT_ASSET_QUERY = `
     INSERT OR REPLACE INTO assets (symbol, name, exchange, sector, type, currency, description)
     VALUES (?, ?, ?, ?, ?, ?, ?)
 `;
+
 
 const GET_ALL_ASSETS_QUERY = `
     SELECT * FROM assets ORDER BY symbol ASC
@@ -120,5 +110,30 @@ export const deleteAsset = async (symbol: string): Promise<void> => {
     } catch (error) {
         console.error('Error deleting asset:', error);
         throw new Error('Failed to delete asset');
+    }
+};
+
+/**
+ * Bulk save assets (for restore)
+ */
+export const bulkSaveAssets = async (assets: Asset[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        await db.withTransactionAsync(async () => {
+            for (const asset of assets) {
+                await db.runAsync(INSERT_ASSET_QUERY, [
+                    asset.symbol,
+                    asset.name || null,
+                    asset.exchange || null,
+                    asset.sector || null,
+                    asset.type || null,
+                    asset.currency || null,
+                    asset.description || null
+                ]);
+            }
+        });
+    } catch (error) {
+        console.error('Error bulk saving assets:', error);
+        throw new Error('Failed to bulk save assets');
     }
 };
