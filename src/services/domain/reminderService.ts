@@ -146,18 +146,8 @@ export const calculateNextOccurrence = (reminder: Reminder, fromDate: Date = new
             case 'MONTHLY':
             case 'QUARTERLY':
             case 'YEARLY':
-                // Jumping by month is safer/faster
-                // But we must reset to targetDay (or clamped) to avoid skipping
                 next.setDate(1); // Go to 1st to avoid month overflow issues when adding month
                 next.setMonth(next.getMonth() + 1);
-                // We will let the "check validity" logic handle the specific day setting in next iteration? 
-                // Wait, if we just setMonth+1, day is 1. Next loop check will fail (unless target is 1).
-                // Better approach: Set to roughly target day next month.
-                const nextM = new Date(next);
-                // ... This getting complex. 
-                // Simple +1 day loop is robust but slow for YEARLY (365 iterations).
-                // Let's rely on +1 day for short periods, and jumps for long ones.
-
                 if (reminder.frequency === 'YEARLY') {
                     next.setFullYear(next.getFullYear() + 1);
                     next.setMonth(targetMonth);

@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { Skeleton } from '@components/common/Skeleton';
+import { InvestmentHistoryModal } from './InvestmentHistoryModal';
 import { useTheme } from '@context/ThemeContext';
 import { formatCurrencyAmount, formatCompactCurrency } from '@utils/currencyUtils';
-import { Skeleton } from '@components/common/Skeleton';
 
 interface Holding {
     symbol: string;
@@ -65,7 +65,13 @@ const HoldingItemSkeleton = () => {
     );
 };
 
-const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled }: { item: Holding, currency: string, totalValue: number, isPrivacyEnabled?: boolean }) => {
+const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled, onPress }: {
+    item: Holding,
+    currency: string,
+    totalValue: number,
+    isPrivacyEnabled?: boolean,
+    onPress?: () => void
+}) => {
     const { colors } = useTheme();
     const isProfit = item.gainLoss >= 0;
 
@@ -76,7 +82,11 @@ const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled }: { item: H
     const estAnnualIncome = (item.totalValue * item.divYield) / 100;
 
     return (
-        <View style={[styles.card, { backgroundColor: colors.surface }]}>
+        <TouchableOpacity
+            style={[styles.card, { backgroundColor: colors.surface }]}
+            onPress={onPress}
+            activeOpacity={0.7}
+        >
             {/* Header: Symbol & Name + Price */}
             <View style={styles.cardHeader}>
                 <View style={styles.tickerContainer}>
@@ -149,12 +159,19 @@ const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled }: { item: H
                     </Text>
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 };
 
 export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency = 'PHP', totalPortfolioValue = 0, isLoading = false, isPrivacyEnabled = false }) => {
     const { colors } = useTheme();
+    const [selectedHolding, setSelectedHolding] = React.useState<Holding | null>(null);
+    const [historyModalVisible, setHistoryModalVisible] = React.useState(false);
+
+    const handleHoldingPress = (holding: Holding) => {
+        setSelectedHolding(holding);
+        setHistoryModalVisible(true);
+    };
 
     if (isLoading) {
         return (
@@ -181,7 +198,6 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency =
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={[styles.headerTitle, { color: colors.text }]}>Current Holdings</Text>
-                {/* Could add sorting/filter here later */}
             </View>
             {holdings.map((h, index) => (
                 <HoldingItem
@@ -190,8 +206,16 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency =
                     currency={currency}
                     totalValue={totalPortfolioValue}
                     isPrivacyEnabled={isPrivacyEnabled}
+                    onPress={() => handleHoldingPress(h)}
                 />
             ))}
+
+            <InvestmentHistoryModal
+                visible={historyModalVisible}
+                onClose={() => setHistoryModalVisible(false)}
+                symbol={selectedHolding?.symbol || ''}
+                currency={currency}
+            />
         </View>
     );
 };

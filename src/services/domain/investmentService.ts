@@ -4,7 +4,7 @@ import { getDatabase } from "@services/database/databaseService";
 import { bulkDecryptItems, encryptField } from "@services/core/encryptionService";
 import { chunkArray } from "@utils/index";
 import { invalidateInvestmentCache, getInvestmentCache, setInvestmentCache, isValid, getTransactionCache, setTransactionCache } from "@services/core/dataCache";
-import { calculatePortfolioMetrics, getAllPortfolioMetrics } from "@utils/investmentMetrics";
+import { getAllPortfolioMetrics } from "@utils/investmentMetrics";
 import { getLatestPrices } from "./priceHistoryService";
 import { getAllTransactions } from "./transactionService";
 import { getAllAssets } from "./assetService";

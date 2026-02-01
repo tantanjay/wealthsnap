@@ -11,22 +11,15 @@ import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
-import { Transaction, UserProfile, Investment } from '@types';
+import { Transaction, UserProfile, Investment, RecurrenceRule } from '@types';
 import { deleteTransaction } from '@services/domain';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile, getCachedTransactions, getCachedInvestments } from '@services/core/storageService';
 import { HistoryCalendar } from '../components/history/HistoryCalendar';
-
-
 import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
-import { RecurrenceRule } from '@types';
+
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
-
 type HistoryItem = Transaction | Investment;
-
-const isTransaction = (item: HistoryItem): item is Transaction => {
-    return (item as Transaction).amount !== undefined && (item as Transaction).category !== undefined;
-};
 
 const isInvestment = (item: HistoryItem): item is Investment => {
     return (item as Investment).symbol !== undefined && (item as Investment).action !== undefined;
@@ -353,13 +346,11 @@ const HistoryScreen = ({ navigation }: any) => {
         if (isInvestment(item)) {
             // Render Investment Item
             const inv = item as Investment;
-            const isBuy = inv.action === 'BUY';
             // Distinct color for investments (Purple/Blue)
             const iconColor = '#8E24AA';
 
             // Calculate total value if possible (price * quantity)
             const totalValue = inv.price.multipliedBy(inv.quantity);
-            const isPositiveAction = inv.action === 'SELL' || inv.action === 'DIVIDEND' || inv.action === 'INTEREST';
 
             // Find linked P/L for SELL actions
             let plElement = null;
@@ -700,7 +691,7 @@ const HistoryScreen = ({ navigation }: any) => {
                         </View>
                         <View style={{ marginTop: 10, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                <Ionicons name="bulb-outline" size={12} color={colors.primary} /> <Text style={{ fontWeight: 'bold' }}>Pro Tip:</Text> Recurring bills like Rent don't trigger the red heat, so you only feel "guilty" about things you can control!
+                                <Ionicons name="bulb-outline" size={12} color={colors.primary} /> <Text style={{ fontWeight: 'bold' }}>Pro Tip:</Text> Recurring bills like Rent don&apos;t trigger the red heat, so you only feel &quot;guilty&quot; about things you can control!
                             </Text>
                         </View>
                     </View>

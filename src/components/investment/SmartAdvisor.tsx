@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions, FlatList, ScrollV
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import { Priority } from '@services/domain/smartAdvisorService';
 import { useTheme } from '@context/ThemeContext';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 
@@ -13,8 +14,6 @@ export interface Suggestion {
     price: number;
     hasDivSoon?: boolean;
 }
-
-import { Priority } from '@services/domain/smartAdvisorService';
 
 interface SmartAdvisorProps {
     suggestions: Suggestion[];
