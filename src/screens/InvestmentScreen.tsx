@@ -19,10 +19,12 @@ import { addDividendHistory, getProjectedDividends } from '@services/domain/divi
 import { fetchHistoricalPrices, AssetRequest, fetchDividendHistory } from '@services/integrations/geminiService';
 import * as Storage from '@services/core/storageService';
 import { usePrivacy } from '@context/PrivacyContext';
+import { useAIConsent } from '@hooks/useAIConsent';
 
 const InvestmentScreen = () => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
+    const { checkConsent } = useAIConsent();
     const [refreshing, setRefreshing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [currency, setCurrency] = useState('PHP');
@@ -225,8 +227,10 @@ const InvestmentScreen = () => {
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => {
-                                setModalStep('selection');
-                                setIsMenuVisible(true);
+                                checkConsent(() => {
+                                    setModalStep('selection');
+                                    setIsMenuVisible(true);
+                                });
                             }}
                             disabled={isFetching}
                             style={{ padding: 8, marginLeft: 5 }}
