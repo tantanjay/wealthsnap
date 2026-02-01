@@ -17,6 +17,7 @@ import { Button, Card } from '@components/index';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { ReminderManager } from '@components/reminders/ReminderManager';
 import { RecurringRulesListModal } from '@components/profile/RecurringRulesListModal';
+import { AssetsListModal } from '@components/profile/assets/AssetsListModal';
 import { useTheme } from '@context/ThemeContext';
 import { useSecurity } from '@context/SecurityContext';
 import { useAlert } from '@context/AlertContext';
@@ -36,7 +37,11 @@ const ProfileScreen = ({ navigation }: any) => {
     const [currency, setCurrency] = useState('PHP');
 
     // Budget State
+    // Budget State
     const [showBudgetModal, setShowBudgetModal] = useState(false);
+
+    // Assets State
+    const [showAssetsModal, setShowAssetsModal] = useState(false);
 
     // Support Modal State
     const [showSupportModal, setShowSupportModal] = useState(false);
@@ -216,6 +221,15 @@ const ProfileScreen = ({ navigation }: any) => {
                         </View>
                         <Text style={[styles.cardTitle, { color: colors.text }]}>Financial Planning</Text>
                     </View>
+                    <SettingItem
+                        icon="list"
+                        title="Asset Dictionary"
+                        subtitle="Manage asset definitions"
+                        onPress={() => setShowAssetsModal(true)}
+                        iconBg={colors.info + '20'}
+                        iconColor={colors.info}
+                        isLast={false}
+                    />
                     <SettingItem
                         icon="repeat"
                         title="Recurring Transactions"
@@ -480,6 +494,12 @@ const ProfileScreen = ({ navigation }: any) => {
                 visible={showBudgetModal}
                 onClose={() => setShowBudgetModal(false)}
                 currency={currency}
+            />
+
+            {/* Assets List Modal */}
+            <AssetsListModal
+                visible={showAssetsModal}
+                onClose={() => setShowAssetsModal(false)}
             />
 
             {/* Reminders Modal */}

@@ -14,6 +14,7 @@ export interface UserProfile {
 
 export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER_IN' | 'TRANSFER_OUT' | 'CAPITAL_LOSS' | 'CAPITAL_GAIN';
 export type InvestmentType = 'STOCKS' | 'FUNDS' | 'BONDS' | 'CRYPTO' | 'COMMODITIES' | 'OTHERS';
+export type AssetType = 'STOCKS' | 'FUNDS' | 'CRYPTO' | 'FOREX' | 'REAL_ESTATE' | 'VEHICLE' | 'JEWELRY' | 'ART' | 'CASH' | 'OTHER';
 export type InvestmentAction = 'BUY' | 'SELL' | 'DIVIDEND' | 'INTEREST';
 export type DebtType = 'LOAN' | 'CREDIT_CARD' | 'MORTGAGE';
 export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
@@ -146,4 +147,16 @@ export interface ReminderLog {
     reminderId: string;
     action: ReminderAction;
     timestamp: string; // ISO string
+}
+
+export interface Asset {
+    symbol: string;
+    name?: string;
+    exchange?: string;
+    sector?: string;
+    type?: string; // Should ideally match AssetType or InvestmentType string values
+    currency?: string;
+    description?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
