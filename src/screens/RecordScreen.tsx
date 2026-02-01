@@ -7,7 +7,7 @@ import RecordMenuModal from '@components/record/RecordMenuModal';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { TransactionForm } from '@components/transaction/TransactionForm';
 import { TransferForm } from '@components/transaction/TransferForm';
-import { InvestmentForm } from '@components/investment/InvestmentForm';
+import { InvestmentForm } from '@components/investments/InvestmentForm';
 import { ReceiptReviewForm } from '@components/ai/ReceiptReviewForm';
 import { useAlert } from '@context/AlertContext';
 import { Transaction, TransactionType, ReceiptAnalysisResult, InvestmentType, DebtType, Investment } from '@types';
