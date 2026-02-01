@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, FlatList, ScrollView } from 'react-native';
-import { useTheme } from '@context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { formatCurrencyAmount } from '@utils/currencyUtils';
+
 import BottomModal from '@components/common/BottomModal';
+import { useTheme } from '@context/ThemeContext';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 export interface Suggestion {
     ticker: string;
