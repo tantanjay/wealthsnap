@@ -12,10 +12,12 @@ import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Investment, InvestmentType, InvestmentAction, Transaction, TransactionType, Asset } from '@types';
 import { generateUUID } from '@utils/uuid';
-import { saveInvestment } from '@services/domain/investmentService';
+import { saveInvestment, getAllInvestments } from '@services/domain/investmentService';
 import { getAllAssets } from '@services/domain/assetService';
 import { addPriceHistory } from '@services/domain/priceHistoryService';
 import { saveTransaction } from '@services/domain/transactionService';
+import { calculatePortfolioMetrics } from '@utils/investmentMetrics';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface InvestmentFormProps {
     investmentType: InvestmentType;
@@ -46,6 +48,11 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     const [createTransaction, setCreateTransaction] = useState(true);
     const [showInfoModal, setShowInfoModal] = useState(false);
 
+    // P/L State
+    const [averageCost, setAverageCost] = useState<BigNumber>(new BigNumber(0));
+    const [realizedPL, setRealizedPL] = useState('');
+    const [showPLCalculator, setShowPLCalculator] = useState(false);
+
     // Asset fetching state
     const [assets, setAssets] = useState<Asset[]>([]);
     const [loadingAssets, setLoadingAssets] = useState(false);
@@ -56,12 +63,11 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
             try {
                 const data = await getAllAssets();
                 setAssets(data);
+
                 // If editing, symbol is already set. If new and data exists, maybe set first?
-                // Or leave empty to force user to select.
-                // Actually, since we block entry if no assets, we assume at least one exists.
-                // But generally good UX to let them pick manually or default to first if none selected?
-                if (!initialInvestment && data.length > 0 && !symbol) {
-                    setSymbol(data[0].symbol);
+                // Using functional update to avoid adding 'symbol' to dependency array/loop
+                if (!initialInvestment && data.length > 0) {
+                    setSymbol(prev => prev || data[0].symbol);
                 }
             } catch (error) {
                 console.error('Failed to load assets for picker:', error);
@@ -71,7 +77,64 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
             }
         };
         fetchAssets();
-    }, []);
+    }, [initialInvestment, showAlert]);
+
+    // Calculate Average Cost when symbol changes
+    useEffect(() => {
+        const fetchAvgCost = async () => {
+            if (!symbol) return;
+            try {
+                // We need all investments for this symbol to calc avg cost
+                // Optimization: Maybe create a service method to just get avg cost?
+                // For now, fetching all investments is checking the cache mostly.
+                const allInvestments = await getAllInvestments();
+                const symbolInvestments = allInvestments.filter(i => i.symbol === symbol);
+
+                if (symbolInvestments.length > 0) {
+                    const metrics = calculatePortfolioMetrics(symbolInvestments);
+                    setAverageCost(metrics.averagePrice);
+                } else {
+                    setAverageCost(new BigNumber(0));
+                }
+            } catch (e) {
+                console.error("Error calculating avg cost", e);
+            }
+        };
+        fetchAvgCost();
+    }, [symbol]);
+
+
+
+    // Auto-calculate Realized P/L when inputs change (only if not manually overridden?) 
+    // For simplicity, we just calculate it. If user edits it, they can. 
+    // But if inputs change afterwards, it might overwrite? 
+    // Standard UX: Auto-calc unless dirtied. But simpler: Just Auto-calc always on input change.
+    useEffect(() => {
+        if (action !== 'SELL' || !quantity || !price) {
+            if (!realizedPL) setRealizedPL(''); // clear if invalid
+            return;
+        }
+
+        try {
+            const qty = new BigNumber(quantity);
+            const prc = new BigNumber(price);
+            const f = new BigNumber(fees || 0);
+
+            // Proceeds = (Price * Qty) - Fees
+            const proceeds = qty.multipliedBy(prc).minus(f);
+
+            // Cost Basis = AvgPrice * Qty
+            const costBasis = qty.multipliedBy(averageCost);
+
+            const calcPL = proceeds.minus(costBasis);
+
+            // Only update if the calculated value is different to avoid cursor jumping if we were to support partial edits
+            // But since we are string matching, it's fine.
+            setRealizedPL(calcPL.toFixed(2));
+        } catch (e) {
+            // ignore parsing errors
+        }
+    }, [quantity, price, fees, averageCost, action]);
 
     // UI state
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -173,6 +236,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
 
                 // Only create transaction if amount > 0
                 if (finalAmount.isGreaterThan(0)) {
+                    // 1. Primary Transaction (Cash Movement)
                     const newTxn: Transaction = {
                         id: generateUUID(),
                         date: newInvestment.date,
@@ -188,6 +252,33 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                         updatedAt: new Date().toISOString(),
                     };
                     await saveTransaction(newTxn);
+
+                    // 2. Secondary Transaction (Realized Gain/Loss) - ONLY FOR SELL
+                    if (action === 'SELL' && realizedPL) {
+                        const plValue = new BigNumber(realizedPL);
+
+                        // We only record if there is a P/L (not zero)
+                        if (!plValue.isZero()) {
+                            const isGain = plValue.isGreaterThan(0);
+                            const plAmount = plValue.abs();
+
+                            const plTxn: Transaction = {
+                                id: generateUUID(),
+                                date: newInvestment.date,
+                                amount: plAmount,
+                                type: isGain ? 'CAPITAL_GAIN' : 'CAPITAL_LOSS',
+                                category: 'Investment',
+                                subCategory: isGain ? 'Realized Gain' : 'Realized Loss',
+                                note: `Realized ${isGain ? 'Gain' : 'Loss'} from selling ${symbol} ${newInvestment.quantity.toFixed(4)} qty`,
+                                creationMethod: 'MANUAL',
+                                isRecurring: false,
+                                investmentId: invId, // Link to same investment
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString(),
+                            };
+                            await saveTransaction(plTxn);
+                        }
+                    }
                 }
             }
 
@@ -411,6 +502,69 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                     </Card>
                 </View>
 
+                {/* Realized P/L Display (Only for SELL) */}
+                {action === 'SELL' && (
+                    <Card style={{ marginTop: 10 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ color: colors.textSecondary }}>Realized P/L</Text>
+                            <TouchableOpacity onPress={() => setShowPLCalculator(true)} style={{ padding: 4 }}>
+                                <Ionicons name="calculator" size={20} color={colors.primary} />
+                            </TouchableOpacity>
+                        </View>
+                        <TextInput
+                            style={{
+                                color: (parseFloat(realizedPL) || 0) >= 0 ? colors.success : colors.error,
+                                fontSize: 20,
+                                fontWeight: 'bold',
+                                borderBottomWidth: 1,
+                                borderBottomColor: colors.border,
+                                padding: 8
+                            }}
+                            value={realizedPL}
+                            onChangeText={setRealizedPL}
+                            keyboardType="numeric" // Note: iOS numeric keyboard doesn't always have minus sign!
+                            placeholder="0.00"
+                            placeholderTextColor={colors.gray300}
+                        />
+
+                        {/* Info Footer */}
+                        {quantity && price && (
+                            <View style={{ marginTop: 8 }}>
+                                {(() => {
+                                    const qty = new BigNumber(quantity);
+                                    const prc = new BigNumber(price);
+                                    const f = new BigNumber(fees || 0);
+                                    const proceeds = qty.multipliedBy(prc).minus(f);
+
+                                    return (
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                                Avg Cost: {formatCurrencyAmount(averageCost)}
+                                            </Text>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                                Proceeds: {formatCurrencyAmount(proceeds)}
+                                            </Text>
+                                        </View>
+                                    );
+                                })()}
+                                <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 4, fontStyle: 'italic' }}>
+                                    * Auto-calculated. Edit if needed.
+                                </Text>
+                                {(parseFloat(realizedPL) || 0) < 0 && (
+                                    <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2, fontStyle: 'italic' }}>
+                                        * Loss includes {formatCurrencyAmount(new BigNumber(fees || 0))} fees + price difference
+                                    </Text>
+                                )}
+                                {((parseFloat(realizedPL) || 0) > 0 && (parseFloat(fees) || 0) > 0) && (
+                                    <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2, fontStyle: 'italic' }}>
+                                        * Net gain after deducting {formatCurrencyAmount(new BigNumber(fees || 0))} fees
+                                    </Text>
+                                )}
+                            </View>
+                        )}
+                    </Card>
+                )}
+
                 {/* Note */}
                 <Card>
                     <Text style={{ color: colors.textSecondary }}>Note (Optional)</Text>
@@ -439,6 +593,17 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                     initialValue={fees}
                     onApply={setFees}
                     type="EXPENSE" // Red color for calculator
+                />
+
+                {/* P/L Calculator */}
+                <CalculatorModal
+                    visible={showPLCalculator}
+                    onClose={() => setShowPLCalculator(false)}
+                    initialValue={realizedPL}
+                    onApply={setRealizedPL}
+                    type="INCOME"
+                    allowNegative={true}
+                    allowZero={true}
                 />
             </ScrollView>
 

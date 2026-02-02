@@ -50,6 +50,66 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     // Initial Load - load everything or lazy load? 
     // Given the local DB nature, loading all is likely fine and provides smoother tab switching.
     useEffect(() => {
+        const loadPositions = async () => {
+            // 1. Fetch all investments for this symbol to get their IDs
+            const allInvestments = await getAllInvestments();
+            const symbolInvestments = allInvestments.filter(inv => inv.symbol === symbol);
+            const investmentIds = new Set(symbolInvestments.map(inv => inv.id));
+
+            // Map investments to history items
+            const investmentItems: HistoryItem[] = symbolInvestments.map(inv => ({
+                id: inv.id,
+                date: inv.date,
+                type: inv.action === 'INTEREST' ? 'DIVIDEND' : inv.action,
+                amount: inv.price.times(inv.quantity).toNumber(),
+                price: inv.price.toNumber(),
+                shares: inv.quantity.toNumber(),
+                note: inv.notes
+            }));
+
+            // 2. Fetch all transactions to look for CAPITAL_GAIN/LOSS linked to these investments
+            const allTransactions = await getAllTransactions();
+            const linkedTransactions = allTransactions.filter(txn =>
+                txn.investmentId && investmentIds.has(txn.investmentId) &&
+                (txn.type === 'CAPITAL_GAIN' || txn.type === 'CAPITAL_LOSS')
+            );
+
+            // Calculate Realized P/L
+            let totalPL = 0;
+            const plItems: HistoryItem[] = linkedTransactions.map(txn => {
+                const val = txn.amount.toNumber();
+                if (txn.type === 'CAPITAL_GAIN') totalPL += val;
+                if (txn.type === 'CAPITAL_LOSS') totalPL -= val;
+
+                return {
+                    id: txn.id,
+                    date: txn.date,
+                    type: txn.type as 'CAPITAL_GAIN' | 'CAPITAL_LOSS',
+                    amount: val,
+                    note: txn.note
+                };
+            });
+
+            setRealizedPL(totalPL);
+
+            // Merge and sort by date descending
+            const combinedHistory = [...investmentItems, ...plItems].sort((a, b) =>
+                new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+
+            setTransactions(combinedHistory);
+        };
+
+        const loadPrices = async () => {
+            const prices = await getPriceHistory(symbol);
+            setPriceHistory(prices);
+        };
+
+        const loadDividends = async () => {
+            const dividends = await getDividendHistory(symbol);
+            setDividendHistory(dividends);
+        };
+
         const loadAllHistory = async () => {
             setIsLoading(true);
             try {
@@ -70,66 +130,6 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             setActiveTab('POSITIONS'); // Reset tab on open
         }
     }, [visible, symbol]);
-
-    const loadPositions = async () => {
-        // 1. Fetch all investments for this symbol to get their IDs
-        const allInvestments = await getAllInvestments();
-        const symbolInvestments = allInvestments.filter(inv => inv.symbol === symbol);
-        const investmentIds = new Set(symbolInvestments.map(inv => inv.id));
-
-        // Map investments to history items
-        const investmentItems: HistoryItem[] = symbolInvestments.map(inv => ({
-            id: inv.id,
-            date: inv.date,
-            type: inv.action === 'INTEREST' ? 'DIVIDEND' : inv.action,
-            amount: inv.price.times(inv.quantity).toNumber(),
-            price: inv.price.toNumber(),
-            shares: inv.quantity.toNumber(),
-            note: inv.notes
-        }));
-
-        // 2. Fetch all transactions to look for CAPITAL_GAIN/LOSS linked to these investments
-        const allTransactions = await getAllTransactions();
-        const linkedTransactions = allTransactions.filter(txn =>
-            txn.investmentId && investmentIds.has(txn.investmentId) &&
-            (txn.type === 'CAPITAL_GAIN' || txn.type === 'CAPITAL_LOSS')
-        );
-
-        // Calculate Realized P/L
-        let totalPL = 0;
-        const plItems: HistoryItem[] = linkedTransactions.map(txn => {
-            const val = txn.amount.toNumber();
-            if (txn.type === 'CAPITAL_GAIN') totalPL += val;
-            if (txn.type === 'CAPITAL_LOSS') totalPL -= val;
-
-            return {
-                id: txn.id,
-                date: txn.date,
-                type: txn.type as 'CAPITAL_GAIN' | 'CAPITAL_LOSS',
-                amount: val,
-                note: txn.note
-            };
-        });
-
-        setRealizedPL(totalPL);
-
-        // Merge and sort by date descending
-        const combinedHistory = [...investmentItems, ...plItems].sort((a, b) =>
-            new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-
-        setTransactions(combinedHistory);
-    };
-
-    const loadPrices = async () => {
-        const prices = await getPriceHistory(symbol);
-        setPriceHistory(prices);
-    };
-
-    const loadDividends = async () => {
-        const dividends = await getDividendHistory(symbol);
-        setDividendHistory(dividends);
-    };
 
     const renderPositionsItem = ({ item }: { item: HistoryItem }) => {
         const isGain = item.type === 'CAPITAL_GAIN';
