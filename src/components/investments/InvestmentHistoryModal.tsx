@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Platform, ToastAndroid } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -73,7 +73,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     const [isFetching, setIsFetching] = useState(false);
 
     // Data Loading Functions
-    const loadPositions = async () => {
+    const loadPositions = useCallback(async () => {
         // 1. Fetch all investments for this symbol to get their IDs
         const allInvestments = await getAllInvestments();
         const symbolInvestments = allInvestments.filter(inv => inv.symbol === symbol);
@@ -121,19 +121,19 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         );
 
         setTransactions(combinedHistory);
-    };
+    }, [symbol]);
 
-    const loadPrices = async () => {
+    const loadPrices = useCallback(async () => {
         const prices = await getPriceHistory(symbol);
         setPriceHistory(prices);
-    };
+    }, [symbol]);
 
-    const loadDividends = async () => {
+    const loadDividends = useCallback(async () => {
         const dividends = await getDividendHistory(symbol);
         setDividendHistory(dividends);
-    };
+    }, [symbol]);
 
-    const loadAllHistory = async () => {
+    const loadAllHistory = useCallback(async () => {
         setIsLoading(true);
         try {
             await Promise.all([
@@ -146,14 +146,14 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [loadPositions, loadPrices, loadDividends]);
 
     useEffect(() => {
         if (visible && symbol) {
             loadAllHistory();
             setActiveTab('POSITIONS'); // Reset tab on open
         }
-    }, [visible, symbol]);
+    }, [visible, symbol, loadAllHistory]);
 
     // Handlers
     const handleClearPrices = async () => {
