@@ -63,7 +63,8 @@
 
         <h2>1. Overview</h2>
         <p>WealthSnap is designed as a <strong>privacy-first, local-only application</strong>. We do not maintain
-            external servers to store your personal account data. Your financial data, transaction logs, and personal
+            external servers to store your financial or personal data. Your financial data, transaction logs, and
+            personal
             details
             remain stored locally on your device.</p>
 
@@ -74,7 +75,8 @@
         <p><strong>Why:</strong> To allow you to take photos of receipts, invoices, or financial documents for analysis.
         </p>
         <p><strong>Data Handling:</strong> Images you select are processed temporarily to extract insights (e.g.,
-            transaction details). These images are sent securely to Google's Gemini API for analysis and are not
+            transaction details). Data is transmitted directly from your device to Google's Gemini API using your
+            personal API key. The Developer never sees, intercepts, or handles this transmission. Images are not
             permanently stored on your device.</p>
         <p><strong>API Processing:</strong> When you use AI features, image data is sent to Google's Gemini API, which
             is
@@ -96,7 +98,7 @@
         <p><strong>Internal:</strong> We do not collect, sell, share, or store your personal data on external developer
             servers. Information you input—transaction history, budgets, and goals—resides locally on your device.</p>
         <p><strong>Transit:</strong> For AI-powered features to function (such as receipt analysis), data you explicitly
-            select is transmitted securely to Google's Gemini API as described in Section 2.1.</p>
+            select is transmitted directly to Google's Gemini API as described in Section 2.1.</p>
         <p><strong>Data Handling:</strong> We employ a <strong>Hybrid Encryption</strong> model to balance privacy and
             performance:</p>
         <ul>
@@ -107,7 +109,9 @@
                 such as transaction dates, categories, and types (e.g., "Expense") are stored in plain text.</li>
         </ul>
         <p>This ensures your private financial details remain hidden while allowing for instant search and rapid
-            filtering.</p>
+            filtering. Decryption keys are managed via the device's secure hardware enclave (e.g., iOS Keychain or
+            Android Keystore), ensuring that even if the raw database file is intercepted, it remains unreadable without
+            device-level authentication.</p>
 
         <h3>2.4 AI Analysis & Third-Party Integration</h3>
         <p>To provide optional features such as "Receipt Analysis" and "AI Price Fetch," WealthSnap utilizes the Google
@@ -120,7 +124,9 @@
             usage is subject to your individual agreement with Google and their Privacy Policy.</p>
         <p><strong>Data Use for Training:</strong> Please be advised that if you use a "Free/Unpaid" tier API key,
             Google may utilize your inputs to improve their models. We strongly recommend reviewing your Google AI
-            Studio settings to manage your data preferences.</p>
+            Studio settings to manage your data preferences. WealthSnap strongly recommends using a 'Pay-as-you-go'
+            (Paid) Google Cloud project key if you wish to opt-out of data training, as Google's terms for Paid-tier API
+            usage typically provide higher data privacy guarantees than the Free tier.</p>
 
         <h2>3. Third-Party Services</h2>
         <p>We use specific third-party services to provide app functionality. These services have their own privacy
@@ -155,12 +161,12 @@
             device settings or by uninstalling the App. Since no data is stored on developer servers, this action is
             permanent and irreversible.</p>
 
-        <h2>6. Children’s Privacy</h2>
-        <p>Our Services do not address anyone under the age of 13. We do not knowingly collect personally identifiable
-            information from children under 13. In the case we discover that a child under 13 has provided us with
-            personal information, we immediately delete this from our records. If you are a parent or guardian and you
-            are aware that your child has provided us with personal information, please contact us so that we will be
-            able to do necessary actions.</p>
+        <h2>6. Children's Privacy</h2>
+        <p>Our Services do not address anyone under the age of 13. We do not knowingly collect or have access to any
+            personally identifiable information from children. Since all data is stored locally on the device, the
+            Developer has no records to review or delete. If you are a parent or guardian and are concerned about data
+            stored within the App, you can remove it by clearing the App's data in the device settings or by
+            uninstalling the App.</p>
 
         <h2>7. Disclaimer of Warranties</h2>
         <p>The Application is provided to you "AS IS" and "AS AVAILABLE" and with all faults and defects without
@@ -203,7 +209,11 @@
         <h2>10. Governing Law</h2>
         <p>These Terms shall be governed by and defined following the laws of the Republic of the Philippines.
             WealthSnap and yourself irrevocably consent that the courts of the Philippines shall have exclusive
-            jurisdiction to resolve any dispute which may arise in connection with these terms.</p>
+            jurisdiction to resolve any dispute which may arise in connection with these terms. WealthSnap is designed
+            with global privacy standards in mind and facilitates your rights as a Data Subject under the Philippine
+            Data Privacy Act of 2012 (DPA) and similar international regulations. Because the Developer has no access to
+            your data, your rights to access, correction, and erasure are exercised directly by you through the App's
+            interface and local storage management.</p>
 
         <h2>11. Severability</h2>
         <p>If any provision of these Terms is held to be unenforceable or invalid, such provision will be changed and
@@ -212,7 +222,8 @@
 
         <h2>12. Changes to This Agreement</h2>
         <p>We may update our Privacy Policy and Terms from time to time. Thus, you are advised to review this page
-            periodically for any changes. We will notify you of any changes by posting the new policy on this page.</p>
+            periodically for any changes. We will notify you of any changes by updating the 'Terms & Privacy' section
+            within the App.</p>
 
         <h2>13. Device Permissions</h2>
         <p>To provide its functionality, the App may request the following permissions on your device:</p>
@@ -223,9 +234,11 @@
             <li><strong>Notifications:</strong> Used to provide timely reminders for budget tracking, bill payments, or
                 investment schedules. These are handled locally or through standard system services and are never used
                 for unsolicited marketing.</li>
-            <li><strong>Service Permissions:</strong> The app uses standard system permissions to enable network
-                connectivity (for AI analysis), provide haptic feedback (vibration), and ensure background tasks (like
-                scheduled reminders) function correctly after a device restart.</li>
+            <li><strong>Network Connectivity:</strong> Strictly used to communicate with the Google Gemini API for
+                user-initiated AI features. No data is sent to the developer or any other third party.</li>
+            <li><strong>Service Permissions:</strong> The app uses standard system permissions to provide haptic
+                feedback (vibration) and ensure background tasks (like scheduled reminders) function correctly after a
+                device restart.</li>
         </ul>
 
         <h2>14. Contact Us</h2>
