@@ -233,18 +233,44 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
         // 1. Determine prompt duration string
         let durationPrompt = '';
-        if (durationLabel === 'Today') durationPrompt = 'Today';
-        else if (durationLabel === 'Last 3 days') durationPrompt = 'Last 3 days';
-        else if (durationLabel === 'Last 7 days') durationPrompt = 'Last 7 days';
-        else if (durationLabel === 'Last 14 days') durationPrompt = 'Last 14 days';
-        else if (durationLabel === 'Last 31 days') durationPrompt = 'Last 31 days';
-        else if (durationLabel === 'Last 3 months') durationPrompt = 'Last 3 months';
-        else if (durationLabel === 'Last 6 months') durationPrompt = 'Last 6 months';
-        else if (durationLabel === 'Last 1 year') durationPrompt = 'Last 1 year';
-        else return;
+
+        // Handle Price relative dates
+        if (activeFetchMode === 'price') {
+            if (durationLabel === 'Today') durationPrompt = 'Today';
+            else if (durationLabel === 'Last 3 days') durationPrompt = 'Last 3 days';
+            else if (durationLabel === 'Last 7 days') durationPrompt = 'Last 7 days';
+            else if (durationLabel === 'Last 14 days') durationPrompt = 'Last 14 days';
+            else if (durationLabel === 'Last 31 days') durationPrompt = 'Last 31 days';
+            else if (durationLabel === 'Last 3 months') durationPrompt = 'Last 3 months';
+            else if (durationLabel === 'Last 6 months') durationPrompt = 'Last 6 months';
+            else if (durationLabel === 'Last 1 year') durationPrompt = 'Last 1 year';
+            else return;
+        } else {
+            // Handle Dividend years
+            const currentYear = new Date().getFullYear();
+            let targetYear = currentYear;
+
+            if (durationLabel === 'This Year') {
+                targetYear = currentYear;
+            } else {
+                const parsedYear = parseInt(durationLabel);
+                if (!isNaN(parsedYear)) {
+                    targetYear = parsedYear;
+                } else {
+                    return; // Invalid
+                }
+            }
+            // Construct prompt: "From January 1, {Year} to Present" if it's past years, 
+            // but the user wants "up to latest 2023-2026 available data".
+            // Actually, if they select 2023, the user said: "if user select 2023 meaning it will fetch up to latest 2023-2026 available data"
+            // Wait, re-reading request: "if user select 2023 meaning it will fetch up to latest 2023-2026 available data"
+            // So start date is Jan 1, 2023. End date is Present.
+            durationPrompt = `From January 1, ${targetYear} to Present`;
+        }
 
         const context = activeFetchMode === 'price' ? 'prices' : 'dividends';
-        const msg = `Fetching ${context} for ${durationLabel}...`;
+        const displayLabel = activeFetchMode === 'dividend' ? durationPrompt : durationLabel;
+        const msg = `Fetching ${context} for ${displayLabel}...`;
         if (Platform.OS === 'android') ToastAndroid.show(msg, ToastAndroid.LONG);
 
         setIsFetching(true);
@@ -756,28 +782,61 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                     <View style={{ backgroundColor: 'rgba(255, 152, 0, 0.1)', padding: 12, borderRadius: 8, marginBottom: 15, flexDirection: 'row' }}>
                         <Ionicons name="warning-outline" size={20} color="#FF9800" style={{ marginRight: 8, marginTop: 2 }} />
                         <Text style={{ color: colors.text, fontSize: 13, flex: 1, lineHeight: 18 }}>
-                            AI-fetched data are estimates.
+                            AI-fetched {activeFetchMode === 'price' ? 'prices' : 'dividends'} are estimates and may vary from real-time official records.
                         </Text>
                     </View>
 
                     <View style={{ backgroundColor: colors.surface, borderRadius: 12, overflow: 'hidden' }}>
-                        {['Today', 'Last 3 days', 'Last 7 days', 'Last 14 days', 'Last 31 days', 'Last 3 months', 'Last 6 months', 'Last 1 year'].map((item, index, arr) => (
-                            <TouchableOpacity
-                                key={item}
-                                style={{
-                                    padding: 16,
-                                    flexDirection: 'row',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    borderBottomWidth: index < arr.length - 1 ? 1 : 0,
-                                    borderBottomColor: colors.border
-                                }}
-                                onPress={() => executeFetch(item)}
-                            >
-                                <Text style={{ color: colors.text, fontSize: 16 }}>{item}</Text>
-                                <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
-                            </TouchableOpacity>
-                        ))}
+                        {activeFetchMode === 'price' ? (
+                            // Price Options (Relative Days)
+                            ['Today', 'Last 3 days', 'Last 7 days', 'Last 14 days', 'Last 31 days', 'Last 3 months', 'Last 6 months', 'Last 1 year'].map((item, index, arr) => (
+                                <TouchableOpacity
+                                    key={item}
+                                    style={{
+                                        padding: 16,
+                                        flexDirection: 'row',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        borderBottomWidth: index < arr.length - 1 ? 1 : 0,
+                                        borderBottomColor: colors.border
+                                    }}
+                                    onPress={() => executeFetch(item)}
+                                >
+                                    <Text style={{ color: colors.text, fontSize: 16 }}>{item}</Text>
+                                    <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
+                                </TouchableOpacity>
+                            ))
+                        ) : (
+                            // Dividend Options (Years)
+                            (() => {
+                                const currentYear = new Date().getFullYear();
+                                const years = [];
+                                for (let i = 0; i < 5; i++) {
+                                    years.push(currentYear - i);
+                                }
+
+                                return years.map((year, index, arr) => {
+                                    const label = year === currentYear ? 'This Year' : year.toString();
+                                    return (
+                                        <TouchableOpacity
+                                            key={year}
+                                            style={{
+                                                padding: 16,
+                                                flexDirection: 'row',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                borderBottomWidth: index < arr.length - 1 ? 1 : 0,
+                                                borderBottomColor: colors.border
+                                            }}
+                                            onPress={() => executeFetch(label)}
+                                        >
+                                            <Text style={{ color: colors.text, fontSize: 16 }}>{label}</Text>
+                                            <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
+                                        </TouchableOpacity>
+                                    );
+                                });
+                            })()
+                        )}
                     </View>
                 </View>
             </BottomModal>
