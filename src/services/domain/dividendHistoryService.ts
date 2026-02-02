@@ -124,6 +124,20 @@ export const deleteDividendHistory = async (id: string): Promise<void> => {
 };
 
 /**
+ * Delete only auto-fetched (AI_FETCH) dividend history for a symbol.
+ */
+export const deleteAutoDividendHistory = async (symbol: string): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        // Delete where source is AI_FETCH
+        await db.runAsync(`DELETE FROM dividend_history WHERE symbol = ? AND source = 'AI_FETCH'`, [symbol]);
+    } catch (error) {
+        console.error('Error deleting auto dividend history:', error);
+        throw new Error('Failed to delete auto dividend history');
+    }
+};
+
+/**
  * Calculate projected dividends for the current year based on holdings
  */
 export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promise<{ labels: string[], data: number[] }> => {

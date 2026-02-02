@@ -386,7 +386,13 @@ export const fetchHistoricalPrices = async (assets: AssetRequest[], duration: st
             }
         });
 
-        const assetList = assets.map(a => `${a.symbol} (${a.exchange || 'Unknown Exchange'})`).join(', ');
+        const assetList = assets.map(a => {
+            const symbol = a.symbol.toUpperCase();
+            const exchange = a.exchange ? a.exchange.toUpperCase() : '';
+            // Format for AI Search Grounding: "EXCHANGE:SYMBOL" 
+            // e.g., "PSE:AREIT", "NASDAQ:AAPL", "NYSE:T"
+            return exchange ? `${exchange}:${symbol}` : symbol;
+        }).join(', ');
 
         prompt = `
 You are a financial data assistant.
