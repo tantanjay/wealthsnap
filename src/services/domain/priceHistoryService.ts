@@ -14,6 +14,32 @@ const UPSERT_PRICE_HISTORY_QUERY = `
 // --- Exported Functions ---
 
 /**
+ * Bulk save price histories (for restore)
+ */
+export const bulkSavePriceHistories = async (priceHistories: PriceHistory[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        await db.withTransactionAsync(async () => {
+            for (const history of priceHistories) {
+                await db.runAsync(UPSERT_PRICE_HISTORY_QUERY, [
+                    history.id || generateUUID(),
+                    history.symbol,
+                    new BigNumber(history.price).toString(),
+                    history.high ? new BigNumber(history.high).toString() : null,
+                    history.low ? new BigNumber(history.low).toString() : null,
+                    history.volume ? new BigNumber(history.volume).toString() : null,
+                    history.timestamp,
+                    history.source || 'MANUAL'
+                ]);
+            }
+        });
+    } catch (error) {
+        console.error('Error bulk saving price histories:', error);
+        throw error;
+    }
+};
+
+/**
  * Gets the latest price entry for each requested symbol.
  */
 export const getLatestPrices = async (symbols: string[]): Promise<Record<string, PriceHistory>> => {
@@ -127,6 +153,26 @@ export const updatePriceHistory = async (
     }
 };
 
+export const getAllPriceHistories = async (): Promise<PriceHistory[]> => {
+    try {
+        const db = await getDatabase();
+        const rows = await db.getAllAsync<any>(`SELECT * FROM price_history ORDER BY timestamp DESC`);
+        return rows.map(row => ({
+            id: row.id,
+            symbol: row.symbol,
+            price: new BigNumber(row.price),
+            high: row.high ? new BigNumber(row.high) : undefined,
+            low: row.low ? new BigNumber(row.low) : undefined,
+            volume: row.volume ? new BigNumber(row.volume) : undefined,
+            timestamp: row.timestamp,
+            source: row.source
+        }));
+    } catch (error) {
+        console.error('Error getting all price histories:', error);
+        return [];
+    }
+};
+
 /**
  * Get price history for a symbol, optionally filtered by date range.
  */
@@ -167,6 +213,73 @@ export const getPriceHistory = async (
         console.error('Error getting price history:', error);
         return [];
     }
+};
+
+/**
+ * Get price history for multiple symbols, optionally filtered by date range.
+ */
+export const getPriceHistoryForSymbols = async (
+    symbols: string[],
+    startDate?: string,
+    endDate?: string
+): Promise<PriceHistory[]> => {
+    if (!symbols || symbols.length === 0) return [];
+
+    try {
+        const db = await getDatabase();
+
+        // Create placeholders (?, ?, ?) for the IN clause
+        const placeholders = symbols.map(() => '?').join(', ');
+
+        let query = `SELECT * FROM price_history WHERE symbol IN (${placeholders})`;
+        const params: any[] = [...symbols];
+
+        if (startDate) {
+            query += ` AND timestamp >= ?`;
+            params.push(startDate);
+        }
+        if (endDate) {
+            query += ` AND timestamp <= ?`;
+            params.push(endDate);
+        }
+
+        query += ` ORDER BY symbol ASC, timestamp DESC`;
+
+        const rows = await db.getAllAsync<any>(query, params);
+
+        return rows.map(row => ({
+            id: row.id,
+            symbol: row.symbol,
+            price: new BigNumber(row.price),
+            high: row.high ? new BigNumber(row.high) : undefined,
+            low: row.low ? new BigNumber(row.low) : undefined,
+            volume: row.volume ? new BigNumber(row.volume) : undefined,
+            timestamp: row.timestamp,
+            source: row.source
+        }));
+    } catch (error) {
+        console.error('Error getting batch price history:', error);
+        return [];
+    }
+};
+
+export const getPriceHistoryByMonths = async (
+    symbols: string[],
+    monthsBack: number = 3
+): Promise<PriceHistory[]> => {
+    const endDate = new Date();
+    const startDate = new Date();
+
+    // Subtract months from the current date
+    startDate.setMonth(startDate.getMonth() - monthsBack);
+
+    // Call your existing SQLite method
+    // Converting to ISO string ensures compatibility with SQLite string comparisons
+    return await getPriceHistoryForSymbols(
+        symbols,
+        startDate.toISOString(),
+        endDate.toISOString()
+    );
 };
 
 /**

@@ -807,7 +807,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                     <View style={{ backgroundColor: colors.surface, borderRadius: 12, overflow: 'hidden' }}>
                         {activeFetchMode === 'price' ? (
                             // Price Options (Relative Days)
-                            ['Today', 'Last 3 days', 'Last 7 days', 'Last 14 days', 'Last 31 days', 'Last 3 months', 'Last 6 months', 'Last 1 year'].map((item, index, arr) => (
+                            ['Today', 'Last 3 days', 'Last 7 days', 'Last 14 days', 'Last 31 days'].map((item, index, arr) => (
                                 <TouchableOpacity
                                     key={item}
                                     style={{

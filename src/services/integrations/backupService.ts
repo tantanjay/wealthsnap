@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import JSZip from 'jszip';
 
-import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget, TransactionReceipt, Asset } from '@types';
+import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget, TransactionReceipt, Asset, PriceHistory, DividendHistory } from '@types';
 import { decryptData, encryptData } from '@services/core/encryptionService';
 import * as Storage from '@services/core/storageService';
 import * as SQLite from '@services/domain';
@@ -20,6 +20,8 @@ export interface BackupData {
     reminders: Reminder[];
     transactionReceipts: TransactionReceipt[];
     assets: Asset[];
+    priceHistories: PriceHistory[];
+    dividendHistories: DividendHistory[];
 }
 
 interface BaseEntity {
@@ -50,6 +52,8 @@ export const createBackup = async (password: string): Promise<string> => {
     const reminders = await SQLite.getAllReminders();
     const transactionReceipts = await SQLite.getAllTransactionReceipts();
     const assets = await SQLite.getAllAssets();
+    const priceHistories = await SQLite.getAllPriceHistories();
+    const dividendHistories = await SQLite.getAllDividendHistories();
 
     const backupData: BackupData = {
         version: '2.0', // Schema version 2.0 (SQLite Support)
@@ -63,7 +67,12 @@ export const createBackup = async (password: string): Promise<string> => {
         reminders,
         transactionReceipts,
         assets,
+        priceHistories: priceHistories.slice(0, 100),
+        dividendHistories: dividendHistories.slice(0, 100)
     };
+
+    console.log('priceHistories', priceHistories.length);
+    console.log('dividendHistories', dividendHistories.length);
 
     // 2. Create zip archive
     const zip = new JSZip();
@@ -219,14 +228,16 @@ export const restoreFromBackup = async (
     const { sanitized: cleanReminders } = sanitizeIds(backupData.reminders);
     const cleanTransactionReceipts = updateForeignKeys(backupData.transactionReceipts, 'transactionId', transactionIdMap);
 
-    await safeBulkSave(cleanTransactions, SQLite.bulkSaveTransactions);
     await safeBulkSave(backupData.assets, SQLite.bulkSaveAssets);
+    await safeBulkSave(cleanTransactions, SQLite.bulkSaveTransactions);
     await safeBulkSave(cleanInvestments, SQLite.bulkSaveInvestments);
     await safeBulkSave(cleanCategories, SQLite.bulkSaveCategories);
     await safeBulkSave(cleanRecurrenceRules, SQLite.bulkSaveRecurrenceRules);
     await safeBulkSave(cleanReminders, SQLite.bulkSaveReminders);
     await safeBulkSave(backupData.budgets, SQLite.bulkSaveBudgets);
     await safeBulkSave(cleanTransactionReceipts, SQLite.bulkSaveTransactionReceipts);
+    await safeBulkSave(backupData.priceHistories, SQLite.bulkSavePriceHistories);
+    await safeBulkSave(backupData.dividendHistories, SQLite.bulkSaveDividendHistories);
 
     // Reschedule Notifications
     if (backupData.reminders && Array.isArray(backupData.reminders) && backupData.reminders.length > 0) {

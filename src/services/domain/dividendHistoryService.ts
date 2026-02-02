@@ -29,6 +29,38 @@ const DELETE_DIVIDEND_HISTORY_QUERY = `
     DELETE FROM dividend_history WHERE id = ?
 `;
 
+const UPSERT_DIVIDEND_HISTORY_QUERY = `
+    INSERT OR REPLACE INTO dividend_history (id, symbol, exDate, paymentDate, recordDate, amount, type, status, source)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
+/**
+ * Bulk save dividend histories (for restore)
+ */
+export const bulkSaveDividendHistories = async (dividendHistories: DividendHistory[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        await db.withTransactionAsync(async () => {
+            for (const history of dividendHistories) {
+                await db.runAsync(UPSERT_DIVIDEND_HISTORY_QUERY, [
+                    history.id || generateUUID(),
+                    history.symbol,
+                    history.exDate,
+                    history.paymentDate || null,
+                    history.recordDate || null,
+                    new BigNumber(history.amount).toString(),
+                    history.type,
+                    history.status,
+                    history.source || 'MANUAL'
+                ]);
+            }
+        });
+    } catch (error) {
+        console.error('Error bulk saving dividend histories:', error);
+        throw error;
+    }
+};
+
 /**
  * Add a new dividend history entry
  */
@@ -89,6 +121,27 @@ export const updateDividendHistory = async (id: string, dividend: Partial<Omit<D
     } catch (error) {
         console.error('Error updating dividend history:', error);
         throw new Error('Failed to update dividend history');
+    }
+};
+
+export const getAllDividendHistories = async (): Promise<DividendHistory[]> => {
+    try {
+        const db = await getDatabase();
+        const rows = await db.getAllAsync<any>(`SELECT * FROM dividend_history`);
+        return rows.map(row => ({
+            id: row.id,
+            symbol: row.symbol,
+            exDate: row.exDate,
+            paymentDate: row.paymentDate,
+            recordDate: row.recordDate,
+            amount: new BigNumber(row.amount),
+            type: row.type,
+            status: row.status,
+            source: row.source
+        }));
+    } catch (error) {
+        console.error('Error getting all dividend histories:', error);
+        return [];
     }
 };
 
