@@ -92,6 +92,42 @@ export const addPriceHistory = async (
 };
 
 /**
+ * Updates an existing price history entry.
+ */
+export const updatePriceHistory = async (
+    id: string,
+    price: BigNumber | number | string,
+    metadata?: { high?: BigNumber | number, low?: BigNumber | number, volume?: BigNumber | number, source?: string, timestamp?: string }
+): Promise<void> => {
+    try {
+        const db = await getDatabase();
+
+        // We need to fetch existing to preserve fields if not updated? 
+        // For simplicity, we assume we want to update the fields provided.
+        // But since we are using UPSERT or simple UPDATE, let's use UPDATE.
+
+        const query = `
+            UPDATE price_history 
+            SET price = ?, high = ?, low = ?, volume = ?, timestamp = ?, source = ?, updatedAt = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `;
+
+        await db.runAsync(query, [
+            new BigNumber(price).toString(),
+            metadata?.high ? new BigNumber(metadata.high).toString() : null,
+            metadata?.low ? new BigNumber(metadata.low).toString() : null,
+            metadata?.volume ? new BigNumber(metadata.volume).toString() : null,
+            metadata?.timestamp || new Date().toISOString(), // Fallback shouldn't happen on update typically, but safe
+            metadata?.source || 'MANUAL',
+            id
+        ]);
+    } catch (error) {
+        console.error('Error updating price history:', error);
+        throw new Error('Failed to update price history');
+    }
+};
+
+/**
  * Get price history for a symbol, optionally filtered by date range.
  */
 export const getPriceHistory = async (
