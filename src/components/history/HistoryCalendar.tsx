@@ -103,7 +103,7 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
             else if (inv.action === 'SELL') {
                 stat.hasSell = true;
                 const dayTxs = transactions.filter(t => new Date(t.date).toDateString() === dateKey);
-                const hasGain = dayTxs.some(t => t.type === 'CAPITAL_GAIN' || (t.investmentId === inv.id && t.amount.gt(0)));
+                const hasGain = dayTxs.some(t => t.type === 'CAPITAL_GAIN' || (t.investmentId === inv.id && t.amount.isGreaterThan(0)));
                 const hasLoss = dayTxs.some(t => t.type === 'CAPITAL_LOSS');
                 stat.sellProfitability = hasGain ? 'PROFIT' : (hasLoss ? 'LOSS' : 'UNKNOWN');
             }
@@ -143,7 +143,7 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
     const maxDiscretionaryExpense = useMemo(() => {
         let max = new BigNumber(0);
         Object.values(dailyStats).forEach(stat => {
-            if (stat.discretionaryExpense.gt(max)) {
+            if (stat.discretionaryExpense.isGreaterThan(max)) {
                 max = stat.discretionaryExpense;
             }
         });
@@ -159,7 +159,7 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
 
         // Heatmap Logic
         let backgroundColor = isCurrentMonth ? colors.surface : 'transparent';
-        if (stat && stat.discretionaryExpense.gt(0) && maxDiscretionaryExpense.gt(0)) {
+        if (stat && stat.discretionaryExpense.isGreaterThan(0) && maxDiscretionaryExpense.isGreaterThan(0)) {
             // Calculate ratio (0 to 1)
             const ratio = stat.discretionaryExpense.div(maxDiscretionaryExpense).toNumber();
             // Start transparent, go up to 0.5 opacity red
@@ -199,21 +199,21 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     </View>
                 </View>
                 <View style={styles.centerContent}>
-                    {date > new Date() && stat && (stat.futureIncomeAmount.gt(0) || stat.futureExpenseAmount.gt(0)) && (
+                    {date > new Date() && stat && (stat.futureIncomeAmount.isGreaterThan(0) || stat.futureExpenseAmount.isGreaterThan(0)) && (
                         <View style={styles.ghostStack}>
-                            {stat.futureIncomeAmount.gt(0) && <Text style={[styles.ghostText, { color: colors.success }]}>{formatCompactCurrency(stat.futureIncomeAmount, currency)}</Text>}
-                            {stat.futureExpenseAmount.gt(0) && <Text style={[styles.ghostText, { color: colors.error }]}>{formatCompactCurrency(stat.futureExpenseAmount, currency)}</Text>}
+                            {stat.futureIncomeAmount.isGreaterThan(0) && <Text style={[styles.ghostText, { color: colors.success }]}>{formatCompactCurrency(stat.futureIncomeAmount, currency)}</Text>}
+                            {stat.futureExpenseAmount.isGreaterThan(0) && <Text style={[styles.ghostText, { color: colors.error }]}>{formatCompactCurrency(stat.futureExpenseAmount, currency)}</Text>}
                         </View>
                     )}
                     {/* Past Recurring Expenses/Income - Displayed in Center */}
-                    {date <= new Date() && stat && (stat.recurringExpense.gt(0) || stat.recurringIncome.gt(0)) && (
+                    {date <= new Date() && stat && (stat.recurringExpense.isGreaterThan(0) || stat.recurringIncome.isGreaterThan(0)) && (
                         <View style={styles.ghostStack}>
-                            {stat.recurringIncome.gt(0) && (
+                            {stat.recurringIncome.isGreaterThan(0) && (
                                 <Text style={[styles.ghostText, { color: colors.success }]}>
                                     {formatCompactCurrency(stat.recurringIncome, currency)}
                                 </Text>
                             )}
-                            {stat.recurringExpense.gt(0) && (
+                            {stat.recurringExpense.isGreaterThan(0) && (
                                 <Text style={[styles.ghostText, { color: colors.error }]}>
                                     {formatCompactCurrency(stat.recurringExpense, currency)}
                                 </Text>
@@ -222,10 +222,10 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     )}
                 </View>
                 <View style={styles.statsStripContainer}>
-                    {stat?.totalVol.gt(0) ? (
+                    {stat?.totalVol.isGreaterThan(0) ? (
                         <View style={styles.statsStripInner}>
-                            {stat.income.gt(0) && <View style={{ flex: 1, backgroundColor: colors.success }} />}
-                            {stat.expense.gt(0) && <View style={{ flex: 1, backgroundColor: colors.error }} />}
+                            {stat.income.isGreaterThan(0) && <View style={{ flex: 1, backgroundColor: colors.success }} />}
+                            {stat.expense.isGreaterThan(0) && <View style={{ flex: 1, backgroundColor: colors.error }} />}
                         </View>
                     ) : <View style={[styles.emptyStrip, { backgroundColor: colors.border + '20' }]} />}
                 </View>
