@@ -388,38 +388,37 @@ export const fetchHistoricalPrices = async (assets: AssetRequest[], duration: st
 
         const assetList = assets.map(a => {
             const symbol = a.symbol.toUpperCase();
-            const exchange = a.exchange ? a.exchange.toUpperCase() : '';
+            const exchange = a.exchange ? a.exchange.toUpperCase() : 'PSE';
             return exchange ? `${exchange}:${symbol}` : symbol;
         }).join(', ');
 
         prompt = `
-You are a financial data assistant.
-I need historical stock price data for the following assets: [${assetList}].
+You are a precise financial data engine. 
+Task: Return the daily closing price history for these assets: [${assetList}].
 
-Duration: ${duration} (relative to today, ${new Date().toISOString().split('T')[0]}).
+Reference Date (Today): ${new Date().toISOString().split('T')[0]}
+Requested Duration: ${duration}
 
-For EACH asset, provide daily price data points for the requested duration.
-If the duration is "Today", just provide the latest closing price (or current price if market open).
-If "Last 3 days", provide 3 data points, etc.
+STRICT DATA RULES:
+1. Provide one data point per TRADING DAY. Do not include weekends or market holidays.
+2. If "Duration" is "Today", provide only the most recent confirmed closing price.
+3. For Philippine stocks (PSE), ensure prices are in PHP. For US stocks, in USD.
+4. "symbol" must be the ticker only (e.g., "AREIT", not "PSE:AREIT").
+5. If you lack data for a specific day, do not skip the date; instead, provide the price from the previous trading day (carry-forward).
 
-RETURN JSON ONLY:
+JSON STRUCTURE EXAMPLE:
 [
   {
-    "symbol": "AAPL",
-    "price": 150.25,
-    "date": "2023-10-27",
-    "high": 151.00,
-    "low": 149.50,
-    "volume": 50000000
-  },
-  ...
+    "symbol": "AREIT",
+    "price": 34.50,
+    "date": "2026-01-30",
+    "high": 34.60,
+    "low": 34.20,
+    "volume": 1200000
+  }
 ]
 
-Notes:
-- "symbol" does not include exchange.
-- "price" should be the closing price.
-- If data is unavailable due to cutoff, estimate based on general market knowledge for that period or fail gracefully by omitting.
-- Ensure dates are YYYY-MM-DD.
+RETURN JSON ONLY. NO PRE-TEXT. NO POST-TEXT.
 `;
 
         const result = await model.generateContent(prompt);
@@ -475,36 +474,38 @@ export const fetchDividendHistory = async (assets: AssetRequest[], duration: str
 
         const assetList = assets.map(a => {
             const symbol = a.symbol.toUpperCase();
-            const exchange = a.exchange ? a.exchange.toUpperCase() : '';
+            const exchange = a.exchange ? a.exchange.toUpperCase() : 'PSE';
             return exchange ? `${exchange}:${symbol}` : symbol;
         }).join(', ');
 
         prompt = `
-You are a financial data assistant.
-I need historical DIVIDEND data for the following assets: [${assetList}].
+You are a highly accurate financial data assistant specializing in the Philippine Stock Exchange and Global Markets.
+Current Date: ${new Date().toISOString().split('T')[0]}
 
-Duration: ${duration} (relative to today, ${new Date().toISOString().split('T')[0]}).
+TASK:
+Retrieve the dividend history for: [${assetList}].
+Duration: ${duration}
 
-For EACH asset, provide dividend events that occurred within the requested duration.
+INSTRUCTIONS:
+1. Identify the exact Ex-Date, Record Date, and Payment Date for each dividend declared.
+2. For PSE stocks (e.g., TEL, DMC, MBT), ensure the currency is in PHP.
+3. If an asset had no dividends in the period "${duration}", return an empty list for that symbol but do not hallucinate data.
+4. Verify against known historical corporate actions.
+5. "symbol" must be the ticker only (e.g., "AREIT", not "PSE:AREIT").
 
-RETURN JSON ONLY:
+REQUIRED JSON FORMAT:
 [
   {
-    "symbol": "AAPL",
-    "exDate": "2023-11-10",
-    "paymentDate": "2023-11-16",
-    "recordDate": "2023-11-13",
-    "amount": 0.24,
-    "type": "CASH" 
-  },
-  ...
+    "symbol": "DMC",
+    "exDate": "2024-04-15",
+    "paymentDate": "2024-05-10",
+    "recordDate": "2024-04-16",
+    "amount": 0.72,
+    "type": "CASH"
+  }
 ]
 
-Notes:
-- "symbol" does not include exchange.
-- "type" must be one of: 'CASH', 'STOCK', 'SPECIAL', 'PROPERTY'. Default to 'CASH' if unsure.
-- Ensure dates are YYYY-MM-DD.
-- "amount" should be the dividend amount per share.
+CRITICAL: Return ONLY valid JSON. No prose or explanations.
 `;
 
         const result = await model.generateContent(prompt);

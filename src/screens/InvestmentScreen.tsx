@@ -107,19 +107,40 @@ const InvestmentScreen = () => {
         setModalStep('selection'); // Reset for next time
 
         // 1. Determine prompt duration string
+        // 1. Determine prompt duration string
         let durationPrompt = '';
-        if (durationLabel === 'Today') durationPrompt = 'Today';
-        else if (durationLabel === 'Last 3 days') durationPrompt = 'Last 3 days';
-        else if (durationLabel === 'Last 7 days') durationPrompt = 'Last 7 days';
-        else if (durationLabel === 'Last 14 days') durationPrompt = 'Last 14 days';
-        else if (durationLabel === 'Last 31 days') durationPrompt = 'Last 31 days';
-        else if (durationLabel === 'Last 3 months') durationPrompt = 'Last 3 months';
-        else if (durationLabel === 'Last 6 months') durationPrompt = 'Last 6 months';
-        else if (durationLabel === 'Last 1 year') durationPrompt = 'Last 1 year';
-        else return;
+
+        if (activeMode === 'price') {
+            if (durationLabel === 'Today') durationPrompt = 'Today';
+            else if (durationLabel === 'Last 3 days') durationPrompt = 'Last 3 days';
+            else if (durationLabel === 'Last 7 days') durationPrompt = 'Last 7 days';
+            else if (durationLabel === 'Last 14 days') durationPrompt = 'Last 14 days';
+            else if (durationLabel === 'Last 31 days') durationPrompt = 'Last 31 days';
+            else if (durationLabel === 'Last 3 months') durationPrompt = 'Last 3 months';
+            else if (durationLabel === 'Last 6 months') durationPrompt = 'Last 6 months';
+            else if (durationLabel === 'Last 1 year') durationPrompt = 'Last 1 year';
+            else return;
+        } else {
+            // Handle Dividend years
+            const currentYear = new Date().getFullYear();
+            let targetYear = currentYear;
+
+            if (durationLabel === 'This Year') {
+                targetYear = currentYear;
+            } else {
+                const parsedYear = parseInt(durationLabel);
+                if (!isNaN(parsedYear)) {
+                    targetYear = parsedYear;
+                } else {
+                    return; // Invalid
+                }
+            }
+            durationPrompt = `From January 1, ${targetYear} to Present`;
+        }
 
         const context = activeMode === 'price' ? 'prices' : 'dividends';
-        const msg = `Fetching ${context} for ${durationLabel}... This runs in background.`;
+        const displayLabel = activeMode === 'dividend' ? durationPrompt : durationLabel;
+        const msg = `Fetching ${context} for ${displayLabel}... This runs in background.`;
         if (Platform.OS === 'android') ToastAndroid.show(msg, ToastAndroid.LONG);
 
         setIsFetching(true); // Start loading
@@ -360,23 +381,56 @@ const InvestmentScreen = () => {
                             </View>
 
                             <View style={{ backgroundColor: colors.surface, borderRadius: 12, overflow: 'hidden' }}>
-                                {['Today', 'Last 3 days', 'Last 7 days', 'Last 14 days', 'Last 31 days', 'Last 3 months', 'Last 6 months', 'Last 1 year'].map((item, index, arr) => (
-                                    <TouchableOpacity
-                                        key={item}
-                                        style={{
-                                            padding: 16,
-                                            flexDirection: 'row',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            borderBottomWidth: index < arr.length - 1 ? 1 : 0,
-                                            borderBottomColor: colors.border
-                                        }}
-                                        onPress={() => executeFetch(item)}
-                                    >
-                                        <Text style={{ color: colors.text, fontSize: 16 }}>{item}</Text>
-                                        <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
-                                    </TouchableOpacity>
-                                ))}
+                                {activeMode === 'price' ? (
+                                    // Price Options
+                                    ['Today', 'Last 3 days', 'Last 7 days', 'Last 14 days', 'Last 31 days', 'Last 3 months', 'Last 6 months', 'Last 1 year'].map((item, index, arr) => (
+                                        <TouchableOpacity
+                                            key={item}
+                                            style={{
+                                                padding: 16,
+                                                flexDirection: 'row',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                borderBottomWidth: index < arr.length - 1 ? 1 : 0,
+                                                borderBottomColor: colors.border
+                                            }}
+                                            onPress={() => executeFetch(item)}
+                                        >
+                                            <Text style={{ color: colors.text, fontSize: 16 }}>{item}</Text>
+                                            <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
+                                        </TouchableOpacity>
+                                    ))
+                                ) : (
+                                    // Dividend Options (Years)
+                                    (() => {
+                                        const currentYear = new Date().getFullYear();
+                                        const years = [];
+                                        for (let i = 0; i < 5; i++) {
+                                            years.push(currentYear - i);
+                                        }
+
+                                        return years.map((year, index, arr) => {
+                                            const label = year === currentYear ? 'This Year' : year.toString();
+                                            return (
+                                                <TouchableOpacity
+                                                    key={year}
+                                                    style={{
+                                                        padding: 16,
+                                                        flexDirection: 'row',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        borderBottomWidth: index < arr.length - 1 ? 1 : 0,
+                                                        borderBottomColor: colors.border
+                                                    }}
+                                                    onPress={() => executeFetch(label)}
+                                                >
+                                                    <Text style={{ color: colors.text, fontSize: 16 }}>{label}</Text>
+                                                    <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
+                                                </TouchableOpacity>
+                                            );
+                                        });
+                                    })()
+                                )}
                             </View>
                         </View>
                     )}
