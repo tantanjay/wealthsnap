@@ -172,7 +172,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                 }
 
                 // Only create transaction if amount > 0
-                if (finalAmount.gt(0)) {
+                if (finalAmount.isGreaterThan(0)) {
                     const newTxn: Transaction = {
                         id: generateUUID(),
                         date: newInvestment.date,
