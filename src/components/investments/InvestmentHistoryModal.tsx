@@ -466,6 +466,8 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
     const renderPriceItem = ({ item }: { item: PriceHistory }) => {
         const isManual = item.source === 'MANUAL';
+        const isAiFetch = item.source === 'AI_FETCH';
+        const canDelete = isManual || isAiFetch;
 
         const content = (
             <TouchableOpacity
@@ -496,7 +498,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                         </Text>
                     )}
                 </View>
-                {isManual && (
+                {canDelete && (
                     <TouchableOpacity
                         style={{ padding: 8, marginLeft: 8 }}
                         onPress={() => handleDeletePrice(item.id)}
@@ -507,7 +509,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             </TouchableOpacity>
         );
 
-        if (isManual) {
+        if (canDelete) {
             return (
                 <Swipeable renderRightActions={() => renderRightActions(() => handleDeletePrice(item.id))}>
                     {content}
@@ -520,6 +522,8 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
     const renderDividendItem = ({ item }: { item: DividendHistory }) => {
         const isManual = item.source === 'MANUAL';
+        const isAiFetch = item.source === 'AI_FETCH';
+        const canDelete = isManual || isAiFetch;
 
         const content = (
             <TouchableOpacity
@@ -551,7 +555,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                         </Text>
                     )}
                 </View>
-                {isManual && (
+                {canDelete && (
                     <TouchableOpacity
                         style={{ padding: 8, marginLeft: 8 }}
                         onPress={() => handleDeleteDividend(item.id)}
@@ -562,7 +566,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             </TouchableOpacity>
         );
 
-        if (isManual) {
+        if (canDelete) {
             return (
                 <Swipeable renderRightActions={() => renderRightActions(() => handleDeleteDividend(item.id))}>
                     {content}
