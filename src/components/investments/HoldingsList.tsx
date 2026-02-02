@@ -24,6 +24,7 @@ interface HoldingsListProps {
     totalPortfolioValue?: number;
     isLoading?: boolean;
     isPrivacyEnabled?: boolean;
+    onUpdate?: () => void;
 }
 
 const HoldingItemSkeleton = () => {
@@ -163,8 +164,9 @@ const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled, onPress }: 
     );
 };
 
-export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency = 'PHP', totalPortfolioValue = 0, isLoading = false, isPrivacyEnabled = false }) => {
+export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency = 'PHP', totalPortfolioValue = 0, isLoading = false, isPrivacyEnabled = false, onUpdate }) => {
     const { colors } = useTheme();
+
     const [selectedHolding, setSelectedHolding] = React.useState<Holding | null>(null);
     const [historyModalVisible, setHistoryModalVisible] = React.useState(false);
 
@@ -215,6 +217,7 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency =
                 onClose={() => setHistoryModalVisible(false)}
                 symbol={selectedHolding?.symbol || ''}
                 currency={currency}
+                onDataChange={onUpdate}
             />
         </View>
     );
