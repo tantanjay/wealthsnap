@@ -12,6 +12,8 @@ interface CalculatorModalProps {
     initialValue: string;
     onApply: (value: string) => void;
     type: TransactionType;
+    allowNegative?: boolean;
+    allowZero?: boolean;
 }
 
 export const CalculatorModal: React.FC<CalculatorModalProps> = ({
@@ -19,7 +21,9 @@ export const CalculatorModal: React.FC<CalculatorModalProps> = ({
     onClose,
     initialValue,
     onApply,
-    type
+    type,
+    allowNegative = false,
+    allowZero = false
 }) => {
     const { colors } = useTheme();
     const { height } = useWindowDimensions();
@@ -102,8 +106,19 @@ export const CalculatorModal: React.FC<CalculatorModalProps> = ({
 
     const handleCalcApply = () => {
         const value = parseFloat(calcDisplay);
-        if (!isNaN(value) && value > 0) {
-            onApply(String(Math.round(value * 100) / 100));
+        const isValid = !isNaN(value);
+        const isPositive = value > 0;
+        const isZero = value === 0;
+        const isNegative = value < 0;
+
+        if (isValid) {
+            if (
+                (isPositive) ||
+                (isZero && allowZero) ||
+                (isNegative && allowNegative)
+            ) {
+                onApply(String(Math.round(value * 100) / 100));
+            }
         }
         onClose();
     };
