@@ -5,9 +5,10 @@ import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { getAllInvestments } from '@services/domain/investmentService';
 import { getAllTransactions } from '@services/domain/transactionService';
-import { getPriceHistory, PriceHistory } from '@services/domain/priceHistoryService';
-import { getDividendHistory, DividendHistory } from '@services/domain/dividendHistoryService';
+import { getPriceHistory } from '@services/domain/priceHistoryService';
+import { getDividendHistory } from '@services/domain/dividendHistoryService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { DividendHistory, PriceHistory } from '@types';
 
 interface InvestmentHistoryModalProps {
     visible: boolean;
