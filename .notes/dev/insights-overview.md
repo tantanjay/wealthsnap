@@ -24,7 +24,7 @@ How many months your current balance can support your lifestyle.
 
 ### 2. Budget Health
 **Shows:**  
-How much of your monthly budgets you’ve used (percentage).
+How much of your monthly budgets you've used (percentage).
 
 **Why it matters:**  
 - Early warning before overspending
@@ -44,7 +44,7 @@ Income minus expenses for the current month.
 - Simple profitability signal
 
 **User insight:**  
-> “I’m moving forward / falling behind this month.”
+> “I'm moving forward / falling behind this month.”
 
 ---
 
@@ -165,7 +165,7 @@ Monthly savings performance over time.
 
 ## Cumulative Spending Chart
 **Shows:**  
-How fast you’re spending this month vs your historical average.
+How fast you're spending this month vs your historical average.
 
 **Why it matters:**  
 - Detects overspending early
