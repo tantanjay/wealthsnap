@@ -3,10 +3,11 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity }
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
 import { getAllInvestments } from '@services/domain/investmentService';
 import { getAllTransactions } from '@services/domain/transactionService';
-import { getPriceHistory } from '@services/domain/priceHistoryService';
-import { getDividendHistory } from '@services/domain/dividendHistoryService';
+import { getPriceHistory, deleteAllPriceHistory, addPriceHistory } from '@services/domain/priceHistoryService';
+import { getDividendHistory, deleteAutoDividendHistory } from '@services/domain/dividendHistoryService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { DividendHistory, PriceHistory } from '@types';
 
@@ -36,6 +37,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     currency
 }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>('POSITIONS');
 
@@ -130,6 +132,85 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             setActiveTab('POSITIONS'); // Reset tab on open
         }
     }, [visible, symbol]);
+
+    const handleClearPrices = async () => {
+        showAlert(
+            "Clear Price History",
+            "This will delete ALL price history for this symbol and regenerate it solely from your Investment records. This cannot be undone.",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Clear & Restore",
+                    style: "destructive",
+                    onPress: async () => {
+                        setIsLoading(true);
+                        try {
+                            // 1. Delete all history
+                            await deleteAllPriceHistory(symbol);
+
+                            // 2. Fetch investments
+                            const allInvestments = await getAllInvestments();
+                            const symbolInvestments = allInvestments.filter(inv => inv.symbol === symbol);
+
+                            // 3. Re-populate from investments
+                            // We use a set to avoid duplicates if multiple investments on same day?
+                            // Or just insert all. logic says "add the price back".
+                            // Usually price history is one per day, but if we have multiple trades, maybe multiple entries or just one.
+                            // The `addPriceHistory` generates a UUID, so multiple entries per day is allowed by DB.
+                            // Let's just loop and add.
+
+                            for (const inv of symbolInvestments) {
+                                // Skip if price is 0 or invalid? assuming valid.
+                                if (inv.price.isGreaterThan(0)) {
+                                    await addPriceHistory(symbol, inv.price, {
+                                        timestamp: inv.date, // Use investment date
+                                        source: 'MANUAL'
+                                    });
+                                }
+                            }
+
+                            // 4. Refresh
+                            const prices = await getPriceHistory(symbol);
+                            setPriceHistory(prices);
+
+                        } catch (error) {
+                            console.error("Failed to clear/restore prices", error);
+                            showAlert("Error", "Failed to restore price history.");
+                        } finally {
+                            setIsLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleClearAutoDividends = async () => {
+        showAlert(
+            "Clear Auto Dividends",
+            "This will remove all auto-fetched dividends. Manual entries will be kept.",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Clear Auto",
+                    style: "destructive",
+                    onPress: async () => {
+                        setIsLoading(true);
+                        try {
+                            await deleteAutoDividendHistory(symbol);
+                            const dividends = await getDividendHistory(symbol);
+                            setDividendHistory(dividends);
+                        } catch (error) {
+                            console.error("Failed to clear auto dividends", error);
+                            showAlert("Error", "Failed to clear auto dividends.");
+                        } finally {
+                            setIsLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
 
     const renderPositionsItem = ({ item }: { item: HistoryItem }) => {
         const isGain = item.type === 'CAPITAL_GAIN';
@@ -288,30 +369,44 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                             />
                         )}
                         {activeTab === 'PRICES' && (
-                            <FlatList
-                                data={priceHistory}
-                                renderItem={renderPriceItem}
-                                keyExtractor={item => item.id}
-                                contentContainerStyle={styles.listContent}
-                                ListEmptyComponent={
-                                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                                        No price history found.
-                                    </Text>
-                                }
-                            />
+                            <View style={{ flex: 1 }}>
+                                <View style={styles.actionRow}>
+                                    <TouchableOpacity style={styles.clearButton} onPress={handleClearPrices}>
+                                        <Text style={styles.clearButtonText}>Clear</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <FlatList
+                                    data={priceHistory}
+                                    renderItem={renderPriceItem}
+                                    keyExtractor={item => item.id}
+                                    contentContainerStyle={styles.listContent}
+                                    ListEmptyComponent={
+                                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                                            No price history found.
+                                        </Text>
+                                    }
+                                />
+                            </View>
                         )}
                         {activeTab === 'DIVIDENDS' && (
-                            <FlatList
-                                data={dividendHistory}
-                                renderItem={renderDividendItem}
-                                keyExtractor={item => item.id}
-                                contentContainerStyle={styles.listContent}
-                                ListEmptyComponent={
-                                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                                        No dividend history found.
-                                    </Text>
-                                }
-                            />
+                            <View style={{ flex: 1 }}>
+                                <View style={styles.actionRow}>
+                                    <TouchableOpacity style={styles.clearButton} onPress={handleClearAutoDividends}>
+                                        <Text style={styles.clearButtonText}>Clear</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <FlatList
+                                    data={dividendHistory}
+                                    renderItem={renderDividendItem}
+                                    keyExtractor={item => item.id}
+                                    contentContainerStyle={styles.listContent}
+                                    ListEmptyComponent={
+                                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                                            No dividend history found.
+                                        </Text>
+                                    }
+                                />
+                            </View>
                         )}
                     </View>
                 )}
@@ -397,5 +492,22 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 20,
         fontSize: 14
+    },
+    actionRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginBottom: 8,
+        paddingHorizontal: 4
+    },
+    clearButton: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        backgroundColor: 'rgba(255, 59, 48, 0.1)', // Light red
+        borderRadius: 6
+    },
+    clearButtonText: {
+        color: '#FF3B30', // System red
+        fontSize: 12,
+        fontWeight: '600'
     }
 });
