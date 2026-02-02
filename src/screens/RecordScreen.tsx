@@ -226,7 +226,7 @@ const RecordScreen = ({ navigation, route }: any) => {
 
                     let maxSum = new BigNumber(0);
                     Object.entries(categorySums).forEach(([cat, sum]) => {
-                        if (sum.gt(maxSum)) {
+                        if (sum.isGreaterThan(maxSum)) {
                             maxSum = sum;
                             newTransaction.category = cat;
                         }

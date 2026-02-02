@@ -110,7 +110,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                     let maxCat = 'Uncategorized';
                     let maxVal = new BigNumber(-1);
                     Object.entries(catSums).forEach(([c, v]) => {
-                        if (v.gt(maxVal)) {
+                        if (v.isGreaterThan(maxVal)) {
                             maxVal = v;
                             maxCat = c;
                         }
