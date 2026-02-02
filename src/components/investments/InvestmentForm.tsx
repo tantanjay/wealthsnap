@@ -103,15 +103,13 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         fetchAvgCost();
     }, [symbol]);
 
-
-
     // Auto-calculate Realized P/L when inputs change (only if not manually overridden?) 
     // For simplicity, we just calculate it. If user edits it, they can. 
     // But if inputs change afterwards, it might overwrite? 
     // Standard UX: Auto-calc unless dirtied. But simpler: Just Auto-calc always on input change.
     useEffect(() => {
         if (action !== 'SELL' || !quantity || !price) {
-            if (!realizedPL) setRealizedPL(''); // clear if invalid
+            if (realizedPL !== '') setRealizedPL(''); // clear if invalid
             return;
         }
 
@@ -127,14 +125,16 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
             const costBasis = qty.multipliedBy(averageCost);
 
             const calcPL = proceeds.minus(costBasis);
+            const newValue = calcPL.toFixed(2);
 
-            // Only update if the calculated value is different to avoid cursor jumping if we were to support partial edits
-            // But since we are string matching, it's fine.
-            setRealizedPL(calcPL.toFixed(2));
-        } catch (e) {
+            // Only update if the calculated value is different to avoid cursor jumping/loops
+            if (realizedPL !== newValue) {
+                setRealizedPL(newValue);
+            }
+        } catch {
             // ignore parsing errors
         }
-    }, [quantity, price, fees, averageCost, action]);
+    }, [quantity, price, fees, averageCost, action, realizedPL]);
 
     // UI state
     const [showDatePicker, setShowDatePicker] = useState(false);

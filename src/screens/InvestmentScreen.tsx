@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BigNumber } from 'bignumber.js';
-import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, ToastAndroid, Platform, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 
-import BottomModal from '@components/common/BottomModal';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { InvestmentStats } from '@components/investments/InvestmentStats';
 import { HoldingsList } from '@components/investments/HoldingsList';
@@ -11,12 +8,11 @@ import { SmartAdvisor, Suggestion } from '@components/investments/SmartAdvisor';
 import { AllocationChart } from '@components/investments/AllocationChart';
 import { DividendChart } from '@components/investments/DividendChart';
 import { useTheme } from '@context/ThemeContext';
-import { getAllAssets } from '@services/domain/assetService';
+import { usePrivacy } from '@context/PrivacyContext';
 import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding } from '@services/domain/investmentService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
 import { getProjectedDividends } from '@services/domain/dividendHistoryService';
 import * as Storage from '@services/core/storageService';
-import { usePrivacy } from '@context/PrivacyContext';
 
 const InvestmentScreen = () => {
     const { colors } = useTheme();
