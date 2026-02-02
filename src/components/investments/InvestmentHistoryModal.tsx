@@ -17,6 +17,7 @@ import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { DividendHistory, PriceHistory } from '@types';
 import PriceHistoryFormModal from './PriceHistoryFormModal';
 import DividendHistoryFormModal from './DividendHistoryFormModal';
+import { useAIConsent } from '@hooks/useAIConsent';
 
 interface InvestmentHistoryModalProps {
     visible: boolean;
@@ -47,6 +48,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 }) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
+    const { checkConsent } = useAIConsent();
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>('POSITIONS');
 
@@ -228,8 +230,10 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     // --- AI Fetch Handlers ---
 
     const openFetchMenu = (mode: 'price' | 'dividend') => {
-        setActiveFetchMode(mode);
-        setIsFetchMenuVisible(true);
+        checkConsent(() => {
+            setActiveFetchMode(mode);
+            setIsFetchMenuVisible(true);
+        });
     };
 
     const executeFetch = async (durationLabel: string) => {

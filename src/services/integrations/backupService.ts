@@ -71,9 +71,6 @@ export const createBackup = async (password: string): Promise<string> => {
         dividendHistories: dividendHistories.slice(0, 100)
     };
 
-    console.log('priceHistories', priceHistories.length);
-    console.log('dividendHistories', dividendHistories.length);
-
     // 2. Create zip archive
     const zip = new JSZip();
 
