@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Asset, AssetType } from '@types';
 import { createAsset, updateAsset } from '@services/domain/assetService';
-import { Button } from '@components/index';
 
 interface AssetFormProps {
     asset?: Asset;
