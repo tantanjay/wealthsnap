@@ -23,6 +23,7 @@ interface InvestmentHistoryModalProps {
     onClose: () => void;
     symbol: string;
     currency: string;
+    onDataChange?: () => void;
 }
 
 interface HistoryItem {
@@ -41,7 +42,8 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     visible,
     onClose,
     symbol,
-    currency
+    currency,
+    onDataChange
 }) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
@@ -182,6 +184,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                             }
 
                             await loadPrices();
+                            onDataChange?.();
 
                         } catch (error) {
                             console.error("Failed to clear/restore prices", error);
@@ -209,6 +212,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                         try {
                             await deleteAutoDividendHistory(symbol);
                             await loadDividends();
+                            onDataChange?.();
                         } catch (error) {
                             console.error("Failed to clear auto dividends", error);
                             showAlert("Error", "Failed to clear auto dividends.");
@@ -302,6 +306,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                     const successMsg = `Updated ${savedCount} prices.`;
                     if (Platform.OS === 'android') ToastAndroid.show(successMsg, ToastAndroid.SHORT);
                     loadPrices();
+                    onDataChange?.();
                 }).catch(err => {
                     console.error("Background fetch prices failed", err);
                     const errMsg = "Failed to update prices.";
@@ -328,6 +333,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                     const successMsg = `Updated ${savedCount} dividend records.`;
                     if (Platform.OS === 'android') ToastAndroid.show(successMsg, ToastAndroid.SHORT);
                     loadDividends();
+                    onDataChange?.();
                 }).catch(err => {
                     console.error("Background fetch dividends failed", err);
                     const errMsg = "Failed to update dividends.";
@@ -368,6 +374,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                         try {
                             await deletePriceHistory(id);
                             loadPrices();
+                            onDataChange?.();
                         } catch (error) {
                             console.error("Failed to delete price", error);
                         }
@@ -401,6 +408,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                         try {
                             await deleteDividendHistory(id);
                             loadDividends();
+                            onDataChange?.();
                         } catch (error) {
                             console.error("Failed to delete dividend", error);
                         }
@@ -765,7 +773,10 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                 onClose={() => setPriceFormVisible(false)}
                 symbol={symbol}
                 existingItem={editingPrice}
-                onSuccess={loadPrices}
+                onSuccess={() => {
+                    loadPrices();
+                    onDataChange?.();
+                }}
             />
 
             <DividendHistoryFormModal
@@ -773,7 +784,10 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                 onClose={() => setDividendFormVisible(false)}
                 symbol={symbol}
                 existingItem={editingDividend}
-                onSuccess={loadDividends}
+                onSuccess={() => {
+                    loadDividends();
+                    onDataChange?.();
+                }}
             />
 
             {/* Fetch Duration Modal */}
