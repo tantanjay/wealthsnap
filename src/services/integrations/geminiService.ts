@@ -389,8 +389,6 @@ export const fetchHistoricalPrices = async (assets: AssetRequest[], duration: st
         const assetList = assets.map(a => {
             const symbol = a.symbol.toUpperCase();
             const exchange = a.exchange ? a.exchange.toUpperCase() : '';
-            // Format for AI Search Grounding: "EXCHANGE:SYMBOL" 
-            // e.g., "PSE:AREIT", "NASDAQ:AAPL", "NYSE:T"
             return exchange ? `${exchange}:${symbol}` : symbol;
         }).join(', ');
 
@@ -418,6 +416,7 @@ RETURN JSON ONLY:
 ]
 
 Notes:
+- "symbol" does not include exchange.
 - "price" should be the closing price.
 - If data is unavailable due to cutoff, estimate based on general market knowledge for that period or fail gracefully by omitting.
 - Ensure dates are YYYY-MM-DD.
@@ -474,7 +473,11 @@ export const fetchDividendHistory = async (assets: AssetRequest[], duration: str
             }
         });
 
-        const assetList = assets.map(a => `${a.symbol} (${a.exchange || 'Unknown Exchange'})`).join(', ');
+        const assetList = assets.map(a => {
+            const symbol = a.symbol.toUpperCase();
+            const exchange = a.exchange ? a.exchange.toUpperCase() : '';
+            return exchange ? `${exchange}:${symbol}` : symbol;
+        }).join(', ');
 
         prompt = `
 You are a financial data assistant.
@@ -498,6 +501,7 @@ RETURN JSON ONLY:
 ]
 
 Notes:
+- "symbol" does not include exchange.
 - "type" must be one of: 'CASH', 'STOCK', 'SPECIAL', 'PROPERTY'. Default to 'CASH' if unsure.
 - Ensure dates are YYYY-MM-DD.
 - "amount" should be the dividend amount per share.
