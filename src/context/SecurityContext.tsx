@@ -42,7 +42,11 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
             // App coming to foreground
             if (isPickingFile.current) {
-                isPickingFile.current = false;
+                // Allow a grace period before re-enabling lock checks
+                // This handles flaky lifecycle events from camera/scanner intents
+                setTimeout(() => {
+                    isPickingFile.current = false;
+                }, 1500);
                 return;
             }
 
