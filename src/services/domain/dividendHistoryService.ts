@@ -2,30 +2,18 @@ import { BigNumber } from 'bignumber.js';
 import { getDatabase } from "@services/database/databaseService";
 import { generateUUID } from "@utils/uuid";
 import { PortfolioHolding } from './investmentService';
-
-export interface DividendHistory {
-    id: string;
-    symbol: string;
-    exDate: string;
-    paymentDate?: string;
-    recordDate?: string;
-    amount: BigNumber;
-    type: 'CASH' | 'STOCK' | 'SPECIAL' | 'PROPERTY';
-    status: 'DECLARED' | 'PAID' | 'PROJECTED';
-    createdAt?: string;
-    updatedAt?: string;
-}
+import { DividendHistory } from '@types';
 
 // --- Queries ---
 
 const INSERT_DIVIDEND_HISTORY_QUERY = `
-    INSERT INTO dividend_history (id, symbol, exDate, paymentDate, recordDate, amount, type, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO dividend_history (id, symbol, exDate, paymentDate, recordDate, amount, type, status, source)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 const UPDATE_DIVIDEND_HISTORY_QUERY = `
     UPDATE dividend_history 
-    SET symbol = ?, exDate = ?, paymentDate = ?, recordDate = ?, amount = ?, type = ?, status = ?, updatedAt = CURRENT_TIMESTAMP
+    SET symbol = ?, exDate = ?, paymentDate = ?, recordDate = ?, amount = ?, type = ?, status = ?, source = ?, updatedAt = CURRENT_TIMESTAMP
     WHERE id = ?
 `;
 
@@ -56,7 +44,8 @@ export const addDividendHistory = async (dividend: Omit<DividendHistory, 'id' | 
             dividend.recordDate || null,
             dividend.amount.toString(),
             dividend.type,
-            dividend.status
+            dividend.status,
+            dividend.source || 'MANUAL'
         ]);
     } catch (error) {
         console.error('Error adding dividend history:', error);
@@ -94,6 +83,7 @@ export const updateDividendHistory = async (id: string, dividend: Partial<Omit<D
             merged.amount,
             merged.type,
             merged.status,
+            merged.source,
             id
         ]);
     } catch (error) {

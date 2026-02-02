@@ -1,17 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 import { getDatabase } from "@services/database/databaseService";
 import { generateUUID } from "@utils/uuid";
-
-export interface PriceHistory {
-    id: string;
-    symbol: string;
-    price: BigNumber;
-    high?: BigNumber;
-    low?: BigNumber;
-    volume?: BigNumber;
-    timestamp: string;
-    source?: string;
-}
+import { PriceHistory } from '@types';
 
 // --- Constants ---
 
@@ -59,7 +49,9 @@ export const getLatestPrices = async (symbols: string[]): Promise<Record<string,
                 low: row.low ? new BigNumber(row.low) : undefined,
                 volume: row.volume ? new BigNumber(row.volume) : undefined,
                 timestamp: row.timestamp,
-                source: row.source
+                source: row.source,
+                createdAt: row.createdAt,
+                updatedAt: row.updatedAt
             };
         });
 

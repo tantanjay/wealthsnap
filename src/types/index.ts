@@ -160,3 +160,30 @@ export interface Asset {
     createdAt?: string;
     updatedAt?: string;
 }
+
+export interface PriceHistory {
+    id: string;
+    symbol: string;
+    price: BigNumber;
+    high?: BigNumber;
+    low?: BigNumber;
+    volume?: BigNumber;
+    timestamp: string;
+    source?: 'MANUAL' | 'AI_FETCH';
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface DividendHistory {
+    id: string;
+    symbol: string;
+    exDate: string;
+    paymentDate?: string;
+    recordDate?: string;
+    amount: BigNumber;
+    type: 'CASH' | 'STOCK' | 'SPECIAL' | 'PROPERTY';
+    status: 'DECLARED' | 'PAID' | 'PROJECTED';
+    source?: 'MANUAL' | 'AI_FETCH';
+    createdAt?: string;
+    updatedAt?: string;
+}

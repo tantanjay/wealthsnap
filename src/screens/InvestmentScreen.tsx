@@ -185,7 +185,8 @@ const InvestmentScreen = () => {
                             recordDate: d.recordDate,
                             amount: new BigNumber(d.amount),
                             type: d.type,
-                            status: 'PAID' // Assume paid if historical
+                            status: 'PAID',
+                            source: 'AI_FETCH'
                         });
                         savedCount++;
                     }

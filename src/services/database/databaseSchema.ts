@@ -107,7 +107,10 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             low TEXT,
             volume TEXT,
             timestamp TEXT NOT NULL,
-            source TEXT
+            source TEXT NOT NULL CHECK(source IN ('MANUAL', 'AI_FETCH')),
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (symbol) REFERENCES assets(symbol) ON DELETE CASCADE
         );
 
         CREATE INDEX IF NOT EXISTS idx_price_history_symbol ON price_history(symbol);
@@ -140,6 +143,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             amount TEXT NOT NULL,
             type TEXT NOT NULL CHECK(type IN ('CASH', 'STOCK', 'SPECIAL', 'PROPERTY')),
             status TEXT NOT NULL CHECK(status IN ('DECLARED', 'PAID', 'PROJECTED')),
+            source TEXT NOT NULL CHECK(source IN ('MANUAL', 'AI_FETCH')),
             createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
             updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (symbol) REFERENCES assets(symbol) ON DELETE CASCADE
