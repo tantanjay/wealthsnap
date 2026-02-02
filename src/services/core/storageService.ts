@@ -248,6 +248,9 @@ export const clearAllData = async (): Promise<void> => {
             DELETE FROM transaction_receipts;
             DELETE FROM reminder_logs;
             DELETE FROM ai_usage_logs;
+            DELETE FROM price_history;
+            DELETE FROM dividend_history;
+            DELETE FROM assets;
         `);
 
         DataCache.invalidateAllCaches();
