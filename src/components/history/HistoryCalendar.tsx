@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
@@ -18,8 +18,6 @@ interface HistoryCalendarProps {
 }
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const COLUMN_WIDTH = (SCREEN_WIDTH - 64 - (2 * 6)) / 7;
 
 export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
     currentDate,
