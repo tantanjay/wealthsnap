@@ -1,5 +1,5 @@
 import { BigNumber } from 'bignumber.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 
@@ -10,7 +10,7 @@ import { saveAIUsageLog } from '@services/domain';
 import { EXPENSE_CATEGORIES } from '@constants/categories';
 
 // Dynamic Configuration
-let genAIInstance: GoogleGenerativeAI | null = null;
+let genAIInstance: GoogleGenAI | null = null;
 let currentApiKey: string | null = null;
 
 const getGeminiClient = async () => {
@@ -26,7 +26,7 @@ const getGeminiClient = async () => {
 
     // Reuse instance if key hasn't changed
     if (!genAIInstance || currentApiKey !== apiKey) {
-        genAIInstance = new GoogleGenerativeAI(apiKey);
+        genAIInstance = new GoogleGenAI({ apiKey });
         currentApiKey = apiKey;
     }
 
@@ -150,6 +150,39 @@ const getCategoryList = () => {
     return EXPENSE_CATEGORIES.map(c => c.value).join(', ');
 };
 
+const receiptSchema = {
+    type: 'object',
+    properties: {
+        isValidReceipt: { type: 'boolean' },
+        validationError: { type: 'string', nullable: true },
+        receiptType: {
+            type: 'string',
+            enum: ['GROCERY', 'RETAIL', 'RESTAURANT', 'CAFE', 'INVOICE', 'UNKNOWN']
+        },
+        merchantName: { type: 'string', nullable: true },
+        date: { type: 'string', description: 'YYYY-MM-DD', nullable: true },
+        totalAmount: { type: 'number', nullable: true },
+        totalDiscount: { type: 'number', default: 0 },
+        currency: { type: 'string', description: 'ISO 3-letter code (e.g. PHP, USD)', nullable: true },
+        items: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    description: { type: 'string' },
+                    quantity: { type: 'number' },
+                    unitPrice: { type: 'number' },
+                    amount: { type: 'number' },
+                    category: { type: 'string' }
+                },
+                required: ['description', 'quantity', 'unitPrice', 'amount', 'category']
+            }
+        },
+        confidence: { type: 'number' }
+    },
+    required: ['isValidReceipt', 'receiptType', 'totalAmount', 'items']
+};
+
 /**
  * Analyze a receipt image to extract transaction details.
  */
@@ -158,10 +191,8 @@ export const analyzeReceiptImage = async (imageUri: string): Promise<ReceiptAnal
     let prompt = '';
     let imageTokens = 0;
 
-    // Default error result
     const failResult: ReceiptAnalysisResult = { isValidReceipt: false, validationError: "Analysis failed", confidence: 0 };
 
-    // 1. Check Configuration First - Fail fast before doing any heavy lifting
     const isConfigured = await isGeminiConfigured();
     if (!isConfigured) {
         return { ...failResult, validationError: "Gemini API Key is not configured" };
@@ -176,18 +207,6 @@ export const analyzeReceiptImage = async (imageUri: string): Promise<ReceiptAnal
         });
 
         const { genAI, modelName } = await getGeminiClient();
-
-        // 1. Initialize the model with thinking configuration
-        const model = genAI.getGenerativeModel({
-            model: modelName,
-            generationConfig: {
-                // THE "STRICT ACCOUNTANT" SETTINGS
-                temperature: 0.1, // No randomness
-                topP: 0.1, // Stay within the highest confidence
-                topK: 1, // Pick only the best match
-                responseMimeType: "application/json",
-            }
-        });
 
         const categories = getCategoryList();
 
@@ -276,45 +295,32 @@ STEP 4: DATA INTEGRITY
 - Small rounding differences are acceptable.
 - Rounding/Adjustments: If there is a small "Round Off" or "Adjustment" line at the bottom, you may ignore it or fold it into the largest item's price to ensure the totalAmount is mathematically correct.
 - DO NOT invent items to force a match.
-
---------------------------------------------------
-RETURN FORMAT (JSON ONLY)
---------------------------------------------------
-{
-  "isValidReceipt": boolean,
-  "validationError": string | null,
-  "receiptType": "GROCERY" | "RETAIL" | "RESTAURANT" | "CAFE" | "INVOICE" | "UNKNOWN",
-  "merchantName": string | null,
-  "date": string | null,
-  "totalAmount": number | null,
-  "totalDiscount": number | 0,
-  "currency": string | null,
-  "items": [
-    {
-      "description": string,
-      "quantity": number,
-      "unitPrice": number,
-      "amount": number,
-      "category": string
-    }
-  ],
-  "confidence": number
-}
 `;
 
-
-        const result = await model.generateContent([
-            prompt,
-            {
-                inlineData: {
-                    mimeType: 'image/jpeg',
-                    data: base64Image,
-                },
+        const response = await genAI.models.generateContent({
+            model: modelName,
+            config: {
+                temperature: 0.1,
+                responseMimeType: "application/json",
+                responseJsonSchema: receiptSchema,
             },
-        ]);
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        { text: prompt },
+                        {
+                            inlineData: {
+                                mimeType: 'image/jpeg',
+                                data: base64Image,
+                            }
+                        }
+                    ]
+                }
+            ]
+        });
 
-        const response = await result.response;
-        const text = response.text().replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const text = response.text ? response.text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim() : '';
 
         await logUsage('analyzeReceiptImage', prompt, text, imageTokens, 1, Date.now() - startTime, modelName, 'success');
 
@@ -364,11 +370,94 @@ export interface FetchedPrice {
     volume?: number;
 }
 
+const stockPriceSchema = {
+    type: 'array',
+    items: {
+        type: 'object',
+        properties: {
+            symbol: { type: 'string', description: 'The stock ticker (e.g. AREIT)' },
+            price: { type: 'number', description: 'Closing price in local currency' },
+            date: { type: 'string', description: 'ISO 8601 format (YYYY-MM-DD)' },
+            high: { type: 'number', nullable: true },
+            low: { type: 'number', nullable: true },
+            volume: { type: 'number', nullable: true }
+        },
+        required: ['symbol', 'price', 'date']
+    }
+};
+
 export const fetchHistoricalPrices = async (assets: AssetRequest[], duration: string): Promise<FetchedPrice[]> => {
+    const startTime = Date.now();
+
+    const isConfigured = await isGeminiConfigured();
+    if (!isConfigured) throw new Error("Gemini API Key is not configured");
+
+    try {
+        const { genAI, modelName } = await getGeminiClient();
+
+        const assetList = assets.map(a => {
+            const symbol = a.symbol.toUpperCase();
+            const exchange = a.exchange ? a.exchange.toUpperCase() : 'PSE';
+            return `${exchange}:${symbol}`;
+        }).join(', ');
+
+        // --- PASS 1: THE RESEARCHER (Search Enabled, No Schema) ---
+        const researchPrompt = `
+            Find the daily closing price history for these assets: [${assetList}].
+            Duration: ${duration}. Today is ${new Date().toISOString().split('T')[0]}.
+            Focus on TRADING DAYS only. Carry-forward prices for weekends/holidays.
+            Provide the data in a clear list format for me to process.
+        `;
+
+        const researchResponse = await genAI.models.generateContent({
+            model: 'gemini-2.5-flash', // Flash is faster for web research
+            config: {
+                tools: [{ googleSearch: {} }],
+                temperature: 1.0, // Higher temp helps synthesize search results better
+            },
+            contents: [{ role: 'user', parts: [{ text: researchPrompt }] }]
+        });
+
+        const rawData = researchResponse.text;
+
+        // --- PASS 2: THE ACCOUNTANT (No Tools, Strict Schema Enabled) ---
+        const formatPrompt = `
+            Convert the following financial research into the requested JSON schema.
+            RESEARCH DATA:
+            ${rawData}
+            
+            RULES:
+            - Symbols must be tickers only (e.g. "AREIT").
+            - Dates must be YYYY-MM-DD.
+        `;
+
+        const formatResponse = await genAI.models.generateContent({
+            model: modelName, // Use Pro here for the final "Strict Accountant" extraction
+            config: {
+                temperature: 0.1,
+                responseMimeType: "application/json",
+                responseJsonSchema: stockPriceSchema, // Strict constraint applied here
+            },
+            contents: [{ role: 'user', parts: [{ text: formatPrompt }] }]
+        });
+
+        const finalJson = formatResponse.text || '[]';
+        const parsed: FetchedPrice[] = JSON.parse(finalJson);
+
+        await logUsage('fetchHistoricalPrices', researchPrompt, finalJson, 0, 0, Date.now() - startTime, modelName, 'success');
+
+        return parsed;
+
+    } catch (error) {
+        console.error('WealthSnap Data Error:', error);
+        return [];
+    }
+};
+
+export const fetchHistoricalPrices1 = async (assets: AssetRequest[], duration: string): Promise<FetchedPrice[]> => {
     const startTime = Date.now();
     let prompt = '';
 
-    // Fail fast
     const isConfigured = await isGeminiConfigured();
     if (!isConfigured) {
         throw new Error("Gemini API Key is not configured");
@@ -376,15 +465,6 @@ export const fetchHistoricalPrices = async (assets: AssetRequest[], duration: st
 
     try {
         const { genAI, modelName } = await getGeminiClient();
-        const model = genAI.getGenerativeModel({
-            model: modelName,
-            generationConfig: {
-                temperature: 0.2,
-                topP: 0.8,
-                topK: 40,
-                responseMimeType: "application/json",
-            }
-        });
 
         const assetList = assets.map(a => {
             const symbol = a.symbol.toUpperCase();
@@ -393,37 +473,38 @@ export const fetchHistoricalPrices = async (assets: AssetRequest[], duration: st
         }).join(', ');
 
         prompt = `
-You are a precise financial data engine. 
-Task: Return the daily closing price history for these assets: [${assetList}].
-
+Task: Return the daily closing price history for: [${assetList}].
 Reference Date (Today): ${new Date().toISOString().split('T')[0]}
 Requested Duration: ${duration}
 
-STRICT DATA RULES:
-1. Provide one data point per TRADING DAY. Do not include weekends or market holidays.
-2. If "Duration" is "Today", provide only the most recent confirmed closing price.
-3. For Philippine stocks (PSE), ensure prices are in PHP. For US stocks, in USD.
-4. "symbol" must be the ticker only (e.g., "AREIT", not "PSE:AREIT").
-5. If you lack data for a specific day, do not skip the date; instead, provide the price from the previous trading day (carry-forward).
+RULES:
+1. Use Google Search to find confirmed historical closing prices.
+2. Provide one data point per TRADING DAY. Skip weekends/holidays.
+3. For PSE, ensure prices are in PHP. For US stocks, in USD.
+4. Carry-forward: If a day is missing, use the previous day's price.
+        `;
 
-JSON STRUCTURE EXAMPLE:
-[
-  {
-    "symbol": "AREIT",
-    "price": 34.50,
-    "date": "2026-01-30",
-    "high": 34.60,
-    "low": 34.20,
-    "volume": 1200000
-  }
-]
+        const response = await genAI.models.generateContent({
+            model: modelName,
+            config: {
+                tools: [
+                    {
+                        googleSearch: {},
+                    },
+                ],
+                temperature: 0.1,
+                responseMimeType: "application/json",
+                responseJsonSchema: stockPriceSchema,
+            },
+            contents: [
+                {
+                    role: 'user',
+                    parts: [{ text: prompt }]
+                }
+            ]
+        });
 
-RETURN JSON ONLY. NO PRE-TEXT. NO POST-TEXT.
-`;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const text = response.text ? response.text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim() : '';
 
         await logUsage('fetchHistoricalPrices', prompt, text, 0, 0, Date.now() - startTime, modelName, 'success');
 
@@ -451,7 +532,72 @@ export interface FetchedDividend {
     type: 'CASH' | 'STOCK' | 'SPECIAL' | 'PROPERTY';
 }
 
+const dividendHistorySchema = {
+    type: 'array',
+    items: {
+        type: 'object',
+        properties: {
+            symbol: { type: 'string', description: 'The stock ticker symbol (e.g. DMC)' },
+            exDate: { type: 'string', description: 'The Ex-Dividend Date (YYYY-MM-DD)', nullable: true },
+            paymentDate: { type: 'string', description: 'The date the dividend is paid (YYYY-MM-DD)', nullable: true },
+            recordDate: { type: 'string', description: 'The date of record (YYYY-MM-DD)', nullable: true },
+            amount: { type: 'number', description: 'The dividend amount per share in local currency' },
+            type: {
+                type: 'string',
+                enum: ['CASH', 'STOCK', 'SPECIAL'],
+                description: 'The type of dividend declaration'
+            }
+        },
+        required: ['symbol', 'exDate', 'amount', 'type']
+    }
+};
+
 export const fetchDividendHistory = async (assets: AssetRequest[], duration: string): Promise<FetchedDividend[]> => {
+    try {
+        const { genAI, modelName } = await getGeminiClient();
+
+        // --- PASS 1: THE RESEARCHER (Plain Text + Search) ---
+        const researchPrompt = `Find the dividend history for: [${assets.map(a => a.symbol).join(', ')}]. 
+        Duration: ${duration}. Focus on Ex-Date, Record Date, and Amount in PHP for PSE stocks. 
+        Provide the raw results in text.`;
+
+        const researchResponse = await genAI.models.generateContent({
+            model: 'gemini-3-flash-preview', // Flash is faster/cheaper for the "search" phase
+            config: { tools: [{ googleSearch: {} }] }, // Tools allowed here
+            contents: [{ role: 'user', parts: [{ text: researchPrompt }] }]
+        });
+
+        const rawResearchText = researchResponse.text;
+
+        // --- PASS 2: THE ACCOUNTANT (Strict JSON + No Tools) ---
+        const accountantPrompt = `Convert this raw financial research into a structured JSON list:
+        
+        RESEARCH DATA:
+        ${rawResearchText}
+
+        RULES:
+        - Use ONLY the following JSON Schema.
+        - Ticker symbols only (e.g., "DMC").
+        - Dates in YYYY-MM-DD.`;
+
+        const extractionResponse = await genAI.models.generateContent({
+            model: modelName, // Use Pro here for high-accuracy extraction
+            config: {
+                responseMimeType: "application/json",
+                responseJsonSchema: dividendHistorySchema, // Schema allowed here (no tools)
+            },
+            contents: [{ role: 'user', parts: [{ text: accountantPrompt }] }]
+        });
+
+        return JSON.parse(extractionResponse.text || '[]');
+
+    } catch (error) {
+        console.error('WealthSnap Data Error:', error);
+        return [];
+    }
+};
+
+export const fetchDividendHistory1 = async (assets: AssetRequest[], duration: string): Promise<FetchedDividend[]> => {
     const startTime = Date.now();
     let prompt = '';
 
@@ -462,15 +608,6 @@ export const fetchDividendHistory = async (assets: AssetRequest[], duration: str
 
     try {
         const { genAI, modelName } = await getGeminiClient();
-        const model = genAI.getGenerativeModel({
-            model: modelName,
-            generationConfig: {
-                temperature: 0.2,
-                topP: 0.8,
-                topK: 40,
-                responseMimeType: "application/json",
-            }
-        });
 
         const assetList = assets.map(a => {
             const symbol = a.symbol.toUpperCase();
@@ -479,38 +616,42 @@ export const fetchDividendHistory = async (assets: AssetRequest[], duration: str
         }).join(', ');
 
         prompt = `
-You are a highly accurate financial data assistant specializing in the Philippine Stock Exchange and Global Markets.
-Current Date: ${new Date().toISOString().split('T')[0]}
+You are the Financial Data Engine.
+Task: Retrieve the confirmed dividend history for these assets: [${assetList}].
 
-TASK:
-Retrieve the dividend history for: [${assetList}].
+Reference Date (Today): ${new Date().toISOString().split('T')[0]}
 Duration: ${duration}
 
-INSTRUCTIONS:
-1. Identify the exact Ex-Date, Record Date, and Payment Date for each dividend declared.
-2. For PSE stocks (e.g., TEL, DMC, MBT), ensure the currency is in PHP.
-3. If an asset had no dividends in the period "${duration}", return an empty list for that symbol but do not hallucinate data.
-4. Verify against known historical corporate actions.
-5. "symbol" must be the ticker only (e.g., "AREIT", not "PSE:AREIT").
-
-REQUIRED JSON FORMAT:
-[
-  {
-    "symbol": "DMC",
-    "exDate": "2024-04-15",
-    "paymentDate": "2024-05-10",
-    "recordDate": "2024-04-16",
-    "amount": 0.72,
-    "type": "CASH"
-  }
-]
-
-CRITICAL: Return ONLY valid JSON. No prose or explanations.
+--------------------------------------------------
+DATA GATHERING RULES:
+--------------------------------------------------
+1. GOOGLE SEARCH: Use live search to find the latest corporate disclosures from PSE Edge or financial news for the requested period.
+2. CURRENCY: For Philippine stocks (PSE), amounts MUST be in PHP. For US stocks, in USD.
+3. DATE FORMAT: Use YYYY-MM-DD. If a date (Record/Payment) is not yet announced, return null for that field.
+4. ACCURACY: Do not hallucinate. If no dividends were declared during "${duration}", return an empty list for that symbol.
+5. TICKER ONLY: The "symbol" field must only contain the ticker (e.g., "TEL", not "PSE:TEL").
 `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const response = await genAI.models.generateContent({
+            model: modelName,
+            config: {
+                tools: [
+                    {
+                        googleSearch: {},
+                    },
+                ],
+                temperature: 0.1,
+                responseMimeType: "application/json",
+            },
+            contents: [
+                {
+                    role: 'user',
+                    parts: [{ text: prompt }]
+                }
+            ]
+        });
+
+        const text = response.text ? response.text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim() : '';
 
         await logUsage('fetchDividendHistory', prompt, text, 0, 0, Date.now() - startTime, modelName, 'success');
 
