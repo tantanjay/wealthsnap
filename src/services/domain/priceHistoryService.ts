@@ -145,3 +145,16 @@ export const deletePriceHistory = async (id: string): Promise<void> => {
         throw new Error('Failed to delete price history');
     }
 };
+
+/**
+ * Delete ALL price history for a symbol.
+ */
+export const deleteAllPriceHistory = async (symbol: string): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        await db.runAsync(`DELETE FROM price_history WHERE symbol = ?`, [symbol]);
+    } catch (error) {
+        console.error('Error deleting all price history:', error);
+        throw new Error('Failed to delete all price history');
+    }
+};
