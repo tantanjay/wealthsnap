@@ -14,9 +14,20 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
 
         const suggestions: Suggestion[] = [];
 
-        // 1. Analyze for "Crash" and "Dip"
+        // FILTER: Only include stocks with investments record (holdings) and type 'STOCKS'
+        const stockAssets = assets.filter(asset => {
+            const hasHolding = holdings.some(h => h.symbol === asset.symbol);
+            const isStock = asset.type && (
+                asset.type.toUpperCase() === 'STOCK' ||
+                asset.type.toUpperCase() === 'STOCKS'
+            );
+            return hasHolding && isStock;
+        });
+
+        // Use filtered assets for analysis
+        const analysisAssets = stockAssets;
         if (priority === 'all' || priority === 'crash') {
-            for (const asset of assets) {
+            for (const asset of analysisAssets) {
                 // Check recent price history (last 30 days)
                 const history = await getPriceHistory(asset.symbol,
                     new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -78,7 +89,7 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
             const nextMonth = new Date();
             nextMonth.setDate(today.getDate() + 30);
 
-            for (const asset of assets) {
+            for (const asset of analysisAssets) {
                 const divHistory = await getDividendHistory(asset.symbol);
                 // Look for upcoming ex-dates. Since our service only gets history, we rely on projected data 
                 // we added in dummyDataService.
@@ -120,7 +131,7 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
             });
 
             // Find sectors from all available assets
-            const allSectors = Array.from(new Set(assets.map(a => a.sector).filter(s => s)));
+            const allSectors = Array.from(new Set(analysisAssets.map(a => a.sector).filter(s => s)));
 
             for (const sector of allSectors) {
                 const alloc = sectorAlloc[sector as string] || 0;
@@ -130,7 +141,7 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
                 if (pct < 0.10) {
                     // Suggest a stock in this sector that isn't crashing? 
                     // Or just any stock. Let's pick one we don't own, or minimal own.
-                    const candidate = assets.find(a => a.sector === sector);
+                    const candidate = analysisAssets.find(a => a.sector === sector);
                     if (candidate) {
                         const currentPrice = latestPricesRecord[candidate.symbol]?.price?.toNumber() || 0;
                         // Avoid duplicates if already suggested
