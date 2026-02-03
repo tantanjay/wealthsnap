@@ -1,5 +1,5 @@
-import { CHANGELOG_MARKDOWN } from './changeLogData';
-import { parseMarkdownToContentItems } from '../utils/markdownParser';
+import { CHANGELOG_MARKDOWN } from '@constants/changeLogData';
+import { parseMarkdownToContentItems } from '@utils/markdownParser';
 
 export interface HelpSlide {
     id: string;

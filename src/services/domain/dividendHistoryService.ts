@@ -1,7 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 import { getDatabase } from "@services/database/databaseService";
 import { generateUUID } from "@utils/uuid";
-import { PortfolioHolding } from './investmentService';
+import { PortfolioHolding } from '@services/domain/investmentService';
 import { DividendHistory } from '@types';
 
 // --- Queries ---

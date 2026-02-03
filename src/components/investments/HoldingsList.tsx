@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Skeleton } from '@components/common/Skeleton';
-import { InvestmentHistoryModal } from './InvestmentHistoryModal';
+import { InvestmentHistoryModal } from '@components/investments/modals/InvestmentHistoryModal';
 import { useTheme } from '@context/ThemeContext';
 import { formatCurrencyAmount, formatCompactCurrency } from '@utils/currencyUtils';
 
