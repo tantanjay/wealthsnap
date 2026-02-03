@@ -49,7 +49,9 @@ const ProfileScreen = ({ navigation }: any) => {
     const [showWhyFreeModal, setShowWhyFreeModal] = useState(false);
     const [showDevMessageModal, setShowDevMessageModal] = useState(false);
     const [showRemindersModal, setShowRemindersModal] = useState(false);
+
     const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+    const [showManifestoModal, setShowManifestoModal] = useState(false);
 
     // Developer Mode State
     const [isDevMode, setIsDevMode] = useState(false);
@@ -412,6 +414,16 @@ const ProfileScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
+                        onPress={() => setShowManifestoModal(true)}
+                        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
+                    >
+                        <Ionicons name="telescope-outline" size={18} color={colors.primary} />
+                        <Text style={{ color: colors.primary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
+                            Vision, Philosophy & Goals
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
                         onPress={() => setShowSupportModal(true)}
                         style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
                     >
@@ -562,6 +574,54 @@ const ProfileScreen = ({ navigation }: any) => {
                         style={{ marginTop: 12 }}
                     />
                 </View>
+            </BottomModal>
+
+            {/* Manifesto Modal */}
+            <BottomModal
+                visible={showManifestoModal}
+                onClose={() => setShowManifestoModal(false)}
+                title="Vision, Philosophy & Goals"
+            >
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={{ marginBottom: 20, marginTop: 5 }}>
+                        <Text style={[styles.cardTitle, { color: colors.text, fontSize: 16, marginBottom: 8 }]}>🔭 Vision</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24 }}>
+                            To provide absolute ownership of financial truth through a zero-knowledge, local-first architecture. WealthSnap envisions a world where privacy is the default and individual data is the ultimate tool for personal clarity.
+                        </Text>
+                    </View>
+
+                    <View style={{ marginBottom: 20 }}>
+                        <Text style={[styles.cardTitle, { color: colors.text, fontSize: 16, marginBottom: 8 }]}>🏛️ Philosophy & Standings</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24 }}>
+                            WealthSnap is a Reflection Tool, not an advisor or a trading platform. It does not provide tips or financial "shoulds"; it provides a high-precision mirror of your own data to help you see your reality without external noise.
+                        </Text>
+                    </View>
+
+                    <View style={{ marginBottom: 20 }}>
+                        <Text style={[styles.cardTitle, { color: colors.text, fontSize: 16, marginBottom: 8 }]}>🎯 Strategic Goals</Text>
+
+                        <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginRight: 8 }}>1.</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, flex: 1 }}>
+                                <Text style={{ color: colors.text, fontWeight: '600' }}>The Skill Portfolio</Text>: Treat professional knowledge as a high-yield financial asset. WealthSnap tracks skills as a portfolio that generates dividends in earning potential.
+                            </Text>
+                        </View>
+
+                        <View style={{ flexDirection: 'row' }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginRight: 8 }}>2.</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, flex: 1 }}>
+                                <Text style={{ color: colors.text, fontWeight: '600' }}>The Health Portfolio</Text>: Manage the "Physical Hardware" required to run your "Professional Software." Health is the ultimate insurance for future earning power.
+                            </Text>
+                        </View>
+                    </View>
+
+                    <Button
+                        title="Close"
+                        onPress={() => setShowManifestoModal(false)}
+                        variant="outline"
+                        style={{ marginTop: 10, marginBottom: 20 }}
+                    />
+                </ScrollView>
             </BottomModal>
         </ScreenWrapper >
 
