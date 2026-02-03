@@ -228,6 +228,63 @@ export const getInsightsSectionOrder = async (): Promise<string[] | null> => {
     }
 };
 
+// ============= Investment Screen Preferences (AsyncStorage) =============
+export type InvestmentLayoutOrder = 'standard' | 'swapped';
+
+export const saveInvestmentLayoutOrder = async (order: InvestmentLayoutOrder): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INVESTMENT_SCREEN.LAYOUT_ORDER, order);
+    } catch (error) {
+        console.error('Failed to save investment layout order:', error);
+    }
+};
+
+export const getInvestmentLayoutOrder = async (): Promise<InvestmentLayoutOrder> => {
+    try {
+        const order = await AsyncStorage.getItem(ASYNC_KEYS.INVESTMENT_SCREEN.LAYOUT_ORDER);
+        return (order === 'swapped') ? 'swapped' : 'standard';
+    } catch (error) {
+        console.error('Failed to get investment layout order:', error);
+        return 'standard';
+    }
+};
+
+export const saveInvestmentStatsOrder = async (order: string[]): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INVESTMENT_SCREEN.STATS_ORDER, JSON.stringify(order));
+    } catch (error) {
+        console.error('Failed to save investment stats order:', error);
+    }
+};
+
+export const getInvestmentStatsOrder = async (): Promise<string[] | null> => {
+    try {
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.INVESTMENT_SCREEN.STATS_ORDER);
+        return data ? JSON.parse(data) : null;
+    } catch (error) {
+        console.error('Failed to get investment stats order:', error);
+        return null;
+    }
+};
+
+export const saveInvestmentSectionOrder = async (order: string[]): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INVESTMENT_SCREEN.SECTION_ORDER, JSON.stringify(order));
+    } catch (error) {
+        console.error('Failed to save investment section order:', error);
+    }
+};
+
+export const getInvestmentSectionOrder = async (): Promise<string[] | null> => {
+    try {
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.INVESTMENT_SCREEN.SECTION_ORDER);
+        return data ? JSON.parse(data) : null;
+    } catch (error) {
+        console.error('Failed to get investment section order:', error);
+        return null;
+    }
+};
+
 // ============= Clear All Data =============
 
 export const clearAllData = async (): Promise<void> => {

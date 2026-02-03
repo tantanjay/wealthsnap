@@ -15,6 +15,7 @@ interface InvestmentStatsProps {
     currency?: string;
     isLoading?: boolean;
     isPrivacyEnabled?: boolean;
+    cardOrder?: string[];
 }
 
 const StatCardSkeleton = ({ width }: { width: number }) => {
@@ -65,7 +66,8 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
     totalDividends,
     currency = 'PHP',
     isLoading = false,
-    isPrivacyEnabled = false
+    isPrivacyEnabled = false,
+    cardOrder
 }) => {
     const { colors } = useTheme();
     const [currentPage, setCurrentPage] = React.useState(0);
@@ -84,7 +86,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
     // To snap 2 cards at a time, we snap by the full availableWidth + gap
     const snapInterval = availableWidth + gap;
 
-    const cards = [
+    const allCards = [
         {
             id: 'equity',
             label: "Total Equity",
@@ -144,6 +146,18 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
             color: colors.textSecondary
         }
     ];
+
+    // Sort cards based on cardOrder
+    const cards = React.useMemo(() => {
+        if (!cardOrder || cardOrder.length === 0) return allCards;
+
+        return [...allCards].sort((a, b) => {
+            const indexA = cardOrder.indexOf(a.id);
+            const indexB = cardOrder.indexOf(b.id);
+            // Items not in the order array go to the end
+            return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+        });
+    }, [allCards, cardOrder]);
 
     const totalPages = Math.ceil(cards.length / 2);
 

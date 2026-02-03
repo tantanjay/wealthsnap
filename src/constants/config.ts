@@ -39,6 +39,11 @@ export const ASYNC_KEYS = {
     HISTORY_SCREEN: {
         PREFERENCE: '@wealthsnap_history_prefs'
     },
+    INVESTMENT_SCREEN: {
+        LAYOUT_ORDER: '@wealthsnap_investment_layout_order',
+        STATS_ORDER: '@wealthsnap_investment_stats_order',
+        SECTION_ORDER: '@wealthsnap_investment_section_order',
+    },
     CRASH_REPORT: '@wealthsnap_crash_report',
     DEVELOPER_MODE: '@wealthsnap_developer_mode',
 };
