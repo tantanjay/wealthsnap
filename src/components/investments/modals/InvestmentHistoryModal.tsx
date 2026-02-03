@@ -239,7 +239,36 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
     // --- AI Fetch Handlers ---
 
-    const openFetchMenu = (mode: 'price' | 'dividend') => {
+    const openFetchMenu = async (mode: 'price' | 'dividend') => {
+        // Validate Asset Type (Stock Only)
+        // Check local transactions first for efficiency or fetch asset info
+        let isStock = false;
+        const position = transactions.find(t => t.originalInvestment?.type === 'STOCKS');
+        if (position) {
+            isStock = true;
+        } else {
+            // Fallback: Check Asset Service
+            try {
+                const allAssets = await getAllAssets();
+                const asset = allAssets.find(a => a.symbol === symbol);
+                // Check if type is STOCKS or vaguely stock-like if needed, but strictly STOCKS as per requirement
+                if (asset?.type === 'STOCKS' || asset?.type === 'STOCK') {
+                    isStock = true;
+                }
+            } catch (e) {
+                console.warn("Failed to verify asset type", e);
+            }
+        }
+
+        if (!isStock) {
+            if (Platform.OS === 'android') {
+                ToastAndroid.show("AI Fetch is only available for Stocks.", ToastAndroid.SHORT);
+            } else {
+                showAlert("Not Available", "AI Fetch is only available for Stocks.");
+            }
+            return;
+        }
+
         checkConsent(() => {
             setActiveFetchMode(mode);
             setIsFetchMenuVisible(true);
