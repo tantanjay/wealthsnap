@@ -20,8 +20,11 @@ import * as Storage from '@services/core/storageService';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, ToastAndroid } from 'react-native';
 import InvestmentSettingsModal from '@components/investments/modals/InvestmentSettingsModal';
-import ReorderModal from '@components/common/ReorderModal';
 import { useAIConsent } from '@hooks/useAIConsent';
+
+// Valid IDs for validation
+const VALID_STATS_IDS = ['equity', 'realized', 'unrealized', 'dividends'];
+const VALID_SECTION_IDS = ['stats_carousel', 'smart_advisor', 'allocation_chart', 'dividend_chart', 'holdings_list'];
 
 const InvestmentScreen = () => {
     const { colors } = useTheme();
@@ -46,8 +49,6 @@ const InvestmentScreen = () => {
 
     // Layout Settings
     const [showSettings, setShowSettings] = useState(false);
-    const [showStatsReorder, setShowStatsReorder] = useState(false);
-    const [showSectionReorder, setShowSectionReorder] = useState(false);
 
     const [statsOrder, setStatsOrder] = useState<string[]>([]);
     const [sectionOrder, setSectionOrder] = useState<string[]>([]);
@@ -75,10 +76,17 @@ const InvestmentScreen = () => {
 
             // Load layout preferences
             const currentStatsOrder = await Storage.getInvestmentStatsOrder();
-            if (currentStatsOrder) setStatsOrder(currentStatsOrder);
+            if (currentStatsOrder) {
+                const validOrder = currentStatsOrder.filter(id => VALID_STATS_IDS.includes(id));
+                // Only set if we have valid items, otherwise fallback to default
+                if (validOrder.length > 0) setStatsOrder(validOrder);
+            }
 
             const currentSectionOrder = await Storage.getInvestmentSectionOrder();
-            if (currentSectionOrder) setSectionOrder(currentSectionOrder);
+            if (currentSectionOrder) {
+                const validOrder = currentSectionOrder.filter(id => VALID_SECTION_IDS.includes(id));
+                if (validOrder.length > 0) setSectionOrder(validOrder);
+            }
 
         } catch (error) {
             console.error("Failed to load investment stats", error);
@@ -99,16 +107,14 @@ const InvestmentScreen = () => {
         setSuggestions(newSuggestions);
     };
 
-    const handleUpdateStatsOrder = async (newItems: any[]) => {
-        const order = newItems.map(i => i.id);
-        setStatsOrder(order);
-        await Storage.saveInvestmentStatsOrder(order);
+    const handleUpdateStatsOrder = async (newOrder: string[]) => {
+        setStatsOrder(newOrder);
+        await Storage.saveInvestmentStatsOrder(newOrder);
     };
 
-    const handleUpdateSectionOrder = async (newItems: any[]) => {
-        const order = newItems.map(i => i.id);
-        setSectionOrder(order);
-        await Storage.saveInvestmentSectionOrder(order);
+    const handleUpdateSectionOrder = async (newOrder: string[]) => {
+        setSectionOrder(newOrder);
+        await Storage.saveInvestmentSectionOrder(newOrder);
     };
 
     const onRefresh = React.useCallback(async () => {
@@ -332,66 +338,14 @@ const InvestmentScreen = () => {
                         handleBulkFetchPrices(duration);
                     });
                 }}
-                onOpenStatsReorder={() => {
-                    setShowSettings(false);
-                    setShowStatsReorder(true);
-                }}
-                onOpenSectionReorder={() => {
-                    setShowSettings(false);
-                    setShowSectionReorder(true);
-                }}
+                statsOrder={statsOrder}
+                sectionOrder={sectionOrder}
+                onUpdateStatsOrder={handleUpdateStatsOrder}
+                onUpdateSectionOrder={handleUpdateSectionOrder}
             />
 
             {/* Stats Reorder Modal */}
-            <ReorderModal
-                visible={showStatsReorder}
-                onClose={() => {
-                    setShowStatsReorder(false);
-                    setShowSettings(true);
-                }}
-                title="Reorder Stats Cards"
-                items={[
-                    { id: 'equity', label: 'Total Equity' },
-                    { id: 'realized', label: 'Realized P/L' },
-                    { id: 'unrealized', label: 'Unrealized P/L' },
-                    { id: 'dividends', label: 'Total Dividends' },
-                ].sort((a, b) => {
-                    if (!statsOrder || statsOrder.length === 0) return 0;
-                    const indexA = statsOrder.indexOf(a.id);
-                    const indexB = statsOrder.indexOf(b.id);
-                    if (indexA === -1 && indexB === -1) return 0;
-                    if (indexA === -1) return 1;
-                    if (indexB === -1) return -1;
-                    return indexA - indexB;
-                })}
-                onReorder={handleUpdateStatsOrder}
-            />
 
-            {/* Section Reorder Modal */}
-            <ReorderModal
-                visible={showSectionReorder}
-                onClose={() => {
-                    setShowSectionReorder(false);
-                    setShowSettings(true);
-                }}
-                title="Reorder Sections"
-                items={[
-                    { id: 'stats_carousel', label: 'Stats Cards' },
-                    { id: 'smart_advisor', label: 'Smart Advisor' },
-                    { id: 'allocation_chart', label: 'Allocation Chart' },
-                    { id: 'dividend_chart', label: 'Dividend Projection' },
-                    { id: 'holdings_list', label: 'Holdings List' },
-                ].sort((a, b) => {
-                    if (!sectionOrder || sectionOrder.length === 0) return 0;
-                    const indexA = sectionOrder.indexOf(a.id);
-                    const indexB = sectionOrder.indexOf(b.id);
-                    if (indexA === -1 && indexB === -1) return 0;
-                    if (indexA === -1) return 1;
-                    if (indexB === -1) return -1;
-                    return indexA - indexB;
-                })}
-                onReorder={handleUpdateSectionOrder}
-            />
 
         </ScreenWrapper>
     );

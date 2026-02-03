@@ -3,21 +3,73 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
+import { ReorderList, ReorderItem } from '@components/common/ReorderList';
 
 interface InsightsSettingsModalProps {
     visible: boolean;
     onClose: () => void;
-    onOpenCardsReorder: () => void;
-    onOpenInsightsReorder: () => void;
+    cardsOrder: string[];
+    insightsOrder: string[];
+    onUpdateCardsOrder: (newOrder: string[]) => void;
+    onUpdateInsightsOrder: (newOrder: string[]) => void;
 }
 
 const InsightsSettingsModal: React.FC<InsightsSettingsModalProps> = ({
     visible,
     onClose,
-    onOpenCardsReorder,
-    onOpenInsightsReorder
+    cardsOrder,
+    insightsOrder,
+    onUpdateCardsOrder,
+    onUpdateInsightsOrder
 }) => {
     const { colors } = useTheme();
+    const [view, setView] = React.useState<'MAIN' | 'CARDS_REORDER' | 'INSIGHTS_REORDER'>('MAIN');
+
+    // Reset view when modal closes
+    React.useEffect(() => {
+        if (!visible) {
+            setView('MAIN');
+        }
+    }, [visible]);
+
+    const getCardItems = (): ReorderItem[] => {
+        const labels: Record<string, string> = {
+            'financial-runway': 'Financial Runway',
+            'budget-performance': 'Budget Health',
+            'net-cash-flow': 'Net Cash Flow',
+            'savings-rate': 'Savings Rate',
+            'total-income': 'Total Income',
+            'total-expense': 'Total Expense',
+            'burn-rate': 'Burn Rate',
+            'avg-daily-spending': 'Daily Average',
+            'annual-spending': 'Annualized Exp.',
+            'largest-category': 'Top Category'
+        };
+        // Combine saved order with all valid keys to ensure nothing is missing
+        const uniqueIds = Array.from(new Set([...cardsOrder, ...Object.keys(labels)]));
+        // Filter out any garbage IDs that are not in our labels map
+        const finalOrder = uniqueIds.filter(id => labels[id]);
+
+        return finalOrder.map(id => ({ id, label: labels[id] }));
+    };
+
+    const getInsightItems = (): ReorderItem[] => {
+        const labels: Record<string, string> = {
+            'overview': 'Summary Cards',
+            'cumulative': 'Cumulative Spending',
+            'comparison': 'Spending Comparison',
+            'expense': 'Expense Analysis',
+            'income': 'Income Analysis',
+            'savings': 'Savings Rate',
+            'alerts': 'Smart Alerts'
+        };
+        // Combine saved order with all valid keys to ensure nothing is missing
+        const uniqueIds = Array.from(new Set([...insightsOrder, ...Object.keys(labels)]));
+        // Filter out any garbage IDs that are not in our labels map
+        const finalOrder = uniqueIds.filter(id => labels[id]);
+
+        return finalOrder.map(id => ({ id, label: labels[id] }));
+    };
 
     const renderMenuItem = (
         icon: any,
@@ -42,28 +94,57 @@ const InsightsSettingsModal: React.FC<InsightsSettingsModalProps> = ({
         </TouchableOpacity>
     );
 
+    const getTitle = () => {
+        switch (view) {
+            case 'CARDS_REORDER': return "Reorder Cards";
+            case 'INSIGHTS_REORDER': return "Reorder Sections";
+            default: return "Insights Settings";
+        }
+    };
+
     return (
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Insights Settings"
+            title={getTitle()}
             maxHeight="auto"
+            headerRight={view !== 'MAIN' ? (
+                <TouchableOpacity onPress={() => setView('MAIN')} style={{ marginRight: 8 }}>
+                    <Text style={{ color: colors.primary, fontSize: 16 }}>Back</Text>
+                </TouchableOpacity>
+            ) : undefined}
         >
             <View style={styles.container}>
-                {renderMenuItem(
-                    "stats-chart",
-                    "Summary Cards Layout",
-                    "Reorder the top summary cards",
-                    onOpenCardsReorder
-                )}
+                {view === 'MAIN' ? (
+                    <>
+                        {renderMenuItem(
+                            "stats-chart",
+                            "Summary Cards Layout",
+                            "Reorder the top summary cards",
+                            () => setView('CARDS_REORDER')
+                        )}
 
-                <View style={{ height: 12 }} />
+                        <View style={{ height: 12 }} />
 
-                {renderMenuItem(
-                    "layers",
-                    "Insights Sections",
-                    "Reorder the main analysis sections",
-                    onOpenInsightsReorder
+                        {renderMenuItem(
+                            "layers",
+                            "Insights Sections",
+                            "Reorder the main analysis sections",
+                            () => setView('INSIGHTS_REORDER')
+                        )}
+                    </>
+                ) : view === 'CARDS_REORDER' ? (
+                    <ReorderList
+                        items={getCardItems()}
+                        onReorder={(newItems) => onUpdateCardsOrder(newItems.map(i => i.id))}
+                        containerStyle={{ maxHeight: 400 }}
+                    />
+                ) : (
+                    <ReorderList
+                        items={getInsightItems()}
+                        onReorder={(newItems) => onUpdateInsightsOrder(newItems.map(i => i.id))}
+                        containerStyle={{ maxHeight: 400 }}
+                    />
                 )}
             </View>
         </BottomModal>
