@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Switch, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
 
 import { Card } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
@@ -19,22 +20,55 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
     const { showAlert } = useAlert();
     const [reminders, setReminders] = useState<Reminder[]>([]);
     const [loading, setLoading] = useState(true);
+    const [scheduledIds, setScheduledIds] = useState<Set<string>>(new Set());
+
+    const refreshScheduledIds = useCallback(async () => {
+        try {
+            const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+            const ids = new Set(scheduled.map(n => n.content.data?.reminderId as string).filter(Boolean));
+            setScheduledIds(ids);
+        } catch (error) {
+            console.error('Error fetching scheduled notifications:', error);
+        }
+    }, []);
+
+    const sortReminders = useCallback((list: Reminder[]) => {
+        return [...list].sort((a, b) => {
+            // 1. Active first
+            if (a.isActive && !b.isActive) return -1;
+            if (!a.isActive && b.isActive) return 1;
+            if (!a.isActive && !b.isActive) return 0; // Keep original order for inactive? Or sort by title?
+
+            // 2. Sort by next upcoming date
+            const nextA = calculateNextOccurrence(a);
+            const nextB = calculateNextOccurrence(b);
+
+            if (!nextA && !nextB) return 0;
+            if (!nextA) return 1;
+            if (!nextB) return -1;
+
+            return nextA.getTime() - nextB.getTime();
+        });
+    }, []);
 
     const loadReminders = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getAllReminders();
-            setReminders(data);
+            setReminders(sortReminders(data));
+            await refreshScheduledIds();
         } catch (error) {
             console.error('Error loading reminders:', error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [refreshScheduledIds, sortReminders]);
 
     useEffect(() => {
         loadReminders();
     }, [loadReminders]);
+
+    // Refresh notification status when app comes to foreground could be nice, but simple useEffect is okay for now.
 
     const handleToggleActive = async (reminder: Reminder) => {
         const updated = { ...reminder, isActive: !reminder.isActive, updatedAt: new Date().toISOString() };
@@ -45,8 +79,12 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
             } else {
                 await cancelReminderNotifications(updated.id);
             }
-            // Update local state
-            setReminders(prev => prev.map(r => r.id === updated.id ? updated : r));
+            // Update local state and re-sort
+            setReminders(prev => {
+                const newList = prev.map(r => r.id === updated.id ? updated : r);
+                return sortReminders(newList);
+            });
+            await refreshScheduledIds();
         } catch {
             showAlert('Error', 'Failed to update reminder');
         }
@@ -66,6 +104,7 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
                             await cancelReminderNotifications(id);
                             await deleteReminder(id);
                             setReminders(prev => prev.filter(r => r.id !== id));
+                            await refreshScheduledIds();
                         } catch {
                             showAlert('Error', 'Failed to delete reminder');
                         }
@@ -117,9 +156,14 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
             </View>
 
             <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
-                <Text style={[styles.triggerText, { color: colors.textSecondary }]}>
-                    N: {getNextTrigger(item)} • L: {formatDate(item.lastTriggered)}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    {scheduledIds.has(item.id) && (
+                        <Ionicons name="checkmark-circle" size={16} color={colors.success} style={{ marginRight: 4 }} />
+                    )}
+                    <Text style={[styles.triggerText, { color: colors.textSecondary }]}>
+                        N: {getNextTrigger(item)} • L: {formatDate(item.lastTriggered)}
+                    </Text>
+                </View>
                 <View style={styles.actions}>
                     <TouchableOpacity onPress={() => onEdit(item)} style={styles.actionButton}>
                         <Ionicons name="create-outline" size={20} color={colors.primary} />

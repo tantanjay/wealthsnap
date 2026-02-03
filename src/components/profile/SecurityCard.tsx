@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import BottomModal from '@components/common/BottomModal';
+import SettingItem from '@components/common/SettingItem';
 import PinCreationScreen from '@screens/security/PinCreationScreen';
 import GeminiSettingsModal from '@components/profile/settings/GeminiSettingsModal';
 import GeminiUsageModal from '@components/profile/settings/GeminiUsageModal';
@@ -45,44 +46,6 @@ const SecurityCard = () => {
         setTimeoutSetting(option);
         setShowTimeoutModal(false);
     };
-
-    const SettingItem = ({
-        icon,
-        title,
-        subtitle,
-        onPress,
-        iconBg,
-        iconColor,
-        isLast = false,
-        rightElement
-    }: {
-        icon: string,
-        title: string,
-        subtitle?: string,
-        onPress: () => void,
-        iconBg?: string,
-        iconColor?: string,
-        isLast?: boolean,
-        rightElement?: React.ReactNode
-    }) => (
-        <TouchableOpacity
-            style={[
-                styles.settingItem,
-                { borderBottomColor: colors.border },
-                isLast && { borderBottomWidth: 0 }
-            ]}
-            onPress={onPress}
-        >
-            <View style={[styles.iconContainer, { backgroundColor: iconBg || colors.primary + '20' }]}>
-                <Ionicons name={icon as any} size={20} color={iconColor || colors.primary} />
-            </View>
-            <View style={{ flex: 1, marginRight: 10 }}>
-                <Text style={[styles.settingTitle, { color: colors.text }]}>{title}</Text>
-                {subtitle && <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
-            </View>
-            {rightElement ? rightElement : <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />}
-        </TouchableOpacity>
-    );
 
     const getTimeoutLabel = (value: Security.TimeoutOption) => {
         const option = Security.TIMEOUT_OPTIONS.find(o => o.value === value);
@@ -233,28 +196,6 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 18,
         fontWeight: '700',
-    },
-    settingItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-    },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    settingTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: 2,
-    },
-    settingSubtitle: {
-        fontSize: 13,
     },
 });
 
