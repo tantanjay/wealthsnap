@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import TransactionOptionsModal from '@components/transaction/TransactionOptionsModal';
+import InvestmentOptionsModal from '@components/investments/InvestmentOptionsModal';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
@@ -12,7 +13,7 @@ import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { Transaction, UserProfile, Investment, RecurrenceRule } from '@types';
-import { deleteTransaction } from '@services/domain';
+import { deleteTransaction, deleteInvestment } from '@services/domain';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile, getCachedTransactions, getCachedInvestments } from '@services/core/storageService';
 import { HistoryCalendar } from '../components/history/HistoryCalendar';
@@ -52,6 +53,7 @@ const HistoryScreen = ({ navigation }: any) => {
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+    const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'LIST' | 'CALENDAR'>('LIST');
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(new Date());
@@ -372,7 +374,7 @@ const HistoryScreen = ({ navigation }: any) => {
             }
 
             return (
-                <TouchableOpacity style={{ marginBottom: 8 }} activeOpacity={0.9}>
+                <TouchableOpacity onPress={() => setSelectedInvestment(inv)} style={{ marginBottom: 8 }} activeOpacity={0.9}>
                     <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0, borderLeftWidth: 4, borderLeftColor: iconColor }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
@@ -446,7 +448,15 @@ const HistoryScreen = ({ navigation }: any) => {
         };
 
         return (
-            <TouchableOpacity onPress={() => setSelectedTransaction(t)} style={{ marginBottom: 8 }} activeOpacity={0.7}>
+            <TouchableOpacity
+                onPress={() => {
+                    // Prevent opening options for auto-generated transactions
+                    if (t.investmentId) return;
+                    setSelectedTransaction(t);
+                }}
+                activeOpacity={t.investmentId ? 1 : 0.7}
+                style={{ marginBottom: 8 }}
+            >
                 <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
@@ -746,7 +756,6 @@ const HistoryScreen = ({ navigation }: any) => {
                         </View>
                     </View>
 
-                    <View style={{ height: 20 }} />
                     {/* Connecting the Dots */}
                     <View style={{ marginBottom: 24, backgroundColor: colors.surface, padding: 16, borderRadius: 16, borderLeftWidth: 4, borderLeftColor: colors.primary }}>
                         <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>
@@ -770,6 +779,36 @@ const HistoryScreen = ({ navigation }: any) => {
 
                 </ScrollView>
             </BottomModal>
+
+            <InvestmentOptionsModal
+                visible={!!selectedInvestment}
+                investment={selectedInvestment}
+                linkedTransaction={selectedInvestment ? allTransactions.find(t => t.investmentId === selectedInvestment.id) || null : null}
+                onClose={() => setSelectedInvestment(null)}
+                onEdit={(inv) => {
+                    setSelectedInvestment(null);
+                    // Serialize BigNumber fields to strings for navigation
+                    const serializedInvestment = {
+                        ...inv,
+                        quantity: inv.quantity.toString(),
+                        price: inv.price.toString(),
+                        fees: inv.fees ? inv.fees.toString() : undefined
+                    };
+                    navigation.navigate('Record', { investment: serializedInvestment });
+                }}
+                onDelete={async (id, deleteLinked) => {
+                    if (deleteLinked) {
+                        const linkedTx = allTransactions.find(t => t.investmentId === id);
+                        if (linkedTx) {
+                            await deleteTransaction(linkedTx.id);
+                        }
+                    }
+                    await deleteInvestment(id);
+                    loadData();
+                    setSelectedInvestment(null);
+                }}
+                currency={profile?.currency}
+            />
         </ScreenWrapper>
     );
 };
