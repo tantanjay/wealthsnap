@@ -9,21 +9,32 @@ interface InvestmentSettingsModalProps {
     onClose: () => void;
     onOpenStatsReorder: () => void;
     onOpenSectionReorder: () => void;
+    onFetchPriceList?: (duration: string) => void;
 }
 
 const InvestmentSettingsModal: React.FC<InvestmentSettingsModalProps> = ({
     visible,
     onClose,
     onOpenStatsReorder,
-    onOpenSectionReorder
+    onOpenSectionReorder,
+    onFetchPriceList
 }) => {
     const { colors } = useTheme();
+    const [view, setView] = React.useState<'MAIN' | 'FETCH_OPTIONS'>('MAIN');
+
+    // Reset view when modal closes
+    React.useEffect(() => {
+        if (!visible) {
+            setView('MAIN');
+        }
+    }, [visible]);
 
     const renderMenuItem = (
         icon: any,
         title: string,
         subtitle: string,
-        onPress: () => void
+        onPress: () => void,
+        showChevron: boolean = true
     ) => (
         <TouchableOpacity
             style={[styles.menuItem, { backgroundColor: colors.surface }]}
@@ -38,7 +49,22 @@ const InvestmentSettingsModal: React.FC<InvestmentSettingsModalProps> = ({
                     <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
                 </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            {showChevron && <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />}
+        </TouchableOpacity>
+    );
+
+    const renderFetchOption = (label: string, value: string) => (
+        <TouchableOpacity
+            style={[styles.menuItem, { backgroundColor: colors.surface }]}
+            onPress={() => {
+                onFetchPriceList?.(value);
+                onClose();
+            }}
+        >
+            <View style={styles.menuContent}>
+                <Text style={[styles.menuTitle, { color: colors.text, marginLeft: 16 }]}>{label}</Text>
+            </View>
+            <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
         </TouchableOpacity>
     );
 
@@ -46,27 +72,62 @@ const InvestmentSettingsModal: React.FC<InvestmentSettingsModalProps> = ({
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Investment Settings"
+            title={view === 'MAIN' ? "Investment Settings" : "Fetch Price List"}
             maxHeight="auto"
+            headerRight={view === 'FETCH_OPTIONS' ? (
+                <TouchableOpacity onPress={() => setView('MAIN')} style={{ marginRight: 8 }}>
+                    <Text style={{ color: colors.primary, fontSize: 16 }}>Back</Text>
+                </TouchableOpacity>
+            ) : undefined}
         >
             <View style={styles.container}>
-                {renderMenuItem(
-                    "stats-chart",
-                    "Stats Cards Layout",
-                    "Reorder the summary cards",
-                    onOpenStatsReorder
-                )}
+                {view === 'MAIN' ? (
+                    <>
+                        {renderMenuItem(
+                            "stats-chart",
+                            "Stats Cards Layout",
+                            "Reorder the summary cards",
+                            onOpenStatsReorder
+                        )}
 
-                <View style={{ height: 12 }} />
+                        <View style={{ height: 12 }} />
 
-                {renderMenuItem(
-                    "layers",
-                    "Dashboard Sections",
-                    "Reorder main screen sections",
-                    onOpenSectionReorder
+                        {renderMenuItem(
+                            "layers",
+                            "Dashboard Sections",
+                            "Reorder main screen sections",
+                            onOpenSectionReorder
+                        )}
+
+                        <View style={{ height: 12 }} />
+
+                        {renderMenuItem(
+                            "pricetag",
+                            "Fetch Price List",
+                            "Bulk update stock prices",
+                            () => setView('FETCH_OPTIONS')
+                        )}
+                    </>
+                ) : (
+                    <>
+                        <View style={{ backgroundColor: 'rgba(255, 152, 0, 0.1)', padding: 12, borderRadius: 8, marginBottom: 15, flexDirection: 'row' }}>
+                            <Ionicons name="warning-outline" size={20} color="#FF9800" style={{ marginRight: 8, marginTop: 2 }} />
+                            <Text style={{ color: colors.text, fontSize: 13, flex: 1, lineHeight: 18 }}>
+                                AI-fetched prices are estimates and may vary from real-time official records.
+                            </Text>
+                        </View>
+                        <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+                            Select how far back to fetch prices for all your Stocks.
+                        </Text>
+                        {renderFetchOption("Today", "Today")}
+                        <View style={{ height: 8 }} />
+                        {renderFetchOption("Last 3 Days", "Last 3 days")}
+                        <View style={{ height: 8 }} />
+                        {renderFetchOption("Last 7 Days", "Last 7 days")}
+                    </>
                 )}
             </View>
-        </BottomModal>
+        </BottomModal >
     );
 };
 
@@ -105,6 +166,11 @@ const styles = StyleSheet.create({
     },
     menuSubtitle: {
         fontSize: 13,
+    },
+    helperText: {
+        fontSize: 14,
+        marginBottom: 8,
+        paddingHorizontal: 4
     }
 });
 
