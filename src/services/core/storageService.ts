@@ -190,6 +190,24 @@ export const getHomeDisplayMode = async (): Promise<HomeDisplayMode | null> => {
     }
 };
 
+export const saveHomeCardOrder = async (order: string[]): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.CARD_ORDER, JSON.stringify(order));
+    } catch (error) {
+        console.error('Failed to save home card order:', error);
+    }
+};
+
+export const getHomeCardOrder = async (): Promise<string[] | null> => {
+    try {
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.CARD_ORDER);
+        return data ? JSON.parse(data) : null;
+    } catch (error) {
+        console.error('Failed to get home card order:', error);
+        return null;
+    }
+};
+
 // ============= Insights Order (AsyncStorage) =============
 
 export const saveInsightsCardOrder = async (order: string[]): Promise<void> => {
