@@ -30,7 +30,7 @@ const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
                 💙 Support Development
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
-                WealthSnap is completely free and ad-free. Your support helps keep it that way!
+                WealthSnap is free because its architecture costs nothing to run. Your support simply helps me dedicate more time to its ongoing craft and future features.
             </Text>
 
             {/* Support Developer (Ko-fi) */}
