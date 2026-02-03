@@ -4,7 +4,7 @@ import { View, ScrollView, TouchableOpacity, Text, RefreshControl, StyleSheet } 
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
-import ReorderModal from '@components/common/ReorderModal';
+
 import InsightsOverviewCards from '@components/insights/InsightsOverviewCards';
 import InsightsSettingsModal from '@components/insights/modals/InsightsSettingsModal';
 import IncomeAnalysis from '@components/insights/IncomeAnalysis';
@@ -21,6 +21,18 @@ import { getAllBudgets } from '@services/domain';
 import * as Metrics from '@utils/financialMetrics';
 import * as Storage from '@services/core/storageService';
 
+// Valid IDs for validation/filtering
+const VALID_CARD_IDS = [
+    'financial-runway', 'budget-performance', 'net-cash-flow', 'savings-rate',
+    'total-income', 'total-expense', 'burn-rate', 'avg-daily-spending',
+    'annual-spending', 'largest-category'
+];
+
+const VALID_SECTION_IDS = [
+    'overview', 'cumulative', 'comparison', 'expense',
+    'income', 'savings', 'alerts'
+];
+
 const InsightsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled } = usePrivacy();
@@ -33,8 +45,6 @@ const InsightsScreen = ({ navigation }: any) => {
     const [sectionOrder, setSectionOrder] = useState<string[]>([]);
 
     const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
-    const [isCardReorderVisible, setIsCardReorderVisible] = useState(false);
-    const [isSectionReorderVisible, setIsSectionReorderVisible] = useState(false);
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
@@ -158,8 +168,17 @@ const InsightsScreen = ({ navigation }: any) => {
             ]);
 
             if (profile?.currency) setCurrency(profile.currency);
-            if (savedCardOrder) setCardOrder(savedCardOrder);
-            if (savedSectionOrder) setSectionOrder(savedSectionOrder);
+            if (profile?.currency) setCurrency(profile.currency);
+
+            if (savedCardOrder) {
+                const validOrder = savedCardOrder.filter(id => VALID_CARD_IDS.includes(id));
+                if (validOrder.length > 0) setCardOrder(validOrder);
+            }
+
+            if (savedSectionOrder) {
+                const validOrder = savedSectionOrder.filter(id => VALID_SECTION_IDS.includes(id));
+                if (validOrder.length > 0) setSectionOrder(validOrder);
+            }
 
             setTransactions(allTransactions);
             // We pass variables directly here to bypass the React state update delay
@@ -329,78 +348,13 @@ const InsightsScreen = ({ navigation }: any) => {
             <InsightsSettingsModal
                 visible={isSettingsModalVisible}
                 onClose={() => setIsSettingsModalVisible(false)}
-                onOpenCardsReorder={() => {
-                    setIsSettingsModalVisible(false);
-                    setIsCardReorderVisible(true);
-                }}
-                onOpenInsightsReorder={() => {
-                    setIsSettingsModalVisible(false);
-                    setIsSectionReorderVisible(true);
-                }}
-            />
-
-            {/* Cards Reorder Modal */}
-            <ReorderModal
-                visible={isCardReorderVisible}
-                onClose={() => {
-                    setIsCardReorderVisible(false);
-                    setIsSettingsModalVisible(true);
-                }}
-                title="Reorder Cards"
-                items={[
-                    { id: 'financial-runway', label: 'Financial Runway' },
-                    { id: 'budget-performance', label: 'Budget Health' },
-                    { id: 'net-cash-flow', label: 'Net Cash Flow' },
-                    { id: 'savings-rate', label: 'Savings Rate' },
-                    { id: 'total-income', label: 'Total Income' },
-                    { id: 'total-expense', label: 'Total Expense' },
-                    { id: 'burn-rate', label: 'Burn Rate' },
-                    { id: 'avg-daily-spending', label: 'Daily Average' },
-                    { id: 'annual-spending', label: 'Annualized Exp.' },
-                    { id: 'largest-category', label: 'Top Category' }
-                ].sort((a, b) => {
-                    if (!cardOrder || cardOrder.length === 0) return 0;
-                    const indexA = cardOrder.indexOf(a.id);
-                    const indexB = cardOrder.indexOf(b.id);
-                    if (indexA === -1 && indexB === -1) return 0;
-                    if (indexA === -1) return 1;
-                    if (indexB === -1) return -1;
-                    return indexA - indexB;
-                })}
-                onReorder={async (newItems) => {
-                    const newOrder = newItems.map(i => i.id);
+                cardsOrder={cardOrder}
+                insightsOrder={sectionOrder}
+                onUpdateCardsOrder={async (newOrder) => {
                     setCardOrder(newOrder);
                     await Storage.saveInsightsCardOrder(newOrder);
                 }}
-            />
-
-            {/* Insights Reorder Modal */}
-            <ReorderModal
-                visible={isSectionReorderVisible}
-                onClose={() => {
-                    setIsSectionReorderVisible(false);
-                    setIsSettingsModalVisible(true);
-                }}
-                title="Reorder Insights"
-                items={[
-                    { id: 'overview', label: 'Summary Cards' },
-                    { id: 'cumulative', label: 'Cumulative Spending' },
-                    { id: 'comparison', label: 'Spending Comparison' },
-                    { id: 'expense', label: 'Expense Analysis' },
-                    { id: 'income', label: 'Income Analysis' },
-                    { id: 'savings', label: 'Savings Rate' },
-                    { id: 'alerts', label: 'Smart Alerts' }
-                ].sort((a, b) => {
-                    if (!sectionOrder || sectionOrder.length === 0) return 0;
-                    const indexA = sectionOrder.indexOf(a.id);
-                    const indexB = sectionOrder.indexOf(b.id);
-                    if (indexA === -1 && indexB === -1) return 0;
-                    if (indexA === -1) return 1;
-                    if (indexB === -1) return -1;
-                    return indexA - indexB;
-                })}
-                onReorder={async (newItems) => {
-                    const newOrder = newItems.map(i => i.id);
+                onUpdateInsightsOrder={async (newOrder) => {
                     setSectionOrder(newOrder);
                     await Storage.saveInsightsSectionOrder(newOrder);
                 }}

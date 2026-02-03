@@ -3,24 +3,66 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
+import { ReorderList, ReorderItem } from '@components/common/ReorderList';
 
 interface InvestmentSettingsModalProps {
     visible: boolean;
     onClose: () => void;
-    onOpenStatsReorder: () => void;
-    onOpenSectionReorder: () => void;
+    statsOrder: string[];
+    sectionOrder: string[];
+    onUpdateStatsOrder: (newOrder: string[]) => void;
+    onUpdateSectionOrder: (newOrder: string[]) => void;
     onFetchPriceList?: (duration: string) => void;
 }
 
 const InvestmentSettingsModal: React.FC<InvestmentSettingsModalProps> = ({
     visible,
     onClose,
-    onOpenStatsReorder,
-    onOpenSectionReorder,
+    statsOrder,
+    sectionOrder,
+    onUpdateStatsOrder,
+    onUpdateSectionOrder,
     onFetchPriceList
 }) => {
     const { colors } = useTheme();
-    const [view, setView] = React.useState<'MAIN' | 'FETCH_OPTIONS'>('MAIN');
+    const [view, setView] = React.useState<'MAIN' | 'FETCH_OPTIONS' | 'STATS_REORDER' | 'SECTION_REORDER'>('MAIN');
+
+    // Define items for reordering (ideally passed in or derived, but here we reconstruct for ReorderList)
+    // We need labels mapping. In a real app, these might come from a config.
+    // Assuming we can map IDs back to labels here or pass full objects.
+    // For now, let's hardcode the labels map based on known IDs.
+
+    const getStatsItems = (): ReorderItem[] => {
+        // Map IDs to Labels
+        const labels: Record<string, string> = {
+            'equity': 'Total Equity',
+            'realized': 'Realized P/L',
+            'unrealized': 'Unrealized P/L',
+            'dividends': 'Total Dividends'
+        };
+        // Combine saved order with all valid keys to ensure nothing is missing
+        const uniqueIds = Array.from(new Set([...statsOrder, ...Object.keys(labels)]));
+        // Filter out any garbage IDs that are not in our labels map
+        const finalOrder = uniqueIds.filter(id => labels[id]);
+
+        return finalOrder.map(id => ({ id, label: labels[id] }));
+    };
+
+    const getSectionItems = (): ReorderItem[] => {
+        const labels: Record<string, string> = {
+            'stats_carousel': 'Stats Carousel',
+            'smart_advisor': 'Smart Advisor',
+            'allocation_chart': 'Allocation Chart',
+            'dividend_chart': 'Dividend Chart',
+            'holdings_list': 'Holdings List'
+        };
+        // Combine saved order with all valid keys to ensure nothing is missing
+        const uniqueIds = Array.from(new Set([...sectionOrder, ...Object.keys(labels)]));
+        // Filter out any garbage IDs that are not in our labels map
+        const finalOrder = uniqueIds.filter(id => labels[id]);
+
+        return finalOrder.map(id => ({ id, label: labels[id] }));
+    };
 
     // Reset view when modal closes
     React.useEffect(() => {
@@ -68,13 +110,22 @@ const InvestmentSettingsModal: React.FC<InvestmentSettingsModalProps> = ({
         </TouchableOpacity>
     );
 
+    const getTitle = () => {
+        switch (view) {
+            case 'FETCH_OPTIONS': return "Fetch Price List";
+            case 'STATS_REORDER': return "Reorder Stats";
+            case 'SECTION_REORDER': return "Reorder Sections";
+            default: return "Investment Settings";
+        }
+    };
+
     return (
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title={view === 'MAIN' ? "Investment Settings" : "Fetch Price List"}
+            title={getTitle()}
             maxHeight="auto"
-            headerRight={view === 'FETCH_OPTIONS' ? (
+            headerRight={view !== 'MAIN' ? (
                 <TouchableOpacity onPress={() => setView('MAIN')} style={{ marginRight: 8 }}>
                     <Text style={{ color: colors.primary, fontSize: 16 }}>Back</Text>
                 </TouchableOpacity>
@@ -87,7 +138,7 @@ const InvestmentSettingsModal: React.FC<InvestmentSettingsModalProps> = ({
                             "stats-chart",
                             "Stats Cards Layout",
                             "Reorder the summary cards",
-                            onOpenStatsReorder
+                            () => setView('STATS_REORDER')
                         )}
 
                         <View style={{ height: 12 }} />
@@ -96,7 +147,7 @@ const InvestmentSettingsModal: React.FC<InvestmentSettingsModalProps> = ({
                             "layers",
                             "Dashboard Sections",
                             "Reorder main screen sections",
-                            onOpenSectionReorder
+                            () => setView('SECTION_REORDER')
                         )}
 
                         <View style={{ height: 12 }} />
@@ -108,6 +159,18 @@ const InvestmentSettingsModal: React.FC<InvestmentSettingsModalProps> = ({
                             () => setView('FETCH_OPTIONS')
                         )}
                     </>
+                ) : view === 'STATS_REORDER' ? (
+                    <ReorderList
+                        items={getStatsItems()}
+                        onReorder={(newItems) => onUpdateStatsOrder(newItems.map(i => i.id))}
+                        containerStyle={{ maxHeight: 400 }}
+                    />
+                ) : view === 'SECTION_REORDER' ? (
+                    <ReorderList
+                        items={getSectionItems()}
+                        onReorder={(newItems) => onUpdateSectionOrder(newItems.map(i => i.id))}
+                        containerStyle={{ maxHeight: 400 }}
+                    />
                 ) : (
                     <>
                         <View style={{ backgroundColor: 'rgba(255, 152, 0, 0.1)', padding: 12, borderRadius: 8, marginBottom: 15, flexDirection: 'row' }}>
