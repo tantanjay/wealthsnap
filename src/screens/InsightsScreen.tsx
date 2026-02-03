@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, ScrollView, TouchableOpacity, Text, RefreshControl } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Text, RefreshControl, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import BottomModal from '@components/common/BottomModal';
 import ReorderModal from '@components/common/ReorderModal';
 import InsightsOverviewCards from '@components/insights/InsightsOverviewCards';
+import InsightsSettingsModal from '@components/insights/modals/InsightsSettingsModal';
 import IncomeAnalysis from '@components/insights/IncomeAnalysis';
 import ExpenseAnalysis from '@components/insights/ExpenseAnalysis';
 import ComparisonChart from '@components/insights/ComparisonChart';
@@ -197,8 +198,11 @@ const InsightsScreen = ({ navigation }: any) => {
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', flex: 1 }}>Financial Insights</Text>
-                <TouchableOpacity onPress={() => setIsSettingsModalVisible(true)}>
-                    <Ionicons name="settings-outline" size={24} color={colors.text} />
+                <TouchableOpacity
+                    style={[styles.iconButton, { backgroundColor: colors.surface }]}
+                    onPress={() => setIsSettingsModalVisible(true)}
+                >
+                    <Ionicons name="settings-outline" size={20} color={colors.text} />
                 </TouchableOpacity>
             </View>
 
@@ -323,55 +327,18 @@ const InsightsScreen = ({ navigation }: any) => {
             </ScrollView>
 
             {/* Settings Modal */}
-            <BottomModal
+            <InsightsSettingsModal
                 visible={isSettingsModalVisible}
                 onClose={() => setIsSettingsModalVisible(false)}
-                title="Insights Settings"
-            >
-                <View style={{ gap: 10, paddingBottom: 20 }}>
-                    <TouchableOpacity
-                        style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            padding: 16,
-                            backgroundColor: colors.surface,
-                            borderRadius: 12,
-                            justifyContent: 'space-between'
-                        }}
-                        onPress={() => {
-                            setIsSettingsModalVisible(false);
-                            setIsCardReorderVisible(true);
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                            <Ionicons name="grid-outline" size={24} color={colors.primary} />
-                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '500' }}>Cards Reorder</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            padding: 16,
-                            backgroundColor: colors.surface,
-                            borderRadius: 12,
-                            justifyContent: 'space-between'
-                        }}
-                        onPress={() => {
-                            setIsSettingsModalVisible(false);
-                            setIsSectionReorderVisible(true);
-                        }}
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                            <Ionicons name="list-outline" size={24} color={colors.primary} />
-                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '500' }}>Insights Reorder</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
-            </BottomModal>
+                onOpenCardsReorder={() => {
+                    setIsSettingsModalVisible(false);
+                    setIsCardReorderVisible(true);
+                }}
+                onOpenInsightsReorder={() => {
+                    setIsSettingsModalVisible(false);
+                    setIsSectionReorderVisible(true);
+                }}
+            />
 
             {/* Cards Reorder Modal */}
             <ReorderModal
@@ -442,5 +409,20 @@ const InsightsScreen = ({ navigation }: any) => {
         </ScreenWrapper>
     );
 };
+
+const styles = StyleSheet.create({
+    iconButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+    }
+});
 
 export default InsightsScreen;

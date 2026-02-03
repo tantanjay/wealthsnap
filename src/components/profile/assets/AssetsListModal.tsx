@@ -7,7 +7,7 @@ import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Asset } from '@types';
 import { getAllAssets, deleteAsset } from '@services/domain/assetService';
-import { AssetForm } from './AssetForm';
+import { AssetForm } from '@components/profile/assets/AssetForm';
 
 interface AssetsListModalProps {
     visible: boolean;
