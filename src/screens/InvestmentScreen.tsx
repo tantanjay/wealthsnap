@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
@@ -17,7 +17,6 @@ import * as Storage from '@services/core/storageService';
 import { Ionicons } from '@expo/vector-icons';
 import InvestmentSettingsModal from '@components/investments/modals/InvestmentSettingsModal';
 import ReorderModal from '@components/common/ReorderModal';
-import { TouchableOpacity } from 'react-native';
 
 const InvestmentScreen = () => {
     const { colors } = useTheme();

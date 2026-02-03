@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet, ScrollView, Linking, ToastAndroid, TouchableWithoutFeedback } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, Linking, ToastAndroid } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';

@@ -1,12 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BigNumber } from 'bignumber.js';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
-import { UserProfile } from '@types';
 import { HomeDisplayMode } from '@services/core/storageService';
 
 interface HomeCashFlowCardProps {

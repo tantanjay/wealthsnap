@@ -14,14 +14,13 @@ import { getDividendHistory, deleteAutoDividendHistory, deleteDividendHistory, a
 import { getAllAssets } from '@services/domain/assetService';
 import { fetchHistoricalPrices, AssetRequest, fetchDividendHistory } from '@services/integrations/geminiService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
-import { DividendHistory, PriceHistory } from '@types';
+import { DividendHistory, PriceHistory, Investment, Transaction } from '@types';
 import PriceHistoryFormModal from '@components/investments/modals/PriceHistoryFormModal';
 import DividendHistoryFormModal from '@components/investments/modals/DividendHistoryFormModal';
 import { useAIConsent } from '@hooks/useAIConsent';
 import InvestmentOptionsModal from '@components/investments/modals/InvestmentOptionsModal';
 import { useNavigation } from '@react-navigation/native';
 import { deleteInvestment, deleteTransaction } from '@services/domain';
-import { Investment, Transaction } from '@types';
 
 interface InvestmentHistoryModalProps {
     visible: boolean;
@@ -494,7 +493,6 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     const renderPositionsItem = ({ item }: { item: HistoryItem }) => {
         const isGain = item.type === 'CAPITAL_GAIN';
         const isLoss = item.type === 'CAPITAL_LOSS';
-        const isDiv = item.type === 'DIVIDEND';
 
         let iconName: any = "help-circle";
         let color = colors.text;
