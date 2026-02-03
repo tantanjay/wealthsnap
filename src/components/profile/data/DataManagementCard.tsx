@@ -10,6 +10,7 @@ import BackupModal from '@components/profile/data/BackupModal';
 import RestoreModal from '@components/profile/data/RestoreModal';
 import ImportDataModal from '@components/profile/data/ImportDataModal';
 import ImportProcessScreen from '@components/profile/data/ImportProcessScreen';
+import SettingItem from '@components/common/SettingItem';
 import { Card } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
@@ -335,42 +336,6 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
         setIsImportSaving(false);
     };
 
-    const SettingItem = ({
-        icon,
-        title,
-        subtitle,
-        onPress,
-        iconBg,
-        iconColor,
-        isLast = false
-    }: {
-        icon: string,
-        title: string,
-        subtitle?: string,
-        onPress: () => void,
-        iconBg?: string,
-        iconColor?: string,
-        isLast?: boolean
-    }) => (
-        <TouchableOpacity
-            style={[
-                styles.settingItem,
-                { borderBottomColor: colors.border },
-                isLast && { borderBottomWidth: 0 }
-            ]}
-            onPress={onPress}
-        >
-            <View style={[styles.iconContainer, { backgroundColor: iconBg || colors.primary + '20' }]}>
-                <Ionicons name={icon as any} size={22} color={iconColor || colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-                <Text style={[styles.settingTitle, { color: colors.text }]}>{title}</Text>
-                {subtitle && <Text style={[styles.settingSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
-    );
-
     return (
         <>
             <Card style={{ marginBottom: 16 }}>
@@ -481,28 +446,6 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 18,
         fontWeight: '700',
-    },
-    settingItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-    },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    settingTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: 2,
-    },
-    settingSubtitle: {
-        fontSize: 13,
     },
 });
 

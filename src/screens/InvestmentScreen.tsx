@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { InvestmentStats } from '@components/investments/InvestmentStats';
 import { HoldingsList } from '@components/investments/HoldingsList';
@@ -61,9 +62,11 @@ const InvestmentScreen = () => {
         }
     }, [activePriority]);
 
-    useEffect(() => {
-        loadStats();
-    }, [loadStats]);
+    useFocusEffect(
+        useCallback(() => {
+            loadStats();
+        }, [loadStats])
+    );
 
     const updateSuggestions = async (priority: Priority) => {
         setActivePriority(priority);

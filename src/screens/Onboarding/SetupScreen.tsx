@@ -486,7 +486,7 @@ const SetupScreen = ({ navigation }: any) => {
                                 )}
                                 <View style={{ marginLeft: SPACING.md }}>
                                     <Text style={styles.welcomeButtonTitle}>Populate Demo Data</Text>
-                                    <Text style={styles.welcomeButtonSubtitle}>For screenshots only</Text>
+                                    <Text style={styles.welcomeButtonSubtitle}>For your eyes only</Text>
                                 </View>
                                 {!isRestoring && <Ionicons name="chevron-forward" size={24} color="#FFF" style={{ marginLeft: 'auto' }} />}
                             </TouchableOpacity>
