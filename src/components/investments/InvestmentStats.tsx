@@ -86,69 +86,68 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
     // To snap 2 cards at a time, we snap by the full availableWidth + gap
     const snapInterval = availableWidth + gap;
 
-    const allCards = [
-        {
-            id: 'equity',
-            label: "Total Equity",
-            value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(totalEquity, currency),
-            color: colors.primary,
-            icon: "wallet-outline"
-        },
-        {
-            id: 'realized',
-            label: "Realized P/L",
-            value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(realizedPL, currency),
-            subValue: isPrivacyEnabled ? (
-                <Text style={{
-                    color: colors.textSecondary,
-                    fontWeight: 'bold',
-                    fontSize: 12
-                }}>
-                    ••••
-                </Text>
-            ) : (
-                <Text style={{
-                    color: realizedPL >= 0 ? colors.success : colors.error,
-                    fontWeight: 'bold',
-                    fontSize: 12
-                }}>
-                    {realizedPL >= 0 ? '+' : ''}{(0).toFixed(2)}%
-                </Text>
-            ),
-            color: colors.text
-        },
-        {
-            id: 'unrealized',
-            label: "Unrealized P/L",
-            value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(unrealizedPL, currency),
-            subValue: isPrivacyEnabled ? (
-                <Text style={{
-                    color: colors.textSecondary,
-                    fontWeight: 'bold',
-                    fontSize: 12
-                }}>
-                    ••••
-                </Text>
-            ) : (
-                <Text style={{
-                    color: unrealizedPL >= 0 ? colors.success : colors.error,
-                    fontWeight: 'bold',
-                    fontSize: 12
-                }}>
-                    {unrealizedPL >= 0 ? '+' : ''}{unrealizedPLPercent.toFixed(2)}%
-                </Text>
-            )
-        },
-        {
-            id: 'dividends',
-            label: "Total Divs Received",
-            value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(totalDividends, currency),
-            color: colors.textSecondary
-        }
-    ];
-
-    // Sort cards based on cardOrder
     const cards = React.useMemo(() => {
+        const allCards = [
+            {
+                id: 'equity',
+                label: "Total Equity",
+                value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(totalEquity, currency),
+                color: colors.primary,
+                icon: "wallet-outline"
+            },
+            {
+                id: 'realized',
+                label: "Realized P/L",
+                value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(realizedPL, currency),
+                subValue: isPrivacyEnabled ? (
+                    <Text style={{
+                        color: colors.textSecondary,
+                        fontWeight: 'bold',
+                        fontSize: 12
+                    }}>
+                        ••••
+                    </Text>
+                ) : (
+                    <Text style={{
+                        color: realizedPL >= 0 ? colors.success : colors.error,
+                        fontWeight: 'bold',
+                        fontSize: 12
+                    }}>
+                        {realizedPL >= 0 ? '+' : ''}{(0).toFixed(2)}%
+                    </Text>
+                ),
+                color: colors.text
+            },
+            {
+                id: 'unrealized',
+                label: "Unrealized P/L",
+                value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(unrealizedPL, currency),
+                subValue: isPrivacyEnabled ? (
+                    <Text style={{
+                        color: colors.textSecondary,
+                        fontWeight: 'bold',
+                        fontSize: 12
+                    }}>
+                        ••••
+                    </Text>
+                ) : (
+                    <Text style={{
+                        color: unrealizedPL >= 0 ? colors.success : colors.error,
+                        fontWeight: 'bold',
+                        fontSize: 12
+                    }}>
+                        {unrealizedPL >= 0 ? '+' : ''}{unrealizedPLPercent.toFixed(2)}%
+                    </Text>
+                )
+            },
+            {
+                id: 'dividends',
+                label: "Total Divs Received",
+                value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(totalDividends, currency),
+                color: colors.textSecondary
+            }
+        ];
+
         if (!cardOrder || cardOrder.length === 0) return allCards;
 
         return [...allCards].sort((a, b) => {
@@ -157,7 +156,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
             // Items not in the order array go to the end
             return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
         });
-    }, [allCards, cardOrder]);
+    }, [cardOrder, isPrivacyEnabled, totalEquity, currency, colors, realizedPL, unrealizedPL, unrealizedPLPercent, totalDividends]);
 
     const totalPages = Math.ceil(cards.length / 2);
 

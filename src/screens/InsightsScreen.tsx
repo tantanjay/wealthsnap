@@ -4,7 +4,6 @@ import { View, ScrollView, TouchableOpacity, Text, RefreshControl, StyleSheet } 
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
-import BottomModal from '@components/common/BottomModal';
 import ReorderModal from '@components/common/ReorderModal';
 import InsightsOverviewCards from '@components/insights/InsightsOverviewCards';
 import InsightsSettingsModal from '@components/insights/modals/InsightsSettingsModal';
