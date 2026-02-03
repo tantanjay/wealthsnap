@@ -588,10 +588,10 @@ const ProfileScreen = ({ navigation }: any) => {
             >
                 <View style={{ paddingVertical: 10 }}>
                     <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 22 }}>
-                        Since WealthSnap is an offline-first app, I don&apos;t track your usage or collect any data. This ensures your privacy, but it also means I don&apos;t automatically know when things go wrong.
+                        Since WealthSnap is an offline-first app, we don&apos;t track your usage or collect any data. This ensures your privacy, but it also means we don&apos;t automatically know when things go wrong.
                     </Text>
                     <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 15 }}>
-                        Your feedback via Google Forms helps me understand bugs, quirks, and which updates you&apos;d like to see next. It&apos;s the best way to help improve the app while keeping it private!
+                        Your feedback via Google Forms helps us understand bugs, quirks, and which updates you&apos;d like to see next. It&apos;s the best way to help improve the app while keeping it private!
                     </Text>
 
                     <Button
