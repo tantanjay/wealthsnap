@@ -18,6 +18,10 @@ import { DividendHistory, PriceHistory } from '@types';
 import PriceHistoryFormModal from './PriceHistoryFormModal';
 import DividendHistoryFormModal from './DividendHistoryFormModal';
 import { useAIConsent } from '@hooks/useAIConsent';
+import InvestmentOptionsModal from './InvestmentOptionsModal';
+import { useNavigation } from '@react-navigation/native';
+import { deleteInvestment, deleteTransaction } from '@services/domain';
+import { Investment, Transaction } from '@types';
 
 interface InvestmentHistoryModalProps {
     visible: boolean;
@@ -35,6 +39,7 @@ interface HistoryItem {
     price?: number;
     shares?: number;
     note?: string;
+    originalInvestment?: Investment;
 }
 
 type TabType = 'POSITIONS' | 'PRICES' | 'DIVIDENDS';
@@ -49,6 +54,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     const { colors } = useTheme();
     const { showAlert } = useAlert();
     const { checkConsent } = useAIConsent();
+    const navigation = useNavigation<any>();
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>('POSITIONS');
 
@@ -72,6 +78,10 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     const [activeFetchMode, setActiveFetchMode] = useState<'price' | 'dividend'>('price');
     const [isFetching, setIsFetching] = useState(false);
 
+    // Investment Options Modal State
+    const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
+    const [linkedTransaction, setLinkedTransaction] = useState<Transaction | null>(null);
+
     // Data Loading Functions
     const loadPositions = useCallback(async () => {
         // 1. Fetch all investments for this symbol to get their IDs
@@ -87,7 +97,8 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             amount: inv.price.times(inv.quantity).toNumber(),
             price: inv.price.toNumber(),
             shares: inv.quantity.toNumber(),
-            note: inv.notes
+            note: inv.notes,
+            originalInvestment: inv
         }));
 
         // 2. Fetch all transactions to look for CAPITAL_GAIN/LOSS linked to these investments
@@ -423,6 +434,17 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     };
 
     // Render Helpers
+    const handlePositionPress = async (item: HistoryItem) => {
+        if (!item.originalInvestment) return;
+
+        // Find linked transaction if any
+        const allTxs = await getAllTransactions();
+        const linked = allTxs.find(t => t.investmentId === item.originalInvestment?.id);
+
+        setSelectedInvestment(item.originalInvestment);
+        setLinkedTransaction(linked || null);
+    };
+
     const renderRightActions = (onDelete: () => void) => {
         return (
             <TouchableOpacity
@@ -439,40 +461,70 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         const isLoss = item.type === 'CAPITAL_LOSS';
         const isDiv = item.type === 'DIVIDEND';
 
-        let amountColor = colors.text;
+        let iconName: any = "help-circle";
+        let color = colors.text;
         let sign = '';
 
-        if (isGain || isDiv) {
-            amountColor = colors.success;
+        if (item.type === 'BUY') {
+            iconName = "arrow-up-circle-outline";
+            color = colors.success;
+        } else if (item.type === 'SELL') {
+            iconName = "arrow-down-circle-outline";
+            color = colors.error;
+            sign = '-'; // Sell reduces asset count typically, but usually we show proceed as positive.
+            // However, amount here is total value. 
+            // Let's stick to consistent signs: Buy/Sell/Div just show value.
+            // But wait, the user wants "premium". 
+        } else if (item.type === 'DIVIDEND') {
+            iconName = "gift-outline";
+            color = colors.primary;
+            sign = '+';
+        } else if (isGain) {
+            iconName = "trending-up";
+            color = colors.success;
             sign = '+';
         } else if (isLoss) {
-            amountColor = colors.error;
+            iconName = "trending-down";
+            color = colors.error;
             sign = '-';
         }
 
         const displayAmount = formatCurrencyAmount(item.amount, currency);
 
         return (
-            <View style={[styles.itemContainer, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity
+                style={[styles.itemContainer, { backgroundColor: colors.surface, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.border }]}
+                onPress={() => handlePositionPress(item)}
+                disabled={!item.originalInvestment}
+            >
+                <View style={[styles.iconContainer, { backgroundColor: color + '15' }]}>
+                    <Ionicons name={iconName} size={20} color={color} />
+                </View>
+
                 <View style={styles.itemLeft}>
                     <Text style={[styles.itemType, { color: colors.text }]}>
-                        {item.type.replace('_', ' ')}
+                        {item.type === 'CAPITAL_GAIN' ? 'Realized Gain' :
+                            item.type === 'CAPITAL_LOSS' ? 'Realized Loss' :
+                                item.type.replace('_', ' ')}
                     </Text>
                     <Text style={[styles.itemDate, { color: colors.textSecondary }]}>
                         {new Date(item.date).toLocaleDateString()}
+                        {(item.shares !== undefined) && (
+                            <Text> • {item.shares} @ {formatCurrencyAmount(item.price || 0, currency)}</Text>
+                        )}
                     </Text>
-                    {(item.shares !== undefined) && (
-                        <Text style={[styles.itemDetails, { color: colors.textSecondary }]}>
-                            {item.shares} @ {formatCurrencyAmount(item.price || 0, currency)}
-                        </Text>
-                    )}
                 </View>
+
                 <View style={styles.itemRight}>
-                    <Text style={[styles.itemAmount, { color: amountColor }]}>
+                    <Text style={[styles.itemAmount, { color: color }]}>
                         {sign}{displayAmount}
                     </Text>
                 </View>
-            </View>
+
+                {item.originalInvestment && (
+                    <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} style={{ marginLeft: 8 }} />
+                )}
+            </TouchableOpacity>
         );
     };
 
@@ -483,33 +535,29 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
         const content = (
             <TouchableOpacity
-                style={[styles.itemContainer, { borderBottomColor: colors.border }]}
+                style={[styles.itemContainer, { backgroundColor: colors.surface, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.border }]}
                 disabled={!isManual}
                 onLongPress={() => isManual && handleEditPrice(item)}
                 delayLongPress={500}
             >
-                <View style={styles.itemLeft}>
-                    <Text style={[styles.itemType, { color: colors.text }]}>
-                        {new Date(item.timestamp).toLocaleDateString()}
-                    </Text>
-                    <Text style={[styles.itemDetails, { color: colors.textSecondary }]}>
-                        {item.source === 'AI_FETCH' ? (
-                            <Ionicons name="sparkles" color={colors.primary} />
-                        ) : (
-                            <Ionicons name="create-outline" color={colors.primary} />
-                        )}
-                    </Text>
-                </View>
-                <View style={styles.itemRight}>
-                    <Text style={[styles.itemAmount, { color: colors.text }]}>
-                        {formatCurrencyAmount(item.price.toNumber(), currency)}
-                    </Text>
-                    {item.high && item.low && (
-                        <Text style={[styles.itemSubDetail, { color: colors.textSecondary }]}>
-                            Low: {item.low.toNumber()} • High: {item.high.toNumber()}
-                        </Text>
+                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
+                    {item.source === 'AI_FETCH' ? (
+                        <Ionicons name="sparkles" size={18} color={colors.primary} />
+                    ) : (
+                        <Ionicons name="pricetag-outline" size={18} color={colors.primary} />
                     )}
                 </View>
+
+                <View style={styles.itemLeft}>
+                    <Text style={[styles.itemType, { color: colors.text }]}>
+                        {formatCurrencyAmount(item.price.toNumber(), currency)}
+                    </Text>
+                    <Text style={[styles.itemDate, { color: colors.textSecondary }]}>
+                        {new Date(item.timestamp).toLocaleDateString()}
+                        {item.high && item.low && ` • H: ${item.high.toNumber()} L: ${item.low.toNumber()}`}
+                    </Text>
+                </View>
+
                 {canDelete && (
                     <TouchableOpacity
                         style={{ padding: 8, marginLeft: 8 }}
@@ -539,34 +587,35 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
         const content = (
             <TouchableOpacity
-                style={[styles.itemContainer, { borderBottomColor: colors.border }]}
+                style={[styles.itemContainer, { backgroundColor: colors.surface, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.border }]}
                 disabled={!isManual}
                 onLongPress={() => isManual && handleEditDividend(item)}
                 delayLongPress={500}
             >
-                <View style={styles.itemLeft}>
-                    <Text style={[styles.itemType, { color: colors.text }]}>
-                        Ex-Date: {new Date(item.exDate).toLocaleDateString()}
-                    </Text>
-                    <Text style={[styles.itemDetails, { color: colors.textSecondary }]}>
-                        {item.source === 'AI_FETCH' ? (
-                            <Ionicons name="sparkles" color={colors.primary} />
-                        ) : (
-                            <Ionicons name="create-outline" color={colors.primary} />
-                        )}
-                        {"  "}{item.type}
-                    </Text>
-                </View>
-                <View style={styles.itemRight}>
-                    <Text style={[styles.itemAmount, { color: colors.success }]}>
-                        {formatCurrencyAmount(item.amount.toNumber(), currency)}
-                    </Text>
-                    {item.paymentDate && (
-                        <Text style={[styles.itemSubDetail, { color: colors.textSecondary }]}>
-                            Pay: {new Date(item.paymentDate).toLocaleDateString()}
-                        </Text>
+                <View style={[styles.iconContainer, { backgroundColor: colors.success + '15' }]}>
+                    {item.source === 'AI_FETCH' ? (
+                        <Ionicons name="sparkles" size={18} color={colors.success} />
+                    ) : (
+                        <Ionicons name="cash-outline" size={18} color={colors.success} />
                     )}
                 </View>
+
+                <View style={styles.itemLeft}>
+                    <Text style={[styles.itemType, { color: colors.text }]}>
+                        {formatCurrencyAmount(item.amount.toNumber(), currency)}
+                    </Text>
+                    <Text style={[styles.itemDate, { color: colors.textSecondary }]}>
+                        Ex: {new Date(item.exDate).toLocaleDateString()}
+                        {item.paymentDate && ` • Pay: ${new Date(item.paymentDate).toLocaleDateString()}`}
+                    </Text>
+                </View>
+
+                <View style={styles.itemRight}>
+                    <View style={{ backgroundColor: colors.success + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                        <Text style={{ color: colors.success, fontSize: 10, fontWeight: 'bold' }}>{item.type}</Text>
+                    </View>
+                </View>
+
                 {canDelete && (
                     <TouchableOpacity
                         style={{ padding: 8, marginLeft: 8 }}
@@ -608,6 +657,52 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
     return (
         <>
+            <InvestmentOptionsModal
+                visible={!!selectedInvestment}
+                investment={selectedInvestment}
+                linkedTransaction={linkedTransaction}
+                onClose={() => setSelectedInvestment(null)}
+                currency={currency}
+                onEdit={(inv) => {
+                    setSelectedInvestment(null);
+                    onClose(); // Close history modal too if navigating away? Maybe keep it open or close it?
+                    // User usually wants to go back to list after edit.
+                    // But here we navigate to Record Screen.
+                    // The Record Screen back button logic I fixed earlier resets strict to MENU.
+                    // So we probably want to Close everything or just navigate.
+                    // Let's close this modal to be safe/clean.
+                    onClose();
+
+                    // Serialize BigNumber fields to strings for navigation
+                    const serializedInvestment = {
+                        ...inv,
+                        quantity: inv.quantity.toString(),
+                        price: inv.price.toString(),
+                        fees: inv.fees ? inv.fees.toString() : undefined
+                    };
+                    navigation.navigate('Record', { investment: serializedInvestment });
+                }}
+                onDelete={async (id, deleteLinked) => {
+                    try {
+                        setIsLoading(true);
+                        // Cascade delete logic (similar to HistoryScreen)
+                        await deleteInvestment(id);
+                        if (deleteLinked && linkedTransaction) {
+                            await deleteTransaction(linkedTransaction.id);
+                        }
+
+                        await loadAllHistory();
+                        onDataChange?.();
+                        setSelectedInvestment(null);
+                    } catch (error) {
+                        console.error('Failed to delete investment', error);
+                        showAlert('Error', 'Failed to delete investment.');
+                    } finally {
+                        setIsLoading(false);
+                    }
+                }}
+            />
+
             <BottomModal
                 visible={visible}
                 onClose={onClose}
@@ -672,7 +767,6 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                                 onPress={handleAddPrice}
                                             >
                                                 <Ionicons name="add" size={18} color={colors.success} />
-                                                <Text style={[styles.actionBtnText, { color: colors.success }]}>Add</Text>
                                             </TouchableOpacity>
 
                                             <TouchableOpacity
@@ -683,16 +777,12 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                                 {isFetching && activeFetchMode === 'price' ? (
                                                     <ActivityIndicator size="small" color={colors.primary} />
                                                 ) : (
-                                                    <>
-                                                        <Ionicons name="cloud-download-outline" size={18} color={colors.primary} />
-                                                        <Text style={[styles.actionBtnText, { color: colors.primary }]}>Fetch</Text>
-                                                    </>
+                                                    <Ionicons name="cloud-download-outline" size={18} color={colors.primary} />
                                                 )}
                                             </TouchableOpacity>
 
                                             <TouchableOpacity style={styles.actionBtn} onPress={handleClearPrices}>
                                                 <Ionicons name="trash-outline" size={18} color={colors.error} />
-                                                <Text style={[styles.actionBtnText, { color: colors.error }]}>Clear</Text>
                                             </TouchableOpacity>
                                         </View>
                                     </View>
@@ -730,7 +820,6 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                                 onPress={handleAddDividend}
                                             >
                                                 <Ionicons name="add" size={18} color={colors.success} />
-                                                <Text style={[styles.actionBtnText, { color: colors.success }]}>Add</Text>
                                             </TouchableOpacity>
 
                                             <TouchableOpacity
@@ -741,16 +830,12 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                                 {isFetching && activeFetchMode === 'dividend' ? (
                                                     <ActivityIndicator size="small" color={colors.primary} />
                                                 ) : (
-                                                    <>
-                                                        <Ionicons name="cloud-download-outline" size={18} color={colors.primary} />
-                                                        <Text style={[styles.actionBtnText, { color: colors.primary }]}>Fetch</Text>
-                                                    </>
+                                                    <Ionicons name="cloud-download-outline" size={18} color={colors.primary} />
                                                 )}
                                             </TouchableOpacity>
 
                                             <TouchableOpacity style={styles.actionBtn} onPress={handleClearAutoDividends}>
                                                 <Ionicons name="trash-outline" size={18} color={colors.error} />
-                                                <Text style={[styles.actionBtnText, { color: colors.error }]}>Clear</Text>
                                             </TouchableOpacity>
                                         </View>
                                     </View>
@@ -908,10 +993,17 @@ const styles = StyleSheet.create({
     },
     itemContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingVertical: 12,
-        borderBottomWidth: 1,
-        alignItems: 'center'
+        paddingHorizontal: 16,
+    },
+    iconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
     },
     itemLeft: {
         flex: 1,
@@ -921,9 +1013,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center'
     },
     itemType: {
-        fontSize: 15,
+        fontSize: 16,
         fontWeight: '600',
-        marginBottom: 2
+        textTransform: 'capitalize',
+        marginBottom: 2,
     },
     itemDate: {
         fontSize: 12,

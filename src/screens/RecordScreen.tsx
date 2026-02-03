@@ -51,6 +51,7 @@ const RecordScreen = ({ navigation, route }: any) => {
         setViewMode('MENU');
         setModalVisible(true);
         setEditingTransaction(null);
+        setEditingInvestment(null);
         setCapturedImageUri(null);
     }, []);
 
@@ -85,7 +86,7 @@ const RecordScreen = ({ navigation, route }: any) => {
 
     useFocusEffect(
         useCallback(() => {
-            const { transaction } = route.params || {};
+            const { transaction, investment } = route.params || {};
 
             if (transaction) {
                 // Editing existing transaction - go straight to form
@@ -98,18 +99,31 @@ const RecordScreen = ({ navigation, route }: any) => {
                 setTransactionType(transaction.type);
                 setViewMode('TRANSACTION');
                 setModalVisible(false); // Hide modal when editing
+            } else if (investment) {
+                // Editing existing investment
+                const deserializedInvestment = {
+                    ...investment,
+                    quantity: typeof investment.quantity === 'string' ? new BigNumber(investment.quantity) : investment.quantity,
+                    price: typeof investment.price === 'string' ? new BigNumber(investment.price) : investment.price,
+                    fees: investment.fees ? (typeof investment.fees === 'string' ? new BigNumber(investment.fees) : investment.fees) : undefined,
+                };
+                setEditingInvestment(deserializedInvestment);
+                setInvestmentType(investment.type);
+                setViewMode('INVESTMENT');
+                setModalVisible(false);
             } else {
                 // New record - show menu (only if not already in a process)
                 if (viewModeRef.current !== 'AI_REVIEW') {
                     setViewMode('MENU');
                     setModalVisible(true);
                     setEditingTransaction(null);
+                    setEditingInvestment(null);
                 }
             }
 
             return () => {
                 // Clear params on blur
-                navigation.setParams({ transaction: undefined });
+                navigation.setParams({ transaction: undefined, investment: undefined });
             };
         }, [route.params, navigation])
     );

@@ -15,7 +15,7 @@ import { generateUUID } from '@utils/uuid';
 import { saveInvestment, getAllInvestments } from '@services/domain/investmentService';
 import { getAllAssets } from '@services/domain/assetService';
 import { addPriceHistory } from '@services/domain/priceHistoryService';
-import { saveTransaction } from '@services/domain/transactionService';
+import { saveTransaction, getAllTransactions } from '@services/domain/transactionService';
 import { calculatePortfolioMetrics } from '@utils/investmentMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 
@@ -46,6 +46,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         initialInvestment?.date ? new Date(initialInvestment.date) : new Date()
     );
     const [createTransaction, setCreateTransaction] = useState(true);
+    const [linkedTransactionId, setLinkedTransactionId] = useState<string | null>(null);
     const [showInfoModal, setShowInfoModal] = useState(false);
 
     // P/L State
@@ -78,6 +79,21 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         };
         fetchAssets();
     }, [initialInvestment, showAlert]);
+
+    // Check for linked transaction
+    useEffect(() => {
+        const checkLinked = async () => {
+            if (initialInvestment) {
+                const txs = await getAllTransactions();
+                const linked = txs.find(t => t.investmentId === initialInvestment.id);
+                if (linked) {
+                    setLinkedTransactionId(linked.id);
+                    setCreateTransaction(true);
+                }
+            }
+        };
+        checkLinked();
+    }, [initialInvestment]);
 
     // Calculate Average Cost when symbol changes
     useEffect(() => {
@@ -234,11 +250,10 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                     finalAmount = totalAmount; // Fallback
                 }
 
-                // Only create transaction if amount > 0
                 if (finalAmount.isGreaterThan(0)) {
                     // 1. Primary Transaction (Cash Movement)
                     const newTxn: Transaction = {
-                        id: generateUUID(),
+                        id: linkedTransactionId || generateUUID(), // Use existing ID if updating
                         date: newInvestment.date,
                         amount: finalAmount,
                         type: txnType,
@@ -248,7 +263,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                         isRecurring: false,
                         transferAccount: transferAccount,
                         investmentId: invId,
-                        createdAt: new Date().toISOString(),
+                        createdAt: initialInvestment ? (initialInvestment.createdAt || new Date().toISOString()) : new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
                     };
                     await saveTransaction(newTxn);
@@ -395,8 +410,9 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
 
                 {/* Transaction Checkbox */}
                 <TouchableOpacity
-                    onPress={toggleCreateTransaction}
-                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, padding: 8 }}
+                    onPress={initialInvestment ? undefined : toggleCreateTransaction}
+                    activeOpacity={initialInvestment ? 0.6 : 0.7}
+                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, padding: 8, opacity: initialInvestment ? 0.6 : 1 }}
                 >
                     <Ionicons
                         name={createTransaction ? "checkbox" : "square-outline"}
@@ -405,7 +421,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                         style={{ marginRight: 8 }}
                     />
                     <Text style={{ color: colors.text, fontSize: 14, flex: 1 }}>
-                        Add corresponding transaction?
+                        {initialInvestment ? "Linked Transaction (Auto-updated)" : "Add corresponding transaction?"}
                     </Text>
                     <TouchableOpacity onPress={() => setShowInfoModal(true)}>
                         <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
