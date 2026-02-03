@@ -4,9 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
 import { Investment, Transaction } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
-import { BigNumber } from 'bignumber.js';
 
 interface InvestmentOptionsModalProps {
     visible: boolean;
@@ -28,11 +28,12 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
     currency = 'PHP'
 }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
 
     if (!investment) return null;
 
     const handleDeletePress = () => {
-        Alert.alert(
+        showAlert(
             "Delete Investment",
             linkedTransaction
                 ? "This investment has a linked transaction. Deleting this will also delete the associated transaction record."
