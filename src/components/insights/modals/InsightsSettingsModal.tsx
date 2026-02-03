@@ -51,7 +51,7 @@ const InsightsSettingsModal: React.FC<InsightsSettingsModalProps> = ({
         >
             <View style={styles.container}>
                 {renderMenuItem(
-                    "grid-outline",
+                    "stats-chart",
                     "Summary Cards Layout",
                     "Reorder the top summary cards",
                     onOpenCardsReorder
@@ -60,7 +60,7 @@ const InsightsSettingsModal: React.FC<InsightsSettingsModalProps> = ({
                 <View style={{ height: 12 }} />
 
                 {renderMenuItem(
-                    "list-outline",
+                    "layers",
                     "Insights Sections",
                     "Reorder the main analysis sections",
                     onOpenInsightsReorder
