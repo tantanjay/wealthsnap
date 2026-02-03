@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
 import { PriceHistory } from '@types';
 import { addPriceHistory, updatePriceHistory } from '@services/domain/priceHistoryService';
 
@@ -23,6 +24,7 @@ const PriceHistoryFormModal: React.FC<PriceHistoryFormModalProps> = ({
     onSuccess
 }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
     const [isLoading, setIsLoading] = useState(false);
 
     // Form State
@@ -45,7 +47,7 @@ const PriceHistoryFormModal: React.FC<PriceHistoryFormModalProps> = ({
 
     const handleSave = async () => {
         if (!price || isNaN(parseFloat(price))) {
-            Alert.alert("Invalid Input", "Please enter a valid price.");
+            showAlert("Invalid Input", "Please enter a valid price.");
             return;
         }
 
@@ -54,7 +56,7 @@ const PriceHistoryFormModal: React.FC<PriceHistoryFormModalProps> = ({
             if (existingItem) {
                 await updatePriceHistory(existingItem.id, price, {
                     timestamp: date.toISOString(),
-                    source: 'MANUAL' // Keep it manual or force manual? existingItem.source? If editing, likely stays manual.
+                    source: 'MANUAL'
                 });
             } else {
                 await addPriceHistory(symbol, price, {
@@ -66,7 +68,7 @@ const PriceHistoryFormModal: React.FC<PriceHistoryFormModalProps> = ({
             onClose();
         } catch (error) {
             console.error("Failed to save price history", error);
-            Alert.alert("Error", "Failed to save price entry.");
+            showAlert("Error", "Failed to save price entry.");
         } finally {
             setIsLoading(false);
         }
