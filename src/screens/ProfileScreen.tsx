@@ -8,13 +8,18 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 import appJson from '@app.json';
 import BottomModal from '@components/common/BottomModal';
-import SettingItem from '@components/common/SettingItem';
 import SecurityCard from '@components/profile/SecurityCard';
 import HelpCenterScreen from '@screens/onboarding/HelpCenterScreen';
 import BudgetManagementModal from '@components/profile/BudgetManagementModal';
 import DataManagementCard from '@components/profile/data/DataManagementCard';
 import SupportModal from '@components/profile/settings/SupportModal';
-import { Button, Card } from '@components/index';
+import ProfileHeader from '@components/profile/ProfileHeader';
+import QuickActionsCard from '@components/profile/QuickActionsCard';
+import AppearanceCard from '@components/profile/AppearanceCard';
+import DeveloperToolsCard from '@components/profile/DeveloperToolsCard';
+import HelpSectionCard from '@components/profile/HelpSectionCard';
+import AboutCard from '@components/profile/AboutCard';
+import { Button } from '@components/index';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { ReminderManager } from '@components/reminders/ReminderManager';
 import { RecurringRulesListModal } from '@components/profile/RecurringRulesListModal';
@@ -146,86 +151,20 @@ const ProfileScreen = ({ navigation }: any) => {
         }
     };
 
-    const ThemeOption = ({ icon, title, value, current }: { icon: string, title: string, value: 'light' | 'dark' | 'system', current: string }) => (
-        <TouchableOpacity
-            style={[
-                styles.themeButton,
-                {
-                    backgroundColor: current === value ? colors.primary : 'transparent',
-                    borderColor: current === value ? colors.primary : colors.border,
-                }
-            ]}
-            onPress={() => setMode(value)}
-        >
-            <Ionicons
-                name={icon as any}
-                size={18}
-                color={current === value ? '#fff' : colors.text}
-                style={{ marginRight: 6 }}
-            />
-            <Text style={{
-                color: current === value ? '#fff' : colors.text,
-                fontWeight: current === value ? '600' : '400'
-            }}>
-                {title}
-            </Text>
-        </TouchableOpacity>
-    );
+
 
     return (
         <ScreenWrapper>
             <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={{ marginBottom: 20, marginTop: 10 }}>
-                    <Text style={{ color: colors.textSecondary }}>Settings & Preferences</Text>
-                    <Text style={{ color: colors.text, fontSize: 28, fontWeight: 'bold' }}>Profile</Text>
-                </View>
+                <ProfileHeader />
 
                 {/* Quick Actions Card */}
-                <Card style={{ marginBottom: 16 }}>
-                    <View style={styles.cardHeader}>
-                        <View style={[styles.headerIcon, { backgroundColor: colors.accent + '20' }]}>
-                            <Ionicons name="wallet" size={22} color={colors.accent} />
-                        </View>
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>Financial Planning</Text>
-                    </View>
-                    <SettingItem
-                        icon="list"
-                        title="Asset Dictionary"
-                        subtitle="Manage asset definitions"
-                        onPress={() => setShowAssetsModal(true)}
-                        iconBg={colors.info + '20'}
-                        iconColor={colors.info}
-                        isLast={false}
-                    />
-                    <SettingItem
-                        icon="repeat"
-                        title="Recurring Transactions"
-                        subtitle="Manage automatic entries"
-                        onPress={handleManageRecurring}
-                        iconBg={colors.success + '20'}
-                        iconColor={colors.success}
-                        isLast={false}
-                    />
-                    <SettingItem
-                        icon="calculator"
-                        title="Budget Management"
-                        subtitle="Set spending limits"
-                        onPress={() => setShowBudgetModal(true)}
-                        iconBg={colors.warning + '20'}
-                        iconColor={colors.warning}
-                        isLast={false}
-                    />
-
-                    <SettingItem
-                        icon="notifications-outline"
-                        title="Reminders"
-                        subtitle="Schedule alerts for tasks"
-                        onPress={() => setShowRemindersModal(true)}
-                        iconBg={colors.primary + '20'}
-                        iconColor={colors.primary}
-                        isLast={true}
-                    />
-                </Card>
+                <QuickActionsCard
+                    onAssetsPress={() => setShowAssetsModal(true)}
+                    onRecurringPress={handleManageRecurring}
+                    onBudgetPress={() => setShowBudgetModal(true)}
+                    onRemindersPress={() => setShowRemindersModal(true)}
+                />
 
                 {/* Data Management */}
                 <DataManagementCard navigation={navigation} />
@@ -234,174 +173,52 @@ const ProfileScreen = ({ navigation }: any) => {
                 <SecurityCard />
 
                 {/* Appearance Card */}
-                <Card style={{ marginBottom: 16 }}>
-                    <View style={styles.cardHeader}>
-                        <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
-                            <Ionicons name="color-palette" size={22} color={colors.primary} />
-                        </View>
-                        <Text style={[styles.cardTitle, { color: colors.text }]}>Appearance</Text>
-                    </View>
-                    <View style={styles.themeContainer}>
-                        <ThemeOption icon="sunny" title="Light" value="light" current={mode} />
-                        <ThemeOption icon="moon" title="Dark" value="dark" current={mode} />
-                        <ThemeOption icon="phone-portrait" title="System" value="system" current={mode} />
-                    </View>
-                </Card>
+                <AppearanceCard mode={mode} setMode={setMode} />
 
                 {(CONFIG.SHOW_DEVELOPER_OPTIONS || isDevMode) && (
-                    <Card style={{ marginBottom: 16 }}>
-                        <View style={styles.cardHeader}>
-                            <View style={[styles.headerIcon, { backgroundColor: colors.error + '20' }]}>
-                                <Ionicons name="bug" size={22} color={colors.error} />
-                            </View>
-                            <Text style={[styles.cardTitle, { color: colors.text }]}>Developer Options</Text>
-                        </View>
-
-                        <TouchableOpacity
-                            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
-                            onPress={async () => {
-                                try {
-                                    const logs = await AsyncStorage.getItem(ASYNC_KEYS.CRASH_REPORT);
-                                    if (!logs) {
-                                        showAlert('No Logs', 'No crash logs found.');
-                                        return;
-                                    }
-
-                                    const path = FileSystem.documentDirectory + 'crash_report.json';
-                                    await FileSystem.writeAsStringAsync(path, logs);
-
-                                    if (await Sharing.isAvailableAsync()) {
-                                        temporarilyDisableLock();
-                                        await Sharing.shareAsync(path);
-                                    } else {
-                                        showAlert('Error', 'Sharing is not available on this device');
-                                    }
-                                } catch (error) {
-                                    console.error(error);
-                                    showAlert('Error', 'Failed to share logs');
+                    <DeveloperToolsCard
+                        onShareLogs={async () => {
+                            try {
+                                const logs = await AsyncStorage.getItem(ASYNC_KEYS.CRASH_REPORT);
+                                if (!logs) {
+                                    showAlert('No Logs', 'No crash logs found.');
+                                    return;
                                 }
-                            }}
-                        >
-                            <Ionicons name="share-social-outline" size={18} color={colors.text} />
-                            <Text style={{ color: colors.text, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
-                                Share Crash Log
-                            </Text>
-                        </TouchableOpacity>
 
-                        <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 15 }} />
+                                const path = FileSystem.documentDirectory + 'crash_report.json';
+                                await FileSystem.writeAsStringAsync(path, logs);
 
-                        <TouchableOpacity
-                            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}
-                            onPress={() => {
-                                setShouldCrash(true);
-                            }}
-                        >
-                            <Ionicons name="warning" size={18} color={colors.error} />
-                            <Text style={{ color: colors.error, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
-                                Simulate Crash
-                            </Text>
-                        </TouchableOpacity>
-                    </Card>
+                                if (await Sharing.isAvailableAsync()) {
+                                    temporarilyDisableLock();
+                                    await Sharing.shareAsync(path);
+                                } else {
+                                    showAlert('Error', 'Sharing is not available on this device');
+                                }
+                            } catch (error) {
+                                console.error(error);
+                                showAlert('Error', 'Failed to share logs');
+                            }
+                        }}
+                        onSimulateCrash={() => setShouldCrash(true)}
+                    />
                 )}
 
                 {/* Help & Documentation  */}
-                <Card style={{ marginBottom: 16, backgroundColor: colors.info, padding: 20 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                        <View style={[styles.headerIcon, { backgroundColor: 'rgba(255,255,255,0.2)', marginRight: 12 }]}>
-                            <Ionicons name="book" size={22} color={colors.white} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={[styles.cardTitle, { color: colors.white }]}>Help Center & Docs</Text>
-                            <Text style={{ color: colors.white, opacity: 0.9, fontSize: 13, marginTop: 2 }}>
-                                How to use WealthSnap & Math
-                            </Text>
-                        </View>
-                    </View>
-
-                    <TouchableOpacity
-                        style={styles.aiButton}
-                        onPress={() => setShowGuide(true)}
-                    >
-                        <Ionicons name="school-outline" size={18} color={colors.info} />
-                        <Text style={[styles.aiButtonText, { color: colors.info }]}>Open Help Center</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.aiButton, { marginTop: 12 }]}
-                        onPress={() => navigation.navigate('TermsAndPrivacy')}
-                    >
-                        <Ionicons name="shield-checkmark-outline" size={18} color={colors.info} />
-                        <Text style={[styles.aiButtonText, { color: colors.info }]}>Terms of Use & Privacy</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.aiButton, { marginTop: 12 }]}
-                        onPress={() => setShowFeedbackModal(true)}
-                    >
-                        <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.info} />
-                        <Text style={[styles.aiButtonText, { color: colors.info }]}>Provide Feedback</Text>
-                    </TouchableOpacity>
-                </Card>
+                <HelpSectionCard
+                    onOpenHelp={() => setShowGuide(true)}
+                    onOpenTerms={() => navigation.navigate('TermsAndPrivacy')}
+                    onOpenFeedback={() => setShowFeedbackModal(true)}
+                />
 
                 {/* About Card */}
-                <Card>
-                    <TouchableWithoutFeedback onPress={handleDevTap}>
-                        <View style={styles.cardHeader}>
-                            <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
-                                <Ionicons name="information-circle" size={22} color={colors.primary} />
-                            </View>
-                            <Text style={[styles.cardTitle, { color: colors.text }]}>About WealthSnap</Text>
-                        </View>
-                    </TouchableWithoutFeedback>
-
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 15 }}>
-                        WealthSnap is an offline-first mirror for your standing. It provides a high-resolution reflection of your assets, securely on your device.
-                    </Text>
-
-                    <TouchableOpacity
-                        onPress={() => setShowWhyFreeModal(true)}
-                        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
-                    >
-                        <Ionicons name="gift-outline" size={18} color={colors.primary} />
-                        <Text style={{ color: colors.primary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
-                            Why is WealthSnap free?
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        onPress={() => setShowDevMessageModal(true)}
-                        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
-                    >
-                        <Ionicons name="person-outline" size={18} color={colors.primary} />
-                        <Text style={{ color: colors.primary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
-                            A Message from the Developer
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        onPress={() => setShowManifestoModal(true)}
-                        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
-                    >
-                        <Ionicons name="telescope-outline" size={18} color={colors.primary} />
-                        <Text style={{ color: colors.primary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
-                            Vision, Philosophy & Goals
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        onPress={() => setShowSupportModal(true)}
-                        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
-                    >
-                        <Ionicons name="heart" size={18} color={colors.error} />
-                        <Text style={{ color: colors.error, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
-                            Support the Developer
-                        </Text>
-                    </TouchableOpacity>
-
-                    <Text style={{ color: colors.gray500, fontSize: 12 }}>
-                        Version {appJson.expo.version}
-                    </Text>
-                </Card>
+                <AboutCard
+                    onDevTap={handleDevTap}
+                    onWhyFree={() => setShowWhyFreeModal(true)}
+                    onDevMessage={() => setShowDevMessageModal(true)}
+                    onManifesto={() => setShowManifestoModal(true)}
+                    onSupport={() => setShowSupportModal(true)}
+                    version={appJson.expo.version}
+                />
 
                 <View style={{ height: 40 }} />
             </ScrollView>
@@ -629,48 +446,9 @@ const ProfileScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-    themeContainer: {
-        flexDirection: 'row',
-        gap: 10,
-    },
-    themeButton: {
-        flex: 1,
-        paddingVertical: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderRadius: 8,
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    headerIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
     cardTitle: {
         fontSize: 18,
         fontWeight: '700',
-    },
-    aiButton: {
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    aiButtonText: {
-        fontWeight: '600',
-        fontSize: 15,
-        marginLeft: 8,
     },
 });
 
