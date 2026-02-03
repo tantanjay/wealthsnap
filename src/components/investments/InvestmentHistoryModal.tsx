@@ -9,8 +9,8 @@ import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { getAllInvestments } from '@services/domain/investmentService';
 import { getAllTransactions } from '@services/domain/transactionService';
-import { getPriceHistory, deleteAllPriceHistory, addPriceHistory, deletePriceHistory } from '@services/domain/priceHistoryService';
-import { getDividendHistory, deleteAutoDividendHistory, deleteDividendHistory, addDividendHistory } from '@services/domain/dividendHistoryService';
+import { getPriceHistory, deleteAllPriceHistory, addPriceHistory, deletePriceHistory, updatePriceHistory } from '@services/domain/priceHistoryService';
+import { getDividendHistory, deleteAutoDividendHistory, deleteDividendHistory, addDividendHistory, updateDividendHistory } from '@services/domain/dividendHistoryService';
 import { getAllAssets } from '@services/domain/assetService';
 import { fetchHistoricalPrices, AssetRequest, fetchDividendHistory } from '@services/integrations/geminiService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
@@ -309,16 +309,32 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                 fetchHistoricalPrices([assetRequest], durationPrompt).then(async (prices) => {
                     let savedCount = 0;
                     for (const p of prices) {
-                        await addPriceHistory(p.symbol, p.price, {
-                            high: p.high,
-                            low: p.low,
-                            volume: p.volume,
-                            timestamp: p.date,
-                            source: 'AI_FETCH'
-                        });
+                        // Check for existing AI_FETCH record (match date YYYY-MM-DD)
+                        const existing = priceHistory.find(curr =>
+                            curr.source === 'AI_FETCH' &&
+                            curr.timestamp.startsWith(p.date)
+                        );
+
+                        if (existing) {
+                            await updatePriceHistory(existing.id, p.price, {
+                                high: p.high,
+                                low: p.low,
+                                volume: p.volume,
+                                timestamp: existing.timestamp, // Keep original timestamp
+                                source: 'AI_FETCH'
+                            });
+                        } else {
+                            await addPriceHistory(p.symbol, p.price, {
+                                high: p.high,
+                                low: p.low,
+                                volume: p.volume,
+                                timestamp: p.date,
+                                source: 'AI_FETCH'
+                            });
+                        }
                         savedCount++;
                     }
-                    const successMsg = `Updated ${savedCount} prices.`;
+                    const successMsg = `Processed ${savedCount} prices.`;
                     if (Platform.OS === 'android') ToastAndroid.show(successMsg, ToastAndroid.SHORT);
                     loadPrices();
                     onDataChange?.();
@@ -333,19 +349,38 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                 fetchDividendHistory([assetRequest], durationPrompt).then(async (dividends) => {
                     let savedCount = 0;
                     for (const d of dividends) {
-                        await addDividendHistory({
-                            symbol: d.symbol,
-                            exDate: d.exDate,
-                            paymentDate: d.paymentDate,
-                            recordDate: d.recordDate,
-                            amount: new BigNumber(d.amount),
-                            type: d.type,
-                            status: 'PAID',
-                            source: 'AI_FETCH'
-                        });
+                        // Check for existing AI_FETCH record (match exDate YYYY-MM-DD or ISO start)
+                        const existing = dividendHistory.find(curr =>
+                            curr.source === 'AI_FETCH' &&
+                            (curr.exDate === d.exDate || curr.exDate.startsWith(d.exDate))
+                        );
+
+                        if (existing) {
+                            await updateDividendHistory(existing.id, {
+                                symbol: d.symbol,
+                                exDate: d.exDate,
+                                paymentDate: d.paymentDate,
+                                recordDate: d.recordDate,
+                                amount: new BigNumber(d.amount),
+                                type: d.type,
+                                status: 'PAID',
+                                source: 'AI_FETCH'
+                            });
+                        } else {
+                            await addDividendHistory({
+                                symbol: d.symbol,
+                                exDate: d.exDate,
+                                paymentDate: d.paymentDate,
+                                recordDate: d.recordDate,
+                                amount: new BigNumber(d.amount),
+                                type: d.type,
+                                status: 'PAID',
+                                source: 'AI_FETCH'
+                            });
+                        }
                         savedCount++;
                     }
-                    const successMsg = `Updated ${savedCount} dividend records.`;
+                    const successMsg = `Processed ${savedCount} dividend records.`;
                     if (Platform.OS === 'android') ToastAndroid.show(successMsg, ToastAndroid.SHORT);
                     loadDividends();
                     onDataChange?.();
