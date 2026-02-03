@@ -1,3 +1,6 @@
+import { CHANGELOG_MARKDOWN } from './changeLogData';
+import { parseMarkdownToContentItems } from '../utils/markdownParser';
+
 export interface HelpSlide {
     id: string;
     icon: string;
@@ -343,5 +346,14 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Account Age: Burn rate respects actual history' },
             { type: 'bullet', text: 'Negative Values: Handled for Savings, Cash Flow, and Runway' }
         ]
+    },
+    {
+        id: 'changelog',
+        title: 'Change Logs',
+        subtitle: 'Version history and release notes',
+        icon: 'git-branch-outline',
+        color: '#607D8B',
+        type: 'document',
+        content: parseMarkdownToContentItems(CHANGELOG_MARKDOWN)
     }
 ];
