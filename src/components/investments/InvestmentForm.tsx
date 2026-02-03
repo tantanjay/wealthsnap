@@ -288,6 +288,10 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
             setFees('');
             setNotes('');
             setCreateTransaction(true);
+
+            if (initialInvestment) {
+                onSave();
+            }
         } catch (error) {
             console.error(error);
             showAlert('Error', 'Failed to save investment.');
