@@ -14,9 +14,8 @@ import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding } from '@serv
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
 import { getProjectedDividends } from '@services/domain/dividendHistoryService';
 import * as Storage from '@services/core/storageService';
-import { InvestmentLayoutOrder } from '@services/core/storageService';
 import { Ionicons } from '@expo/vector-icons';
-import InvestmentSettingsModal from '@components/investments/InvestmentSettingsModal';
+import InvestmentSettingsModal from '@components/investments/modals/InvestmentSettingsModal';
 import ReorderModal from '@components/common/ReorderModal';
 import { TouchableOpacity } from 'react-native';
 
@@ -45,7 +44,6 @@ const InvestmentScreen = () => {
     const [showStatsReorder, setShowStatsReorder] = useState(false);
     const [showSectionReorder, setShowSectionReorder] = useState(false);
 
-    const [layoutOrder, setLayoutOrder] = useState<InvestmentLayoutOrder>('standard');
     const [statsOrder, setStatsOrder] = useState<string[]>([]);
     const [sectionOrder, setSectionOrder] = useState<string[]>([]);
 
@@ -71,9 +69,6 @@ const InvestmentScreen = () => {
             setSuggestions(newSuggestions);
 
             // Load layout preferences
-            const currentLayoutOrder = await Storage.getInvestmentLayoutOrder();
-            setLayoutOrder(currentLayoutOrder);
-
             const currentStatsOrder = await Storage.getInvestmentStatsOrder();
             if (currentStatsOrder) setStatsOrder(currentStatsOrder);
 

@@ -5,10 +5,10 @@ import { bulkDecryptItems, encryptField } from "@services/core/encryptionService
 import { chunkArray } from "@utils/index";
 import { invalidateInvestmentCache, getInvestmentCache, setInvestmentCache, isValid, getTransactionCache, setTransactionCache } from "@services/core/dataCache";
 import { getAllPortfolioMetrics } from "@utils/investmentMetrics";
-import { getLatestPrices } from "./priceHistoryService";
-import { getAllTransactions } from "./transactionService";
-import { getAllAssets } from "./assetService";
-import { getAnnualDividend } from "./dividendHistoryService"; // Import this
+import { getLatestPrices } from "@services/domain/priceHistoryService";
+import { getAllTransactions } from "@services/domain/transactionService";
+import { getAllAssets } from "@services/domain/assetService";
+import { getAnnualDividend } from "@services/domain/dividendHistoryService"; // Import this
 
 
 

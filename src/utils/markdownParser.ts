@@ -1,4 +1,4 @@
-import { ContentItem } from '../constants/helpContent';
+import { ContentItem } from '@constants/helpContent';
 
 export const parseMarkdownToContentItems = (markdown: string): ContentItem[] => {
     const lines = markdown.split('\n');
