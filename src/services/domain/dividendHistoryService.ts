@@ -127,7 +127,7 @@ export const updateDividendHistory = async (id: string, dividend: Partial<Omit<D
 export const getAllDividendHistories = async (): Promise<DividendHistory[]> => {
     try {
         const db = await getDatabase();
-        const rows = await db.getAllAsync<any>(`SELECT * FROM dividend_history`);
+        const rows = await db.getAllAsync<any>(`SELECT * FROM dividend_history ORDER BY date(exDate) DESC`);
         return rows.map(row => ({
             id: row.id,
             symbol: row.symbol,

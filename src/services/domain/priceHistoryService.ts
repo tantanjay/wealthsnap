@@ -156,7 +156,7 @@ export const updatePriceHistory = async (
 export const getAllPriceHistories = async (): Promise<PriceHistory[]> => {
     try {
         const db = await getDatabase();
-        const rows = await db.getAllAsync<any>(`SELECT * FROM price_history ORDER BY timestamp DESC`);
+        const rows = await db.getAllAsync<any>(`SELECT * FROM price_history ORDER BY date(timestamp) DESC`);
         return rows.map(row => ({
             id: row.id,
             symbol: row.symbol,
