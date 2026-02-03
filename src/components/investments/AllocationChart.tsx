@@ -14,6 +14,7 @@ interface Holding {
     gainLossPercent: number;
     divYield: number;
     sector?: string;
+    type?: string;
 }
 
 interface AllocationChartProps {
@@ -92,7 +93,7 @@ const getTreemapLayout = (data: any[], width: number, height: number): TreeMapIt
 // --- Main Component ---
 export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, isLoading = false, isPrivacyEnabled = false }) => {
     const { colors } = useTheme();
-    const [selectedTab, setSelectedTab] = useState<'stocks' | 'sector'>('stocks');
+    const [selectedTab, setSelectedTab] = useState<'stocks' | 'sector' | 'type'>('stocks');
     const [containerWidth, setContainerWidth] = useState(0);
     const chartHeight = 220;
 
@@ -103,10 +104,20 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
 
     const chartItems = useMemo(() => {
         if (!holdingsData || holdingsData.length === 0) return [];
-        const totalPortfolioValue = holdingsData.reduce((sum, h) => sum + h.totalValue, 0);
+
+        // Filter based on selected tab logic first
+        // For Stocks tab, we only want actual Stocks
+        let filteredHoldings = holdingsData;
+        if (selectedTab === 'stocks') {
+            filteredHoldings = holdingsData.filter(h => h.type === 'STOCKS');
+        }
+
+        if (filteredHoldings.length === 0) return [];
+
+        const totalPortfolioValue = filteredHoldings.reduce((sum, h) => sum + h.totalValue, 0);
 
         if (selectedTab === 'stocks') {
-            return holdingsData.map(h => {
+            return filteredHoldings.map(h => {
                 const isGain = h.gainLoss >= 0;
                 const glSign = isGain ? '+' : '';
                 const color = isGain
@@ -122,14 +133,19 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                     color,
                 };
             });
-        } else {
+        } else if (selectedTab === 'sector') {
             const sectors: { [key: string]: { value: number, gainLoss: number } } = {};
+            // For Sector view, we use ALL holdings (as requested "its ok in Sector option")
+            // So we use holdingsData, not filteredHoldings (which was only filtered for 'stocks' tab)
             holdingsData.forEach(h => {
                 const s = h.sector || 'Other';
                 if (!sectors[s]) sectors[s] = { value: 0, gainLoss: 0 };
                 sectors[s].value += h.totalValue;
                 sectors[s].gainLoss += h.gainLoss;
             });
+
+            // Recalculate total for ALL holdings
+            const totalValue = holdingsData.reduce((sum, h) => sum + h.totalValue, 0);
 
             return Object.keys(sectors).map((s) => {
                 const data = sectors[s];
@@ -146,8 +162,41 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                     id: s,
                     value: data.value,
                     label: s,
-                    weight: `${((data.value / totalPortfolioValue) * 100).toFixed(1)}%`,
+                    weight: `${((data.value / totalValue) * 100).toFixed(1)}%`,
                     performance: `${glSign}${sectorPerf.toFixed(1)}%`,
+                    color,
+                };
+            });
+        } else {
+            // TYPE view
+            const types: { [key: string]: { value: number, gainLoss: number } } = {};
+            holdingsData.forEach(h => {
+                // Use type or fallback
+                const t = h.type || 'Other';
+                if (!types[t]) types[t] = { value: 0, gainLoss: 0 };
+                types[t].value += h.totalValue;
+                types[t].gainLoss += h.gainLoss;
+            });
+
+            const totalValue = holdingsData.reduce((sum, h) => sum + h.totalValue, 0);
+
+            return Object.keys(types).map((t) => {
+                const data = types[t];
+                const costBasis = data.value - data.gainLoss;
+                const typePerf = costBasis > 0 ? (data.gainLoss / costBasis) * 100 : 0;
+
+                const isGain = data.gainLoss >= 0;
+                const glSign = isGain ? '+' : '';
+                const color = isGain
+                    ? `rgba(16, 185, 129, ${0.5 + (Math.min(typePerf, 15) / 40)})`
+                    : `rgba(239, 68, 68, ${0.5 + (Math.min(Math.abs(typePerf), 15) / 40)})`;
+
+                return {
+                    id: t,
+                    value: data.value,
+                    label: t, // Label as Type
+                    weight: `${((data.value / totalValue) * 100).toFixed(1)}%`,
+                    performance: `${glSign}${typePerf.toFixed(1)}%`,
                     color,
                 };
             });
@@ -164,7 +213,7 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
             <View style={styles.header}>
                 <Text style={[styles.title, { color: colors.text }]}>Allocation</Text>
                 <View style={[styles.tabContainer, { backgroundColor: colors.background }]}>
-                    {(['stocks', 'sector'] as const).map((tab) => (
+                    {(['stocks', 'sector', 'type'] as const).map((tab) => (
                         <TouchableOpacity
                             key={tab}
                             style={[styles.tab, selectedTab === tab && { backgroundColor: colors.primary }]}
@@ -193,61 +242,67 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
             ) : (
                 <View style={styles.chartWrapper} onLayout={onLayout}>
                     <View style={[styles.chartContainer, { height: chartHeight }]}>
-                        {layout.map((item) => {
-                            const isPortrait = item.height > item.width * 1.2;
-                            const showLabel = item.width > 28 && item.height > 18;
-                            const showWeight = item.width > 40 && item.height > 35;
-                            // Performance (% gain/loss) is hidden if the box is very small
-                            const showPerf = item.width > 55 && item.height > 45;
+                        {layout.length === 0 ? (
+                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                <Text style={{ color: colors.textSecondary }}>No data for {selectedTab}</Text>
+                            </View>
+                        ) : (
+                            layout.map((item) => {
+                                const isPortrait = item.height > item.width * 1.2;
+                                const showLabel = item.width > 28 && item.height > 18;
+                                const showWeight = item.width > 40 && item.height > 35;
+                                // Performance (% gain/loss) is hidden if the box is very small
+                                const showPerf = item.width > 55 && item.height > 45;
 
-                            return (
-                                <View
-                                    key={item.id}
-                                    style={[
-                                        styles.box,
-                                        {
-                                            left: item.x,
-                                            top: item.y,
-                                            width: item.width,
-                                            height: item.height,
-                                            backgroundColor: item.color,
-                                            borderColor: colors.surface,
-                                        }
-                                    ]}
-                                >
-                                    {showLabel && (
-                                        <Text
-                                            style={[styles.boxLabel, { fontSize: Math.min(12, item.width / 4.5) }]}
-                                            numberOfLines={1}
-                                            adjustsFontSizeToFit
-                                        >
-                                            {item.label}
-                                        </Text>
-                                    )}
+                                return (
+                                    <View
+                                        key={item.id}
+                                        style={[
+                                            styles.box,
+                                            {
+                                                left: item.x,
+                                                top: item.y,
+                                                width: item.width,
+                                                height: item.height,
+                                                backgroundColor: item.color,
+                                                borderColor: colors.surface,
+                                            }
+                                        ]}
+                                    >
+                                        {showLabel && (
+                                            <Text
+                                                style={[styles.boxLabel, { fontSize: Math.min(12, item.width / 4.5) }]}
+                                                numberOfLines={1}
+                                                adjustsFontSizeToFit
+                                            >
+                                                {item.label}
+                                            </Text>
+                                        )}
 
-                                    {(showWeight || showPerf) && (
-                                        <View style={[
-                                            styles.subLabelContainer,
-                                            { flexDirection: isPortrait ? 'column' : 'row' }
-                                        ]}>
-                                            {showWeight && (
-                                                <Text style={[styles.boxSubLabel, { fontSize: Math.min(10, item.width / 7) }]}>
-                                                    {item.weight}
-                                                </Text>
-                                            )}
-                                            {showWeight && showPerf && !isPortrait && (
-                                                <Text style={styles.boxSubLabel}> </Text>
-                                            )}
-                                            {showPerf && (
-                                                <Text style={[styles.boxSubLabel, { fontSize: Math.min(10, item.width / 7), opacity: 0.9 }]}>
-                                                    ({item.performance})
-                                                </Text>
-                                            )}
-                                        </View>
-                                    )}
-                                </View>
-                            );
-                        })}
+                                        {(showWeight || showPerf) && (
+                                            <View style={[
+                                                styles.subLabelContainer,
+                                                { flexDirection: isPortrait ? 'column' : 'row' }
+                                            ]}>
+                                                {showWeight && (
+                                                    <Text style={[styles.boxSubLabel, { fontSize: Math.min(10, item.width / 7) }]}>
+                                                        {item.weight}
+                                                    </Text>
+                                                )}
+                                                {showWeight && showPerf && !isPortrait && (
+                                                    <Text style={styles.boxSubLabel}> </Text>
+                                                )}
+                                                {showPerf && (
+                                                    <Text style={[styles.boxSubLabel, { fontSize: Math.min(10, item.width / 7), opacity: 0.9 }]}>
+                                                        ({item.performance})
+                                                    </Text>
+                                                )}
+                                            </View>
+                                        )}
+                                    </View>
+                                );
+                            })
+                        )}
                     </View>
                 </View>
             )}
