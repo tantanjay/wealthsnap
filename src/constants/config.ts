@@ -31,6 +31,7 @@ export const ASYNC_KEYS = {
     },
     HOME_SCREEN: {
         DISPLAY_MODE: '@wealthsnap_finance_display_mode',
+        CARD_ORDER: '@wealthsnap_finance_card_order',
     },
     INSIGHTS_SCREEN: {
         CARD_ORDER: '@wealthsnap_insights_card_order',
