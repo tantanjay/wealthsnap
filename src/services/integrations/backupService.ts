@@ -67,8 +67,8 @@ export const createBackup = async (password: string): Promise<string> => {
         reminders,
         transactionReceipts,
         assets,
-        priceHistories: priceHistories.slice(0, 100),
-        dividendHistories: dividendHistories.slice(0, 100)
+        priceHistories: limitPerSymbol(priceHistories, 100),
+        dividendHistories: limitPerSymbol(dividendHistories, 10)
     };
 
     // 2. Create zip archive
@@ -96,6 +96,24 @@ export const createBackup = async (password: string): Promise<string> => {
 
     return fileUri;
 };
+
+function limitPerSymbol<T extends { symbol: string }>(
+    items: T[],
+    limit: number
+): T[] {
+    const map = new Map<string, T[]>();
+
+    for (const item of items) {
+        const list = map.get(item.symbol) ?? [];
+        if (list.length < limit) {
+            list.push(item);
+            map.set(item.symbol, list);
+        }
+    }
+
+    return Array.from(map.values()).flat();
+}
+
 
 /**
  * Ensures all entities in an array have valid UUIDs.
