@@ -13,14 +13,20 @@ import { usePrivacy } from '@context/PrivacyContext';
 import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding } from '@services/domain/investmentService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
 import { getProjectedDividends } from '@services/domain/dividendHistoryService';
+import { AssetRequest, fetchHistoricalPrices } from '@services/integrations/geminiService';
+import { addPriceHistory, getPriceHistory, updatePriceHistory } from '@services/domain/priceHistoryService';
+import { getAllAssets } from '@services/domain/assetService';
 import * as Storage from '@services/core/storageService';
 import { Ionicons } from '@expo/vector-icons';
+import { Platform, ToastAndroid } from 'react-native';
 import InvestmentSettingsModal from '@components/investments/modals/InvestmentSettingsModal';
 import ReorderModal from '@components/common/ReorderModal';
+import { useAIConsent } from '@hooks/useAIConsent';
 
 const InvestmentScreen = () => {
     const { colors } = useTheme();
     const { isPrivacyEnabled } = usePrivacy();
+    const { checkConsent } = useAIConsent();
     const [refreshing, setRefreshing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [currency, setCurrency] = useState('PHP');
@@ -110,6 +116,117 @@ const InvestmentScreen = () => {
         await loadStats();
         setRefreshing(false);
     }, [loadStats]);
+
+
+
+    // --- Bulk Fetch Logic ---
+    const handleBulkFetchPrices = async (durationLabel: string) => {
+        // Background process
+        const showToast = (msg: string) => {
+            if (Platform.OS === 'android') {
+                ToastAndroid.show(msg, ToastAndroid.SHORT);
+            }
+        };
+
+        if (holdings.length === 0) {
+            showToast("No holdings to fetch prices for.");
+            return;
+        }
+
+        showToast(`Fetching prices for ${durationLabel}...`);
+
+        try {
+            // 1. Identify Stock Holdings
+            // We use 'type' from holdings (which comes from Asset or Investment)
+            // HoldingsList uses `type` field.
+            // Let's filter holdings where type is close to 'STOCK' or 'STOCKS' or check Asset Service for more precision if needed.
+            // For now, relies on holding.type (which comes from asset?.type)
+            const stockHoldings = holdings.filter(h =>
+                h.type === 'STOCKS' || h.type === 'STOCK' // Cover potential variations
+            );
+
+            if (stockHoldings.length === 0) {
+                showToast("No Stock holdings found.");
+                return;
+            }
+
+            // 2. Prepare Asset Requests
+            const allAssets = await getAllAssets();
+            const requests: AssetRequest[] = stockHoldings.map(h => {
+                const asset = allAssets.find(a => a.symbol === h.symbol);
+                return {
+                    symbol: h.symbol,
+                    exchange: asset?.exchange || 'Unknown'
+                };
+            });
+
+            // 3. Determine Duration
+            let durationPrompt = 'Last 7 days';
+            if (durationLabel === 'Today') durationPrompt = 'Today';
+            else if (durationLabel === 'Last 3 days') durationPrompt = 'Last 3 days';
+
+            // 4. Fetch
+            fetchHistoricalPrices(requests, durationPrompt).then(async (prices) => {
+                let savedCount = 0;
+                for (const p of prices) {
+                    // We need to check existing price history to avoid duplicates or update them
+                    // This is expensive if we do it one by one against DB.
+                    // Optimization: Check against what we have in memory? We don't have all price history in memory here.
+                    // We will query DB for each symbol's history? Or just Try Insert/Update.
+                    // `addPriceHistory` adds new. `updatePriceHistory` updates.
+
+                    // Strategy: Get existing history for this symbol first (limited range?)
+                    // `getPriceHistory` gets all.
+                    // Let's just fetch all history for the symbol. It might be heavy if history is long.
+                    // But for correctness, we should.
+                    const existingHistory = await getPriceHistory(p.symbol);
+                    const existing = existingHistory.find(eh => eh.timestamp.startsWith(p.date));
+
+                    if (existing) {
+                        // Update if AI_FETCH or just update. 
+                        // If source is MANUAL, we preserve it?
+                        // The requirement said: "make sure existing AI_FETCH records if they already exist... add new if no existing... manual entries preserved".
+                        if (existing.source === 'AI_FETCH') {
+                            await updatePriceHistory(existing.id, new (require('bignumber.js').BigNumber)(p.price), {
+                                high: p.high ? new (require('bignumber.js').BigNumber)(p.high) : undefined,
+                                low: p.low ? new (require('bignumber.js').BigNumber)(p.low) : undefined,
+                                volume: p.volume ? new (require('bignumber.js').BigNumber)(p.volume) : undefined,
+                                timestamp: existing.timestamp,
+                                source: 'AI_FETCH'
+                            });
+                            savedCount++;
+                        }
+                        // If MANUAL, do nothing.
+                    } else {
+                        await addPriceHistory(p.symbol, new (require('bignumber.js').BigNumber)(p.price), {
+                            high: p.high ? new (require('bignumber.js').BigNumber)(p.high) : undefined,
+                            low: p.low ? new (require('bignumber.js').BigNumber)(p.low) : undefined,
+                            volume: p.volume ? new (require('bignumber.js').BigNumber)(p.volume) : undefined,
+                            timestamp: p.date,
+                            source: 'AI_FETCH'
+                        });
+                        savedCount++;
+                    }
+                }
+
+                if (savedCount > 0) {
+                    showToast(`Updated ${savedCount} prices.`);
+                    loadStats(); // Refresh UI
+                } else {
+                    showToast("No new prices to update.");
+                }
+
+            }).catch(err => {
+                console.error("Bulk fetch failed", err);
+                showToast("Failed to fetch prices.");
+            });
+
+
+        } catch (e) {
+            console.error("Error preparing bulk fetch", e);
+            showToast("Error initiating fetch.");
+        }
+    };
 
     // --- Dynamic Section Rendering ---
 
@@ -210,6 +327,11 @@ const InvestmentScreen = () => {
             <InvestmentSettingsModal
                 visible={showSettings}
                 onClose={() => setShowSettings(false)}
+                onFetchPriceList={(duration) => {
+                    checkConsent(() => {
+                        handleBulkFetchPrices(duration);
+                    });
+                }}
                 onOpenStatsReorder={() => {
                     setShowSettings(false);
                     setShowStatsReorder(true);
