@@ -237,7 +237,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                 <ScrollView showsVerticalScrollIndicator={false}>
                     <View style={{ padding: 20, paddingBottom: 40 }}>
                         <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
-                            Financial Runway shows how many months you can sustain your current lifestyle based on your net tracked balance and average monthly expenses (burn rate).
+                            Financial Runway shows how many months you can sustain your current lifestyle based on your net liquid balance and average monthly expenses (burn rate).
                         </Text>
                         <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
@@ -247,12 +247,12 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                         <View style={{ backgroundColor: '#FF9800' + '20', padding: 12, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: '#FF9800', marginBottom: 15 }}>
                             <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 6 }}>⚠️ Important Note</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
-                                This calculation uses your <Text style={{ fontWeight: 'bold' }}>tracked balance</Text> (lifetime income - expenses from your transactions), not your actual bank account balance.{"\n\n"}
-                                For accurate runway, ensure your starting balance is recorded as an initial income transaction.
+                                This calculation uses your <Text style={{ fontWeight: 'bold' }}>Net Liquid Balance</Text> (Income + Transfer In - Expenses - Transfer Out), reflecting your actual available funds.{"\n\n"}
+                                For accurate runway, ensure your starting balance is recorded as an initial transaction.
                             </Text>
                         </View>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            Calculation: Net Tracked Balance ÷ Average Monthly Expense
+                            Calculation: Net Liquid Balance ÷ Average Monthly Expense
                         </Text>
                     </View>
                 </ScrollView>
