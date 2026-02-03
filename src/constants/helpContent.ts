@@ -213,8 +213,8 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'heading1', text: '1. Overview Cards' },
 
             { type: 'heading2', text: 'Financial Runway' },
-            { type: 'formula', text: 'Runway = Net Tracked Balance ÷ Burn Rate' },
-            { type: 'bullet', text: 'Net Tracked Balance = Lifetime Income - Lifetime Expenses' },
+            { type: 'formula', text: 'Runway = Net Liquid Balance ÷ Burn Rate' },
+            { type: 'bullet', text: 'Net Liquid Balance = (Income + Transfer In) - (Total Expenses + Transfer Out)' },
             { type: 'bullet', text: 'Burn Rate = Average monthly expenses' },
             { type: 'paragraph', text: 'Color Coding:' },
             { type: 'bullet', text: 'Green: ≥6 months' },

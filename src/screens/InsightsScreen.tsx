@@ -91,7 +91,22 @@ const InsightsScreen = ({ navigation }: any) => {
         }
 
         const allTimeTotals = Metrics.calculateTotals(currentTransactions);
-        const currentBalance = allTimeTotals.income.minus(allTimeTotals.expense);
+
+        // Calculate Transfers for Liquid Balance
+        let totalTransferIn = new BigNumber(0);
+        let totalTransferOut = new BigNumber(0);
+
+        currentTransactions.forEach(t => {
+            if (t.type === 'TRANSFER_IN') {
+                totalTransferIn = totalTransferIn.plus(t.amount.abs());
+            } else if (t.type === 'TRANSFER_OUT') {
+                totalTransferOut = totalTransferOut.plus(t.amount.abs());
+            }
+        });
+
+        // Current Balance = (Income + Transfer In) - (Expense + Transfer Out)
+        const currentBalance = allTimeTotals.income.plus(totalTransferIn)
+            .minus(allTimeTotals.expense.plus(totalTransferOut));
 
         // Budget Performance
         const budgets = await getAllBudgets();
