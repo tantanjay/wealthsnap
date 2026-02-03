@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Picker } from '@react-native-picker/picker'; // You might need to install this if not available, checking package.json... Yes, it is installed: @react-native-picker/picker
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
 import { DividendHistory } from '@types';
 import { addDividendHistory, updateDividendHistory } from '@services/domain/dividendHistoryService';
 
@@ -25,6 +26,7 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
     onSuccess
 }) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
     const [isLoading, setIsLoading] = useState(false);
 
     // Form State
@@ -59,7 +61,7 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
 
     const handleSave = async () => {
         if (!amount || isNaN(parseFloat(amount))) {
-            Alert.alert("Invalid Input", "Please enter a valid amount.");
+            showAlert("Invalid Input", "Please enter a valid amount.");
             return;
         }
 
@@ -84,7 +86,7 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
             onClose();
         } catch (error) {
             console.error("Failed to save dividend history", error);
-            Alert.alert("Error", "Failed to save dividend entry.");
+            showAlert("Error", "Failed to save dividend entry.");
         } finally {
             setIsLoading(false);
         }
