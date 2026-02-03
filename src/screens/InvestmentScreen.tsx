@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
-
+import { BigNumber } from 'bignumber.js';
+import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, Platform, ToastAndroid } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { InvestmentStats } from '@components/investments/InvestmentStats';
@@ -18,7 +18,6 @@ import { addPriceHistory, getPriceHistory, updatePriceHistory } from '@services/
 import { getAllAssets } from '@services/domain/assetService';
 import * as Storage from '@services/core/storageService';
 import { Ionicons } from '@expo/vector-icons';
-import { Platform, ToastAndroid } from 'react-native';
 import InvestmentSettingsModal from '@components/investments/modals/InvestmentSettingsModal';
 import { useAIConsent } from '@hooks/useAIConsent';
 
@@ -193,10 +192,10 @@ const InvestmentScreen = () => {
                         // If source is MANUAL, we preserve it?
                         // The requirement said: "make sure existing AI_FETCH records if they already exist... add new if no existing... manual entries preserved".
                         if (existing.source === 'AI_FETCH') {
-                            await updatePriceHistory(existing.id, new (require('bignumber.js').BigNumber)(p.price), {
-                                high: p.high ? new (require('bignumber.js').BigNumber)(p.high) : undefined,
-                                low: p.low ? new (require('bignumber.js').BigNumber)(p.low) : undefined,
-                                volume: p.volume ? new (require('bignumber.js').BigNumber)(p.volume) : undefined,
+                            await updatePriceHistory(existing.id, new BigNumber(p.price), {
+                                high: p.high ? new BigNumber(p.high) : undefined,
+                                low: p.low ? new BigNumber(p.low) : undefined,
+                                volume: p.volume ? new BigNumber(p.volume) : undefined,
                                 timestamp: existing.timestamp,
                                 source: 'AI_FETCH'
                             });
@@ -204,10 +203,10 @@ const InvestmentScreen = () => {
                         }
                         // If MANUAL, do nothing.
                     } else {
-                        await addPriceHistory(p.symbol, new (require('bignumber.js').BigNumber)(p.price), {
-                            high: p.high ? new (require('bignumber.js').BigNumber)(p.high) : undefined,
-                            low: p.low ? new (require('bignumber.js').BigNumber)(p.low) : undefined,
-                            volume: p.volume ? new (require('bignumber.js').BigNumber)(p.volume) : undefined,
+                        await addPriceHistory(p.symbol, new BigNumber(p.price), {
+                            high: p.high ? new BigNumber(p.high) : undefined,
+                            low: p.low ? new BigNumber(p.low) : undefined,
+                            volume: p.volume ? new BigNumber(p.volume) : undefined,
                             timestamp: p.date,
                             source: 'AI_FETCH'
                         });
