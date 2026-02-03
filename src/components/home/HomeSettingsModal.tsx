@@ -3,11 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
+import { ReorderList, ReorderItem } from '@components/common/ReorderList';
 
 interface HomeSettingsModalProps {
     visible: boolean;
     onClose: () => void;
-    onOpenReorder: () => void;
+    cardOrder: string[];
+    onUpdateCardOrder: (newOrder: string[]) => void;
     displayMode: 'Overall' | 'Month' | 'MonthIncomeExpense';
     onDisplayModeChange: (mode: 'Overall' | 'Month' | 'MonthIncomeExpense') => void;
 }
@@ -15,11 +17,35 @@ interface HomeSettingsModalProps {
 const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
     visible,
     onClose,
-    onOpenReorder,
+    cardOrder,
+    onUpdateCardOrder,
     displayMode,
     onDisplayModeChange
 }) => {
     const { colors } = useTheme();
+    const [view, setView] = React.useState<'MAIN' | 'REORDER'>('MAIN');
+
+    // Reset view when modal closes
+    React.useEffect(() => {
+        if (!visible) {
+            setView('MAIN');
+        }
+    }, [visible]);
+
+    const getCardItems = (): ReorderItem[] => {
+        const labels: Record<string, string> = {
+            'cash-flow': 'Cash Flow',
+            'portfolio': 'Investments',
+            'debt': 'Debts & Liabilities',
+            'transactions': 'Recent Transactions'
+        };
+        // Combine saved order with all valid keys to ensure nothing is missing
+        const uniqueIds = Array.from(new Set([...cardOrder, ...Object.keys(labels)]));
+        // Filter out any garbage IDs that are not in our labels map
+        const finalOrder = uniqueIds.filter(id => labels[id]);
+
+        return finalOrder.map(id => ({ id, label: labels[id] }));
+    };
 
     const renderMenuItem = (
         icon: any,
@@ -64,31 +90,46 @@ const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Home Settings"
+            title={view === 'MAIN' ? "Home Settings" : "Reorder Dashboard"}
             maxHeight="auto"
+            headerRight={view === 'REORDER' ? (
+                <TouchableOpacity onPress={() => setView('MAIN')} style={{ marginRight: 8 }}>
+                    <Text style={{ color: colors.primary, fontSize: 16 }}>Back</Text>
+                </TouchableOpacity>
+            ) : undefined}
         >
             <View style={styles.container}>
-                {/* Reorder Section */}
-                {renderMenuItem(
-                    "layers-outline",
-                    "Reorder Dashboard",
-                    "Customize the layout of your home screen",
-                    onOpenReorder
+                {view === 'MAIN' ? (
+                    <>
+                        {/* Reorder Section */}
+                        {renderMenuItem(
+                            "layers-outline",
+                            "Reorder Dashboard",
+                            "Customize the layout of your home screen",
+                            () => setView('REORDER')
+                        )}
+
+                        <View style={{ height: 24 }} />
+
+                        {/* Display Mode Section */}
+                        <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
+                            CASH FLOW DISPLAY
+                        </Text>
+                        <View style={[styles.radioGroup, { backgroundColor: colors.surface }]}>
+                            {renderRadioItem("Overall Balance", "Overall")}
+                            {renderRadioItem("This Month", "Month")}
+                            <View style={{ borderBottomWidth: 0 }}>
+                                {renderRadioItem("Monthly Net (No Transfers)", "MonthIncomeExpense")}
+                            </View>
+                        </View>
+                    </>
+                ) : (
+                    <ReorderList
+                        items={getCardItems()}
+                        onReorder={(newItems) => onUpdateCardOrder(newItems.map(i => i.id))}
+                        containerStyle={{ maxHeight: 400 }}
+                    />
                 )}
-
-                <View style={{ height: 24 }} />
-
-                {/* Display Mode Section */}
-                <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
-                    CASH FLOW DISPLAY
-                </Text>
-                <View style={[styles.radioGroup, { backgroundColor: colors.surface }]}>
-                    {renderRadioItem("Overall Balance", "Overall")}
-                    {renderRadioItem("This Month", "Month")}
-                    <View style={{ borderBottomWidth: 0 }}>
-                        {renderRadioItem("Monthly Net (No Transfers)", "MonthIncomeExpense")}
-                    </View>
-                </View>
             </View>
         </BottomModal>
     );

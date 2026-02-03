@@ -10,7 +10,6 @@ import HomeSettingsModal from '@components/home/HomeSettingsModal';
 import HomeCashFlowCard from '@components/home/HomeCashFlowCard';
 import HomeInvestmentCard from '@components/home/HomeInvestmentCard';
 import HomeDebtCard from '@components/home/HomeDebtCard';
-import ReorderModal from '@components/common/ReorderModal';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
@@ -47,7 +46,6 @@ const HomeScreen = ({ navigation }: any) => {
 
     // Settings Modal State
     const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
-    const [isReorderModalVisible, setIsReorderModalVisible] = useState(false);
     const [displayMode, setDisplayMode] = useState<Storage.HomeDisplayMode>('Overall');
     const [cardOrder, setCardOrder] = useState<string[]>(['cash-flow', 'portfolio', 'debt', 'transactions']);
 
@@ -371,41 +369,13 @@ const HomeScreen = ({ navigation }: any) => {
             <HomeSettingsModal
                 visible={isSettingsModalVisible}
                 onClose={() => setIsSettingsModalVisible(false)}
-                onOpenReorder={() => {
-                    setIsSettingsModalVisible(false);
-                    setIsReorderModalVisible(true);
-                }}
-                displayMode={displayMode || 'Overall'}
-                onDisplayModeChange={handleModeChange}
-            />
-
-            {/* Reorder Modal */}
-            <ReorderModal
-                visible={isReorderModalVisible}
-                onClose={() => {
-                    setIsReorderModalVisible(false);
-                    setIsSettingsModalVisible(true);
-                }}
-                title="Reorder Dashboard"
-                items={[
-                    { id: 'cash-flow', label: 'Cash Flow' },
-                    { id: 'portfolio', label: 'Investments' },
-                    { id: 'debt', label: 'Debts & Liabilities' },
-                    { id: 'transactions', label: 'Recent Transactions' },
-                ].sort((a, b) => {
-                    if (!cardOrder || cardOrder.length === 0) return 0;
-                    const indexA = cardOrder.indexOf(a.id);
-                    const indexB = cardOrder.indexOf(b.id);
-                    if (indexA === -1 && indexB === -1) return 0;
-                    if (indexA === -1) return 1;
-                    if (indexB === -1) return -1;
-                    return indexA - indexB;
-                })}
-                onReorder={async (newItems) => {
-                    const newOrder = newItems.map(i => i.id);
+                cardOrder={cardOrder}
+                onUpdateCardOrder={async (newOrder) => {
                     setCardOrder(newOrder);
                     await Storage.saveHomeCardOrder(newOrder);
                 }}
+                displayMode={displayMode || 'Overall'}
+                onDisplayModeChange={handleModeChange}
             />
         </ScreenWrapper>
     );
