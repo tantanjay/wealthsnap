@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import TransactionOptionsModal from '@components/transaction/TransactionOptionsModal';
-import InvestmentOptionsModal from '@components/investments/InvestmentOptionsModal';
+import InvestmentOptionsModal from '@components/investments/modals/InvestmentOptionsModal';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
@@ -16,7 +16,7 @@ import { Transaction, UserProfile, Investment, RecurrenceRule } from '@types';
 import { deleteTransaction, deleteInvestment } from '@services/domain';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile, getCachedTransactions, getCachedInvestments } from '@services/core/storageService';
-import { HistoryCalendar } from '../components/history/HistoryCalendar';
+import { HistoryCalendar } from '@components/history/HistoryCalendar';
 import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
 
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
