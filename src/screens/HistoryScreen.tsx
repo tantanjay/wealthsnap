@@ -646,7 +646,7 @@ const HistoryScreen = ({ navigation }: any) => {
             <BottomModal
                 visible={showInfoModal}
                 onClose={() => setShowInfoModal(false)}
-                title="Understand Your Calendar"
+                title="Understanding Your Calendar"
                 maxHeight="80%"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
@@ -760,7 +760,7 @@ const HistoryScreen = ({ navigation }: any) => {
                                 “Did I sell because I needed cash?”
                             </Text>
                             <Text style={{ color: colors.text, fontSize: 14, fontStyle: 'italic' }}>
-                                “Was I spending heavily before this bad trade?”
+                                “How do my daily habits impact my long-term equity?”
                             </Text>
                             <Text style={{ color: colors.text, fontSize: 14, fontStyle: 'italic' }}>
                                 “Why does this month feel chaotic?”
