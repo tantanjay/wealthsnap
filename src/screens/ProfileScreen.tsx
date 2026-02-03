@@ -390,7 +390,7 @@ const ProfileScreen = ({ navigation }: any) => {
                     </TouchableWithoutFeedback>
 
                     <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 15 }}>
-                        WealthSnap is a free, ad-free personal finance tracker with AI-powered receipt scanning. Your data stays private and secure on your device.
+                        WealthSnap is an offline-first mirror for your standing. It provides a high-resolution reflection of your assets, securely on your device.
                     </Text>
 
                     <TouchableOpacity
