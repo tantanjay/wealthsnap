@@ -447,17 +447,44 @@ const ProfileScreen = ({ navigation }: any) => {
                 onClose={() => setShowWhyFreeModal(false)}
                 title="Why is WealthSnap free? 🎁"
             >
-                <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 10 }}>
-                    WealthSnap was built as a passion project to provide a high-quality, private financial tool without the tracking found in modern apps.
-                </Text>
-                <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 15 }}>
-                    We don&apos;t have server costs because your data stays on your phone. If you use the AI features, you use your own API key, keeping the app sustainable and free for everyone.
-                </Text>
-                <Button
-                    title="Got it!"
-                    onPress={() => setShowWhyFreeModal(false)}
-                    style={{ marginTop: 24 }}
-                />
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginTop: 10, marginBottom: 20 }}>
+                        Most &quot;free&quot; apps stay alive by selling your data or burying you in ads. WealthSnap takes a different path: <Text style={{ fontWeight: '700', color: colors.text }}>Architectural Integrity</Text>.
+                    </Text>
+
+                    <View style={{ marginBottom: 16 }}>
+                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: 4 }}>
+                            1. No Servers, No Costs
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24 }}>
+                            Because your data never leaves your device, I have zero server hosting or database costs. Since it costs me nothing to store your data, it costs you nothing to use the app.
+                        </Text>
+                    </View>
+
+                    <View style={{ marginBottom: 16 }}>
+                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: 4 }}>
+                            2. Sustainable AI (BYOK)
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24 }}>
+                            By using your own Gemini API key for AI features, you cover your own &quot;usage tax&quot;. This allows me to offer advanced intelligence without a subscription fee or venture capital funding.
+                        </Text>
+                    </View>
+
+                    <View style={{ marginBottom: 20 }}>
+                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: 4 }}>
+                            3. Built for the Developer
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24 }}>
+                            I built this tool for my own financial clarity. Sharing it with you costs me nothing but my time, and I believe everyone deserves a high-resolution view of their life without a price tag or a privacy trade-off.
+                        </Text>
+                    </View>
+
+                    <Button
+                        title="Got it!"
+                        onPress={() => setShowWhyFreeModal(false)}
+                        style={{ marginTop: 10, marginBottom: 20 }}
+                    />
+                </ScrollView>
             </BottomModal>
 
             {/* Developer Message Modal */}
@@ -472,16 +499,24 @@ const ProfileScreen = ({ navigation }: any) => {
                     </Text>
 
                     <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginBottom: 16 }}>
-                        I built this app because I wanted a better way to understand my own spending. For years, I heavily relied on <Text style={{ fontWeight: '700', color: colors.text }}>Lista</Text> — a fantastic, free app that I genuinely admire for its simplicity.
+                        I built this app because I wanted a higher resolution for my own financial life. For years, I relied on <Text style={{ fontWeight: '700', color: colors.text }}>Lista</Text>—a fantastic tool that I still genuinely admire for its simplicity. However, as my needs grew toward complex investment tracking and deep-tier financial logic, I realized I needed a private &quot;bunker&quot; for my data.
                     </Text>
 
                     <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginBottom: 16 }}>
-                        However, as my financial needs grew, I felt the need for deeper insights and automation. That&apos;s when I decided to build WealthSnap.
+                        <Text style={{ fontWeight: '700', color: colors.text }}>WealthSnap</Text> was born from that need. What started as a personal script has evolved into a privacy-first platform designed for those who want full control over their records without the &quot;cloud-sync&quot; trade-off.
                     </Text>
 
-                    <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginBottom: 24 }}>
-                        It started as a personal tool, but I realized others might find it useful too. I developed this out of passion, wanting to share a privacy-focused, powerful tool with everyone. I hope it helps you achieve your financial goals as much as it helps me!
-                    </Text>
+                    <View style={{ marginBottom: 24 }}>
+                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700', marginBottom: 8 }}>
+                            A Note on the Build
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24 }}>
+                            <Text style={{ fontWeight: '700', color: colors.text }}>WealthSnap</Text> is a 100% independent, solo-developed project. There are no venture capitalists or support teams here—just one engineer and a keyboard.
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginTop: 12 }}>
+                            Because this is a personal mission, updates and support are provided on a &quot;best-effort&quot; basis between my professional life and family time. If this app brings you clarity, the mission is accomplished; if it needs a fix, I&apos;ll get to it as soon as life permits.
+                        </Text>
+                    </View>
 
                     <Button
                         title="Close"
@@ -593,7 +628,7 @@ const ProfileScreen = ({ navigation }: any) => {
                     <View style={{ marginBottom: 20 }}>
                         <Text style={[styles.cardTitle, { color: colors.text, fontSize: 16, marginBottom: 8 }]}>🏛️ Philosophy & Standings</Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24 }}>
-                            WealthSnap is a Reflection Tool, not an advisor or a trading platform. It does not provide tips or financial "shoulds"; it provides a high-precision mirror of your own data to help you see your reality without external noise.
+                            WealthSnap is a Reflection Tool, not an advisor or a trading platform. It does not provide tips or financial &quot;shoulds&quot;; it provides a high-precision mirror of your own data to help you see your reality without external noise.
                         </Text>
                     </View>
 
@@ -610,7 +645,7 @@ const ProfileScreen = ({ navigation }: any) => {
                         <View style={{ flexDirection: 'row' }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginRight: 8 }}>2.</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, flex: 1 }}>
-                                <Text style={{ color: colors.text, fontWeight: '600' }}>The Health Portfolio</Text>: Manage the "Physical Hardware" required to run your "Professional Software." Health is the ultimate insurance for future earning power.
+                                <Text style={{ color: colors.text, fontWeight: '600' }}>The Health Portfolio</Text>: Manage the &quot;Physical Hardware&quot; required to run your &quot;Professional Software&quot; Health is the ultimate insurance for future earning power.
                             </Text>
                         </View>
                     </View>
