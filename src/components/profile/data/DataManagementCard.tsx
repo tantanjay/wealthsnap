@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Text, View, TouchableOpacity, StyleSheet, Modal, BackHandler } from 'react-native';
+import { Text, View, StyleSheet, Modal, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, CommonActions, NavigationProp } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
