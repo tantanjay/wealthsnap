@@ -17,6 +17,7 @@ interface BottomModalProps {
     contentStyle?: ViewStyle;
     dismissable?: boolean;
     closeOnLock?: boolean;
+    headerRight?: React.ReactNode;
 }
 
 const BottomModal: React.FC<BottomModalProps> = ({
@@ -29,7 +30,8 @@ const BottomModal: React.FC<BottomModalProps> = ({
     style,
     contentStyle,
     dismissable = true,
-    closeOnLock = true
+    closeOnLock = true,
+    headerRight
 }) => {
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
@@ -101,11 +103,14 @@ const BottomModal: React.FC<BottomModalProps> = ({
                                     </Text>
                                 )}
                             </View>
-                            {dismissable && (
-                                <TouchableOpacity onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                                    <Ionicons name="close" size={24} color={colors.text} />
-                                </TouchableOpacity>
-                            )}
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                {headerRight}
+                                {dismissable && (
+                                    <TouchableOpacity onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                                        <Ionicons name="close" size={24} color={colors.text} />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
                         </View>
                     )}
 
