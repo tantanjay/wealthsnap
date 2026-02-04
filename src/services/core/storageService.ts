@@ -171,10 +171,11 @@ export const getHistoryTimeFrame = async (): Promise<string | null> => {
 
 // ============= Home Display Preferences (AsyncStorage) =============
 export type HomeDisplayMode = 'Overall' | 'Month' | 'MonthIncomeExpense';
+export type InvestmentDisplayMode = 'Total' | 'Month';
 
 export const saveHomeDisplayMode = async (mode: HomeDisplayMode): Promise<void> => {
     try {
-        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.DISPLAY_MODE, mode);
+        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.FINANCE_DISPLAY_MODE, mode);
     } catch (error) {
         console.error('Failed to save home display mode:', error);
     }
@@ -182,10 +183,28 @@ export const saveHomeDisplayMode = async (mode: HomeDisplayMode): Promise<void> 
 
 export const getHomeDisplayMode = async (): Promise<HomeDisplayMode | null> => {
     try {
-        const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.DISPLAY_MODE);
+        const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.FINANCE_DISPLAY_MODE);
         return (mode === 'Overall' || mode === 'Month' || mode === 'MonthIncomeExpense') ? mode as HomeDisplayMode : null;
     } catch (error) {
         console.error('Failed to get home display mode:', error);
+        return null;
+    }
+};
+
+export const saveHomeInvestmentDisplayMode = async (mode: InvestmentDisplayMode): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.INVESTMENT_DISPLAY_MODE, mode);
+    } catch (error) {
+        console.error('Failed to save home investment display mode:', error);
+    }
+};
+
+export const getHomeInvestmentDisplayMode = async (): Promise<InvestmentDisplayMode | null> => {
+    try {
+        const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.INVESTMENT_DISPLAY_MODE);
+        return (mode === 'Total' || mode === 'Month') ? mode as InvestmentDisplayMode : null;
+    } catch (error) {
+        console.error('Failed to get home investment display mode:', error);
         return null;
     }
 };

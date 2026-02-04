@@ -41,12 +41,25 @@ const HomeScreen = ({ navigation }: any) => {
     const [investmentTotal, setInvestmentTotal] = useState(new BigNumber(0));
     const [realizedPL, setRealizedPL] = useState(new BigNumber(0));
     const [unrealizedPL, setUnrealizedPL] = useState(new BigNumber(0));
+    // Monthly Investment Metrics
+    const [monthInvested, setMonthInvested] = useState(new BigNumber(0));
+    const [monthRealizedPL, setMonthRealizedPL] = useState(new BigNumber(0));
+    const [monthUnrealizedPL, setMonthUnrealizedPL] = useState(new BigNumber(0));
+
     const [debtTotal, setDebtTotal] = useState(new BigNumber(0));
     const [isLoading, setIsLoading] = useState(true);
 
     // Settings Modal State
     const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
+
+    // Active Display States (Swipeable)
     const [displayMode, setDisplayMode] = useState<Storage.HomeDisplayMode>('Overall');
+    const [investmentDisplayMode, setInvestmentDisplayMode] = useState<Storage.InvestmentDisplayMode>('Total');
+
+    // Saved Configuration States (Settings)
+    const [savedDisplayMode, setSavedDisplayMode] = useState<Storage.HomeDisplayMode>('Overall');
+    const [savedInvestmentDisplayMode, setSavedInvestmentDisplayMode] = useState<Storage.InvestmentDisplayMode>('Total');
+
     const [cardOrder, setCardOrder] = useState<string[]>(['cash-flow', 'portfolio', 'debt', 'transactions']);
 
     // Info Modal State
@@ -66,6 +79,13 @@ const HomeScreen = ({ navigation }: any) => {
         const savedMode = await Storage.getHomeDisplayMode();
         if (savedMode) {
             setDisplayMode(savedMode);
+            setSavedDisplayMode(savedMode);
+        }
+
+        const savedInvestmentMode = await Storage.getHomeInvestmentDisplayMode();
+        if (savedInvestmentMode) {
+            setInvestmentDisplayMode(savedInvestmentMode);
+            setSavedInvestmentDisplayMode(savedInvestmentMode);
         }
 
         // Load persisted card order
@@ -160,17 +180,56 @@ const HomeScreen = ({ navigation }: any) => {
 
         // 5. Calculate Realized P/L from Transactions (CAPITAL_GAIN/LOSS)
         let totalRealizedPL = new BigNumber(0);
+        let mRealizedPL = new BigNumber(0);
+
         t.forEach(tx => {
             if (tx.type === 'CAPITAL_GAIN') {
-                totalRealizedPL = totalRealizedPL.plus(tx.amount.abs());
+                const val = tx.amount.abs();
+                totalRealizedPL = totalRealizedPL.plus(val);
+
+                const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
+                if (isMonth) {
+                    mRealizedPL = mRealizedPL.plus(val);
+                }
             } else if (tx.type === 'CAPITAL_LOSS') {
-                totalRealizedPL = totalRealizedPL.minus(tx.amount.abs());
+                const val = tx.amount.abs();
+                totalRealizedPL = totalRealizedPL.minus(val);
+
+                const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
+                if (isMonth) {
+                    mRealizedPL = mRealizedPL.minus(val);
+                }
+            }
+        });
+
+        // 6. Calculate Monthly Investment Metrics
+        // Monthly Invested: Sum of BUY amounts in current month
+        let mInvested = new BigNumber(0);
+        let mUnrealizedPL = new BigNumber(0);
+
+        inv.forEach(item => {
+            const isMonth = new Date(item.date).getMonth() === currentMonth && new Date(item.date).getFullYear() === currentYear;
+
+            if (isMonth && item.action === 'BUY') {
+                // Invested Amount (Cost Basis)
+                const cost = item.price.times(item.quantity).plus(item.fees || 0);
+                mInvested = mInvested.plus(cost);
+
+                // Unrealized P/L for this item
+                const currentPrice = currentPriceMap[item.symbol] || new BigNumber(0);
+                const marketValue = currentPrice.times(item.quantity);
+                const pl = marketValue.minus(cost);
+                mUnrealizedPL = mUnrealizedPL.plus(pl);
             }
         });
 
         setInvestmentTotal(totalMarketValue);
         setUnrealizedPL(totalUnrealizedPL);
         setRealizedPL(totalRealizedPL);
+
+        setMonthInvested(mInvested);
+        setMonthRealizedPL(mRealizedPL);
+        setMonthUnrealizedPL(mUnrealizedPL);
 
         setIsLoading(false);
     };
@@ -181,9 +240,24 @@ const HomeScreen = ({ navigation }: any) => {
         }, [])
     );
 
-    const handleModeChange = async (newMode: Storage.HomeDisplayMode) => {
+    const handleModeSave = async (newMode: Storage.HomeDisplayMode) => {
         setDisplayMode(newMode);
+        setSavedDisplayMode(newMode);
         await Storage.saveHomeDisplayMode(newMode);
+    };
+
+    const handleModeSwipe = (newMode: Storage.HomeDisplayMode) => {
+        setDisplayMode(newMode);
+    };
+
+    const handleInvestmentModeSave = async (newMode: Storage.InvestmentDisplayMode) => {
+        setInvestmentDisplayMode(newMode);
+        setSavedInvestmentDisplayMode(newMode);
+        await Storage.saveHomeInvestmentDisplayMode(newMode);
+    };
+
+    const handleInvestmentModeSwipe = (newMode: Storage.InvestmentDisplayMode) => {
+        setInvestmentDisplayMode(newMode);
     };
 
     const renderInfoModalContent = () => {
@@ -304,7 +378,7 @@ const HomeScreen = ({ navigation }: any) => {
                                     isPrivacyEnabled={isPrivacyEnabled}
                                     currency={profile?.currency || 'PHP'}
                                     displayMode={displayMode}
-                                    onDisplayModeChange={handleModeChange}
+                                    onDisplayModeChange={handleModeSwipe}
                                     onInfoPress={handleInfoPress}
                                     onNavigateToInsights={() => navigation.navigate('Insights')}
                                 />
@@ -321,6 +395,15 @@ const HomeScreen = ({ navigation }: any) => {
                                     isPrivacyEnabled={isPrivacyEnabled}
                                     currency={profile?.currency || 'PHP'}
                                     onPress={() => navigation.navigate('Investment')}
+
+                                    // Monthly Data
+                                    monthInvested={monthInvested}
+                                    monthRealizedPL={monthRealizedPL}
+                                    monthUnrealizedPL={monthUnrealizedPL}
+
+                                    // Display Mode
+                                    displayMode={investmentDisplayMode}
+                                    onDisplayModeChange={handleInvestmentModeSwipe}
                                 />
                             );
 
@@ -374,8 +457,10 @@ const HomeScreen = ({ navigation }: any) => {
                     setCardOrder(newOrder);
                     await Storage.saveHomeCardOrder(newOrder);
                 }}
-                displayMode={displayMode || 'Overall'}
-                onDisplayModeChange={handleModeChange}
+                displayMode={savedDisplayMode || 'Overall'}
+                onDisplayModeChange={handleModeSave}
+                investmentDisplayMode={savedInvestmentDisplayMode || 'Total'}
+                onInvestmentDisplayModeChange={handleInvestmentModeSave}
             />
         </ScreenWrapper>
     );

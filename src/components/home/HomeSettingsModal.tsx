@@ -5,13 +5,21 @@ import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { ReorderList, ReorderItem } from '@components/common/ReorderList';
 
+import { HomeDisplayMode, InvestmentDisplayMode } from '@services/core/storageService';
+
 interface HomeSettingsModalProps {
     visible: boolean;
     onClose: () => void;
     cardOrder: string[];
     onUpdateCardOrder: (newOrder: string[]) => void;
-    displayMode: 'Overall' | 'Month' | 'MonthIncomeExpense';
-    onDisplayModeChange: (mode: 'Overall' | 'Month' | 'MonthIncomeExpense') => void;
+
+    // Cash Flow Settings
+    displayMode: HomeDisplayMode;
+    onDisplayModeChange: (mode: HomeDisplayMode) => void;
+
+    // Investment Settings
+    investmentDisplayMode: InvestmentDisplayMode;
+    onInvestmentDisplayModeChange: (mode: InvestmentDisplayMode) => void;
 }
 
 const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
@@ -20,7 +28,9 @@ const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
     cardOrder,
     onUpdateCardOrder,
     displayMode,
-    onDisplayModeChange
+    onDisplayModeChange,
+    investmentDisplayMode,
+    onInvestmentDisplayModeChange
 }) => {
     const { colors } = useTheme();
     const [view, setView] = React.useState<'MAIN' | 'REORDER'>('MAIN');
@@ -73,14 +83,16 @@ const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
 
     const renderRadioItem = (
         label: string,
-        value: 'Overall' | 'Month' | 'MonthIncomeExpense'
+        value: any,
+        currentValue: any,
+        onSelect: (val: any) => void
     ) => (
         <TouchableOpacity
             style={[styles.radioItem, { borderBottomColor: colors.border }]}
-            onPress={() => onDisplayModeChange(value)}
+            onPress={() => onSelect(value)}
         >
             <Text style={{ color: colors.text, fontSize: 16 }}>{label}</Text>
-            {displayMode === value && (
+            {currentValue === value && (
                 <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
             )}
         </TouchableOpacity>
@@ -115,11 +127,22 @@ const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
                         <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
                             CASH FLOW DISPLAY
                         </Text>
-                        <View style={[styles.radioGroup, { backgroundColor: colors.surface }]}>
-                            {renderRadioItem("Overall Balance", "Overall")}
-                            {renderRadioItem("This Month", "Month")}
+                        <View style={[styles.radioGroup, { backgroundColor: colors.surface, marginBottom: 24 }]}>
+                            {renderRadioItem("Overall Balance", "Overall", displayMode, onDisplayModeChange)}
+                            {renderRadioItem("This Month", "Month", displayMode, onDisplayModeChange)}
                             <View style={{ borderBottomWidth: 0 }}>
-                                {renderRadioItem("Monthly Net (No Transfers)", "MonthIncomeExpense")}
+                                {renderRadioItem("Monthly Net (No Transfers)", "MonthIncomeExpense", displayMode, onDisplayModeChange)}
+                            </View>
+                        </View>
+
+                        {/* Investment Display Mode Section */}
+                        <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
+                            INVESTMENTS DISPLAY
+                        </Text>
+                        <View style={[styles.radioGroup, { backgroundColor: colors.surface }]}>
+                            {renderRadioItem("Total Portfolio", "Total", investmentDisplayMode, onInvestmentDisplayModeChange)}
+                            <View style={{ borderBottomWidth: 0 }}>
+                                {renderRadioItem("Monthly Activity", "Month", investmentDisplayMode, onInvestmentDisplayModeChange)}
                             </View>
                         </View>
                     </>
