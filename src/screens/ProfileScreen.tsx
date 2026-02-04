@@ -352,7 +352,7 @@ const ProfileScreen = ({ navigation }: any) => {
             <BottomModal
                 visible={showGuide}
                 onClose={() => setShowGuide(false)}
-                maxHeight="90%"
+                maxHeight="85%"
                 title=""
                 style={{ padding: 0 }} // Remove default padding to let screen handle it
             >
