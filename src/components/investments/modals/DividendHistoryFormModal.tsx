@@ -109,7 +109,7 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
             visible={visible}
             onClose={onClose}
             title={existingItem ? "Edit Dividend" : "Add Dividend"}
-            maxHeight="90%"
+            maxHeight="85%"
         >
             <View style={styles.content}>
 
