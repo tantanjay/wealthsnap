@@ -261,47 +261,6 @@ const HistoryScreen = ({ navigation }: any) => {
 
     // Calculate Safe To Spend (Effective Balance)
     const safeToSpendData = useMemo(() => {
-        let upcomingBills = new BigNumber(0);
-        let upcomingIncome = new BigNumber(0);
-        const { end } = getStartEndOfPeriod(currentDate, viewMode === 'CALENDAR' ? 'MONTHLY' : timeFrame);
-        const now = new Date();
-
-        if (end > now && recurrenceRules.length > 0) {
-            recurrenceRules.forEach(rule => {
-                if (!rule.isActive) return;
-                let pointer = new Date(rule.nextDueDate);
-
-                // Only count bills due between NOW and END OF PERIOD
-                while (pointer <= end) {
-                    if (pointer > now) {
-                        // Assume rules are expenses/transfers out for "safety" check?
-                        // Or check transactionTemplate type? 
-                        // Start with Type check.
-                        const type = rule.transactionTemplate.type;
-                        if (type === 'EXPENSE' || type === 'TRANSFER_OUT') {
-                            upcomingBills = upcomingBills.plus(new BigNumber(rule.transactionTemplate.amount).abs());
-                        } else if (type === 'INCOME') {
-                            upcomingIncome = upcomingIncome.plus(new BigNumber(rule.transactionTemplate.amount).abs());
-                        }
-                    }
-
-                    // Advance
-                    const next = new Date(pointer);
-                    if (rule.frequency === 'DAILY') next.setDate(next.getDate() + 1);
-                    else if (rule.frequency === 'WEEKLY') next.setDate(next.getDate() + 7);
-                    else if (rule.frequency === 'SEMI_MONTHLY') next.setDate(next.getDate() + 15);
-                    else if (rule.frequency === 'MONTHLY') next.setMonth(next.getMonth() + 1);
-                    else if (rule.frequency === 'QUARTERLY') next.setMonth(next.getMonth() + 3);
-                    else if (rule.frequency === 'YEARLY') next.setFullYear(next.getFullYear() + 1);
-                    else break;
-                    pointer = next;
-                }
-            });
-        }
-
-        // User prefers Safe-to-Spend to be based on Monthly Income/Budget, not Total Wealth
-        const periodNet = summary.totalIncome.plus(upcomingIncome).minus(summary.totalExpense).minus(summary.totalTransferOut);
-
         // --- LIFE BURNRATE LOGIC ---
         // Calculate Average Daily Non-Recurring Spend (Life Burnrate)
         // using last 90 days of data
@@ -320,17 +279,86 @@ const HistoryScreen = ({ navigation }: any) => {
         const totalRecentSpend = recentNonRecurringExpenses.reduce((acc, t) => acc.plus(t.amount.abs()), new BigNumber(0));
         const dailyBurnRate = totalRecentSpend.dividedBy(burnRatePeriod);
 
-        // Calculate Days Remaining in Current Period
-        let daysRemaining = 0;
-        if (end > now) {
-            const diffTime = Math.abs(end.getTime() - now.getTime());
-            daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // --- CALCULATION LOGIC ---
+        let amount = new BigNumber(0);
+        let projectedVariableSpend = new BigNumber(0);
+
+        if (viewMode === 'LIST' && timeFrame === 'DAILY') {
+            amount = dailyBurnRate.minus(summary.totalExpense);
+            projectedVariableSpend = dailyBurnRate;
+        } else if (viewMode === 'LIST' && timeFrame === 'WEEKLY') {
+            const now = new Date();
+            const { start, end } = getStartEndOfPeriod(currentDate, 'WEEKLY');
+
+            let multiplier = 7;
+
+            const isCurrentWeek = now >= start && now <= end;
+            if (isCurrentWeek) {
+                const diffTime = Math.abs(now.getTime() - start.getTime());
+                const daysElapsed = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                multiplier = daysElapsed;
+                if (multiplier < 1) multiplier = 1;
+                if (multiplier > 7) multiplier = 7;
+            }
+
+            const weeklyAllowance = dailyBurnRate.multipliedBy(multiplier);
+            amount = weeklyAllowance.minus(summary.totalExpense);
+            projectedVariableSpend = isCurrentWeek ? dailyBurnRate.multipliedBy(multiplier) : dailyBurnRate.multipliedBy(7);
+        } else {
+            // MONTHLY / YEARLY / CALENDAR (Existing Logic)
+            let upcomingBills = new BigNumber(0);
+            let upcomingIncome = new BigNumber(0);
+            const { end } = getStartEndOfPeriod(currentDate, viewMode === 'CALENDAR' ? 'MONTHLY' : timeFrame);
+            const now = new Date();
+
+            if (end > now && recurrenceRules.length > 0) {
+                recurrenceRules.forEach(rule => {
+                    if (!rule.isActive) return;
+                    let pointer = new Date(rule.nextDueDate);
+
+                    // Only count bills due between NOW and END OF PERIOD
+                    while (pointer <= end) {
+                        if (pointer > now) {
+                            const type = rule.transactionTemplate.type;
+                            if (type === 'EXPENSE' || type === 'TRANSFER_OUT') {
+                                upcomingBills = upcomingBills.plus(new BigNumber(rule.transactionTemplate.amount).abs());
+                            } else if (type === 'INCOME') {
+                                upcomingIncome = upcomingIncome.plus(new BigNumber(rule.transactionTemplate.amount).abs());
+                            }
+                        }
+
+                        // Advance
+                        const next = new Date(pointer);
+                        if (rule.frequency === 'DAILY') next.setDate(next.getDate() + 1);
+                        else if (rule.frequency === 'WEEKLY') next.setDate(next.getDate() + 7);
+                        else if (rule.frequency === 'SEMI_MONTHLY') next.setDate(next.getDate() + 15);
+                        else if (rule.frequency === 'MONTHLY') next.setMonth(next.getMonth() + 1);
+                        else if (rule.frequency === 'QUARTERLY') next.setMonth(next.getMonth() + 3);
+                        else if (rule.frequency === 'YEARLY') next.setFullYear(next.getFullYear() + 1);
+                        else break;
+                        pointer = next;
+                    }
+                });
+            }
+
+            // User prefers Safe-to-Spend to be based on Monthly Income/Budget, not Total Wealth
+            const periodNet = summary.totalIncome.plus(upcomingIncome).minus(summary.totalExpense).minus(summary.totalTransferOut);
+
+            // Calculate Days Remaining in Current Period
+            let daysRemaining = 0;
+            if (end > now) {
+                const limitTime = Math.abs(end.getTime() - now.getTime());
+                daysRemaining = Math.ceil(limitTime / (1000 * 60 * 60 * 24));
+            }
+
+            // In Monthly mode, this is "Projected Future Variable Spend"
+            projectedVariableSpend = dailyBurnRate.multipliedBy(daysRemaining);
+
+            amount = periodNet.minus(upcomingBills).minus(projectedVariableSpend);
         }
 
-        const projectedVariableSpend = dailyBurnRate.multipliedBy(daysRemaining);
-
         return {
-            amount: periodNet.minus(upcomingBills).minus(projectedVariableSpend),
+            amount,
             dailyBurnRate,
             projectedVariableSpend
         };
