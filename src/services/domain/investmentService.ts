@@ -317,6 +317,7 @@ export interface PortfolioHolding {
     sector: string;
     name?: string;
     type?: string;
+    priceAsOf?: string;
 }
 
 export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
@@ -334,14 +335,18 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
     const latestPrices = await getLatestPrices(symbols);
 
     const priceMap: Record<string, BigNumber> = {};
+    const priceDateMap: Record<string, string | undefined> = {};
+
     symbols.forEach(symbol => {
         if (latestPrices[symbol]) {
             priceMap[symbol] = latestPrices[symbol].price;
+            priceDateMap[symbol] = latestPrices[symbol].timestamp;
         } else {
             // Fallback: Find latest transaction for this symbol
             const sorted = groupedInvestments[symbol].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             if (sorted.length > 0) {
                 priceMap[symbol] = sorted[0].price;
+                priceDateMap[symbol] = sorted[0].date;
             } else {
                 priceMap[symbol] = new BigNumber(0);
             }
@@ -385,7 +390,8 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
             divYield: parseFloat(divYield.toFixed(2)), // Format to 2 decimal places
             sector: asset?.sector || 'Other',
             name: asset?.name,
-            type: asset?.type
+            type: asset?.type,
+            priceAsOf: priceDateMap[m.symbol]
         };
     });
 
