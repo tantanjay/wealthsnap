@@ -65,13 +65,13 @@ export const HistorySummary: React.FC<HistorySummaryProps> = ({
                 <View>
                     <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Income</Text>
                     <Text style={{ color: colors.success, fontSize: 16, fontWeight: '600' }}>
-                        +{formatCurrency(summary.totalIncome)}
+                        {formatCurrency(summary.totalIncome)}
                     </Text>
                 </View>
                 <View>
                     <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Expenses</Text>
                     <Text style={{ color: colors.error, fontSize: 16, fontWeight: '600' }}>
-                        -{formatCurrency(summary.totalExpense)}
+                        {formatCurrency(summary.totalExpense)}
                     </Text>
                 </View>
             </View>
