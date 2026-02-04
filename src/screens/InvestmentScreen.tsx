@@ -38,7 +38,9 @@ const InvestmentScreen = ({ navigation }: any) => {
         realizedPL: 0,
         unrealizedPL: 0,
         unrealizedPLPercent: 0,
-        totalDividends: 0
+        totalDividends: 0,
+        thisMonthDividends: 0,
+        thisMonthInvested: 0
     });
 
     const [holdings, setHoldings] = useState<PortfolioHolding[]>([]);
@@ -250,6 +252,8 @@ const InvestmentScreen = ({ navigation }: any) => {
                         isLoading={isLoading}
                         isPrivacyEnabled={isPrivacyEnabled}
                         cardOrder={statsOrder}
+                        thisMonthDividends={portfolioStats.thisMonthDividends}
+                        thisMonthInvested={portfolioStats.thisMonthInvested}
                     />
                 );
             case 'smart_advisor':

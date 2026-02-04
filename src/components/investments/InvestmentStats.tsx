@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions, FlatList } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { InvestmentEquityHelpModal } from './modals/InvestmentEquityHelpModal';
 
 interface InvestmentStatsProps {
     totalEquity: number;
@@ -12,6 +13,8 @@ interface InvestmentStatsProps {
     unrealizedPL: number;
     unrealizedPLPercent: number;
     totalDividends: number;
+    thisMonthDividends?: number;
+    thisMonthInvested?: number;
     currency?: string;
     isLoading?: boolean;
     isPrivacyEnabled?: boolean;
@@ -34,13 +37,17 @@ const StatCardSkeleton = ({ width }: { width: number }) => {
     );
 };
 
-const StatCard = ({ label, value, subValue, color, icon, width }: any) => {
+const StatCard = ({ label, value, subValue, color, icon, width, onIconPress }: any) => {
     const { colors } = useTheme();
     return (
         <View style={[styles.card, { backgroundColor: colors.surface, width }]}>
             <View style={styles.cardHeader}>
                 <Text style={[styles.label, { color: colors.textSecondary }]} numberOfLines={1}>{label}</Text>
-                {icon && <Ionicons name={icon} size={16} color={colors.textSecondary} />}
+                {icon && (
+                    <TouchableOpacity onPress={onIconPress} disabled={!onIconPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Ionicons name={icon} size={16} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                )}
             </View>
             <Text style={[styles.value, { color: color || colors.text }]} numberOfLines={1}>
                 {value}
@@ -64,6 +71,8 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
     unrealizedPL,
     unrealizedPLPercent,
     totalDividends,
+    thisMonthDividends = 0,
+    thisMonthInvested = 0,
     currency = 'PHP',
     isLoading = false,
     isPrivacyEnabled = false,
@@ -71,6 +80,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
 }) => {
     const { colors } = useTheme();
     const [currentPage, setCurrentPage] = React.useState(0);
+    const [isEquityHelpVisible, setIsEquityHelpVisible] = React.useState(false);
 
     // --- LAYOUT CALCULATIONS ---
     const screenWidth = Dimensions.get('window').width;
@@ -93,7 +103,25 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
                 label: "Total Equity",
                 value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(totalEquity, currency),
                 color: colors.primary,
-                icon: "wallet-outline"
+                icon: "information-circle-outline",
+                onIconPress: () => setIsEquityHelpVisible(true),
+                subValue: isPrivacyEnabled ? (
+                    <Text style={{
+                        color: colors.textSecondary,
+                        fontWeight: 'bold',
+                        fontSize: 12
+                    }}>
+                        ••••
+                    </Text>
+                ) : (
+                    <Text style={{
+                        color: thisMonthInvested >= 0 ? colors.success : colors.error,
+                        fontWeight: '600',
+                        fontSize: 12
+                    }}>
+                        {thisMonthInvested >= 0 ? '+' : '-'}{formatCurrencyAmount(Math.abs(thisMonthInvested), currency)}
+                    </Text>
+                )
             },
             {
                 id: 'realized',
@@ -144,7 +172,23 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
                 id: 'dividends',
                 label: "Total Divs Received",
                 value: isPrivacyEnabled ? "••••" : formatCurrencyAmount(totalDividends, currency),
-                color: colors.textSecondary
+                subValue: isPrivacyEnabled ? (
+                    <Text style={{
+                        color: colors.textSecondary,
+                        fontWeight: 'bold',
+                        fontSize: 12
+                    }}>
+                        ••••
+                    </Text>
+                ) : (
+                    <Text style={{
+                        color: colors.textSecondary,
+                        fontWeight: '600',
+                        fontSize: 12
+                    }}>
+                        +{formatCurrencyAmount(thisMonthDividends, currency)}
+                    </Text>
+                )
             }
         ];
 
@@ -180,6 +224,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
                 subValue={item.subValue}
                 color={item.color}
                 icon={item.icon}
+                onIconPress={item.onIconPress}
                 width={cardWidth}
             />
         );
@@ -226,6 +271,11 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
                     />
                 ))}
             </View>
+
+            <InvestmentEquityHelpModal
+                visible={isEquityHelpVisible}
+                onClose={() => setIsEquityHelpVisible(false)}
+            />
         </View>
     );
 };
@@ -233,6 +283,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
 const styles = StyleSheet.create({
     container: {
         paddingVertical: 10,
+        marginTop: -20,
     },
     card: {
         borderRadius: 12,
@@ -272,7 +323,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 16,
+        marginTop: 5,
+        marginBottom: 5,
         gap: 6
     }
 });
