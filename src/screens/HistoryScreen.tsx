@@ -37,6 +37,7 @@ interface TransactionSection {
 interface FinancialSummary {
     totalIncome: BigNumber;
     totalExpense: BigNumber;
+    totalTransferOut: BigNumber;
     balance: BigNumber;
     safeToSpend?: BigNumber;
 }
@@ -58,6 +59,7 @@ const HistoryScreen = ({ navigation }: any) => {
     const [viewMode, setViewMode] = useState<'LIST' | 'CALENDAR'>('LIST');
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(new Date());
     const [showInfoModal, setShowInfoModal] = useState(false);
+    const [showSafeToSpendInfo, setShowSafeToSpendInfo] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
@@ -238,30 +240,31 @@ const HistoryScreen = ({ navigation }: any) => {
     const summary = useMemo((): FinancialSummary => {
         let totalIncome = new BigNumber(0);
         let totalExpense = new BigNumber(0);
-        // We track net period flow mainly for Income/Expense cards
-        // Balance card will use Global Balance
+        let totalTransferOut = new BigNumber(0);
 
         dashboardTransactions.forEach(t => {
             if (t.type === 'INCOME') {
                 totalIncome = totalIncome.plus(t.amount.abs());
             } else if (t.type === 'EXPENSE') {
                 totalExpense = totalExpense.plus(t.amount.abs());
+            } else if (t.type === 'TRANSFER_OUT') {
+                totalTransferOut = totalTransferOut.plus(t.amount.abs());
             }
-            // Transfers usually don't count as Spending/Income for the stats cards unless we want them to
-            // But usually Income card = Earned, Expense card = Spent
         });
 
         return {
             totalIncome,
             totalExpense,
+            totalTransferOut,
             balance: globalBalance, // Use Global Balance for 'Actual Balance'
             safeToSpend: globalBalance // Initialize
         };
     }, [dashboardTransactions, globalBalance]);
 
     // Calculate Safe To Spend (Effective Balance)
-    const safeToSpend = useMemo(() => {
+    const safeToSpendData = useMemo(() => {
         let upcomingBills = new BigNumber(0);
+        let upcomingIncome = new BigNumber(0);
         const { end } = getStartEndOfPeriod(currentDate, viewMode === 'CALENDAR' ? 'MONTHLY' : timeFrame);
         const now = new Date();
 
@@ -279,6 +282,8 @@ const HistoryScreen = ({ navigation }: any) => {
                         const type = rule.transactionTemplate.type;
                         if (type === 'EXPENSE' || type === 'TRANSFER_OUT') {
                             upcomingBills = upcomingBills.plus(new BigNumber(rule.transactionTemplate.amount).abs());
+                        } else if (type === 'INCOME') {
+                            upcomingIncome = upcomingIncome.plus(new BigNumber(rule.transactionTemplate.amount).abs());
                         }
                     }
 
@@ -297,9 +302,41 @@ const HistoryScreen = ({ navigation }: any) => {
         }
 
         // User prefers Safe-to-Spend to be based on Monthly Income/Budget, not Total Wealth
-        const periodNet = summary.totalIncome.minus(summary.totalExpense);
-        return periodNet.minus(upcomingBills);
-    }, [summary, recurrenceRules, currentDate, timeFrame, viewMode]);
+        const periodNet = summary.totalIncome.plus(upcomingIncome).minus(summary.totalExpense).minus(summary.totalTransferOut);
+
+        // --- LIFE BURNRATE LOGIC ---
+        // Calculate Average Daily Non-Recurring Spend (Life Burnrate)
+        // using last 90 days of data
+        const burnRatePeriod = 90;
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - burnRatePeriod);
+
+        const recentNonRecurringExpenses = allTransactions.filter(t => {
+            const tDate = new Date(t.date);
+            return t.type === 'EXPENSE' &&
+                !t.isRecurring &&
+                tDate >= thirtyDaysAgo &&
+                tDate <= new Date();
+        });
+
+        const totalRecentSpend = recentNonRecurringExpenses.reduce((acc, t) => acc.plus(t.amount.abs()), new BigNumber(0));
+        const dailyBurnRate = totalRecentSpend.dividedBy(burnRatePeriod);
+
+        // Calculate Days Remaining in Current Period
+        let daysRemaining = 0;
+        if (end > now) {
+            const diffTime = Math.abs(end.getTime() - now.getTime());
+            daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        const projectedVariableSpend = dailyBurnRate.multipliedBy(daysRemaining);
+
+        return {
+            amount: periodNet.minus(upcomingBills).minus(projectedVariableSpend),
+            dailyBurnRate,
+            projectedVariableSpend
+        };
+    }, [summary, recurrenceRules, currentDate, timeFrame, viewMode, allTransactions]);
 
     const sections = useMemo((): TransactionSection[] => {
         const grouped: { [key: string]: HistoryItem[] } = {};
@@ -594,15 +631,25 @@ const HistoryScreen = ({ navigation }: any) => {
                         {/* Summary Dashboard - Show for List Mode or for Selected Date in Calendar Mode */}
                         <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16 }}>
                             <View style={{ marginBottom: 12 }}>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Safe to Spend</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Safe to Spend</Text>
+                                    <TouchableOpacity onPress={() => setShowSafeToSpendInfo(true)}>
+                                        <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} />
+                                    </TouchableOpacity>
+                                </View>
                                 {isLoading ? <Skeleton width={120} height={32} /> : (
                                     <View>
-                                        <Text style={{ color: safeToSpend.isGreaterThanOrEqualTo(0) ? colors.success : colors.error, fontSize: 28, fontWeight: 'bold' }}>
-                                            {formatCurrency(safeToSpend)}
+                                        <Text style={{ color: safeToSpendData.amount.isGreaterThanOrEqualTo(0) ? colors.success : colors.error, fontSize: 28, fontWeight: 'bold' }}>
+                                            {formatCurrency(safeToSpendData.amount)}
                                         </Text>
-                                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                            Actual Balance: {formatCurrency(summary.balance)}
-                                        </Text>
+                                        <View style={{ flexDirection: 'row', gap: 12, marginTop: 2, marginBottom: 2 }}>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                                🔥 Burn: {formatCurrency(safeToSpendData.dailyBurnRate)}/day
+                                            </Text>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                                🆘 Survival: {formatCurrency(safeToSpendData.projectedVariableSpend)}
+                                            </Text>
+                                        </View>
                                     </View>
                                 )}
                             </View>
@@ -660,27 +707,6 @@ const HistoryScreen = ({ navigation }: any) => {
                 maxHeight="80%"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    {/* Safe to Spend */}
-                    <View style={{ marginBottom: 20 }}>
-                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
-                            💰 Safe-to-Spend
-                        </Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 10 }}>
-                            Know exactly what you can spend without worrying about bills.
-                        </Text>
-                        <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center', marginBottom: 6 }}>
-                                (Month Income - Expenses) - <Text style={{ color: colors.text }}>Future Bills</Text> =
-                            </Text>
-                            <Text style={{ color: '#4CAF50', fontSize: 20, fontWeight: 'bold', textAlign: 'center' }}>
-                                Safe Amount
-                            </Text>
-                        </View>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 8 }}>
-                            *Calculated based on recurring bills due before the end of the current period.
-                        </Text>
-                    </View>
-
                     {/* Guilt Filter */}
                     <View style={{ marginBottom: 20 }}>
                         <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
@@ -777,6 +803,72 @@ const HistoryScreen = ({ navigation }: any) => {
                         </View>
                     </View>
 
+                </ScrollView>
+            </BottomModal>
+
+            {/* Safe To Spend Info Modal */}
+            <BottomModal
+                visible={showSafeToSpendInfo}
+                onClose={() => setShowSafeToSpendInfo(false)}
+                title="Understanding Safe-To-Spend"
+                maxHeight="80%"
+            >
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 12 }}>
+                        We calculate your <Text style={{ fontWeight: 'bold' }}>True Discretionary Income</Text> so you don't accidentally spend money you need for later.
+                    </Text>
+
+                    <View style={{ backgroundColor: colors.surface, padding: 16, borderRadius: 16, gap: 12 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ color: colors.text }}>1. Total Inflow</Text>
+                            <Text style={{ color: colors.success, fontWeight: 'bold' }}>Income + Future Paychecks</Text>
+                        </View>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                            Includes money earned + recurring income expected before period end.
+                        </Text>
+
+                        <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ color: colors.text }}>2. Minus Outflows</Text>
+                            <Text style={{ color: colors.error, fontWeight: 'bold' }}>Spent + Transfers Out</Text>
+                        </View>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                            Money already spent or moved to savings/investments.
+                        </Text>
+
+                        <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ color: colors.text }}>3. Minus Future Bills</Text>
+                            <Text style={{ color: colors.error, fontWeight: 'bold' }}>Recurring Bills</Text>
+                        </View>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                            Rent, subscriptions, and bills due before period end.
+                        </Text>
+
+                        <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ color: colors.text }}>4. Minus Survival</Text>
+                            <Text style={{ color: '#FF9800', fontWeight: 'bold' }}>Life Burnrate</Text>
+                        </View>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                            Estimated daily cost for food/transport based on your last 90 days (3 months).
+                        </Text>
+                        <View style={{ marginTop: 6, backgroundColor: '#FFF3E0', padding: 8, borderRadius: 8 }}>
+                            <Text style={{ color: '#E65100', fontSize: 11, fontStyle: 'italic' }}>
+                                <Text style={{ fontWeight: 'bold' }}>💡 Aha Moment:</Text> Buying a $900 phone increases your burn rate by $10/day for 3 months. This helps you "feel" the purchase!
+                            </Text>
+                        </View>
+
+                        <View style={{ height: 2, backgroundColor: colors.text + '30', marginVertical: 4 }} />
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>= Safe To Spend</Text>
+                            <Text style={{ color: '#4CAF50', fontWeight: 'bold', fontSize: 18 }}>Guilt-Free Money</Text>
+                        </View>
+                    </View>
                 </ScrollView>
             </BottomModal>
 
