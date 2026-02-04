@@ -238,7 +238,7 @@ const ProfileScreen = ({ navigation }: any) => {
                             1. No Servers, No Costs
                         </Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24 }}>
-                            Because your data never leaves your device, I have zero server hosting or database costs. Since it costs me nothing to store your data, it costs you nothing to use the app.
+                            Because your data never leaves your device, we have zero server hosting or database costs. Since it costs us nothing to store your data, it costs you nothing to use the app.
                         </Text>
                     </View>
 
@@ -247,7 +247,7 @@ const ProfileScreen = ({ navigation }: any) => {
                             2. Sustainable AI (BYOK)
                         </Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24 }}>
-                            By using your own Gemini API key for AI features, you cover your own &quot;usage tax&quot;. This allows me to offer advanced intelligence without a subscription fee or venture capital funding.
+                            By using your own Gemini API key for AI features, you cover your own &quot;usage tax&quot;. This allows us to offer advanced intelligence without a subscription fee or venture capital funding.
                         </Text>
                     </View>
 
@@ -256,7 +256,7 @@ const ProfileScreen = ({ navigation }: any) => {
                             3. Built for the Developer
                         </Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24 }}>
-                            I built this tool for my own financial clarity. Sharing it with you costs me nothing but my time, and I believe everyone deserves a high-resolution view of their life without a price tag or a privacy trade-off.
+                            We built this tool for our own financial clarity. Sharing it with you costs us nothing but our time, and we believe everyone deserves a high-resolution view of their life without a price tag or a privacy trade-off.
                         </Text>
                     </View>
 
@@ -407,7 +407,7 @@ const ProfileScreen = ({ navigation }: any) => {
                     </View>
 
                     <View style={{ marginBottom: 20 }}>
-                        <Text style={[styles.cardTitle, { color: colors.text, fontSize: 16, marginBottom: 8 }]}>🏛️ Philosophy & Standings</Text>
+                        <Text style={[styles.cardTitle, { color: colors.text, fontSize: 16, marginBottom: 8 }]}>🏛️ Philosophy & Stance</Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24 }}>
                             WealthSnap is a Reflection Tool, not an advisor or a trading platform. It does not provide tips or financial &quot;shoulds&quot;; it provides a high-precision mirror of your own data to help you see your reality without external noise.
                         </Text>
@@ -426,7 +426,7 @@ const ProfileScreen = ({ navigation }: any) => {
                         <View style={{ flexDirection: 'row' }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, marginRight: 8 }}>2.</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 24, flex: 1 }}>
-                                <Text style={{ color: colors.text, fontWeight: '600' }}>The Health Portfolio</Text>: Manage the &quot;Physical Hardware&quot; required to run your &quot;Professional Software&quot; Health is the ultimate insurance for future earning power.
+                                <Text style={{ color: colors.text, fontWeight: '600' }}>The Health Portfolio</Text>: Manage the &quot;Physical Hardware&quot; required to run your &quot;Professional Software&quot;. Health is the ultimate insurance for future earning power.
                             </Text>
                         </View>
                     </View>
