@@ -92,18 +92,13 @@ export const TransferForm: React.FC<TransferFormProps> = ({
             updatedAt: new Date().toISOString(),
         };
 
-        try {
-            await saveTransaction(newTransaction);
+        await saveTransaction(newTransaction);
 
-            showAlert('Success', 'Transfer saved!', [
-                {
-                    text: 'OK',
-                    onPress: onSave
-                }
-            ]);
-        } catch (error) {
-            console.error('Failed to save transfer', error);
-            showAlert('Error', 'Failed to save transfer');
+        setAmount('');
+        setNote('');
+
+        if (initialTransaction) {
+            onSave();
         }
     };
 
