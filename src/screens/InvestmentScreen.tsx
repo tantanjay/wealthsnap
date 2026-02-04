@@ -3,6 +3,7 @@ import { BigNumber } from 'bignumber.js';
 import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, Platform, ToastAndroid } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { Skeleton } from '@components/common/Skeleton';
 import { InvestmentStats } from '@components/investments/InvestmentStats';
 import { HoldingsList } from '@components/investments/HoldingsList';
 import { SmartAdvisor, Suggestion } from '@components/investments/SmartAdvisor';
@@ -32,6 +33,8 @@ const InvestmentScreen = ({ navigation }: any) => {
     const [refreshing, setRefreshing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [currency, setCurrency] = useState('PHP');
+
+    const [valuationDate, setValuationDate] = useState<string | null>(null);
 
     const [portfolioStats, setPortfolioStats] = useState({
         totalEquity: 0,
@@ -66,6 +69,42 @@ const InvestmentScreen = ({ navigation }: any) => {
 
             const portfolioHoldings = await getPortfolioHoldings();
             setHoldings(portfolioHoldings);
+
+            // Determine Majority Date for Stocks
+            const stockHoldings = portfolioHoldings.filter(h => h.type === 'STOCKS' || h.type === 'STOCK');
+            if (stockHoldings.length > 0) {
+                // Count frequencies of dates
+                const dateCounts: Record<string, number> = {};
+                stockHoldings.forEach(h => {
+                    if (h.priceAsOf) {
+                        // Extract just the date part YYYY-MM-DD
+                        const datePart = h.priceAsOf.split('T')[0];
+                        dateCounts[datePart] = (dateCounts[datePart] || 0) + 1;
+                    }
+                });
+
+                // Find majority
+                let maxCount = 0;
+                let majorityDate = '';
+
+                // If tie, pick latest
+                Object.entries(dateCounts).forEach(([date, count]) => {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        majorityDate = date;
+                    } else if (count === maxCount) {
+                        // Tie-break: use latest date
+                        if (new Date(date) > new Date(majorityDate)) {
+                            majorityDate = date;
+                        }
+                    }
+                });
+
+                setValuationDate(majorityDate || null);
+
+            } else {
+                setValuationDate(null); // Fallback to current date in UI if null
+            }
 
             // Fetch Dividend Projections
             const projectedDividends = await getProjectedDividends(portfolioHoldings);
@@ -317,7 +356,18 @@ const InvestmentScreen = ({ navigation }: any) => {
                 {/* Header Title with Menu */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={[styles.date, { color: colors.textSecondary }]}>As of {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+                        {isLoading ? (
+                            <View style={{ marginBottom: 4, width: 120 }}>
+                                <Skeleton width={120} height={16} />
+                            </View>
+                        ) : (
+                            <Text style={[styles.date, { color: colors.textSecondary }]}>
+                                As of {valuationDate
+                                    ? new Date(valuationDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                                    : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                                }
+                            </Text>
+                        )}
                         <Text style={[styles.title, { color: colors.text }]}>Portfolio</Text>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 12 }}>
