@@ -36,7 +36,8 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
 
     const loadBudgets = async () => {
         const data = await getAllBudgets();
-        setBudgetsList(data);
+        const sortedData = data.sort((a, b) => b.amount.minus(a.amount).toNumber());
+        setBudgetsList(sortedData);
     };
 
     const handleSaveBudget = async () => {
