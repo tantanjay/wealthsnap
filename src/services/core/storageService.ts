@@ -303,6 +303,24 @@ export const getInvestmentSectionOrder = async (): Promise<string[] | null> => {
     }
 };
 
+export const saveInvestmentHoldingsSort = async (sort: { option: string, direction: string }): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INVESTMENT_SCREEN.HOLDINGS_SORT, JSON.stringify(sort));
+    } catch (error) {
+        console.error('Failed to save investment holdings sort:', error);
+    }
+};
+
+export const getInvestmentHoldingsSort = async (): Promise<{ option: string, direction: string } | null> => {
+    try {
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.INVESTMENT_SCREEN.HOLDINGS_SORT);
+        return data ? JSON.parse(data) : null;
+    } catch (error) {
+        console.error('Failed to get investment holdings sort:', error);
+        return null;
+    }
+};
+
 // ============= Clear All Data =============
 
 export const clearAllData = async (): Promise<void> => {
