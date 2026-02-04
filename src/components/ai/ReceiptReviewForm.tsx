@@ -275,6 +275,14 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                 </View>
 
                 <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 150 }}>
+                    {/* Warning Strip */}
+                    <View style={{ backgroundColor: 'rgba(255, 152, 0, 0.1)', padding: 12, borderRadius: 8, marginBottom: 16, flexDirection: 'row' }}>
+                        <Ionicons name="warning-outline" size={20} color="#FF9800" style={{ marginRight: 8, marginTop: 2 }} />
+                        <Text style={{ color: colors.text, fontSize: 13, flex: 1, lineHeight: 18 }}>
+                            AI analysis may contain errors. Please verify all details before saving.
+                        </Text>
+                    </View>
+
                     {/* Global Info */}
                     <View style={{ gap: 12 }}>
                         {/* Date & Time Selection */}
