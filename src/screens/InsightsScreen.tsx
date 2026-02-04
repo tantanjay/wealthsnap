@@ -38,7 +38,7 @@ const InsightsScreen = ({ navigation }: any) => {
     const { isPrivacyEnabled } = usePrivacy();
     const [currency, setCurrency] = useState('PHP');
     const [refreshing, setRefreshing] = useState(false);
-    const [expenseGrouping, setExpenseGrouping] = useState<'CATEGORY' | 'SUB_CATEGORY'>('CATEGORY');
+    const [expenseGrouping, setExpenseGrouping] = useState<'CATEGORY' | 'SUB_CATEGORY'>('SUB_CATEGORY');
     const [isLoading, setIsLoading] = useState(true);
 
     const [cardOrder, setCardOrder] = useState<string[]>([]);
@@ -66,7 +66,8 @@ const InsightsScreen = ({ navigation }: any) => {
         currentBalance: new BigNumber(0),
         budgetPerformance: new BigNumber(0),
         topExpenseCategory: { name: 'None', amount: new BigNumber(0), percentage: new BigNumber(0) },
-        daysInMonth: 30
+        daysInMonth: 30,
+        dailyAverage: new BigNumber(0)
     });
 
     const calculateMetrics = useCallback(async (currentTransactions: Transaction[], grouping: 'CATEGORY' | 'SUB_CATEGORY') => {
@@ -153,7 +154,8 @@ const InsightsScreen = ({ navigation }: any) => {
             currentBalance,
             budgetPerformance,
             topExpenseCategory: specificBreakdown[0] || { name: 'None', amount: new BigNumber(0), percentage: new BigNumber(0) },
-            daysInMonth: new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+            daysInMonth: new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate(),
+            dailyAverage: totals.expense.dividedBy(Math.max(1, today.getDate()))
         });
     }, []);
 
@@ -248,7 +250,7 @@ const InsightsScreen = ({ navigation }: any) => {
                                 currentBalance={data.currentBalance}
                                 budgetPerformance={data.budgetPerformance}
                                 topExpenseCategory={data.topExpenseCategory}
-                                daysInMonth={data.daysInMonth}
+                                dailyAverage={data.dailyAverage}
                                 cardOrder={cardOrder}
                             />
                         )

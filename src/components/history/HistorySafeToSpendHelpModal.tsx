@@ -15,7 +15,7 @@ export const HistorySafeToSpendHelpModal: React.FC<HistorySafeToSpendHelpModalPr
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Understanding Your Stats"
+            title="How is this calculated?"
             maxHeight="80%"
         >
             <ScrollView showsVerticalScrollIndicator={false}>
