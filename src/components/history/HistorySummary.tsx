@@ -1,7 +1,7 @@
 import React from 'react';
+import { BigNumber } from 'bignumber.js';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BigNumber } from 'bignumber.js';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 
@@ -49,7 +49,7 @@ export const HistorySummary: React.FC<HistorySummaryProps> = ({
                         </Text>
                         <View style={{ flexDirection: 'row', gap: 12, marginTop: 2, marginBottom: 2 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
-                                🔥 Burn: {formatCurrency(safeToSpendData.dailyBurnRate)}/Day
+                                🔥 Burn: {formatCurrency(safeToSpendData.dailyBurnRate)}/day
                             </Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
                                 🧾 Living Costs: {formatCurrency(safeToSpendData.projectedVariableSpend)}
