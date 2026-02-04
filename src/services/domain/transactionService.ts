@@ -4,8 +4,8 @@ import { getDatabase } from "@services/database/databaseService";
 import { bulkDecryptItems, encryptData, encryptField } from "@services/core/encryptionService";
 import { chunkArray } from "@utils/index";
 import * as DataCache from '@services/core/dataCache';
-
-
+import { checkAndNotifyAnomalies } from '@services/background/notificationService';
+import { getTransactionsByMonth } from '@utils/financialMetrics';
 
 // --- Constants & Helpers ---
 
@@ -101,6 +101,13 @@ export const saveTransaction = async (transaction: Transaction): Promise<void> =
         const values = await prepareTransactionValues(transaction);
         await db.runAsync(UPSERT_TRANSACTION_QUERY, values);
         DataCache.upsertTransaction(transaction);
+
+        // Check for anomalies (Fire and forget)
+        const cached = DataCache.getTransactionCache();
+        if (cached?.data) {
+            checkAndNotifyAnomalies(getTransactionsByMonth(cached.data), cached.data)
+                .catch(err => console.error('Failed to check anomalies:', err));
+        }
     } catch (error) {
         console.error('Error saving transaction:', error);
         throw new Error('Failed to save transaction');
@@ -121,6 +128,13 @@ export const saveTransactionWithReceipt = async (transaction: Transaction, recei
         });
 
         DataCache.upsertTransaction(transaction);
+
+        // Check for anomalies (Fire and forget)
+        const cached = DataCache.getTransactionCache();
+        if (cached?.data) {
+            checkAndNotifyAnomalies(getTransactionsByMonth(cached.data), cached.data)
+                .catch(err => console.error('Failed to check anomalies:', err));
+        }
     } catch (error) {
         console.error('Error saving transaction with receipt:', error);
         throw new Error('Failed to save transaction with receipt');
