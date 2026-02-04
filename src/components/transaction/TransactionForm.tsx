@@ -156,6 +156,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         setStartDate(new Date());
         setEndsNever(true);
         setEndDate(new Date());
+
+        if (initialTransaction) {
+            onSave();
+        }
     };
 
     return (
