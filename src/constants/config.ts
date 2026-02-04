@@ -30,7 +30,8 @@ export const ASYNC_KEYS = {
         ACCEPTED_TERMS_VERSION: '@wealthsnap_accepted_terms_version',
     },
     HOME_SCREEN: {
-        DISPLAY_MODE: '@wealthsnap_finance_display_mode',
+        FINANCE_DISPLAY_MODE: '@wealthsnap_finance_display_mode',
+        INVESTMENT_DISPLAY_MODE: '@wealthsnap_investment_display_mode',
         CARD_ORDER: '@wealthsnap_finance_card_order',
     },
     INSIGHTS_SCREEN: {
