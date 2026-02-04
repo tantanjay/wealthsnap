@@ -11,6 +11,7 @@ import HomeCashFlowCard from '@components/home/HomeCashFlowCard';
 import HomeInvestmentCard from '@components/home/HomeInvestmentCard';
 import HomeDebtCard from '@components/home/HomeDebtCard';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { UserProfile, Transaction, Investment } from '@types';
@@ -329,10 +330,14 @@ const HomeScreen = ({ navigation }: any) => {
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header with Settings Icon and Privacy Toggle */}
                 <View style={{ marginBottom: 20, marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <View>
+                    <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
                         <Text style={{ color: colors.textSecondary }}>Welcome back,</Text>
-                        <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>{profile?.name || 'User'}</Text>
-                    </View>
+                        {isLoading ? (
+                            <Skeleton width={180} height={34} borderRadius={8} style={{ marginTop: 4 }} />
+                        ) : (
+                            <Text style={{ color: colors.text, fontSize: 28, fontWeight: 'bold' }}>{profile?.name || 'User'}</Text>
+                        )}
+                    </TouchableOpacity>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                         <TouchableOpacity
                             onPress={togglePrivacy}
@@ -354,7 +359,7 @@ const HomeScreen = ({ navigation }: any) => {
                                 { backgroundColor: colors.surface }
                             ]}
                         >
-                            <Ionicons name="settings-outline" size={20} color={colors.text} />
+                            <Ionicons name="options-outline" size={20} color={colors.text} />
                         </TouchableOpacity>
                     </View>
                 </View>
