@@ -21,6 +21,22 @@ export const getTransactionsByMonth = (transactions: Transaction[], date: Date =
     });
 };
 
+export const calculateBalance = (transactions: Transaction[], endDate: Date = new Date()): BigNumber => {
+    let balance = new BigNumber(0);
+
+    transactions.forEach(t => {
+        if (parseDate(t.date) > endDate) return;
+
+        if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') {
+            balance = balance.plus(t.amount);
+        } else if (t.type === 'EXPENSE' || t.type === 'TRANSFER_OUT') {
+            balance = balance.minus(t.amount.abs());
+        }
+    });
+
+    return balance;
+};
+
 export const calculateTotals = (transactions: Transaction[]) => {
     let income = new BigNumber(0);
     let expense = new BigNumber(0);
@@ -164,10 +180,10 @@ export const getMonthEndProjection = (transactions: Transaction[]) => {
     };
 };
 
-export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: number = 6): BigNumber => {
+export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: number = 6, referenceDate: Date = new Date()): BigNumber => {
     if (allTransactions.length === 0) return new BigNumber(0);
 
-    const today = new Date();
+    const today = referenceDate;
     // Start from LAST month to avoid using partial current data which lowers the average artificially
     const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
@@ -323,7 +339,7 @@ export const getCurrentMonthCumulative = (currentMonthTransactions: Transaction[
 };
 
 export interface Anomaly {
-    type: 'SPIKE' | 'NEW_CATEGORY' | 'HIGH_SPENDING' | 'BUDGET_EXCEEDED';
+    type: 'SPIKE' | 'NEW_CATEGORY' | 'HIGH_SPENDING' | 'BUDGET_EXCEEDED' | 'RUNWAY_DROP';
     category: string;
     message: string;
     severity: 'LOW' | 'MEDIUM' | 'HIGH';
@@ -333,6 +349,43 @@ export const detectAnomalies = (currentMonthTransactions: Transaction[], allTran
     const anomalies: Anomaly[] = [];
 
     if (allTransactions.length < 10) return anomalies;
+
+    // --- 0. RUNWAY DROP CHECK ---
+    // Check if Financial Runway has dropped significantly (>25%) since last month
+    const today = new Date();
+    const currentBalance = calculateBalance(allTransactions, today);
+    const currentBurnRate = calculateBurnRate(allTransactions, 6, today);
+
+    // To avoid division by zero or huge numbers with 0 burn rate
+    if (currentBurnRate.isGreaterThan(0) && currentBalance.isGreaterThan(0)) {
+        const currentRunway = currentBalance.dividedBy(currentBurnRate);
+
+        // Previous Month Data
+        // Go 1 day back from start of this month to get end of last month
+        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+        const prevBalance = calculateBalance(allTransactions, lastMonthEnd);
+        const prevBurnRate = calculateBurnRate(allTransactions, 6, lastMonthEnd);
+
+        if (prevBurnRate.isGreaterThan(0) && prevBalance.isGreaterThan(0)) {
+            const prevRunway = prevBalance.dividedBy(prevBurnRate);
+
+            // Avoid triggering for very small runway changes (e.g. 0.5 to 0.4) if it's not meaningful
+            // Or very high runways (e.g. 50 months -> 35 months is 30% drop but maybe not "alert" worthy? User said 25% drop.)
+            // We'll stick to the % drop request.
+
+            const dropAmount = prevRunway.minus(currentRunway);
+            const dropPercent = dropAmount.dividedBy(prevRunway); // e.g. (10 - 7) / 10 = 0.3
+
+            if (dropPercent.isGreaterThanOrEqualTo(0.25)) {
+                anomalies.push({
+                    type: 'RUNWAY_DROP' as any, // Cast to any to avoid TS error until type def is updated (or just update type def above)
+                    category: 'Financial Health',
+                    message: `Runway dropped from ${prevRunway.toFixed(1)} to ${currentRunway.toFixed(1)} months`,
+                    severity: 'HIGH'
+                });
+            }
+        }
+    }
 
     // Use a Set for faster lookup when filtering out current transactions
     const currentIds = new Set(currentMonthTransactions.map(t => t.id));
