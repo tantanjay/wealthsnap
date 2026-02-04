@@ -66,7 +66,8 @@ const BottomModal: React.FC<BottomModalProps> = ({
             onRequestClose={handleClose}
         >
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior="padding"
+                keyboardVerticalOffset={Platform.OS === 'android' ? -insets.bottom : 0}
                 style={styles.overlay}
             >
                 {/* Backdrop - handles closing */}
