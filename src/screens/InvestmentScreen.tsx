@@ -25,9 +25,9 @@ import { useAIConsent } from '@hooks/useAIConsent';
 const VALID_STATS_IDS = ['equity', 'realized', 'unrealized', 'dividends'];
 const VALID_SECTION_IDS = ['stats_carousel', 'smart_advisor', 'allocation_chart', 'dividend_chart', 'holdings_list'];
 
-const InvestmentScreen = () => {
+const InvestmentScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
-    const { isPrivacyEnabled } = usePrivacy();
+    const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const { checkConsent } = useAIConsent();
     const [refreshing, setRefreshing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -313,15 +313,30 @@ const InvestmentScreen = () => {
                 {/* Header Title with Menu */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={[styles.title, { color: colors.text }]}>Portfolio</Text>
                         <Text style={[styles.date, { color: colors.textSecondary }]}>As of {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+                        <Text style={[styles.title, { color: colors.text }]}>Portfolio</Text>
                     </View>
-                    <TouchableOpacity
-                        style={[styles.iconButton, { backgroundColor: colors.surface }]}
-                        onPress={() => setShowSettings(true)}
-                    >
-                        <Ionicons name="settings-outline" size={20} color={colors.text} />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                        <TouchableOpacity
+                            onPress={togglePrivacy}
+                            style={[
+                                styles.iconButton,
+                                { backgroundColor: colors.surface }
+                            ]}
+                        >
+                            <Ionicons
+                                name={isPrivacyEnabled ? 'eye-off' : 'eye'}
+                                size={20}
+                                color={colors.text}
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.iconButton, { backgroundColor: colors.surface }]}
+                            onPress={() => setShowSettings(true)}
+                        >
+                            <Ionicons name="options-outline" size={20} color={colors.text} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Dynamic Sections */}
@@ -352,12 +367,12 @@ const InvestmentScreen = () => {
 
 const styles = StyleSheet.create({
     header: {
-        paddingHorizontal: 20,
-        paddingBottom: 10,
-        paddingTop: 10,
+        paddingHorizontal: 16,
+        marginBottom: 20,
+        marginTop: 10,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start'
+        alignItems: 'center'
     },
     title: {
         fontSize: 28,

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { Text, View, SectionList, TouchableOpacity } from 'react-native';
+import { Text, View, SectionList, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -46,9 +46,7 @@ interface FinancialSummary {
 
 const HistoryScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
-    const { isPrivacyEnabled } = usePrivacy();
-
-
+    const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
     const [allInvestments, setAllInvestments] = useState<Investment[]>([]);
     const [recurrenceRules, setRecurrenceRules] = useState<RecurrenceRule[]>([]);
@@ -163,8 +161,6 @@ const HistoryScreen = ({ navigation }: any) => {
         }
         setCurrentDate(newDate);
     };
-
-    // --- Computed Data ---
 
     // --- Computed Data ---
 
@@ -549,38 +545,44 @@ const HistoryScreen = ({ navigation }: any) => {
                 contentContainerStyle={{ paddingBottom: 40 }}
                 showsVerticalScrollIndicator={false}
                 ListHeaderComponent={
-                    <View style={{ marginBottom: 20 }}>
+                    <View style={{ marginBottom: 20, marginTop: 10 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>History</Text>
-                                {viewMode === 'CALENDAR' && (
-                                    <TouchableOpacity
-                                        onPress={() => setShowInfoModal(true)}
-                                        style={{ padding: 4, backgroundColor: 'transparent', borderRadius: 12 }}
-                                    >
-                                        <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
-                                    </TouchableOpacity>
-                                )}
+                            <View>
+                                <Text style={{ color: colors.textSecondary }}>Transaction Log</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <Text style={{ color: colors.text, fontSize: 28, fontWeight: 'bold' }}>History</Text>
+                                    {viewMode === 'CALENDAR' && (
+                                        <TouchableOpacity
+                                            onPress={() => setShowInfoModal(true)}
+                                            style={{ padding: 4, backgroundColor: 'transparent', borderRadius: 12 }}
+                                        >
+                                            <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
                             </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', gap: 12 }}>
                                 <TouchableOpacity
-                                    onPress={() => setViewMode('LIST')}
-                                    style={{ padding: 8 }}
+                                    onPress={togglePrivacy}
+                                    style={[
+                                        styles.iconButton,
+                                        { backgroundColor: colors.surface }
+                                    ]}
                                 >
                                     <Ionicons
-                                        name="list"
-                                        size={24}
-                                        color={viewMode === 'LIST' ? colors.primary : colors.text}
+                                        name={isPrivacyEnabled ? 'eye-off' : 'eye'}
+                                        size={20}
+                                        color={colors.text}
                                     />
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    onPress={() => setViewMode('CALENDAR')}
-                                    style={{ padding: 8 }}
+                                    onPress={() => setViewMode(viewMode === 'LIST' ? 'CALENDAR' : 'LIST')}
+                                    style={[styles.iconButton, { backgroundColor: colors.surface }]}
                                 >
                                     <Ionicons
-                                        name="calendar"
-                                        size={24}
-                                        color={viewMode === 'CALENDAR' ? colors.primary : colors.text}
+                                        name={viewMode === 'LIST' ? "calendar-outline" : "list-outline"}
+                                        size={20}
+                                        color={colors.text}
                                     />
                                 </TouchableOpacity>
                             </View>
@@ -711,5 +713,20 @@ const HistoryScreen = ({ navigation }: any) => {
         </ScreenWrapper>
     );
 };
+
+const styles = StyleSheet.create({
+    iconButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+    }
+});
 
 export default HistoryScreen;
