@@ -46,7 +46,8 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
         for (let i = 1; i <= daysInMonth; i++) {
             days.push(new Date(year, month, i));
         }
-        const remainingSlots = 42 - days.length;
+        const totalSlots = Math.ceil(days.length / 7) * 7;
+        const remainingSlots = totalSlots - days.length;
         for (let i = 1; i <= remainingSlots; i++) {
             days.push(new Date(year, month + 1, i));
         }
