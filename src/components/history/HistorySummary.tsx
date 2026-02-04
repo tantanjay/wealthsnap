@@ -49,7 +49,7 @@ export const HistorySummary: React.FC<HistorySummaryProps> = ({
                         </Text>
                         <View style={{ flexDirection: 'row', gap: 12, marginTop: 2, marginBottom: 2 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
-                                🔥 Burn: {formatCurrency(safeToSpendData.dailyBurnRate)}/day
+                                🔥 Burn: {formatCurrency(safeToSpendData.dailyBurnRate)}/Day
                             </Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
                                 🧾 Living Costs: {formatCurrency(safeToSpendData.projectedVariableSpend)}
