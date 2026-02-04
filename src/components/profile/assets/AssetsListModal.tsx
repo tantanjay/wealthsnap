@@ -113,7 +113,7 @@ export const AssetsListModal: React.FC<AssetsListModalProps> = ({ visible, onClo
             visible={visible}
             onClose={onClose}
             title={view === 'LIST' ? "Manage Assets" : undefined}
-            maxHeight="90%"
+            maxHeight="85%"
         >
             <View style={{ height: '100%', backgroundColor: colors.background }}>
                 {view === 'LIST' ? (

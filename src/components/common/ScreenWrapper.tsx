@@ -34,8 +34,8 @@ export const ScreenWrapper: React.FC<Props> = ({ children, style, noPadding, scr
                 paddingTop: insets.top,
                 paddingHorizontal: noPadding ? 0 : 16,
             }, style]}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={0}
+            behavior="padding"
+            keyboardVerticalOffset={Platform.OS === 'android' ? -insets.bottom : 0}
         >
             <StatusBar style={mode === 'dark' ? 'light' : 'dark'} translucent />
             {content}
