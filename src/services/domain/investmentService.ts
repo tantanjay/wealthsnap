@@ -227,11 +227,48 @@ export const getPortfolioStats = async () => {
         });
     }
 
-    // 6. Calculate Dividends separately (from actions)
+    // 6. Calculate Dividends separately (from actions) and This Month's Metrics
+    const now = new Date();
+    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+
+    let thisMonthDividends = new BigNumber(0);
+    let thisMonthInvested = new BigNumber(0);
+
     investments.forEach(inv => {
+        // Check if investment is in current month
+        // inv.date format is typically YYYY-MM-DD
+        const isCurrentMonth = inv.date.startsWith(currentMonthStr);
+
         if (inv.action === 'DIVIDEND') {
             const val = inv.price.times(inv.quantity);
             totalDividends = totalDividends.plus(val);
+
+            if (isCurrentMonth) {
+                thisMonthDividends = thisMonthDividends.plus(val);
+            }
+        } else if (isCurrentMonth) {
+            // Calculate Net Invested for this month (Buy - Sell)
+            // Fees are generally considered "spent" so part of cost basis, but for "Net Invested" flow...
+            // Usually Net Invested = Money In - Money Out.
+            // Buy: Money Out (Invested). Sell: Money In (Divested).
+            // So "Net Invested" = Buys - Sells.
+
+            // Total amount for transaction = (Price * Qty) + Fees?
+            // "Invested" usually implies base cost. Let's include fees for accuracy of cash flow?
+            // Actually, keep it simple: Price * Qty. Fees are separate expense usually.
+            // Let's stick to Price * Qty for now or we can do total cost.
+            // Using logic from metrics: totalCostBasis uses (price * qty) + fees.
+            // Let's us total value flowed.
+
+            const amount = inv.price.times(inv.quantity);
+            if (inv.action === 'BUY') {
+                // We add fees to what we "Invested" (spent)
+                thisMonthInvested = thisMonthInvested.plus(amount).plus(inv.fees || 0);
+            } else if (inv.action === 'SELL') {
+                // We subtract what we got back (amount - fees?)
+                // If I sell 100 worth and pay 1 fee, I got back 99. "Invested" decreases by 99.
+                thisMonthInvested = thisMonthInvested.minus(amount.minus(inv.fees || 0));
+            }
         }
     });
 
@@ -246,7 +283,9 @@ export const getPortfolioStats = async () => {
         realizedPL: totalRealizedPL.toNumber(),
         unrealizedPL: unrealizedPL.toNumber(),
         unrealizedPLPercent: detailsUnrealizedPLPercent,
-        totalDividends: totalDividends.toNumber()
+        totalDividends: totalDividends.toNumber(),
+        thisMonthDividends: thisMonthDividends.toNumber(),
+        thisMonthInvested: thisMonthInvested.toNumber()
     };
 };
 
