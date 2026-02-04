@@ -55,7 +55,7 @@ export const HistorySafeToSpendHelpModal: React.FC<HistorySafeToSpendHelpModalPr
                     <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
 
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: colors.text }}>4. Living Costs</Text>
+                        <Text style={{ color: colors.text }}>4. Minus Living Costs</Text>
                         <Text style={{ color: '#FF9800', fontWeight: 'bold' }}>Life Burnrate</Text>
                     </View>
                     <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
