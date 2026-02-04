@@ -35,7 +35,7 @@ const TermsContent: React.FC = () => {
             <Text style={[styles.termsHeading, { marginTop: 0 }]}>1. OVERVIEW</Text>
             <Text style={styles.termsText}>
                 WealthSnap is a <Text style={styles.bold}>privacy-first, local-only application</Text>. Your financial data, transaction logs, and personal details remain stored locally on your device; we do not maintain external servers. {'\n\n'}
-                By downloading, installing, or using WealthSnap ("the App"), you agree to these Terms of Service and Privacy Policy.
+                By downloading, installing, or using WealthSnap (&quot;the App&quot;), you agree to these Terms of Service and Privacy Policy.
             </Text>
 
             <Text style={styles.termsHeading}>2. INFORMATION WE COLLECT & HOW WE USE IT</Text>
@@ -82,14 +82,14 @@ const TermsContent: React.FC = () => {
                 • <Text style={styles.bold}>Data Deletion:</Text> Clear cache/data or uninstall the app to remove all data permanently.
             </Text>
 
-            <Text style={styles.termsHeading}>6. CHILDREN'S PRIVACY</Text>
+            <Text style={styles.termsHeading}>6. CHILDREN&apos;S PRIVACY</Text>
             <Text style={styles.termsText}>
                 We do not collect data from anyone under 13. Parents may remove data by clearing app data or uninstalling.
             </Text>
 
             <Text style={styles.termsHeading}>7. DISCLAIMER OF WARRANTIES</Text>
             <Text style={styles.termsText}>
-                • <Text style={styles.bold}>"AS IS":</Text> The app is provided without warranties of any kind.{'\n'}
+                • <Text style={styles.bold}>&quot;AS IS&quot;:</Text> The app is provided without warranties of any kind.{'\n'}
                 • <Text style={styles.bold}>Automated Insights:</Text> Features like Safe-to-Spend, Ghost Forecast, and Smart Alerts are estimates only and are not financial advice. You are responsible for your decisions.
             </Text>
 
