@@ -21,7 +21,7 @@ interface InsightsOverviewCardsProps {
     currentBalance: BigNumber;
     budgetPerformance: BigNumber;
     topExpenseCategory: { name: string; amount: BigNumber; percentage: BigNumber };
-    daysInMonth: number;
+    dailyAverage: BigNumber;
     cardOrder?: string[];
     onReorderCards?: (newOrder: string[]) => void;
 }
@@ -38,7 +38,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
     currentBalance,
     budgetPerformance,
     topExpenseCategory,
-    daysInMonth,
+    dailyAverage,
     cardOrder,
     onReorderCards
 }) => {
@@ -110,7 +110,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
         {
             id: 'avg-daily-spending',
             title: "Daily Average",
-            value: formatCurrencyAmount(expense.dividedBy(daysInMonth), currency),
+            value: formatCurrencyAmount(dailyAverage, currency),
             subValue: "This Month",
             color: undefined,
             hasInfo: true,
@@ -130,7 +130,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
             subValue: formatCurrencyAmount(topExpenseCategory.amount, currency),
             color: undefined
         }
-    ], [netCashFlow, income, expense, savingsRate, burnRate, currency, currentBalance, budgetPerformance, topExpenseCategory, daysInMonth]);
+    ], [netCashFlow, income, expense, savingsRate, burnRate, currency, currentBalance, budgetPerformance, topExpenseCategory, dailyAverage]);
 
     // Apply custom order if available
     const orderedData = useMemo(() => {
@@ -235,7 +235,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                 title="How is this Calculated?"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <View style={{ padding: 20, paddingBottom: 40 }}>
+                    <View style={{ paddingBottom: 40 }}>
                         <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
                             Financial Runway shows how many months you can sustain your current lifestyle based on your net liquid balance and average monthly expenses (burn rate).
                         </Text>
@@ -265,7 +265,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                 title="How is this Calculated?"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <View style={{ padding: 20, paddingBottom: 40 }}>
+                    <View style={{ paddingBottom: 40 }}>
                         <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
                             Budget Health shows what percentage of your total budgets you&apos;ve spent this month.
                         </Text>
@@ -300,7 +300,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                 title="How is this Calculated?"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <View style={{ padding: 20, paddingBottom: 40 }}>
+                    <View style={{ paddingBottom: 40 }}>
                         <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
                             Daily Average shows how much you&apos;re spending per day on average this month.
                         </Text>
@@ -322,7 +322,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                             </Text>
                         </View>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            Calculation: Total Monthly Expenses ÷ Days in Month
+                            Calculation: Total Monthly Expenses ÷ Days Passed in Month
                         </Text>
                     </View>
                 </ScrollView>
