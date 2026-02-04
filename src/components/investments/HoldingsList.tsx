@@ -1,11 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Skeleton } from '@components/common/Skeleton';
+import BottomModal from '@components/common/BottomModal';
 import { InvestmentHistoryModal } from '@components/investments/modals/InvestmentHistoryModal';
 import { useTheme } from '@context/ThemeContext';
-import { formatCurrencyAmount, formatCompactCurrency } from '@utils/currencyUtils';
+import { formatCurrencyAmount, formatCompactCurrency, CURRENCY_SYMBOLS } from '@utils/currencyUtils';
+import { saveInvestmentHoldingsSort, getInvestmentHoldingsSort } from '@services/core/storageService';
 
 interface Holding {
     symbol: string;
@@ -26,6 +29,9 @@ interface HoldingsListProps {
     isPrivacyEnabled?: boolean;
     onUpdate?: () => void;
 }
+
+type SortOption = 'ALPHABETICAL' | 'ALLOCATION' | 'PL_AMOUNT' | 'PL_PERCENT' | 'YIELD';
+type SortDirection = 'ASC' | 'DESC';
 
 const HoldingItemSkeleton = () => {
     const { colors } = useTheme();
@@ -170,9 +176,91 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency =
     const [selectedHolding, setSelectedHolding] = React.useState<Holding | null>(null);
     const [historyModalVisible, setHistoryModalVisible] = React.useState(false);
 
+    // Sort State
+    const [sortOption, setSortOption] = React.useState<SortOption>('ALLOCATION');
+    const [sortDirection, setSortDirection] = React.useState<SortDirection>('DESC');
+    const [isSortModalVisible, setSortModalVisible] = React.useState(false);
+
+    // Helper ref to avoid infinite loop in useEffect when saving
+    const isInitialLoad = React.useRef(true);
+
+    // Load Sort Pref
+    React.useEffect(() => {
+        const loadSort = async () => {
+            const saved = await getInvestmentHoldingsSort();
+            if (saved) {
+                setSortOption(saved.option as SortOption);
+                setSortDirection(saved.direction as SortDirection);
+            }
+            isInitialLoad.current = false;
+        };
+        loadSort();
+    }, []);
+
+    // Save Sort Pref
+    React.useEffect(() => {
+        if (!isInitialLoad.current) {
+            saveInvestmentHoldingsSort({ option: sortOption, direction: sortDirection });
+        }
+    }, [sortOption, sortDirection]);
+
     const handleHoldingPress = (holding: Holding) => {
         setSelectedHolding(holding);
         setHistoryModalVisible(true);
+    };
+
+    const handleSort = (option: SortOption) => {
+        if (sortOption === option) {
+            // Toggle direction
+            setSortDirection(prev => prev === 'ASC' ? 'DESC' : 'ASC');
+        } else {
+            setSortOption(option);
+            setSortDirection('DESC'); // Default to DESC for new option (usually better for numbers)
+        }
+        // Keep modal open or close? Usually close if selecting new, but maybe not if toggling?
+        // Let's close for better UX on selection
+        if (sortOption !== option) {
+            setSortModalVisible(false);
+        }
+    };
+
+    const getSortedHoldings = () => {
+        if (!holdings) return [];
+
+        return [...holdings].sort((a, b) => {
+            let comparison = 0;
+            switch (sortOption) {
+                case 'ALPHABETICAL':
+                    comparison = a.symbol.localeCompare(b.symbol);
+                    // For alphabetical, ASC is A-Z (default), DESC is Z-A
+                    break;
+                case 'ALLOCATION':
+                    comparison = a.totalValue - b.totalValue;
+                    break;
+                case 'PL_AMOUNT':
+                    comparison = a.gainLoss - b.gainLoss;
+                    break;
+                case 'PL_PERCENT':
+                    comparison = a.gainLossPercent - b.gainLossPercent;
+                    break;
+                case 'YIELD':
+                    comparison = a.divYield - b.divYield;
+                    break;
+            }
+            return sortDirection === 'ASC' ? comparison : -comparison;
+        });
+    };
+
+    const sortedHoldings = getSortedHoldings();
+
+    const getSortLabel = (option: SortOption) => {
+        switch (option) {
+            case 'ALPHABETICAL': return 'Alphabetical (Symbol)';
+            case 'ALLOCATION': return 'Allocation (Value)';
+            case 'PL_AMOUNT': return `Profit/Loss (${CURRENCY_SYMBOLS[currency] || currency})`;
+            case 'PL_PERCENT': return 'Profit/Loss (%)';
+            case 'YIELD': return 'Dividend Yield';
+        }
     };
 
     if (isLoading) {
@@ -199,9 +287,20 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency =
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>Current Holdings</Text>
+                <View>
+                    <Text style={[styles.headerTitle, { color: colors.text }]}>Current Holdings</Text>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                        Sorted by {getSortLabel(sortOption).replace(/ *\([^)]*\) */g, "")} ({sortDirection === 'ASC' ? (sortOption === 'ALPHABETICAL' ? 'A-Z' : 'Low-High') : (sortOption === 'ALPHABETICAL' ? 'Z-A' : 'High-Low')})
+                    </Text>
+                </View>
+                <TouchableOpacity
+                    style={styles.sortButton}
+                    onPress={() => setSortModalVisible(true)}
+                >
+                    <Ionicons name="filter" size={20} color={colors.primary} />
+                </TouchableOpacity>
             </View>
-            {holdings.map((h, index) => (
+            {sortedHoldings.map((h, index) => (
                 <HoldingItem
                     key={index}
                     item={h}
@@ -219,6 +318,63 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency =
                 currency={currency}
                 onDataChange={onUpdate}
             />
+
+            <BottomModal
+                visible={isSortModalVisible}
+                onClose={() => setSortModalVisible(false)}
+                title="Sort Holdings"
+                maxHeight="80%"
+            >
+                <View style={{ gap: 8, paddingBottom: 16 }}>
+                    {(['ALLOCATION', 'ALPHABETICAL', 'PL_AMOUNT', 'PL_PERCENT', 'YIELD'] as SortOption[]).map((option) => (
+                        <TouchableOpacity
+                            key={option}
+                            style={[
+                                styles.sortOption,
+                                {
+                                    backgroundColor: sortOption === option ? 'rgba(79, 70, 229, 0.1)' : 'transparent',
+                                    borderColor: sortOption === option ? colors.primary : colors.border
+                                }
+                            ]}
+                            onPress={() => handleSort(option)}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                <Ionicons
+                                    name={
+                                        option === 'ALPHABETICAL' ? 'text' :
+                                            option === 'ALLOCATION' ? 'pie-chart' :
+                                                option === 'YIELD' ? 'water' :
+                                                    'trending-up'
+                                    }
+                                    size={20}
+                                    color={sortOption === option ? colors.primary : colors.textSecondary}
+                                />
+                                <Text style={[
+                                    styles.sortOptionText,
+                                    {
+                                        color: sortOption === option ? colors.primary : colors.text,
+                                        fontWeight: sortOption === option ? '700' : '400'
+                                    }
+                                ]}>
+                                    {getSortLabel(option)}
+                                </Text>
+                            </View>
+                            {sortOption === option && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                    <Text style={{ fontSize: 12, color: colors.primary }}>
+                                        {sortDirection === 'ASC' ? (option === 'ALPHABETICAL' ? 'A-Z' : 'Low-High') : (option === 'ALPHABETICAL' ? 'Z-A' : 'High-Low')}
+                                    </Text>
+                                    <Ionicons
+                                        name={sortDirection === 'ASC' ? 'arrow-up' : 'arrow-down'}
+                                        size={16}
+                                        color={colors.primary}
+                                    />
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </BottomModal>
         </View>
     );
 };
@@ -363,5 +519,20 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         fontStyle: 'italic'
+    },
+    sortButton: {
+        padding: 4,
+        marginRight: -4
+    },
+    sortOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+    },
+    sortOptionText: {
+        fontSize: 16,
     }
 });

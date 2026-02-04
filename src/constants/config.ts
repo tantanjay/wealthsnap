@@ -44,6 +44,7 @@ export const ASYNC_KEYS = {
     INVESTMENT_SCREEN: {
         STATS_ORDER: '@wealthsnap_investment_stats_order',
         SECTION_ORDER: '@wealthsnap_investment_section_order',
+        HOLDINGS_SORT: '@wealthsnap_investment_holdings_sort',
     },
     CRASH_REPORT: '@wealthsnap_crash_report',
     DEVELOPER_MODE: '@wealthsnap_developer_mode',
