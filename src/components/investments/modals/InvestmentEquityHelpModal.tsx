@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 
@@ -25,11 +25,11 @@ export const InvestmentEquityHelpModal: React.FC<InvestmentEquityHelpModalProps>
 
                     <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
-                            "This is the total amount you would have if you sold all your positions today at current market prices."
+                            &quot;This is the total amount you would have if you sold all your positions today at current market prices.&quot;
                         </Text>
                     </View>
 
-                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>This Month's Activity:</Text>
+                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginBottom: 8 }}>This Month&apos;s Activity:</Text>
                     <View style={{ marginLeft: 8, marginBottom: 15 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20, marginBottom: 4 }}>
                             The sub-value shows your <Text style={{ fontWeight: 'bold' }}>Net Invested</Text> amount for the current month.
