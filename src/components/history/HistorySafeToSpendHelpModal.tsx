@@ -59,7 +59,7 @@ export const HistorySafeToSpendHelpModal: React.FC<HistorySafeToSpendHelpModalPr
                         <Text style={{ color: '#FF9800', fontWeight: 'bold' }}>Life Burnrate</Text>
                     </View>
                     <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
-                        Estimated daily cost for food/transport based on your last 90 days (3 months).
+                        Estimated daily cost for food/transport based on your last 90 days (3 months). Does not include recurring expenses.
                     </Text>
                     <View style={{ marginTop: 6, backgroundColor: '#FFF3E0', padding: 8, borderRadius: 8 }}>
                         <Text style={{ color: '#E65100', fontSize: 11, fontStyle: 'italic' }}>
