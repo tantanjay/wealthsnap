@@ -200,7 +200,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
             // Items not in the order array go to the end
             return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
         });
-    }, [cardOrder, isPrivacyEnabled, totalEquity, currency, colors, realizedPL, unrealizedPL, unrealizedPLPercent, totalDividends]);
+    }, [cardOrder, isPrivacyEnabled, totalEquity, currency, colors, realizedPL, unrealizedPL, unrealizedPLPercent, totalDividends, thisMonthDividends, thisMonthInvested]);
 
     const totalPages = Math.ceil(cards.length / 2);
 
