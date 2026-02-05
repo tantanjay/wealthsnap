@@ -2,7 +2,7 @@
   "expo": {
     "name": "WealthSnap",
     "slug": "WealthSnap",
-    "version": "1.8.0",
+    "version": "1.8.1",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -33,7 +33,7 @@
         "backgroundColor": "#0033CC"
       },
       "package": "com.christian.soyosa.WealthSnap",
-      "versionCode": 12,
+      "versionCode": 13,
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",
@@ -42,7 +42,10 @@
         "android.permission.USE_FINGERPRINT"
       ],
       "blockedPermissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
