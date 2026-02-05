@@ -707,6 +707,8 @@ const HistoryScreen = ({ navigation }: any) => {
             <HistorySafeToSpendHelpModal
                 visible={showSafeToSpendInfo}
                 onClose={() => setShowSafeToSpendInfo(false)}
+                viewMode={viewMode}
+                timeFrame={timeFrame}
             />
 
             <InvestmentOptionsModal
