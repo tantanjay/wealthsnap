@@ -1,7 +1,9 @@
 import { BigNumber } from 'bignumber.js';
+import { getCurrencyInfo } from './currencyData';
 
 /**
  * Maps currency codes to their respective symbols.
+ * Deprecated: Use getCurrencyInfo instead.
  */
 export const CURRENCY_SYMBOLS: Record<string, string> = {
     PHP: '₱',
@@ -18,17 +20,27 @@ export const formatCurrencyAmount = (
     amount: BigNumber | string | number,
     currencyCode: string = 'PHP'
 ): string => {
-    const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
+    const { symbol, locale } = getCurrencyInfo(currencyCode);
 
     // Ensure we are working with a BigNumber instance
     const bn = new BigNumber(amount);
 
-    const formattedNumber = new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(bn.toNumber()); // Convert to number for the Intl formatter
+    try {
+        const formattedNumber = new Intl.NumberFormat(locale, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(bn.toNumber()); // Convert to number for the Intl formatter
 
-    return `${symbol}${formattedNumber}`;
+        return `${symbol}${formattedNumber}`;
+    } catch {
+        // Fallback to en-US if locale is invalid
+        const formattedNumber = new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(bn.toNumber());
+
+        return `${symbol}${formattedNumber}`;
+    }
 };
 
 /**
@@ -39,21 +51,31 @@ export const formatCompactCurrency = (
     currencyCode: string = 'PHP',
     decimalPlaces: number = 2 // Default to 2, or 0 for whole numbers
 ): string => {
-    const symbol = CURRENCY_SYMBOLS[currencyCode] || currencyCode;
+    const { symbol, locale } = getCurrencyInfo(currencyCode);
 
     // Convert to BigNumber and apply rounding
     // ROUND_HALF_UP is the standard "round to nearest"
     const bn = new BigNumber(amount).decimalPlaces(decimalPlaces, BigNumber.ROUND_HALF_UP);
 
-    const formatter = new Intl.NumberFormat('en-US', {
-        notation: 'compact',
-        compactDisplay: 'short',
-        // We sync the Intl formatter with your decimalPlaces argument
-        minimumFractionDigits: 0,
-        maximumFractionDigits: decimalPlaces
-    });
-
-    return `${symbol}${formatter.format(bn.toNumber())}`;
+    try {
+        const formatter = new Intl.NumberFormat(locale, {
+            notation: 'compact',
+            compactDisplay: 'short',
+            // We sync the Intl formatter with your decimalPlaces argument
+            minimumFractionDigits: 0,
+            maximumFractionDigits: decimalPlaces
+        });
+        return `${symbol}${formatter.format(bn.toNumber())}`;
+    } catch {
+        const formatter = new Intl.NumberFormat('en-US', {
+            notation: 'compact',
+            compactDisplay: 'short',
+            // We sync the Intl formatter with your decimalPlaces argument
+            minimumFractionDigits: 0,
+            maximumFractionDigits: decimalPlaces
+        });
+        return `${symbol}${formatter.format(bn.toNumber())}`;
+    }
 };
 
 /**
