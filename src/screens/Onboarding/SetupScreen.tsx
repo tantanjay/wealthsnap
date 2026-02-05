@@ -1,12 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions, FlatList } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 
 import RestoreModal from '@components/profile/data/RestoreModal';
+import BottomModal from '@components/common/BottomModal';
 import PinCreationScreen from '@screens/security/PinCreationScreen';
 import TermsContent from '@components/onboarding/TermsContent';
 import OnboardingGuide from '@screens/onboarding/OnboardingGuideScreen';
@@ -18,6 +19,7 @@ import { UserProfile } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { restoreFromBackup, generateDummyData } from '@services/integrations';
 import { saveUserProfile, setOnboardingComplete, saveAcceptedTermsVersion } from '@services/core/storageService';
+import { CURRENCIES, getCurrencyInfo } from '@utils/currencyData';
 import { CONFIG } from '@constants/config';
 import { SPACING } from '@styles/theme';
 
@@ -29,6 +31,10 @@ const SetupScreen = ({ navigation }: any) => {
     const [step, setStep] = useState(0);
     const [hasAgreed, setHasAgreed] = useState(false);
     const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+
+    // Currency Selection
+    const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const [isRestoring, setIsRestoring] = useState(false);
     const [hasRestored, setHasRestored] = useState(false);
@@ -529,35 +535,44 @@ const SetupScreen = ({ navigation }: any) => {
 
                         <Card>
                             <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Currency</Text>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                                {['PHP', 'USD', 'EUR', 'GBP', 'JPY'].map(curr => (
-                                    <TouchableOpacity
-                                        key={curr}
-                                        onPress={() => setCurrency(curr)}
-                                        style={{
-                                            backgroundColor: currency === curr ? colors.primary : 'transparent',
-                                            paddingVertical: 8,
-                                            paddingHorizontal: 16,
-                                            borderRadius: 8,
-                                            marginRight: 8,
-                                            marginBottom: 8,
-                                            borderWidth: 1,
-                                            borderColor: currency === curr ? colors.primary : colors.border,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    >
-                                        <Text
-                                            style={{
-                                                color: currency === curr ? colors.white : colors.text,
-                                                fontWeight: '600'
-                                            }}
-                                        >
-                                            {curr}
+                            <TouchableOpacity
+                                onPress={() => setCurrencyModalVisible(true)}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    backgroundColor: colors.surface || colors.textSecondary + '20',
+                                    padding: 12,
+                                    borderRadius: 12,
+                                    borderWidth: 1,
+                                    borderColor: colors.border
+                                }}
+                            >
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 20,
+                                        backgroundColor: colors.primary + '20',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginRight: 12
+                                    }}>
+                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.primary }}>
+                                            {getCurrencyInfo(currency).symbol}
                                         </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
+                                    </View>
+                                    <View>
+                                        <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text }}>
+                                            {currency}
+                                        </Text>
+                                        <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                                            {getCurrencyInfo(currency).name}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+                            </TouchableOpacity>
                         </Card>
 
                         <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginVertical: 10 }}>Financial Goals</Text>
@@ -605,7 +620,100 @@ const SetupScreen = ({ navigation }: any) => {
                 onRestore={confirmRestore}
                 isProcessing={isRestoring}
             />
+
+            {/* Currency Selection Modal */}
+            <BottomModal
+                visible={currencyModalVisible}
+                onClose={() => setCurrencyModalVisible(false)}
+                title="Select Currency"
+                maxHeight="85%"
+            >
+                <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        borderRadius: 12,
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        marginBottom: 16,
+                        borderWidth: 1,
+                        borderColor: colors.border
+                    }}>
+                        <Ionicons name="search" size={20} color={colors.textSecondary} />
+                        <TextInput
+                            style={{ flex: 1, marginLeft: 8, fontSize: 16, color: colors.text }}
+                            placeholder="Search currency..."
+                            placeholderTextColor={colors.textSecondary}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            autoCorrect={false}
+                        />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    <FlatList
+                        data={Object.values(CURRENCIES).filter(c =>
+                            c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            c.code.toLowerCase().includes(searchQuery.toLowerCase())
+                        )}
+                        keyExtractor={item => item.code}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={{
+                                    paddingVertical: 12,
+                                    borderBottomWidth: 1,
+                                    borderBottomColor: colors.border,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between'
+                                }}
+                                onPress={() => {
+                                    setCurrency(item.code);
+                                    setCurrencyModalVisible(false);
+                                }}
+                            >
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: 20,
+                                        backgroundColor: colors.primary + '10',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginRight: 12
+                                    }}>
+                                        <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text }}>{item.symbol}</Text>
+                                    </View>
+                                    <View>
+                                        <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
+                                            {item.name}
+                                        </Text>
+                                        <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                                            {item.code}
+                                        </Text>
+                                    </View>
+                                </View>
+                                {currency === item.code && (
+                                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                                )}
+                            </TouchableOpacity>
+                        )}
+                        style={{ height: '100%' }}
+                        contentContainerStyle={{ paddingBottom: 40 }}
+                        keyboardShouldPersistTaps="handled"
+                    />
+                </View>
+            </BottomModal>
+
         </ScreenWrapper >
     );
 };
 export default SetupScreen;
+
+// Should be inside the return, but SetupScreen is huge.
+// Actually I need to put the modal inside the return block.
+// Let me target the closing tag of ScreenWrapper and insert it before.

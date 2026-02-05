@@ -43,18 +43,10 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
     const { checkConsent } = useAIConsent();
     const insets = useSafeAreaInsets(); // Hook for notch/home-bar detection
 
-    const [status, requestPermission] = ImagePicker.useMediaLibraryPermissions();
     const [cameraStatus, requestCameraPermission] = ImagePicker.useCameraPermissions();
 
     const handleBrowse = async () => {
         checkConsent(async () => {
-            if (status?.status !== 'granted') {
-                const response = await requestPermission();
-                if (!response.granted) {
-                    showAlert('Permission needed', 'Please grant photo library access.');
-                    return;
-                }
-            }
             try {
                 temporarilyDisableLock();
                 const result = await ImagePicker.launchImageLibraryAsync({
