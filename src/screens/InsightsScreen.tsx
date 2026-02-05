@@ -35,7 +35,7 @@ const VALID_SECTION_IDS = [
 
 const InsightsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
-    const { isPrivacyEnabled } = usePrivacy();
+    const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const [currency, setCurrency] = useState('PHP');
     const [refreshing, setRefreshing] = useState(false);
     const [expenseGrouping, setExpenseGrouping] = useState<'CATEGORY' | 'SUB_CATEGORY'>('SUB_CATEGORY');
@@ -219,10 +219,23 @@ const InsightsScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
                 <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', flex: 1 }}>Financial Insights</Text>
                 <TouchableOpacity
+                    onPress={togglePrivacy}
+                    style={[
+                        styles.iconButton,
+                        { backgroundColor: colors.surface, marginRight: 10 }
+                    ]}
+                >
+                    <Ionicons
+                        name={isPrivacyEnabled ? 'eye-off' : 'eye'}
+                        size={20}
+                        color={colors.text}
+                    />
+                </TouchableOpacity>
+                <TouchableOpacity
                     style={[styles.iconButton, { backgroundColor: colors.surface }]}
                     onPress={() => setIsSettingsModalVisible(true)}
                 >
-                    <Ionicons name="settings-outline" size={20} color={colors.text} />
+                    <Ionicons name="options-outline" size={20} color={colors.text} />
                 </TouchableOpacity>
             </View>
 
