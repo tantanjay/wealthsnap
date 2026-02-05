@@ -6,10 +6,129 @@ import { useTheme } from '@context/ThemeContext';
 interface HistorySafeToSpendHelpModalProps {
     visible: boolean;
     onClose: () => void;
+    viewMode?: 'LIST' | 'CALENDAR';
+    timeFrame?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 }
 
-export const HistorySafeToSpendHelpModal: React.FC<HistorySafeToSpendHelpModalProps> = ({ visible, onClose }) => {
+export const HistorySafeToSpendHelpModal: React.FC<HistorySafeToSpendHelpModalProps> = ({
+    visible,
+    onClose,
+    viewMode = 'LIST',
+    timeFrame = 'DAILY'
+}) => {
     const { colors } = useTheme();
+
+    const renderDailyContent = () => (
+        <View style={{ backgroundColor: colors.surface, padding: 16, borderRadius: 16, gap: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.text }}>1. Life Burnrate</Text>
+                <Text style={{ color: '#FF9800', fontWeight: 'bold' }}>Daily Average</Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                Estimated daily cost for food/transport based on your last 90 days.
+            </Text>
+
+            <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.text }}>2. Minus Expenses</Text>
+                <Text style={{ color: colors.error, fontWeight: 'bold' }}>Today&apos;s Spend</Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                Total amount you have spent today.
+            </Text>
+
+            <View style={{ height: 2, backgroundColor: colors.text + '30', marginVertical: 4 }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>= Safe To Spend</Text>
+                <Text style={{ color: '#4CAF50', fontWeight: 'bold', fontSize: 18 }}>Remaining</Text>
+            </View>
+        </View>
+    );
+
+    const renderWeeklyContent = () => (
+        <View style={{ backgroundColor: colors.surface, padding: 16, borderRadius: 16, gap: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.text }}>1. Accumulated Burnrate</Text>
+                <Text style={{ color: '#FF9800', fontWeight: 'bold' }}>Daily x Days</Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                Your daily burnrate multiplied by days passed in this week (or 7 if viewing past weeks).
+            </Text>
+
+            <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.text }}>2. Minus Expenses</Text>
+                <Text style={{ color: colors.error, fontWeight: 'bold' }}>Week&apos;s Spend</Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                Total amount you have spent this week.
+            </Text>
+
+            <View style={{ height: 2, backgroundColor: colors.text + '30', marginVertical: 4 }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>= Safe To Spend</Text>
+                <Text style={{ color: '#4CAF50', fontWeight: 'bold', fontSize: 18 }}>Status</Text>
+            </View>
+        </View>
+    );
+
+    const renderDefaultContent = () => (
+        <View style={{ backgroundColor: colors.surface, padding: 16, borderRadius: 16, gap: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.text }}>1. Total Inflow</Text>
+                <Text style={{ color: colors.success, fontWeight: 'bold' }}>Income + Future Paychecks</Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                Includes money earned + recurring income expected before period end.
+            </Text>
+
+            <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.text }}>2. Minus Outflows</Text>
+                <Text style={{ color: colors.error, fontWeight: 'bold' }}>Spent + Transfers Out</Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                Money already spent or moved to savings/investments.
+            </Text>
+
+            <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.text }}>3. Minus Future Bills</Text>
+                <Text style={{ color: colors.error, fontWeight: 'bold' }}>Recurring Bills</Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                Rent, subscriptions, and bills due before period end.
+            </Text>
+
+            <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.text }}>4. Minus Living Costs</Text>
+                <Text style={{ color: '#FF9800', fontWeight: 'bold' }}>Life Burnrate</Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                Estimated daily cost for food/transport based on your last 90 days (3 months). Does not include recurring expenses.
+            </Text>
+            <View style={{ marginTop: 6, backgroundColor: '#FFF3E0', padding: 8, borderRadius: 8 }}>
+                <Text style={{ color: '#E65100', fontSize: 11, fontStyle: 'italic' }}>
+                    <Text style={{ fontWeight: 'bold' }}>💡 Aha Moment:</Text> Buying a $900 phone increases your burn rate by $10/day for 3 months. This helps you &apos;feel&apos; the purchase!
+                </Text>
+            </View>
+
+            <View style={{ height: 2, backgroundColor: colors.text + '30', marginVertical: 4 }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>= Safe To Spend</Text>
+                <Text style={{ color: '#4CAF50', fontWeight: 'bold', fontSize: 18 }}>Guilt-Free Money</Text>
+            </View>
+        </View>
+    );
 
     return (
         <BottomModal
@@ -23,57 +142,9 @@ export const HistorySafeToSpendHelpModal: React.FC<HistorySafeToSpendHelpModalPr
                     We calculate your <Text style={{ fontWeight: 'bold' }}>True Discretionary Income</Text> to help you avoid spending money you may need later.
                 </Text>
 
-                <View style={{ backgroundColor: colors.surface, padding: 16, borderRadius: 16, gap: 12 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: colors.text }}>1. Total Inflow</Text>
-                        <Text style={{ color: colors.success, fontWeight: 'bold' }}>Income + Future Paychecks</Text>
-                    </View>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
-                        Includes money earned + recurring income expected before period end.
-                    </Text>
-
-                    <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: colors.text }}>2. Minus Outflows</Text>
-                        <Text style={{ color: colors.error, fontWeight: 'bold' }}>Spent + Transfers Out</Text>
-                    </View>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
-                        Money already spent or moved to savings/investments.
-                    </Text>
-
-                    <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: colors.text }}>3. Minus Future Bills</Text>
-                        <Text style={{ color: colors.error, fontWeight: 'bold' }}>Recurring Bills</Text>
-                    </View>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
-                        Rent, subscriptions, and bills due before period end.
-                    </Text>
-
-                    <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: colors.text }}>4. Minus Living Costs</Text>
-                        <Text style={{ color: '#FF9800', fontWeight: 'bold' }}>Life Burnrate</Text>
-                    </View>
-                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
-                        Estimated daily cost for food/transport based on your last 90 days (3 months). Does not include recurring expenses.
-                    </Text>
-                    <View style={{ marginTop: 6, backgroundColor: '#FFF3E0', padding: 8, borderRadius: 8 }}>
-                        <Text style={{ color: '#E65100', fontSize: 11, fontStyle: 'italic' }}>
-                            <Text style={{ fontWeight: 'bold' }}>💡 Aha Moment:</Text> Buying a $900 phone increases your burn rate by $10/day for 3 months. This helps you &apos;feel&apos; the purchase!
-                        </Text>
-                    </View>
-
-                    <View style={{ height: 2, backgroundColor: colors.text + '30', marginVertical: 4 }} />
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>= Safe To Spend</Text>
-                        <Text style={{ color: '#4CAF50', fontWeight: 'bold', fontSize: 18 }}>Guilt-Free Money</Text>
-                    </View>
-                </View>
+                {viewMode === 'LIST' && timeFrame === 'DAILY' ? renderDailyContent() :
+                    viewMode === 'LIST' && timeFrame === 'WEEKLY' ? renderWeeklyContent() :
+                        renderDefaultContent()}
 
                 <Text style={{
                     color: colors.textSecondary,
