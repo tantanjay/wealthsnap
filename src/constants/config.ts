@@ -50,6 +50,10 @@ export const ASYNC_KEYS = {
     CRASH_REPORT: '@wealthsnap_crash_report',
     DEVELOPER_MODE: '@wealthsnap_developer_mode',
     BACKUP_TIMESTAMP: '@wealthsnap_backup_timestamp',
+    REVIEW_PROMPT: {
+        HAS_RATED: '@wealthsnap_review_has_rated',
+        LAST_PROMPT: '@wealthsnap_review_last_prompt',
+    }
 };
 
 /**

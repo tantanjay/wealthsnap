@@ -4,7 +4,8 @@ import * as Notifications from 'expo-notifications';
 
 import { Transaction } from '@types';
 import { detectAnomalies } from '@utils/financialMetrics';
-import { initReminderCategories, getAllBudgets } from '@services/domain';
+import { initReminderCategories } from '@services/domain/reminderService';
+import { getAllBudgets } from '@services/domain/budgetService';
 import { ASYNC_KEYS } from '@constants/config';
 import { REMINDER_BACKGROUND_TASK } from '@services/background/backgroundTasks';
 

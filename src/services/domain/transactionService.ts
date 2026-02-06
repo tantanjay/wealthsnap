@@ -182,6 +182,18 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
     }
 };
 
+export const getTransactionCount = async (): Promise<number> => {
+    try {
+        const db = await getDatabase();
+        // Count all transactions
+        const result = await db.getAllAsync<{ count: number }>('SELECT COUNT(*) as count FROM transactions');
+        return result[0]?.count || 0;
+    } catch (error) {
+        console.error('Error counting transactions:', error);
+        return 0;
+    }
+};
+
 export const deleteTransaction = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
