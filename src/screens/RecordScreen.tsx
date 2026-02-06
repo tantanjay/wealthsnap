@@ -12,7 +12,7 @@ import { ReceiptReviewForm } from '@components/ai/ReceiptReviewForm';
 import { useAlert } from '@context/AlertContext';
 import { Transaction, TransactionType, ReceiptAnalysisResult, InvestmentType, DebtType, Investment } from '@types';
 import { generateUUID } from '@utils/uuid';
-import { saveTransactionWithReceipt } from '@services/domain';
+import { saveTransactionWithReceipt } from '@services/domain/transactionService';
 
 type ViewMode = 'MENU' | 'TRANSACTION' | 'INVESTMENT' | 'AI' | 'AI_REVIEW';
 

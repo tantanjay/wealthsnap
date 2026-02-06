@@ -215,30 +215,18 @@ const InvestmentScreen = ({ navigation }: any) => {
             fetchHistoricalPrices(requests, durationPrompt).then(async (prices) => {
                 let savedCount = 0;
                 for (const p of prices) {
-                    // We need to check existing price history to avoid duplicates or update them
-                    // This is expensive if we do it one by one against DB.
-                    // Optimization: Check against what we have in memory? We don't have all price history in memory here.
-                    // We will query DB for each symbol's history? Or just Try Insert/Update.
-                    // `addPriceHistory` adds new. `updatePriceHistory` updates.
-
-                    // Strategy: Get existing history for this symbol first (limited range?)
-                    // `getPriceHistory` gets all.
-                    // Let's just fetch all history for the symbol. It might be heavy if history is long.
-                    // But for correctness, we should.
                     const existingHistory = await getPriceHistory(p.symbol);
                     const existing = existingHistory.find(eh => eh.timestamp.startsWith(p.date));
 
                     if (existing) {
-                        // Update if AI_FETCH or just update. 
-                        // If source is MANUAL, we preserve it?
-                        // The requirement said: "make sure existing AI_FETCH records if they already exist... add new if no existing... manual entries preserved".
                         if (existing.source === 'AI_FETCH') {
                             await updatePriceHistory(existing.id, new BigNumber(p.price), {
                                 high: p.high ? new BigNumber(p.high) : undefined,
                                 low: p.low ? new BigNumber(p.low) : undefined,
                                 volume: p.volume ? new BigNumber(p.volume) : undefined,
                                 timestamp: existing.timestamp,
-                                source: 'AI_FETCH'
+                                source: 'AI_FETCH',
+                                currency: p.currency
                             });
                             savedCount++;
                         }
@@ -249,7 +237,8 @@ const InvestmentScreen = ({ navigation }: any) => {
                             low: p.low ? new BigNumber(p.low) : undefined,
                             volume: p.volume ? new BigNumber(p.volume) : undefined,
                             timestamp: p.date,
-                            source: 'AI_FETCH'
+                            source: 'AI_FETCH',
+                            currency: p.currency
                         });
                         savedCount++;
                     }

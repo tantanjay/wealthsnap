@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
-import { createTables, setDatabaseVersion, getDatabaseVersion, DATABASE_NAME, DATABASE_VERSION } from '@services/database/databaseSchema';
+import { createTables, setDatabaseVersion, getDatabaseVersion, migrateToVersion8, DATABASE_NAME, DATABASE_VERSION } from '@services/database/databaseSchema';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -48,8 +48,13 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
         // This is a "fresh start" approach - we assume createTables handles schema
         if (currentVersion !== DATABASE_VERSION) {
             console.log(`[Database] Setting DB version to ${DATABASE_VERSION} (was ${currentVersion})`);
-            await setDatabaseVersion(db, DATABASE_VERSION);
-            console.log('[Database] Version set successfully');
+
+            if (currentVersion > 0 && currentVersion < 8) {
+                await migrateToVersion8(db);
+            } else {
+                await setDatabaseVersion(db, DATABASE_VERSION);
+            }
+            console.log('[Database] Version set/migrated successfully');
         } else {
             console.log('[Database] Version matches, no action needed');
         }

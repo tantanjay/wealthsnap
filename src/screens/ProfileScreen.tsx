@@ -27,7 +27,7 @@ import { useTheme } from '@context/ThemeContext';
 import { useSecurity } from '@context/SecurityContext';
 import { useAlert } from '@context/AlertContext';
 import { RecurrenceRule } from '@types';
-import { getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule } from '@services/domain';
+import { getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule } from '@services/domain/recurrenceService';
 import { getUserProfile } from '@services/core/storageService';
 import { CONFIG, ASYNC_KEYS } from '@constants/config';
 
