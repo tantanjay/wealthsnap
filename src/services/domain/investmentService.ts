@@ -129,6 +129,18 @@ export const getAllInvestments = async (): Promise<Investment[]> => {
     }
 };
 
+export const getInvestmentCount = async (): Promise<number> => {
+    try {
+        const db = await getDatabase();
+        // Count all investments
+        const result = await db.getAllAsync<{ count: number }>('SELECT COUNT(*) as count FROM investments');
+        return result[0]?.count || 0;
+    } catch (error) {
+        console.error('Error counting investments:', error);
+        return 0;
+    }
+};
+
 /**
  * Get investments with caching strategy
  */
