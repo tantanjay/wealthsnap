@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
-import { getUserProfile } from '@services/core/storageService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ASYNC_KEYS } from '@constants/config';
 
 export const DATABASE_NAME = 'wealthsnap.db';
 export const DATABASE_VERSION = 8;
@@ -255,11 +256,13 @@ export const migrateToVersion8 = async (db: SQLite.SQLiteDatabase): Promise<void
         // 2. Fetch User Profile for default currency
         let defaultCurrency = 'PHP';
         try {
-            getUserProfile().then((profile) => {
+            const profileRaw = await AsyncStorage.getItem(ASYNC_KEYS.USER_PROFILE);
+            if (profileRaw) {
+                const profile = JSON.parse(profileRaw);
                 if (profile && profile.currency) {
                     defaultCurrency = profile.currency;
                 }
-            });
+            }
         } catch (e) {
             console.warn('[Migration] Failed to fetch user profile currency, defaulting to PHP', e);
         }

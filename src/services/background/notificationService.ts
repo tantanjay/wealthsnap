@@ -2,15 +2,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
-import { Transaction } from '@types';
+import { Transaction, Budget } from '@types';
 import { detectAnomalies } from '@utils/financialMetrics';
-import { initReminderCategories } from '@services/domain/reminderService';
-import { getAllBudgets } from '@services/domain/budgetService';
 import { ASYNC_KEYS } from '@constants/config';
 import { REMINDER_BACKGROUND_TASK } from '@services/background/backgroundTasks';
 
-// Export a setup function to be called at app launch (index.ts)
-export const setupNotificationListeners = () => {
+/**
+ * Setup function to be called at app launch.
+ * @param onInit Optional callback to perform additional initialization (like categories)
+ */
+export const setupNotificationListeners = (onInit?: () => void) => {
     Notifications.setNotificationHandler({
         handleNotification: async () => ({
             shouldShowAlert: true,
@@ -21,17 +22,18 @@ export const setupNotificationListeners = () => {
         }),
     });
 
-    // Initialize categories
-    initReminderCategories();
+    if (onInit) {
+        onInit();
+    }
 
     // Register background task (for remote/background fetch triggers)
-    Notifications.registerTaskAsync(REMINDER_BACKGROUND_TASK);
+    Notifications.registerTaskAsync(REMINDER_BACKGROUND_TASK).catch(err => {
+        console.warn('Failed to register notification background task:', err);
+    });
 };
 
 // Keep for backward compatibility or UI-specific init if needed
 export const initNotifications = setupNotificationListeners;
-
-
 
 export const requestPermissions = async () => {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -56,13 +58,20 @@ export const openSettings = () => {
     }
 };
 
-export const checkAndNotifyAnomalies = async (currentMonthTransactions: Transaction[], allTransactions: Transaction[]) => {
+/**
+ * Checks for anomalies and notifies user if needed.
+ * BUDGETS ARE INJECTED TO PREVENT CIRCULAR DEPENDENCY.
+ */
+export const checkAndNotifyAnomalies = async (
+    currentMonthTransactions: Transaction[],
+    allTransactions: Transaction[],
+    budgets: Budget[]
+) => {
     try {
         const status = await getPermissionStatus();
         if (status !== 'granted') return;
 
-        // Detect anomalies
-        const budgets = await getAllBudgets();
+        // Detect anomalies using injected budgets
         const anomalies = detectAnomalies(currentMonthTransactions, allTransactions, budgets);
         if (anomalies.length === 0) return;
 
@@ -80,9 +89,7 @@ export const checkAndNotifyAnomalies = async (currentMonthTransactions: Transact
         let hasNewNotifications = false;
 
         for (const anomaly of anomalies) {
-            // Create a unique ID for this specific anomaly instance
-            // User Request: "I want notification to be only once per category item"
-            // So we key off the CATEGORY solely.
+            // Create a unique ID for this specific anomaly instance (by category)
             const anomalyId = anomaly.category;
 
             if (!notifiedAlerts[currentMonthKey].includes(anomalyId)) {

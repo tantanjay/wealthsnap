@@ -1,10 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 
-import { UserProfile, Transaction, Investment, AIConfig } from '@types';
+import { UserProfile, AIConfig } from '@types';
 import { getDatabase } from '@services/database/databaseService';
-import { getAllTransactions } from '@services/domain/transactionService';
-import { getAllInvestments } from '@services/domain/investmentService';
 import { encryptData, decryptData } from '@services/core/encryptionService';
 import { ALL_ASYNC_KEYS, ASYNC_KEYS, SECURE_KEYS } from '@constants/config';
 import * as DataCache from '@services/core/dataCache';
@@ -371,37 +369,4 @@ export const clearAllData = async (): Promise<void> => {
     } catch (error) {
         console.error('Error clearing data:', error);
     }
-};
-
-// ============= Smart Caching =============
-
-export const getCachedTransactions = async (): Promise<Transaction[]> => {
-    const cache = DataCache.getTransactionCache();
-    if (DataCache.isValid(cache)) {
-        return cache!.data;
-    }
-
-    const data = await getAllTransactions();
-
-    // Check if the cache became valid while we were waiting (e.g., via optimistic update from a new transaction).
-    // If so, the cache contains the user's latest change, while 'data' (the snapshot) might have missed it
-    // because the read started before the write. In this local-first architecture, we prefer the cache.
-    const currentCache = DataCache.getTransactionCache();
-    if (DataCache.isValid(currentCache)) {
-        return currentCache!.data;
-    }
-
-    DataCache.setTransactionCache(data);
-    return data;
-};
-
-export const getCachedInvestments = async (): Promise<Investment[]> => {
-    const cache = DataCache.getInvestmentCache();
-    if (DataCache.isValid(cache)) {
-        return cache!.data;
-    }
-
-    const data = await getAllInvestments();
-    DataCache.setInvestmentCache(data);
-    return data;
 };
