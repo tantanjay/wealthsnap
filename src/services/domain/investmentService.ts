@@ -14,8 +14,8 @@ import { getAnnualDividend } from "@services/domain/dividendHistoryService";
 
 const UPSERT_INVESTMENT_QUERY = `
   INSERT OR REPLACE INTO investments 
-  (id, date, symbol, type, action, quantity, price, fees, notes, creationMethod, isRecurring, recurrenceId)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (id, date, symbol, type, action, quantity, price, currency, fees, notes, creationMethod, isRecurring, recurrenceId)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 /**

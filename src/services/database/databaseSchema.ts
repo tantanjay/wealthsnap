@@ -249,6 +249,7 @@ export const migrateToVersion8 = async (db: SQLite.SQLiteDatabase): Promise<void
         // For simplicity in this env, we just try to add it.
         try {
             await db.execAsync(`ALTER TABLE price_history ADD COLUMN currency TEXT DEFAULT 'PHP'`);
+            await db.execAsync(`ALTER TABLE investments ADD COLUMN currency TEXT DEFAULT 'PHP'`);
         } catch (e) {
             console.log('[Migration] Column currency might already exist or error:', e);
         }
@@ -271,6 +272,7 @@ export const migrateToVersion8 = async (db: SQLite.SQLiteDatabase): Promise<void
 
         // 3. Update existing records
         await db.runAsync(`UPDATE price_history SET currency = ?`, [defaultCurrency]);
+        await db.runAsync(`UPDATE investments SET currency = ?`, [defaultCurrency]);
 
         // 4. Update Version
         await setDatabaseVersion(db, 8);
