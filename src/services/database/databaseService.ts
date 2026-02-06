@@ -58,7 +58,6 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
         } else {
             console.log('[Database] Version matches, no action needed');
         }
-
     } catch (error) {
         console.error('[Database] Initialization error:', error);
         throw error;
