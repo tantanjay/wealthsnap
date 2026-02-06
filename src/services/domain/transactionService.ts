@@ -6,6 +6,7 @@ import { chunkArray } from "@utils/index";
 import * as DataCache from '@services/core/dataCache';
 import { checkAndNotifyAnomalies } from '@services/background/notificationService';
 import { getTransactionsByMonth } from '@utils/financialMetrics';
+import { getAllBudgets } from '@services/domain/budgetService';
 
 // --- Constants & Helpers ---
 
@@ -105,8 +106,10 @@ export const saveTransaction = async (transaction: Transaction): Promise<void> =
         // Check for anomalies (Fire and forget)
         const cached = DataCache.getTransactionCache();
         if (cached?.data) {
-            checkAndNotifyAnomalies(getTransactionsByMonth(cached.data), cached.data)
-                .catch(err => console.error('Failed to check anomalies:', err));
+            getAllBudgets().then(budgets => {
+                checkAndNotifyAnomalies(getTransactionsByMonth(cached.data), cached.data, budgets)
+                    .catch((err: any) => console.error('Failed to check anomalies:', err));
+            }).catch((err: any) => console.error('Failed to get budgets for anomaly check:', err));
         }
     } catch (error) {
         console.error('Error saving transaction:', error);
@@ -132,8 +135,10 @@ export const saveTransactionWithReceipt = async (transaction: Transaction, recei
         // Check for anomalies (Fire and forget)
         const cached = DataCache.getTransactionCache();
         if (cached?.data) {
-            checkAndNotifyAnomalies(getTransactionsByMonth(cached.data), cached.data)
-                .catch(err => console.error('Failed to check anomalies:', err));
+            getAllBudgets().then(budgets => {
+                checkAndNotifyAnomalies(getTransactionsByMonth(cached.data), cached.data, budgets)
+                    .catch((err: any) => console.error('Failed to check anomalies:', err));
+            }).catch((err: any) => console.error('Failed to get budgets for anomaly check:', err));
         }
     } catch (error) {
         console.error('Error saving transaction with receipt:', error);
@@ -263,4 +268,25 @@ export const getRecentCategories = async (type: TransactionType, limit: number =
         console.error('Error getting recent categories:', error);
         return [];
     }
+};
+
+/**
+ * Smart caching getter for transactions
+ */
+export const getCachedTransactions = async (): Promise<Transaction[]> => {
+    const cache = DataCache.getTransactionCache();
+    if (DataCache.isValid(cache)) {
+        return cache!.data;
+    }
+
+    const data = await getAllTransactions();
+
+    // Check if cache was updated while we were fetching
+    const currentCache = DataCache.getTransactionCache();
+    if (DataCache.isValid(currentCache)) {
+        return currentCache!.data;
+    }
+
+    DataCache.setTransactionCache(data);
+    return data;
 };
