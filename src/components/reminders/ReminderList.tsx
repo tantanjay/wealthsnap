@@ -7,8 +7,7 @@ import { Card } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Reminder } from '@types';
-import { getAllReminders, saveReminder, deleteReminder } from '@services/domain/reminderService';
-import { scheduleReminderNotifications, cancelReminderNotifications, calculateNextOccurrence } from '@services/domain/reminderService';
+import * as ReminderService from '@services/domain/reminderService';
 
 interface ReminderListProps {
     onEdit: (reminder: Reminder) => void;
@@ -40,8 +39,8 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
             if (!a.isActive && !b.isActive) return 0; // Keep original order for inactive? Or sort by title?
 
             // 2. Sort by next upcoming date
-            const nextA = calculateNextOccurrence(a);
-            const nextB = calculateNextOccurrence(b);
+            const nextA = ReminderService.calculateNextOccurrence(a);
+            const nextB = ReminderService.calculateNextOccurrence(b);
 
             if (!nextA && !nextB) return 0;
             if (!nextA) return 1;
@@ -54,7 +53,7 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
     const loadReminders = useCallback(async () => {
         try {
             setLoading(true);
-            const data = await getAllReminders();
+            const data = await ReminderService.getAllReminders();
             setReminders(sortReminders(data));
             await refreshScheduledIds();
         } catch (error) {
@@ -73,11 +72,11 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
     const handleToggleActive = async (reminder: Reminder) => {
         const updated = { ...reminder, isActive: !reminder.isActive, updatedAt: new Date().toISOString() };
         try {
-            await saveReminder(updated);
+            await ReminderService.saveReminder(updated);
             if (updated.isActive) {
-                await scheduleReminderNotifications(updated);
+                await ReminderService.scheduleReminderNotifications(updated);
             } else {
-                await cancelReminderNotifications(updated.id);
+                await ReminderService.cancelReminderNotifications(updated.id);
             }
             // Update local state and re-sort
             setReminders(prev => {
@@ -101,8 +100,8 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await cancelReminderNotifications(id);
-                            await deleteReminder(id);
+                            await ReminderService.cancelReminderNotifications(id);
+                            await ReminderService.deleteReminder(id);
                             setReminders(prev => prev.filter(r => r.id !== id));
                             await refreshScheduledIds();
                         } catch {
@@ -132,7 +131,7 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
 
     const getNextTrigger = (reminder: Reminder) => {
         if (!reminder.isActive) return 'Disabled';
-        const next = calculateNextOccurrence(reminder);
+        const next = ReminderService.calculateNextOccurrence(reminder);
         return formatDate(next?.toISOString());
     };
 

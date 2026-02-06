@@ -5,9 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useAlert } from '@context/AlertContext';
 import { Reminder, ReminderFrequency } from '@types';
-import { saveReminder } from '@services/domain/reminderService';
 import { generateUUID } from '@utils/uuid';
-import { scheduleReminderNotifications } from '@services/domain/reminderService';
+import { saveReminder, scheduleReminderNotifications } from '@services/domain/reminderService';
 
 interface ReminderFormProps {
     reminder?: Reminder;

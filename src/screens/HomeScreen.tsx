@@ -249,7 +249,7 @@ const HomeScreen = ({ navigation }: any) => {
         useCallback(() => {
             loadData();
             checkReviewEligibility();
-        }, [])
+        }, [checkReviewEligibility])
     );
 
     const handleModeSave = async (newMode: Storage.HomeDisplayMode) => {
