@@ -20,6 +20,7 @@ import { Transaction } from '@types';
 import { getAllBudgets } from '@services/domain/budgetService';
 import * as Metrics from '@utils/financialMetrics';
 import * as Storage from '@services/core/storageService';
+import { getCachedTransactions } from '@services/domain/transactionService';
 
 // Valid IDs for validation/filtering
 const VALID_CARD_IDS = [
@@ -162,11 +163,11 @@ const InsightsScreen = ({ navigation }: any) => {
     const fetchAllData = useCallback(async (isManualRefresh = false) => {
         if (!isManualRefresh) setIsLoading(true);
         try {
-            const [profile, allTransactions, savedCardOrder, savedSectionOrder] = await Promise.all([
+            const [profile, savedCardOrder, savedSectionOrder, allTransactions] = await Promise.all([
                 Storage.getUserProfile(),
-                Storage.getCachedTransactions(),
                 Storage.getInsightsCardOrder(),
-                Storage.getInsightsSectionOrder()
+                Storage.getInsightsSectionOrder(),
+                getCachedTransactions(),
             ]);
 
             if (profile?.currency) setCurrency(profile.currency);

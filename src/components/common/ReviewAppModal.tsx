@@ -1,16 +1,11 @@
 import React, { FC } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import BottomModal from '@components/common/BottomModal';
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView } from 'react-native-gesture-handler';
 
 
 interface ReviewAppModalProps {
-    // No props needed as it manages its own visibility via global hook logic calling it, 
-    // but typically modals are controlled by a parent. 
-    // However, the prompt might be triggered from a Layout or Home directly.
-    // For now, let's assume it takes visibilty props or we use the hook inside usage context.
-    // Based on plan: "Render <ReviewAppModal /> in HomeScreen", so it needs access to the hook's state.
     isVisible: boolean;
     onRate: () => void;
     onLater: () => void;
@@ -33,7 +28,7 @@ export const ReviewAppModal: FC<ReviewAppModalProps> = ({ isVisible, onRate, onL
 
                     <Text style={styles.description}>
                         If you enjoy using WealthSnap, would you mind taking a moment to rate it?
-                        It won't take more than a minute. Thanks for your support!
+                        It won&apos;t take more than a minute. Thanks for your support!
                     </Text>
 
                     <View style={styles.buttonContainer}>
