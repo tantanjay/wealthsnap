@@ -94,6 +94,9 @@ export const createBackup = async (password: string): Promise<string> => {
         encoding: FileSystem.EncodingType.Base64,
     });
 
+    // 5. Update last backup timestamp
+    await Storage.saveLastBackupDate(new Date().toISOString());
+
     return fileUri;
 };
 

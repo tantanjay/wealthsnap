@@ -10,7 +10,7 @@ import BottomModal from '@components/common/BottomModal';
 import SecurityCard from '@components/profile/SecurityCard';
 import HelpCenterScreen from '@screens/onboarding/HelpCenterScreen';
 import BudgetManagementModal from '@components/profile/BudgetManagementModal';
-import DataManagementCard from '@components/profile/data/DataManagementCard';
+import DataManagementCard from '@components/data/DataManagementCard';
 import SupportModal from '@components/profile/settings/SupportModal';
 import ProfileHeader from '@components/profile/ProfileHeader';
 import QuickActionsCard from '@components/profile/QuickActionsCard';
