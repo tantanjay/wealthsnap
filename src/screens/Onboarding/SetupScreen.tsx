@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 
-import RestoreModal from '@components/profile/data/RestoreModal';
+import RestoreModal from '@components/data/RestoreModal';
 import BottomModal from '@components/common/BottomModal';
 import PinCreationScreen from '@screens/security/PinCreationScreen';
 import TermsContent from '@components/onboarding/TermsContent';
@@ -18,7 +18,7 @@ import { useAlert } from '@context/AlertContext';
 import { UserProfile } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { restoreFromBackup, generateDummyData } from '@services/integrations';
-import { saveUserProfile, setOnboardingComplete, saveAcceptedTermsVersion } from '@services/core/storageService';
+import { saveUserProfile, setOnboardingComplete, saveAcceptedTermsVersion, saveLastBackupDate } from '@services/core/storageService';
 import { CURRENCIES, getCurrencyInfo } from '@utils/currencyData';
 import { CONFIG } from '@constants/config';
 import { SPACING } from '@styles/theme';
@@ -96,6 +96,7 @@ const SetupScreen = ({ navigation }: any) => {
             setIsRestoring(false);
             setShowRestoreModal(false);
 
+            await saveLastBackupDate(new Date().toISOString());
             setHasRestored(true);
             showAlert('Success', 'Data restored successfully! Please set a new PIN for this device.', [
                 {
@@ -138,6 +139,8 @@ const SetupScreen = ({ navigation }: any) => {
         };
 
         await saveUserProfile(profile);
+        // Mark backup as done (since they just started, we don't want to nag them immediately)
+        await saveLastBackupDate(new Date().toISOString());
 
         // show guide
         setStep(4);
@@ -152,6 +155,8 @@ const SetupScreen = ({ navigation }: any) => {
             setIsRestoring(true); // Reuse restoring state for loading indicator
             await generateDummyData();
             setIsRestoring(false);
+
+            await saveLastBackupDate(new Date().toISOString());
 
             showAlert('Success', 'Demo data populated! Please set a PIN.', [
                 {
