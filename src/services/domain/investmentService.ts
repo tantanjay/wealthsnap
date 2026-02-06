@@ -129,6 +129,17 @@ export const getAllInvestments = async (): Promise<Investment[]> => {
     }
 };
 
+export const getLatestInvestmentDate = async (): Promise<string | null> => {
+    try {
+        const db = await getDatabase();
+        const result = await db.getAllAsync<{ createdAt: string }>('SELECT createdAt FROM investments ORDER BY createdAt DESC LIMIT 1');
+        return result[0]?.createdAt || null;
+    } catch (error) {
+        console.error('Error getting latest investment date:', error);
+        return null;
+    }
+};
+
 export const getInvestmentCount = async (): Promise<number> => {
     try {
         const db = await getDatabase();

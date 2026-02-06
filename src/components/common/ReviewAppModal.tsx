@@ -55,8 +55,8 @@ export const ReviewAppModal: FC<ReviewAppModalProps> = ({ isVisible, onRate, onL
                     >
                         <Text style={styles.declineButtonText}>Do Not Show Again</Text>
                     </TouchableOpacity>
-                    <Text style={{ fontSize: 12, color: '#8E8E93', textAlign: 'center' }}>Thank you for using WealthSnap!</Text>
                 </View>
+                <Text style={{ fontSize: 12, color: '#8E8E93', textAlign: 'center' }}>Thank you for using WealthSnap!</Text>
             </View>
         </BottomModal>
     );
