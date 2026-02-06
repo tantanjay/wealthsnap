@@ -111,9 +111,9 @@ const HistoryScreen = ({ navigation }: any) => {
         }
     };
 
-    const formatCurrency = (amount: BigNumber) => {
+    const formatCurrency = (amount: BigNumber, currency?: string) => {
         if (isPrivacyEnabled) return '****';
-        return formatCurrencyAmount(amount, profile?.currency || 'PHP');
+        return formatCurrencyAmount(amount, currency || profile?.currency || 'PHP');
     };
 
     // --- Date Logic Helpers ---
@@ -178,6 +178,13 @@ const HistoryScreen = ({ navigation }: any) => {
             return new Date(b.date).getTime() - new Date(a.date).getTime();
         });
     }, [allTransactions, allInvestments]);
+
+    const investmentMap = useMemo(() => {
+        return allInvestments.reduce((acc, inv) => {
+            acc[inv.id] = inv;
+            return acc;
+        }, {} as Record<string, Investment>);
+    }, [allInvestments]);
 
     const filteredData = useMemo(() => {
         if (viewMode === 'CALENDAR') {
@@ -437,7 +444,7 @@ const HistoryScreen = ({ navigation }: any) => {
                     plElement = (
                         <Text>
                             {" • "}<Text style={{ color: isGain ? colors.success : colors.error, fontWeight: 'bold' }}>
-                                {isGain ? '+' : '-'}{formatCurrency(linkedTx.amount.abs())}
+                                {isGain ? '+' : '-'}{formatCurrency(linkedTx.amount.abs(), inv.currency)}
                             </Text>
                         </Text>
                     );
@@ -461,7 +468,7 @@ const HistoryScreen = ({ navigation }: any) => {
                                         {inv.symbol} <Text style={{ fontSize: 14, color: colors.textSecondary }}>({inv.action})</Text>
                                     </Text>
                                     <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                                        {inv.quantity.toString()} units @ {formatCurrency(inv.price)}
+                                        {inv.quantity.toString()} units @ {formatCurrency(inv.price, inv.currency)}
                                         {plElement}
                                     </Text>
                                 </View>
@@ -473,7 +480,7 @@ const HistoryScreen = ({ navigation }: any) => {
                                     // Let's keep it simple.
                                     fontSize: 16, fontWeight: 'bold'
                                 }}>
-                                    {formatCurrency(totalValue)}
+                                    {formatCurrency(totalValue, inv.currency)}
                                 </Text>
                                 <View style={{ backgroundColor: iconColor + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
                                     <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>INVESTMENT</Text>
@@ -551,7 +558,7 @@ const HistoryScreen = ({ navigation }: any) => {
                             color: isNegativeFlow ? colors.error : colors.success,
                             fontSize: 16, fontWeight: 'bold'
                         }}>
-                            {isNegativeFlow ? '-' : '+'}{formatCurrency(t.amount)}
+                            {isNegativeFlow ? '-' : '+'}{formatCurrency(t.amount, t.investmentId ? investmentMap[t.investmentId]?.currency : undefined)}
                         </Text>
                     </View>
                 </Card>
