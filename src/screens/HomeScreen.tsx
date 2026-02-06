@@ -20,6 +20,8 @@ import { processRecurrenceRules } from '@services/domain/recurrenceService';
 import * as Storage from '@services/core/storageService';
 import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
 import { getLatestPrices } from '@services/domain/priceHistoryService';
+import { ReviewAppModal } from '@components/common/ReviewAppModal';
+import { useReviewPrompt } from '@hooks/useReviewPrompt';
 
 const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -235,9 +237,12 @@ const HomeScreen = ({ navigation }: any) => {
         setIsLoading(false);
     };
 
+    const { isReviewVisible, checkReviewEligibility, handleRate, handleLater, handleDecline } = useReviewPrompt();
+
     useFocusEffect(
         useCallback(() => {
             loadData();
+            checkReviewEligibility();
         }, [])
     );
 
@@ -466,6 +471,13 @@ const HomeScreen = ({ navigation }: any) => {
                 onDisplayModeChange={handleModeSave}
                 investmentDisplayMode={savedInvestmentDisplayMode || 'Total'}
                 onInvestmentDisplayModeChange={handleInvestmentModeSave}
+            />
+
+            <ReviewAppModal
+                isVisible={isReviewVisible}
+                onRate={handleRate}
+                onLater={handleLater}
+                onDecline={handleDecline}
             />
         </ScreenWrapper>
     );

@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Updates from 'expo-updates';
 
 import { ASYNC_KEYS } from '@constants/config';
+import { generateUUID } from '@utils/uuid';
 
 interface Props {
     children: ReactNode;
@@ -48,7 +49,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
     saveCrashReport = async (error: Error, errorInfo: ErrorInfo) => {
         try {
             const report = {
-                id: Date.now().toString(),
+                id: generateUUID(),
                 timestamp: new Date().toISOString(),
                 message: error.message,
                 stack: error.stack,
