@@ -22,6 +22,7 @@ import { formatCurrencyAmount } from '@utils/currencyUtils';
 interface InvestmentFormProps {
     investmentType: InvestmentType;
     initialInvestment?: Investment;
+    currency: string;
     onSave: () => void;
     onCancel: () => void;
 }
@@ -29,6 +30,7 @@ interface InvestmentFormProps {
 export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     investmentType,
     initialInvestment,
+    currency,
     onSave,
     onCancel
 }) => {
@@ -57,6 +59,25 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     // Asset fetching state
     const [assets, setAssets] = useState<Asset[]>([]);
     const [loadingAssets, setLoadingAssets] = useState(false);
+
+    // Currency state
+    const [useNativeCurrency, setUseNativeCurrency] = useState(
+        initialInvestment && initialInvestment.currency && initialInvestment.currency !== currency
+            ? true
+            : false
+    );
+
+    // Derived state for selected asset
+    const selectedAsset = assets.find(a => a.symbol === symbol);
+    const assetCurrency = selectedAsset?.currency;
+    const showCurrencyCheckbox = assetCurrency && assetCurrency !== currency;
+
+    // Reset checkbox when symbol changes (if not editing or if symbol changed from initial)
+    useEffect(() => {
+        if (!initialInvestment || initialInvestment.symbol !== symbol) {
+            setUseNativeCurrency(false);
+        }
+    }, [symbol]);
 
     useEffect(() => {
         const fetchAssets = async () => {
@@ -198,6 +219,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
             action,
             quantity: new BigNumber(quantity),
             price: new BigNumber(price),
+            currency: (useNativeCurrency && assetCurrency) ? assetCurrency : currency,
             fees: fees ? new BigNumber(fees) : undefined,
             notes: notes || undefined,
             date: investmentDate.toISOString(),
@@ -459,6 +481,65 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                     )}
                 </Card>
 
+                {/* Currency Checkbox - Premium Style */}
+                {showCurrencyCheckbox && (
+                    <TouchableOpacity
+                        onPress={() => setUseNativeCurrency(!useNativeCurrency)}
+                        activeOpacity={0.8}
+                        style={{
+                            marginBottom: 16,
+                            borderRadius: 16,
+                            borderWidth: 1,
+                            borderColor: useNativeCurrency ? colors.primary : colors.border,
+                            backgroundColor: useNativeCurrency ? colors.primary + '10' : colors.surface,
+                            overflow: 'hidden'
+                        }}
+                    >
+                        {/* Status Bar Decorator */}
+                        {useNativeCurrency && (
+                            <View style={{ height: 4, backgroundColor: colors.primary, width: '100%' }} />
+                        )}
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
+                            <View style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 20,
+                                backgroundColor: useNativeCurrency ? colors.primary : colors.surface,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginRight: 12
+                            }}>
+                                <Ionicons
+                                    name={useNativeCurrency ? "swap-horizontal" : "radio-button-off"}
+                                    size={20}
+                                    color={useNativeCurrency ? '#FFF' : colors.textSecondary}
+                                />
+                            </View>
+
+                            <View style={{ flex: 1 }}>
+                                <Text style={{
+                                    color: useNativeCurrency ? colors.primary : colors.text,
+                                    fontWeight: 'bold',
+                                    fontSize: 14,
+                                    marginBottom: 2
+                                }}>
+                                    {useNativeCurrency ? `Using Native Currency (${assetCurrency})` : `Switch to Native Currency (${assetCurrency})`}
+                                </Text>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                    {useNativeCurrency
+                                        ? "Investment will be saved in its original currency."
+                                        : "Tap to save this investment in its original currency."}
+                                </Text>
+                            </View>
+
+                            {useNativeCurrency && (
+                                <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                )}
+
                 {/* Quantity and Price */}
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                     <Card style={{ flex: 1 }}>
@@ -516,7 +597,12 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                                 const prc = new BigNumber(price || 0);
                                 const f = new BigNumber(fees || 0);
                                 const total = qty.multipliedBy(prc).plus(f);
-                                return total.isNaN() ? '0.00' : total.toFixed(2);
+
+                                const displayCurrency = (useNativeCurrency && assetCurrency) ? assetCurrency : currency;
+
+                                return total.isNaN()
+                                    ? formatCurrencyAmount(0, displayCurrency)
+                                    : formatCurrencyAmount(total, displayCurrency);
                             })()}
                         </Text>
                     </Card>

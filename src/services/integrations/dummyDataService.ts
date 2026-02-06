@@ -220,6 +220,7 @@ export const generateDummyData = async () => {
                         action: 'BUY',
                         quantity: new BigNumber(quantity),
                         price: new BigNumber(currentPrice),
+                        currency: 'USD',
                         fees: new BigNumber(fees),
                         notes: `Automated investment`,
                         isRecurring: false,

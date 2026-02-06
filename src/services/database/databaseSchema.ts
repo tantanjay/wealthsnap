@@ -49,6 +49,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             action TEXT NOT NULL CHECK(action IN ('BUY', 'SELL', 'DIVIDEND', 'INTEREST')),
             quantity TEXT NOT NULL,
             price TEXT NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'PHP',
             fees TEXT,
             notes TEXT,
             creationMethod TEXT,
