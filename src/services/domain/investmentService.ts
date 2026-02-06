@@ -39,6 +39,7 @@ const prepareInvestmentValues = async (inv: Investment) => {
         inv.action,
         encryptedQty,
         encryptedPrice,
+        inv.currency || 'PHP',
         encryptedFees,
         encryptedNotes,
         inv.creationMethod || null,
@@ -114,6 +115,7 @@ export const getAllInvestments = async (): Promise<Investment[]> => {
             action: row.action,
             quantity: new BigNumber(row.quantity || 0),
             price: new BigNumber(row.price || 0),
+            currency: row.currency || 'PHP',
             fees: new BigNumber(row.fees || 0),
             notes: row.notes || '',
             creationMethod: row.creationMethod,
@@ -270,19 +272,6 @@ export const getPortfolioStats = async () => {
                 thisMonthDividends = thisMonthDividends.plus(val);
             }
         } else if (isCurrentMonth) {
-            // Calculate Net Invested for this month (Buy - Sell)
-            // Fees are generally considered "spent" so part of cost basis, but for "Net Invested" flow...
-            // Usually Net Invested = Money In - Money Out.
-            // Buy: Money Out (Invested). Sell: Money In (Divested).
-            // So "Net Invested" = Buys - Sells.
-
-            // Total amount for transaction = (Price * Qty) + Fees?
-            // "Invested" usually implies base cost. Let's include fees for accuracy of cash flow?
-            // Actually, keep it simple: Price * Qty. Fees are separate expense usually.
-            // Let's stick to Price * Qty for now or we can do total cost.
-            // Using logic from metrics: totalCostBasis uses (price * qty) + fees.
-            // Let's us total value flowed.
-
             const amount = inv.price.times(inv.quantity);
             if (inv.action === 'BUY') {
                 // We add fees to what we "Invested" (spent)
