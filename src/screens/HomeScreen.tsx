@@ -17,6 +17,8 @@ import { usePrivacy } from '@context/PrivacyContext';
 import { UserProfile, Transaction, Investment } from '@types';
 import { getTopExpenses } from '@utils/financialMetrics';
 import { processRecurrenceRules } from '@services/domain/recurrenceService';
+import { getCachedTransactions } from '@services/domain/transactionService';
+import { getCachedInvestments } from '@services/domain/investmentService';
 import * as Storage from '@services/core/storageService';
 import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
 import { getLatestPrices } from '@services/domain/priceHistoryService';
@@ -75,166 +77,170 @@ const HomeScreen = ({ navigation }: any) => {
     };
 
     const loadData = async () => {
-        setDebtTotal(new BigNumber(0)); // to remove lint
-        setIsLoading(true);
+        try {
+            setDebtTotal(new BigNumber(0)); // to remove lint
+            setIsLoading(true);
 
-        // Load persisted display mode
-        const savedMode = await Storage.getHomeDisplayMode();
-        if (savedMode) {
-            setDisplayMode(savedMode);
-            setSavedDisplayMode(savedMode);
-        }
-
-        const savedInvestmentMode = await Storage.getHomeInvestmentDisplayMode();
-        if (savedInvestmentMode) {
-            setInvestmentDisplayMode(savedInvestmentMode);
-            setSavedInvestmentDisplayMode(savedInvestmentMode);
-        }
-
-        // Load persisted card order
-        const savedOrder = await Storage.getHomeCardOrder();
-        if (savedOrder && savedOrder.length > 0) {
-            setCardOrder(savedOrder);
-        }
-
-        // Process recurring rules first to ensure we fetch the latest transactions
-        await processRecurrenceRules();
-
-        const p = await Storage.getUserProfile();
-        const t = await Storage.getCachedTransactions();
-        const inv = await Storage.getCachedInvestments();
-
-        setProfile(p);
-        setTransactions(t);
-
-        // Calculate metrics
-        let oInc = new BigNumber(0), oExp = new BigNumber(0), mInc = new BigNumber(0), mExp = new BigNumber(0);
-        let oTransIn = new BigNumber(0), oTransOut = new BigNumber(0), mTransIn = new BigNumber(0), mTransOut = new BigNumber(0);
-
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-
-        t.forEach((tx: Transaction) => {
-            const val = tx.amount.abs();
-            const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
-
-            if (tx.type === 'INCOME') {
-                oInc = oInc.plus(val.abs());
-                if (isMonth) mInc = mInc.plus(val.abs());
-            } else if (tx.type === 'EXPENSE') {
-                oExp = oExp.plus(val.abs());
-                if (isMonth) mExp = mExp.plus(val.abs());
-            } else if (tx.type === 'TRANSFER_IN') {
-                oTransIn = oTransIn.plus(val.abs());
-                if (isMonth) mTransIn = mTransIn.plus(val.abs());
-            } else if (tx.type === 'TRANSFER_OUT') {
-                oTransOut = oTransOut.plus(val.abs());
-                if (isMonth) mTransOut = mTransOut.plus(val.abs());
+            // Load persisted display mode
+            const savedMode = await Storage.getHomeDisplayMode();
+            if (savedMode) {
+                setDisplayMode(savedMode);
+                setSavedDisplayMode(savedMode);
             }
-        });
 
-        setOverallIncome(oInc);
-        setOverallExpense(oExp);
-        setMonthIncome(mInc);
-        setMonthExpense(mExp);
-        setOverallTransferIn(oTransIn);
-        setOverallTransferOut(oTransOut);
-        setMonthTransferIn(mTransIn);
-        setMonthTransferOut(mTransOut);
+            const savedInvestmentMode = await Storage.getHomeInvestmentDisplayMode();
+            if (savedInvestmentMode) {
+                setInvestmentDisplayMode(savedInvestmentMode);
+                setSavedInvestmentDisplayMode(savedInvestmentMode);
+            }
 
-        // --- Investment Computation ---
-        // 1. Group investments to find symbols and group data
-        const groupedInvestments = inv.reduce((acc, item) => {
-            if (!acc[item.symbol]) acc[item.symbol] = [];
-            acc[item.symbol].push(item);
-            return acc;
-        }, {} as Record<string, Investment[]>);
+            // Load persisted card order
+            const savedOrder = await Storage.getHomeCardOrder();
+            if (savedOrder && savedOrder.length > 0) {
+                setCardOrder(savedOrder);
+            }
 
-        const uniqueSymbols = Object.keys(groupedInvestments);
+            // Process recurring rules first to ensure we fetch the latest transactions
+            await processRecurrenceRules();
 
-        // 2. Fetch latest prices from Price History
-        const priceHistoryMap = await getLatestPrices(uniqueSymbols);
+            const p = await Storage.getUserProfile();
+            const t = await getCachedTransactions();
+            const inv = await getCachedInvestments();
 
-        // 3. Build a comprehensive "Current Price Map"
-        // Priority: Price History > Latest Transaction Price > 0
-        const currentPriceMap: Record<string, BigNumber> = {};
+            setProfile(p);
+            setTransactions(t);
 
-        uniqueSymbols.forEach(symbol => {
-            if (priceHistoryMap[symbol]) {
-                currentPriceMap[symbol] = priceHistoryMap[symbol].price;
-            } else {
-                // Fallback: Find latest transaction for this symbol from the pre-grouped map
-                const symbolTxns = groupedInvestments[symbol].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            // Calculate metrics
+            let oInc = new BigNumber(0), oExp = new BigNumber(0), mInc = new BigNumber(0), mExp = new BigNumber(0);
+            let oTransIn = new BigNumber(0), oTransOut = new BigNumber(0), mTransIn = new BigNumber(0), mTransOut = new BigNumber(0);
 
-                if (symbolTxns.length > 0) {
-                    currentPriceMap[symbol] = symbolTxns[0].price;
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            t.forEach((tx: Transaction) => {
+                const val = tx.amount.abs();
+                const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
+
+                if (tx.type === 'INCOME') {
+                    oInc = oInc.plus(val.abs());
+                    if (isMonth) mInc = mInc.plus(val.abs());
+                } else if (tx.type === 'EXPENSE') {
+                    oExp = oExp.plus(val.abs());
+                    if (isMonth) mExp = mExp.plus(val.abs());
+                } else if (tx.type === 'TRANSFER_IN') {
+                    oTransIn = oTransIn.plus(val.abs());
+                    if (isMonth) mTransIn = mTransIn.plus(val.abs());
+                } else if (tx.type === 'TRANSFER_OUT') {
+                    oTransOut = oTransOut.plus(val.abs());
+                    if (isMonth) mTransOut = mTransOut.plus(val.abs());
+                }
+            });
+
+            setOverallIncome(oInc);
+            setOverallExpense(oExp);
+            setMonthIncome(mInc);
+            setMonthExpense(mExp);
+            setOverallTransferIn(oTransIn);
+            setOverallTransferOut(oTransOut);
+            setMonthTransferIn(mTransIn);
+            setMonthTransferOut(mTransOut);
+
+            // --- Investment Computation ---
+            // 1. Group investments to find symbols and group data
+            const groupedInvestments = inv.reduce((acc, item) => {
+                if (!acc[item.symbol]) acc[item.symbol] = [];
+                acc[item.symbol].push(item);
+                return acc;
+            }, {} as Record<string, Investment[]>);
+
+            const uniqueSymbols = Object.keys(groupedInvestments);
+
+            // 2. Fetch latest prices from Price History
+            const priceHistoryMap = await getLatestPrices(uniqueSymbols);
+
+            // 3. Build a comprehensive "Current Price Map"
+            // Priority: Price History > Latest Transaction Price > 0
+            const currentPriceMap: Record<string, BigNumber> = {};
+
+            uniqueSymbols.forEach(symbol => {
+                if (priceHistoryMap[symbol]) {
+                    currentPriceMap[symbol] = priceHistoryMap[symbol].price;
                 } else {
-                    currentPriceMap[symbol] = new BigNumber(0);
+                    // Fallback: Find latest transaction for this symbol from the pre-grouped map
+                    const symbolTxns = groupedInvestments[symbol].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                    if (symbolTxns.length > 0) {
+                        currentPriceMap[symbol] = symbolTxns[0].price;
+                    } else {
+                        currentPriceMap[symbol] = new BigNumber(0);
+                    }
                 }
-            }
-        });
+            });
 
-        // 4. Calculate Portfolio Metrics (Unrealized P/L, Market Value)
-        const portfolioMetrics = getAllPortfolioMetrics(inv, currentPriceMap);
+            // 4. Calculate Portfolio Metrics (Unrealized P/L, Market Value)
+            const portfolioMetrics = getAllPortfolioMetrics(inv, currentPriceMap);
 
-        const totalMarketValue = portfolioMetrics.reduce((sum, m) => sum.plus(m.totalMarketValue), new BigNumber(0));
-        const totalUnrealizedPL = portfolioMetrics.reduce((sum, m) => sum.plus(m.unrealizedPL), new BigNumber(0));
+            const totalMarketValue = portfolioMetrics.reduce((sum, m) => sum.plus(m.totalMarketValue), new BigNumber(0));
+            const totalUnrealizedPL = portfolioMetrics.reduce((sum, m) => sum.plus(m.unrealizedPL), new BigNumber(0));
 
-        // 5. Calculate Realized P/L from Transactions (CAPITAL_GAIN/LOSS)
-        let totalRealizedPL = new BigNumber(0);
-        let mRealizedPL = new BigNumber(0);
+            // 5. Calculate Realized P/L from Transactions (CAPITAL_GAIN/LOSS)
+            let totalRealizedPL = new BigNumber(0);
+            let mRealizedPL = new BigNumber(0);
 
-        t.forEach(tx => {
-            if (tx.type === 'CAPITAL_GAIN') {
-                const val = tx.amount.abs();
-                totalRealizedPL = totalRealizedPL.plus(val);
+            t.forEach(tx => {
+                if (tx.type === 'CAPITAL_GAIN') {
+                    const val = tx.amount.abs();
+                    totalRealizedPL = totalRealizedPL.plus(val);
 
-                const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
-                if (isMonth) {
-                    mRealizedPL = mRealizedPL.plus(val);
+                    const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
+                    if (isMonth) {
+                        mRealizedPL = mRealizedPL.plus(val);
+                    }
+                } else if (tx.type === 'CAPITAL_LOSS') {
+                    const val = tx.amount.abs();
+                    totalRealizedPL = totalRealizedPL.minus(val);
+
+                    const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
+                    if (isMonth) {
+                        mRealizedPL = mRealizedPL.minus(val);
+                    }
                 }
-            } else if (tx.type === 'CAPITAL_LOSS') {
-                const val = tx.amount.abs();
-                totalRealizedPL = totalRealizedPL.minus(val);
+            });
 
-                const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
-                if (isMonth) {
-                    mRealizedPL = mRealizedPL.minus(val);
+            // 6. Calculate Monthly Investment Metrics
+            // Monthly Invested: Sum of BUY amounts in current month
+            let mInvested = new BigNumber(0);
+            let mUnrealizedPL = new BigNumber(0);
+
+            inv.forEach(item => {
+                const isMonth = new Date(item.date).getMonth() === currentMonth && new Date(item.date).getFullYear() === currentYear;
+
+                if (isMonth && item.action === 'BUY') {
+                    // Invested Amount (Cost Basis)
+                    const cost = item.price.times(item.quantity).plus(item.fees || 0);
+                    mInvested = mInvested.plus(cost);
+
+                    // Unrealized P/L for this item
+                    const currentPrice = currentPriceMap[item.symbol] || new BigNumber(0);
+                    const marketValue = currentPrice.times(item.quantity);
+                    const pl = marketValue.minus(cost);
+                    mUnrealizedPL = mUnrealizedPL.plus(pl);
                 }
-            }
-        });
+            });
 
-        // 6. Calculate Monthly Investment Metrics
-        // Monthly Invested: Sum of BUY amounts in current month
-        let mInvested = new BigNumber(0);
-        let mUnrealizedPL = new BigNumber(0);
+            setInvestmentTotal(totalMarketValue);
+            setUnrealizedPL(totalUnrealizedPL);
+            setRealizedPL(totalRealizedPL);
 
-        inv.forEach(item => {
-            const isMonth = new Date(item.date).getMonth() === currentMonth && new Date(item.date).getFullYear() === currentYear;
-
-            if (isMonth && item.action === 'BUY') {
-                // Invested Amount (Cost Basis)
-                const cost = item.price.times(item.quantity).plus(item.fees || 0);
-                mInvested = mInvested.plus(cost);
-
-                // Unrealized P/L for this item
-                const currentPrice = currentPriceMap[item.symbol] || new BigNumber(0);
-                const marketValue = currentPrice.times(item.quantity);
-                const pl = marketValue.minus(cost);
-                mUnrealizedPL = mUnrealizedPL.plus(pl);
-            }
-        });
-
-        setInvestmentTotal(totalMarketValue);
-        setUnrealizedPL(totalUnrealizedPL);
-        setRealizedPL(totalRealizedPL);
-
-        setMonthInvested(mInvested);
-        setMonthRealizedPL(mRealizedPL);
-        setMonthUnrealizedPL(mUnrealizedPL);
-
-        setIsLoading(false);
+            setMonthInvested(mInvested);
+            setMonthRealizedPL(mRealizedPL);
+            setMonthUnrealizedPL(mUnrealizedPL);
+        } catch (error) {
+            console.error('Error loading HomeScreen data:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const { isReviewVisible, checkReviewEligibility, handleRate, handleLater, handleDecline } = useReviewPrompt();

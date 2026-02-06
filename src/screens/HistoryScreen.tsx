@@ -15,7 +15,9 @@ import { Transaction, UserProfile, Investment, RecurrenceRule } from '@types';
 import { deleteTransaction } from '@services/domain/transactionService';
 import { deleteInvestment } from '@services/domain/investmentService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
-import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile, getCachedTransactions, getCachedInvestments } from '@services/core/storageService';
+import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile } from '@services/core/storageService';
+import { getCachedTransactions } from '@services/domain/transactionService';
+import { getCachedInvestments } from '@services/domain/investmentService';
 import { HistoryCalendar } from '@components/history/HistoryCalendar';
 import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
 import { HistoryCalendarHelpModal } from '@components/history/HistoryCalendarHelpModal';
@@ -94,14 +96,19 @@ const HistoryScreen = ({ navigation }: any) => {
     };
 
     const loadData = async () => {
-        setIsLoading(true);
-        const [transactions, investments] = await Promise.all([
-            getCachedTransactions(),
-            getCachedInvestments()
-        ]);
-        setAllTransactions(transactions);
-        setAllInvestments(investments);
-        setIsLoading(false);
+        try {
+            setIsLoading(true);
+            const [transactions, investments] = await Promise.all([
+                getCachedTransactions(),
+                getCachedInvestments()
+            ]);
+            setAllTransactions(transactions);
+            setAllInvestments(investments);
+        } catch (error) {
+            console.error('Error loading HistoryScreen data:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const formatCurrency = (amount: BigNumber) => {
