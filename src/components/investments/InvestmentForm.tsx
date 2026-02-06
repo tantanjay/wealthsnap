@@ -79,7 +79,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         if (!initialInvestment || initialInvestment.symbol !== symbol) {
             setUseNativeCurrency(false);
         }
-    }, [symbol]);
+    }, [symbol, initialInvestment]);
 
     useEffect(() => {
         const fetchAssets = async () => {
@@ -102,7 +102,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
             }
         };
         fetchAssets();
-    }, [initialInvestment, showAlert]);
+    }, [initialInvestment, showAlert, investmentType]);
 
     // Check for linked transaction
     useEffect(() => {

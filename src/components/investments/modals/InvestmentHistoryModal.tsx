@@ -7,8 +7,8 @@ import { BigNumber } from 'bignumber.js';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
-import { getAllInvestments } from '@services/domain/investmentService';
-import { getAllTransactions } from '@services/domain/transactionService';
+import { getAllInvestments, deleteInvestment } from '@services/domain/investmentService';
+import { getAllTransactions, deleteTransaction } from '@services/domain/transactionService';
 import { getPriceHistory, deleteAllPriceHistory, addPriceHistory, deletePriceHistory, updatePriceHistory } from '@services/domain/priceHistoryService';
 import { getDividendHistory, deleteAutoDividendHistory, deleteDividendHistory, addDividendHistory, updateDividendHistory } from '@services/domain/dividendHistoryService';
 import { getAllAssets } from '@services/domain/assetService';
@@ -20,8 +20,6 @@ import DividendHistoryFormModal from '@components/investments/modals/DividendHis
 import { useAIConsent } from '@hooks/useAIConsent';
 import InvestmentOptionsModal from '@components/investments/modals/InvestmentOptionsModal';
 import { useNavigation } from '@react-navigation/native';
-import { deleteInvestment } from '@services/domain/investmentService';
-import { deleteTransaction } from '@services/domain/transactionService';
 
 interface InvestmentHistoryModalProps {
     visible: boolean;
