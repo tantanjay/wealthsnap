@@ -295,7 +295,7 @@ const RecordScreen = ({ navigation, route }: any) => {
             {/* Transaction Form */}
             {viewMode === 'TRANSACTION' && transactionType !== 'TRANSFER_IN' && transactionType !== 'TRANSFER_OUT' && (
                 <TransactionForm
-                    key={`${transactionType}-${editingTransaction?.id || 'new'}`}
+                    key={`${transactionType}-${currency}-${editingTransaction?.id || 'new'}`}
                     transactionType={transactionType}
                     initialTransaction={editingTransaction || undefined}
                     onSave={handleTransactionSave}
@@ -306,7 +306,7 @@ const RecordScreen = ({ navigation, route }: any) => {
             {/* Transfer Form */}
             {viewMode === 'TRANSACTION' && (transactionType === 'TRANSFER_IN' || transactionType === 'TRANSFER_OUT') && (
                 <TransferForm
-                    key={`TRANSFER-${transactionType}-${editingTransaction?.id || 'new'}`}
+                    key={`TRANSFER-${transactionType}-${currency}-${editingTransaction?.id || 'new'}`}
                     initialType={transactionType as 'TRANSFER_IN' | 'TRANSFER_OUT'}
                     initialTransaction={editingTransaction || undefined}
                     onSave={handleTransactionSave}
@@ -317,7 +317,7 @@ const RecordScreen = ({ navigation, route }: any) => {
             {/* Investment Form */}
             {viewMode === 'INVESTMENT' && (
                 <InvestmentForm
-                    key={`${investmentType}-${editingInvestment?.id || 'new'}`}
+                    key={`${investmentType}-${currency}-${editingInvestment?.id || 'new'}`}
                     investmentType={investmentType}
                     initialInvestment={editingInvestment || undefined}
                     currency={currency}
