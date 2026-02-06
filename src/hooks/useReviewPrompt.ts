@@ -4,8 +4,8 @@ import * as StoreReview from 'expo-store-review';
 import { Linking, Platform } from 'react-native';
 
 import { ASYNC_KEYS } from '@constants/config';
-import { getTransactionCount } from '@services/domain/transactionService';
-import { getInvestmentCount } from '@services/domain/investmentService';
+import { getTransactionCount, getLatestTransactionDate } from '@services/domain/transactionService';
+import { getInvestmentCount, getLatestInvestmentDate } from '@services/domain/investmentService';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -15,6 +15,7 @@ export const useReviewPrompt = () => {
 
     const checkReviewEligibility = useCallback(async () => {
         try {
+
             // 1. Check if already rated/declined
             const hasRated = await AsyncStorage.getItem(ASYNC_KEYS.REVIEW_PROMPT.HAS_RATED);
             if (hasRated === 'true') return;
@@ -35,22 +36,37 @@ export const useReviewPrompt = () => {
                     return timeSinceCrash < SEVEN_DAYS_MS;
                 });
 
-                // If user experienced ANY crash recently, maybe don't ask...
-                // The requirement says "detect if has_crashed_recently >= 7". 
-                // Wait, logic check: "detect if has_crashed_recently >= 7" usually means count >= 7 crashes?
-                // Or "7 days"? The user said "has_crashed_recently >= 7". 
-                // Let's assume CRASH COUNT >= 7 implies "too unstable, don't ask".
-                // But typically even 1 crash is bad. User said ">= 7". I will implement COUNT >= 7.
+                // If user experienced ANY crash recently
                 if (recentCrashes.length >= 7) return;
             }
 
             // 4. Check Activity Thresholds
-            // "transactions.count > 20 or investments.count > 5"
-            // Note: The user said "transactions.count > 20", usually means "User has entered > 20 txns".
-            const userTxnCount = await getTransactionCount();
-            const userInvCount = await getInvestmentCount();
+            // "transactions.count > 20 or investments.count > 5" AND "during user interaction of add"
+            const [userTxnCount, userInvCount, lastTxnDate, lastInvDate] = await Promise.all([
+                getTransactionCount(),
+                getInvestmentCount(),
+                getLatestTransactionDate(),
+                getLatestInvestmentDate()
+            ]);
 
-            if (userTxnCount > 20 || userInvCount > 5) {
+            const now = Date.now();
+            const ONE_MINUTE_MS = 1 * 60 * 1000;
+
+            let isRecent = false;
+
+            if (lastTxnDate) {
+                const diff = now - new Date(lastTxnDate).getTime();
+                if (diff < ONE_MINUTE_MS) isRecent = true;
+            }
+
+            if (!isRecent && lastInvDate) {
+                const diff = now - new Date(lastInvDate).getTime();
+                if (diff < ONE_MINUTE_MS) isRecent = true;
+            }
+
+            // Only show if heavy user AND they just did something productive (contextual trigger)
+            // Roughly 2 weeks of daily usage, 3 transactions per day
+            if (isRecent && (userTxnCount > 50 || userInvCount > 5)) {
                 setIsVisible(true);
             }
 
