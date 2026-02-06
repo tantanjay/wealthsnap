@@ -20,7 +20,8 @@ import DividendHistoryFormModal from '@components/investments/modals/DividendHis
 import { useAIConsent } from '@hooks/useAIConsent';
 import InvestmentOptionsModal from '@components/investments/modals/InvestmentOptionsModal';
 import { useNavigation } from '@react-navigation/native';
-import { deleteInvestment, deleteTransaction } from '@services/domain';
+import { deleteInvestment } from '@services/domain/investmentService';
+import { deleteTransaction } from '@services/domain/transactionService';
 
 interface InvestmentHistoryModalProps {
     visible: boolean;
@@ -307,11 +308,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                     return; // Invalid
                 }
             }
-            // Construct prompt: "From January 1, {Year} to Present" if it's past years, 
-            // but the user wants "up to latest 2023-2026 available data".
-            // Actually, if they select 2023, the user said: "if user select 2023 meaning it will fetch up to latest 2023-2026 available data"
-            // Wait, re-reading request: "if user select 2023 meaning it will fetch up to latest 2023-2026 available data"
-            // So start date is Jan 1, 2023. End date is Present.
+
             durationPrompt = `From January 1, ${targetYear} to Present`;
         }
 
@@ -349,7 +346,8 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                 low: p.low,
                                 volume: p.volume,
                                 timestamp: existing.timestamp, // Keep original timestamp
-                                source: 'AI_FETCH'
+                                source: 'AI_FETCH',
+                                currency: p.currency
                             });
                         } else {
                             await addPriceHistory(p.symbol, p.price, {
@@ -357,7 +355,8 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                 low: p.low,
                                 volume: p.volume,
                                 timestamp: p.date,
-                                source: 'AI_FETCH'
+                                source: 'AI_FETCH',
+                                currency: p.currency
                             });
                         }
                         savedCount++;
@@ -533,10 +532,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         } else if (item.type === 'SELL') {
             iconName = "arrow-down-circle-outline";
             color = colors.error;
-            sign = '-'; // Sell reduces asset count typically, but usually we show proceed as positive.
-            // However, amount here is total value. 
-            // Let's stick to consistent signs: Buy/Sell/Div just show value.
-            // But wait, the user wants "premium". 
+            sign = '-';
         } else if (item.type === 'DIVIDEND') {
             iconName = "gift-outline";
             color = colors.primary;
@@ -612,7 +608,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
                 <View style={styles.itemLeft}>
                     <Text style={[styles.itemType, { color: colors.text }]}>
-                        {formatCurrencyAmount(item.price.toNumber(), currency)}
+                        {formatCurrencyAmount(item.price.toNumber(), item.currency ? item.currency : currency)}
                     </Text>
                     <Text style={[styles.itemDate, { color: colors.textSecondary }]}>
                         {new Date(item.timestamp).toLocaleDateString()}

@@ -7,7 +7,7 @@ import { CategorySelectModal } from '@components/record/CategorySelectModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Budget } from '@types';
-import { getAllBudgets, setBudget, deleteBudget } from '@services/domain';
+import { getAllBudgets, setBudget, deleteBudget } from '@services/domain/budgetService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { EXPENSE_CATEGORY_GROUPS, getCategoryGroup } from '@constants/categories';
 

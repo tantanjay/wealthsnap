@@ -1,7 +1,8 @@
 import * as SQLite from 'expo-sqlite';
+import { getUserProfile } from '@services/core/storageService';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 7;
+export const DATABASE_VERSION = 8;
 
 /**
  * Create all database tables and indexes
@@ -108,6 +109,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             volume TEXT,
             timestamp TEXT NOT NULL,
             source TEXT NOT NULL CHECK(source IN ('MANUAL', 'AI_FETCH')),
+            currency TEXT DEFAULT 'PHP',
             createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
             updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (symbol) REFERENCES assets(symbol) ON DELETE CASCADE
@@ -230,5 +232,48 @@ export const getDatabaseVersion = async (db: SQLite.SQLiteDatabase): Promise<num
         return result ? parseInt(result.value, 10) : 0;
     } catch {
         return 0;
+    }
+};
+
+/**
+ * Migrate to Version 8: Add currency to price_history
+ */
+export const migrateToVersion8 = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+    try {
+        console.log('[Migration] Starting migration to version 8...');
+
+        // 1. Add column if not exists
+        // Note: SQLite ALTER TABLE ADD COLUMN silently fails if column exists, or we can check pragma.
+        // For simplicity in this env, we just try to add it.
+        try {
+            await db.execAsync(`ALTER TABLE price_history ADD COLUMN currency TEXT DEFAULT 'PHP'`);
+        } catch (e) {
+            console.log('[Migration] Column currency might already exist or error:', e);
+        }
+
+        // 2. Fetch User Profile for default currency
+        let defaultCurrency = 'PHP';
+        try {
+            getUserProfile().then((profile) => {
+                if (profile && profile.currency) {
+                    defaultCurrency = profile.currency;
+                }
+            });
+        } catch (e) {
+            console.warn('[Migration] Failed to fetch user profile currency, defaulting to PHP', e);
+        }
+
+        console.log(`[Migration] Defaulting price_history currency to: ${defaultCurrency}`);
+
+        // 3. Update existing records
+        await db.runAsync(`UPDATE price_history SET currency = ?`, [defaultCurrency]);
+
+        // 4. Update Version
+        await setDatabaseVersion(db, 8);
+        console.log('[Migration] Successfully migrated to version 8');
+
+    } catch (error) {
+        console.error('[Migration] Failed version 8 migration:', error);
+        throw error;
     }
 };

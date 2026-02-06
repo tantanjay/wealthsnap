@@ -1,15 +1,38 @@
 import { BigNumber } from 'bignumber.js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDatabase } from "@services/database/databaseService";
 import { generateUUID } from "@utils/uuid";
 import { PriceHistory } from '@types';
+import { ASYNC_KEYS } from '@constants/config';
+import { decryptData } from '@services/core/encryptionService';
 
 // --- Constants ---
 
 const UPSERT_PRICE_HISTORY_QUERY = `
   INSERT OR REPLACE INTO price_history 
-  (id, symbol, price, high, low, volume, timestamp, source)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  (id, symbol, price, high, low, volume, timestamp, source, currency)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
+
+// --- Helper Functions ---
+
+/**
+ * Helper to get user's default currency without importing storageService (circular dep prevention)
+ */
+const getDefaultCurrency = async (): Promise<string> => {
+    try {
+        const raw = await AsyncStorage.getItem(ASYNC_KEYS.USER_PROFILE);
+        if (raw) {
+            const decrypted: any = await decryptData(raw);
+            if (decrypted && decrypted.currency) {
+                return decrypted.currency;
+            }
+        }
+    } catch {
+        // ignore
+    }
+    return 'PHP';
+};
 
 // --- Exported Functions ---
 
@@ -29,7 +52,8 @@ export const bulkSavePriceHistories = async (priceHistories: PriceHistory[]): Pr
                     history.low ? new BigNumber(history.low).toString() : null,
                     history.volume ? new BigNumber(history.volume).toString() : null,
                     history.timestamp,
-                    history.source || 'MANUAL'
+                    history.source || 'MANUAL',
+                    history.currency || 'PHP' // Fallback if bulk data is missing currency
                 ]);
             }
         });
@@ -76,6 +100,7 @@ export const getLatestPrices = async (symbols: string[]): Promise<Record<string,
                 volume: row.volume ? new BigNumber(row.volume) : undefined,
                 timestamp: row.timestamp,
                 source: row.source,
+                currency: row.currency || 'PHP',
                 createdAt: row.createdAt,
                 updatedAt: row.updatedAt
             };
@@ -94,12 +119,13 @@ export const getLatestPrices = async (symbols: string[]): Promise<Record<string,
 export const addPriceHistory = async (
     symbol: string,
     price: BigNumber | number | string,
-    metadata?: { high?: BigNumber | number, low?: BigNumber | number, volume?: BigNumber | number, source?: string, timestamp?: string }
+    metadata?: { high?: BigNumber | number, low?: BigNumber | number, volume?: BigNumber | number, source?: string, timestamp?: string, currency?: string }
 ): Promise<void> => {
     try {
         const db = await getDatabase();
         const id = generateUUID();
         const timestamp = metadata?.timestamp || new Date().toISOString();
+        const currency = metadata?.currency || await getDefaultCurrency();
 
         await db.runAsync(UPSERT_PRICE_HISTORY_QUERY, [
             id,
@@ -109,7 +135,8 @@ export const addPriceHistory = async (
             metadata?.low ? new BigNumber(metadata.low).toString() : null,
             metadata?.volume ? new BigNumber(metadata.volume).toString() : null,
             timestamp,
-            metadata?.source || 'MANUAL'
+            metadata?.source || 'MANUAL',
+            currency
         ]);
     } catch (error) {
         console.error('Error adding price history:', error);
@@ -123,30 +150,33 @@ export const addPriceHistory = async (
 export const updatePriceHistory = async (
     id: string,
     price: BigNumber | number | string,
-    metadata?: { high?: BigNumber | number, low?: BigNumber | number, volume?: BigNumber | number, source?: string, timestamp?: string }
+    metadata?: { high?: BigNumber | number, low?: BigNumber | number, volume?: BigNumber | number, source?: string, timestamp?: string, currency?: string }
 ): Promise<void> => {
     try {
         const db = await getDatabase();
 
-        // We need to fetch existing to preserve fields if not updated? 
-        // For simplicity, we assume we want to update the fields provided.
-        // But since we are using UPSERT or simple UPDATE, let's use UPDATE.
-
-        const query = `
+        let query = `
             UPDATE price_history 
             SET price = ?, high = ?, low = ?, volume = ?, timestamp = ?, source = ?, updatedAt = CURRENT_TIMESTAMP
-            WHERE id = ?
         `;
-
-        await db.runAsync(query, [
+        const params: any[] = [
             new BigNumber(price).toString(),
             metadata?.high ? new BigNumber(metadata.high).toString() : null,
             metadata?.low ? new BigNumber(metadata.low).toString() : null,
             metadata?.volume ? new BigNumber(metadata.volume).toString() : null,
-            metadata?.timestamp || new Date().toISOString(), // Fallback shouldn't happen on update typically, but safe
-            metadata?.source || 'MANUAL',
-            id
-        ]);
+            metadata?.timestamp || new Date().toISOString(),
+            metadata?.source || 'MANUAL'
+        ];
+
+        if (metadata?.currency) {
+            query += `, currency = ?`;
+            params.push(metadata.currency);
+        }
+
+        query += ` WHERE id = ?`;
+        params.push(id);
+
+        await db.runAsync(query, params);
     } catch (error) {
         console.error('Error updating price history:', error);
         throw new Error('Failed to update price history');
@@ -165,7 +195,8 @@ export const getAllPriceHistories = async (): Promise<PriceHistory[]> => {
             low: row.low ? new BigNumber(row.low) : undefined,
             volume: row.volume ? new BigNumber(row.volume) : undefined,
             timestamp: row.timestamp,
-            source: row.source
+            source: row.source,
+            currency: row.currency || 'PHP'
         }));
     } catch (error) {
         console.error('Error getting all price histories:', error);
@@ -207,7 +238,8 @@ export const getPriceHistory = async (
             low: row.low ? new BigNumber(row.low) : undefined,
             volume: row.volume ? new BigNumber(row.volume) : undefined,
             timestamp: row.timestamp,
-            source: row.source
+            source: row.source,
+            currency: row.currency || 'PHP'
         }));
     } catch (error) {
         console.error('Error getting price history:', error);
@@ -255,7 +287,8 @@ export const getPriceHistoryForSymbols = async (
             low: row.low ? new BigNumber(row.low) : undefined,
             volume: row.volume ? new BigNumber(row.volume) : undefined,
             timestamp: row.timestamp,
-            source: row.source
+            source: row.source,
+            currency: row.currency || 'PHP'
         }));
     } catch (error) {
         console.error('Error getting batch price history:', error);

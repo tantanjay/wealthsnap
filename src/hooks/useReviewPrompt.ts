@@ -15,7 +15,6 @@ export const useReviewPrompt = () => {
 
     const checkReviewEligibility = useCallback(async () => {
         try {
-
             // 1. Check if already rated/declined
             const hasRated = await AsyncStorage.getItem(ASYNC_KEYS.REVIEW_PROMPT.HAS_RATED);
             if (hasRated === 'true') return;
@@ -77,17 +76,32 @@ export const useReviewPrompt = () => {
 
     const handleRate = async () => {
         setIsVisible(false);
+
+        // Mark as rated immediately so the modal disappears and doesn't return
         await AsyncStorage.setItem(ASYNC_KEYS.REVIEW_PROMPT.HAS_RATED, 'true');
 
-        if (await StoreReview.hasAction()) {
-            await StoreReview.requestReview();
-        } else {
-            // Fallback to store URL if native popup not supported
-            const storeUrl = Platform.select({
-                ios: 'https://apps.apple.com/app/idYOUR_APP_ID?action=write-review',
-                android: 'market://details?id=com.tantanjay.wealthsnap', // Update with actual package
-            });
-            if (storeUrl) Linking.openURL(storeUrl).catch(() => { });
+        try {
+            if (await StoreReview.hasAction()) {
+                await StoreReview.requestReview();
+            } else {
+                const storeUrl = Platform.select({
+                    ios: 'https://apps.apple.com/app/idYOUR_APP_ID?action=write-review',
+                    // Web fallback for Android just in case market:// isn't supported
+                    android: 'market://details?id=com.christian.soyosa.WealthSnap',
+                });
+
+                if (storeUrl) {
+                    const canOpen = await Linking.canOpenURL(storeUrl);
+                    if (canOpen) {
+                        await Linking.openURL(storeUrl);
+                    } else if (Platform.OS === 'android') {
+                        // Final fallback to web browser for Android
+                        await Linking.openURL('https://play.google.com/store/apps/details?id=com.christian.soyosa.WealthSnap');
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn("Rating redirect failed", error);
         }
     };
 

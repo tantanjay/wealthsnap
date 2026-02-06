@@ -3,7 +3,8 @@ import * as SecureStore from 'expo-secure-store';
 
 import { UserProfile, Transaction, Investment, AIConfig } from '@types';
 import { getDatabase } from '@services/database/databaseService';
-import { getAllTransactions, getAllInvestments } from '@services/domain';
+import { getAllTransactions } from '@services/domain/transactionService';
+import { getAllInvestments } from '@services/domain/investmentService';
 import { encryptData, decryptData } from '@services/core/encryptionService';
 import { ALL_ASYNC_KEYS, ASYNC_KEYS, SECURE_KEYS } from '@constants/config';
 import * as DataCache from '@services/core/dataCache';

@@ -4,9 +4,17 @@ import JSZip from 'jszip';
 import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget, TransactionReceipt, Asset, PriceHistory, DividendHistory } from '@types';
 import { decryptData, encryptData } from '@services/core/encryptionService';
 import * as Storage from '@services/core/storageService';
-import * as SQLite from '@services/domain';
 import { CONFIG } from '@constants/config';
 import { generateUUID, isUUID } from '@utils/uuid';
+import { bulkSaveTransactionReceipts, bulkSaveTransactions, getAllTransactionReceipts, getAllTransactions } from '@services/domain/transactionService';
+import { bulkSaveInvestments, getAllInvestments } from '@services/domain/investmentService';
+import { bulkSaveCategories, getAllCategories } from '@services/domain/categoryService';
+import { bulkSaveRecurrenceRules, getAllRecurrenceRules } from '@services/domain/recurrenceService';
+import { bulkSaveBudgets, getAllBudgets } from '@services/domain/budgetService';
+import { bulkSaveReminders, getAllReminders, scheduleReminderNotifications } from '@services/domain/reminderService';
+import { bulkSaveAssets, getAllAssets } from '@services/domain/assetService';
+import { bulkSavePriceHistories, getAllPriceHistories } from '@services/domain/priceHistoryService';
+import { bulkSaveDividendHistories, getAllDividendHistories } from '@services/domain/dividendHistoryService';
 
 export interface BackupData {
     version: string;
@@ -44,16 +52,16 @@ export const createBackup = async (password: string): Promise<string> => {
 
     // 1. Gather all data
     const profile = await Storage.getUserProfile();
-    const transactions = await SQLite.getAllTransactions();
-    const investments = await SQLite.getAllInvestments();
-    const categories = await SQLite.getAllCategories();
-    const recurrenceRules = await SQLite.getAllRecurrenceRules();
-    const budgets = await SQLite.getAllBudgets();
-    const reminders = await SQLite.getAllReminders();
-    const transactionReceipts = await SQLite.getAllTransactionReceipts();
-    const assets = await SQLite.getAllAssets();
-    const priceHistories = await SQLite.getAllPriceHistories();
-    const dividendHistories = await SQLite.getAllDividendHistories();
+    const transactions = await getAllTransactions();
+    const investments = await getAllInvestments();
+    const categories = await getAllCategories();
+    const recurrenceRules = await getAllRecurrenceRules();
+    const budgets = await getAllBudgets();
+    const reminders = await getAllReminders();
+    const transactionReceipts = await getAllTransactionReceipts();
+    const assets = await getAllAssets();
+    const priceHistories = await getAllPriceHistories();
+    const dividendHistories = await getAllDividendHistories();
 
     const backupData: BackupData = {
         version: '2.0', // Schema version 2.0 (SQLite Support)
@@ -246,16 +254,16 @@ export const restoreFromBackup = async (
     const { sanitized: cleanReminders } = sanitizeIds(backupData.reminders);
     const cleanTransactionReceipts = updateForeignKeys(backupData.transactionReceipts, 'transactionId', transactionIdMap);
 
-    await safeBulkSave(backupData.assets, SQLite.bulkSaveAssets);
-    await safeBulkSave(cleanTransactions, SQLite.bulkSaveTransactions);
-    await safeBulkSave(cleanInvestments, SQLite.bulkSaveInvestments);
-    await safeBulkSave(cleanCategories, SQLite.bulkSaveCategories);
-    await safeBulkSave(cleanRecurrenceRules, SQLite.bulkSaveRecurrenceRules);
-    await safeBulkSave(cleanReminders, SQLite.bulkSaveReminders);
-    await safeBulkSave(backupData.budgets, SQLite.bulkSaveBudgets);
-    await safeBulkSave(cleanTransactionReceipts, SQLite.bulkSaveTransactionReceipts);
-    await safeBulkSave(backupData.priceHistories, SQLite.bulkSavePriceHistories);
-    await safeBulkSave(backupData.dividendHistories, SQLite.bulkSaveDividendHistories);
+    await safeBulkSave(backupData.assets, bulkSaveAssets);
+    await safeBulkSave(cleanTransactions, bulkSaveTransactions);
+    await safeBulkSave(cleanInvestments, bulkSaveInvestments);
+    await safeBulkSave(cleanCategories, bulkSaveCategories);
+    await safeBulkSave(cleanRecurrenceRules, bulkSaveRecurrenceRules);
+    await safeBulkSave(cleanReminders, bulkSaveReminders);
+    await safeBulkSave(backupData.budgets, bulkSaveBudgets);
+    await safeBulkSave(cleanTransactionReceipts, bulkSaveTransactionReceipts);
+    await safeBulkSave(backupData.priceHistories, bulkSavePriceHistories);
+    await safeBulkSave(backupData.dividendHistories, bulkSaveDividendHistories);
 
     // Reschedule Notifications
     if (backupData.reminders && Array.isArray(backupData.reminders) && backupData.reminders.length > 0) {
@@ -263,7 +271,7 @@ export const restoreFromBackup = async (
             if (reminder.isActive) {
                 // scheduleReminderNotifications calculates the next occurrence starting from NOW,
                 // so it correctly handles old reminders by finding their next future date.
-                await SQLite.scheduleReminderNotifications(reminder).catch(err => {
+                await scheduleReminderNotifications(reminder).catch(err => {
                     console.error(`Failed to schedule notification for reminder ${reminder.id}:`, err);
                 });
             }
