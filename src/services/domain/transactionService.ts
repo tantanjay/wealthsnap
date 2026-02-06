@@ -182,6 +182,22 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
     }
 };
 
+export const getLatestTransactionDate = async (): Promise<string | null> => {
+    try {
+        const db = await getDatabase();
+        // Get the most recent transaction date (created or dated)
+        // We use 'createdAt' to detect user interaction "just now", or 'date' if we want business date.
+        // User said "during user interaction of add". This implies 'createdAt' is better proxy for "interaction",
+        // but 'date' is usually what is stored. Let's use 'createdAt' if available, or 'date'.
+        // My schema has 'createdAt'.
+        const result = await db.getAllAsync<{ createdAt: string }>('SELECT createdAt FROM transactions ORDER BY createdAt DESC LIMIT 1');
+        return result[0]?.createdAt || null;
+    } catch (error) {
+        console.error('Error getting latest transaction date:', error);
+        return null;
+    }
+};
+
 export const getTransactionCount = async (): Promise<number> => {
     try {
         const db = await getDatabase();
