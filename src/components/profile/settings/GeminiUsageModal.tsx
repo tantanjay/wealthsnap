@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { AIUsageLog } from '@types';
-import { getAIUsageLogs } from '@services/domain';
+import { getAIUsageLogs } from '@services/domain/logService';
 import { SPACING, FONT_SIZES } from '@styles/theme';
 
 interface GeminiUsageModalProps {

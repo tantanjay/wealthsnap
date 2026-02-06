@@ -170,6 +170,7 @@ export interface PriceHistory {
     volume?: BigNumber;
     timestamp: string;
     source?: 'MANUAL' | 'AI_FETCH';
+    currency?: string;
     createdAt?: string;
     updatedAt?: string;
 }

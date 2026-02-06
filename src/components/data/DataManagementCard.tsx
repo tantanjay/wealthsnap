@@ -18,7 +18,7 @@ import { useSecurity } from '@context/SecurityContext';
 import { Transaction } from '@types';
 import { clearAllData, getUserProfile, saveLastBackupDate } from '@services/core/storageService';
 import { createBackup, restoreFromBackup } from '@services/integrations';
-import { bulkSaveTransactions, getAllTransactions } from '@services/domain';
+import { bulkSaveTransactions, getAllTransactions } from '@services/domain/transactionService';
 import * as Import from '@services/integrations';
 
 interface DataManagementCardProps {

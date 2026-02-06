@@ -12,7 +12,8 @@ import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { Budget, RecurrenceRule, Transaction } from '@types';
 import { formatCompactCurrency } from '@utils/currencyUtils';
-import { checkBudgetStatus, getAllBudgets, getAllRecurrenceRules } from '@services/domain';
+import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
+import { checkBudgetStatus, getAllBudgets, } from '@services/domain/budgetService';
 
 interface ExpenseAnalysisProps {
     categoryBreakdown: {

@@ -7,7 +7,7 @@ import { Card } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Reminder } from '@types';
-import { getAllReminders, saveReminder, deleteReminder } from '@services/domain';
+import { getAllReminders, saveReminder, deleteReminder } from '@services/domain/reminderService';
 import { scheduleReminderNotifications, cancelReminderNotifications, calculateNextOccurrence } from '@services/domain/reminderService';
 
 interface ReminderListProps {

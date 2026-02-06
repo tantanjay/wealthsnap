@@ -10,7 +10,7 @@ import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Transaction, TransferAccount } from '@types';
 import { generateUUID } from '@utils/uuid';
-import { saveTransaction } from '@services/domain';
+import { saveTransaction } from '@services/domain/transactionService';
 
 interface TransferFormProps {
     onSave: () => void;

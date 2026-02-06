@@ -12,8 +12,9 @@ import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency } from '@types';
 import { generateUUID } from '@utils/uuid';
-import { saveTransaction, saveRecurrenceRule, getRecentCategories } from '@services/domain';
 import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS } from '@constants/categories';
+import { getRecentCategories, saveTransaction } from '@services/domain/transactionService';
+import { saveRecurrenceRule } from '@services/domain/recurrenceService';
 
 interface TransactionFormProps {
     transactionType: TransactionType;
