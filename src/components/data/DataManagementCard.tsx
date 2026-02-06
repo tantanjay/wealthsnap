@@ -6,17 +6,17 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
-import BackupModal from '@components/profile/data/BackupModal';
-import RestoreModal from '@components/profile/data/RestoreModal';
-import ImportDataModal from '@components/profile/data/ImportDataModal';
-import ImportProcessScreen from '@components/profile/data/ImportProcessScreen';
+import BackupModal from '@components/data/BackupModal';
+import RestoreModal from '@components/data/RestoreModal';
+import ImportDataModal from '@components/data/ImportDataModal';
+import ImportProcessScreen from '@components/data/ImportProcessScreen';
 import SettingItem from '@components/common/SettingItem';
 import { Card } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { useSecurity } from '@context/SecurityContext';
 import { Transaction } from '@types';
-import { clearAllData, getUserProfile } from '@services/core/storageService';
+import { clearAllData, getUserProfile, saveLastBackupDate } from '@services/core/storageService';
 import { createBackup, restoreFromBackup } from '@services/integrations';
 import { bulkSaveTransactions, getAllTransactions } from '@services/domain';
 import * as Import from '@services/integrations';
@@ -171,6 +171,8 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
             await restoreFromBackup(restoreFileUri, password);
             setIsProcessing(false);
             setShowRestoreModal(false);
+
+            await saveLastBackupDate(new Date().toISOString());
 
             showAlert('Success', 'Data restored successfully. The app will reload.', [
                 {

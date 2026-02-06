@@ -2,6 +2,7 @@ export const CONFIG = {
     TERMS_VERSION: 4,
     ENABLE_DUMMY_DATA: false,
     SHOW_DEVELOPER_OPTIONS: false,
+    SHOW_PAYPAL_SUPPORT: false,
     CHUNK_SIZE: 100,
 };
 
@@ -48,6 +49,7 @@ export const ASYNC_KEYS = {
     },
     CRASH_REPORT: '@wealthsnap_crash_report',
     DEVELOPER_MODE: '@wealthsnap_developer_mode',
+    BACKUP_TIMESTAMP: '@wealthsnap_backup_timestamp',
 };
 
 /**

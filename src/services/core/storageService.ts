@@ -12,7 +12,7 @@ import { clearAllNotifications } from '@services/background/notificationService'
 /**
  * Storage Architecture:
  * - SQLite: Core data (Transactions, Investments, Budgets, Recurrence Rules).
- * - AsyncStorage: Lightweight preferences (User Profile, Onboarding State, History Prefs).
+ * - AsyncStorage: Lightweight preferences (User Profile, Onboarding State, History Prefs, Backup Timestamp).
  * - SecureStore: Sensitive secrets (PIN, API Keys, etc.).
  */
 
@@ -317,6 +317,25 @@ export const getInvestmentHoldingsSort = async (): Promise<{ option: string, dir
         return data ? JSON.parse(data) : null;
     } catch (error) {
         console.error('Failed to get investment holdings sort:', error);
+        return null;
+    }
+};
+
+// ============= Backup Timestamp (AsyncStorage) =============
+
+export const saveLastBackupDate = async (date: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.BACKUP_TIMESTAMP, date);
+    } catch (error) {
+        console.error('Failed to save last backup date:', error);
+    }
+};
+
+export const getLastBackupDate = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.BACKUP_TIMESTAMP);
+    } catch (error) {
+        console.error('Failed to get last backup date:', error);
         return null;
     }
 };
