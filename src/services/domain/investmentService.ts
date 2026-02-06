@@ -8,9 +8,7 @@ import { getAllPortfolioMetrics } from "@utils/investmentMetrics";
 import { getLatestPrices } from "@services/domain/priceHistoryService";
 import { getAllTransactions } from "@services/domain/transactionService";
 import { getAllAssets } from "@services/domain/assetService";
-import { getAnnualDividend } from "@services/domain/dividendHistoryService"; // Import this
-
-
+import { getAnnualDividend } from "@services/domain/dividendHistoryService";
 
 // --- Constants & Helpers ---
 
@@ -181,9 +179,6 @@ export const getPortfolioStats = async () => {
     const investments = await getCachedInvestments();
 
     // We need transactions to get accurate Realized P/L (same source of truth as Home Screen)
-    // We'll mimic 'getCachedTransactions' logic here locally to avoid circular dependency
-    // if we tried to import from storageService (which imports investmentService).
-    // Or we can import from transactionService directly, but cache is better.
     let transactions = getTransactionCache()?.data;
     if (!transactions) {
         // Fallback if cache empty (rare if user came from Home)
@@ -225,14 +220,12 @@ export const getPortfolioStats = async () => {
 
     // 4. Aggregate totals
     let totalEquity = new BigNumber(0);
-    // let realizedPL = new BigNumber(0); // We will calculate this from Transactions instead
     let unrealizedPL = new BigNumber(0);
     let totalCostBasis = new BigNumber(0);
     let totalDividends = new BigNumber(0);
 
     metrics.forEach(m => {
         totalEquity = totalEquity.plus(m.totalMarketValue);
-        // realizedPL = realizedPL.plus(m.realizedPL); // Legacy calc method
         unrealizedPL = unrealizedPL.plus(m.unrealizedPL);
         totalCostBasis = totalCostBasis.plus(m.totalCostBasis);
     });
@@ -241,9 +234,6 @@ export const getPortfolioStats = async () => {
     let totalRealizedPL = new BigNumber(0);
     if (transactions) {
         transactions.forEach(tx => {
-            // Only consider transactions linked to investments if we want to be strict,
-            // but CAPITAL_GAIN/LOSS types are inherently investment related in this schema.
-            // AND the HomeScreen logic sums ALL CAPITAL_GAIN/LOSS.
             if (tx.type === 'CAPITAL_GAIN') {
                 totalRealizedPL = totalRealizedPL.plus(tx.amount);
             } else if (tx.type === 'CAPITAL_LOSS') {
@@ -260,8 +250,6 @@ export const getPortfolioStats = async () => {
     let thisMonthInvested = new BigNumber(0);
 
     investments.forEach(inv => {
-        // Check if investment is in current month
-        // inv.date format is typically YYYY-MM-DD
         const isCurrentMonth = inv.date.startsWith(currentMonthStr);
 
         if (inv.action === 'DIVIDEND') {
@@ -274,18 +262,13 @@ export const getPortfolioStats = async () => {
         } else if (isCurrentMonth) {
             const amount = inv.price.times(inv.quantity);
             if (inv.action === 'BUY') {
-                // We add fees to what we "Invested" (spent)
                 thisMonthInvested = thisMonthInvested.plus(amount).plus(inv.fees || 0);
             } else if (inv.action === 'SELL') {
-                // We subtract what we got back (amount - fees?)
-                // If I sell 100 worth and pay 1 fee, I got back 99. "Invested" decreases by 99.
                 thisMonthInvested = thisMonthInvested.minus(amount.minus(inv.fees || 0));
             }
         }
     });
 
-    // Unrealized PL %
-    // (Current Value - Cost Basis) / Cost Basis
     const detailsUnrealizedPLPercent = totalCostBasis.isGreaterThan(0)
         ? unrealizedPL.dividedBy(totalCostBasis).times(100).toNumber()
         : 0;
@@ -305,9 +288,6 @@ export const deleteInvestment = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
         await db.runAsync('DELETE FROM investments WHERE id = ?', [id]);
-
-        // Optimistic cache update or invalidation
-        // For simplicity, just invalidate
         invalidateInvestmentCache();
     } catch (error) {
         console.error('Error deleting investment:', error);
@@ -333,10 +313,8 @@ export interface PortfolioHolding {
 }
 
 export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
-    // 1. Get Base Investment Data
     const investments = await getCachedInvestments();
 
-    // 2. Group by symbol and fetch prices (reusing stats logic)
     const groupedInvestments: Record<string, Investment[]> = {};
     investments.forEach(inv => {
         if (!groupedInvestments[inv.symbol]) groupedInvestments[inv.symbol] = [];
@@ -354,7 +332,6 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
             priceMap[symbol] = latestPrices[symbol].price;
             priceDateMap[symbol] = latestPrices[symbol].timestamp;
         } else {
-            // Fallback: Find latest transaction for this symbol
             const sorted = groupedInvestments[symbol].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             if (sorted.length > 0) {
                 priceMap[symbol] = sorted[0].price;
@@ -365,16 +342,11 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
         }
     });
 
-    // 3. Calculate Core Metrics
     const metrics = getAllPortfolioMetrics(investments, priceMap);
 
-    // 4. Fetch Asset Metadata (for Sector)
     const allAssets = await getAllAssets();
     const assetMap = new Map(allAssets.map(a => [a.symbol, a]));
 
-    // 5. Map to UI Model
-    // We need to fetch annual dividends for all symbols to calculate yield
-    // This could be N+1 so ideally we'd bulk fetch, but for now we iterate (local DB is fast)
     const annualDividends = await Promise.all(metrics.map(m => getAnnualDividend(m.symbol)));
     const dividendMap = new Map(metrics.map((m, i) => [m.symbol, annualDividends[i]]));
 
@@ -389,7 +361,6 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
         const currentPrice = priceMap[m.symbol] ? priceMap[m.symbol].toNumber() : 0;
         const annualDiv = dividendMap.get(m.symbol) || 0;
 
-        // Yield = (Annual Div / Current Price) * 100
         const divYield = currentPrice > 0 ? (annualDiv / currentPrice) * 100 : 0;
 
         return {
@@ -399,7 +370,7 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
             totalValue: m.totalMarketValue.toNumber(),
             gainLoss: m.unrealizedPL.toNumber(),
             gainLossPercent: gainLossPercent,
-            divYield: parseFloat(divYield.toFixed(2)), // Format to 2 decimal places
+            divYield: parseFloat(divYield.toFixed(2)),
             sector: asset?.sector || 'Other',
             name: asset?.name,
             type: asset?.type,
@@ -407,7 +378,5 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
         };
     });
 
-    // 6. Filter out sold positions (0 shares)
-    // Use a small epsilon for floating point comparison if needed, but BigNumber usually accurate
     return holdings.filter(h => h.shares > 0.000001);
 };
