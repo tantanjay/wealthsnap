@@ -84,12 +84,13 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
             setLoadingAssets(true);
             try {
                 const data = await getAllAssets();
-                setAssets(data);
+                // Filter assets by type to match the selection from RecordMenu (e.g., STOCKS, FUNDS)
+                const filteredData = data.filter(asset => asset.type === investmentType);
+                setAssets(filteredData);
 
-                // If editing, symbol is already set. If new and data exists, maybe set first?
-                // Using functional update to avoid adding 'symbol' to dependency array/loop
-                if (!initialInvestment && data.length > 0) {
-                    setSymbol(prev => prev || data[0].symbol);
+                // If editing, symbol is already set. If new and data exists, set first available asset
+                if (!initialInvestment && filteredData.length > 0) {
+                    setSymbol(prev => prev || filteredData[0].symbol);
                 }
             } catch (error) {
                 console.error('Failed to load assets for picker:', error);
