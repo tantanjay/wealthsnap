@@ -13,6 +13,7 @@ import { useAlert } from '@context/AlertContext';
 import { Transaction, TransactionType, ReceiptAnalysisResult, InvestmentType, DebtType, Investment } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveTransactionWithReceipt } from '@services/domain/transactionService';
+import { getUserProfile } from '@services/core/storageService';
 
 type ViewMode = 'MENU' | 'TRANSACTION' | 'INVESTMENT' | 'AI' | 'AI_REVIEW';
 
@@ -24,6 +25,7 @@ const RecordScreen = ({ navigation, route }: any) => {
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
     const [capturedImageUri, setCapturedImageUri] = useState<string | null>(null);
+    const [currency, setCurrency] = useState('PHP');
 
     // Ref for viewMode to access current value in focus effect without triggering re-runs
     const viewModeRef = useRef(viewMode);
@@ -83,6 +85,18 @@ const RecordScreen = ({ navigation, route }: any) => {
 
         return () => backHandler.remove();
     }, [viewMode, modalVisible, handleTransactionCancel]);
+
+    useFocusEffect(
+        useCallback(() => {
+            const loadCurrency = async () => {
+                const profile = await getUserProfile();
+                if (profile?.currency) {
+                    setCurrency(profile.currency);
+                }
+            };
+            loadCurrency();
+        }, [])
+    );
 
     useFocusEffect(
         useCallback(() => {
@@ -306,6 +320,7 @@ const RecordScreen = ({ navigation, route }: any) => {
                     key={`${investmentType}-${editingInvestment?.id || 'new'}`}
                     investmentType={investmentType}
                     initialInvestment={editingInvestment || undefined}
+                    currency={currency}
                     onSave={handleTransactionSave}
                     onCancel={handleTransactionCancel}
                 />
