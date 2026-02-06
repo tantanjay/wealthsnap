@@ -17,7 +17,7 @@ import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { Transaction } from '@types';
-import { getAllBudgets } from '@services/domain';
+import { getAllBudgets } from '@services/domain/budgetService';
 import * as Metrics from '@utils/financialMetrics';
 import * as Storage from '@services/core/storageService';
 

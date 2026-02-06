@@ -6,7 +6,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { AIUsageLog, ReceiptAnalysisResult } from '@types';
 import { getAIConfig } from '@services/core/storageService';
 import { generateUUID } from '@utils/uuid';
-import { saveAIUsageLog } from '@services/domain';
+import { saveAIUsageLog } from '@services/domain/logService';
 import { EXPENSE_CATEGORIES } from '@constants/categories';
 
 // Dynamic Configuration
@@ -364,25 +364,27 @@ export interface AssetRequest {
 export interface FetchedPrice {
     symbol: string;
     price: number;
+    currency: string;
     date: string; // YYYY-MM-DD
     high?: number;
     low?: number;
     volume?: number;
 }
 
-const stockPriceSchema = {
+const assetPriceSchema = {
     type: 'array',
     items: {
         type: 'object',
         properties: {
-            symbol: { type: 'string', description: 'The stock ticker (e.g. AREIT)' },
-            price: { type: 'number', description: 'Closing price in local currency' },
+            symbol: { type: 'string', description: 'The asset ticker (e.g. AREIT, BTC)' },
+            price: { description: 'Daily closing price' },
+            currency: { type: 'string', description: 'ISO 4217 currency code (e.g. PHP, USD)' },
             date: { type: 'string', description: 'ISO 8601 format (YYYY-MM-DD)' },
             high: { type: 'number', nullable: true },
             low: { type: 'number', nullable: true },
             volume: { type: 'number', nullable: true }
         },
-        required: ['symbol', 'price', 'date']
+        required: ['symbol', 'price', 'currency', 'date']
     }
 };
 
@@ -405,11 +407,35 @@ export const fetchHistoricalPrices = async (assets: AssetRequest[], duration: st
 
         // --- PASS 1: THE RESEARCHER (Search Enabled, No Schema) ---
         const researchPrompt = `
-            Find the daily closing price history for these assets: [${assetList}].
-            Duration: ${duration}. Today is ${new Date().toISOString().split('T')[0]}.
-            Focus on TRADING DAYS only. Carry-forward prices for weekends/holidays.
-            Provide the data in a clear list format for me to process.
-        `;
+Retrieve historical daily prices for the following assets:
+
+Assets:
+${assetList}
+
+Duration: ${duration}
+Today (UTC): ${new Date().toISOString().split('T')[0]}
+
+RULES:
+- Every price MUST include its currency (ISO 4217).
+- Examples:
+  - PSE stocks → PHP
+  - US stocks → USD
+  - Crypto → USD unless exchange specifies otherwise
+- Use real historical market data only.
+- Do NOT fabricate or estimate prices.
+- Stocks: include only official exchange trading days.
+- Crypto: include all calendar days (24/7 markets).
+- Clearly label each entry with:
+  - Symbol
+  - Exchange
+  - Date (YYYY-MM-DD)
+  - Closing price
+  - Currency
+- Prefer reputable sources (Yahoo Finance, exchange data, CoinMarketCap, CoinGecko).
+
+Output format:
+A simple, line-by-line list. No commentary.
+`;
 
         const researchResponse = await genAI.models.generateContent({
             model: currentModelName,
@@ -426,21 +452,29 @@ export const fetchHistoricalPrices = async (assets: AssetRequest[], duration: st
 
         // --- PASS 2: THE ACCOUNTANT (No Tools, Strict Schema Enabled) ---
         const formatPrompt = `
-            Convert the following financial research into the requested JSON schema.
-            RESEARCH DATA:
-            ${rawResearchText}
-            
-            RULES:
-            - Symbols must be tickers only (e.g. "AREIT").
-            - Dates must be YYYY-MM-DD.
-        `;
+Transform the following research data into valid JSON
+matching the provided schema.
 
+RESEARCH DATA:
+${rawResearchText}
+
+STRICT RULES:
+- Do NOT infer or guess currency.
+- If currency is missing, EXCLUDE the entry.
+- Currency must be a valid ISO 4217 code (e.g. USD, PHP).
+- Do NOT invent missing values.
+- Exclude entries with missing prices or dates.
+- Symbols must be tickers only (e.g. "AREIT", "BTC").
+- Dates must be in YYYY-MM-DD format.
+- Prices must be numeric.
+- If high, low, or volume are unavailable, set them to null.
+`;
         const formatResponse = await genAI.models.generateContent({
             model: currentModelName,
             config: {
                 temperature: 0.1,
                 responseMimeType: "application/json",
-                responseJsonSchema: stockPriceSchema,
+                responseJsonSchema: assetPriceSchema,
             },
             contents: [{ role: 'user', parts: [{ text: formatPrompt }] }]
         });

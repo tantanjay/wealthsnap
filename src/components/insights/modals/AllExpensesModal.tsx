@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { Budget } from '@types';
-import { checkBudgetStatus } from '@services/domain';
+import { checkBudgetStatus } from '@services/domain/budgetService';
 import { formatCompactCurrency } from '@utils/currencyUtils';
 
 interface AllExpensesModalProps {
