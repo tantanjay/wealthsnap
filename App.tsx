@@ -17,9 +17,17 @@ import { ReminderCatchupModal } from '@components/reminders/ReminderCatchupModal
 import { Reminder } from '@types';
 import { getDatabase } from '@services/database/databaseService';
 import { getPendingReminders } from '@services/domain/reminderService';
-import { isOnboardingComplete, getAcceptedTermsVersion } from '@services/core/storageService';
+import { isOnboardingComplete, getAcceptedTermsVersion, getLastBackupDate, saveLastBackupDate } from '@services/core/storageService';
 import { initNotifications, requestPermissions, registerBackgroundFetchAsync } from '@services/background';
 import { CONFIG } from '@constants/config';
+import BackupReminderModal from '@components/data/BackupReminderModal';
+import BackupModal from '@components/data/BackupModal';
+import { createBackup } from '@services/integrations/backupService';
+import * as Sharing from 'expo-sharing';
+
+// Standard JS date math is safer since I don't know dependencies.
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -27,6 +35,11 @@ export default function App() {
   const [initialRoute, setInitialRoute] = useState<'Onboarding' | 'Main' | 'LegalAcceptance'>('Onboarding');
   const [pendingReminders, setPendingReminders] = useState<Reminder[]>([]);
   const [showCatchup, setShowCatchup] = useState(false);
+
+  // Backup Reminder State
+  const [showBackupReminder, setShowBackupReminder] = useState(false);
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [isBackupProcessing, setIsBackupProcessing] = useState(false);
 
   useEffect(() => {
     initNotifications();
@@ -37,6 +50,24 @@ export default function App() {
       if (pending.length > 0) {
         setPendingReminders(pending);
         setShowCatchup(true);
+      }
+    };
+
+    const checkBackupStatus = async () => {
+      const lastBackup = await getLastBackupDate();
+      if (!lastBackup) {
+        // First run or never backed up. Initialize to NOW so we don't bug them for 7 days.
+        await saveLastBackupDate(new Date().toISOString());
+        return;
+      }
+
+      const now = new Date();
+      const last = new Date(lastBackup);
+      const diffTime = Math.abs(now.getTime() - last.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays >= 7) {
+        setShowBackupReminder(true);
       }
     };
 
@@ -76,12 +107,14 @@ export default function App() {
 
     // Initial checks
     checkCatchup();
+    checkBackupStatus();
     checkOnboarding();
 
     // Foreground check
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
         checkCatchup();
+        checkBackupStatus();
       }
     });
 
@@ -126,6 +159,44 @@ export default function App() {
                     />
                   )}
                 </BottomModal>
+
+                <BackupReminderModal
+                  visible={showBackupReminder}
+                  onClose={() => setShowBackupReminder(false)}
+                  onCreateBackup={() => {
+                    setShowBackupReminder(false);
+                    setShowBackupModal(true);
+                  }}
+                  onRemindLater={async () => {
+                    // Reset timer
+                    await saveLastBackupDate(new Date().toISOString());
+                    setShowBackupReminder(false);
+                  }}
+                />
+
+                <BackupModal
+                  visible={showBackupModal}
+                  onClose={() => setShowBackupModal(false)}
+                  onBackup={async (password) => {
+                    try {
+                      setIsBackupProcessing(true);
+                      const uri = await createBackup(password);
+                      setIsBackupProcessing(false);
+                      setShowBackupModal(false);
+
+                      if (await Sharing.isAvailableAsync()) {
+                        await Sharing.shareAsync(uri);
+                      }
+                    } catch (error) {
+                      setIsBackupProcessing(false);
+                      console.error(error);
+                      // Ideally show alert but we are outside normal context. 
+                      // CustomAlert might work if we trigger it globally, but for now simple log or maybe alert()
+                      alert('Backup Failed: ' + (error as Error).message);
+                    }
+                  }}
+                  isProcessing={isBackupProcessing}
+                />
               </SafeAreaProvider>
             </AlertProvider>
           </PrivacyProvider>
