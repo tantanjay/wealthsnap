@@ -61,11 +61,13 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     const [loadingAssets, setLoadingAssets] = useState(false);
 
     // Currency state
-    const [useNativeCurrency, setUseNativeCurrency] = useState(
-        initialInvestment && initialInvestment.currency && initialInvestment.currency !== currency
-            ? true
-            : false
-    );
+    const [useNativeCurrency, setUseNativeCurrency] = useState(() => {
+        if (initialInvestment && initialInvestment.currency) {
+            // If editing, and investment has a currency different from standard profile currency
+            return initialInvestment.currency !== currency;
+        }
+        return false;
+    });
 
     // Derived state for selected asset
     const selectedAsset = assets.find(a => a.symbol === symbol);
