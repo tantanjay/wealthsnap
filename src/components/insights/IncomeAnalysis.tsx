@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { PieChart } from 'react-native-chart-kit';
+import { PieChart } from 'react-native-gifted-charts';
 
 import BottomModal from '@components/common/BottomModal';
 import MonthEndProjectionModal from '@components/insights/modals/MonthEndProjectionModal';
@@ -63,7 +63,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
     const pieData = categoryBreakdown.map((item, index) => ({
         name: item.name,
         population: item.amount,
-        color: index % 2 === 0 ? colors.primary : '#FF9800', // Simple alternator for now, could be better
+        color: index % 2 === 0 ? colors.primary : '#FF9800',
         legendFontColor: colors.textSecondary,
         legendFontSize: 12
     }));
@@ -221,20 +221,17 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
 
                                 // Calculate Average from historical months (exclude current)
                                 const historicalData = rawData.slice(0, rawData.length - 1);
-                                // 1. Sum up the history using .plus()
+
                                 const historicalTotal = historicalData.reduce(
                                     (sum, val) => sum.plus(val),
                                     new BigNumber(0)
                                 );
 
-                                // 2. Calculate average using .dividedBy()
                                 const averageIncome = historicalData.length > 0
                                     ? historicalTotal.dividedBy(historicalData.length)
-                                    : currentMonthIncome; // currentMonthIncome should also be a BigNumber
+                                    : currentMonthIncome;
 
                                 // Projection = Max(Current, Average)
-                                // If current < average, project we will reach the average.
-                                // If current > average, projection is just the current income (no extra bar).
                                 const proRatedIncome = BigNumber.max(currentMonthIncome, averageIncome);
 
                                 // Replace last label with * indicator
@@ -353,17 +350,29 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                         pieData.length > 0 ? (
                             <>
                                 <PieChart
-                                    data={pieData}
-                                    width={screenWidth - 64}
-                                    height={220}
-                                    chartConfig={{
-                                        color: (opacity = 1) => colors.text,
+                                    data={pieData.map(d => ({
+                                        value: d.population.toNumber(),
+                                        color: d.color,
+                                        text: `${((d.population.toNumber() / pieData.reduce((acc, curr) => acc + curr.population.toNumber(), 0)) * 100).toFixed(0)}%`,
+                                        textColor: "white",
+                                    }))}
+                                    radius={100}
+                                    textSize={10}
+                                    showText
+                                    textColor="white"
+                                    donut
+                                    innerRadius={60}
+                                    innerCircleColor={colors.surface}
+                                    centerLabelComponent={() => {
+                                        return (
+                                            <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                                                <Text style={{ fontSize: 22, color: colors.text, fontWeight: 'bold' }}>
+                                                    {categoryBreakdown.length}
+                                                </Text>
+                                                <Text style={{ fontSize: 10, color: colors.textSecondary }}>Sources</Text>
+                                            </View>
+                                        );
                                     }}
-                                    accessor={"population"}
-                                    backgroundColor={"transparent"}
-                                    paddingLeft={"15"}
-                                    center={[10, 0]}
-                                    absolute={false}
                                 />
                                 <View style={{ marginTop: 20 }}>
                                     {categoryBreakdown.map((item, index) => (

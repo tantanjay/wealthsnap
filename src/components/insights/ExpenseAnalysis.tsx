@@ -1,7 +1,7 @@
 import React from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
-import { PieChart } from 'react-native-chart-kit';
+import { PieChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 
 import AllExpensesModal from '@components/insights/modals/AllExpensesModal';
@@ -51,7 +51,7 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
         setRecurrences(recurrenceData);
     };
 
-    // Fixed colors for categories to make it look decent
+    // Category colors
     const CHART_COLORS = [
         '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
         '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50'
@@ -156,19 +156,50 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                             <Skeleton width={180} height={180} borderRadius={90} />
                         </View>
                     ) : pieData.length > 0 ? (
-                        <PieChart
-                            data={pieData}
-                            width={screenWidth - 64}
-                            height={220}
-                            chartConfig={{
-                                color: (opacity = 1) => colors.text,
-                            }}
-                            accessor={"population"}
-                            backgroundColor={"transparent"}
-                            paddingLeft={"15"}
-                            center={[10, 0]}
-                            absolute={false}
-                        />
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            {/* Chart Section */}
+                            <View style={{ flex: 3, alignItems: 'center' }}>
+                                <PieChart
+                                    data={pieData.map(d => ({
+                                        value: d.population,
+                                        color: d.color,
+                                        text: '', // No text inside slices, moving to legend
+                                    }))}
+                                    radius={70} // Reduced radius to fit side-by-side
+                                    donut
+                                    innerCircleColor={colors.surface}
+                                    innerRadius={40}
+                                    centerLabelComponent={() => {
+                                        return (
+                                            <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                                                <Text style={{ fontSize: 16, color: colors.text, fontWeight: 'bold' }}>
+                                                    {categoryBreakdown.length}
+                                                </Text>
+                                                <Text style={{ fontSize: 8, color: colors.textSecondary }}>Categories</Text>
+                                            </View>
+                                        );
+                                    }}
+                                />
+                            </View>
+
+                            {/* Legend (Ledger) Section - Right Side */}
+                            <View style={{ flex: 4, paddingLeft: 10 }}>
+                                <View style={{ gap: 8 }}>
+                                    {pieData.map((item, index) => {
+                                        const totalPopulation = pieData.reduce((acc, curr) => acc + curr.population, 0);
+                                        const percentage = ((item.population / totalPopulation) * 100).toFixed(0);
+                                        return (
+                                            <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.color, marginRight: 8, marginTop: 2 }} />
+                                                <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 1 }}>
+                                                    {item.name} <Text style={{ fontWeight: 'bold', color: colors.text }}>({percentage}%)</Text>
+                                                </Text>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+                        </View>
                     ) : (
                         <Text style={{ color: colors.textSecondary, textAlign: 'center', padding: 20 }}>No expense data available.</Text>
                     )

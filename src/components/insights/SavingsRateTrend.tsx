@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
+import { LineChart } from 'react-native-gifted-charts';
 import { Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -68,33 +68,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         };
     }, [transactions, monthsToLoad, colors.primary]);
 
-    const chartConfig = {
-        backgroundGradientFrom: colors.surface,
-        backgroundGradientTo: colors.surface,
-        decimalPlaces: 0,
-        color: (opacity = 1) => colors.primary,
-        labelColor: (opacity = 1) => colors.textSecondary,
-        propsForLabels: {
-            fontSize: 10
-        },
-        fillShadowGradientFrom: colors.surface,
-        fillShadowGradientTo: colors.surface,
-        fillShadowGradientOpacity: 0,
-        style: {
-            borderRadius: 16,
-            paddingRight: 0, // Minimize right padding
-        },
-        propsForDots: {
-            r: '4',
-            strokeWidth: '2',
-            stroke: '#fafafa'
-        },
-        propsForBackgroundLines: {
-            strokeDasharray: '',
-            stroke: colors.border,
-            strokeWidth: 1
-        }
-    };
+
 
     // Calculate average savings rate
     const avgRate = useMemo(() => {
@@ -103,51 +77,33 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         return Math.round((sum / savingsData.rawData.length) * 10) / 10;
     }, [savingsData.rawData]);
 
-    // Calculate chart bounds and properties based on data range
+    // Calculate chart bounds for Symmetric Y-Axis
     const chartStats = useMemo(() => {
-        if (savingsData.rawData.length === 0) return { min: 0, max: 100, zeroOffset: 1 };
+        if (savingsData.rawData.length === 0) return { min: -100, max: 100, zeroOffset: 0.5, step: 25 };
 
         const rates = savingsData.rawData.map(d => d.rate);
         const dataMax = Math.max(...rates);
         const dataMin = Math.min(...rates);
 
-        // Smart Scaling Algorithm
-        // Find optimal step size key: 0 must be a tick (so Min is multiple of Step).
-        // Range must be exactly 4 * Step.
-        // Range must cover dataMin and dataMax.
-        const SEGMENTS = 4;
-        const steps = [1, 2, 5, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 75, 80, 90, 100, 150, 200];
-
-        for (const step of steps) {
-            // Find minimal 'n' such that -n * step <= dataMin
-            // -n * step is the chart floor (Min)
-            // If dataMin is positive (e.g. 5%), we technically can start at 0 (n=0).
-            // But if dataMin is negative (e.g. -38%), we need floor to be below it.
-
-            // n * step >= -dataMin  =>  n >= -dataMin / step
-            // Since n must be >= 0 (to ensure 0 is max or below), 
-            // n = ceil(abs(min(dataMin, 0)) / step)
-
-            const n = Math.ceil(Math.abs(Math.min(dataMin, 0)) / step);
-            const candidateMin = -n * step;
-            const candidateMax = candidateMin + (step * SEGMENTS);
-
-            if (candidateMax >= dataMax) {
-                let finalMin = candidateMin;
-                let finalMax = candidateMax;
-
-                const range = finalMax - finalMin;
-                const zeroOffset = finalMax / range;
-
-                return { min: finalMin, max: finalMax, zeroOffset };
-            }
-        }
-
-        // Fallback to symmetric if no smart fit found (e.g. huge numbers)
+        // Create symmetric chart boundary based on max absolute value
         const absMax = Math.max(Math.abs(dataMax), Math.abs(dataMin));
-        const roundedAbs = Math.ceil(absMax / 10) * 10;
-        return { min: -roundedAbs, max: roundedAbs, zeroOffset: 0.5 };
 
+        // Round up to nearest nice number
+        let boundary = 100;
+        if (absMax <= 10) boundary = 10;
+        else if (absMax <= 25) boundary = 25;
+        else if (absMax <= 50) boundary = 50;
+        else if (absMax <= 100) boundary = 100;
+        else boundary = Math.ceil(absMax / 50) * 50;
+
+        const min = -boundary;
+        const max = boundary;
+
+        // 8 sections for symmetry around zero
+        const sections = 8;
+        const step = (max - min) / sections;
+
+        return { min, max, zeroOffset: 0.5, step };
     }, [savingsData.rawData]);
 
     const latestRate = savingsData.rawData[savingsData.rawData.length - 1]?.rate || 0;
@@ -421,6 +377,28 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         </BottomModal>
     );
 
+    // --- Center-zero workaround for gifted-charts (older versions) ---
+
+    const yBoundary = chartStats.max; // symmetric boundary
+    const yOffset = yBoundary;        // shift zero to center
+
+    const shiftedChartData = savingsData.datasets[0].data.map((val) => ({
+        value: val + yOffset, // shift
+        originalValue: val,   // keep real value for labels/colors
+        dataPointColor: val < 0 ? '#F44336' : colors.primary,
+    }));
+
+    const Y_AXIS_WIDTH = 45;
+    const INITIAL_SPACING = 20;
+
+    const chartWidth = screenWidth - 40;
+    const plotWidth = chartWidth - Y_AXIS_WIDTH - INITIAL_SPACING;
+
+    const pointSpacing =
+        savingsData.datasets[0].data.length > 1
+            ? plotWidth / (savingsData.datasets[0].data.length - 1)
+            : plotWidth;
+
     if (!isLoading && savingsData.datasets[0].data.length === 0) {
         return (
             <View>
@@ -537,76 +515,107 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                         <Skeleton height={180} width="100%" borderRadius={16} />
                     </View>
                 ) : !privacyMode && (
-                    <LineChart
-                        data={{
-                            labels: savingsData.labels,
-                            datasets: [
-                                {
-                                    data: savingsData.datasets[0].data,
-                                    color: (opacity = 1) => `url(#savings_gradient_${savingsData.labels.join('')})`,
-                                    strokeWidth: 3
-                                },
-                                {
-                                    // Zero baseline
-                                    data: savingsData.datasets[0].data.map(() => 0),
-                                    color: (opacity = 1) => colors.border,
-                                    strokeWidth: 1,
-                                    withDots: false,
-                                },
-                                {
-                                    // Hidden dataset to force specific scaling
-                                    data: savingsData.datasets[0].data.map((_, i) => i === 0 ? chartStats.max : chartStats.min),
-                                    color: () => 'transparent',
-                                    strokeWidth: 0,
-                                    withDots: false
-                                }
-                            ]
-                        }}
-                        width={screenWidth - 48} // Slightly wider to reduce right gap relative to container
-                        height={200}
-                        chartConfig={{
-                            ...chartConfig,
-                            propsForDots: {
-                                r: '4',
-                                strokeWidth: '2',
-                                stroke: '#fafafa'
-                            }
-                        }}
-                        bezier
-                        style={{
-                            marginVertical: 8,
-                            borderRadius: 16,
-                            paddingRight: 40,
-                        }}
-                        segments={4}
-                        formatYLabel={(value) => `${parseFloat(value).toFixed(0)}%`}
-                        fromZero
-                        getDotColor={(dataPoint, dataPointIndex) => {
-                            return dataPoint < 0 ? '#F44336' : colors.primary;
-                        }}
-                        decorator={({ width, height }: any) => {
-                            const paddingTop = 16;
-                            const paddingBottom = 36;
-                            const chartHeight = height || 200;
+                    <View style={{ overflow: 'hidden', marginLeft: -10 }}>
+                        <LineChart
+                            data={shiftedChartData.map(d => ({
+                                value: d.value,
+                                dataPointColor: d.dataPointColor,
+                            }))}
 
-                            return (
-                                <Defs key={`savings-rate-defs-${savingsData.labels.join('')}`}>
-                                    <LinearGradient
-                                        id={`savings_gradient_${savingsData.labels.join('')}`}
-                                        x1="0"
-                                        y1={paddingTop}
-                                        x2="0"
-                                        y2={chartHeight - paddingBottom}
-                                        gradientUnits="userSpaceOnUse"
+                            height={200}
+                            width={screenWidth - 40}
+                            spacing={(screenWidth - 80) / Math.max(shiftedChartData.length, 1)}
+                            initialSpacing={20}
+                            thickness={3}
+                            curved
+                            curveType={0}
+
+                            /* ---- SCALE (IMPORTANT) ---- */
+                            maxValue={yBoundary * 2}
+                            noOfSections={4}
+
+                            /* ---- GRID ---- */
+                            hideRules={false}
+                            rulesType="solid"
+                            rulesColor={colors.border + '80'}
+                            rulesThickness={1}
+
+                            showVerticalLines
+                            verticalLinesColor={colors.border + '80'}
+                            verticalLinesThickness={1}
+
+                            /* ---- AXIS ---- */
+                            yAxisColor="transparent"
+                            xAxisColor="transparent"
+                            yAxisLabelWidth={45}
+                            yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+
+                            /* ---- ZERO LINE (NOW CENTERED) ---- */
+                            showReferenceLine1
+                            referenceLine1Position={yOffset}
+                            referenceLine1Config={{
+                                color: colors.textSecondary,
+                                thickness: 1,
+                                type: 'dashed',
+                                dashWidth: 5,
+                                dashGap: 5,
+                            }}
+
+                            /* ---- LINE GRADIENT ---- */
+                            lineGradient
+                            lineGradientId="g_savings"
+                            lineGradientComponent={() => (
+                                <LinearGradient id="g_savings" x1="0" y1="0" x2="0" y2="1">
+                                    <Stop offset="0%" stopColor={colors.primary} stopOpacity="1" />
+                                    <Stop offset="50%" stopColor={colors.primary} stopOpacity="1" />
+                                    <Stop offset="50%" stopColor="#F44336" stopOpacity="1" />
+                                    <Stop offset="100%" stopColor="#F44336" stopOpacity="1" />
+                                </LinearGradient>
+                            )}
+
+                            /* ---- LABEL FIX (UNSHIFT VALUES) ---- */
+                            formatYLabel={(value: string) => {
+                                const realValue = Number(value) - yOffset;
+                                return `${realValue.toFixed(0)}%`;
+                            }}
+                        />
+                        {/* Custom X-Axis Labels Reference (Below Chart) */}
+                        {/* Custom X-Axis Labels (Pixel-Aligned) */}
+                        <View
+                            style={{
+                                position: 'relative',
+                                width: chartWidth,
+                                height: 20,
+                                marginTop: 4,
+                            }}
+                        >
+                            {savingsData.labels.map((label, index) => {
+                                if (!label) return null;
+
+                                const left =
+                                    Y_AXIS_WIDTH +
+                                    INITIAL_SPACING +
+                                    index * pointSpacing -
+                                    15; // half of label width (30 / 2)
+
+                                return (
+                                    <Text
+                                        key={index}
+                                        style={{
+                                            position: 'absolute',
+                                            left,
+                                            width: 30,
+                                            textAlign: 'center',
+                                            fontSize: 10,
+                                            color: colors.textSecondary,
+                                        }}
                                     >
-                                        {/* Dynamic offset based on smart scaling */}
-                                        <Stop offset={`${chartStats.zeroOffset}`} stopColor={colors.primary} stopOpacity="1" />
-                                        <Stop offset={`${chartStats.zeroOffset}`} stopColor="#F44336" stopOpacity="1" />
-                                    </LinearGradient>
-                                </Defs>
-                            );
-                        }}
-                    />
+                                        {label}
+                                    </Text>
+                                );
+                            })}
+                        </View>
+                    </View>
                 )}
 
                 {!isLoading && privacyMode && (
