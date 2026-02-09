@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, Text, Dimensions, ScrollView } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
+import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
@@ -34,40 +34,7 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
         return getCategoryTrend(transactions, category, 'EXPENSE', 6, grouping);
     }, [transactions, category, grouping]);
 
-    const chartData = {
-        labels: trendData.labels.length > 0 ? trendData.labels : ["No Data"],
-        datasets: [{
-            // 1. Map BigNumbers to primitive numbers for the UI
-            // 2. Use a fallback array of [0] if data is empty
-            data: trendData.data.length > 0
-                ? trendData.data.map(val => val.toNumber())
-                : [0],
-            color: (opacity = 1) => colors.primary,
-            strokeWidth: 3
-        }]
-    };
 
-    const chartConfig = {
-        backgroundColor: colors.surface,
-        backgroundGradientFrom: colors.surface,
-        backgroundGradientTo: colors.surface,
-        decimalPlaces: 0,
-        color: (opacity = 1) => colors.primary,
-        labelColor: (opacity = 1) => colors.text,
-        style: {
-            borderRadius: 16,
-        },
-        propsForDots: {
-            r: '5',
-            strokeWidth: '2',
-            stroke: colors.primary
-        },
-        propsForBackgroundLines: {
-            strokeDasharray: '',
-            stroke: colors.border,
-            strokeWidth: 1
-        }
-    };
 
     // Calculate stats
 
@@ -101,22 +68,38 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
             >
                 {/* Chart */}
                 {trendData.data.length > 0 && (
-                    <LineChart
-                        data={chartData}
-                        width={screenWidth - 40}
-                        height={220}
-                        chartConfig={chartConfig}
-                        bezier
-                        style={{
-                            marginVertical: 8,
-                            borderRadius: 16,
-                        }}
-                        formatYLabel={(value) => {
-                            const num = parseFloat(value);
-                            if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
-                            return num.toFixed(0);
-                        }}
-                    />
+                    <View style={{ overflow: 'hidden', marginLeft: -20 }}>
+                        <LineChart
+                            data={trendData.data.map((val, index) => ({
+                                value: val.toNumber(),
+                                label: trendData.labels[index],
+                                // Show label for every point or throttle?
+                                // Original code showed all labels if they fit, or "No Data"
+                            }))}
+                            height={220}
+                            width={screenWidth - 40}
+                            spacing={(screenWidth - 80) / Math.max(trendData.data.length - 1, 1)}
+                            initialSpacing={20}
+                            thickness={3}
+                            color={colors.primary}
+                            hideRules={false}
+                            rulesColor={colors.border + '40'}
+                            yAxisColor="transparent"
+                            xAxisColor="transparent"
+                            yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+                            xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+                            hideDataPoints={false}
+                            dataPointsColor={colors.primary}
+                            curved
+                            curveType={0}
+                            xAxisLabelTexts={trendData.labels}
+                            formatYLabel={(value: string) => {
+                                const num = parseFloat(value);
+                                if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
+                                return num.toFixed(0);
+                            }}
+                        />
+                    </View>
                 )}
 
                 {/* Stats */}
