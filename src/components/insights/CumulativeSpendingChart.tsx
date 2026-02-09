@@ -83,10 +83,18 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     // Construct DataSets for Gifted Charts
 
     // 1. Average Data (Background, Gray, Dashed)
-    const averageLineData = avgData.map(value => ({ value }));
+    const averageLineData = avgData.map((value, index) => ({
+        value,
+        type: 'Average',
+        day: index + 1
+    }));
 
     // 2. Current Data (Foreground, Primary, Solid)
-    const currentLineData = currentData.map(value => ({ value }));
+    const currentLineData = currentData.map((value, index) => ({
+        value,
+        type: 'Current',
+        day: index + 1
+    }));
 
     // 3. Projection Data (Primary, Dotted)
     // Strategy:
@@ -94,68 +102,85 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     // - Layer 2 (Middle): Full Projection (Primary Dotted) from start to finish
     // - Layer 3 (Top): Current Actuals (Primary Solid) overlays the projection up to today
 
-    const fullProjectionLine = [];
+    const fullProjectionLine: any[] = [];
     if (projectionData.length > 0) {
         // Create a full array combining currentData (up to last point) and projectionData (rest)
         // projectionData array already includes the connection point (last actual value) at index 0.
 
         // Full curve = currentData[0...last-1] + projectionData[0...end]
         const prefix = currentData.slice(0, currentData.length - 1);
-        fullProjectionLine.push(...prefix.map(val => ({ value: val })));
-        fullProjectionLine.push(...projectionData.map(val => ({ value: val })));
+        fullProjectionLine.push(...prefix.map((val, index) => ({
+            value: val,
+            type: 'Current', // This is actual spending data, not projected
+            day: index + 1
+        })));
+
+        // The projection part starts from where currentData left off?
+        // Wait, logic in useMemo:
+        // projectionData[0] is currentTotal (day = currentData.length)
+        const startDay = currentData.length;
+        fullProjectionLine.push(...projectionData.map((val, index) => ({
+            value: val,
+            type: 'Projected',
+            day: startDay + index
+        })));
     }
 
-    const dataSet = [];
+    const dataSet = useMemo(() => {
+        const ds = [];
 
-    // 1. Average (Gray Dashed)
-    if (avgData.length > 0) {
-        dataSet.push({
-            data: averageLineData,
-            color: 'rgba(160, 160, 160, 1)',
-            strokeDashArray: [5, 5],
-            thickness: 2,
-            hideDataPoints: true,
-            zIndex: 1,
-            startFillColor: 'rgba(160, 160, 160, 0.2)',
-            endFillColor: 'rgba(160, 160, 160, 0.01)',
-            startOpacity: 0.2,
-            endOpacity: 0.01,
-            areaChart: true,
-        });
-    }
+        // 1. Average (Gray Dashed)
+        if (avgData.length > 0) {
+            ds.push({
+                data: averageLineData,
+                color: 'rgba(160, 160, 160, 1)',
+                strokeDashArray: [5, 5],
+                thickness: 2,
+                hideDataPoints: true,
+                zIndex: 1,
+                startFillColor: 'rgba(160, 160, 160, 0.2)',
+                endFillColor: 'rgba(160, 160, 160, 0.01)',
+                startOpacity: 0.2,
+                endOpacity: 0.01,
+                areaChart: true,
+            });
+        }
 
-    // 2. Projection (Primary Dotted) - Behind Current
-    if (fullProjectionLine.length > 0) {
-        dataSet.push({
-            data: fullProjectionLine,
-            color: colors.primary,
-            strokeDashArray: [8, 4],
-            thickness: 2,
-            hideDataPoints: true,
-            zIndex: 2,
-            startFillColor: 'rgba(160, 160, 160, 0.2)',
-            endFillColor: 'rgba(160, 160, 160, 0.01)',
-            startOpacity: 0.2,
-            endOpacity: 0.01,
-            areaChart: true,
-        });
-    }
+        // 2. Projection (Primary Dotted) - Behind Current
+        if (fullProjectionLine.length > 0) {
+            ds.push({
+                data: fullProjectionLine,
+                color: colors.primary,
+                strokeDashArray: [8, 4],
+                thickness: 2,
+                hideDataPoints: true,
+                zIndex: 2,
+                startFillColor: 'rgba(160, 160, 160, 0.2)',
+                endFillColor: 'rgba(160, 160, 160, 0.01)',
+                startOpacity: 0.2,
+                endOpacity: 0.01,
+                areaChart: true,
+            });
+        }
 
-    // 3. Current (Primary Solid) - On Top
-    if (currentData.length > 0) {
-        dataSet.push({
-            data: currentLineData,
-            color: colors.primary,
-            thickness: 3,
-            hideDataPoints: true,
-            zIndex: 3,
-            startFillColor: 'rgba(160, 160, 160, 0.4)',
-            endFillColor: 'rgba(160, 160, 160, 0.01)',
-            startOpacity: 0.2,
-            endOpacity: 0.01,
-            areaChart: true,
-        });
-    }
+        // 3. Current (Primary Solid) - On Top
+        if (currentData.length > 0) {
+            ds.push({
+                data: currentLineData,
+                color: colors.primary,
+                thickness: 3,
+                hideDataPoints: true,
+                hidePointer: true, // Fix "sky dot" by hiding the pointer for actuals
+                zIndex: 3,
+                startFillColor: 'rgba(160, 160, 160, 0.4)',
+                endFillColor: 'rgba(160, 160, 160, 0.01)',
+                startOpacity: 0.2,
+                endOpacity: 0.01,
+                areaChart: true,
+            });
+        }
+        return ds;
+    }, [averageLineData, fullProjectionLine, currentLineData, colors.primary]);
 
     // Determine max value for Y-axis scaling
     const allValues = [
@@ -163,7 +188,85 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         ...avgData,
         ...(fullProjectionLine.map(d => d.value))
     ];
-    const maxValue = Math.max(...allValues, 0);
+    const pointerConfig = useMemo(() => ({
+        pointerStripHeight: 160,
+        pointerStripColor: colors.border,
+        pointerStripWidth: 2,
+        pointerColor: colors.primary,
+        radius: 6,
+        pointerLabelWidth: 140,
+        pointerLabelHeight: 100,
+        activatePointersOnLongPress: false,
+        autoAdjustPointerLabelPosition: true,
+        pointerLabelComponent: (items: any[]) => {
+            const safeItems = items || [];
+
+            // Find specific item types from the items array
+            const currentItem = safeItems.find(i => i && i.type === 'Current');
+            const projectedItem = safeItems.find(i => i && i.type === 'Projected');
+            const averageItem = safeItems.find(i => i && i.type === 'Average');
+
+            // Priority for main value: Current > Projected
+            const mainItem = currentItem || projectedItem;
+
+            if (!mainItem && !averageItem) return null;
+
+            return (
+                <View
+                    style={{
+                        height: 100,
+                        width: 140,
+                        justifyContent: 'center',
+                        marginTop: -30,
+                        marginLeft: -60,
+                    }}>
+                    <View style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        borderRadius: 12,
+                        backgroundColor: colors.surface,
+                        elevation: 5,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 3.84,
+                        borderWidth: 1,
+                        borderColor: colors.border + '20'
+                    }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: 'bold', marginBottom: 6, textAlign: 'center' }}>
+                            Day {mainItem?.day || averageItem?.day || '?'}
+                        </Text>
+
+                        {mainItem && (
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary, marginRight: 6 }} />
+                                    <Text style={{ color: colors.textSecondary, fontSize: 10 }}>{mainItem.type === 'Current' ? 'Actual' : 'Projected'}</Text>
+                                </View>
+                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>
+                                    {formatCompactCurrency(mainItem.value, currency)}
+                                </Text>
+                            </View>
+                        )}
+
+                        {averageItem && (
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#A0A0A0', marginRight: 6 }} />
+                                    <Text style={{ color: colors.textSecondary, fontSize: 10 }}>History</Text>
+                                </View>
+                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>
+                                    {formatCompactCurrency(averageItem.value, currency)}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            );
+        },
+    }), [colors, currency]);
+
+
 
 
     return (
@@ -256,6 +359,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                             }}
                             yAxisLabelWidth={65}
                             animationDuration={1000}
+                            pointerConfig={pointerConfig}
                         />
                     </View>
                 )}
