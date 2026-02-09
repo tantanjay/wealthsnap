@@ -1,6 +1,6 @@
 import React from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -31,7 +31,6 @@ interface ExpenseAnalysisProps {
 
 const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, currency, isPrivacyEnabled, grouping, onToggleGrouping, transactions, isLoading = false }) => {
     const { colors } = useTheme();
-    const screenWidth = Dimensions.get('window').width;
     const [budgets, setBudgets] = React.useState<Budget[]>([]);
     const [recurrences, setRecurrences] = React.useState<RecurrenceRule[]>([]);
     const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
