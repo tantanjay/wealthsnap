@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { BarChart } from 'react-native-chart-kit';
+import { BarChart } from 'react-native-gifted-charts';
 
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
-import { CURRENCY_SYMBOLS, formatCompactCurrency, formatCompactNumber, formatCurrencyAmount } from '@utils/currencyUtils';
+import { CURRENCY_SYMBOLS, formatCurrencyAmount, formatCompactNumber } from '@utils/currencyUtils';
 
 interface DividendChartProps {
     labels: string[];
@@ -21,16 +21,38 @@ export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, curr
 
     const totalDividends = data.reduce((acc, curr) => acc + curr, 0);
 
-    const chartConfig = {
-        backgroundGradientFrom: colors.surface,
-        backgroundGradientTo: colors.surface,
-        decimalPlaces: 0,
-        color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-        labelColor: (opacity = 1) => colors.textSecondary,
-        barPercentage: 0.5,
-        formatYLabel: (value: string) => formatCompactNumber(value),
-        formatTopBarValue: (value: number) => formatCompactCurrency(value.toString(), currency, 0),
-    };
+    const chartWidth = screenWidth - 64;
+    const barWidth = 22;
+    let initialSpacing = 10;
+    let spacing = 20;
+
+    if (data && data.length > 0) {
+        if (data.length === 1) {
+            initialSpacing = (chartWidth - barWidth) / 2;
+        } else {
+            const totalBarWidth = data.length * barWidth;
+            const availableSpace = chartWidth - initialSpacing * 2 - totalBarWidth; // Subtract initial spacing from both sides for visual balance
+            spacing = Math.max(0, availableSpace / (data.length));
+        }
+    }
+
+    const maxValue = Math.max(...data);
+    const maxValueWithBuffer = maxValue * 1.25;
+
+    // Prepare data for Gifted Charts
+    const barData = data.map((value, index) => ({
+        value,
+        label: labels[index],
+        topLabelComponent: () => (
+            <View style={{ width: 50, alignItems: 'center', marginLeft: 0, marginBottom: 4 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 10 }} numberOfLines={1} adjustsFontSizeToFit>
+                    {formatCompactNumber(value)}
+                </Text>
+            </View>
+        ),
+        frontColor: 'rgba(16, 185, 129, 1)',
+        gradientColor: 'rgba(16, 185, 129, 0.8)',
+    }));
 
     return (
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
@@ -51,22 +73,28 @@ export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, curr
                     <Text style={{ color: colors.textSecondary, fontStyle: 'italic' }}>No active holdings.</Text>
                 </View>
             ) : (
-                <BarChart
-                    data={{
-                        labels: labels,
-                        datasets: [{ data: data }]
-                    }}
-                    width={screenWidth - 48}
-                    height={220}
-                    yAxisLabel={symbol}
-                    yAxisSuffix=""
-                    yAxisInterval={1}
-                    chartConfig={chartConfig as any}
-                    verticalLabelRotation={0}
-                    showValuesOnTopOfBars
-                    fromZero
-                    style={{ borderRadius: 16 }}
-                />
+                <View style={{ overflow: 'hidden', marginLeft: -10 }}>
+                    <BarChart
+                        data={barData}
+                        barWidth={22}
+                        noOfSections={4}
+                        barBorderRadius={4}
+                        frontColor="rgba(16, 185, 129, 1)"
+                        yAxisThickness={0}
+                        xAxisThickness={0}
+                        yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+                        xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10, textAlign: 'center' }}
+                        height={220}
+                        width={chartWidth}
+                        spacing={spacing}
+                        initialSpacing={initialSpacing}
+                        yAxisLabelPrefix={symbol}
+                        formatYLabel={(label) => formatCompactNumber(parseFloat(label))}
+                        maxValue={maxValueWithBuffer}
+                        hideRules
+                        showGradient
+                    />
+                </View>
             )}
         </View>
     );

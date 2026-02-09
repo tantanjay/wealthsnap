@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
+import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
@@ -80,61 +80,90 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         return { currentData, avgData, projectionData, insight };
     }, [transactions, period, currency, isPrivacyEnabled]);
 
-    const labels = Array.from({ length: 31 }, (_, i) => (i + 1) % 5 === 0 ? (i + 1).toString() : "");
+    // Construct DataSets for Gifted Charts
 
-    // Prepare datasets
-    const datasets = [];
+    // 1. Average Data (Background, Gray, Dashed)
+    const averageLineData = avgData.map(value => ({ value }));
 
-    // Dataset 1: Average (Background Line) - Only if we have history
+    // 2. Current Data (Foreground, Primary, Solid)
+    const currentLineData = currentData.map(value => ({ value }));
+
+    // 3. Projection Data (Primary, Dotted)
+    // Strategy:
+    // - Layer 1 (Bottom): Average (Gray Dashed)
+    // - Layer 2 (Middle): Full Projection (Primary Dotted) from start to finish
+    // - Layer 3 (Top): Current Actuals (Primary Solid) overlays the projection up to today
+
+    const fullProjectionLine = [];
+    if (projectionData.length > 0) {
+        // Create a full array combining currentData (up to last point) and projectionData (rest)
+        // projectionData array already includes the connection point (last actual value) at index 0.
+
+        // Full curve = currentData[0...last-1] + projectionData[0...end]
+        const prefix = currentData.slice(0, currentData.length - 1);
+        fullProjectionLine.push(...prefix.map(val => ({ value: val })));
+        fullProjectionLine.push(...projectionData.map(val => ({ value: val })));
+    }
+
+    const dataSet = [];
+
+    // 1. Average (Gray Dashed)
     if (avgData.length > 0) {
-        datasets.push({
-            data: avgData, // 30-31 points
-            color: (opacity = 1) => `rgba(160, 160, 160, ${opacity})`, // Gray
-            strokeWidth: 2,
-            withDots: false, // Clean line
-            strokeDashArray: [5, 5] // Dashed
+        dataSet.push({
+            data: averageLineData,
+            color: 'rgba(160, 160, 160, 1)',
+            strokeDashArray: [5, 5],
+            thickness: 2,
+            hideDataPoints: true,
+            zIndex: 1,
+            startFillColor: 'rgba(160, 160, 160, 0.2)',
+            endFillColor: 'rgba(160, 160, 160, 0.01)',
+            startOpacity: 0.2,
+            endOpacity: 0.01,
+            areaChart: true,
         });
     }
 
-    // Dataset 2: Current (Foreground Line) - ONLY actual spending, no padding
-    // This line ends at the current day
-    datasets.push({
-        data: currentData, // Just the actual spending data, no padding
-        color: (opacity = 1) => colors.primary,
-        strokeWidth: 3
-    });
-
-    // Dataset 3: Projection (Dotted Line extending from current day)
-    // Starts from current day's value and continues to end of month
-    if (projectionData.length > 0 && avgData.length > 0) {
-        // Copy currentData for days 1 to currentDay (overlaps exactly with solid line, hidden underneath)
-        // Then add projection data for remaining days
-        const fullProjectionData: number[] = [...currentData]; // Days 1 to currentDay
-
-        // Add remaining projection days (skip first since it's already the last currentData value)
-        for (let i = 1; i < projectionData.length; i++) {
-            fullProjectionData.push(projectionData[i]);
-        }
-
-        datasets.push({
-            data: fullProjectionData,
-            color: (opacity = 1) => colors.primary,
-            strokeWidth: 2,
-            withDots: false,
-            strokeDashArray: [8, 4] // Dotted
+    // 2. Projection (Primary Dotted) - Behind Current
+    if (fullProjectionLine.length > 0) {
+        dataSet.push({
+            data: fullProjectionLine,
+            color: colors.primary,
+            strokeDashArray: [8, 4],
+            thickness: 2,
+            hideDataPoints: true,
+            zIndex: 2,
+            startFillColor: 'rgba(160, 160, 160, 0.2)',
+            endFillColor: 'rgba(160, 160, 160, 0.01)',
+            startOpacity: 0.2,
+            endOpacity: 0.01,
+            areaChart: true,
         });
     }
 
-    const chartConfig = {
-        backgroundColor: colors.surface,
-        backgroundGradientFrom: colors.surface,
-        backgroundGradientTo: colors.surface,
-        decimalPlaces: 0,
-        color: (opacity = 1) => colors.textSecondary,
-        labelColor: (opacity = 1) => colors.textSecondary,
-        style: { borderRadius: 16 },
-        propsForDots: { r: "0" }, // Hide dots by default for cleaner look
-    };
+    // 3. Current (Primary Solid) - On Top
+    if (currentData.length > 0) {
+        dataSet.push({
+            data: currentLineData,
+            color: colors.primary,
+            thickness: 3,
+            hideDataPoints: true,
+            zIndex: 3,
+            startFillColor: 'rgba(160, 160, 160, 0.4)',
+            endFillColor: 'rgba(160, 160, 160, 0.01)',
+            startOpacity: 0.2,
+            endOpacity: 0.01,
+            areaChart: true,
+        });
+    }
+
+    // Determine max value for Y-axis scaling
+    const allValues = [
+        ...currentData,
+        ...avgData,
+        ...(fullProjectionLine.map(d => d.value))
+    ];
+    const maxValue = Math.max(...allValues, 0);
 
 
     return (
@@ -196,27 +225,39 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                         <Text style={{ color: colors.textSecondary }}>🔒 Chart hidden for privacy</Text>
                     </View>
                 ) : (
-                    <LineChart
-                        data={{
-                            labels: avgData.length > 0 ? labels : labels.slice(0, currentData.length), // Adjust labels
-                            datasets: datasets
-                        }}
-                        width={screenWidth - 64}
-                        height={200}
-                        chartConfig={chartConfig}
-                        withDots={false}
-                        withInnerLines={false}
-                        withOuterLines={true}
-                        withVerticalLines={false}
-                        withHorizontalLines={true}
-                        bezier
-                        style={{ borderRadius: 16 }}
-                        formatYLabel={(value) => {
-                            const num = parseFloat(value);
-                            if (isNaN(num) || num === 0) return formatCompactCurrency(0, currency);
-                            return formatCompactCurrency(num, currency);
-                        }}
-                    />
+                    <View style={{ overflow: 'hidden', marginLeft: -20 }}>
+                        <LineChart
+                            dataSet={dataSet}
+                            height={200}
+                            width={screenWidth - 40} // Card padding deduction
+                            spacing={(screenWidth - 80) / 31} // Approx spacing for 31 days
+                            initialSpacing={10}
+                            thickness={2}
+                            hideRules={false}
+                            rulesColor={colors.border + '40'}
+                            yAxisColor="transparent"
+                            xAxisColor="transparent"
+                            yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10, marginLeft: 4 }}
+                            xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+                            hideDataPoints
+                            curved
+                            curveType={0} // 0 = Normal, 1 = Cubic Bezier? Gifted charts use 'curved' prop.
+                            // For Labels
+                            xAxisIndicesHeight={2}
+                            xAxisIndicesWidth={2}
+                            noOfSections={4}
+
+                            // Custom Labels logic
+                            xAxisLabelTexts={Array.from({ length: 31 }, (_, i) => (i + 1) % 5 === 0 ? (i + 1).toString() : "")}
+                            formatYLabel={(value: string) => {
+                                const num = parseFloat(value);
+                                if (isNaN(num) || num === 0) return formatCompactCurrency(0, currency);
+                                return formatCompactCurrency(num, currency);
+                            }}
+                            yAxisLabelWidth={65}
+                            animationDuration={1000}
+                        />
+                    </View>
                 )}
 
                 {/* Legend */}
