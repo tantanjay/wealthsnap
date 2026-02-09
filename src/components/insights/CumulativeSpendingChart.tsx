@@ -29,6 +29,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     const [period, setPeriod] = useState<3 | 6 | 12>(3);
     const [showInfo, setShowInfo] = useState(false);
 
+    // 1. Calculate Raw Data (Stable)
     const { currentData, avgData, projectionData, insight } = useMemo(() => {
         const today = new Date();
         const currentMonthTrans = getTransactionsByMonth(transactions, today);
@@ -36,30 +37,24 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         const currentData = getCurrentMonthCumulative(currentMonthTrans);
         const avgData = getCumulativeSpendingCurve(transactions, period);
 
-        // Calculate projection using historical average for future days
         const projectionData: number[] = [];
         if (currentData.length > 0 && avgData.length > 0) {
             const currentDay = currentData.length;
             const currentTotal = currentData[currentData.length - 1];
 
-            // Start with current day's actual value (for seamless connection)
             projectionData.push(currentTotal);
 
-            // Project future days using historical average's daily increments
             let runningTotal = currentTotal;
             for (let day = currentDay; day < avgData.length; day++) {
-                // Use the daily increment from historical average
                 const dailyIncrement = avgData[day] - avgData[day - 1];
                 runningTotal += dailyIncrement;
                 projectionData.push(runningTotal);
             }
         }
 
-        // Calculate Insight
         let insight = "";
         if (currentData.length > 0 && avgData.length > 0) {
             const currentTotal = currentData[currentData.length - 1];
-            // Compare to the avg curve on the SAME day
             const dayIndex = currentData.length - 1;
             const avgAtThisDay = avgData[Math.min(dayIndex, avgData.length - 1)];
 
@@ -80,56 +75,17 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         return { currentData, avgData, projectionData, insight };
     }, [transactions, period, currency, isPrivacyEnabled]);
 
-    // Construct DataSets for Gifted Charts
-
-    // 1. Average Data (Background, Gray, Dashed)
-    const averageLineData = avgData.map((value, index) => ({
-        value,
-        type: 'Average',
-        day: index + 1
-    }));
-
-    // 2. Current Data (Foreground, Primary, Solid)
-    const currentLineData = currentData.map((value, index) => ({
-        value,
-        type: 'Current',
-        day: index + 1
-    }));
-
-    // 3. Projection Data (Primary, Dotted)
-    // Strategy:
-    // - Layer 1 (Bottom): Average (Gray Dashed)
-    // - Layer 2 (Middle): Full Projection (Primary Dotted) from start to finish
-    // - Layer 3 (Top): Current Actuals (Primary Solid) overlays the projection up to today
-
-    const fullProjectionLine: any[] = [];
-    if (projectionData.length > 0) {
-        // Create a full array combining currentData (up to last point) and projectionData (rest)
-        // projectionData array already includes the connection point (last actual value) at index 0.
-
-        // Full curve = currentData[0...last-1] + projectionData[0...end]
-        const prefix = currentData.slice(0, currentData.length - 1);
-        fullProjectionLine.push(...prefix.map((val, index) => ({
-            value: val,
-            type: 'Current', // This is actual spending data, not projected
-            day: index + 1
-        })));
-
-        // The projection part starts from where currentData left off?
-        // Wait, logic in useMemo:
-        // projectionData[0] is currentTotal (day = currentData.length)
-        const startDay = currentData.length;
-        fullProjectionLine.push(...projectionData.map((val, index) => ({
-            value: val,
-            type: 'Projected',
-            day: startDay + index
-        })));
-    }
-
+    // 2. Prepare DataSet (FIX: All logic inside useMemo to prevent re-renders)
     const dataSet = useMemo(() => {
         const ds = [];
 
-        // 1. Average (Gray Dashed)
+        // --- A. Prepare Average Data ---
+        const averageLineData = avgData.map((value, index) => ({
+            value,
+            type: 'Average',
+            day: index + 1
+        }));
+
         if (avgData.length > 0) {
             ds.push({
                 data: averageLineData,
@@ -146,7 +102,24 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
             });
         }
 
-        // 2. Projection (Primary Dotted) - Behind Current
+        // --- B. Prepare Projection Data ---
+        const fullProjectionLine: any[] = [];
+        if (projectionData.length > 0) {
+            const prefix = currentData.slice(0, currentData.length - 1);
+            fullProjectionLine.push(...prefix.map((val, index) => ({
+                value: val,
+                type: 'Current',
+                day: index + 1
+            })));
+
+            const startDay = currentData.length;
+            fullProjectionLine.push(...projectionData.map((val, index) => ({
+                value: val,
+                type: 'Projected',
+                day: startDay + index
+            })));
+        }
+
         if (fullProjectionLine.length > 0) {
             ds.push({
                 data: fullProjectionLine,
@@ -163,14 +136,19 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
             });
         }
 
-        // 3. Current (Primary Solid) - On Top
+        // --- C. Prepare Current Data ---
+        const currentLineData = currentData.map((value, index) => ({
+            value,
+            type: 'Current',
+            day: index + 1
+        }));
+
         if (currentData.length > 0) {
             ds.push({
                 data: currentLineData,
                 color: colors.primary,
                 thickness: 3,
                 hideDataPoints: true,
-                hidePointer: true, // Fix "sky dot" by hiding the pointer for actuals
                 zIndex: 3,
                 startFillColor: 'rgba(160, 160, 160, 0.4)',
                 endFillColor: 'rgba(160, 160, 160, 0.01)',
@@ -179,15 +157,11 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                 areaChart: true,
             });
         }
-        return ds;
-    }, [averageLineData, fullProjectionLine, currentLineData, colors.primary]);
 
-    // Determine max value for Y-axis scaling
-    const allValues = [
-        ...currentData,
-        ...avgData,
-        ...(fullProjectionLine.map(d => d.value))
-    ];
+        return ds;
+    }, [avgData, currentData, projectionData, colors.primary]);
+
+    // 3. Pointer Config (Stable)
     const pointerConfig = useMemo(() => ({
         pointerStripHeight: 160,
         pointerStripColor: colors.border,
@@ -198,17 +172,32 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         pointerLabelHeight: 100,
         activatePointersOnLongPress: false,
         autoAdjustPointerLabelPosition: true,
-        pointerLabelComponent: (items: any[]) => {
-            const safeItems = items || [];
+        pointerComponent: (items: any) => {
+            const safeItems = Array.isArray(items) ? items : [items].filter(Boolean);
+            const isProjected = safeItems.some((i: any) => i?.type === 'Projected');
 
-            // Find specific item types from the items array
-            const currentItem = safeItems.find(i => i && i.type === 'Current');
-            const projectedItem = safeItems.find(i => i && i.type === 'Projected');
-            const averageItem = safeItems.find(i => i && i.type === 'Average');
+            if (isProjected) {
+                return (
+                    <View style={{
+                        height: 10,
+                        width: 10,
+                        borderRadius: 5,
+                        backgroundColor: colors.primary,
+                        borderWidth: 2,
+                        borderColor: colors.surface
+                    }} />
+                );
+            }
+            return <View />;
+        },
+        pointerLabelComponent: (items: any) => {
+            const safeItems = Array.isArray(items) ? items : [items].filter(Boolean);
 
-            // Priority for main value: Current > Projected
+            const currentItem = safeItems.find((i: any) => i?.type === 'Current');
+            const projectedItem = safeItems.find((i: any) => i?.type === 'Projected');
+            const averageItem = safeItems.find((i: any) => i?.type === 'Average');
+
             const mainItem = currentItem || projectedItem;
-
             if (!mainItem && !averageItem) return null;
 
             return (
@@ -265,9 +254,6 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
             );
         },
     }), [colors, currency]);
-
-
-
 
     return (
         <View style={{ marginBottom: 20 }}>
@@ -332,8 +318,8 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                         <LineChart
                             dataSet={dataSet}
                             height={200}
-                            width={screenWidth - 40} // Card padding deduction
-                            spacing={(screenWidth - 80) / 31} // Approx spacing for 31 days
+                            width={screenWidth - 40}
+                            spacing={(screenWidth - 80) / 31}
                             initialSpacing={10}
                             thickness={2}
                             hideRules={false}
@@ -344,13 +330,10 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                             xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
                             hideDataPoints
                             curved
-                            curveType={0} // 0 = Normal, 1 = Cubic Bezier? Gifted charts use 'curved' prop.
-                            // For Labels
+                            curveType={0}
                             xAxisIndicesHeight={2}
                             xAxisIndicesWidth={2}
                             noOfSections={4}
-
-                            // Custom Labels logic
                             xAxisLabelTexts={Array.from({ length: 31 }, (_, i) => (i + 1) % 5 === 0 ? (i + 1).toString() : "")}
                             formatYLabel={(value: string) => {
                                 const num = parseFloat(value);
@@ -408,7 +391,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                         <View style={{ width: 24, height: 4, backgroundColor: colors.primary, marginRight: 12, borderRadius: 2, borderStyle: 'dashed', borderWidth: 2, borderColor: colors.primary }} />
                         <View style={{ flex: 1 }}>
                             <Text style={{ color: colors.text, fontWeight: 'bold' }}>Dotted Line (Projection)</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Where you&apos;re headed based on your historical spending pattern.</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Where you're headed based on your historical spending pattern.</Text>
                         </View>
                     </View>
 
