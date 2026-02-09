@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
-import { Defs, LinearGradient, Stop } from 'react-native-svg';
+import { LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
