@@ -30,7 +30,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, curr
         if (data.length === 1) {
             initialSpacing = (chartWidth - barWidth) / 2;
         } else {
-            const totalBarWidth = data.length * barWidth;
+            const totalBarWidth = data.length * barWidth + 10;
             const availableSpace = chartWidth - initialSpacing * 2 - totalBarWidth; // Subtract initial spacing from both sides for visual balance
             spacing = Math.max(0, availableSpace / (data.length));
         }
