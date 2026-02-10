@@ -161,6 +161,16 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         return ds;
     }, [avgData, currentData, projectionData, colors.primary]);
 
+    // Calculate Max Value for dynamic tooltip positioning
+    const maxValue = useMemo(() => {
+        const allValues = [
+            ...(currentData || []),
+            ...(projectionData || []),
+            ...(avgData || [])
+        ];
+        return allValues.length > 0 ? Math.max(...allValues) : 0;
+    }, [currentData, projectionData, avgData]);
+
     // 3. Pointer Config (Stable)
     const pointerConfig = useMemo(() => ({
         pointerStripHeight: 160,
@@ -200,14 +210,31 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
             const mainItem = currentItem || projectedItem;
             if (!mainItem && !averageItem) return null;
 
+            // --- Dynamic Positioning Logic ---
+            const day = mainItem?.day || averageItem?.day || 1;
+            const value = mainItem?.value || averageItem?.value || 0;
+
+            // X-Axis Positioning: Always avoid center to prevent finger overlap
+            let marginLeft = 10; // Default to Right side
+            if (day > 16) {
+                marginLeft = -100; // Show on Left side for second half of month
+            }
+
+            // Y-Axis Positioning: Prevent clipping at top
+            // If value is in top 20% of range, push tooltip DOWN
+            let marginTop = -30; // Default (Above point)
+            if (maxValue > 0 && value > maxValue * 0.8) {
+                marginTop = 40; // Push below point
+            }
+
             return (
                 <View
                     style={{
                         height: 100,
                         width: 140,
                         justifyContent: 'center',
-                        marginTop: -30,
-                        marginLeft: -60,
+                        marginTop: marginTop,
+                        marginLeft: marginLeft,
                     }}>
                     <View style={{
                         paddingHorizontal: 12,
@@ -253,7 +280,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                 </View>
             );
         },
-    }), [colors, currency]);
+    }), [colors, currency, maxValue]);
 
     return (
         <View style={{ marginBottom: 20 }}>
