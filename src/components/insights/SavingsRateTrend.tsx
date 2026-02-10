@@ -517,13 +517,14 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                 ) : !privacyMode && (
                     <View style={{ overflow: 'hidden', marginLeft: -10 }}>
                         <LineChart
-                            data={shiftedChartData.map(d => ({
+                            data={shiftedChartData.map((d, index) => ({
                                 value: d.value,
                                 dataPointColor: d.dataPointColor,
+                                label: savingsData.labels[index],
                             }))}
 
                             height={200}
-                            width={screenWidth - 40}
+                            width={screenWidth - 80}
                             spacing={(screenWidth - 80) / Math.max(shiftedChartData.length, 1)}
                             initialSpacing={20}
                             thickness={3}
@@ -548,7 +549,9 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                             yAxisColor="transparent"
                             xAxisColor="transparent"
                             yAxisLabelWidth={45}
+
                             yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+                            xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10, width: 30, textAlign: 'center' }}
 
                             /* ---- ZERO LINE (NOW CENTERED) ---- */
                             showReferenceLine1
@@ -579,42 +582,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                                 return `${realValue.toFixed(0)}%`;
                             }}
                         />
-                        {/* Custom X-Axis Labels Reference (Below Chart) */}
-                        {/* Custom X-Axis Labels (Pixel-Aligned) */}
-                        <View
-                            style={{
-                                position: 'relative',
-                                width: chartWidth,
-                                height: 20,
-                                marginTop: 4,
-                            }}
-                        >
-                            {savingsData.labels.map((label, index) => {
-                                if (!label) return null;
 
-                                const left =
-                                    Y_AXIS_WIDTH +
-                                    INITIAL_SPACING +
-                                    index * pointSpacing -
-                                    15; // half of label width (30 / 2)
-
-                                return (
-                                    <Text
-                                        key={index}
-                                        style={{
-                                            position: 'absolute',
-                                            left,
-                                            width: 30,
-                                            textAlign: 'center',
-                                            fontSize: 10,
-                                            color: colors.textSecondary,
-                                        }}
-                                    >
-                                        {label}
-                                    </Text>
-                                );
-                            })}
-                        </View>
                     </View>
                 )}
 
