@@ -37,12 +37,27 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     const { colors } = useTheme();
     const { showAlert } = useAlert();
 
+    // Helper to get initial values (converting back to native if needed)
+    const getInitialValue = (val: BigNumber | undefined, rate: BigNumber | undefined): string => {
+        if (!val) return '';
+        if (initialInvestment?.currency && initialInvestment.currency !== currency && rate && rate.isGreaterThan(0)) {
+            // Convert Profile Currency -> Native Currency (Value / Rate)
+            return val.dividedBy(rate).decimalPlaces(4).toString();
+        }
+        return val.toString();
+    };
+
+    const initialRate = initialInvestment?.exchangeRate ? new BigNumber(initialInvestment.exchangeRate) : undefined;
+
     // Form state
     const [symbol, setSymbol] = useState(initialInvestment?.symbol || '');
     const [action, setAction] = useState<InvestmentAction>(initialInvestment?.action || 'BUY');
     const [quantity, setQuantity] = useState(initialInvestment?.quantity.toString() || '');
-    const [price, setPrice] = useState(initialInvestment?.price.toString() || '');
-    const [fees, setFees] = useState(initialInvestment?.fees?.toString() || '');
+
+    // Initialize price and fees in Native Currency if applicable
+    const [price, setPrice] = useState(() => getInitialValue(initialInvestment?.price, initialRate));
+    const [fees, setFees] = useState(() => getInitialValue(initialInvestment?.fees, initialRate));
+
     const [notes, setNotes] = useState(initialInvestment?.notes || '');
     const [investmentDate, setInvestmentDate] = useState<Date>(
         initialInvestment?.date ? new Date(initialInvestment.date) : new Date()
@@ -69,6 +84,11 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         return false;
     });
 
+
+    // Exchange Rate State
+    const [exchangeRate, setExchangeRate] = useState(initialInvestment?.exchangeRate?.toString() || '1');
+    const [isFetchingRate, setIsFetchingRate] = useState(false);
+
     // Derived state for selected asset
     const selectedAsset = assets.find(a => a.symbol === symbol);
     const assetCurrency = selectedAsset?.currency;
@@ -78,8 +98,46 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     useEffect(() => {
         if (!initialInvestment || initialInvestment.symbol !== symbol) {
             setUseNativeCurrency(false);
+            setExchangeRate('1');
         }
     }, [symbol, initialInvestment]);
+
+    // Fetch Exchange Rate when useNativeCurrency is enabled
+    useEffect(() => {
+        const fetchExchangeRate = async () => {
+            if (useNativeCurrency && assetCurrency && currency && assetCurrency !== currency) {
+                // If we already have a rate (e.g. editing) and it's not 1, maybe don't overwrite?
+                // But if the user just toggled it on, needed. 
+                // Simple logic: If rate is '1' (default) or we just toggled, fetch.
+                // But wait, if user edits, we don't want to refetch on every render.
+                // Let's fetch only if we enabled it and rate is 1 (default).
+                // Actually relying on useNativeCurrency change is better.
+
+                // If editing and we already have a saved rate, don't overwrite it automatically unless user asks?
+                // For now, let's fetch if current rate is 1 or empty.
+                if (exchangeRate !== '1' && exchangeRate !== '') return;
+
+                setIsFetchingRate(true);
+                try {
+                    const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${assetCurrency}&symbols=${currency}`);
+                    const data = await response.json();
+                    if (data && data.rates && data.rates[currency]) {
+                        setExchangeRate(data.rates[currency].toString());
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch exchange rate:', error);
+                    // Fallback/Silent fail - user can edit manually
+                } finally {
+                    setIsFetchingRate(false);
+                }
+            }
+        };
+
+        if (useNativeCurrency) {
+            fetchExchangeRate();
+        }
+    }, [useNativeCurrency, assetCurrency, currency]);
+
 
     useEffect(() => {
         const fetchAssets = async () => {
@@ -155,13 +213,21 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
 
         try {
             const qty = new BigNumber(quantity);
-            const prc = new BigNumber(price);
-            const f = new BigNumber(fees || 0);
+            let prc = new BigNumber(price);
+            let f = new BigNumber(fees || 0);
+
+            // Convert input to Profile Currency if using Native Currency
+            // precise calculation for PL
+            if (useNativeCurrency) {
+                const rate = new BigNumber(exchangeRate || 1);
+                prc = prc.multipliedBy(rate);
+                f = f.multipliedBy(rate);
+            }
 
             // Proceeds = (Price * Qty) - Fees
             const proceeds = qty.multipliedBy(prc).minus(f);
 
-            // Cost Basis = AvgPrice * Qty
+            // Cost Basis = AvgPrice * Qty (AvgPrice is already in Profile Currency)
             const costBasis = qty.multipliedBy(averageCost);
 
             const calcPL = proceeds.minus(costBasis);
@@ -174,7 +240,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         } catch {
             // ignore parsing errors
         }
-    }, [quantity, price, fees, averageCost, action, realizedPL]);
+    }, [quantity, price, fees, averageCost, action, realizedPL, useNativeCurrency, exchangeRate]);
 
     // UI state
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -215,15 +281,25 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
 
         const invId = initialInvestment?.id || generateUUID();
 
+        // Prepare Exchange Rate
+        const finalExchangeRate = useNativeCurrency ? new BigNumber(exchangeRate || 1) : new BigNumber(1);
+
+        // Convert values to Profile Currency if using Native Currency input
+        const finalPrice = useNativeCurrency ? new BigNumber(price).multipliedBy(finalExchangeRate) : new BigNumber(price);
+        const finalFees = fees
+            ? (useNativeCurrency ? new BigNumber(fees).multipliedBy(finalExchangeRate) : new BigNumber(fees))
+            : undefined;
+
         const newInvestment: Investment = {
             id: invId,
             symbol: symbol.toUpperCase(),
             type: investmentType,
             action,
             quantity: new BigNumber(quantity),
-            price: new BigNumber(price),
+            price: finalPrice,
             currency: (useNativeCurrency && assetCurrency) ? assetCurrency : currency,
-            fees: fees ? new BigNumber(fees) : undefined,
+            exchangeRate: finalExchangeRate,
+            fees: finalFees,
             notes: notes || undefined,
             date: investmentDate.toISOString(),
             isRecurring: false, // Per request: "dont do anything about the recurring"
@@ -250,7 +326,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
             // Create corresponding transaction if checked
             if (createTransaction) {
                 const totalAmount = newInvestment.quantity.multipliedBy(newInvestment.price);
-                const feeAmount = newInvestment.fees ? new BigNumber(fees) : new BigNumber(0);
+                const feeAmount = newInvestment.fees || new BigNumber(0);
 
                 // Effective Amount Logic:
                 // BUY: Cost = (Price * Qty) + Fees
@@ -275,6 +351,8 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                     finalAmount = totalAmount; // Fallback
                 }
 
+                // Note: finalAmount is derived from newInvestment.price which is ALREADY converted to Profile Currency.
+
                 if (finalAmount.isGreaterThan(0)) {
                     // 1. Primary Transaction (Cash Movement)
                     const newTxn: Transaction = {
@@ -295,7 +373,8 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
 
                     // 2. Secondary Transaction (Realized Gain/Loss) - ONLY FOR SELL
                     if (action === 'SELL' && realizedPL) {
-                        const plValue = new BigNumber(realizedPL);
+                        // Realized PL is derived in effect above (Profile Currency)
+                        let plValue = new BigNumber(realizedPL);
 
                         // We only record if there is a P/L (not zero)
                         if (!plValue.isZero()) {
@@ -312,7 +391,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                                 note: `Realized ${isGain ? 'Gain' : 'Loss'} from selling ${symbol} ${newInvestment.quantity.toFixed(4)} qty`,
                                 creationMethod: 'MANUAL',
                                 isRecurring: false,
-                                investmentId: invId, // Link to same investment
+                                investmentId: invId,
                                 createdAt: new Date().toISOString(),
                                 updatedAt: new Date().toISOString(),
                             };
@@ -348,7 +427,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         <View style={{ flex: 1 }}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
                 <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 10 }}>
-                    {initialInvestment ? 'Edit Investment' : `New ${investmentType === 'STOCKS' ? 'Stock' : investmentType === 'FUNDS' ? 'Fund' : 'Investment'}`}
+                    {initialInvestment ? 'Edit Investment' : `New ${investmentType === 'STOCKS' ? 'Stock' : investmentType === 'FUNDS' ? 'Fund' : investmentType === 'CRYPTO' ? 'Crypto' : 'Investment'}`}
                 </Text>
 
                 {/* Date and Time Selection */}
@@ -455,7 +534,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
 
                 {/* Symbol Selection */}
                 <Card style={{ marginBottom: 10 }}>
-                    <Text style={{ color: colors.textSecondary }}>{investmentType === 'FUNDS' ? 'Select Asset' : 'Select Symbol'}</Text>
+                    <Text style={{ color: colors.textSecondary }}>{investmentType === 'FUNDS' ? 'Select Fund' : investmentType === 'CRYPTO' ? 'Select Coin' : 'Select Symbol'}</Text>
                     {loadingAssets ? (
                         <ActivityIndicator color={colors.primary} style={{ marginTop: 10 }} />
                     ) : (
@@ -486,61 +565,95 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
 
                 {/* Currency Checkbox - Premium Style */}
                 {showCurrencyCheckbox && (
-                    <TouchableOpacity
-                        onPress={() => setUseNativeCurrency(!useNativeCurrency)}
-                        activeOpacity={0.8}
-                        style={{
-                            marginBottom: 16,
-                            borderRadius: 16,
-                            borderWidth: 1,
-                            borderColor: useNativeCurrency ? colors.primary : colors.border,
-                            backgroundColor: useNativeCurrency ? colors.primary + '10' : colors.surface,
-                            overflow: 'hidden'
-                        }}
-                    >
-                        {/* Status Bar Decorator */}
-                        {useNativeCurrency && (
-                            <View style={{ height: 4, backgroundColor: colors.primary, width: '100%' }} />
-                        )}
-
-                        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
-                            <View style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: 20,
-                                backgroundColor: useNativeCurrency ? colors.primary : colors.surface,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                marginRight: 12
-                            }}>
-                                <Ionicons
-                                    name={useNativeCurrency ? "swap-horizontal" : "radio-button-off"}
-                                    size={20}
-                                    color={useNativeCurrency ? '#FFF' : colors.textSecondary}
-                                />
-                            </View>
-
-                            <View style={{ flex: 1 }}>
-                                <Text style={{
-                                    color: useNativeCurrency ? colors.primary : colors.text,
-                                    fontWeight: 'bold',
-                                    fontSize: 14,
-                                    marginBottom: 2
-                                }}>
-                                    {useNativeCurrency ? `Using Native Currency (${assetCurrency})` : `Switch to Native Currency (${assetCurrency})`}
-                                </Text>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                    {useNativeCurrency
-                                        ? "Investment will be saved in its original currency."
-                                        : "Tap to save this investment in its original currency."}
-                                </Text>
-                            </View>
-
+                    <View style={{ marginBottom: 16 }}>
+                        <TouchableOpacity
+                            onPress={() => setUseNativeCurrency(!useNativeCurrency)}
+                            activeOpacity={0.8}
+                            style={{
+                                borderRadius: 16,
+                                borderWidth: 1,
+                                borderColor: useNativeCurrency ? colors.primary : colors.border,
+                                backgroundColor: useNativeCurrency ? colors.primary + '10' : colors.surface,
+                                overflow: 'hidden',
+                                // If using native currency, we might show a split view below, but kept the main toggle wrapper same for consistency
+                            }}
+                        >
+                            {/* Status Bar Decorator */}
                             {useNativeCurrency && (
-                                <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                                <View style={{ height: 4, backgroundColor: colors.primary, width: '100%' }} />
                             )}
-                        </View>
-                    </TouchableOpacity>
+
+                            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
+                                <View style={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 20,
+                                    backgroundColor: useNativeCurrency ? colors.primary : colors.surface,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginRight: 12
+                                }}>
+                                    <Ionicons
+                                        name={useNativeCurrency ? "swap-horizontal" : "radio-button-off"}
+                                        size={20}
+                                        color={useNativeCurrency ? '#FFF' : colors.textSecondary}
+                                    />
+                                </View>
+
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{
+                                        color: useNativeCurrency ? colors.primary : colors.text,
+                                        fontWeight: 'bold',
+                                        fontSize: 14,
+                                        marginBottom: 2
+                                    }}>
+                                        {useNativeCurrency ? `Using Native Currency (${assetCurrency})` : `Switch to Native Currency (${assetCurrency})`}
+                                    </Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                        {useNativeCurrency
+                                            ? "Investment kept in native. Transferred value converted using rate below."
+                                            : "Tap to save this investment in its original currency."}
+                                    </Text>
+                                </View>
+
+                                {useNativeCurrency && (
+                                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                                )}
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Exchange Rate Input (Visible only when checked) */}
+                        {useNativeCurrency && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
+                                <View style={{ marginRight: 12, alignItems: 'center', justifyContent: 'center' }}>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 2 }}>
+                                        Exchange Rate
+                                    </Text>
+                                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>
+                                        1 {assetCurrency} =
+                                    </Text>
+                                </View>
+
+                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.primary, paddingBottom: 4 }}>
+                                    <TextInput
+                                        style={{ flex: 1, color: colors.text, fontSize: 18, fontWeight: 'bold', textAlign: 'center' }}
+                                        value={exchangeRate}
+                                        onChangeText={setExchangeRate}
+                                        keyboardType="numeric"
+                                        placeholder="1.0"
+                                        placeholderTextColor={colors.gray300}
+                                    />
+                                    {isFetchingRate && (
+                                        <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 8 }} />
+                                    )}
+                                </View>
+
+                                <Text style={{ color: colors.text, fontWeight: 'bold', marginLeft: 12 }}>
+                                    {currency}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                 )}
 
                 {/* Quantity and Price */}

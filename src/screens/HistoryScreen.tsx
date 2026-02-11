@@ -427,8 +427,14 @@ const HistoryScreen = ({ navigation }: any) => {
             // Distinct color for investments (Purple/Blue)
             const iconColor = '#8E24AA';
 
-            // Calculate total value if possible (price * quantity)
-            const totalValue = inv.price.multipliedBy(inv.quantity);
+            // Conversion Logic for Display
+            const rate = inv.exchangeRate ? new BigNumber(inv.exchangeRate) : new BigNumber(1);
+            // If rate > 1, we assume stored values are in Profile Currency and need conversion for display
+            // But only if we want to show in "Native" currency.
+            // Since inv.currency might be 'USD', we definitely want to match values to the symbol.
+
+            const nativePrice = inv.price.dividedBy(rate);
+            const nativeTotal = nativePrice.multipliedBy(inv.quantity);
 
             // Find linked P/L for SELL actions
             let plElement = null;
@@ -439,10 +445,12 @@ const HistoryScreen = ({ navigation }: any) => {
                 );
                 if (linkedTx) {
                     const isGain = linkedTx.type === 'CAPITAL_GAIN';
+                    const nativePL = linkedTx.amount.dividedBy(rate);
+
                     plElement = (
                         <Text>
                             {" • "}<Text style={{ color: isGain ? colors.success : colors.error, fontWeight: 'bold' }}>
-                                {isGain ? '+' : '-'}{formatCurrency(linkedTx.amount.abs(), inv.currency)}
+                                {isGain ? '+' : '-'}{formatCurrency(nativePL.abs(), inv.currency)}
                             </Text>
                         </Text>
                     );
@@ -466,19 +474,17 @@ const HistoryScreen = ({ navigation }: any) => {
                                         {inv.symbol} <Text style={{ fontSize: 14, color: colors.textSecondary }}>({inv.action})</Text>
                                     </Text>
                                     <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                                        {inv.quantity.toString()} units @ {formatCurrency(inv.price, inv.currency)}
+                                        {inv.quantity.toString()} units @ {formatCurrency(nativePrice, inv.currency)}
                                         {plElement}
                                     </Text>
                                 </View>
                             </View>
                             <View style={{ alignItems: 'flex-end' }}>
                                 <Text style={{
-                                    color: colors.text, // Neutral color for value, or Green/Red if we want to imply cash flow impact? 
-                                    // User said "investments and debts can also be no link". 
-                                    // Let's keep it simple.
-                                    fontSize: 16, fontWeight: 'bold'
+                                    fontSize: 16, fontWeight: 'bold',
+                                    color: colors.text
                                 }}>
-                                    {formatCurrency(totalValue, inv.currency)}
+                                    {formatCurrency(nativeTotal, inv.currency)}
                                 </Text>
                                 <View style={{ backgroundColor: iconColor + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
                                     <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>INVESTMENT</Text>
@@ -523,6 +529,19 @@ const HistoryScreen = ({ navigation }: any) => {
             return t.category;
         };
 
+        // Resolve Currency and Amount for Display
+        // If linked to investment, respect investment currency and rate
+        let displayAmount = t.amount;
+        let displayCurrency = undefined;
+
+        if (t.investmentId && investmentMap[t.investmentId]) {
+            const inv = investmentMap[t.investmentId];
+            displayCurrency = inv.currency;
+            if (inv.exchangeRate) {
+                displayAmount = displayAmount.dividedBy(inv.exchangeRate);
+            }
+        }
+
         return (
             <TouchableOpacity
                 onPress={() => {
@@ -556,7 +575,7 @@ const HistoryScreen = ({ navigation }: any) => {
                             color: isNegativeFlow ? colors.error : colors.success,
                             fontSize: 16, fontWeight: 'bold'
                         }}>
-                            {isNegativeFlow ? '-' : '+'}{formatCurrency(t.amount, t.investmentId ? investmentMap[t.investmentId]?.currency : undefined)}
+                            {isNegativeFlow ? '-' : '+'}{formatCurrency(displayAmount, displayCurrency)}
                         </Text>
                     </View>
                 </Card>
@@ -736,15 +755,17 @@ const HistoryScreen = ({ navigation }: any) => {
                         ...inv,
                         quantity: inv.quantity.toString(),
                         price: inv.price.toString(),
-                        fees: inv.fees ? inv.fees.toString() : undefined
+                        fees: inv.fees ? inv.fees.toString() : undefined,
+                        exchangeRate: inv.exchangeRate ? inv.exchangeRate.toString() : undefined
                     };
                     navigation.navigate('Record', { investment: serializedInvestment });
                 }}
                 onDelete={async (id, deleteLinked) => {
                     if (deleteLinked) {
-                        const linkedTx = allTransactions.find(t => t.investmentId === id);
-                        if (linkedTx) {
-                            await deleteTransaction(linkedTx.id);
+                        // Find ALL linked transactions (Transfer In/Out AND Capital Gain/Loss)
+                        const linkedTxs = allTransactions.filter(t => t.investmentId === id);
+                        for (const tx of linkedTxs) {
+                            await deleteTransaction(tx.id);
                         }
                     }
                     await deleteInvestment(id);
