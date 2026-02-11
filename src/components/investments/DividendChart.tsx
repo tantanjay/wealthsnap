@@ -1,10 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { BarChart } from 'react-native-gifted-charts';
-
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
-import { CURRENCY_SYMBOLS, formatCurrencyAmount, formatCompactNumber } from '@utils/currencyUtils';
+import { CURRENCY_SYMBOLS, formatCurrencyAmount, formatCompactNumber, formatCompactCurrency } from '@utils/currencyUtils';
 
 interface DividendChartProps {
     labels: string[];
@@ -16,43 +14,124 @@ interface DividendChartProps {
 
 export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, currency = 'PHP', isLoading = false, isPrivacyEnabled = false }) => {
     const { colors } = useTheme();
-    const screenWidth = Dimensions.get('window').width;
+    const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
     const symbol = CURRENCY_SYMBOLS[currency] || currency;
 
     const totalDividends = data.reduce((acc, curr) => acc + curr, 0);
 
-    const chartWidth = screenWidth - 64;
-    const barWidth = 22;
-    let initialSpacing = 10;
-    let spacing = 20;
+    const maxValue = Math.max(...data, 1); // Ensure at least 1 to avoid division by zero
+    const yMax = maxValue * 1.1; // 10% padding
+    const yMin = 0;
+    const yRange = yMax - yMin;
+    const chartHeight = 180;
 
-    if (data && data.length > 0) {
-        if (data.length === 1) {
-            initialSpacing = (chartWidth - barWidth) / 2;
-        } else {
-            const totalBarWidth = data.length * barWidth + 10;
-            const availableSpace = chartWidth - initialSpacing * 2 - totalBarWidth; // Subtract initial spacing from both sides for visual balance
-            spacing = Math.max(0, availableSpace / (data.length));
-        }
+    // Generate Y-axis labels (4 labels)
+    const yLabels: string[] = [];
+    for (let i = 0; i < 4; i++) {
+        const value = yMin + (yRange * (i / 3)); // 0, 1/3, 2/3, 1
+        yLabels.push(formatCompactNumber(value));
     }
 
-    const maxValue = Math.max(...data);
-    const maxValueWithBuffer = maxValue * 1.25;
+    const renderChart = () => {
+        return (
+            <View style={{ flex: 1, flexDirection: 'row' }}>
+                {/* Y-Axis Labels */}
+                <View style={{ width: 40, justifyContent: 'space-between', paddingBottom: 25, alignItems: 'flex-end', paddingRight: 8 }}>
+                    {yLabels.reverse().map((label, i) => (
+                        <Text key={i} style={{ color: colors.textSecondary, fontSize: 10 }}>{label}</Text>
+                    ))}
+                </View>
 
-    // Prepare data for Gifted Charts
-    const barData = data.map((value, index) => ({
-        value,
-        label: labels[index],
-        topLabelComponent: () => (
-            <View style={{ width: 50, alignItems: 'center', marginLeft: 0, marginBottom: 4 }}>
-                <Text style={{ color: colors.textSecondary, fontSize: 10 }} numberOfLines={1} adjustsFontSizeToFit>
-                    {formatCompactNumber(value)}
-                </Text>
+                {/* Bars */}
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around', paddingRight: 10 }}>
+                    {data.map((value, index) => {
+                        const barHeight = yRange > 0 ? ((value - yMin) / yRange) * chartHeight : 0;
+                        const isSelected = selectedBarIndex === index;
+
+                        // Smart Labeling: Throttling for density if many items
+                        const showLabelInterval = Math.ceil(labels.length / 6);
+                        const shouldShowLabel = index === 0 || index === labels.length - 1 || index % showLabelInterval === 0;
+
+                        return (
+                            <View key={index} style={{ alignItems: 'center', flex: 1, zIndex: isSelected ? 100 : 0 }}>
+                                <TouchableOpacity
+                                    activeOpacity={1}
+                                    onPressIn={() => setSelectedBarIndex(index)}
+                                    onPressOut={() => setSelectedBarIndex(null)}
+                                    style={{ height: chartHeight, justifyContent: 'flex-end', width: '100%', alignItems: 'center' }}
+                                >
+                                    <View style={{
+                                        position: 'relative',
+                                        height: Math.max(4, barHeight), // Min height for visibility
+                                        width: '60%', // Relative width to container
+                                        backgroundColor: 'rgba(16, 185, 129, 1)', // Emerald Green
+                                        opacity: isSelected ? 0.8 : 1,
+                                        borderRadius: 4,
+                                        minWidth: 4,
+                                        maxWidth: 40
+                                    }} />
+                                </TouchableOpacity>
+
+                                {/* Tooltip Overlay */}
+                                {isSelected && (
+                                    <View style={{
+                                        position: 'absolute',
+                                        bottom: Math.max(4, barHeight) + 8,
+                                        backgroundColor: colors.surface,
+                                        padding: 8,
+                                        borderRadius: 8,
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: 2 },
+                                        shadowOpacity: 0.15,
+                                        shadowRadius: 4,
+                                        elevation: 10,
+                                        minWidth: 80,
+                                        alignItems: 'center',
+                                        borderWidth: 1,
+                                        borderColor: colors.border,
+                                        zIndex: 100
+                                    }}>
+                                        <Text style={{ color: colors.text, fontSize: 12, fontWeight: 'bold', marginBottom: 2 }}>{labels[index]}</Text>
+                                        <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                            {formatCompactCurrency(value, currency)}
+                                        </Text>
+                                        {/* Arrow */}
+                                        <View style={{
+                                            position: 'absolute',
+                                            bottom: -6,
+                                            width: 12,
+                                            height: 12,
+                                            backgroundColor: colors.surface,
+                                            transform: [{ rotate: '45deg' }],
+                                            borderBottomWidth: 1,
+                                            borderRightWidth: 1,
+                                            borderColor: colors.border,
+                                            zIndex: -1
+                                        }} />
+                                    </View>
+                                )}
+
+                                <Text
+                                    numberOfLines={1}
+                                    style={{
+                                        color: isSelected ? colors.primary : colors.textSecondary,
+                                        fontSize: 10,
+                                        marginTop: 6,
+                                        width: 40,
+                                        textAlign: 'center',
+                                        fontWeight: isSelected ? 'bold' : 'normal',
+                                        opacity: shouldShowLabel || isSelected ? 1 : 0
+                                    }}
+                                >
+                                    {labels[index]}
+                                </Text>
+                            </View>
+                        );
+                    })}
+                </View>
             </View>
-        ),
-        frontColor: 'rgba(16, 185, 129, 1)',
-        gradientColor: 'rgba(16, 185, 129, 0.8)',
-    }));
+        );
+    };
 
     return (
         <View style={[styles.container, { backgroundColor: colors.surface }]}>
@@ -73,27 +152,8 @@ export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, curr
                     <Text style={{ color: colors.textSecondary, fontStyle: 'italic' }}>No active holdings.</Text>
                 </View>
             ) : (
-                <View style={{ overflow: 'hidden', marginLeft: -10 }}>
-                    <BarChart
-                        data={barData}
-                        barWidth={22}
-                        noOfSections={4}
-                        barBorderRadius={4}
-                        frontColor="rgba(16, 185, 129, 1)"
-                        yAxisThickness={0}
-                        xAxisThickness={0}
-                        yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
-                        xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10, textAlign: 'center' }}
-                        height={220}
-                        width={chartWidth}
-                        spacing={spacing}
-                        initialSpacing={initialSpacing}
-                        yAxisLabelPrefix={symbol}
-                        formatYLabel={(label) => formatCompactNumber(parseFloat(label))}
-                        maxValue={maxValueWithBuffer}
-                        hideRules
-                        showGradient
-                    />
+                <View style={{ height: 220, paddingVertical: 10 }}>
+                    {renderChart()}
                 </View>
             )}
         </View>
