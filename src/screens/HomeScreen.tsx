@@ -213,18 +213,51 @@ const HomeScreen = ({ navigation }: any) => {
             let mInvested = new BigNumber(0);
             let mUnrealizedPL = new BigNumber(0);
 
+            // Helper maps for monthly calculations
+            const monthlyBuys: Record<string, { qty: BigNumber, cost: BigNumber }> = {};
+            const currentQuantities: Record<string, BigNumber> = {};
+
+            // Populate current quantities from portfolio metrics
+            portfolioMetrics.forEach(m => {
+                currentQuantities[m.symbol] = m.currentQuantity;
+            });
+
             inv.forEach(item => {
                 const isMonth = new Date(item.date).getMonth() === currentMonth && new Date(item.date).getFullYear() === currentYear;
 
                 if (isMonth && item.action === 'BUY') {
-                    // Invested Amount (Cost Basis)
+                    // Invested Amount (Cost Basis) - Activity Metric (shows how much you poured in this month)
                     const cost = item.price.times(item.quantity).plus(item.fees || 0);
                     mInvested = mInvested.plus(cost);
 
-                    // Unrealized P/L for this item
-                    const currentPrice = currentPriceMap[item.symbol] || new BigNumber(0);
-                    const marketValue = currentPrice.times(item.quantity);
-                    const pl = marketValue.minus(cost);
+                    // Track monthly buys per symbol for P/L calculation
+                    if (!monthlyBuys[item.symbol]) {
+                        monthlyBuys[item.symbol] = { qty: new BigNumber(0), cost: new BigNumber(0) };
+                    }
+                    monthlyBuys[item.symbol].qty = monthlyBuys[item.symbol].qty.plus(item.quantity);
+                    monthlyBuys[item.symbol].cost = monthlyBuys[item.symbol].cost.plus(cost);
+                }
+            });
+
+            // Calculate Monthly Unrealized P/L
+            // Logic: Only count P/L for shares bought this month that are STILL HELD.
+            // If you bought 10 and sold 10, monthly unrealized P/L should be 0.
+            Object.keys(monthlyBuys).forEach(symbol => {
+                const buyData = monthlyBuys[symbol];
+                const currentQty = currentQuantities[symbol] || new BigNumber(0);
+
+                // Effective Quantity = Min(Bought This Month, Currently Held)
+                const effectiveQty = BigNumber.min(buyData.qty, currentQty);
+
+                if (effectiveQty.isGreaterThan(0)) {
+                    // Calculate average cost of the shares bought THIS MONTH
+                    const avgCostThisMonth = buyData.cost.dividedBy(buyData.qty);
+
+                    const currentPrice = currentPriceMap[symbol] || new BigNumber(0);
+                    const marketValue = currentPrice.times(effectiveQty);
+                    const costBasis = avgCostThisMonth.times(effectiveQty);
+
+                    const pl = marketValue.minus(costBasis);
                     mUnrealizedPL = mUnrealizedPL.plus(pl);
                 }
             });
