@@ -130,8 +130,8 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
             items: [
                 { id: 'stk', icon: 'trending-up', label: 'Stocks', color: colors.primary, onPress: () => handleInvestmentSelect('STOCKS') },
                 { id: 'fnd', icon: 'briefcase', label: 'Funds', color: colors.primary, onPress: () => handleInvestmentSelect('FUNDS') },
-                { id: 'bnd', icon: 'bar-chart', label: 'Bonds', color: colors.primary, onPress: () => handleInvestmentSelect('BONDS') },
                 { id: 'cry', icon: 'logo-bitcoin', label: 'Crypto', color: colors.primary, onPress: () => handleInvestmentSelect('CRYPTO') },
+                { id: 'bnd', icon: 'bar-chart', label: 'Bonds', color: colors.primary, onPress: () => handleInvestmentSelect('BONDS') },
                 { id: 'com', icon: 'diamond', label: 'Commodities', color: colors.primary, onPress: () => handleInvestmentSelect('COMMODITIES') },
             ]
         },
