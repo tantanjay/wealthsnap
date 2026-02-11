@@ -35,6 +35,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
     const [showInfoModal, setShowInfoModal] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState<'TREND' | 'SOURCES'>('TREND');
     const [showInsightInfo, setShowInsightInfo] = React.useState(false);
+    const [selectedBarIndex, setSelectedBarIndex] = React.useState<number | null>(null);
 
     // Time Range Filter Logic
     const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
@@ -293,23 +294,30 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                                 const actualHeight = yRange > 0 ? ((bar.actual.toNumber() - yMin) / yRange) * chartHeight : 0;
                                                 // If projected < actual, prevent overflow
                                                 const projectedHeight = bar.isProjected ? Math.max(0, totalHeight - actualHeight) : 0;
+                                                const isSelected = selectedBarIndex === index;
 
                                                 return (
-                                                    <View key={index} style={{ alignItems: 'center', flex: 1 }}>
-                                                        <View style={{ height: chartHeight, justifyContent: 'flex-end', width: '100%', alignItems: 'center' }}>
+                                                    <View key={index} style={{ alignItems: 'center', flex: 1, zIndex: isSelected ? 100 : 0, elevation: isSelected ? 10 : 0 }}>
+                                                        <TouchableOpacity
+                                                            activeOpacity={1}
+                                                            onPressIn={() => setSelectedBarIndex(index)}
+                                                            onPressOut={() => setSelectedBarIndex(null)}
+                                                            style={{ height: chartHeight, justifyContent: 'flex-end', width: '100%', alignItems: 'center' }}
+                                                        >
                                                             {bar.isProjected ? (
                                                                 <View style={{ width: '50%', borderRadius: 4, overflow: 'hidden' }}>
                                                                     {/* Projected (Lighter) */}
                                                                     <View style={{
                                                                         height: projectedHeight,
-                                                                        backgroundColor: colors.primary + '50', // Lighter opacity
+                                                                        backgroundColor: isSelected ? colors.primary + '80' : colors.primary + '50', // Lighter opacity
                                                                         borderTopLeftRadius: 4,
                                                                         borderTopRightRadius: 4,
                                                                     }} />
                                                                     {/* Actual (Solid) */}
                                                                     <View style={{
                                                                         height: Math.max(0, actualHeight),
-                                                                        backgroundColor: colors.primary,
+                                                                        backgroundColor: isSelected ? colors.primary : colors.primary,
+                                                                        opacity: isSelected ? 0.9 : 1,
                                                                         borderBottomLeftRadius: 4,
                                                                         borderBottomRightRadius: 4,
                                                                         borderTopLeftRadius: projectedHeight > 0 ? 0 : 4,
@@ -321,18 +329,65 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                                                     height: Math.max(0, totalHeight),
                                                                     width: '50%',
                                                                     backgroundColor: colors.primary,
+                                                                    opacity: isSelected ? 0.8 : 1,
                                                                     borderRadius: 4,
                                                                 }} />
                                                             )}
-                                                        </View>
+                                                        </TouchableOpacity>
+
+                                                        {/* Tooltip Overlay */}
+                                                        {isSelected && (
+                                                            <View style={{
+                                                                position: 'absolute',
+                                                                bottom: Math.max(0, totalHeight) + 8, // Dynamic positioning
+                                                                backgroundColor: colors.surface,
+                                                                padding: 8,
+                                                                borderRadius: 8,
+                                                                shadowColor: '#000',
+                                                                shadowOffset: { width: 0, height: 2 },
+                                                                shadowOpacity: 0.15,
+                                                                shadowRadius: 4,
+                                                                elevation: 10,
+                                                                minWidth: 100,
+                                                                alignItems: 'center',
+                                                                borderWidth: 1,
+                                                                borderColor: colors.border,
+                                                                zIndex: 100
+                                                            }}>
+                                                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: 'bold', marginBottom: 2 }}>{bar.label.replace('*', '')}</Text>
+                                                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                                                    Actual: <Text style={{ color: colors.text }}>{formatCompactCurrency(bar.actual, currency)}</Text>
+                                                                </Text>
+                                                                {bar.isProjected && (
+                                                                    <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                                                        Proj: <Text style={{ color: colors.text }}>{formatCompactCurrency(bar.value, currency)}</Text>
+                                                                    </Text>
+                                                                )}
+                                                                {/* Arrow */}
+                                                                <View style={{
+                                                                    position: 'absolute',
+                                                                    bottom: -6,
+                                                                    width: 12,
+                                                                    height: 12,
+                                                                    backgroundColor: colors.surface,
+                                                                    transform: [{ rotate: '45deg' }],
+                                                                    borderBottomWidth: 1,
+                                                                    borderRightWidth: 1,
+                                                                    borderColor: colors.border,
+                                                                    zIndex: -1
+                                                                }} />
+                                                            </View>
+                                                        )}
+
                                                         <Text
                                                             numberOfLines={1}
                                                             style={{
-                                                                color: colors.textSecondary,
+                                                                color: isSelected ? colors.primary : colors.textSecondary,
                                                                 fontSize: 10,
                                                                 marginTop: 6,
                                                                 width: 40,
-                                                                textAlign: 'center'
+                                                                textAlign: 'center',
+                                                                fontWeight: isSelected ? 'bold' : 'normal'
                                                             }}
                                                         >
                                                             {bar.label}
