@@ -23,6 +23,7 @@ interface ComparisonChartProps {
 const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year, currency, isPrivacyEnabled, isLoading = false }) => {
     const [showInfoModal, setShowInfoModal] = React.useState(false);
     const [showInsightInfo, setShowInsightInfo] = React.useState(false);
+    const [selectedBarIndex, setSelectedBarIndex] = React.useState<number | null>(null);
     const { colors } = useTheme();
 
     // Pro-rate current month spending to estimate full month
@@ -157,7 +158,6 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                         ))}
                                     </View>
 
-                                    {/* Bars */}
                                     <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around' }}>
                                         {barData.map((bar, index) => {
                                             // Calculate heights relative to yMin-yMax range
@@ -171,24 +171,31 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
 
                                             const projectedHeight = bar.isProjected ? Math.max(0, totalHeight - actualHeight) : 0;
 
+                                            const isSelected = selectedBarIndex === index;
+
                                             return (
-                                                <View key={index} style={{ alignItems: 'center', flex: 1 }}>
-                                                    {/* Bar */}
-                                                    <View style={{ height: chartHeight, justifyContent: 'flex-end', width: '100%', alignItems: 'center' }}>
+                                                <View key={index} style={{ alignItems: 'center', flex: 1, zIndex: isSelected ? 100 : 0, elevation: isSelected ? 10 : 0 }}>
+                                                    {/* Tappable Bar Area */}
+                                                    <TouchableOpacity
+                                                        activeOpacity={1}
+                                                        onPressIn={() => setSelectedBarIndex(index)}
+                                                        onPressOut={() => setSelectedBarIndex(null)}
+                                                        style={{ height: chartHeight, justifyContent: 'flex-end', width: '100%', alignItems: 'center' }}
+                                                    >
                                                         {bar.isProjected ? (
                                                             // Stacked bar: actual (solid) + projected (lighter)
                                                             <View style={{ width: '50%', borderRadius: 4, overflow: 'hidden' }}>
                                                                 {/* Projected portion (lighter, on top) */}
                                                                 <View style={{
                                                                     height: projectedHeight,
-                                                                    backgroundColor: 'rgba(255, 152, 0, 0.35)',
+                                                                    backgroundColor: isSelected ? 'rgba(255, 152, 0, 0.45)' : 'rgba(255, 152, 0, 0.35)',
                                                                     borderTopLeftRadius: 4,
                                                                     borderTopRightRadius: 4,
                                                                 }} />
                                                                 {/* Actual portion (solid, on bottom) */}
                                                                 <View style={{
                                                                     height: Math.max(0, actualHeight),
-                                                                    backgroundColor: 'rgba(255, 152, 0, 1)',
+                                                                    backgroundColor: isSelected ? 'rgba(255, 152, 0, 0.9)' : 'rgba(255, 152, 0, 1)',
                                                                     borderBottomLeftRadius: 4,
                                                                     borderBottomRightRadius: 4,
                                                                     borderTopLeftRadius: projectedHeight > 0 ? 0 : 4,
@@ -200,13 +207,58 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                                             <View style={{
                                                                 height: Math.max(0, totalHeight),
                                                                 width: '50%',
-                                                                backgroundColor: 'rgba(255, 152, 0, 1)',
+                                                                backgroundColor: isSelected ? 'rgba(255, 152, 0, 0.9)' : 'rgba(255, 152, 0, 1)',
                                                                 borderRadius: 4,
                                                             }} />
                                                         )}
-                                                    </View>
+                                                    </TouchableOpacity>
+
+                                                    {/* Tooltip Overlay - Rendered AFTER so it's on top */}
+                                                    {isSelected && (
+                                                        <View style={{
+                                                            position: 'absolute',
+                                                            bottom: Math.max(0, totalHeight) + 8, // Dynamic positioning
+                                                            backgroundColor: colors.surface,
+                                                            padding: 8,
+                                                            borderRadius: 8,
+                                                            shadowColor: '#000',
+                                                            shadowOffset: { width: 0, height: 2 },
+                                                            shadowOpacity: 0.15,
+                                                            shadowRadius: 4,
+                                                            elevation: 10, // Ensure high elevation for Android
+                                                            minWidth: 100,
+                                                            alignItems: 'center',
+                                                            borderWidth: 1,
+                                                            borderColor: colors.border,
+                                                            zIndex: 100 // High z-index
+                                                        }}>
+                                                            <Text style={{ color: colors.text, fontSize: 12, fontWeight: 'bold', marginBottom: 2 }}>{bar.label.replace('*', '')}</Text>
+                                                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                                                Actual: <Text style={{ color: colors.text }}>{formatCurrencyAmount(bar.actual, currency)}</Text>
+                                                            </Text>
+                                                            {bar.isProjected && (
+                                                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                                                    Proj: <Text style={{ color: colors.text }}>{formatCurrencyAmount(bar.value, currency)}</Text>
+                                                                </Text>
+                                                            )}
+                                                            {/* Arrow */}
+                                                            <View style={{
+                                                                position: 'absolute',
+                                                                bottom: -6,
+                                                                width: 12,
+                                                                height: 12,
+                                                                backgroundColor: colors.surface,
+                                                                transform: [{ rotate: '45deg' }],
+                                                                borderBottomWidth: 1,
+                                                                borderRightWidth: 1,
+                                                                borderColor: colors.border,
+                                                                zIndex: -1
+                                                            }} />
+                                                        </View>
+                                                    )}
+
                                                     {/* Label */}
-                                                    <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 6 }}>
+                                                    <Text style={{ color: isSelected ? colors.primary : colors.textSecondary, fontSize: 10, marginTop: 6, fontWeight: isSelected ? 'bold' : 'normal' }}>
                                                         {bar.label}
                                                     </Text>
                                                 </View>
