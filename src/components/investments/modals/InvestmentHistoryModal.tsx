@@ -545,7 +545,21 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             sign = '-';
         }
 
-        const displayAmount = formatCurrencyAmount(item.amount, currency);
+        // Calculate Native Amount if Investment has Exchange Rate
+        let displayAmountValue = new BigNumber(item.amount);
+        let displayCurrency = currency; // Default to profile currency
+
+        // Check if this item is part of an investment with exchange rate
+        if (item.originalInvestment) {
+            const inv = item.originalInvestment;
+            displayCurrency = inv.currency || currency; // Use investment currency (e.g. USD)
+
+            if (inv.exchangeRate && new BigNumber(inv.exchangeRate).isGreaterThan(1)) {
+                displayAmountValue = displayAmountValue.dividedBy(inv.exchangeRate);
+            }
+        }
+
+        const displayAmount = formatCurrencyAmount(displayAmountValue, displayCurrency);
 
         return (
             <TouchableOpacity
@@ -565,8 +579,15 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                     </Text>
                     <Text style={[styles.itemDate, { color: colors.textSecondary }]}>
                         {new Date(item.date).toLocaleDateString()}
-                        {(item.shares !== undefined) && (
-                            <Text> • {item.shares} @ {formatCurrencyAmount(item.price || 0, currency)}</Text>
+                        {(item.shares !== undefined) && item.originalInvestment && (
+                            <Text> • {item.shares} @ {formatCurrencyAmount(
+                                item.price
+                                    ? (item.originalInvestment.exchangeRate && new BigNumber(item.originalInvestment.exchangeRate).isGreaterThan(1)
+                                        ? new BigNumber(item.price).dividedBy(item.originalInvestment.exchangeRate)
+                                        : item.price)
+                                    : 0,
+                                displayCurrency
+                            )}</Text>
                         )}
                     </Text>
                 </View>
@@ -734,7 +755,8 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                         ...inv,
                         quantity: inv.quantity.toString(),
                         price: inv.price.toString(),
-                        fees: inv.fees ? inv.fees.toString() : undefined
+                        fees: inv.fees ? inv.fees.toString() : undefined,
+                        exchangeRate: inv.exchangeRate ? inv.exchangeRate.toString() : undefined
                     };
                     navigation.navigate('Record', { investment: serializedInvestment });
                 }}
@@ -743,8 +765,13 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                         setIsLoading(true);
                         // Cascade delete logic (similar to HistoryScreen)
                         await deleteInvestment(id);
-                        if (deleteLinked && linkedTransaction) {
-                            await deleteTransaction(linkedTransaction.id);
+                        if (deleteLinked) {
+                            // Fetch current transactions to be sure we get all linked ones
+                            const currentTxs = await getAllTransactions();
+                            const linkedTxs = currentTxs.filter(t => t.investmentId === id);
+                            for (const tx of linkedTxs) {
+                                await deleteTransaction(tx.id);
+                            }
                         }
 
                         await loadAllHistory();

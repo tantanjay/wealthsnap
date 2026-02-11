@@ -14,8 +14,8 @@ import { getAnnualDividend } from "@services/domain/dividendHistoryService";
 
 const UPSERT_INVESTMENT_QUERY = `
   INSERT OR REPLACE INTO investments 
-  (id, date, symbol, type, action, quantity, price, currency, fees, notes, creationMethod, isRecurring, recurrenceId)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (id, date, symbol, type, action, quantity, price, currency, exchange_rate, fees, notes, creationMethod, isRecurring, recurrenceId)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 /**
@@ -38,6 +38,7 @@ const prepareInvestmentValues = async (inv: Investment) => {
         encryptedQty,
         encryptedPrice,
         inv.currency || 'PHP',
+        inv.exchangeRate?.toString() || '1',
         encryptedFees,
         encryptedNotes,
         inv.creationMethod || null,
@@ -114,6 +115,7 @@ export const getAllInvestments = async (): Promise<Investment[]> => {
             quantity: new BigNumber(row.quantity || 0),
             price: new BigNumber(row.price || 0),
             currency: row.currency || 'PHP',
+            exchangeRate: new BigNumber(row.exchange_rate || 1),
             fees: new BigNumber(row.fees || 0),
             notes: row.notes || '',
             creationMethod: row.creationMethod,
