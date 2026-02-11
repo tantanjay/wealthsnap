@@ -102,44 +102,57 @@ const RecordScreen = ({ navigation, route }: any) => {
         useCallback(() => {
             const { transaction, investment } = route.params || {};
 
-            if (transaction) {
-                // Editing existing transaction - go straight to form
-                // Deserialize amount if it's a string (from navigation params)
-                const deserializedTransaction = {
-                    ...transaction,
-                    amount: typeof transaction.amount === 'string' ? new BigNumber(transaction.amount) : transaction.amount
-                };
-                setEditingTransaction(deserializedTransaction);
-                setTransactionType(transaction.type);
-                setViewMode('TRANSACTION');
-                setModalVisible(false); // Hide modal when editing
-            } else if (investment) {
-                // Editing existing investment
-                const deserializedInvestment = {
-                    ...investment,
-                    quantity: typeof investment.quantity === 'string' ? new BigNumber(investment.quantity) : investment.quantity,
-                    price: typeof investment.price === 'string' ? new BigNumber(investment.price) : investment.price,
-                    fees: investment.fees ? (typeof investment.fees === 'string' ? new BigNumber(investment.fees) : investment.fees) : undefined,
-                };
-                setEditingInvestment(deserializedInvestment);
-                setInvestmentType(investment.type);
-                setViewMode('INVESTMENT');
-                setModalVisible(false);
+            if (transaction || investment) {
+                // Determine if we need to process (check against current state to avoid loops)
+                // However, navigation params should drive the state.
+
+                if (transaction) {
+                    const deserializedTransaction = {
+                        ...transaction,
+                        amount: typeof transaction.amount === 'string' ? new BigNumber(transaction.amount) : transaction.amount
+                    };
+                    // Only update if IDs differ to avoid loop
+                    if (editingTransaction?.id !== deserializedTransaction.id) {
+                        setEditingTransaction(deserializedTransaction);
+                        setTransactionType(transaction.type);
+                        setViewMode('TRANSACTION');
+                        setModalVisible(false);
+                    }
+                } else if (investment) {
+                    const deserializedInvestment = {
+                        ...investment,
+                        quantity: typeof investment.quantity === 'string' ? new BigNumber(investment.quantity) : investment.quantity,
+                        price: typeof investment.price === 'string' ? new BigNumber(investment.price) : investment.price,
+                        fees: investment.fees ? (typeof investment.fees === 'string' ? new BigNumber(investment.fees) : investment.fees) : undefined,
+                    };
+                    if (editingInvestment?.id !== deserializedInvestment.id) {
+                        setEditingInvestment(deserializedInvestment);
+                        setInvestmentType(investment.type);
+                        setViewMode('INVESTMENT');
+                        setModalVisible(false);
+                    }
+                }
+
+                // Clear params immediately to prevent re-processing
+                navigation.setParams({ transaction: undefined, investment: undefined });
             } else {
-                // New record - show menu (only if not already in a process)
-                if (viewModeRef.current !== 'AI_REVIEW') {
-                    setViewMode('MENU');
+                // No params - default state
+                // Only reset if we are not already in a specific mode (e.g., entered via tab press)
+                // But useFocusEffect runs on tab press/focus.
+                // We want to show menu if we just arrived here blank.
+
+                // Check if we are "initialized". 
+                // Using a check to see if we should reset.
+                // If viewMode is already set to something else by user interaction, do we reset?
+                // If user tabs away and comes back, usually we want to keep state? 
+                // Or reset? User expects reset on "Add Record" tab usually?
+                // Logic: "New record - show menu (only if not already in a process)"
+
+                if (viewModeRef.current !== 'AI_REVIEW' && viewModeRef.current === 'MENU' && !modalVisible) {
                     setModalVisible(true);
-                    setEditingTransaction(null);
-                    setEditingInvestment(null);
                 }
             }
-
-            return () => {
-                // Clear params on blur
-                navigation.setParams({ transaction: undefined, investment: undefined });
-            };
-        }, [route.params, navigation])
+        }, [route.params, navigation]) // Depend on route.params
     );
 
     const handleTransactionSelect = (selectedType: TransactionType) => {
@@ -151,7 +164,7 @@ const RecordScreen = ({ navigation, route }: any) => {
     const { showAlert } = useAlert();
 
     const handleInvestmentSelect = (type: InvestmentType) => {
-        if (type === 'STOCKS' || type === 'FUNDS') {
+        if (type === 'STOCKS' || type === 'FUNDS' || type === 'CRYPTO') {
             setInvestmentType(type);
             setViewMode('INVESTMENT');
             setModalVisible(false);
