@@ -55,7 +55,7 @@ const InsightsScreen = ({ navigation }: any) => {
         expense: new BigNumber(0),
         savingsRate: new BigNumber(0),
         burnRate: new BigNumber(0),
-        incomeTrends: { labels: [], incomeData: [], expenseData: [] } as { labels: string[], incomeData: BigNumber[], expenseData: BigNumber[] },
+        incomeTrends: { labels: [], fullLabels: [], incomeData: [], expenseData: [] } as { labels: string[], fullLabels: string[], incomeData: BigNumber[], expenseData: BigNumber[] },
         incomeBreakdown: [] as any[],
         expenseBreakdown: [] as any[],
         currentMonthExpense: new BigNumber(0),
