@@ -4,247 +4,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy & Terms of Service - WealthSnap</title>
+    <title>WealthSnap Terms of Service & Privacy Policy</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             line-height: 1.6;
             color: #333;
-            max-width: 800px;
-            margin: 0 auto;
+            margin: 0;
             padding: 20px;
-            background-color: #f9f9f9;
-        }
-
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            color: #2c3e50;
-            border-bottom: 2px solid #eaeaea;
-            padding-bottom: 10px;
+            background-color: #fff;
         }
 
         h2 {
-            color: #34495e;
+            color: #2c3e50;
+            font-size: 18px;
             margin-top: 30px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        strong {
+            font-weight: bold;
         }
 
         ul {
+            margin-bottom: 12px;
             padding-left: 20px;
         }
 
         li {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
-        .footer {
-            margin-top: 50px;
-            font-size: 0.9em;
-            color: #7f8c8d;
-            border-top: 1px solid #eaeaea;
-            padding-top: 20px;
+        a {
+            color: #1a73e8;
+            text-decoration: none;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Privacy Policy & Terms of Service</h1>
-        <p><strong>Effective Date:</strong> January 2026</p>
-        <p><strong>App Name:</strong> WealthSnap</p>
 
-        <p>This Agreement governs your use of WealthSnap ("the App"). By downloading, installing, or using the App, you
-            agree to these Terms of Service and Privacy Policy.</p>
+    <h2>1. OVERVIEW</h2>
+    <p>WealthSnap is a <strong>privacy-first, local-only application</strong>. Your financial data, transaction logs,
+        and personal details remain stored locally on your device; we do not maintain external servers.</p>
+    <p>By downloading, installing, or using WealthSnap ("the App"), you agree to these Terms of Service and Privacy
+        Policy.</p>
 
-        <h2>1. Overview</h2>
-        <p>WealthSnap is designed as a <strong>privacy-first, local-only application</strong>. We do not maintain
-            external servers to store your financial or personal data. Your financial data, transaction logs, and
-            personal
-            details
-            remain stored locally on your device.</p>
+    <h2>2. INFORMATION WE COLLECT & HOW WE USE IT</h2>
 
-        <h2>2. Information We Collect & How We Use It</h2>
+    <h3>2.1 Camera & Images</h3>
+    <p>We request access to your camera and photo library to allow you to take photos of receipts, invoices, or
+        financial documents for analysis. Images are sent directly from your device to Google Gemini API using your
+        personal API key. We never see, store, or intercept these images. Users should review their Google Cloud or AI
+        Studio privacy settings.</p>
 
-        <h3>2.1 Camera and Images</h3>
-        <p><strong>What we access:</strong> We request permission to access your device's camera and photo library.</p>
-        <p><strong>Why:</strong> To allow you to take photos of receipts, invoices, or financial documents for analysis.
-        </p>
-        <p><strong>Data Handling:</strong> Images you select are processed temporarily to extract insights (e.g.,
-            transaction details). Data is transmitted directly from your device to Google's Gemini API using your
-            personal API key. The Developer never sees, intercepts, or handles this transmission. Images are not
-            permanently stored on your device.</p>
-        <p><strong>API Processing:</strong> When you use AI features, image data is sent to Google's Gemini API, which
-            is
-            subject to <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.
-            WealthSnap acts merely as a conduit for this data and does not store, process, or have access to the API's
-            internal processing of your images. Users are encouraged to review their own Google AI Studio or Google
-            Cloud privacy settings, as the use of a personal API key falls under the user's individual agreement with
-            Google.</p>
+    <h3>2.2 Biometric Data</h3>
+    <p>We use device biometrics (FaceID, TouchID) for secure access. Your biometric data never leaves your device;
+        authentication is handled by your OS.</p>
 
-        <h3>2.2 Biometric Data</h3>
-        <p><strong>What we access:</strong> We use your device's biometric capabilities (FaceID, TouchID, or
-            Fingerprint).</p>
-        <p><strong>Why:</strong> To provide secure, quick access to your financial data.</p>
-        <p><strong>Data Handling:</strong> We <strong>never</strong> access, collect, or store your actual biometric
-            data (fingerprints or facial maps). Authentication is handled entirely by your device's operating system,
-            which simply tells our app "Success" or "Failure".</p>
+    <h3>2.3 User Content & Data Transit</h3>
+    <p>Financial data (budgets, transactions, notes) is stored locally. For AI features, only the data you select is
+        sent to Google Gemini. Sensitive values are encrypted (AES-256); metadata is stored in plain text for fast
+        search. Decryption keys are stored in secure hardware enclaves.</p>
 
-        <h3>2.3 User Content (Financial Data) & Data Transit</h3>
-        <p><strong>Internal:</strong> We do not collect, sell, share, or store your personal data on external developer
-            servers. Information you input—transaction history, budgets, and goals—resides locally on your device.</p>
-        <p><strong>Transit:</strong> For AI-powered features to function (such as receipt analysis), data you explicitly
-            select is transmitted directly to Google's Gemini API as described in Section 2.1.</p>
-        <p><strong>Data Handling:</strong> We employ a <strong>Hybrid Encryption</strong> model to balance privacy and
-            performance:</p>
-        <ul>
-            <li><strong>Sensitive Data (Encrypted):</strong> Private values such as transaction amounts, notes,
-                receipts,
-                and investment quantities are encrypted using AES-256 before being stored.</li>
-            <li><strong>Metadata (Raw):</strong> To ensure the app remains fast and searchable, non-sensitive metadata
-                such as transaction dates, categories, and types (e.g., "Expense") are stored in plain text.</li>
-        </ul>
-        <p>This ensures your private financial details remain hidden while allowing for instant search and rapid
-            filtering. Decryption keys are managed via the device's secure hardware enclave (e.g., iOS Keychain or
-            Android Keystore), ensuring that even if the raw database file is intercepted, it remains unreadable without
-            device-level authentication.</p>
+    <h3>2.4 AI Features & Third-Party Integration</h3>
+    <ul>
+        <li><strong>Data Sharing:</strong> Only the data you explicitly send for AI features is shared. Other app data
+            remains local.</li>
+        <li><strong>User API Key:</strong> You provide your Google Gemini API key. You control the data, and your
+            agreement with Google applies.</li>
+        <li><strong>Data Use for Training:</strong> Free-tier keys may be used by Google for model training. Paid-tier
+            keys generally have stronger privacy guarantees.</li>
+    </ul>
 
-        <h3>2.4 AI Analysis & Third-Party Integration</h3>
-        <p>To provide optional features such as "Receipt Analysis" and "AI Price Fetch," WealthSnap utilizes the Google
-            Gemini API.</p>
-        <p><strong>Data Sharing:</strong> When you explicitly initiate an AI feature, only the specific data required
-            (e.g., an image of a receipt or a stock symbol) is transmitted to Google. No other part of your encrypted
-            local database is shared.</p>
-        <p><strong>User-Provided API Key:</strong> WealthSnap is a "Bring Your Own Key" (BYOK) application. By providing
-            your own Google Gemini API key, you act as the primary Data Controller for these interactions. Your data
-            usage is subject to your individual agreement with Google and their Privacy Policy.</p>
-        <p><strong>Data Use for Training:</strong> Please be advised that if you use a "Free/Unpaid" tier API key,
-            Google may utilize your inputs to improve their models. We strongly recommend reviewing your Google AI
-            Studio settings to manage your data preferences. WealthSnap strongly recommends using a 'Pay-as-you-go'
-            (Paid) Google Cloud project key if you wish to opt-out of data training, as Google's terms for Paid-tier API
-            usage typically provide higher data privacy guarantees than the Free tier.</p>
-
-        <h2>3. Third-Party Services</h2>
-        <p>We use specific third-party services to provide app functionality. These services have their own privacy
-            policies:</p>
-        <ul>
-            <li><strong>Google Gemini API:</strong> Used for AI analysis of images and text. <a
-                    href="https://policies.google.com/privacy" target="_blank">Google Privacy Policy</a></li>
-            <li><strong>Google ML Kit:</strong> Used for on-device document scanning and image processing. No personal
-                data is transmitted to Google servers for this function.</li>
-            <li><strong>Expo:</strong> The platform used to build and update the app. <a href="https://expo.dev/privacy"
-                    target="_blank">Expo Privacy Policy</a></li>
-        </ul>
-
-        <h2>4. Freeware & API Usage</h2>
-        <p><strong>4.1 Free to Use:</strong> The App is provided as "Freeware" at no cost to you.</p>
-        <p><strong>4.2 User-Provided API Key:</strong> To access optional AI-powered features, you must obtain and
-            provide your own Google Gemini API key.</p>
-        <p><strong>4.3 API Costs:</strong> While the App itself is free, you are solely responsible for any costs, fees,
-            or usage limits associated with your personal Google Gemini API key.</p>
-
-        <h2>5. Security & Data Retention</h2>
-        <p>Since data is stored locally on your device, you have full control. Uninstalling the application will remove
-            all local data associated with it, unless you have created a manual backup file.</p>
-        <p><strong>5.1 No Backup Liability:</strong> The Developer does not maintain backups and is not responsible for
-            data
-            loss due to hardware failure, app deletion, or forgotten PINs. You are solely responsible for creating and
-            maintaining your own backups using the in-app backup feature.</p>
-        <p><strong>5.2 No Password Recovery:</strong> There is NO "Forgot Password" or recovery mechanism for your
-            custom PIN. The Developer cannot "reset" your PIN or recover your encrypted database. Forgetting your PIN
-            results in permanent data loss.</p>
-        <p><strong>5.3 Data Deletion:</strong> Users can delete all data at any time by clearing the App's cache/data in
-            device settings or by uninstalling the App. Since no data is stored on developer servers, this action is
-            permanent and irreversible.</p>
-
-        <h2>6. Children's Privacy</h2>
-        <p>Our Services do not address anyone under the age of 13. We do not knowingly collect or have access to any
-            personally identifiable information from children. Since all data is stored locally on the device, the
-            Developer has no records to review or delete. If you are a parent or guardian and are concerned about data
-            stored within the App, you can remove it by clearing the App's data in the device settings or by
-            uninstalling the App.</p>
-
-        <h2>7. Disclaimer of Warranties</h2>
-        <p>The Application is provided to you "AS IS" and "AS AVAILABLE" and with all faults and defects without
-            warranty of any kind. To the maximum extent permitted under applicable law, we expressly disclaim all
-            warranties, whether express, implied, statutory, or otherwise, including all implied warranties of
-            merchantability, fitness for a particular purpose, title, and non-infringement.</p>
-        <p>We do not warrant that the Application will meet your requirements, achieve any intended results, be
-            compatible with any other software, applications, systems, or services, operate without interruption, meet
-            any performance or reliability standards, or be error-free.</p>
+    <h2>3. THIRD-PARTY SERVICES</h2>
+    <ul>
+        <li><strong>Google Gemini API:</strong> AI analysis of images and text.</li>
+        <li><strong>Google ML Kit:</strong> On-device document scanning; no personal data sent.</li>
+        <li><strong>Frankfurter API:</strong> Open-source currency exchange rates.</li>
+        <li><strong>Expo:</strong> Used to build and update the app.</li>
+    </ul>
 
 
-        <h3>7.1 Automated Insights & Projections</h3>
-        <p>Features such as Safe-to-Spend, Ghost Forecast, Smart Alerts, and any other current or future predictive
-            tools utilize local algorithms to provide financial projections. These insights are:</p>
-        <p><strong>Non-Binding:</strong> Projections are estimates based on your input history and are not a guarantee
-            of future balance availability.</p>
-        <p><strong>Informational Only:</strong> These features do not constitute automated financial advice or
-            professional credit assessment. WealthSnap does not use your data for "Social Scoring" or automated lending
-            decisions.</p>
+    <h2>4. FREEWARE & API USAGE</h2>
+    <ul>
+        <li><strong>Free to Use:</strong> The app is free.</li>
+        <li><strong>API Key:</strong> Optional AI features require your own Google Gemini API key.</li>
+        <li><strong>API Costs:</strong> You are responsible for any costs or limits related to your API key.</li>
+    </ul>
 
-        <p><strong>Crucially (Financial Disclaimer):</strong> WealthSnap is a tool for informational purposes only. We
-            are not financial advisors. The insights provided by the App and AI analysis are for informational purposes
-            only. Any insights, metrics, calculations, or data (whether generated by AI, current or future algorithms,
-            or system logic) may be inaccurate, incomplete, or misleading. You are solely responsible for your own
-            financial decisions, and we accept no liability for any actions you take based on information provided by
-            the App.</p>
+    <h2>5. SECURITY & DATA RETENTION</h2>
+    <ul>
+        <li><strong>No Backup Liability:</strong> All data is local. Losing the device or deleting the app may result in
+            permanent data loss. You are responsible for backups.</li>
+        <li><strong>No Password Recovery:</strong> We cannot reset PINs or recover encrypted databases.</li>
+        <li><strong>Data Deletion:</strong> Clear cache/data or uninstall the app to remove all data permanently.</li>
+    </ul>
 
-        <h2>8. Limitation of Liability</h2>
-        <p>To the fullest extent permitted by applicable law, in no event shall the Developer be liable for any special,
-            incidental, indirect, or consequential damages whatsoever (including, but not limited to, damages for loss
-            of profits, loss of data, or other information, for business interruption, for personal injury, loss of
-            privacy arising out of or in any way related to the use of or inability to use the Application), even if the
-            Developer has been advised of the possibility of such damages.</p>
+    <h2>6. CHILDREN'S PRIVACY</h2>
+    <p>We do not collect data from anyone under 13. Parents may remove data by clearing app data or uninstalling.</p>
 
-        <h2>9. Indemnification</h2>
-        <p>You agree to indemnify, defend, and hold harmless the developer from any and all claims, liabilities,
-            damages, and costs (including attorney's fees) arising from your use of the App, your violation of these
-            Terms, or your violation of any third-party rights.</p>
+    <h2>7. DISCLAIMER OF WARRANTIES</h2>
+    <ul>
+        <li><strong>"AS IS":</strong> The app is provided without warranties of any kind.</li>
+        <li><strong>Automated Insights:</strong> Features like Safe-to-Spend, Ghost Forecast, and Smart Alerts are
+            estimates only and are not financial advice. You are responsible for your decisions.</li>
+    </ul>
 
-        <h2>10. Governing Law</h2>
-        <p>These Terms shall be governed by and defined following the laws of the Republic of the Philippines.
-            WealthSnap and yourself irrevocably consent that the courts of the Philippines shall have exclusive
-            jurisdiction to resolve any dispute which may arise in connection with these terms. WealthSnap is designed
-            with global privacy standards in mind and facilitates your rights as a Data Subject under the Philippine
-            Data Privacy Act of 2012 (DPA) and similar international regulations. Because the Developer has no access to
-            your data, your rights to access, correction, and erasure are exercised directly by you through the App's
-            interface and local storage management.</p>
+    <h2>8. LIMITATION OF LIABILITY</h2>
+    <p>We are not liable for damages, data loss, or lost profits related to app use to the fullest extent allowed by
+        law.</p>
 
-        <h2>11. Severability</h2>
-        <p>If any provision of these Terms is held to be unenforceable or invalid, such provision will be changed and
-            interpreted to accomplish the objectives of such provision to the greatest extent possible under applicable
-            law and the remaining provisions will continue in full force and effect.</p>
+    <h2>9. INDEMNIFICATION</h2>
+    <p>You agree to hold the developer harmless from claims, liabilities, or costs arising from your use of the app.</p>
 
-        <h2>12. Changes to This Agreement</h2>
-        <p>We may update our Privacy Policy and Terms from time to time. Thus, you are advised to review this page
-            periodically for any changes. We will notify you of any changes by updating the 'Terms & Privacy' section
-            within the App.</p>
+    <h2>10. GOVERNING LAW</h2>
+    <p>These Terms are governed by the <strong>Republic of the Philippines</strong>. Courts in the Philippines have
+        exclusive jurisdiction. Users exercise their data rights directly via the app.</p>
 
-        <h2>13. Device Permissions</h2>
-        <p>To provide its functionality, the App may request the following permissions on your device:</p>
-        <ul>
-            <li><strong>Camera & Photos:</strong> For receipt analysis (Section 2.1).</li>
-            <li><strong>Biometrics:</strong> For secure app access via FaceID/Fingerprint (Section 2.2).</li>
-            <li><strong>Storage:</strong> For saving your encrypted financial database on your device.</li>
-            <li><strong>Notifications:</strong> Used to provide timely reminders for budget tracking, bill payments, or
-                investment schedules. These are handled locally or through standard system services and are never used
-                for unsolicited marketing.</li>
-            <li><strong>Network Connectivity:</strong> Strictly used to communicate with the Google Gemini API for
-                user-initiated AI features. No data is sent to the developer or any other third party.</li>
-            <li><strong>Service Permissions:</strong> The app uses standard system permissions to provide haptic
-                feedback (vibration) and ensure background tasks (like scheduled reminders) function correctly after a
-                device restart.</li>
-        </ul>
+    <h2>11. SEVERABILITY</h2>
+    <p>If any provision is invalid, the remaining Terms remain in effect.</p>
 
-        <h2>14. Contact Us</h2>
-        <p>If you have any questions or suggestions about our Privacy Policy, do not hesitate to contact us at:</p>
-        <p>Email: cjs.dev.studio@gmail.com</p>
-    </div>
+    <h2>12. CHANGES TO THIS AGREEMENT</h2>
+    <p>Terms may change; users should review them periodically. Updates are posted in the app.</p>
+
+    <h2>13. DEVICE PERMISSIONS</h2>
+    <ul>
+        <li><strong>Camera & Photos:</strong> For receipt analysis.</li>
+        <li><strong>Biometrics:</strong> For secure app access.</li>
+        <li><strong>Storage:</strong> To save encrypted local data.</li>
+        <li><strong>Notifications:</strong> Local reminders only, no spam.</li>
+        <li><strong>Network:</strong> Only for AI features; no other data sent.</li>
+        <li><strong>Service Permissions:</strong> Standard system access for vibration and reminders.</li>
+    </ul>
+
+    <h2>14. CONTACT US</h2>
+    <p>If you have any questions, email: <strong><a
+                href="mailto:cjs.dev.studio@gmail.com">cjs.dev.studio@gmail.com</a></strong></p>
+
 </body>
 
 </html>
