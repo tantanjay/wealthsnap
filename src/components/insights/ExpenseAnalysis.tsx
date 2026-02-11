@@ -157,7 +157,7 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                     ) : pieData.length > 0 ? (
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             {/* Chart Section */}
-                            <View style={{ flex: 3, alignItems: 'center' }}>
+                            <View style={{ flex: 6, alignItems: 'center' }}>
                                 <PieChart
                                     data={pieData.map(d => ({
                                         value: d.population,

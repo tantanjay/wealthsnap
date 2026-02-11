@@ -354,7 +354,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                             yAxisColor="transparent"
                             xAxisColor="transparent"
                             yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10, marginLeft: 4 }}
-                            xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
+                            xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10, width: 30, textAlign: 'center' }}
                             hideDataPoints
                             curved
                             curveType={0}
