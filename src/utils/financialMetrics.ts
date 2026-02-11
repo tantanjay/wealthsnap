@@ -257,6 +257,7 @@ export const getCategoryBreakdown = (transactions: Transaction[], type: Breakdow
 export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: number = 6) => {
     const result = {
         labels: [] as string[],
+        fullLabels: [] as string[],
         incomeData: [] as BigNumber[],
         expenseData: [] as BigNumber[]
     };
@@ -265,6 +266,7 @@ export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: num
     for (let i = monthsBack - 1; i >= 0; i--) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         result.labels.push(d.toLocaleString('default', { month: 'short' }));
+        result.fullLabels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
 
         const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
         const { income, expense } = calculateTotals(monthlyTransactions);

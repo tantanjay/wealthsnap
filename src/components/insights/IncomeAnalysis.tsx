@@ -16,6 +16,7 @@ import { CURRENCY_SYMBOLS, formatCompactCurrency } from '@utils/currencyUtils';
 interface IncomeAnalysisProps {
     monthlyTrends: {
         labels: string[];
+        fullLabels?: string[];
         incomeData: BigNumber[];
     };
     categoryBreakdown: {
@@ -68,6 +69,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
         legendFontSize: 12
     }));
 
+    // ... getInsight and renderTimeFilter ...
     // Generate smart insight (using active trends)
     const getInsight = () => {
         if (isPrivacyEnabled) return "Income insights hidden in privacy mode.";
@@ -214,6 +216,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                 // Use historical average as the target for the current month's projection
 
                                 const labels = [...activeMonthlyTrends.labels];
+                                const fullLabels = activeMonthlyTrends.fullLabels ? [...activeMonthlyTrends.fullLabels] : [...labels];
                                 const rawData = [...activeMonthlyTrends.incomeData];
 
                                 // Last element is current month
@@ -237,6 +240,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                 // Replace last label with * indicator
                                 if (labels.length > 0) {
                                     labels[labels.length - 1] = labels[labels.length - 1] + "*";
+                                    fullLabels[fullLabels.length - 1] = fullLabels[fullLabels.length - 1] + "*";
                                 }
 
                                 const barData = labels.map((label, index) => {
@@ -250,6 +254,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
 
                                     return {
                                         label: shouldShowLabel ? label : '',
+                                        fullLabel: fullLabels[index],
                                         value,
                                         actual,
                                         isProjected: isCurrentMonth
@@ -354,7 +359,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                                                 borderColor: colors.border,
                                                                 zIndex: 100
                                                             }}>
-                                                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: 'bold', marginBottom: 2 }}>{bar.label.replace('*', '')}</Text>
+                                                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: 'bold', marginBottom: 2 }}>{bar.fullLabel.replace('*', '')}</Text>
                                                                 <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
                                                                     Actual: <Text style={{ color: colors.text }}>{formatCompactCurrency(bar.actual, currency)}</Text>
                                                                 </Text>
@@ -387,7 +392,8 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                                                 marginTop: 6,
                                                                 width: 40,
                                                                 textAlign: 'center',
-                                                                fontWeight: isSelected ? 'bold' : 'normal'
+                                                                fontWeight: isSelected ? 'bold' : 'normal',
+                                                                opacity: bar.label || isSelected ? 1 : 0
                                                             }}
                                                         >
                                                             {bar.label}
