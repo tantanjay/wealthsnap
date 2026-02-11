@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
@@ -64,7 +65,20 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
     const iconColor = isBuy ? colors.success : (isSell ? colors.error : colors.primary);
     const iconName = isBuy ? "arrow-up-circle-outline" : (isSell ? "arrow-down-circle-outline" : "gift-outline");
 
-    const totalValue = investment.price.multipliedBy(investment.quantity);
+    const rate = investment.exchangeRate && new BigNumber(investment.exchangeRate).isGreaterThan(1)
+        ? new BigNumber(investment.exchangeRate)
+        : new BigNumber(1);
+
+    // Check if we effectively have a different currency
+    const displayCurrency = investment.currency || currency;
+    const isNative = rate.isGreaterThan(1);
+
+    const displayPrice = isNative ? investment.price.dividedBy(rate) : investment.price;
+    const totalValue = displayPrice.multipliedBy(investment.quantity);
+
+    const displayLinkedAmount = linkedTransaction
+        ? (isNative ? linkedTransaction.amount.dividedBy(rate) : linkedTransaction.amount)
+        : null;
 
     return (
         <BottomModal
@@ -90,14 +104,19 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
                         <View style={styles.details}>
                             <Text style={[styles.category, { color: colors.text }]}>{investment.symbol} ({investment.action})</Text>
                             <Text style={[styles.note, { color: colors.textSecondary }]}>
-                                {investment.quantity.toString()} units @ {formatCurrencyAmount(investment.price, currency)}
+                                {investment.quantity.toString()} units @ {formatCurrencyAmount(displayPrice, displayCurrency)}
                             </Text>
+                            {isNative && (
+                                <Text style={[styles.note, { color: colors.textSecondary, fontSize: 12, marginTop: 2 }]}>
+                                    Rate: 1 {displayCurrency} = {rate.toFixed(2)} {currency}
+                                </Text>
+                            )}
                         </View>
                         <Text style={[
                             styles.amount,
                             { color: colors.text }
                         ]}>
-                            {formatCurrencyAmount(totalValue, currency)}
+                            {formatCurrencyAmount(totalValue, displayCurrency)}
                         </Text>
                     </View>
 
@@ -106,7 +125,7 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
                         <View style={[styles.linkedInfo, { backgroundColor: colors.background }]}>
                             <Ionicons name="link-outline" size={14} color={colors.primary} />
                             <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 6 }}>
-                                Linked to Transaction • {formatCurrencyAmount(linkedTransaction.amount, currency)}
+                                Linked to Transaction • {displayLinkedAmount ? formatCurrencyAmount(displayLinkedAmount, displayCurrency) : ''}
                             </Text>
                         </View>
                     )}

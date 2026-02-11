@@ -54,6 +54,7 @@ export interface Investment {
     quantity: BigNumber;
     price: BigNumber;
     currency?: string;
+    exchangeRate?: BigNumber;
     fees?: BigNumber;
     notes?: string;
     isRecurring: boolean;
