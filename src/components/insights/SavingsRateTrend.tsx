@@ -10,14 +10,16 @@ import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
 import { getSavingsRateTrend } from '@utils/financialMetrics';
+import { formatCompactCurrency } from '@utils/currencyUtils';
 
 interface SavingsRateTrendProps {
     transactions: Transaction[];
     privacyMode: boolean;
     isLoading?: boolean;
+    currency: string;
 }
 
-const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, privacyMode, isLoading = false }) => {
+const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, privacyMode, isLoading = false, currency }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
@@ -67,6 +69,126 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
             rawData: data
         };
     }, [transactions, monthsToLoad, colors.primary]);
+
+    // Calculate Max Value for dynamic tooltip positioning
+    const maxValue = useMemo(() => {
+        if (savingsData.rawData.length === 0) return 0;
+        const rates = savingsData.rawData.map(d => Math.abs(d.rate));
+        return Math.max(...rates);
+    }, [savingsData.rawData]);
+
+    // Pointer Config for Tap & Drag
+    const pointerConfig = useMemo(() => ({
+        pointerStripHeight: 160,
+        pointerStripColor: colors.border,
+        pointerStripWidth: 2,
+        pointerColor: colors.primary,
+        radius: 6,
+        pointerLabelWidth: 140, // Ensure width is known for positioning calculations if needed
+        pointerLabelHeight: 100,
+        // Require long press to activate tooltip so scrolling (drag) works
+        activatePointersOnLongPress: true,
+        autoAdjustPointerLabelPosition: true,
+        pointerComponent: (items: any) => {
+            const safeItems = Array.isArray(items) ? items : [items].filter(Boolean);
+            const item = safeItems[0];
+            if (!item) return <View />;
+
+            return (
+                <View style={{
+                    height: 10,
+                    width: 10,
+                    borderRadius: 5,
+                    backgroundColor: item.originalValue >= 0 ? '#4CAF50' : '#F44336',
+                    borderWidth: 2,
+                    borderColor: colors.surface
+                }} />
+            );
+        },
+        pointerLabelComponent: (items: any) => {
+            const safeItems = Array.isArray(items) ? items : [items].filter(Boolean);
+            const item = safeItems[0];
+            if (!item) return null;
+
+            // --- Dynamic Positioning Logic (Copied & Adapted from CumulativeSpendingChart) ---
+            const index = item.index || 0;
+            const totalItems = savingsData.rawData.length;
+
+            // X-Axis Positioning: Always avoid center to prevent finger overlap
+            let marginLeft = 10; // Default to Right side
+            // If we are in the right half of the chart, show tooltip on the left
+            if (index > totalItems / 2) {
+                marginLeft = -100;
+            }
+
+            // Y-Axis Positioning: 
+            // Since we use shifted values, the "visual" y is high for positive numbers.
+            // We want to avoid blocking the point itself.
+            let marginTop = -30; // Default (Above point)
+
+            // Note: In CumulativeChart, logic was based on value > max * 0.8
+            // Here, we can try similar, but let's stick to simple "Above" usually works, 
+            // unless it's at the very top of the graph.
+            // If item.value (shifted) is very high, move tooltip down.
+            // yBoundary is max; value is shifted. Max visual ~ yBoundary * 2.
+
+            return (
+                <View
+                    style={{
+                        height: 100,
+                        width: 140,
+                        justifyContent: 'center',
+                        marginTop: marginTop,
+                        marginLeft: marginLeft,
+                        zIndex: 1000, // Ensure tooltip is above everything
+                    }}>
+                    <View style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        borderRadius: 12,
+                        backgroundColor: colors.surface,
+                        elevation: 10, // Increase elevation for Android
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 4.65,
+                        borderWidth: 1,
+                        borderColor: colors.border + '20'
+                    }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: 'bold', marginBottom: 6, textAlign: 'center' }}>
+                            {item.month}
+                        </Text>
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Savings Rate</Text>
+                            <Text style={{
+                                color: item.originalValue >= 0 ? '#4CAF50' : '#F44336',
+                                fontSize: 12,
+                                fontWeight: '600'
+                            }}>
+                                {item.originalValue.toFixed(1)}%
+                            </Text>
+                        </View>
+
+                        <View style={{ height: 1, backgroundColor: colors.border + '40', marginVertical: 4 }} />
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Income</Text>
+                            <Text style={{ color: colors.text, fontSize: 10 }}>
+                                {formatCompactCurrency(item.income, currency)}
+                            </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Expense</Text>
+                            <Text style={{ color: colors.text, fontSize: 10 }}>
+                                {formatCompactCurrency(item.expense, currency)}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+            );
+        },
+    }), [colors, currency, savingsData.rawData, maxValue]);
 
 
 
@@ -515,12 +637,31 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                         <Skeleton height={180} width="100%" borderRadius={16} />
                     </View>
                 ) : !privacyMode && (
-                    <View style={{ overflow: 'hidden', marginLeft: -10 }}>
+                    <View style={{ marginLeft: -10 }}>
+                        {/* MANUAL REFERENCE LINE (0%) - Rendered BEHIND chart to avoid tooltip overlap */}
+                        <View style={{
+                            position: 'absolute',
+                            left: 50, // Match yAxisLabelWidth roughly + spacing
+                            right: 0,
+                            top: 220 * (1 - (yOffset / (yBoundary * 2))), // Calculate Top Position
+                            height: 1,
+                            borderTopWidth: 1,
+                            borderColor: colors.textSecondary,
+                            borderStyle: 'dashed',
+                            zIndex: -1
+                        }} />
+
                         <LineChart
                             data={shiftedChartData.map((d, index) => ({
                                 value: d.value,
                                 dataPointColor: d.dataPointColor,
                                 label: savingsData.labels[index],
+                                // Metadata for tooltip
+                                originalValue: d.originalValue,
+                                month: savingsData.rawData[index].month,
+                                income: savingsData.rawData[index].income.toString(),
+                                expense: savingsData.rawData[index].expense.toString(),
+                                index: index,
                             }))}
 
                             height={200}
@@ -553,16 +694,8 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                             yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
                             xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10, width: 30, textAlign: 'center' }}
 
-                            /* ---- ZERO LINE (NOW CENTERED) ---- */
-                            showReferenceLine1
-                            referenceLine1Position={yOffset}
-                            referenceLine1Config={{
-                                color: colors.textSecondary,
-                                thickness: 1,
-                                type: 'dashed',
-                                dashWidth: 5,
-                                dashGap: 5,
-                            }}
+                            /* ---- REMOVED BUILT-IN REFERENCE LINE ---- */
+
 
                             /* ---- LINE GRADIENT ---- */
                             lineGradient
@@ -581,6 +714,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                                 const realValue = Number(value) - yOffset;
                                 return `${realValue.toFixed(0)}%`;
                             }}
+                            pointerConfig={pointerConfig}
                         />
 
                     </View>
