@@ -334,6 +334,7 @@ const InsightsScreen = ({ navigation }: any) => {
                                 transactions={transactions}
                                 privacyMode={isPrivacyEnabled}
                                 isLoading={isLoading}
+                                currency={currency}
                             />
                         )
                     },
