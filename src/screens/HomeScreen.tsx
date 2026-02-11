@@ -474,7 +474,7 @@ const HomeScreen = ({ navigation }: any) => {
                             return (
                                 <View key="transactions" style={{ marginBottom: 20 }}>
                                     <HomeTransactionsCard
-                                        recentTransactions={transactions.slice(0, 5)}
+                                        recentTransactions={transactions.filter(t => t.type === 'INCOME' || t.type === 'EXPENSE').slice(0, 5)}
                                         topExpenses={getTopExpenses(transactions, 5)}
                                         currency={profile?.currency || 'PHP'}
                                         onTransactionPress={() => navigation.navigate('History')}

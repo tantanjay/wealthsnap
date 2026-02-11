@@ -65,6 +65,7 @@ const TermsContent: React.FC = () => {
             <Text style={styles.termsText}>
                 • <Text style={styles.bold}>Google Gemini API:</Text> AI analysis of images and text.{'\n'}
                 • <Text style={styles.bold}>Google ML Kit:</Text> On-device document scanning; no personal data sent.{'\n'}
+                • <Text style={styles.bold}>Frankfurter API:</Text> Open-source currency exchange rates.{'\n'}
                 • <Text style={styles.bold}>Expo:</Text> Used to build and update the app.
             </Text>
 
