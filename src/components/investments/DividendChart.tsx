@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
-import { CURRENCY_SYMBOLS, formatCurrencyAmount, formatCompactNumber, formatCompactCurrency } from '@utils/currencyUtils';
+import { formatCurrencyAmount, formatCompactNumber, formatCompactCurrency } from '@utils/currencyUtils';
 
 interface DividendChartProps {
     labels: string[];
@@ -15,7 +15,6 @@ interface DividendChartProps {
 export const DividendChart: React.FC<DividendChartProps> = ({ labels, data, currency = 'PHP', isLoading = false, isPrivacyEnabled = false }) => {
     const { colors } = useTheme();
     const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
-    const symbol = CURRENCY_SYMBOLS[currency] || currency;
 
     const totalDividends = data.reduce((acc, curr) => acc + curr, 0);
 
