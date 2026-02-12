@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -27,11 +27,13 @@ const RecordScreen = ({ navigation, route }: any) => {
     const [capturedImageUri, setCapturedImageUri] = useState<string | null>(null);
     const [currency, setCurrency] = useState('PHP');
 
-    // Ref for viewMode to access current value in focus effect without triggering re-runs
-    const viewModeRef = useRef(viewMode);
+
+
+    // Ref to hold current state for access in focus effect without re-triggering
+    const stateRef = useRef({ viewMode, modalVisible, editingTransaction, editingInvestment });
     useEffect(() => {
-        viewModeRef.current = viewMode;
-    }, [viewMode]);
+        stateRef.current = { viewMode, modalVisible, editingTransaction, editingInvestment };
+    }, [viewMode, modalVisible, editingTransaction, editingInvestment]);
 
     // Listen for tab press events to reopen modal
     useEffect(() => {
@@ -101,6 +103,8 @@ const RecordScreen = ({ navigation, route }: any) => {
     useFocusEffect(
         useCallback(() => {
             const { transaction, investment } = route.params || {};
+            // Access current state via ref to avoid effect re-runs on local state changes
+            const { viewMode, modalVisible, editingTransaction, editingInvestment } = stateRef.current;
 
             if (transaction || investment) {
                 // Determine if we need to process (check against current state to avoid loops)
@@ -136,19 +140,7 @@ const RecordScreen = ({ navigation, route }: any) => {
                 // Clear params immediately to prevent re-processing
                 navigation.setParams({ transaction: undefined, investment: undefined });
             } else {
-                // No params - default state
-                // Only reset if we are not already in a specific mode (e.g., entered via tab press)
-                // But useFocusEffect runs on tab press/focus.
-                // We want to show menu if we just arrived here blank.
-
-                // Check if we are "initialized". 
-                // Using a check to see if we should reset.
-                // If viewMode is already set to something else by user interaction, do we reset?
-                // If user tabs away and comes back, usually we want to keep state? 
-                // Or reset? User expects reset on "Add Record" tab usually?
-                // Logic: "New record - show menu (only if not already in a process)"
-
-                if (viewModeRef.current !== 'AI_REVIEW' && viewModeRef.current === 'MENU' && !modalVisible) {
+                if (viewMode === 'MENU' && !modalVisible) {
                     setModalVisible(true);
                 }
             }

@@ -1,6 +1,6 @@
 
 import { fetchExchangeRate } from '@services/integrations/currencyService';
-import { AssetRequest, FetchedPrice, FetchedDividend, fetchHistoricalPrices as fetchGeminiPrices, fetchDividendHistory as fetchGeminiDividends } from '@services/integrations/geminiService';
+import { AssetRequest, FetchedPrice, fetchHistoricalPrices as fetchGeminiPrices, fetchDividendHistory as fetchGeminiDividends } from '@services/integrations/geminiService';
 import { addPriceHistory, updatePriceHistory, getPriceHistory } from '@services/domain/priceHistoryService';
 import { addDividendHistory, updateDividendHistory, getDividendHistory } from '@services/domain/dividendHistoryService';
 import { BigNumber } from 'bignumber.js';

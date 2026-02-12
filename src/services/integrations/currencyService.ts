@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BigNumber } from 'bignumber.js';
 
 const CACHE_PREFIX = 'FX_RATE_';
 const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours for current rates

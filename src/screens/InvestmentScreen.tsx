@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react';
-import { BigNumber } from 'bignumber.js';
 import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, Platform, ToastAndroid } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
@@ -16,7 +15,6 @@ import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorServ
 import { getProjectedDividends } from '@services/domain/dividendHistoryService';
 import { AssetRequest } from '@services/integrations/geminiService';
 import { refreshAssetPrices } from '@services/domain/marketDataService';
-import { getPriceHistory } from '@services/domain/priceHistoryService';
 import { getAllAssets } from '@services/domain/assetService';
 import * as Storage from '@services/core/storageService';
 import { Ionicons } from '@expo/vector-icons';

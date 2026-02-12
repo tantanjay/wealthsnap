@@ -129,7 +129,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         if (useNativeCurrency) {
             getRate();
         }
-    }, [useNativeCurrency, assetCurrency, currency]);
+    }, [useNativeCurrency, assetCurrency, exchangeRate, currency]);
 
 
     useEffect(() => {
