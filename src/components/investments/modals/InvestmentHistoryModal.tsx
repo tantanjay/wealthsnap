@@ -189,7 +189,9 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                 if (inv.price.isGreaterThan(0)) {
                                     await addPriceHistory(symbol, inv.price, {
                                         timestamp: inv.date,
-                                        source: 'MANUAL'
+                                        source: 'MANUAL',
+                                        currency: inv.currency,
+                                        exchangeRate: inv.exchangeRate
                                     });
                                 }
                             }
