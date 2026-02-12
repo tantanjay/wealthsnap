@@ -15,7 +15,7 @@ import { getAllAssets } from '@services/domain/assetService';
 import { AssetRequest } from '@services/integrations/geminiService';
 import { refreshAssetPrices, refreshAssetDividends } from '@services/domain/marketDataService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
-import { DividendHistory, PriceHistory, Investment, Transaction } from '@types';
+import { DividendHistory, PriceHistory, Investment, Transaction, Asset } from '@types';
 import PriceHistoryFormModal from '@components/investments/modals/PriceHistoryFormModal';
 import DividendHistoryFormModal from '@components/investments/modals/DividendHistoryFormModal';
 import { useAIConsent } from '@hooks/useAIConsent';
@@ -61,6 +61,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     const [transactions, setTransactions] = useState<HistoryItem[]>([]);
     const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([]);
     const [dividendHistory, setDividendHistory] = useState<DividendHistory[]>([]);
+    const [asset, setAsset] = useState<Asset | null>(null);
 
     // Summary states
     const [realizedPL, setRealizedPL] = useState(0);
@@ -143,20 +144,27 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         setDividendHistory(dividends);
     }, [symbol]);
 
+    const loadAsset = useCallback(async () => {
+        const allAssets = await getAllAssets();
+        const found = allAssets.find(a => a.symbol === symbol);
+        setAsset(found || null);
+    }, [symbol]);
+
     const loadAllHistory = useCallback(async () => {
         setIsLoading(true);
         try {
             await Promise.all([
                 loadPositions(),
                 loadPrices(),
-                loadDividends()
+                loadDividends(),
+                loadAsset()
             ]);
         } catch (error) {
             console.error("Failed to load investment history", error);
         } finally {
             setIsLoading(false);
         }
-    }, [loadPositions, loadPrices, loadDividends]);
+    }, [loadPositions, loadPrices, loadDividends, loadAsset]);
 
     useEffect(() => {
         if (visible && symbol) {
@@ -548,10 +556,29 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         );
     };
 
+
+
     const renderPriceItem = ({ item }: { item: PriceHistory }) => {
         const isManual = item.source === 'MANUAL';
         const isAiFetch = item.source === 'AI_FETCH';
         const canDelete = isManual || isAiFetch;
+
+        // Calculate Native Price if applicable
+        let displayPrice = item.price;
+        let displayCurrency = currency;
+
+        if (asset && asset.currency && asset.currency !== currency) {
+            // Check if we have a valid exchange rate to convert back
+            const rate = item.exchangeRate ? new BigNumber(item.exchangeRate) : new BigNumber(1);
+
+            // Only convert if rate is NOT 1 (implies conversion happened or explicit rate exists)
+            // If rate is 1, we assume parity or default (no conversion info), so likely safer to show stored info OR shows stored info is 1:1.
+            // But user requested "compute to native".
+            if (!rate.isEqualTo(1)) {
+                displayPrice = item.price.dividedBy(rate);
+                displayCurrency = asset.currency;
+            }
+        }
 
         const content = (
             <TouchableOpacity
@@ -570,7 +597,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
                 <View style={styles.itemLeft}>
                     <Text style={[styles.itemType, { color: colors.text }]}>
-                        {formatCurrencyAmount(item.price.toNumber(), item.currency ? item.currency : currency)}
+                        {formatCurrencyAmount(displayPrice.toNumber(), displayCurrency)}
                     </Text>
                     <Text style={[styles.itemDate, { color: colors.textSecondary }]}>
                         {new Date(item.timestamp).toLocaleDateString()}
