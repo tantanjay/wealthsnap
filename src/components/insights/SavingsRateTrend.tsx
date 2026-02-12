@@ -70,13 +70,6 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         };
     }, [transactions, monthsToLoad, colors.primary]);
 
-    // Calculate Max Value for dynamic tooltip positioning
-    const maxValue = useMemo(() => {
-        if (savingsData.rawData.length === 0) return 0;
-        const rates = savingsData.rawData.map(d => Math.abs(d.rate));
-        return Math.max(...rates);
-    }, [savingsData.rawData]);
-
     // Pointer Config for Tap & Drag
     const pointerConfig = useMemo(() => ({
         pointerStripHeight: 160,
@@ -188,7 +181,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                 </View>
             );
         },
-    }), [colors, currency, savingsData.rawData, maxValue]);
+    }), [colors, currency, savingsData.rawData]);
 
 
 
@@ -509,17 +502,6 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         originalValue: val,   // keep real value for labels/colors
         dataPointColor: val < 0 ? '#F44336' : colors.primary,
     }));
-
-    const Y_AXIS_WIDTH = 45;
-    const INITIAL_SPACING = 20;
-
-    const chartWidth = screenWidth - 40;
-    const plotWidth = chartWidth - Y_AXIS_WIDTH - INITIAL_SPACING;
-
-    const pointSpacing =
-        savingsData.datasets[0].data.length > 1
-            ? plotWidth / (savingsData.datasets[0].data.length - 1)
-            : plotWidth;
 
     if (!isLoading && savingsData.datasets[0].data.length === 0) {
         return (
