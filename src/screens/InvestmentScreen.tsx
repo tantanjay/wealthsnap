@@ -14,8 +14,9 @@ import { usePrivacy } from '@context/PrivacyContext';
 import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding } from '@services/domain/investmentService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
 import { getProjectedDividends } from '@services/domain/dividendHistoryService';
-import { AssetRequest, fetchHistoricalPrices } from '@services/integrations/geminiService';
-import { addPriceHistory, getPriceHistory, updatePriceHistory } from '@services/domain/priceHistoryService';
+import { AssetRequest } from '@services/integrations/geminiService';
+import { refreshAssetPrices } from '@services/domain/marketDataService';
+import { getPriceHistory } from '@services/domain/priceHistoryService';
 import { getAllAssets } from '@services/domain/assetService';
 import * as Storage from '@services/core/storageService';
 import { Ionicons } from '@expo/vector-icons';
@@ -212,38 +213,7 @@ const InvestmentScreen = ({ navigation }: any) => {
             else if (durationLabel === 'Last 3 days') durationPrompt = 'Last 3 days';
 
             // 4. Fetch
-            fetchHistoricalPrices(requests, durationPrompt).then(async (prices) => {
-                let savedCount = 0;
-                for (const p of prices) {
-                    const existingHistory = await getPriceHistory(p.symbol);
-                    const existing = existingHistory.find(eh => eh.timestamp.startsWith(p.date));
-
-                    if (existing) {
-                        if (existing.source === 'AI_FETCH') {
-                            await updatePriceHistory(existing.id, new BigNumber(p.price), {
-                                high: p.high ? new BigNumber(p.high) : undefined,
-                                low: p.low ? new BigNumber(p.low) : undefined,
-                                volume: p.volume ? new BigNumber(p.volume) : undefined,
-                                timestamp: existing.timestamp,
-                                source: 'AI_FETCH',
-                                currency: p.currency
-                            });
-                            savedCount++;
-                        }
-                        // If MANUAL, do nothing.
-                    } else {
-                        await addPriceHistory(p.symbol, new BigNumber(p.price), {
-                            high: p.high ? new BigNumber(p.high) : undefined,
-                            low: p.low ? new BigNumber(p.low) : undefined,
-                            volume: p.volume ? new BigNumber(p.volume) : undefined,
-                            timestamp: p.date,
-                            source: 'AI_FETCH',
-                            currency: p.currency
-                        });
-                        savedCount++;
-                    }
-                }
-
+            refreshAssetPrices(requests, durationPrompt, currency).then((savedCount) => {
                 if (savedCount > 0) {
                     showToast(`Updated ${savedCount} prices.`);
                     loadStats(); // Refresh UI
