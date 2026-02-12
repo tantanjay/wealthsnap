@@ -12,7 +12,8 @@ import { getAllTransactions, deleteTransaction } from '@services/domain/transact
 import { getPriceHistory, deleteAllPriceHistory, addPriceHistory, deletePriceHistory, updatePriceHistory } from '@services/domain/priceHistoryService';
 import { getDividendHistory, deleteAutoDividendHistory, deleteDividendHistory, addDividendHistory, updateDividendHistory } from '@services/domain/dividendHistoryService';
 import { getAllAssets } from '@services/domain/assetService';
-import { fetchHistoricalPrices, AssetRequest, fetchDividendHistory } from '@services/integrations/geminiService';
+import { AssetRequest } from '@services/integrations/geminiService';
+import { refreshAssetPrices, refreshAssetDividends } from '@services/domain/marketDataService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { DividendHistory, PriceHistory, Investment, Transaction } from '@types';
 import PriceHistoryFormModal from '@components/investments/modals/PriceHistoryFormModal';
@@ -329,95 +330,35 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                 exchange: assetInfo?.exchange || 'Unknown'
             };
 
-            // 3. Call AI Service
+            // 3. Call Market Data Service
             if (activeFetchMode === 'price') {
-                fetchHistoricalPrices([assetRequest], durationPrompt).then(async (prices) => {
-                    let savedCount = 0;
-                    for (const p of prices) {
-                        // Check for existing AI_FETCH record (match date YYYY-MM-DD)
-                        const existing = priceHistory.find(curr =>
-                            curr.source === 'AI_FETCH' &&
-                            curr.timestamp.startsWith(p.date)
-                        );
-
-                        if (existing) {
-                            await updatePriceHistory(existing.id, p.price, {
-                                high: p.high,
-                                low: p.low,
-                                volume: p.volume,
-                                timestamp: existing.timestamp, // Keep original timestamp
-                                source: 'AI_FETCH',
-                                currency: p.currency
-                            });
-                        } else {
-                            await addPriceHistory(p.symbol, p.price, {
-                                high: p.high,
-                                low: p.low,
-                                volume: p.volume,
-                                timestamp: p.date,
-                                source: 'AI_FETCH',
-                                currency: p.currency
-                            });
-                        }
-                        savedCount++;
-                    }
+                try {
+                    const savedCount = await refreshAssetPrices([assetRequest], durationPrompt, currency);
                     const successMsg = `Processed ${savedCount} prices.`;
                     if (Platform.OS === 'android') ToastAndroid.show(successMsg, ToastAndroid.SHORT);
                     loadPrices();
                     onDataChange?.();
-                }).catch(err => {
+                } catch (err) {
                     console.error("Background fetch prices failed", err);
                     const errMsg = "Failed to update prices.";
                     if (Platform.OS === 'android') ToastAndroid.show(errMsg, ToastAndroid.SHORT);
-                }).finally(() => {
+                } finally {
                     setIsFetching(false);
-                });
+                }
             } else {
-                fetchDividendHistory([assetRequest], durationPrompt).then(async (dividends) => {
-                    let savedCount = 0;
-                    for (const d of dividends) {
-                        // Check for existing AI_FETCH record (match exDate YYYY-MM-DD or ISO start)
-                        const existing = dividendHistory.find(curr =>
-                            curr.source === 'AI_FETCH' &&
-                            (curr.exDate === d.exDate || curr.exDate.startsWith(d.exDate))
-                        );
-
-                        if (existing) {
-                            await updateDividendHistory(existing.id, {
-                                symbol: d.symbol,
-                                exDate: d.exDate,
-                                paymentDate: d.paymentDate,
-                                recordDate: d.recordDate,
-                                amount: new BigNumber(d.amount),
-                                type: d.type,
-                                status: 'PAID',
-                                source: 'AI_FETCH'
-                            });
-                        } else {
-                            await addDividendHistory({
-                                symbol: d.symbol,
-                                exDate: d.exDate,
-                                paymentDate: d.paymentDate,
-                                recordDate: d.recordDate,
-                                amount: new BigNumber(d.amount),
-                                type: d.type,
-                                status: 'PAID',
-                                source: 'AI_FETCH'
-                            });
-                        }
-                        savedCount++;
-                    }
+                try {
+                    const savedCount = await refreshAssetDividends([assetRequest], durationPrompt);
                     const successMsg = `Processed ${savedCount} dividend records.`;
                     if (Platform.OS === 'android') ToastAndroid.show(successMsg, ToastAndroid.SHORT);
                     loadDividends();
                     onDataChange?.();
-                }).catch(err => {
+                } catch (err) {
                     console.error("Background fetch dividends failed", err);
                     const errMsg = "Failed to update dividends.";
                     if (Platform.OS === 'android') ToastAndroid.show(errMsg, ToastAndroid.SHORT);
-                }).finally(() => {
+                } finally {
                     setIsFetching(false);
-                });
+                }
             }
         } catch (e) {
             console.error("Error initiating fetch", e);

@@ -13,6 +13,7 @@ import { useAlert } from '@context/AlertContext';
 import { Investment, InvestmentType, InvestmentAction, Transaction, TransactionType, Asset } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveInvestment, getAllInvestments } from '@services/domain/investmentService';
+import { fetchExchangeRate } from '@services/integrations/currencyService';
 import { getAllAssets } from '@services/domain/assetService';
 import { addPriceHistory } from '@services/domain/priceHistoryService';
 import { saveTransaction, getAllTransactions } from '@services/domain/transactionService';
@@ -104,25 +105,17 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
 
     // Fetch Exchange Rate when useNativeCurrency is enabled
     useEffect(() => {
-        const fetchExchangeRate = async () => {
+        const getRate = async () => {
             if (useNativeCurrency && assetCurrency && currency && assetCurrency !== currency) {
-                // If we already have a rate (e.g. editing) and it's not 1, maybe don't overwrite?
-                // But if the user just toggled it on, needed. 
-                // Simple logic: If rate is '1' (default) or we just toggled, fetch.
-                // But wait, if user edits, we don't want to refetch on every render.
-                // Let's fetch only if we enabled it and rate is 1 (default).
-                // Actually relying on useNativeCurrency change is better.
-
                 // If editing and we already have a saved rate, don't overwrite it automatically unless user asks?
                 // For now, let's fetch if current rate is 1 or empty.
                 if (exchangeRate !== '1' && exchangeRate !== '') return;
 
                 setIsFetchingRate(true);
                 try {
-                    const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${assetCurrency}&symbols=${currency}`);
-                    const data = await response.json();
-                    if (data && data.rates && data.rates[currency]) {
-                        setExchangeRate(data.rates[currency].toString());
+                    const rate = await fetchExchangeRate(assetCurrency, currency);
+                    if (rate) {
+                        setExchangeRate(rate.toString());
                     }
                 } catch (error) {
                     console.error('Failed to fetch exchange rate:', error);
@@ -134,7 +127,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         };
 
         if (useNativeCurrency) {
-            fetchExchangeRate();
+            getRate();
         }
     }, [useNativeCurrency, assetCurrency, currency]);
 
