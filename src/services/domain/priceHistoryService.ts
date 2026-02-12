@@ -10,8 +10,8 @@ import { decryptData } from '@services/core/encryptionService';
 
 const UPSERT_PRICE_HISTORY_QUERY = `
   INSERT OR REPLACE INTO price_history 
-  (id, symbol, price, high, low, volume, timestamp, source, currency)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (id, symbol, price, high, low, volume, timestamp, source, currency, exchangeRate)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 // --- Helper Functions ---
@@ -53,7 +53,9 @@ export const bulkSavePriceHistories = async (priceHistories: PriceHistory[]): Pr
                     history.volume ? new BigNumber(history.volume).toString() : null,
                     history.timestamp,
                     history.source || 'MANUAL',
-                    history.currency || 'PHP' // Fallback if bulk data is missing currency
+                    history.source || 'MANUAL',
+                    history.currency || 'PHP', // Fallback if bulk data is missing currency
+                    history.exchangeRate ? new BigNumber(history.exchangeRate).toString() : '1'
                 ]);
             }
         });
@@ -101,6 +103,7 @@ export const getLatestPrices = async (symbols: string[]): Promise<Record<string,
                 timestamp: row.timestamp,
                 source: row.source,
                 currency: row.currency || 'PHP',
+                exchangeRate: row.exchangeRate ? new BigNumber(row.exchangeRate) : new BigNumber(1),
                 createdAt: row.createdAt,
                 updatedAt: row.updatedAt
             };
@@ -119,7 +122,7 @@ export const getLatestPrices = async (symbols: string[]): Promise<Record<string,
 export const addPriceHistory = async (
     symbol: string,
     price: BigNumber | number | string,
-    metadata?: { high?: BigNumber | number, low?: BigNumber | number, volume?: BigNumber | number, source?: string, timestamp?: string, currency?: string }
+    metadata?: { high?: BigNumber | number, low?: BigNumber | number, volume?: BigNumber | number, source?: string, timestamp?: string, currency?: string, exchangeRate?: BigNumber | number | string }
 ): Promise<void> => {
     try {
         const db = await getDatabase();
@@ -136,7 +139,8 @@ export const addPriceHistory = async (
             metadata?.volume ? new BigNumber(metadata.volume).toString() : null,
             timestamp,
             metadata?.source || 'MANUAL',
-            currency
+            currency,
+            metadata?.exchangeRate ? new BigNumber(metadata.exchangeRate).toString() : '1'
         ]);
     } catch (error) {
         console.error('Error adding price history:', error);
@@ -150,7 +154,7 @@ export const addPriceHistory = async (
 export const updatePriceHistory = async (
     id: string,
     price: BigNumber | number | string,
-    metadata?: { high?: BigNumber | number, low?: BigNumber | number, volume?: BigNumber | number, source?: string, timestamp?: string, currency?: string }
+    metadata?: { high?: BigNumber | number, low?: BigNumber | number, volume?: BigNumber | number, source?: string, timestamp?: string, currency?: string, exchangeRate?: BigNumber | number | string }
 ): Promise<void> => {
     try {
         const db = await getDatabase();
@@ -167,6 +171,11 @@ export const updatePriceHistory = async (
             metadata?.timestamp || new Date().toISOString(),
             metadata?.source || 'MANUAL'
         ];
+
+        if (metadata?.exchangeRate) {
+            query += `, exchangeRate = ?`;
+            params.push(new BigNumber(metadata.exchangeRate).toString());
+        }
 
         if (metadata?.currency) {
             query += `, currency = ?`;
@@ -196,7 +205,8 @@ export const getAllPriceHistories = async (): Promise<PriceHistory[]> => {
             volume: row.volume ? new BigNumber(row.volume) : undefined,
             timestamp: row.timestamp,
             source: row.source,
-            currency: row.currency || 'PHP'
+            currency: row.currency || 'PHP',
+            exchangeRate: row.exchangeRate ? new BigNumber(row.exchangeRate) : new BigNumber(1)
         }));
     } catch (error) {
         console.error('Error getting all price histories:', error);
@@ -239,7 +249,8 @@ export const getPriceHistory = async (
             volume: row.volume ? new BigNumber(row.volume) : undefined,
             timestamp: row.timestamp,
             source: row.source,
-            currency: row.currency || 'PHP'
+            currency: row.currency || 'PHP',
+            exchangeRate: row.exchangeRate ? new BigNumber(row.exchangeRate) : new BigNumber(1)
         }));
     } catch (error) {
         console.error('Error getting price history:', error);
@@ -288,7 +299,8 @@ export const getPriceHistoryForSymbols = async (
             volume: row.volume ? new BigNumber(row.volume) : undefined,
             timestamp: row.timestamp,
             source: row.source,
-            currency: row.currency || 'PHP'
+            currency: row.currency || 'PHP',
+            exchangeRate: row.exchangeRate ? new BigNumber(row.exchangeRate) : new BigNumber(1)
         }));
     } catch (error) {
         console.error('Error getting batch price history:', error);

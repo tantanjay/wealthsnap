@@ -318,7 +318,9 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                     newInvestment.price,
                     {
                         timestamp: newInvestment.date,
-                        source: 'MANUAL'
+                        source: 'MANUAL',
+                        currency: newInvestment.currency,
+                        exchangeRate: newInvestment.exchangeRate,
                     }
                 );
             }

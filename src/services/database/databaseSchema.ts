@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ASYNC_KEYS } from '@constants/config';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 9;
+export const DATABASE_VERSION = 10;
 
 /**
  * Create all database tables and indexes
@@ -113,6 +113,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             timestamp TEXT NOT NULL,
             source TEXT NOT NULL CHECK(source IN ('MANUAL', 'AI_FETCH')),
             currency TEXT DEFAULT 'PHP',
+            exchangeRate TEXT DEFAULT '1',
             createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
             updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (symbol) REFERENCES assets(symbol) ON DELETE CASCADE
@@ -292,22 +293,41 @@ export const migrateToVersion9 = async (db: SQLite.SQLiteDatabase): Promise<void
     try {
         console.log('[Migration] Starting migration to version 9...');
 
-        // 1. Add column if not exists
         try {
             await db.execAsync(`ALTER TABLE investments ADD COLUMN exchange_rate TEXT DEFAULT '1'`);
         } catch (e) {
             console.log('[Migration] Column exchange_rate might already exist or error:', e);
         }
 
-        // 2. Set default value for existing records (already handled by DEFAULT 1 but good to be explicit if needed logic later)
-        // For now, we assume 1:1 if not set, or the user will update it.
-
-        // 3. Update Version
         await setDatabaseVersion(db, 9);
         console.log('[Migration] Successfully migrated to version 9');
 
     } catch (error) {
         console.error('[Migration] Failed version 9 migration:', error);
+        throw error;
+    }
+};
+
+/**
+ * Migrate to Version 10: Add exchangeRate to price_history
+ */
+export const migrateToVersion10 = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+    try {
+        console.log('[Migration] Starting migration to version 10...');
+
+        // 1. Add column if not exists
+        try {
+            await db.execAsync(`ALTER TABLE price_history ADD COLUMN exchangeRate TEXT DEFAULT '1'`);
+        } catch (e) {
+            console.log('[Migration] Column exchangeRate might already exist or error:', e);
+        }
+
+        // 2. Update Version
+        await setDatabaseVersion(db, 10);
+        console.log('[Migration] Successfully migrated to version 10');
+
+    } catch (error) {
+        console.error('[Migration] Failed version 10 migration:', error);
         throw error;
     }
 };

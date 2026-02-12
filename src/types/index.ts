@@ -173,6 +173,7 @@ export interface PriceHistory {
     timestamp: string;
     source?: 'MANUAL' | 'AI_FETCH';
     currency?: string;
+    exchangeRate?: BigNumber;
     createdAt?: string;
     updatedAt?: string;
 }
