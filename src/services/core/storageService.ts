@@ -208,6 +208,26 @@ export const getHomeInvestmentDisplayMode = async (): Promise<InvestmentDisplayM
     }
 };
 
+export type HomeFinancialHealthDisplayMode = 'Assets' | 'Health';
+
+export const saveHomeFinancialHealthDisplayMode = async (mode: HomeFinancialHealthDisplayMode): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.FINANCIAL_HEALTH_DISPLAY_MODE, mode);
+    } catch (error) {
+        console.error('Failed to save home financial health display mode:', error);
+    }
+};
+
+export const getHomeFinancialHealthDisplayMode = async (): Promise<HomeFinancialHealthDisplayMode | null> => {
+    try {
+        const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.FINANCIAL_HEALTH_DISPLAY_MODE);
+        return (mode === 'Assets' || mode === 'Health') ? mode as HomeFinancialHealthDisplayMode : null;
+    } catch (error) {
+        console.error('Failed to get home financial health display mode:', error);
+        return null;
+    }
+};
+
 export const saveHomeCardOrder = async (order: string[]): Promise<void> => {
     try {
         await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.CARD_ORDER, JSON.stringify(order));
