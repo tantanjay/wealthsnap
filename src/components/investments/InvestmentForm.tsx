@@ -176,7 +176,6 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
             if (!symbol) return;
             try {
                 // We need all investments for this symbol to calc avg cost
-                // Optimization: Maybe create a service method to just get avg cost?
                 // For now, fetching all investments is checking the cache mostly.
                 const allInvestments = await getAllInvestments();
                 const symbolInvestments = allInvestments.filter(i => i.symbol === symbol);
@@ -195,9 +194,6 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     }, [symbol]);
 
     // Auto-calculate Realized P/L when inputs change (only if not manually overridden?) 
-    // For simplicity, we just calculate it. If user edits it, they can. 
-    // But if inputs change afterwards, it might overwrite? 
-    // Standard UX: Auto-calc unless dirtied. But simpler: Just Auto-calc always on input change.
     useEffect(() => {
         if (action !== 'SELL' || !quantity || !price) {
             if (realizedPL !== '') setRealizedPL(''); // clear if invalid

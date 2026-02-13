@@ -217,8 +217,6 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency =
             setSortOption(option);
             setSortDirection('DESC'); // Default to DESC for new option (usually better for numbers)
         }
-        // Keep modal open or close? Usually close if selecting new, but maybe not if toggling?
-        // Let's close for better UX on selection
         if (sortOption !== option) {
             setSortModalVisible(false);
         }
