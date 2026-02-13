@@ -156,7 +156,7 @@ export interface Asset {
     name?: string;
     exchange?: string;
     sector?: string;
-    type?: string; // Should ideally match AssetType or InvestmentType string values
+    type?: AssetType;
     currency?: string;
     description?: string;
     createdAt?: string;

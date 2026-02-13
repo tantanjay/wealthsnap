@@ -103,7 +103,7 @@ const PriceHistoryFormModal: React.FC<PriceHistoryFormModalProps> = ({
                             mode="date"
                             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                             onChange={onDateChange}
-                            maximumDate={new Date()} // Future prices? maybe not.
+                            maximumDate={new Date()}
                         />
                     )}
                 </View>

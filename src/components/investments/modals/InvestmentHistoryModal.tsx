@@ -250,31 +250,35 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     // --- AI Fetch Handlers ---
 
     const openFetchMenu = async (mode: 'price' | 'dividend') => {
-        // Validate Asset Type (Stock Only)
+        // Validate Asset Type (Stock or Crypto Only)
         // Check local transactions first for efficiency or fetch asset info
-        let isStock = false;
-        const position = transactions.find(t => t.originalInvestment?.type === 'STOCKS');
+        let isSupportedAsset = false;
+        const position = transactions.find(t =>
+            t.originalInvestment?.type === 'STOCKS' ||
+            t.originalInvestment?.type === 'CRYPTO'
+        );
+
         if (position) {
-            isStock = true;
+            isSupportedAsset = true;
         } else {
             // Fallback: Check Asset Service
             try {
                 const allAssets = await getAllAssets();
                 const asset = allAssets.find(a => a.symbol === symbol);
-                // Check if type is STOCKS or vaguely stock-like if needed, but strictly STOCKS as per requirement
-                if (asset?.type === 'STOCKS' || asset?.type === 'STOCK') {
-                    isStock = true;
+                if (asset?.type === 'STOCKS' || asset?.type === 'CRYPTO') {
+                    isSupportedAsset = true;
                 }
             } catch (e) {
                 console.warn("Failed to verify asset type", e);
             }
         }
 
-        if (!isStock) {
+        if (!isSupportedAsset) {
+            const msg = "AI Fetch is only available for Stocks and Crypto.";
             if (Platform.OS === 'android') {
-                ToastAndroid.show("AI Fetch is only available for Stocks.", ToastAndroid.SHORT);
+                ToastAndroid.show(msg, ToastAndroid.SHORT);
             } else {
-                showAlert("Not Available", "AI Fetch is only available for Stocks.");
+                showAlert("Not Available", msg);
             }
             return;
         }
@@ -712,12 +716,6 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                 currency={currency}
                 onEdit={(inv) => {
                     setSelectedInvestment(null);
-                    onClose(); // Close history modal too if navigating away? Maybe keep it open or close it?
-                    // User usually wants to go back to list after edit.
-                    // But here we navigate to Record Screen.
-                    // The Record Screen back button logic I fixed earlier resets strict to MENU.
-                    // So we probably want to Close everything or just navigate.
-                    // Let's close this modal to be safe/clean.
                     onClose();
 
                     // Serialize BigNumber fields to strings for navigation
