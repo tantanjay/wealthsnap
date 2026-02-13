@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { ReorderList, ReorderItem } from '@components/common/ReorderList';
 
-import { HomeDisplayMode, InvestmentDisplayMode } from '@services/core/storageService';
+import { HomeDisplayMode, InvestmentDisplayMode, HomeFinancialHealthDisplayMode } from '@services/core/storageService';
 
 interface HomeSettingsModalProps {
     visible: boolean;
@@ -20,6 +20,10 @@ interface HomeSettingsModalProps {
     // Investment Settings
     investmentDisplayMode: InvestmentDisplayMode;
     onInvestmentDisplayModeChange: (mode: InvestmentDisplayMode) => void;
+
+    // Financial Health Settings
+    financialHealthDisplayMode: HomeFinancialHealthDisplayMode;
+    onFinancialHealthDisplayModeChange: (mode: HomeFinancialHealthDisplayMode) => void;
 }
 
 const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
@@ -30,7 +34,9 @@ const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
     displayMode,
     onDisplayModeChange,
     investmentDisplayMode,
-    onInvestmentDisplayModeChange
+    onInvestmentDisplayModeChange,
+    financialHealthDisplayMode,
+    onFinancialHealthDisplayModeChange
 }) => {
     const { colors } = useTheme();
     const [view, setView] = React.useState<'MAIN' | 'REORDER'>('MAIN');
@@ -44,6 +50,7 @@ const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
 
     const getCardItems = (): ReorderItem[] => {
         const labels: Record<string, string> = {
+            'financial-health': 'Financial Health',
             'cash-flow': 'Cash Flow',
             'portfolio': 'Investments',
             'debt': 'Debts & Liabilities',
@@ -103,57 +110,70 @@ const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
             visible={visible}
             onClose={onClose}
             title={view === 'MAIN' ? "Home Settings" : "Reorder Dashboard"}
-            maxHeight="auto"
+            maxHeight="85%"
             headerRight={view === 'REORDER' ? (
                 <TouchableOpacity onPress={() => setView('MAIN')} style={{ marginRight: 8 }}>
                     <Text style={{ color: colors.primary, fontSize: 16 }}>Back</Text>
                 </TouchableOpacity>
             ) : undefined}
         >
-            <View style={styles.container}>
-                {view === 'MAIN' ? (
-                    <>
-                        {/* Reorder Section */}
-                        {renderMenuItem(
-                            "layers-outline",
-                            "Reorder Dashboard",
-                            "Customize the layout of your home screen",
-                            () => setView('REORDER')
-                        )}
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.container}>
+                    {view === 'MAIN' ? (
+                        <>
+                            {/* Reorder Section */}
+                            {renderMenuItem(
+                                "layers-outline",
+                                "Reorder Dashboard",
+                                "Customize the layout of your home screen",
+                                () => setView('REORDER')
+                            )}
 
-                        <View style={{ height: 24 }} />
+                            <View style={{ height: 24 }} />
 
-                        {/* Display Mode Section */}
-                        <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
-                            CASH FLOW DISPLAY
-                        </Text>
-                        <View style={[styles.radioGroup, { backgroundColor: colors.surface, marginBottom: 24 }]}>
-                            {renderRadioItem("Overall Balance", "Overall", displayMode, onDisplayModeChange)}
-                            {renderRadioItem("This Month", "Month", displayMode, onDisplayModeChange)}
-                            <View style={{ borderBottomWidth: 0 }}>
-                                {renderRadioItem("Monthly Net (No Transfers)", "MonthIncomeExpense", displayMode, onDisplayModeChange)}
+                            {/* Financial Health Display Mode Section */}
+                            <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
+                                FINANCIAL HEALTH DISPLAY
+                            </Text>
+                            <View style={[styles.radioGroup, { backgroundColor: colors.surface, marginBottom: 24 }]}>
+                                {renderRadioItem("Total Assets", "Assets", financialHealthDisplayMode, onFinancialHealthDisplayModeChange)}
+                                <View style={{ borderBottomWidth: 0 }}>
+                                    {renderRadioItem("Health Metrics", "Health", financialHealthDisplayMode, onFinancialHealthDisplayModeChange)}
+                                </View>
                             </View>
-                        </View>
 
-                        {/* Investment Display Mode Section */}
-                        <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
-                            INVESTMENTS DISPLAY
-                        </Text>
-                        <View style={[styles.radioGroup, { backgroundColor: colors.surface }]}>
-                            {renderRadioItem("Total Portfolio", "Total", investmentDisplayMode, onInvestmentDisplayModeChange)}
-                            <View style={{ borderBottomWidth: 0 }}>
-                                {renderRadioItem("Monthly Activity", "Month", investmentDisplayMode, onInvestmentDisplayModeChange)}
+                            {/* Display Mode Section */}
+                            <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
+                                CASH FLOW DISPLAY
+                            </Text>
+                            <View style={[styles.radioGroup, { backgroundColor: colors.surface, marginBottom: 24 }]}>
+                                {renderRadioItem("Overall Balance", "Overall", displayMode, onDisplayModeChange)}
+                                {renderRadioItem("This Month", "Month", displayMode, onDisplayModeChange)}
+                                <View style={{ borderBottomWidth: 0 }}>
+                                    {renderRadioItem("Monthly Net (No Transfers)", "MonthIncomeExpense", displayMode, onDisplayModeChange)}
+                                </View>
                             </View>
-                        </View>
-                    </>
-                ) : (
-                    <ReorderList
-                        items={getCardItems()}
-                        onReorder={(newItems) => onUpdateCardOrder(newItems.map(i => i.id))}
-                        containerStyle={{ maxHeight: 400 }}
-                    />
-                )}
-            </View>
+
+                            {/* Investment Display Mode Section */}
+                            <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>
+                                INVESTMENTS DISPLAY
+                            </Text>
+                            <View style={[styles.radioGroup, { backgroundColor: colors.surface }]}>
+                                {renderRadioItem("Total Portfolio", "Total", investmentDisplayMode, onInvestmentDisplayModeChange)}
+                                <View style={{ borderBottomWidth: 0 }}>
+                                    {renderRadioItem("Monthly Activity", "Month", investmentDisplayMode, onInvestmentDisplayModeChange)}
+                                </View>
+                            </View>
+                        </>
+                    ) : (
+                        <ReorderList
+                            items={getCardItems()}
+                            onReorder={(newItems) => onUpdateCardOrder(newItems.map(i => i.id))}
+                            containerStyle={{ maxHeight: 400 }}
+                        />
+                    )}
+                </View>
+            </ScrollView>
         </BottomModal>
     );
 };

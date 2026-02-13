@@ -71,6 +71,11 @@ const HomeInvestmentCard: React.FC<HomeInvestmentCardProps> = ({
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
                     Investments
                 </Text>
+                {/* Page Indicator */}
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Total' ? colors.primary : colors.border }} />
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Month' ? colors.primary : colors.border }} />
+                </View>
             </View>
             <View>
                 <ScrollView
@@ -96,10 +101,6 @@ const HomeInvestmentCard: React.FC<HomeInvestmentCardProps> = ({
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Total Portfolio</Text>
-                                    <View style={{ flexDirection: 'row', gap: 4, marginLeft: 10 }}>
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white }} />
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
-                                    </View>
                                 </View>
                                 <Ionicons name="trending-up" size={24} color={colors.white} />
                             </View>
@@ -164,10 +165,6 @@ const HomeInvestmentCard: React.FC<HomeInvestmentCardProps> = ({
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Monthly Activity</Text>
-                                    <View style={{ flexDirection: 'row', gap: 4, marginLeft: 10 }}>
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white }} />
-                                    </View>
                                 </View>
                                 <Ionicons name="calendar-outline" size={24} color={colors.white} />
                             </View>

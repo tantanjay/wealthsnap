@@ -10,15 +10,24 @@ import HomeSettingsModal from '@components/home/HomeSettingsModal';
 import HomeCashFlowCard from '@components/home/HomeCashFlowCard';
 import HomeInvestmentCard from '@components/home/HomeInvestmentCard';
 import HomeDebtCard from '@components/home/HomeDebtCard';
+import HomeFinancialHealthCard from '@components/home/HomeFinancialHealthCard';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { UserProfile, Transaction, Investment } from '@types';
-import { getTopExpenses } from '@utils/financialMetrics';
+import {
+    getTransactionsByMonth,
+    getCumulativeSpendingCurve,
+    getCurrentMonthCumulative,
+    getTopExpenses,
+    calculateBurnRate,
+    getCategoryBreakdown
+} from '@utils/financialMetrics';
 import { processRecurrenceRules } from '@services/domain/recurrenceService';
 import { getCachedTransactions } from '@services/domain/transactionService';
 import { getCachedInvestments } from '@services/domain/investmentService';
+import { getAllBudgets } from '@services/domain/budgetService';
 import * as Storage from '@services/core/storageService';
 import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
 import { getLatestPrices } from '@services/domain/priceHistoryService';
@@ -54,24 +63,35 @@ const HomeScreen = ({ navigation }: any) => {
     const [debtTotal, setDebtTotal] = useState(new BigNumber(0));
     const [isLoading, setIsLoading] = useState(true);
 
+    const [financialHealth, setFinancialHealth] = useState({
+        totalAssets: new BigNumber(0),
+        runwayInMonths: 0,
+        runwayChange: 0,
+        topHoldings: [] as Array<{ symbol: string, percent: number }>,
+        monthBudgetPercent: 0,
+        spendingDifferencePercent: 0,
+        cashBalance: new BigNumber(0)
+    });
+
     // Settings Modal State
     const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
 
     // Active Display States (Swipeable)
     const [displayMode, setDisplayMode] = useState<Storage.HomeDisplayMode>('Overall');
     const [investmentDisplayMode, setInvestmentDisplayMode] = useState<Storage.InvestmentDisplayMode>('Total');
+    const [financialHealthDisplayMode, setFinancialHealthDisplayMode] = useState<Storage.HomeFinancialHealthDisplayMode>('Assets');
 
     // Saved Configuration States (Settings)
     const [savedDisplayMode, setSavedDisplayMode] = useState<Storage.HomeDisplayMode>('Overall');
     const [savedInvestmentDisplayMode, setSavedInvestmentDisplayMode] = useState<Storage.InvestmentDisplayMode>('Total');
 
-    const [cardOrder, setCardOrder] = useState<string[]>(['cash-flow', 'portfolio', 'debt', 'transactions']);
+    const [cardOrder, setCardOrder] = useState<string[]>(['financial-health', 'cash-flow', 'portfolio', 'debt', 'transactions']);
 
     // Info Modal State
     const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
-    const [infoModalMode, setInfoModalMode] = useState<'Overall' | 'Month' | 'MonthIncomeExpense'>('Overall');
+    const [infoModalMode, setInfoModalMode] = useState<'Overall' | 'Month' | 'MonthIncomeExpense' | 'Assets' | 'Health'>('Overall');
 
-    const handleInfoPress = (mode: 'Overall' | 'Month' | 'MonthIncomeExpense') => {
+    const handleInfoPress = (mode: 'Overall' | 'Month' | 'MonthIncomeExpense' | 'Assets' | 'Health') => {
         setInfoModalMode(mode);
         setIsInfoModalVisible(true);
     };
@@ -92,12 +112,34 @@ const HomeScreen = ({ navigation }: any) => {
             if (savedInvestmentMode) {
                 setInvestmentDisplayMode(savedInvestmentMode);
                 setSavedInvestmentDisplayMode(savedInvestmentMode);
+                setSavedInvestmentDisplayMode(savedInvestmentMode);
+            }
+
+            const savedFinancialMode = await Storage.getHomeFinancialHealthDisplayMode();
+            if (savedFinancialMode) {
+                setFinancialHealthDisplayMode(savedFinancialMode);
             }
 
             // Load persisted card order
             const savedOrder = await Storage.getHomeCardOrder();
             if (savedOrder && savedOrder.length > 0) {
-                setCardOrder(savedOrder);
+                const defaultOrder = ['financial-health', 'cash-flow', 'portfolio', 'debt', 'transactions'];
+
+                // Check for missing cards
+                const missingCards = defaultOrder.filter(id => !savedOrder.includes(id));
+
+                let newOrder = [...savedOrder];
+
+                // If financial-health is missing (new feature), add it to the TOP
+                if (missingCards.includes('financial-health')) {
+                    newOrder = ['financial-health', ...newOrder];
+                }
+
+                // Add other missing cards to the end
+                const otherMissing = missingCards.filter(c => c !== 'financial-health');
+                newOrder = [...newOrder, ...otherMissing];
+
+                setCardOrder(newOrder);
             }
 
             // Process recurring rules first to ensure we fetch the latest transactions
@@ -269,6 +311,152 @@ const HomeScreen = ({ navigation }: any) => {
             setMonthInvested(mInvested);
             setMonthRealizedPL(mRealizedPL);
             setMonthUnrealizedPL(mUnrealizedPL);
+
+            // 7. Calculate Financial Health Metrics
+            const cashBalance = oInc.plus(oTransIn).minus(oExp.plus(oTransOut));
+            const currentTotalAssets = cashBalance.plus(totalMarketValue);
+
+            // Calculate Runway & Budget
+            // Get date of first transaction to determine "months active"
+            let monthsActive = 1;
+            if (t.length > 0) {
+                const firstTxDate = new Date(t[t.length - 1].date);
+                const diffTime = Math.abs(now.getTime() - firstTxDate.getTime());
+                const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30));
+                monthsActive = Math.max(1, diffMonths);
+            }
+
+            // Align Runway with Insights (Liquid Balance / 6-Month Burn Rate)
+            const average6MonthBurn = calculateBurnRate(t, 6);
+            const average3MonthBurn = calculateBurnRate(t, 3);
+
+            // Fallback hierarchy matching InsightsScreen
+            let burnRate = average6MonthBurn;
+            if (burnRate.isLessThanOrEqualTo(0)) {
+                burnRate = average3MonthBurn.isGreaterThan(0) ? average3MonthBurn : mExp;
+            }
+
+            const runway = burnRate.isGreaterThan(0)
+                ? cashBalance.dividedBy(burnRate).toNumber() // Use CashBalance (Liquid) not TotalAssets
+                : (cashBalance.isGreaterThan(0) ? Infinity : 0);
+
+            // Previous Month Runway Calculation (for Trend)
+            let runwayChange = 0;
+            if (monthsActive > 1) {
+                // Previous Liquid Balance
+                const prevCashBalance = cashBalance.minus(mInc.minus(mExp));
+
+                // Previous Burn Rate (Approximate by using same rate or strict calculation)
+                // For strict alignment, we'd need to recalc burn rate as of last month.
+                // Using current burn rate as proxy for stability, or recalculating:
+                const prevDate = new Date();
+                prevDate.setMonth(prevDate.getMonth() - 1);
+                const prevBurnRate6 = calculateBurnRate(t, 6, prevDate);
+                let prevBurnRate = prevBurnRate6;
+                if (prevBurnRate.isLessThanOrEqualTo(0)) {
+                    // Fallback proxies
+                    prevBurnRate = burnRate;
+                }
+
+                const prevRunway = prevBurnRate.isGreaterThan(0)
+                    ? prevCashBalance.dividedBy(prevBurnRate).toNumber()
+                    : (prevCashBalance.isGreaterThan(0) ? Infinity : 0);
+
+                if (prevRunway !== Infinity && runway !== Infinity) {
+                    runwayChange = runway - prevRunway;
+                }
+            }
+
+            // Previous Month Runway Calculation
+            // Estimation: Previous Assets = Current Assets - (Month Income - Month Expense)
+            // Previous Avg Expense = (Total Expense - Month Expense) / (monthsActive - 1)
+
+            // Month Budget % (Actual Budget Health)
+            // Fetch real budgets to match InsightsScreen logic
+            const budgets = await getAllBudgets();
+            let budgetPercent = 0;
+
+            if (budgets.length > 0) {
+                // Get breakdown for current month expenses
+                const currentMonthTransForBudget = getTransactionsByMonth(t, new Date());
+                const specificCategoryBreakdown = getCategoryBreakdown(currentMonthTransForBudget, 'EXPENSE', 'SUB_CATEGORY');
+
+                const budgetedCategorySpent = specificCategoryBreakdown
+                    .filter(cat => budgets.some(b => b.category === cat.name))
+                    .reduce((sum, cat) => sum.plus(cat.amount), new BigNumber(0));
+
+                const totalBudget = budgets.reduce((sum, b) => sum.plus(b.amount), new BigNumber(0));
+
+                budgetPercent = totalBudget.isGreaterThan(0)
+                    ? budgetedCategorySpent.dividedBy(totalBudget).times(100).toNumber()
+                    : 0;
+            } else {
+                // Fallback if no budgets set 
+                budgetPercent = 0;
+            }
+
+            // Spending Difference % (Current Pacing vs 3-Month Average at this day)
+            // Logic adapted from CumulativeSpendingChart.tsx
+            let spendingDiff = 0;
+            const currentMonthTransForPacing = getTransactionsByMonth(t, new Date());
+            const currentPacingData = getCurrentMonthCumulative(currentMonthTransForPacing);
+            const avgPacingData = getCumulativeSpendingCurve(t, 3); // 3-month average
+
+            if (currentPacingData.length > 0 && avgPacingData.length > 0) {
+                const currentTotalAtDay = currentPacingData[currentPacingData.length - 1];
+                const dayIndex = currentPacingData.length - 1;
+                const avgAtThisDay = avgPacingData[Math.min(dayIndex, avgPacingData.length - 1)];
+
+                if (avgAtThisDay > 0) {
+                    spendingDiff = ((currentTotalAtDay - avgAtThisDay) / avgAtThisDay) * 100;
+                }
+            }
+
+            // Top Holding (Dynamic by Asset Type)
+            const topHoldings: Array<{ symbol: string, percent: number }> = [];
+
+            if (portfolioMetrics.length > 0 && totalMarketValue.isGreaterThan(0)) {
+                // 1. Group by Asset Type
+                const holdingsByType: Record<string, typeof portfolioMetrics> = {};
+
+                portfolioMetrics.forEach(m => {
+                    const type = inv.find(i => i.symbol === m.symbol)?.type || 'STOCKS';
+                    if (!holdingsByType[type]) holdingsByType[type] = [];
+                    holdingsByType[type].push(m);
+                });
+
+                // 2. Calculate Total Value per Type
+                const typeValues = Object.entries(holdingsByType).map(([type, metrics]) => {
+                    const value = metrics.reduce((sum, m) => sum.plus(m.totalMarketValue), new BigNumber(0));
+                    return { type, value, metrics };
+                });
+
+                // 3. Sort Types by Value (Descending)
+                const topTypes = typeValues.sort((a, b) => b.value.minus(a.value).toNumber()).slice(0, 2);
+
+                // 4. For each Top Type, find the Top Holding
+                topTypes.forEach(typeData => {
+                    const sortedHoldings = typeData.metrics.sort((a, b) => b.totalMarketValue.minus(a.totalMarketValue).toNumber());
+                    if (sortedHoldings.length > 0) {
+                        const topHolding = sortedHoldings[0];
+                        topHoldings.push({
+                            symbol: topHolding.symbol,
+                            percent: topHolding.totalMarketValue.dividedBy(totalMarketValue).times(100).toNumber()
+                        });
+                    }
+                });
+            }
+
+            setFinancialHealth({
+                totalAssets: currentTotalAssets,
+                cashBalance: cashBalance,
+                runwayInMonths: runway,
+                runwayChange: runwayChange,
+                topHoldings,
+                monthBudgetPercent: budgetPercent,
+                spendingDifferencePercent: spendingDiff
+            });
+
         } catch (error) {
             console.error('Error loading HomeScreen data:', error);
         } finally {
@@ -303,6 +491,15 @@ const HomeScreen = ({ navigation }: any) => {
 
     const handleInvestmentModeSwipe = (newMode: Storage.InvestmentDisplayMode) => {
         setInvestmentDisplayMode(newMode);
+    };
+
+    const handleFinancialHealthModeSave = async (newMode: Storage.HomeFinancialHealthDisplayMode) => {
+        setFinancialHealthDisplayMode(newMode);
+        await Storage.saveHomeFinancialHealthDisplayMode(newMode);
+    };
+
+    const handleFinancialHealthModeSwipe = (newMode: Storage.HomeFinancialHealthDisplayMode) => {
+        setFinancialHealthDisplayMode(newMode);
     };
 
     const renderInfoModalContent = () => {
@@ -342,6 +539,40 @@ const HomeScreen = ({ navigation }: any) => {
                         <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginTop: 2, marginRight: 8 }} />
                         <Text style={{ color: colors.textSecondary, flex: 1, fontSize: 14 }}>
                             Use this to see if you are net positive or negative for this month, considering all money movements.
+                        </Text>
+                    </View>
+                </View>
+            );
+        } else if (infoModalMode === 'Assets') {
+            return (
+                <View>
+                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
+                        &quot;Total Assets&quot; is the sum of your <Text style={{ fontWeight: 'bold' }}>Investments</Text> and <Text style={{ fontWeight: 'bold' }}>Cash Balance</Text>.
+                    </Text>
+                    <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
+                        <Text style={{ color: colors.text, fontFamily: 'monospace', fontSize: 14 }}>
+                            Investments Value + Cash Balance
+                        </Text>
+                    </View>
+                </View>
+            );
+        } else if (infoModalMode === 'Health') {
+            return (
+                <View>
+                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
+                        &quot;Financial Health&quot; metrics help you understand the sustainability of your finances.
+                    </Text>
+                    <View style={{ marginBottom: 15 }}>
+                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Runway</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                            How long your money will last based on your average monthly expenses.
+                        </Text>
+                    </View>
+                    <View style={{ marginBottom: 15 }}>
+                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Budget</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                            Percentage of your monthly budget used so far.
                         </Text>
                     </View>
                 </View>
@@ -483,6 +714,26 @@ const HomeScreen = ({ navigation }: any) => {
                                     />
                                 </View>
                             );
+                        case 'financial-health':
+                            return (
+                                <HomeFinancialHealthCard
+                                    key="financial-health"
+                                    totalAssets={financialHealth.totalAssets}
+                                    runwayInMonths={financialHealth.runwayInMonths}
+                                    runwayChange={financialHealth.runwayChange}
+                                    topHoldings={financialHealth.topHoldings}
+                                    monthBudgetPercent={financialHealth.monthBudgetPercent}
+                                    spendingDifferencePercent={financialHealth.spendingDifferencePercent}
+                                    investmentsTotal={investmentTotal}
+                                    cashBalance={financialHealth.cashBalance}
+                                    isLoading={isLoading}
+                                    isPrivacyEnabled={isPrivacyEnabled}
+                                    currency={profile?.currency || 'PHP'}
+                                    displayMode={financialHealthDisplayMode}
+                                    onDisplayModeChange={handleFinancialHealthModeSwipe}
+                                    onInfoPress={handleInfoPress}
+                                />
+                            );
                         default:
                             return null;
                     }
@@ -510,6 +761,8 @@ const HomeScreen = ({ navigation }: any) => {
                 onDisplayModeChange={handleModeSave}
                 investmentDisplayMode={savedInvestmentDisplayMode || 'Total'}
                 onInvestmentDisplayModeChange={handleInvestmentModeSave}
+                financialHealthDisplayMode={financialHealthDisplayMode}
+                onFinancialHealthDisplayModeChange={handleFinancialHealthModeSave}
             />
 
             <ReviewAppModal
