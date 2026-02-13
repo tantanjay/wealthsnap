@@ -17,14 +17,11 @@ interface HomeFinancialHealthCardProps {
     isPrivacyEnabled: boolean;
     currency: string;
     displayMode: HomeFinancialHealthDisplayMode;
-    onDisplayModeChange: (mode: HomeFinancialHealthDisplayMode) => void;
-
-    // For "Health" card specific data, we might want to pass formatted strings or raw values
-    // Using simple placeholders for now based on the prompt "Months Budget: 60%"
     monthBudgetPercent: number;
     spendingDifferencePercent: number;
     investmentsTotal: BigNumber;
     cashBalance: BigNumber;
+    onDisplayModeChange: (mode: HomeFinancialHealthDisplayMode) => void;
     onInfoPress: (mode: 'Assets' | 'Health') => void;
 }
 
@@ -205,7 +202,6 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                             </View>
 
                             {/* Top Holding */}
-                            {/* Top Holding */}
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                     <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
@@ -215,7 +211,7 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                         <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Top Holdings</Text>
                                         {isLoading ? <Skeleton width={150} height={20} style={{ marginTop: 4 }} /> : (
                                             <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                                                {topHoldings.map((holding, index) => (
+                                                {topHoldings.sort((a, b) => b.percent - a.percent).map((holding, index) => (
                                                     <View key={index} style={{ marginRight: index === 0 ? 24 : 0 }}>
                                                         <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', lineHeight: 22 }}>
                                                             {holding.percent.toFixed(1)}% <Text style={{ fontWeight: '400', fontSize: 14 }}>({holding.symbol})</Text>

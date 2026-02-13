@@ -136,11 +136,13 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
             ]
         },
         {
-            title: 'Debt & Liabilities',
+            title: 'Debts & Private Loans',
             items: [
                 { id: 'loan', icon: 'cash-outline', label: 'Loan', color: '#F59E0B', onPress: () => onSelectDebt?.('LOAN') },
-                { id: 'card', icon: 'card-outline', label: 'Card', color: '#F59E0B', onPress: () => onSelectDebt?.('CREDIT_CARD') },
+                { id: 'card', icon: 'card-outline', label: 'Credit Card', color: '#F59E0B', onPress: () => onSelectDebt?.('CREDIT_CARD') },
                 { id: 'mort', icon: 'home-outline', label: 'Mortgage', color: '#F59E0B', onPress: () => onSelectDebt?.('MORTGAGE') },
+                { id: 'iou', icon: 'arrow-redo-outline', label: 'I Owe', color: '#EF4444', onPress: () => onSelectDebt?.('I_OWE_YOU') },
+                { id: 'uom', icon: 'arrow-undo-outline', label: 'Owed to Me', color: '#10B981', onPress: () => onSelectDebt?.('YOU_OWE_ME') },
             ]
         }
     ];
