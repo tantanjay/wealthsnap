@@ -191,7 +191,6 @@ export default function App() {
                       setIsBackupProcessing(false);
                       console.error(error);
                       // Ideally show alert but we are outside normal context. 
-                      // CustomAlert might work if we trigger it globally, but for now simple log or maybe alert()
                       alert('Backup Failed: ' + (error as Error).message);
                     }
                   }}

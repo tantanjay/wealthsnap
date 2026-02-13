@@ -1,5 +1,5 @@
 import { BigNumber } from 'bignumber.js';
-import { UserProfile, Transaction, TransactionType, Investment } from '@types';
+import { UserProfile, Transaction, TransactionType, Investment, AssetType } from '@types';
 import { saveCategory } from '@services/domain/categoryService';
 import { saveTransaction } from '@services/domain/transactionService';
 import { bulkSaveInvestments } from '@services/domain/investmentService';
@@ -71,16 +71,16 @@ export const generateDummyData = async () => {
 
         // Define Stocks with Metadata for Assets Table
         const STOCKS = [
-            { exchange: 'NASDAQ', symbol: 'AAPL', name: 'Apple Inc.', basePrice: 150, trend: 0.005, sector: 'Technology', type: 'Common Stock' },
-            { exchange: 'NASDAQ', symbol: 'MSFT', name: 'Microsoft Corp.', basePrice: 280, trend: 0.003, sector: 'Technology', type: 'Common Stock' },
-            { exchange: 'NASDAQ', symbol: 'GOOGL', name: 'Alphabet Inc.', basePrice: 2500, trend: 0.002, sector: 'Technology', type: 'Common Stock' },
-            { exchange: 'NASDAQ', symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 3300, trend: 0.004, sector: 'Consumer Cyclical', type: 'Common Stock' },
-            { exchange: 'NASDAQ', symbol: 'TSLA', name: 'Tesla Inc.', basePrice: 700, trend: -0.01, sector: 'Automotive', type: 'Common Stock' },
-            { exchange: 'NASDAQ', symbol: 'NVDA', name: 'NVIDIA Corp.', basePrice: 200, trend: 0.008, sector: 'Technology', type: 'Common Stock' },
-            { exchange: 'NYSE', symbol: 'JPM', name: 'JPMorgan Chase', basePrice: 140, trend: 0.003, sector: 'Financial Services', type: 'Common Stock' },
-            { exchange: 'NYSE', symbol: 'KO', name: 'Coca-Cola', basePrice: 60, trend: 0.001, sector: 'Consumer Defensive', type: 'Common Stock' },
-            { exchange: 'NYSE', symbol: 'XOM', name: 'Exxon Mobil', basePrice: 55, trend: 0.002, sector: 'Energy', type: 'Common Stock' },
-            { exchange: 'NYSE', symbol: 'O', name: 'Realty Income', basePrice: 65, trend: 0.001, sector: 'Real Estate', type: 'REIT' }
+            { exchange: 'NASDAQ', symbol: 'AAPL', name: 'Apple Inc.', basePrice: 150, trend: 0.005, sector: 'Technology', type: 'STOCKS' },
+            { exchange: 'NASDAQ', symbol: 'MSFT', name: 'Microsoft Corp.', basePrice: 280, trend: 0.003, sector: 'Technology', type: 'STOCKS' },
+            { exchange: 'NASDAQ', symbol: 'GOOGL', name: 'Alphabet Inc.', basePrice: 2500, trend: 0.002, sector: 'Technology', type: 'STOCKS' },
+            { exchange: 'NASDAQ', symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 3300, trend: 0.004, sector: 'Consumer Cyclical', type: 'STOCKS' },
+            { exchange: 'NASDAQ', symbol: 'TSLA', name: 'Tesla Inc.', basePrice: 700, trend: -0.01, sector: 'Automotive', type: 'STOCKS' },
+            { exchange: 'NASDAQ', symbol: 'NVDA', name: 'NVIDIA Corp.', basePrice: 200, trend: 0.008, sector: 'Technology', type: 'STOCKS' },
+            { exchange: 'NYSE', symbol: 'JPM', name: 'JPMorgan Chase', basePrice: 140, trend: 0.003, sector: 'Financial Services', type: 'STOCKS' },
+            { exchange: 'NYSE', symbol: 'KO', name: 'Coca-Cola', basePrice: 60, trend: 0.001, sector: 'Consumer Defensive', type: 'STOCKS' },
+            { exchange: 'NYSE', symbol: 'XOM', name: 'Exxon Mobil', basePrice: 55, trend: 0.002, sector: 'Energy', type: 'STOCKS' },
+            { exchange: 'NYSE', symbol: 'O', name: 'Realty Income', basePrice: 65, trend: 0.001, sector: 'Real Estate', type: 'STOCKS' }
         ];
 
         const transactions: Transaction[] = [];
@@ -94,7 +94,7 @@ export const generateDummyData = async () => {
                 symbol: stock.symbol,
                 name: stock.name,
                 sector: stock.sector,
-                type: stock.type,
+                type: stock.type as AssetType,
                 currency: 'USD',
                 exchange: 'NASDAQ' // Simplified
             });

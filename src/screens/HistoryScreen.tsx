@@ -389,7 +389,7 @@ const HistoryScreen = ({ navigation }: any) => {
         const newSections: TransactionSection[] = Object.keys(grouped).map(dateKey => {
             const items = grouped[dateKey];
             const totalAmount = items.reduce((sum, item) => {
-                if (isInvestment(item)) return sum; // Don't include investments in daily total sum for now to keep it clean, or maybe track separately?
+                if (isInvestment(item)) return sum;
 
                 const t = item as Transaction;
                 if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') {

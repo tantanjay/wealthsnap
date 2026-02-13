@@ -21,7 +21,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSave, onCancel })
 
     const [symbol, setSymbol] = useState(asset?.symbol || '');
     const [name, setName] = useState(asset?.name || '');
-    const [type, setType] = useState<string>(asset?.type || ASSET_TYPES[0]);
+    const [type, setType] = useState<AssetType>(asset?.type || ASSET_TYPES[0]);
     const [exchange, setExchange] = useState(asset?.exchange || '');
     const [sector, setSector] = useState(asset?.sector || '');
     const [currency, setCurrency] = useState(asset?.currency || 'PHP');
@@ -133,7 +133,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSave, onCancel })
                         <View style={{ flex: 1, marginHorizontal: -10 }}>
                             <Picker
                                 selectedValue={type}
-                                onValueChange={(itemValue: string) => setType(itemValue)}
+                                onValueChange={(itemValue) => setType(itemValue as AssetType)}
                                 style={{ color: colors.text }}
                                 dropdownIconColor={colors.text}
                             >
