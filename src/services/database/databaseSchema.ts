@@ -209,8 +209,33 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
 
         CREATE INDEX IF NOT EXISTS idx_reminder_logs_reminder ON reminder_logs(reminderId);
         CREATE INDEX IF NOT EXISTS idx_reminder_logs_timestamp ON reminder_logs(timestamp DESC);
-    `);
 
+        CREATE TABLE IF NOT EXISTS debts (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,                  
+            type TEXT NOT NULL CHECK(type IN (
+                'LOAN', 'CREDIT_CARD', 'MORTGAGE', 'STUDENT_LOAN', 'I_OWE_YOU', 'YOU_OWE_ME'
+            )),
+            direction TEXT NOT NULL CHECK(direction IN ('PAYABLE', 'RECEIVABLE')),
+            initialAmount TEXT NOT NULL,         
+            currency TEXT DEFAULT 'PHP',
+            interestRate TEXT DEFAULT 0,         
+            interestType TEXT DEFAULT 'FIXED' CHECK(interestType IN ('FIXED', 'VARIABLE', 'NONE')),
+            minPayment TEXT DEFAULT 0,           
+            startDate TEXT,                      
+            termMonths TEXT,                  
+            dueDate TEXT,                        
+            status TEXT DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE', 'PAID_OFF', 'FORGIVEN')),
+            notes TEXT,
+            contactId TEXT,
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_debts_status ON debts(status);
+        CREATE INDEX IF NOT EXISTS idx_debts_type ON debts(type);
+        CREATE INDEX IF NOT EXISTS idx_debts_direction ON debts(direction);
+    `);
 
 };
 
