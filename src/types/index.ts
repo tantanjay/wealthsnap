@@ -16,7 +16,7 @@ export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER_IN' | 'TRANSFER_O
 export type InvestmentType = 'STOCKS' | 'FUNDS' | 'BONDS' | 'CRYPTO' | 'COMMODITIES' | 'OTHERS';
 export type AssetType = 'STOCKS' | 'FUNDS' | 'CRYPTO' | 'FOREX' | 'REAL_ESTATE' | 'VEHICLE' | 'JEWELRY' | 'ART' | 'CASH' | 'OTHER';
 export type InvestmentAction = 'BUY' | 'SELL' | 'DIVIDEND' | 'INTEREST';
-export type DebtType = 'LOAN' | 'CREDIT_CARD' | 'MORTGAGE';
+export type DebtType = 'LOAN' | 'CREDIT_CARD' | 'MORTGAGE' | 'I_OWE_YOU' | 'YOU_OWE_ME';
 export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
 export type TransferAccount = 'OTHER_ACCOUNT' | 'INVESTMENTS' | 'DEBT' | 'CASH_ATM' | 'DIGITAL_WALLET' | 'CRYPTO' | 'RECEIVABLE' | 'TIME_DEPOSIT';
 
