@@ -68,7 +68,6 @@ const RecordScreen = ({ navigation, route }: any) => {
             }
             if (viewMode === 'AI_REVIEW') {
                 // Let ReceiptReviewForm handle its own back logic via its own BackHandler
-                // But if it bubbles up or if we want to force reset:
                 handleTransactionCancel(); // Resets to Menu
                 return true;
             }
