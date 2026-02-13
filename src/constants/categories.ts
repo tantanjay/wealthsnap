@@ -11,7 +11,6 @@ export const EXPENSE_CATEGORY_GROUPS = [
             { label: 'Supplies', value: 'Supplies', icon: 'cube' },
             { label: 'Groceries', value: 'Groceries', icon: 'cart' },
             { label: 'Laundry', value: 'Laundry', icon: 'shirt' },
-            { label: 'Rent', value: 'Rent', icon: 'key' },
             { label: 'Water', value: 'Water', icon: 'water' },
             { label: 'Electricity', value: 'Electricity', icon: 'flash' },
         ]
@@ -24,6 +23,7 @@ export const EXPENSE_CATEGORY_GROUPS = [
             { label: 'Food Delivery', value: 'Food Delivery', icon: 'bicycle' },
             { label: 'Self-care', value: 'Self-care', icon: 'sparkles' },
             { label: 'Shopping', value: 'Shopping', icon: 'bag' },
+            { label: 'Online Shopping', value: 'Online Shopping', icon: 'logo-amazon' },
             { label: 'Entertainment', value: 'Entertainment', icon: 'film' },
             { label: 'Hobbies', value: 'Hobbies', icon: 'color-palette' },
             { label: 'Events', value: 'Events', icon: 'calendar' },
@@ -35,7 +35,6 @@ export const EXPENSE_CATEGORY_GROUPS = [
         icon: 'car',
         items: [
             { label: 'Car', value: 'Car', icon: 'car-sport' },
-            { label: 'Grab/Taxi', value: 'Grab', icon: 'car' },
             { label: 'Gas', value: 'Gas', icon: 'speedometer' },
             { label: 'Transportation', value: 'Transportation', icon: 'bus' },
             { label: 'Parking', value: 'Parking', icon: 'location' },
@@ -45,16 +44,16 @@ export const EXPENSE_CATEGORY_GROUPS = [
         group: 'Financial & Bills',
         icon: 'card',
         items: [
+            { label: 'Rent', value: 'Rent', icon: 'key' },
             { label: 'Bills', value: 'Bills', icon: 'receipt' },
             { label: 'Credit Card', value: 'Credit Card', icon: 'card' },
-            { label: 'Loans Payment', value: 'Loans Payment', icon: 'document-text' },
             { label: 'Insurance', value: 'Insurance', icon: 'shield-checkmark' },
             { label: 'Tax', value: 'Tax', icon: 'briefcase' },
-            { label: 'Fund Transfer', value: 'Fund Transfer', icon: 'swap-horizontal' },
-            { label: 'Foreign Exchange', value: 'Foreign Exchange', icon: 'globe' },
-            { label: 'Payment', value: 'Payment', icon: 'cash' },
             { label: 'Remittance', value: 'Remittance', icon: 'send' },
             { label: 'Subscriptions', value: 'Subscriptions', icon: 'repeat' },
+            { label: 'Debt Principal', value: 'Principal', icon: 'trending-down' },
+            { label: 'Interest Expense', value: 'Interest', icon: 'trending-down' },
+            { label: 'Bank Fees', value: 'Bank Fees', icon: 'business' },
         ]
     },
     {
@@ -66,6 +65,7 @@ export const EXPENSE_CATEGORY_GROUPS = [
             { label: 'Mobile Postpaid', value: 'Mobile Postpaid', icon: 'phone-portrait' },
             { label: 'Mobile Prepaid', value: 'Mobile Prepaid', icon: 'call' },
             { label: 'Tech Gear', value: 'Tech Gear', icon: 'hardware-chip' },
+            { label: 'Gaming & Top-ups', value: 'Gaming & Top-ups', icon: 'game-controller' },
         ]
     },
     {
@@ -91,8 +91,6 @@ export const EXPENSE_CATEGORY_GROUPS = [
         group: 'Miscellaneous',
         icon: 'ellipsis-horizontal',
         items: [
-            { label: 'Gaming & Top-ups', value: 'Gaming & Top-ups', icon: 'game-controller' },
-            { label: 'Online Shopping', value: 'Online Shopping', icon: 'logo-amazon' },
             { label: 'Others', value: 'Others', icon: 'ellipsis-horizontal' },
             { label: 'Uncategorized', value: 'Uncategorized', icon: 'help-circle' },
         ]
