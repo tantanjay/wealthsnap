@@ -78,6 +78,12 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
                     Cash Flow
                 </Text>
+                {/* Page Indicator */}
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Overall' ? colors.primary : colors.border }} />
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Month' ? colors.primary : colors.border }} />
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'MonthIncomeExpense' ? colors.primary : colors.border }} />
+                </View>
             </View>
             <View>
                 <ScrollView
@@ -108,11 +114,6 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
                                         <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Cash Balance</Text>
                                         <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
                                     </TouchableOpacity>
-                                    <View style={{ flexDirection: 'row', gap: 4, marginLeft: 10 }}>
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white }} />
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
-                                    </View>
                                 </View>
                                 <Ionicons name="wallet-outline" size={24} color={colors.white} />
                             </View>
@@ -167,11 +168,6 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
                                         <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Monthly Balance</Text>
                                         <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
                                     </TouchableOpacity>
-                                    <View style={{ flexDirection: 'row', gap: 4, marginLeft: 10 }}>
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white }} />
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
-                                    </View>
                                 </View>
                                 <Ionicons name="calendar-outline" size={24} color={colors.white} />
                             </View>
@@ -226,11 +222,6 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
                                         <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Monthly Net</Text>
                                         <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
                                     </TouchableOpacity>
-                                    <View style={{ flexDirection: 'row', gap: 4, marginLeft: 10 }}>
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white, opacity: 0.3 }} />
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.white }} />
-                                    </View>
                                 </View>
                                 <Ionicons name="swap-vertical" size={24} color={colors.white} />
                             </View>
