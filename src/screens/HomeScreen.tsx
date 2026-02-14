@@ -94,7 +94,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [investmentDisplayMode, setInvestmentDisplayMode] = useState<Storage.InvestmentDisplayMode>('Total');
 
     const [debtDisplayMode, setDebtDisplayMode] = useState<Storage.DebtDisplayMode>('Total');
-    const [financialHealthDisplayMode, setFinancialHealthDisplayMode] = useState<Storage.HomeFinancialHealthDisplayMode>('NetWorth');
+    const [financialHealthDisplayMode, setFinancialHealthDisplayMode] = useState<Storage.HomeFinancialHealthDisplayMode>('Health');
 
     // Saved Configuration States (Settings)
     const [savedDisplayMode, setSavedDisplayMode] = useState<Storage.HomeDisplayMode>('Overall');

@@ -8,10 +8,13 @@ These represent the most impactful and differentiated capabilities of the app.
   Calculates "True Discretionary Income" by subtracting fixed bills, debt obligations, *and* a dynamic **Life Burnrate** (90-day average of daily costs).
 
 - **Financial Runway Metric**
-  Converts net liquid balance into time (e.g., **“11.0 months”**) to show how long funds will last without income. Now accounts for debt obligations.
+  Converts net liquid balance into time (e.g., **“11.0 months”**) to show how long funds will last without income.
+  - **Debt Aware**: Now explicitly subtracts **Minimum Debt Payments** from your monthly burn rate, showing a realistic survival timeline.
 
 - **Debt & Loan Management (v1.10.0)**
   Comprehensive tracking for Loans, Credit Cards, and Mortgages with full amortization schedules and "True Cost" integration into financial health metrics.
+  - **Safe-to-Spend**: Deducts debt obligations before calculating discretionary income.
+  - **Savings Rate**: Treats debt repayments as expenses to show true net savings.
 
 - **Global Currency & Native Assets (v1.9.0)**
   Support for **150+ world currencies**. Invest in assets using their native currency (e.g., USD stocks while living in EUR zone) with auto-converted portfolio valuation.
