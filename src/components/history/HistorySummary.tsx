@@ -14,6 +14,7 @@ interface SafeToSpendData {
     amount: BigNumber;
     dailyBurnRate: BigNumber;
     projectedVariableSpend: BigNumber;
+    remainingDebtObligations: BigNumber;
 }
 
 interface HistorySummaryProps {
@@ -47,7 +48,7 @@ export const HistorySummary: React.FC<HistorySummaryProps> = ({
                         <Text style={{ color: safeToSpendData.amount.isGreaterThanOrEqualTo(0) ? colors.success : colors.error, fontSize: 28, fontWeight: 'bold' }}>
                             {formatCurrency(safeToSpendData.amount)}
                         </Text>
-                        <View style={{ flexDirection: 'row', gap: 12, marginTop: 2, marginBottom: 2 }}>
+                        <View style={{ flexDirection: 'row', gap: 12, marginTop: 2, marginBottom: 2, flexWrap: 'wrap' }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
                                 🔥 Burn: {formatCurrency(safeToSpendData.dailyBurnRate)}/day
                             </Text>
@@ -55,6 +56,11 @@ export const HistorySummary: React.FC<HistorySummaryProps> = ({
                                 🧾 Living Costs: {formatCurrency(safeToSpendData.projectedVariableSpend)}
                             </Text>
                         </View>
+                        {safeToSpendData.remainingDebtObligations.isGreaterThan(0) && (
+                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                🏦 Debt: {formatCurrency(safeToSpendData.remainingDebtObligations)}
+                            </Text>
+                        )}
                         <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
                             Estimate · Based on recent activity
                         </Text>
