@@ -41,7 +41,7 @@ const InsightsScreen = ({ navigation }: any) => {
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const [currency, setCurrency] = useState('PHP');
     const [refreshing, setRefreshing] = useState(false);
-    const [expenseGrouping, setExpenseGrouping] = useState<'CATEGORY' | 'SUB_CATEGORY'>('SUB_CATEGORY');
+    const [expenseGrouping, setExpenseGrouping] = useState<'GROUP' | 'ITEM'>('ITEM');
     const [isLoading, setIsLoading] = useState(true);
 
     const [cardOrder, setCardOrder] = useState<string[]>([]);
@@ -74,7 +74,7 @@ const InsightsScreen = ({ navigation }: any) => {
         dailyAverage: new BigNumber(0)
     });
 
-    const calculateMetrics = useCallback(async (currentTransactions: Transaction[], currentDebts: import('@types').Debt[], grouping: 'CATEGORY' | 'SUB_CATEGORY') => {
+    const calculateMetrics = useCallback(async (currentTransactions: Transaction[], currentDebts: import('@types').Debt[], grouping: 'GROUP' | 'ITEM') => {
         if (!currentTransactions || currentTransactions.length === 0) {
             setIsLoading(false);
             return;
@@ -90,7 +90,7 @@ const InsightsScreen = ({ navigation }: any) => {
         const lastMonthTotals = Metrics.calculateTotals(lastMonthTrans);
 
         // Breakdowns & Trends
-        const incomeBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'INCOME', 'SUB_CATEGORY');
+        const incomeBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'INCOME', 'ITEM'); // Income always by Item (specific source)
         const expenseBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', grouping);
         const monthlyTrends = Metrics.getMonthlyTrends(currentTransactions, 6);
 
@@ -131,7 +131,7 @@ const InsightsScreen = ({ navigation }: any) => {
         const budgets = await getAllBudgets();
         let budgetPerformance = new BigNumber(0);
         if (budgets.length > 0) {
-            const specificCategoryBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'SUB_CATEGORY');
+            const specificCategoryBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'ITEM');
             const budgetedCategorySpent = specificCategoryBreakdown
                 .filter(cat => budgets.some(b => b.category === cat.name))
                 .reduce((sum, cat) => sum.plus(cat.amount), new BigNumber(0));
@@ -142,7 +142,7 @@ const InsightsScreen = ({ navigation }: any) => {
                 : new BigNumber(0);
         }
 
-        const specificBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'SUB_CATEGORY');
+        const specificBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'ITEM');
 
         setData({
             netCashFlow: totals.net,
@@ -179,22 +179,24 @@ const InsightsScreen = ({ navigation }: any) => {
             ]);
 
             if (profile?.currency) setCurrency(profile.currency);
-            if (profile?.currency) setCurrency(profile.currency);
 
             if (savedCardOrder) {
-                const validOrder = savedCardOrder.filter(id => VALID_CARD_IDS.includes(id));
+                const validOrder = savedCardOrder.filter((id: string) => VALID_CARD_IDS.includes(id));
                 if (validOrder.length > 0) setCardOrder(validOrder);
             }
 
             if (savedSectionOrder) {
-                const validOrder = savedSectionOrder.filter(id => VALID_SECTION_IDS.includes(id));
+                const validOrder = savedSectionOrder.filter((id: string) => VALID_SECTION_IDS.includes(id));
                 if (validOrder.length > 0) setSectionOrder(validOrder);
             }
 
-            setTransactions(allTransactions);
+            // Fallback if getTransactions returns null/undefined (though likely it returns empty array)
+            const safeTransactions = allTransactions || [];
+
+            setTransactions(safeTransactions);
             setDebts(allDebts);
             // We pass variables directly here to bypass the React state update delay
-            await calculateMetrics(allTransactions, allDebts, expenseGrouping);
+            await calculateMetrics(safeTransactions, allDebts, expenseGrouping);
         } catch (error) {
             console.error("Error loading insights:", error);
         } finally {

@@ -408,49 +408,48 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                         </View>
                     ) : (
                         pieData.length > 0 ? (
-                            <>
-                                <PieChart
-                                    data={pieData.map(d => ({
-                                        value: d.population.toNumber(),
-                                        color: d.color,
-                                        text: `${((d.population.toNumber() / pieData.reduce((acc, curr) => acc + curr.population.toNumber(), 0)) * 100).toFixed(0)}%`,
-                                        textColor: "white",
-                                    }))}
-                                    radius={100}
-                                    textSize={10}
-                                    showText
-                                    textColor="white"
-                                    donut
-                                    innerRadius={60}
-                                    innerCircleColor={colors.surface}
-                                    centerLabelComponent={() => {
-                                        return (
-                                            <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                                                <Text style={{ fontSize: 22, color: colors.text, fontWeight: 'bold' }}>
-                                                    {categoryBreakdown.length}
-                                                </Text>
-                                                <Text style={{ fontSize: 10, color: colors.textSecondary }}>Sources</Text>
-                                            </View>
-                                        );
-                                    }}
-                                />
-                                <View style={{ marginTop: 20 }}>
-                                    {categoryBreakdown.map((item, index) => (
-                                        <View key={index} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, alignItems: 'center' }}>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: pieData[index].color, marginRight: 10 }} />
-                                                <Text style={{ color: colors.text, fontSize: 14 }}>{item.name}</Text>
-                                            </View>
-                                            <View style={{ alignItems: 'flex-end' }}>
-                                                <Text style={{ color: colors.text, fontWeight: 'bold' }}>
-                                                    {formatCompactCurrency(item.amount, currency)}
-                                                </Text>
-                                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{item.percentage.toFixed(1)}%</Text>
-                                            </View>
-                                        </View>
-                                    ))}
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                {/* Chart Section */}
+                                <View style={{ flex: 6, alignItems: 'center' }}>
+                                    <PieChart
+                                        data={pieData.map(d => ({
+                                            value: d.population.toNumber(),
+                                            color: d.color,
+                                            text: '', // No text inside slices, moving to legend
+                                        }))}
+                                        radius={70} // Reduced radius to fit side-by-side
+                                        donut
+                                        innerCircleColor={colors.surface}
+                                        innerRadius={40}
+                                        centerLabelComponent={() => {
+                                            return (
+                                                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                                                    <Text style={{ fontSize: 16, color: colors.text, fontWeight: 'bold' }}>
+                                                        {categoryBreakdown.length}
+                                                    </Text>
+                                                    <Text style={{ fontSize: 8, color: colors.textSecondary }}>Sources</Text>
+                                                </View>
+                                            );
+                                        }}
+                                    />
                                 </View>
-                            </>
+
+                                {/* Legend (Ledger) Section - Right Side */}
+                                <View style={{ flex: 4, paddingLeft: 10 }}>
+                                    <View style={{ gap: 8 }}>
+                                        {categoryBreakdown.map((item, index) => {
+                                            return (
+                                                <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: pieData[index].color, marginRight: 8, marginTop: 2 }} />
+                                                    <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 1 }}>
+                                                        {item.name} <Text style={{ fontWeight: 'bold', color: colors.text }}>({item.percentage.toFixed(0)}%)</Text>
+                                                    </Text>
+                                                </View>
+                                            );
+                                        })}
+                                    </View>
+                                </View>
+                            </View>
                         ) : (
                             <Text style={{ color: colors.textSecondary, textAlign: 'center', padding: 20 }}>No income data available.</Text>
                         )
