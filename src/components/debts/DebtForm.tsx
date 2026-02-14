@@ -20,42 +20,51 @@ interface DebtFormProps {
     currency: string;
     onSave: () => void;
     onCancel: () => void;
+    initialDebt?: Debt;
 }
 
-export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel }) => {
+export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, initialDebt }) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
 
     // Form State
-    const [name, setName] = useState('');
-    const [debtType, setDebtType] = useState<DebtType>('LOAN');
-    const [direction, setDirection] = useState<DebtDirection>('PAYABLE');
-    const [amount, setAmount] = useState('');
-    const [formCurrency, setFormCurrency] = useState(currency); // Local state if needed, but mainly use prop
-    const [interestRate, setInterestRate] = useState('');
-    const [interestType, setInterestType] = useState<DebtInterestType>('FIXED');
-    const [minPayment, setMinPayment] = useState('');
-    const [fees, setFees] = useState('');
-    const [termMonths, setTermMonths] = useState('');
-    const [notes, setNotes] = useState('');
-    const [contactInfo, setContactInfo] = useState(''); // Contact/Lender Name/Number
+    const [name, setName] = useState(initialDebt?.name || '');
+    const [debtType, setDebtType] = useState<DebtType>(initialDebt?.type || 'LOAN');
+    const [direction, setDirection] = useState<DebtDirection>(initialDebt?.direction || 'PAYABLE');
+    const [amount, setAmount] = useState(initialDebt?.initialAmount.toString() || '');
+    const [formCurrency, setFormCurrency] = useState(initialDebt?.currency || currency);
+    const [interestRate, setInterestRate] = useState(initialDebt?.interestRate.toString() || '');
+    const [interestType, setInterestType] = useState<DebtInterestType>(initialDebt?.interestType || 'FIXED');
+    const [minPayment, setMinPayment] = useState(initialDebt?.minPayment.toString() || '');
+    const [fees, setFees] = useState(initialDebt?.fees?.toString() || '');
+    const [termMonths, setTermMonths] = useState(initialDebt?.termMonths?.toString() || '');
+    const [notes, setNotes] = useState(initialDebt?.notes || '');
+    const [contactInfo, setContactInfo] = useState(initialDebt?.contactId || '');
 
     // UI Configuration State
     const [createTransaction, setCreateTransaction] = useState(false);
     const [showInterestTypeModal, setShowInterestTypeModal] = useState(false);
     const [showAmountCalculator, setShowAmountCalculator] = useState(false);
     const [showTransactionInfo, setShowTransactionInfo] = useState(false);
-    const [isMinPaymentManual, setIsMinPaymentManual] = useState(false);
+    const [isMinPaymentManual, setIsMinPaymentManual] = useState(!!initialDebt?.minPayment);
     const [isPaymentDetailsExpanded, setIsPaymentDetailsExpanded] = useState(false);
-    const [startDate, setStartDate] = useState<Date>(new Date());
+    const [startDate, setStartDate] = useState<Date>(initialDebt?.startDate ? new Date(initialDebt.startDate) : new Date());
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
 
     // Get Templates based on Currency
     const templates = getTemplatesForCurrency(currency);
 
     useEffect(() => {
-        setFormCurrency(currency);
-    }, [currency]);
+        if (!initialDebt) {
+            setFormCurrency(currency);
+        }
+    }, [currency, initialDebt]);
+
+    // Update Auto-Calculation logic to respect edits
+    useEffect(() => {
+        // If we have an initial debt and payments/amounts exactly match, we might want to respect that
+        // But if user changes amount/rate, auto-calc should trigger.
+    }, []);
 
     const applyTemplate = (template: DebtTemplate) => {
         setName(template.label);
@@ -132,7 +141,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel }
             return;
         }
 
-        const newId = generateUUID();
+        const newId = initialDebt?.id || generateUUID();
         const initialAmountBN = new BigNumber(amount);
 
         const newDebt: Debt = {
@@ -150,8 +159,8 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel }
             termMonths: termMonths ? parseInt(termMonths, 10) : undefined,
             notes: notes || undefined,
             contactId: contactInfo || undefined, // Storing Name/Number in contactId field as text for now
-            status: 'ACTIVE', // Default
-            createdAt: new Date().toISOString(),
+            status: initialDebt?.status || 'ACTIVE', // Default
+            createdAt: initialDebt?.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
 
@@ -181,10 +190,12 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel }
                     amount: netAmount,
                     type: txnType,
                     category: debtType,
-                    subCategory: debtType,
+                    subCategory: 'INITIAL_TRANSACTION',
+                    transferAccount: debtType,
                     note: `Initial record for ${name}${feesBN.gt(0) ? ' (Net of fees)' : ''}`,
                     creationMethod: 'MANUAL',
                     isRecurring: false,
+                    debtId: newDebt.id,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
                 };
@@ -198,11 +209,13 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel }
                         date: new Date().toISOString(),
                         amount: feesBN,
                         type: 'EXPENSE',
-                        category: 'Debt',
-                        subCategory: 'Fees',
+                        category: 'Fees',
+                        subCategory: 'INITIAL_TRANSACTION',
+                        transferAccount: debtType,
                         note: `Processing fees for ${name}`,
                         creationMethod: 'MANUAL',
                         isRecurring: false,
+                        debtId: newDebt.id,
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
                     };
@@ -382,7 +395,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel }
         <View style={{ flex: 1 }}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 4, paddingBottom: 120 }}>
                 <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 8 }}>
-                    Add Debt / Loan
+                    {initialDebt ? 'Edit Debt / Loan' : 'Add Debt / Loan'}
                 </Text>
 
                 {/* Templates ScrollView */}
@@ -512,34 +525,36 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel }
                     />
                 </Card>
 
-                {/* Add Transaction Checkbox - Moved to Top */}
-                <Card style={{ marginBottom: 10, paddingVertical: 10 }}>
-                    <TouchableOpacity
-                        onPress={() => setCreateTransaction(!createTransaction)}
-                        activeOpacity={0.7}
-                        style={{ flexDirection: 'row', alignItems: 'center' }}
-                    >
-                        <Ionicons
-                            name={createTransaction ? "checkbox" : "square-outline"}
-                            size={24}
-                            color={createTransaction ? colors.primary : colors.textSecondary}
-                            style={{ marginRight: 12 }}
-                        />
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>
-                                Add corresponding transaction?
-                            </Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
-                                {createTransaction
-                                    ? (direction === 'PAYABLE' ? "Will record as Income (Cash In)" : "Will record as Expense (Cash Out)")
-                                    : "No transaction will be recorded"}
-                            </Text>
-                        </View>
-                        <TouchableOpacity onPress={() => setShowTransactionInfo(true)} style={{ padding: 4 }}>
-                            <Ionicons name="information-circle-outline" size={22} color={colors.primary} />
+                {/* Add Transaction Checkbox - Only for New Debts */}
+                {!initialDebt && (
+                    <Card style={{ marginBottom: 10, paddingVertical: 10 }}>
+                        <TouchableOpacity
+                            onPress={() => setCreateTransaction(!createTransaction)}
+                            activeOpacity={0.7}
+                            style={{ flexDirection: 'row', alignItems: 'center' }}
+                        >
+                            <Ionicons
+                                name={createTransaction ? "checkbox" : "square-outline"}
+                                size={24}
+                                color={createTransaction ? colors.primary : colors.textSecondary}
+                                style={{ marginRight: 12 }}
+                            />
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>
+                                    Add corresponding transaction?
+                                </Text>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                                    {createTransaction
+                                        ? (direction === 'PAYABLE' ? "Will record as Income (Cash In)" : "Will record as Expense (Cash Out)")
+                                        : "No transaction will be recorded"}
+                                </Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setShowTransactionInfo(true)} style={{ padding: 4 }}>
+                                <Ionicons name="information-circle-outline" size={22} color={colors.primary} />
+                            </TouchableOpacity>
                         </TouchableOpacity>
-                    </TouchableOpacity>
-                </Card>
+                    </Card>
+                )}
 
                 {/* Interest Section - Side by Side and Compact */}
                 <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>

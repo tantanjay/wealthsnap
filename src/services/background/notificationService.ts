@@ -14,7 +14,6 @@ import { REMINDER_BACKGROUND_TASK } from '@services/background/backgroundTasks';
 export const setupNotificationListeners = (onInit?: () => void) => {
     Notifications.setNotificationHandler({
         handleNotification: async () => ({
-            shouldShowAlert: true,
             shouldPlaySound: true,
             shouldSetBadge: false,
             shouldShowBanner: true,
