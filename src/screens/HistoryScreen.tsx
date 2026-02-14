@@ -23,6 +23,7 @@ import { HistoryCalendarHelpModal } from '@components/history/HistoryCalendarHel
 import { HistorySafeToSpendHelpModal } from '@components/history/HistorySafeToSpendHelpModal';
 import { HistorySummary } from '@components/history/HistorySummary';
 import DebtOptionsModal from '@components/debts/DebtOptionsModal';
+import { calculateTotalDebtObligations } from '@utils/debtMetrics';
 
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 type HistoryItem = Transaction | Investment | Debt;
@@ -309,12 +310,30 @@ const HistoryScreen = ({ navigation }: any) => {
         const totalRecentSpend = recentNonRecurringExpenses.reduce((acc, t) => acc.plus(t.amount.abs()), new BigNumber(0));
         const dailyBurnRate = totalRecentSpend.dividedBy(burnRatePeriod);
 
+        // --- DEBT OBLIGATION LOGIC ---
+        // Calculate Total Monthly Debt Obligations
+        const totalMonthlyDebtObligations = calculateTotalDebtObligations(allDebts);
+
+        // Calculate how much debt was ALREADY paid this period (to avoid double deduction)
+        // We look at TRANSFER_OUT transactions with a debtId in the current view's transactions
+        const debtPaymentsMade = dashboardTransactions
+            .filter(t => t.type === 'TRANSFER_OUT' && t.debtId)
+            .reduce((acc, t) => acc.plus(t.amount.abs()), new BigNumber(0));
+
+        // Remaining Obligation = Total - Paid (Floor at 0, don't credit extra payments)
+        const remainingDebtObligations = BigNumber.max(0, totalMonthlyDebtObligations.minus(debtPaymentsMade));
+
         // --- CALCULATION LOGIC ---
         let amount = new BigNumber(0);
         let projectedVariableSpend = new BigNumber(0);
 
         if (viewMode === 'LIST' && timeFrame === 'DAILY') {
-            amount = dailyBurnRate.minus(summary.totalExpense);
+            // Daily View: (Daily Allow - Daily Spend) - (Daily Portion of Remaining Debt)
+            // Even in daily view, we reserve the daily portion of the *remaining* debt
+            // If debt is fully paid, remaining is 0, so no deduction.
+            const dailyRemainingDebt = remainingDebtObligations.dividedBy(30);
+
+            amount = dailyBurnRate.minus(summary.totalExpense).minus(dailyRemainingDebt);
             projectedVariableSpend = dailyBurnRate;
         } else if (viewMode === 'LIST' && timeFrame === 'WEEKLY') {
             const now = new Date();
@@ -332,7 +351,11 @@ const HistoryScreen = ({ navigation }: any) => {
             }
 
             const weeklyAllowance = dailyBurnRate.multipliedBy(multiplier);
-            amount = weeklyAllowance.minus(summary.totalExpense);
+
+            // Weekly Portion of Remaining Debt
+            const weeklyRemainingDebt = remainingDebtObligations.dividedBy(4);
+
+            amount = weeklyAllowance.minus(summary.totalExpense).minus(weeklyRemainingDebt);
             projectedVariableSpend = isCurrentWeek ? dailyBurnRate.multipliedBy(multiplier) : dailyBurnRate.multipliedBy(7);
         } else {
             // MONTHLY / YEARLY / CALENDAR (Existing Logic)
@@ -384,7 +407,8 @@ const HistoryScreen = ({ navigation }: any) => {
             // In Monthly mode, this is "Projected Future Variable Spend"
             projectedVariableSpend = dailyBurnRate.multipliedBy(daysRemaining);
 
-            amount = periodNet.minus(upcomingBills).minus(projectedVariableSpend);
+            // Deduct Remaining Debt Obligations (treated as a "Bill" that hasn't been paid yet)
+            amount = periodNet.minus(upcomingBills).minus(projectedVariableSpend).minus(remainingDebtObligations);
         }
 
         return {
