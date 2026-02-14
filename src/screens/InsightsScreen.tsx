@@ -18,7 +18,9 @@ import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { Transaction } from '@types';
 import { getAllBudgets } from '@services/domain/budgetService';
+import { getAllDebts } from '@services/domain/debtService';
 import * as Metrics from '@utils/financialMetrics';
+import { calculateTotalDebtObligations } from '@utils/debtMetrics';
 import * as Storage from '@services/core/storageService';
 import { getCachedTransactions } from '@services/domain/transactionService';
 
@@ -48,6 +50,7 @@ const InsightsScreen = ({ navigation }: any) => {
     const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [debts, setDebts] = useState<import('@types').Debt[]>([]);
 
     const [data, setData] = useState({
         netCashFlow: new BigNumber(0),
@@ -71,7 +74,7 @@ const InsightsScreen = ({ navigation }: any) => {
         dailyAverage: new BigNumber(0)
     });
 
-    const calculateMetrics = useCallback(async (currentTransactions: Transaction[], grouping: 'CATEGORY' | 'SUB_CATEGORY') => {
+    const calculateMetrics = useCallback(async (currentTransactions: Transaction[], currentDebts: import('@types').Debt[], grouping: 'CATEGORY' | 'SUB_CATEGORY') => {
         if (!currentTransactions || currentTransactions.length === 0) {
             setIsLoading(false);
             return;
@@ -101,6 +104,10 @@ const InsightsScreen = ({ navigation }: any) => {
         if (burnRate.isLessThanOrEqualTo(0)) {
             burnRate = average3Month.isGreaterThan(0) ? average3Month : totals.expense;
         }
+
+        // --- INJECT DEBT OBLIGATIONS ---
+        const totalDebtObligations = calculateTotalDebtObligations(currentDebts);
+        burnRate = burnRate.plus(totalDebtObligations);
 
         const allTimeTotals = Metrics.calculateTotals(currentTransactions);
 
@@ -163,11 +170,12 @@ const InsightsScreen = ({ navigation }: any) => {
     const fetchAllData = useCallback(async (isManualRefresh = false) => {
         if (!isManualRefresh) setIsLoading(true);
         try {
-            const [profile, savedCardOrder, savedSectionOrder, allTransactions] = await Promise.all([
+            const [profile, savedCardOrder, savedSectionOrder, allTransactions, allDebts] = await Promise.all([
                 Storage.getUserProfile(),
                 Storage.getInsightsCardOrder(),
                 Storage.getInsightsSectionOrder(),
                 getCachedTransactions(),
+                getAllDebts(),
             ]);
 
             if (profile?.currency) setCurrency(profile.currency);
@@ -184,8 +192,9 @@ const InsightsScreen = ({ navigation }: any) => {
             }
 
             setTransactions(allTransactions);
+            setDebts(allDebts);
             // We pass variables directly here to bypass the React state update delay
-            await calculateMetrics(allTransactions, expenseGrouping);
+            await calculateMetrics(allTransactions, allDebts, expenseGrouping);
         } catch (error) {
             console.error("Error loading insights:", error);
         } finally {
@@ -202,9 +211,9 @@ const InsightsScreen = ({ navigation }: any) => {
     // Only re-calculate breakdown if grouping changes specifically
     useEffect(() => {
         if (transactions.length > 0) {
-            calculateMetrics(transactions, expenseGrouping);
+            calculateMetrics(transactions, debts, expenseGrouping);
         }
-    }, [expenseGrouping, calculateMetrics, transactions]);
+    }, [expenseGrouping, calculateMetrics, transactions, debts]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);

@@ -83,3 +83,8 @@ export const calculateProjectedDebtLiability = (debt: Debt, currentPrincipalBala
     };
 };
 
+export const calculateTotalDebtObligations = (debts: Debt[]): BigNumber => {
+    return debts
+        .filter(d => d.status === 'ACTIVE')
+        .reduce((sum, d) => sum.plus(d.minPayment), new BigNumber(0));
+};
