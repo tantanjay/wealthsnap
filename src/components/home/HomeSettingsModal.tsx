@@ -177,8 +177,9 @@ const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
                             </Text>
                             <View style={[styles.radioGroup, { backgroundColor: colors.surface }]}>
                                 {renderRadioItem("Total Debt", "Total", debtDisplayMode, onDebtDisplayModeChange)}
+                                {renderRadioItem("Monthly Activity", "Month", debtDisplayMode, onDebtDisplayModeChange)}
                                 <View style={{ borderBottomWidth: 0 }}>
-                                    {renderRadioItem("Monthly Activity", "Month", debtDisplayMode, onDebtDisplayModeChange)}
+                                    {renderRadioItem("Monthly Obligations", "Obligations", debtDisplayMode, onDebtDisplayModeChange)}
                                 </View>
                             </View>
                         </>
