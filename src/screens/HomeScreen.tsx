@@ -70,6 +70,8 @@ const HomeScreen = ({ navigation }: any) => {
     const [debtRepaid, setDebtRepaid] = useState(new BigNumber(0));
     const [monthDebtBorrowed, setMonthDebtBorrowed] = useState(new BigNumber(0));
     const [monthDebtRepaid, setMonthDebtRepaid] = useState(new BigNumber(0));
+    const [monthlyObligations, setMonthlyObligations] = useState(new BigNumber(0));
+    const [monthlyObligationsPaid, setMonthlyObligationsPaid] = useState(new BigNumber(0));
     const [isLoading, setIsLoading] = useState(true);
 
     const [financialHealth, setFinancialHealth] = useState({
@@ -448,11 +450,36 @@ const HomeScreen = ({ navigation }: any) => {
                 }
             });
 
+            // Calculate Obligations Paid (Active Debts only)
+            let obligationsPaid = new BigNumber(0);
+            const totalDebtObligationsValue = calculateTotalDebtObligations(allDebts);
+
+            allDebts.forEach(debt => {
+                if (debt.status === 'ACTIVE') {
+                    // Get all payments for this debt in current month
+                    const monthPayments = getDebtTransactions(debt.id, true);
+
+                    // Sum of Principal (TRANSFER_OUT) + Interest (EXPENSE)
+                    // Note: We exclude INITIAL_TRANSACTION fees if present, though typically they are one-off.
+                    // We want to capture regular monthly payments.
+                    const totalPaid = monthPayments.reduce((sum, tx) => {
+                        if (tx.type === 'TRANSFER_OUT' || (tx.type === 'EXPENSE' && tx.subCategory !== 'INITIAL_TRANSACTION')) {
+                            return sum.plus(tx.amount.abs());
+                        }
+                        return sum;
+                    }, new BigNumber(0));
+
+                    obligationsPaid = obligationsPaid.plus(totalPaid);
+                }
+            });
+
             setDebtTotal(currentTotalDebt);
             setDebtBorrowed(totalBorrowed);
             setDebtRepaid(totalRepaid);
             setMonthDebtBorrowed(mDebtBorrowed);
             setMonthDebtRepaid(mDebtRepaid);
+            setMonthlyObligations(totalDebtObligationsValue);
+            setMonthlyObligationsPaid(obligationsPaid);
 
             // 8. Calculate Financial Health Metrics
             const currentCashBalance = oInc.plus(oTransIn).minus(oExp.plus(oTransOut));
@@ -480,8 +507,8 @@ const HomeScreen = ({ navigation }: any) => {
 
             // --- INJECT DEBT OBLIGATIONS ---
             // Runway = Cash / (Living Expenses + Debt Obligations)
-            const totalDebtObligations = calculateTotalDebtObligations(allDebts);
-            const totalBurnRate = burnRate.plus(totalDebtObligations);
+            // Already calculated totalDebtObligationsValue above
+            const totalBurnRate = burnRate.plus(totalDebtObligationsValue);
 
             const runway = totalBurnRate.isGreaterThan(0)
                 ? currentCashBalance.dividedBy(totalBurnRate) // Use CashBalance (Liquid) not TotalAssets
@@ -899,7 +926,6 @@ const HomeScreen = ({ navigation }: any) => {
 
                         case 'debt':
                             return (
-
                                 <HomeDebtCard
                                     key="debt"
                                     total={debtTotal}
@@ -907,6 +933,8 @@ const HomeScreen = ({ navigation }: any) => {
                                     repaid={debtRepaid}
                                     monthBorrowed={monthDebtBorrowed}
                                     monthRepaid={monthDebtRepaid}
+                                    obligations={monthlyObligations}
+                                    obligationsPaid={monthlyObligationsPaid}
                                     isLoading={isLoading}
                                     isPrivacyEnabled={isPrivacyEnabled}
                                     currency={profile?.currency || 'PHP'}
