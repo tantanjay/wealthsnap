@@ -23,8 +23,8 @@ interface ExpenseAnalysisProps {
     }[];
     currency: string;
     isPrivacyEnabled: boolean;
-    grouping: 'CATEGORY' | 'SUB_CATEGORY';
-    onToggleGrouping: (grouping: 'CATEGORY' | 'SUB_CATEGORY') => void;
+    grouping: 'GROUP' | 'ITEM';
+    onToggleGrouping: (grouping: 'GROUP' | 'ITEM') => void;
     transactions: Transaction[];
     isLoading?: boolean;
 }
@@ -117,17 +117,17 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                     {/* Simple Toggle */}
                     <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
                         <TouchableOpacity
-                            onPress={() => onToggleGrouping('CATEGORY')}
-                            style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: grouping === 'CATEGORY' ? colors.primary : 'transparent' }}
+                            onPress={() => onToggleGrouping('GROUP')}
+                            style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: grouping === 'GROUP' ? colors.primary : 'transparent' }}
                         >
-                            <Text style={{ color: grouping === 'CATEGORY' ? '#fff' : colors.text, fontSize: 12, fontWeight: '600' }}>Group</Text>
+                            <Text style={{ color: grouping === 'GROUP' ? '#fff' : colors.text, fontSize: 12, fontWeight: '600' }}>Group</Text>
                         </TouchableOpacity>
                         <View style={{ width: 1, backgroundColor: colors.border }} />
                         <TouchableOpacity
-                            onPress={() => onToggleGrouping('SUB_CATEGORY')}
-                            style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: grouping === 'SUB_CATEGORY' ? colors.primary : 'transparent' }}
+                            onPress={() => onToggleGrouping('ITEM')}
+                            style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: grouping === 'ITEM' ? colors.primary : 'transparent' }}
                         >
-                            <Text style={{ color: grouping === 'SUB_CATEGORY' ? '#fff' : colors.text, fontSize: 12, fontWeight: '600' }}>Item</Text>
+                            <Text style={{ color: grouping === 'ITEM' ? '#fff' : colors.text, fontSize: 12, fontWeight: '600' }}>Item</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
