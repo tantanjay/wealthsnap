@@ -155,11 +155,14 @@ const HomeDebtCard: React.FC<HomeDebtCardProps> = ({
                                         backgroundColor: 'rgba(255,255,255,0.2)',
                                         paddingVertical: 8,
                                         alignItems: 'center',
-                                        borderRadius: 8
+                                        borderRadius: 8,
+                                        flexDirection: 'row',
+                                        justifyContent: 'center'
                                     }}
                                     onPress={onPress}
                                 >
-                                    <Text style={{ color: colors.white, fontWeight: '600' }}>View Debts</Text>
+                                    <Ionicons name="card" size={24} color={colors.white} style={{ marginRight: 8 }} />
+                                    <Text style={{ color: colors.white, fontWeight: '600' }}>View Debts &amp; Obligations</Text>
                                 </TouchableOpacity>
                             )}
                         </Card>
@@ -220,11 +223,14 @@ const HomeDebtCard: React.FC<HomeDebtCardProps> = ({
                                         backgroundColor: 'rgba(255,255,255,0.2)',
                                         paddingVertical: 8,
                                         alignItems: 'center',
-                                        borderRadius: 8
+                                        borderRadius: 8,
+                                        flexDirection: 'row',
+                                        justifyContent: 'center'
                                     }}
                                     onPress={onPress}
                                 >
-                                    <Text style={{ color: colors.white, fontWeight: '600' }}>View Debts</Text>
+                                    <Ionicons name="card" size={24} color={colors.white} style={{ marginRight: 8 }} />
+                                    <Text style={{ color: colors.white, fontWeight: '600' }}>View Debts &amp; Obligations</Text>
                                 </TouchableOpacity>
                             )}
                         </Card>
@@ -278,11 +284,14 @@ const HomeDebtCard: React.FC<HomeDebtCardProps> = ({
                                         backgroundColor: 'rgba(255,255,255,0.2)',
                                         paddingVertical: 8,
                                         alignItems: 'center',
-                                        borderRadius: 8
+                                        borderRadius: 8,
+                                        flexDirection: 'row',
+                                        justifyContent: 'center'
                                     }}
                                     onPress={onPress}
                                 >
-                                    <Text style={{ color: colors.white, fontWeight: '600' }}>View Debts</Text>
+                                    <Ionicons name="card" size={24} color={colors.white} style={{ marginRight: 8 }} />
+                                    <Text style={{ color: colors.white, fontWeight: '600' }}>View Debts &amp; Obligations</Text>
                                 </TouchableOpacity>
                             )}
                         </Card>
