@@ -208,7 +208,27 @@ export const getHomeInvestmentDisplayMode = async (): Promise<InvestmentDisplayM
     }
 };
 
-export type HomeFinancialHealthDisplayMode = 'Assets' | 'Health';
+export type DebtDisplayMode = 'Total' | 'Month';
+
+export const saveHomeDebtDisplayMode = async (mode: DebtDisplayMode): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.DEBT_DISPLAY_MODE, mode);
+    } catch (error) {
+        console.error('Failed to save home debt display mode:', error);
+    }
+};
+
+export const getHomeDebtDisplayMode = async (): Promise<DebtDisplayMode | null> => {
+    try {
+        const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.DEBT_DISPLAY_MODE);
+        return (mode === 'Total' || mode === 'Month') ? mode as DebtDisplayMode : null;
+    } catch (error) {
+        console.error('Failed to get home debt display mode:', error);
+        return null;
+    }
+};
+
+export type HomeFinancialHealthDisplayMode = 'NetWorth' | 'Assets' | 'Health';
 
 export const saveHomeFinancialHealthDisplayMode = async (mode: HomeFinancialHealthDisplayMode): Promise<void> => {
     try {

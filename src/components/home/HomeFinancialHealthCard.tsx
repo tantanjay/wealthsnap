@@ -21,8 +21,9 @@ interface HomeFinancialHealthCardProps {
     spendingDifferencePercent: number;
     investmentsTotal: BigNumber;
     cashBalance: BigNumber;
+    netWorth: BigNumber; // New Prop
     onDisplayModeChange: (mode: HomeFinancialHealthDisplayMode) => void;
-    onInfoPress: (mode: 'Assets' | 'Health') => void;
+    onInfoPress: (mode: HomeFinancialHealthDisplayMode) => void;
 }
 
 const CARD_HEIGHT = 200;
@@ -36,6 +37,7 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
     spendingDifferencePercent,
     investmentsTotal,
     cashBalance,
+    netWorth,
     isLoading,
     isPrivacyEnabled,
     currency,
@@ -51,7 +53,9 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
     useEffect(() => {
         if (cardWidth > 0 && scrollRef.current) {
             let pageIndex = 0;
-            if (displayMode === 'Health') pageIndex = 1;
+            if (displayMode === 'NetWorth') pageIndex = 0;
+            if (displayMode === 'Assets') pageIndex = 1;
+            if (displayMode === 'Health') pageIndex = 2;
             scrollRef.current.scrollTo({ x: pageIndex * cardWidth, animated: true });
         }
     }, [displayMode, cardWidth]);
@@ -61,7 +65,10 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
         const width = event.nativeEvent.layoutMeasurement.width;
         const pageIndex = Math.round(contentOffsetX / width);
 
-        const newMode: HomeFinancialHealthDisplayMode = pageIndex === 0 ? 'Assets' : 'Health';
+        let newMode: HomeFinancialHealthDisplayMode = 'NetWorth';
+        if (pageIndex === 1) newMode = 'Assets';
+        if (pageIndex === 2) newMode = 'Health';
+
         if (newMode !== displayMode) {
             onDisplayModeChange(newMode);
         }
@@ -103,6 +110,7 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                 </Text>
                 {/* Page Indicator */}
                 <View style={{ flexDirection: 'row', gap: 4 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'NetWorth' ? colors.primary : colors.border }} />
                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Assets' ? colors.primary : colors.border }} />
                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Health' ? colors.primary : colors.border }} />
                 </View>
@@ -119,13 +127,47 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                         const width = e.nativeEvent.layout.width;
                         if (Math.abs(width - cardWidth) > 1) {
                             setCardWidth(width);
-                            if (displayMode === 'Health' && width > 0) {
+                            if (displayMode === 'Assets' && width > 0) {
                                 scrollRef.current?.scrollTo({ x: width, animated: false });
+                            }
+                            if (displayMode === 'Health' && width > 0) {
+                                scrollRef.current?.scrollTo({ x: width * 2, animated: false });
                             }
                         }
                     }}
                     scrollEventThrottle={16}
                 >
+                    {/* Card 0: Net Worth */}
+                    <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
+                        <Card style={{ backgroundColor: colors.surface, padding: 20, marginBottom: 10, width: '100%', height: CARD_HEIGHT, justifyContent: 'space-between' }}>
+                            <View>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <TouchableOpacity onPress={() => onInfoPress('NetWorth')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Net Worth</Text>
+                                            <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={{ backgroundColor: colors.primary + '20', padding: 8, borderRadius: 12 }}>
+                                        <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
+                                    </View>
+                                </View>
+                                <Text style={{ color: colors.text, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
+                                    {isLoading ? (
+                                        <Skeleton width={150} height={40} style={{ backgroundColor: colors.border }} />
+                                    ) : (
+                                        formatCurrency(netWorth)
+                                    )}
+                                </Text>
+                            </View>
+                            <View>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                    Assets - (Debt + Interest)
+                                </Text>
+                            </View>
+                        </Card>
+                    </View>
+
                     {/* Card 1: Total Assets */}
                     <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
                         <Card style={{ backgroundColor: colors.surface, padding: 20, marginBottom: 10, width: '100%', height: CARD_HEIGHT, justifyContent: 'space-between' }}>

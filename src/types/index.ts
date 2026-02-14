@@ -31,7 +31,7 @@ export interface Transaction {
     isRecurring: boolean;
     recurrenceId?: string; // Link to recurrence rule
     creationMethod?: 'MANUAL' | 'RECURRENCE' | 'AI';
-    transferAccount?: TransferAccount;
+    transferAccount?: TransferAccount | DebtType;
     linkedTransactionId?: string;
     investmentId?: string;
     debtId?: string;

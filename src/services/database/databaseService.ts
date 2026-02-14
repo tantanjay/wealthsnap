@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
-import { createTables, setDatabaseVersion, getDatabaseVersion, migrateToVersion8, migrateToVersion9, migrateToVersion10, DATABASE_NAME, DATABASE_VERSION } from '@services/database/databaseSchema';
+import { createTables, setDatabaseVersion, getDatabaseVersion, migrateToVersion8, migrateToVersion9, migrateToVersion10, migrateToVersion11, DATABASE_NAME, DATABASE_VERSION } from '@services/database/databaseSchema';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -53,6 +53,7 @@ export const initializeDatabase = async (db: SQLite.SQLiteDatabase): Promise<voi
                 if (currentVersion < 8) await migrateToVersion8(db);
                 if (currentVersion < 9) await migrateToVersion9(db);
                 if (currentVersion < 10) await migrateToVersion10(db);
+                if (currentVersion < 11) await migrateToVersion11(db);
             } else {
                 await setDatabaseVersion(db, DATABASE_VERSION);
             }
