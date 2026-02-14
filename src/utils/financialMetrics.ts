@@ -65,7 +65,23 @@ export const getSavingsRateTrend = (transactions: Transaction[], months: number 
 
     return trends.labels.map((month, index) => {
         const income = trends.incomeData[index];
-        const expense = trends.expenseData[index];
+        let expense = trends.expenseData[index];
+
+        // --- INJECT DEBT REPAYMENTS INTO EXPENSE FOR SAVINGS RATE ---
+        // We want Savings Rate = (Income - (Expenses + Debt Payments)) / Income
+        // But we kept 'calculateTotals' pure (Expenses only) for other metrics.
+        // So we calculate debt payments for this specific month here.
+
+        const d = new Date();
+        d.setMonth(d.getMonth() - (months - 1 - index)); // Re-calculate date for this index
+        const monthlyTransactions = getTransactionsByMonth(transactions, d);
+
+        const debtRepayments = monthlyTransactions
+            .filter(t => t.type === 'TRANSFER_OUT' && t.debtId)
+            .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
+
+        expense = expense.plus(debtRepayments);
+
         const savingsRate = calculateSavingsRate(income, expense);
 
         return {
