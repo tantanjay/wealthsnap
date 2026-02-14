@@ -35,7 +35,7 @@ import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
 import { getLatestPrices } from '@services/domain/priceHistoryService';
 import { ReviewAppModal } from '@components/common/ReviewAppModal';
 import { useReviewPrompt } from '@hooks/useReviewPrompt';
-import { calculateProjectedDebtLiability } from '@utils/debtMetrics';
+import { calculateProjectedDebtLiability, calculateTotalDebtObligations } from '@utils/debtMetrics';
 
 const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -478,8 +478,13 @@ const HomeScreen = ({ navigation }: any) => {
                 burnRate = average3MonthBurn.isGreaterThan(0) ? average3MonthBurn : mExp;
             }
 
-            const runway = burnRate.isGreaterThan(0)
-                ? currentCashBalance.dividedBy(burnRate) // Use CashBalance (Liquid) not TotalAssets
+            // --- INJECT DEBT OBLIGATIONS ---
+            // Runway = Cash / (Living Expenses + Debt Obligations)
+            const totalDebtObligations = calculateTotalDebtObligations(allDebts);
+            const totalBurnRate = burnRate.plus(totalDebtObligations);
+
+            const runway = totalBurnRate.isGreaterThan(0)
+                ? currentCashBalance.dividedBy(totalBurnRate) // Use CashBalance (Liquid) not TotalAssets
                 : (currentCashBalance.isGreaterThan(0) ? new BigNumber(Infinity) : new BigNumber(0));
 
             // Previous Month Runway Calculation (for Trend)
@@ -771,7 +776,7 @@ const HomeScreen = ({ navigation }: any) => {
                     <View style={{ marginBottom: 15 }}>
                         <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Runway</Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            How long your money will last based on your average monthly expenses.
+                            How long your money will last based on your average monthly expenses <Text style={{ fontWeight: 'bold' }}>+ debt obligations</Text>.
                         </Text>
                     </View>
                     <View style={{ marginBottom: 15 }}>

@@ -31,7 +31,17 @@ export const HistorySafeToSpendHelpModal: React.FC<HistorySafeToSpendHelpModalPr
             <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ color: colors.text }}>2. Minus Expenses</Text>
+                <Text style={{ color: colors.text }}>2. Minus Debt Portion</Text>
+                <Text style={{ color: colors.error, fontWeight: 'bold' }}>Daily Share</Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                Daily portion of your unpaid monthly debt obligations.
+            </Text>
+
+            <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.text }}>3. Minus Expenses</Text>
                 <Text style={{ color: colors.error, fontWeight: 'bold' }}>Today&apos;s Spend</Text>
             </View>
             <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
@@ -109,11 +119,21 @@ export const HistorySafeToSpendHelpModal: React.FC<HistorySafeToSpendHelpModalPr
             <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ color: colors.text }}>4. Minus Living Costs</Text>
+                <Text style={{ color: colors.text }}>4. Minus Debt Obligations</Text>
+                <Text style={{ color: colors.error, fontWeight: 'bold' }}>Unpaid Min Payments</Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                Remaining minimum payments for your active debts.
+            </Text>
+
+            <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.text }}>5. Minus Living Costs</Text>
                 <Text style={{ color: '#FF9800', fontWeight: 'bold' }}>Life Burnrate</Text>
             </View>
             <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
-                Estimated daily cost for food/transport based on your last 90 days (3 months). Does not include recurring expenses.
+                Estimated daily cost for food/transport based on your last 90 days. Does not include recurring bills.
             </Text>
             <View style={{ marginTop: 6, backgroundColor: '#FFF3E0', padding: 8, borderRadius: 8 }}>
                 <Text style={{ color: '#E65100', fontSize: 11, fontStyle: 'italic' }}>
