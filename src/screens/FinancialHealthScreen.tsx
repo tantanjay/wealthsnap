@@ -34,12 +34,12 @@ import {
 } from '@utils/insightMetrics';
 import { getSmartScenarioAmount } from '@utils/scenarioUtils';
 
-import FinancialStateCard from '@components/homev2/FinancialStateCard';
-import SpendingCashFlowCard from '@components/homev2/SpendingCashFlowCard';
-import DebtPressureCard from '@components/homev2/DebtPressureCard';
-import WealthGrowthCard from '@components/homev2/WealthGrowthCard';
+import FinancialStateCard from '@components/financialHealth/FinancialStateCard';
+import SpendingCashFlowCard from '@components/financialHealth/SpendingCashFlowCard';
+import DebtPressureCard from '@components/financialHealth/DebtPressureCard';
+import WealthGrowthCard from '@components/financialHealth/WealthGrowthCard';
 
-const HomeScreenV2 = ({ navigation }: any) => {
+const FinancialHealthScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled } = usePrivacy();
 
@@ -355,4 +355,4 @@ const HomeScreenV2 = ({ navigation }: any) => {
     );
 };
 
-export default HomeScreenV2;
+export default FinancialHealthScreen;
