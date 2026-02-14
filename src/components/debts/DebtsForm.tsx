@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { BigNumber } from 'bignumber.js';
+import * as Clipboard from 'expo-clipboard';
 
 import { Button, Card } from '@components/index';
 import BottomModal from '@components/common/BottomModal';
@@ -43,6 +45,10 @@ export const DebtsForm: React.FC<DebtsFormProps> = ({ currency, onSave, onCancel
     const [showInterestTypeModal, setShowInterestTypeModal] = useState(false);
     const [showAmountCalculator, setShowAmountCalculator] = useState(false);
     const [showTransactionInfo, setShowTransactionInfo] = useState(false);
+    const [isMinPaymentManual, setIsMinPaymentManual] = useState(false);
+    const [isPaymentDetailsExpanded, setIsPaymentDetailsExpanded] = useState(false);
+    const [startDate, setStartDate] = useState<Date>(new Date());
+    const [showStartDatePicker, setShowStartDatePicker] = useState(false);
 
     // Get Templates based on Currency
     const templates = getTemplatesForCurrency(currency);
@@ -68,6 +74,58 @@ export const DebtsForm: React.FC<DebtsFormProps> = ({ currency, onSave, onCancel
         else if (debtType === 'CREDIT_CARD' || debtType === 'MORTGAGE' || debtType === 'LOAN') setDirection('PAYABLE');
     }, [debtType]);
 
+    const handleMinPaymentChange = (text: string) => {
+        setMinPayment(text);
+        setIsMinPaymentManual(true);
+    };
+
+    // Auto-calculate Min Payment
+    useEffect(() => {
+        if (isMinPaymentManual || !amount) return;
+
+        const principal = new BigNumber(amount);
+        if (principal.isNaN() || principal.lte(0)) return;
+
+        let calculatedPayment = new BigNumber(0);
+        const rate = new BigNumber(interestRate || 0).div(100);
+        const months = termMonths ? parseInt(termMonths, 10) : 0;
+
+        if (months > 0) {
+            // Term Loan Logic
+            if (interestType === 'NONE') {
+                calculatedPayment = principal.div(months);
+            } else if (interestType === 'FLAT') {
+                const totalInterest = principal.times(rate).times(months / 12);
+                calculatedPayment = principal.plus(totalInterest).div(months);
+            } else {
+                // FIXED / VARIABLE (Standard Amortization)
+                const monthlyRate = rate.div(12);
+                if (monthlyRate.eq(0)) {
+                    calculatedPayment = principal.div(months);
+                } else {
+                    const factor = monthlyRate.plus(1).pow(months);
+                    // PMT = P * r * (1+r)^n / ((1+r)^n - 1)
+                    calculatedPayment = principal.times(monthlyRate).times(factor).div(factor.minus(1));
+                }
+            }
+        } else {
+            // No Term (e.g. Credit Card) -> 3% or Interest + 1%
+            // Defaulting to 3.00% of balance (common min payment)
+            calculatedPayment = principal.times(0.03);
+
+            // Ensure min payment covers at least interest if possible
+            if (interestRate) {
+                const monthlyInterest = principal.times(rate.div(12));
+                if (calculatedPayment.lt(monthlyInterest)) {
+                    calculatedPayment = monthlyInterest.plus(principal.times(0.01)); // Interest + 1% principal
+                }
+            }
+        }
+
+        // Round to 2 decimals
+        setMinPayment(calculatedPayment.toFixed(2));
+    }, [amount, interestRate, termMonths, interestType]);
+
     const handleSave = async () => {
         if (!name || !amount) {
             showAlert('Missing Info', 'Please provide a name and initial amount.');
@@ -88,6 +146,7 @@ export const DebtsForm: React.FC<DebtsFormProps> = ({ currency, onSave, onCancel
             interestType,
             minPayment: new BigNumber(minPayment || 0),
             fees: fees ? new BigNumber(fees) : undefined,
+            startDate: startDate.toISOString(),
             termMonths: termMonths ? parseInt(termMonths, 10) : undefined,
             notes: notes || undefined,
             contactId: contactInfo || undefined, // Storing Name/Number in contactId field as text for now
@@ -165,6 +224,160 @@ export const DebtsForm: React.FC<DebtsFormProps> = ({ currency, onSave, onCancel
         { type: 'NONE', label: 'NONE', description: 'Friends/Family (0% interest)' },
     ];
 
+    const renderPaymentBreakdown = () => {
+        if (!amount || !minPayment) return null;
+
+        const P = new BigNumber(amount);
+        const rAnnual = new BigNumber(interestRate || 0).div(100);
+        const monthlyPayment = new BigNumber(minPayment);
+        const months = termMonths ? parseInt(termMonths, 10) : 0;
+
+        let schedule: { month: number; principal: BigNumber; interest: BigNumber; balance: BigNumber; date: Date }[] = [];
+        let totalInterest = new BigNumber(0);
+
+        // Verify validity
+        if (P.isNaN() || monthlyPayment.isNaN() || monthlyPayment.lte(0)) return null;
+
+        // Generate Schedule
+        // Limit simulation to avoid freezing UI on infinite loops or really long debts
+        const maxMonths = months > 0 ? months : 120;
+
+        let balance = P;
+
+        // Simplified Simulation for display
+        for (let i = 1; i <= maxMonths; i++) {
+            let interestPart = new BigNumber(0);
+
+            // Calculate payment date: Start Date + (i-1) months
+            let paymentDate = new Date(startDate);
+            paymentDate.setMonth(paymentDate.getMonth() + (i - 1));
+
+            if (interestType === 'NONE') {
+                interestPart = new BigNumber(0);
+            } else if (interestType === 'FLAT') {
+                // Standard Flat: Monthly Interest = (P_original * rate * years) / months = P_original * rate / 12
+                interestPart = P.times(rAnnual).div(12);
+            } else {
+                // FIXED/VARIABLE - Reducing Balance
+                interestPart = balance.times(rAnnual).div(12);
+            }
+
+            let principalPart = monthlyPayment.minus(interestPart);
+
+            // Handle last payment or negative balance logic
+            if (balance.lte(monthlyPayment) || (months > 0 && i === months)) { // Force closure if term ends
+                if (months > 0 && i === months && balance.gt(monthlyPayment)) {
+                    // Last month adjustment if balance remains (rounding issues)
+                    principalPart = balance;
+                    // Interest remains same
+                } else if (balance.lte(monthlyPayment)) {
+                    principalPart = balance;
+                }
+
+                balance = new BigNumber(0);
+                schedule.push({ month: i, principal: principalPart, interest: interestPart, balance, date: paymentDate });
+                totalInterest = totalInterest.plus(interestPart);
+                break;
+            }
+
+            balance = balance.minus(principalPart);
+            schedule.push({ month: i, principal: principalPart, interest: interestPart, balance, date: paymentDate });
+            totalInterest = totalInterest.plus(interestPart);
+
+            if (balance.lte(0)) break;
+        }
+
+        const handleCopySchedule = async () => {
+            if (schedule.length === 0) return;
+
+            const summary = [
+                `Amount: ${formCurrency} ${new BigNumber(amount).toFormat(2)}`,
+                `Interest: ${interestRate}% (${interestType})`,
+                `Start Date: ${startDate.toLocaleDateString()}`,
+                ''
+            ].join('\n');
+
+            const header = ['Date', 'Principal', 'Interest', 'Balance'].join('\t');
+            const rows = schedule.map(item => {
+                const dateStr = item.date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                return `${dateStr}\t${item.principal.toFixed(2)}\t${item.interest.toFixed(2)}\t${item.balance.toFixed(2)}`;
+            }).join('\n');
+            const result = `${summary}${header}\n${rows}`;
+
+            await Clipboard.setStringAsync(result);
+            showAlert('Copied', 'Payment schedule copied to clipboard!');
+        };
+
+        return (
+            <Card style={{ marginBottom: 10, paddingVertical: 0, paddingHorizontal: 0, overflow: 'hidden' }}>
+                <TouchableOpacity
+                    onPress={() => setIsPaymentDetailsExpanded(!isPaymentDetailsExpanded)}
+                    style={{ flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: colors.surface }}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons
+                        name={isPaymentDetailsExpanded ? "chevron-down" : "chevron-forward"}
+                        size={20}
+                        color={colors.primary}
+                        style={{ marginRight: 8 }}
+                    />
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Estimated Monthly Payment</Text>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
+                            {formCurrency} {new BigNumber(minPayment).toFormat(2)}
+                        </Text>
+                    </View>
+                    <TouchableOpacity onPress={handleCopySchedule} style={{ padding: 4 }}>
+                        <Ionicons name="copy-outline" size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                </TouchableOpacity>
+
+                {isPaymentDetailsExpanded && (
+                    <View style={{ borderTopWidth: 1, borderTopColor: colors.border, padding: 12, backgroundColor: colors.surface }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, paddingHorizontal: 4 }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 1.5 }}>Date</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 2, textAlign: 'right' }}>Principal</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 2, textAlign: 'right' }}>Interest</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 2, textAlign: 'right' }}>Balance</Text>
+                        </View>
+
+                        <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled showsVerticalScrollIndicator={true}>
+                            {schedule.length === 0 ? (
+                                <Text style={{ color: colors.textSecondary, textAlign: 'center', marginVertical: 10 }}>
+                                    Calculation unavailable. Check amounts.
+                                </Text>
+                            ) : (
+                                schedule.map((item) => (
+                                    <View key={item.month} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5, borderBottomColor: colors.border + '30', paddingHorizontal: 4 }}>
+                                        <Text style={{ color: colors.text, fontSize: 12, flex: 1.5 }}>
+                                            {item.date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}
+                                        </Text>
+                                        <Text style={{ color: colors.success, fontSize: 12, flex: 2, textAlign: 'right' }}>{item.principal.toFormat(2)}</Text>
+                                        <Text style={{ color: colors.error, fontSize: 12, flex: 2, textAlign: 'right' }}>{item.interest.toFormat(2)}</Text>
+                                        <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 2, textAlign: 'right' }}>{item.balance.toFormat(2)}</Text>
+                                    </View>
+                                ))
+                            )}
+                            {(months === 0 && schedule.length >= 120) && (
+                                <Text style={{ color: colors.textSecondary, fontSize: 10, textAlign: 'center', marginTop: 8 }}>
+                                    (Projection limited to 10 years)
+                                </Text>
+                            )}
+                        </ScrollView>
+
+                        {/* Summary Footer */}
+                        <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>Est. Total Interest:</Text>
+                            <Text style={{ color: colors.error, fontSize: 12, fontWeight: 'bold' }}>
+                                {formCurrency} {totalInterest.toFormat(2)}
+                            </Text>
+                        </View>
+                    </View>
+                )}
+            </Card>
+        );
+    };
+
     return (
         <View style={{ flex: 1 }}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 4, paddingBottom: 120 }}>
@@ -201,6 +414,35 @@ export const DebtsForm: React.FC<DebtsFormProps> = ({ currency, onSave, onCancel
                         ))}
                     </ScrollView>
                 </View>
+
+                {/* Start Date */}
+                <Card style={{ marginBottom: 10, paddingVertical: 10 }}>
+                    <TouchableOpacity
+                        onPress={() => setShowStartDatePicker(true)}
+                        style={{ flexDirection: 'row', alignItems: 'center' }}
+                    >
+                        <Ionicons name="calendar-outline" size={20} color={colors.primary} style={{ marginRight: 12 }} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Start Date (First Payment)</Text>
+                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginTop: 2 }}>
+                                {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </Text>
+                        </View>
+                        {showStartDatePicker && (
+                            <DateTimePicker
+                                value={startDate}
+                                mode="date"
+                                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                onChange={(event: DateTimePickerEvent, date?: Date) => {
+                                    setShowStartDatePicker(Platform.OS === 'ios');
+                                    if (date) {
+                                        setStartDate(date);
+                                    }
+                                }}
+                            />
+                        )}
+                    </TouchableOpacity>
+                </Card>
 
                 {/* Name */}
                 <Card style={{ marginBottom: 10, paddingVertical: 10 }}>
@@ -349,7 +591,7 @@ export const DebtsForm: React.FC<DebtsFormProps> = ({ currency, onSave, onCancel
                             <TextInput
                                 style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', padding: 0, marginTop: 2 }}
                                 value={minPayment}
-                                onChangeText={setMinPayment}
+                                onChangeText={handleMinPaymentChange}
                                 keyboardType="numeric"
                                 placeholder="0.00"
                                 placeholderTextColor={colors.gray300}
@@ -399,6 +641,9 @@ export const DebtsForm: React.FC<DebtsFormProps> = ({ currency, onSave, onCancel
                         multiline
                     />
                 </Card>
+
+                {/* Payment Breakdown / Computation */}
+                {renderPaymentBreakdown()}
             </ScrollView>
 
             {/* Fixed Footer Actions */}
