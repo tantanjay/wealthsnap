@@ -24,6 +24,7 @@ interface HomeFinancialHealthCardProps {
     netWorth: BigNumber; // New Prop
     onDisplayModeChange: (mode: HomeFinancialHealthDisplayMode) => void;
     onInfoPress: (mode: HomeFinancialHealthDisplayMode) => void;
+    onSeeDetails: () => void;
 }
 
 const CARD_HEIGHT = 200;
@@ -43,7 +44,8 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
     currency,
     displayMode,
     onDisplayModeChange,
-    onInfoPress
+    onInfoPress,
+    onSeeDetails
 }) => {
     const { colors } = useTheme();
     const scrollRef = useRef<ScrollView>(null);
@@ -140,67 +142,59 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                     {/* Card 1: Financial Health Stats */}
                     <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
                         <Card style={{ backgroundColor: colors.surface, padding: 20, marginBottom: 10, width: '100%', height: CARD_HEIGHT, justifyContent: 'space-between' }}>
-
-                            {/* Runway */}
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.success + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                                        <Ionicons name="hourglass-outline" size={16} color={colors.success} />
+                            <View>
+                                {/* Runway */}
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.success + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                            <Ionicons name="hourglass-outline" size={16} color={colors.success} />
+                                        </View>
+                                        <View>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Runway</Text>
+                                            {isLoading ? <Skeleton width={60} height={20} style={{ marginTop: 4 }} /> : (
+                                                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
+                                                    {runwayInMonths === Infinity ? '∞' : runwayInMonths.toFixed(1)} months
+                                                </Text>
+                                            )}
+                                        </View>
                                     </View>
-                                    <View>
-                                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Runway</Text>
-                                        {isLoading ? <Skeleton width={60} height={20} style={{ marginTop: 4 }} /> : (
-                                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-                                                {runwayInMonths === Infinity ? '∞' : runwayInMonths.toFixed(1)} months
-                                            </Text>
-                                        )}
+                                    {isLoading ? <Skeleton width={80} height={16} /> : getRunwayChangeContent()}
+                                </View>
+
+                                {/* Budget */}
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.warning + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                            <Ionicons name="wallet-outline" size={16} color={colors.warning} />
+                                        </View>
+                                        <View>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Months Budget: {isLoading ? '...' : `${monthBudgetPercent.toFixed(0)}%`}</Text>
+                                            {isLoading ? <Skeleton width={100} height={16} style={{ marginTop: 4 }} /> : (
+                                                <Text style={{ color: colors.textSecondary, fontSize: 12, fontStyle: 'italic' }}>
+                                                    {getSpendingMessage()}
+                                                </Text>
+                                            )}
+                                        </View>
                                     </View>
                                 </View>
-                                {isLoading ? <Skeleton width={80} height={16} /> : getRunwayChangeContent()}
+
                             </View>
 
-                            {/* Budget */}
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.warning + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                                        <Ionicons name="wallet-outline" size={16} color={colors.warning} />
-                                    </View>
-                                    <View>
-                                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Months Budget: {isLoading ? '...' : `${monthBudgetPercent.toFixed(0)}%`}</Text>
-                                        {isLoading ? <Skeleton width={100} height={16} style={{ marginTop: 4 }} /> : (
-                                            <Text style={{ color: colors.textSecondary, fontSize: 12, fontStyle: 'italic' }}>
-                                                {getSpendingMessage()}
-                                            </Text>
-                                        )}
-                                    </View>
-                                </View>
-                            </View>
-
-                            {/* Top Holding */}
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                                        <Ionicons name="trending-up-outline" size={16} color={colors.primary} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Top Holdings</Text>
-                                        {isLoading ? <Skeleton width={150} height={20} style={{ marginTop: 4 }} /> : (
-                                            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                                                {topHoldings.sort((a, b) => b.percent - a.percent).map((holding, index) => (
-                                                    <View key={index} style={{ marginRight: index === 0 ? 24 : 0 }}>
-                                                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', lineHeight: 22 }}>
-                                                            {holding.percent.toFixed(1)}% <Text style={{ fontWeight: '400', fontSize: 14 }}>({holding.symbol})</Text>
-                                                        </Text>
-                                                    </View>
-                                                ))}
-                                                {topHoldings.length === 0 && (
-                                                    <Text style={{ color: colors.textSecondary, fontSize: 14 }}>No data</Text>
-                                                )}
-                                            </View>
-                                        )}
-                                    </View>
-                                </View>
-                            </View>
+                            <TouchableOpacity
+                                onPress={onSeeDetails}
+                                style={{
+                                    marginTop: 15,
+                                    backgroundColor: colors.primary,
+                                    paddingVertical: 10,
+                                    borderRadius: 8,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                <Ionicons name="analytics-outline" size={20} color={colors.white} style={{ marginRight: 8 }} />
+                                <Text style={{ color: colors.white, fontWeight: '600' }}>See Details</Text>
+                            </TouchableOpacity>
 
                         </Card>
                     </View>

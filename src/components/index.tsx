@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, ViewStyle, ActivityIndicator, View } from 'react-native';
+import { TouchableOpacity, Text, ViewStyle, StyleProp, ActivityIndicator, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
@@ -8,7 +8,7 @@ interface ButtonProps {
     title: string;
     onPress: () => void;
     variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
-    style?: ViewStyle;
+    style?: StyleProp<ViewStyle>;
     loading?: boolean;
     disabled?: boolean;
     icon?: string;
@@ -76,7 +76,7 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, variant = 'prima
 
 interface CardProps {
     children: React.ReactNode;
-    style?: ViewStyle;
+    style?: StyleProp<ViewStyle>;
 }
 
 export const Card: React.FC<CardProps> = ({ children, style }) => {

@@ -11,6 +11,7 @@ import LegalAcceptanceScreen from '@screens/onboarding/LegalAcceptanceScreen';
 import ProfileScreen from '@screens/ProfileScreen';
 import InsightsScreen from '@screens/InsightsScreen';
 import HomeScreen from '@screens/HomeScreen';
+import HomeScreenV2 from '@screens/HomeScreenV2';
 import InvestmentScreen from '@screens/InvestmentScreen';
 import HistoryScreen from '@screens/HistoryScreen';
 import RecordScreen from '@screens/RecordScreen';
@@ -24,6 +25,7 @@ const HomeStackNavigator = () => {
     return (
         <HomeStack.Navigator screenOptions={{ headerShown: false }}>
             <HomeStack.Screen name="HomeMain" component={HomeScreen} />
+            <HomeStack.Screen name="HomeScreenV2" component={HomeScreenV2} />
             <HomeStack.Screen name="Insights" component={InsightsScreen} />
         </HomeStack.Navigator>
     );
