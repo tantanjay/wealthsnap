@@ -15,13 +15,11 @@ interface SupportModalProps {
 const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
     const { colors } = useTheme();
 
-    const handleKofiPress = () => {
-        Linking.openURL('https://ko-fi.com/christianjay66500');
-        onClose();
-    };
-
-    const handlePayPalPress = () => {
-        Linking.openURL('https://paypal.me/hansoctantan');
+    const handlePress = async (url: string) => {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+            await Linking.openURL(url);
+        }
         onClose();
     };
 
@@ -36,7 +34,7 @@ const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
 
             {/* Support Developer (Ko-fi) */}
             <TouchableOpacity
-                onPress={handleKofiPress}
+                onPress={() => handlePress('https://ko-fi.com/christianjay66500')}
                 style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -62,7 +60,7 @@ const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
             {/* PayPal Option */}
             {CONFIG.SHOW_PAYPAL_SUPPORT && (
                 <TouchableOpacity
-                    onPress={handlePayPalPress}
+                    onPress={() => handlePress('https://paypal.me/hansoctantan')}
                     style={{
                         flexDirection: 'row',
                         alignItems: 'center',
@@ -85,6 +83,8 @@ const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
                     <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
             )}
+
+
 
             <Button
                 variant="outline"

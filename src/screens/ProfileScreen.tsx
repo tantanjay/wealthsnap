@@ -12,6 +12,7 @@ import HelpCenterScreen from '@screens/onboarding/HelpCenterScreen';
 import BudgetManagementModal from '@components/profile/BudgetManagementModal';
 import DataManagementCard from '@components/data/DataManagementCard';
 import SupportModal from '@components/profile/settings/SupportModal';
+import ContactDeveloperModal from '@components/profile/settings/ContactDeveloperModal';
 import ProfileHeader from '@components/profile/ProfileHeader';
 import QuickActionsCard from '@components/profile/QuickActionsCard';
 import AppearanceCard from '@components/profile/AppearanceCard';
@@ -50,6 +51,7 @@ const ProfileScreen = ({ navigation }: any) => {
 
     // Support Modal State
     const [showSupportModal, setShowSupportModal] = useState(false);
+    const [showContactModal, setShowContactModal] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     const [showWhyFreeModal, setShowWhyFreeModal] = useState(false);
     const [showDevMessageModal, setShowDevMessageModal] = useState(false);
@@ -215,6 +217,7 @@ const ProfileScreen = ({ navigation }: any) => {
                     onWhyFree={() => setShowWhyFreeModal(true)}
                     onDevMessage={() => setShowDevMessageModal(true)}
                     onManifesto={() => setShowManifestoModal(true)}
+                    onContact={() => setShowContactModal(true)}
                     onSupport={() => setShowSupportModal(true)}
                     version={appJson.expo.version}
                 />
@@ -346,6 +349,12 @@ const ProfileScreen = ({ navigation }: any) => {
             <SupportModal
                 visible={showSupportModal}
                 onClose={() => setShowSupportModal(false)}
+            />
+
+            {/* Contact Developer Modal */}
+            <ContactDeveloperModal
+                visible={showContactModal}
+                onClose={() => setShowContactModal(false)}
             />
 
             {/* Help Center Modal */}
