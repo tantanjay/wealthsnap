@@ -504,24 +504,41 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                 </View>
 
                 {/* Transaction Checkbox */}
-                <TouchableOpacity
-                    onPress={initialInvestment ? undefined : toggleCreateTransaction}
-                    activeOpacity={initialInvestment ? 0.6 : 0.7}
-                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, padding: 8, opacity: initialInvestment ? 0.6 : 1 }}
-                >
-                    <Ionicons
-                        name={createTransaction ? "checkbox" : "square-outline"}
-                        size={24}
-                        color={createTransaction ? colors.primary : colors.textSecondary}
-                        style={{ marginRight: 8 }}
-                    />
-                    <Text style={{ color: colors.text, fontSize: 14, flex: 1 }}>
-                        {initialInvestment ? "Linked Transaction (Auto-updated)" : "Add corresponding transaction?"}
-                    </Text>
-                    <TouchableOpacity onPress={() => setShowInfoModal(true)}>
-                        <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+                <Card style={{ marginBottom: 10, paddingVertical: 10 }}>
+                    <TouchableOpacity
+                        onPress={initialInvestment ? undefined : toggleCreateTransaction}
+                        activeOpacity={initialInvestment ? 0.6 : 0.7}
+                        style={{ flexDirection: 'row', alignItems: 'center', opacity: initialInvestment ? 0.6 : 1 }}
+                    >
+                        <Ionicons
+                            name={createTransaction ? "checkbox" : "square-outline"}
+                            size={24}
+                            color={createTransaction ? colors.primary : colors.textSecondary}
+                            style={{ marginRight: 12 }}
+                        />
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>
+                                {initialInvestment ? "Linked Transaction" : "Add corresponding transaction?"}
+                            </Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                                {(() => {
+                                    if (initialInvestment) return "Auto-updated with investment changes";
+                                    if (!createTransaction) return "No transaction will be recorded";
+
+                                    switch (action) {
+                                        case 'BUY': return "Will record as Transfer Out (Cash Out)";
+                                        case 'SELL': return "Will record as Transfer In (Cash In)";
+                                        case 'DIVIDEND': return "Will record as Income";
+                                        default: return "Will record a transaction";
+                                    }
+                                })()}
+                            </Text>
+                        </View>
+                        <TouchableOpacity onPress={() => setShowInfoModal(true)} style={{ padding: 4 }}>
+                            <Ionicons name="information-circle-outline" size={22} color={colors.primary} />
+                        </TouchableOpacity>
                     </TouchableOpacity>
-                </TouchableOpacity>
+                </Card>
 
                 {/* Symbol Selection */}
                 <Card style={{ marginBottom: 10 }}>
