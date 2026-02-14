@@ -35,7 +35,7 @@ import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
 import { getLatestPrices } from '@services/domain/priceHistoryService';
 import { ReviewAppModal } from '@components/common/ReviewAppModal';
 import { useReviewPrompt } from '@hooks/useReviewPrompt';
-import { calculateProjectedDebtLiability, calculateTotalDebtObligations } from '@utils/debtMetrics';
+import { calculateProjectedDebtLiability, calculateTotalDebtObligations, calculatePrevDebtObligations } from '@utils/debtMetrics';
 
 const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -518,13 +518,15 @@ const HomeScreen = ({ navigation }: any) => {
             let runwayChange = 0;
             if (monthsActive > 1) {
                 // Previous Liquid Balance
-                const prevCashBalance = currentCashBalance.minus(mInc.minus(mExp));
+                // Previous Liquid Balance
+                // Net Flow = (Income + TransIn) - (Expense + TransOut)
+                const monthNetFlow = mInc.plus(mTransIn).minus(mExp.plus(mTransOut));
+                const prevCashBalance = currentCashBalance.minus(monthNetFlow);
 
                 // Previous Burn Rate (Approximate by using same rate or strict calculation)
                 // For strict alignment, we'd need to recalc burn rate as of last month.
                 // Using current burn rate as proxy for stability, or recalculating:
-                const prevDate = new Date();
-                prevDate.setMonth(prevDate.getMonth() - 1);
+                const prevDate = new Date(now.getFullYear(), now.getMonth(), 0); // End of last month
                 const prevBurnRate6 = calculateBurnRate(t, 6, prevDate);
                 let prevBurnRate = prevBurnRate6;
                 if (prevBurnRate.isLessThanOrEqualTo(0)) {
@@ -532,8 +534,11 @@ const HomeScreen = ({ navigation }: any) => {
                     prevBurnRate = burnRate;
                 }
 
-                const prevRunway = prevBurnRate.isGreaterThan(0)
-                    ? prevCashBalance.dividedBy(prevBurnRate)
+                const prevDebtObligations = calculatePrevDebtObligations(allDebts, prevDate);
+                const prevTotalBurnRate = prevBurnRate.plus(prevDebtObligations);
+
+                const prevRunway = prevTotalBurnRate.isGreaterThan(0)
+                    ? prevCashBalance.dividedBy(prevTotalBurnRate)
                     : (prevCashBalance.isGreaterThan(0) ? new BigNumber(Infinity) : new BigNumber(0));
 
                 if (prevRunway.isFinite() && runway.isFinite()) {
@@ -978,6 +983,7 @@ const HomeScreen = ({ navigation }: any) => {
                                     displayMode={financialHealthDisplayMode}
                                     onDisplayModeChange={handleFinancialHealthModeSwipe}
                                     onInfoPress={handleInfoPress}
+                                    onSeeDetails={() => navigation.navigate('HomeScreenV2')}
                                 />
                             );
                         default:

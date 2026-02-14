@@ -88,3 +88,15 @@ export const calculateTotalDebtObligations = (debts: Debt[]): BigNumber => {
         .filter(d => d.status === 'ACTIVE')
         .reduce((sum, d) => sum.plus(d.minPayment), new BigNumber(0));
 };
+
+export const calculatePrevDebtObligations = (debts: Debt[], date: Date): BigNumber => {
+    return debts.reduce((sum, debt) => {
+        // Only include if debt existed at that date
+        // Use startDate or createdAt
+        const startDate = new Date(debt.startDate || debt.createdAt);
+        if (startDate <= date && debt.status === 'ACTIVE') {
+            return sum.plus(debt.minPayment);
+        }
+        return sum;
+    }, new BigNumber(0));
+};
