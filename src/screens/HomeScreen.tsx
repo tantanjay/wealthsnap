@@ -997,7 +997,7 @@ const HomeScreen = ({ navigation }: any) => {
                                     displayMode={financialHealthDisplayMode}
                                     onDisplayModeChange={handleFinancialHealthModeSwipe}
                                     onInfoPress={handleInfoPress}
-                                    onSeeDetails={() => navigation.navigate('HomeScreenV2')}
+                                    onSeeDetails={() => navigation.navigate('FinancialHealth')}
                                 />
                             );
                         default:
