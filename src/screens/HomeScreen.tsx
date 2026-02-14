@@ -553,7 +553,7 @@ const HomeScreen = ({ navigation }: any) => {
             if (budgets.length > 0) {
                 // Get breakdown for current month expenses
                 const currentMonthTransForBudget = getTransactionsByMonth(t, new Date());
-                const specificCategoryBreakdown = getCategoryBreakdown(currentMonthTransForBudget, 'EXPENSE', 'SUB_CATEGORY');
+                const specificCategoryBreakdown = getCategoryBreakdown(currentMonthTransForBudget, 'EXPENSE', 'ITEM');
 
                 const budgetedCategorySpent = specificCategoryBreakdown
                     .filter(cat => budgets.some(b => b.category === cat.name))
