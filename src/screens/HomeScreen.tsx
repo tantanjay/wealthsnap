@@ -22,17 +22,20 @@ import {
     getCurrentMonthCumulative,
     getTopExpenses,
     calculateBurnRate,
-    getCategoryBreakdown
+    getCategoryBreakdown,
 } from '@utils/financialMetrics';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { processRecurrenceRules } from '@services/domain/recurrenceService';
 import { getCachedTransactions } from '@services/domain/transactionService';
 import { getCachedInvestments } from '@services/domain/investmentService';
 import { getAllBudgets } from '@services/domain/budgetService';
+import { getAllDebts } from '@services/domain/debtService';
 import * as Storage from '@services/core/storageService';
 import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
 import { getLatestPrices } from '@services/domain/priceHistoryService';
 import { ReviewAppModal } from '@components/common/ReviewAppModal';
 import { useReviewPrompt } from '@hooks/useReviewPrompt';
+import { calculateProjectedDebtLiability } from '@utils/debtMetrics';
 
 const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -60,11 +63,19 @@ const HomeScreen = ({ navigation }: any) => {
     const [monthRealizedPL, setMonthRealizedPL] = useState(new BigNumber(0));
     const [monthUnrealizedPL, setMonthUnrealizedPL] = useState(new BigNumber(0));
 
+
+
     const [debtTotal, setDebtTotal] = useState(new BigNumber(0));
+    const [debtBorrowed, setDebtBorrowed] = useState(new BigNumber(0));
+    const [debtRepaid, setDebtRepaid] = useState(new BigNumber(0));
+    const [monthDebtBorrowed, setMonthDebtBorrowed] = useState(new BigNumber(0));
+    const [monthDebtRepaid, setMonthDebtRepaid] = useState(new BigNumber(0));
     const [isLoading, setIsLoading] = useState(true);
 
     const [financialHealth, setFinancialHealth] = useState({
         totalAssets: new BigNumber(0),
+        netWorth: new BigNumber(0), // New
+        totalProjectedLiability: new BigNumber(0), // New: Principal + Interest
         runwayInMonths: 0,
         runwayChange: 0,
         topHoldings: [] as Array<{ symbol: string, percent: number }>,
@@ -79,19 +90,23 @@ const HomeScreen = ({ navigation }: any) => {
     // Active Display States (Swipeable)
     const [displayMode, setDisplayMode] = useState<Storage.HomeDisplayMode>('Overall');
     const [investmentDisplayMode, setInvestmentDisplayMode] = useState<Storage.InvestmentDisplayMode>('Total');
-    const [financialHealthDisplayMode, setFinancialHealthDisplayMode] = useState<Storage.HomeFinancialHealthDisplayMode>('Assets');
+
+    const [debtDisplayMode, setDebtDisplayMode] = useState<Storage.DebtDisplayMode>('Total');
+    const [financialHealthDisplayMode, setFinancialHealthDisplayMode] = useState<Storage.HomeFinancialHealthDisplayMode>('NetWorth');
 
     // Saved Configuration States (Settings)
     const [savedDisplayMode, setSavedDisplayMode] = useState<Storage.HomeDisplayMode>('Overall');
+
     const [savedInvestmentDisplayMode, setSavedInvestmentDisplayMode] = useState<Storage.InvestmentDisplayMode>('Total');
+    const [savedDebtDisplayMode, setSavedDebtDisplayMode] = useState<Storage.DebtDisplayMode>('Total');
 
     const [cardOrder, setCardOrder] = useState<string[]>(['financial-health', 'cash-flow', 'portfolio', 'debt', 'transactions']);
 
     // Info Modal State
     const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
-    const [infoModalMode, setInfoModalMode] = useState<'Overall' | 'Month' | 'MonthIncomeExpense' | 'Assets' | 'Health'>('Overall');
+    const [infoModalMode, setInfoModalMode] = useState<'Overall' | 'Month' | 'MonthIncomeExpense' | 'Assets' | 'Health' | 'NetWorth'>('Overall');
 
-    const handleInfoPress = (mode: 'Overall' | 'Month' | 'MonthIncomeExpense' | 'Assets' | 'Health') => {
+    const handleInfoPress = (mode: 'Overall' | 'Month' | 'MonthIncomeExpense' | 'Assets' | 'Health' | 'NetWorth') => {
         setInfoModalMode(mode);
         setIsInfoModalVisible(true);
     };
@@ -112,12 +127,18 @@ const HomeScreen = ({ navigation }: any) => {
             if (savedInvestmentMode) {
                 setInvestmentDisplayMode(savedInvestmentMode);
                 setSavedInvestmentDisplayMode(savedInvestmentMode);
-                setSavedInvestmentDisplayMode(savedInvestmentMode);
+
             }
 
             const savedFinancialMode = await Storage.getHomeFinancialHealthDisplayMode();
             if (savedFinancialMode) {
                 setFinancialHealthDisplayMode(savedFinancialMode);
+            }
+
+            const savedDebtMode = await Storage.getHomeDebtDisplayMode();
+            if (savedDebtMode) {
+                setDebtDisplayMode(savedDebtMode);
+                setSavedDebtDisplayMode(savedDebtMode);
             }
 
             // Load persisted card order
@@ -145,9 +166,12 @@ const HomeScreen = ({ navigation }: any) => {
             // Process recurring rules first to ensure we fetch the latest transactions
             await processRecurrenceRules();
 
+
+
             const p = await Storage.getUserProfile();
             const t = await getCachedTransactions();
             const inv = await getCachedInvestments();
+            const allDebts = await getAllDebts();
 
             setProfile(p);
             setTransactions(t);
@@ -312,9 +336,127 @@ const HomeScreen = ({ navigation }: any) => {
             setMonthRealizedPL(mRealizedPL);
             setMonthUnrealizedPL(mUnrealizedPL);
 
-            // 7. Calculate Financial Health Metrics
-            const cashBalance = oInc.plus(oTransIn).minus(oExp.plus(oTransOut));
-            const currentTotalAssets = cashBalance.plus(totalMarketValue);
+            // 7. Calculate Debt Metrics
+            let totalBorrowed = new BigNumber(0);
+            let totalRepaid = new BigNumber(0);
+            let mDebtBorrowed = new BigNumber(0);
+            let mDebtRepaid = new BigNumber(0);
+
+            // Filter for ACTIVE debts for the main card totals (Balance)
+            // But for "Borrowed" and "Repaid", maybe include all?
+            // "Total Debt" usually implies Current Outstanding Balance.
+            // Let's iterate through ALL debts but primarily focus on Active for Balance.
+            // However, if a debt is PAID_OFF, its balance is 0.
+            // So iterating through all is safe if we calculate balance individually.
+
+            // Helper to get transaction total for a specific debt
+            const getDebtTransactions = (debtId: string, monthOnly: boolean = false) => {
+                return t.filter(tx => {
+                    const isDebt = tx.debtId === debtId;
+                    const isPayment = tx.type === 'EXPENSE' || tx.type === 'TRANSFER_OUT'; // Assuming payments are expenses or transfers out
+                    // Note: 'TRANSFER_IN' from Debt Account to Cash = Borrowing (Increase Debt)?
+                    // Or 'INCOME' tagged with Debt?
+                    // Currently user creates Debt via "New Debt" -> Initial Amount.
+                    // Additional borrowing? "Edit Debt" or separate transaction?
+                    // For now, assume Initial Amount is the main Borrowed.
+                    // Payments are transactions linked to debtId.
+
+                    if (!isDebt) return false;
+                    if (monthOnly) {
+                        return new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
+                    }
+                    return true;
+                });
+            };
+
+            let currentTotalDebt = new BigNumber(0);
+
+            allDebts.forEach(debt => {
+                // 1. Borrowed
+                totalBorrowed = totalBorrowed.plus(debt.initialAmount);
+
+                const isMonthCreated = new Date(debt.startDate || debt.createdAt).getMonth() === currentMonth &&
+                    new Date(debt.startDate || debt.createdAt).getFullYear() === currentYear;
+
+                if (isMonthCreated) {
+                    mDebtBorrowed = mDebtBorrowed.plus(debt.initialAmount);
+                }
+
+                // 2. Repaid (Payments) & Interest
+                const payments = getDebtTransactions(debt.id);
+
+                // User Logic:
+                // Repaid = TRANSFER_OUT linked to debtId (Principal Payment)
+                // Interest = EXPENSE linked to debtId (excluding 'INITIAL_TRANSACTION' which is Fees)
+
+                const debtPrincipalRepaid = payments.reduce((sum, tx) => {
+                    if (tx.type === 'TRANSFER_OUT') {
+                        return sum.plus(tx.amount.abs());
+                    }
+                    return sum;
+                }, new BigNumber(0));
+
+                const debtInterestPaid = payments.reduce((sum, tx) => {
+                    if (tx.type === 'EXPENSE' && tx.subCategory !== 'INITIAL_TRANSACTION') {
+                        return sum.plus(tx.amount.abs());
+                    }
+                    return sum;
+                }, new BigNumber(0));
+
+                totalRepaid = totalRepaid.plus(debtPrincipalRepaid);
+
+                // Month Repaid
+                const monthPayments = getDebtTransactions(debt.id, true);
+                const monthPrincipalRepaid = monthPayments.reduce((sum, tx) => {
+                    if (tx.type === 'TRANSFER_OUT') {
+                        return sum.plus(tx.amount.abs());
+                    }
+                    return sum;
+                }, new BigNumber(0));
+
+                mDebtRepaid = mDebtRepaid.plus(monthPrincipalRepaid);
+
+                // 3. Current Balance (Initial - Principal Repaid)
+                // If status is PAID_OFF, balance is 0.
+                if (debt.status === 'ACTIVE') {
+                    const balance = debt.initialAmount.minus(debtPrincipalRepaid);
+                    // Don't show negative balance if overpaid (unless it's a credit?)
+                    if (balance.isGreaterThan(0)) {
+                        currentTotalDebt = currentTotalDebt.plus(balance);
+                    }
+                }
+            });
+
+            // Calculate Total Projected Liability (Principal + Future Interest)
+            let totalProjectedLiability = new BigNumber(0);
+
+            allDebts.forEach(debt => {
+                if (debt.status === 'ACTIVE') {
+                    // 1. Calculate current principal balance
+                    const payments = getDebtTransactions(debt.id);
+                    const principalRepaid = payments.reduce((sum, tx) => {
+                        if (tx.type === 'TRANSFER_OUT') return sum.plus(tx.amount.abs());
+                        return sum;
+                    }, new BigNumber(0));
+
+                    const currentPrincipal = debt.initialAmount.minus(principalRepaid);
+
+                    if (currentPrincipal.gt(0)) {
+                        const { totalLiability } = calculateProjectedDebtLiability(debt, currentPrincipal);
+                        totalProjectedLiability = totalProjectedLiability.plus(totalLiability);
+                    }
+                }
+            });
+
+            setDebtTotal(currentTotalDebt);
+            setDebtBorrowed(totalBorrowed);
+            setDebtRepaid(totalRepaid);
+            setMonthDebtBorrowed(mDebtBorrowed);
+            setMonthDebtRepaid(mDebtRepaid);
+
+            // 8. Calculate Financial Health Metrics
+            const currentCashBalance = oInc.plus(oTransIn).minus(oExp.plus(oTransOut));
+            const assetsTotal = currentCashBalance.plus(totalMarketValue);
 
             // Calculate Runway & Budget
             // Get date of first transaction to determine "months active"
@@ -337,14 +479,14 @@ const HomeScreen = ({ navigation }: any) => {
             }
 
             const runway = burnRate.isGreaterThan(0)
-                ? cashBalance.dividedBy(burnRate).toNumber() // Use CashBalance (Liquid) not TotalAssets
-                : (cashBalance.isGreaterThan(0) ? Infinity : 0);
+                ? currentCashBalance.dividedBy(burnRate) // Use CashBalance (Liquid) not TotalAssets
+                : (currentCashBalance.isGreaterThan(0) ? new BigNumber(Infinity) : new BigNumber(0));
 
             // Previous Month Runway Calculation (for Trend)
             let runwayChange = 0;
             if (monthsActive > 1) {
                 // Previous Liquid Balance
-                const prevCashBalance = cashBalance.minus(mInc.minus(mExp));
+                const prevCashBalance = currentCashBalance.minus(mInc.minus(mExp));
 
                 // Previous Burn Rate (Approximate by using same rate or strict calculation)
                 // For strict alignment, we'd need to recalc burn rate as of last month.
@@ -359,11 +501,11 @@ const HomeScreen = ({ navigation }: any) => {
                 }
 
                 const prevRunway = prevBurnRate.isGreaterThan(0)
-                    ? prevCashBalance.dividedBy(prevBurnRate).toNumber()
-                    : (prevCashBalance.isGreaterThan(0) ? Infinity : 0);
+                    ? prevCashBalance.dividedBy(prevBurnRate)
+                    : (prevCashBalance.isGreaterThan(0) ? new BigNumber(Infinity) : new BigNumber(0));
 
-                if (prevRunway !== Infinity && runway !== Infinity) {
-                    runwayChange = runway - prevRunway;
+                if (prevRunway.isFinite() && runway.isFinite()) {
+                    runwayChange = runway.minus(prevRunway).toNumber();
                 }
             }
 
@@ -374,7 +516,7 @@ const HomeScreen = ({ navigation }: any) => {
             // Month Budget % (Actual Budget Health)
             // Fetch real budgets to match InsightsScreen logic
             const budgets = await getAllBudgets();
-            let budgetPercent = 0;
+            let monthBudgetPercent = 0;
 
             if (budgets.length > 0) {
                 // Get breakdown for current month expenses
@@ -387,17 +529,17 @@ const HomeScreen = ({ navigation }: any) => {
 
                 const totalBudget = budgets.reduce((sum, b) => sum.plus(b.amount), new BigNumber(0));
 
-                budgetPercent = totalBudget.isGreaterThan(0)
+                monthBudgetPercent = totalBudget.isGreaterThan(0)
                     ? budgetedCategorySpent.dividedBy(totalBudget).times(100).toNumber()
                     : 0;
             } else {
-                // Fallback if no budgets set 
-                budgetPercent = 0;
+                // Fallback if no budgets set
+                monthBudgetPercent = 0;
             }
 
             // Spending Difference % (Current Pacing vs 3-Month Average at this day)
             // Logic adapted from CumulativeSpendingChart.tsx
-            let spendingDiff = 0;
+            let spendingDifference = 0;
             const currentMonthTransForPacing = getTransactionsByMonth(t, new Date());
             const currentPacingData = getCurrentMonthCumulative(currentMonthTransForPacing);
             const avgPacingData = getCumulativeSpendingCurve(t, 3); // 3-month average
@@ -408,7 +550,7 @@ const HomeScreen = ({ navigation }: any) => {
                 const avgAtThisDay = avgPacingData[Math.min(dayIndex, avgPacingData.length - 1)];
 
                 if (avgAtThisDay > 0) {
-                    spendingDiff = ((currentTotalAtDay - avgAtThisDay) / avgAtThisDay) * 100;
+                    spendingDifference = ((currentTotalAtDay - avgAtThisDay) / avgAtThisDay) * 100;
                 }
             }
 
@@ -448,13 +590,15 @@ const HomeScreen = ({ navigation }: any) => {
             }
 
             setFinancialHealth({
-                totalAssets: currentTotalAssets,
-                cashBalance: cashBalance,
-                runwayInMonths: runway,
+                totalAssets: assetsTotal,
+                netWorth: assetsTotal.minus(totalProjectedLiability),
+                totalProjectedLiability,
+                runwayInMonths: runway.toNumber(),
                 runwayChange: runwayChange,
-                topHoldings,
-                monthBudgetPercent: budgetPercent,
-                spendingDifferencePercent: spendingDiff
+                topHoldings: topHoldings,
+                monthBudgetPercent: monthBudgetPercent,
+                spendingDifferencePercent: spendingDifference,
+                cashBalance: currentCashBalance
             });
 
         } catch (error) {
@@ -502,6 +646,16 @@ const HomeScreen = ({ navigation }: any) => {
         setFinancialHealthDisplayMode(newMode);
     };
 
+    const handleDebtModeSave = async (newMode: Storage.DebtDisplayMode) => {
+        setDebtDisplayMode(newMode);
+        setSavedDebtDisplayMode(newMode);
+        await Storage.saveHomeDebtDisplayMode(newMode);
+    };
+
+    const handleDebtModeSwipe = (newMode: Storage.DebtDisplayMode) => {
+        setDebtDisplayMode(newMode);
+    };
+
     const renderInfoModalContent = () => {
         if (infoModalMode === 'Overall') {
             return (
@@ -543,11 +697,62 @@ const HomeScreen = ({ navigation }: any) => {
                     </View>
                 </View>
             );
+
+        } else if (infoModalMode === 'NetWorth') {
+            return (
+                <View>
+                    <Text style={{ color: colors.text, marginBottom: 12, lineHeight: 22 }}>
+                        Your <Text style={{ fontWeight: 'bold' }}>Projected Net Worth</Text> is a conservative estimate of your true financial position.
+                    </Text>
+
+                    <View style={{ backgroundColor: colors.surface, padding: 16, borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <Text style={{ color: colors.text, fontWeight: '600' }}>Total Assets</Text>
+                            <Text style={{ color: colors.success, fontWeight: 'bold' }}>{formatCurrencyAmount(financialHealth.totalAssets, profile?.currency || 'PHP')}</Text>
+                        </View>
+
+                        {/* Asset Breakdown */}
+                        <View style={{ marginLeft: 16, marginBottom: 12, borderLeftWidth: 2, borderLeftColor: colors.border, paddingLeft: 12 }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Cash</Text>
+                                <Text style={{ color: colors.text, fontSize: 12 }}>{formatCurrencyAmount(financialHealth.cashBalance, profile?.currency || 'PHP')}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Investments</Text>
+                                <Text style={{ color: colors.text, fontSize: 12 }}>{formatCurrencyAmount(financialHealth.totalAssets.minus(financialHealth.cashBalance), profile?.currency || 'PHP')}</Text>
+                            </View>
+                        </View>
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <Text style={{ color: colors.text, fontWeight: '600' }}>Total Liabilities</Text>
+                            <Text style={{ color: colors.error, fontWeight: 'bold' }}>- {formatCurrencyAmount(financialHealth.totalProjectedLiability, profile?.currency || 'PHP')}</Text>
+                        </View>
+                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 16, marginLeft: 8 }}>
+                            Current Debt Principal + Future Projected Interest (Fees)
+                        </Text>
+
+                        <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 12 }} />
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>Net Worth</Text>
+                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>
+                                {formatCurrencyAmount(financialHealth.netWorth, profile?.currency || 'PHP')}
+                            </Text>
+                        </View>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8 }}>
+                        <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginRight: 8, marginTop: 2 }} />
+                        <Text style={{ color: colors.primary, fontSize: 12, flex: 1, lineHeight: 18 }}>
+                            <Text style={{ fontWeight: 'bold' }}>Note:</Text> We include &quot;Possible Fees&quot; (Projected Future Interest) in your liabilities to show the true cost of your debts if paid over time.
+                        </Text>
+                    </View>
+                </View>
+            );
         } else if (infoModalMode === 'Assets') {
             return (
                 <View>
                     <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                        &quot;Total Assets&quot; is the sum of your <Text style={{ fontWeight: 'bold' }}>Investments</Text> and <Text style={{ fontWeight: 'bold' }}>Cash Balance</Text>.
                     </Text>
                     <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
                         <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
@@ -689,15 +894,22 @@ const HomeScreen = ({ navigation }: any) => {
 
                         case 'debt':
                             return (
+
                                 <HomeDebtCard
                                     key="debt"
                                     total={debtTotal}
+                                    borrowed={debtBorrowed}
+                                    repaid={debtRepaid}
+                                    monthBorrowed={monthDebtBorrowed}
+                                    monthRepaid={monthDebtRepaid}
                                     isLoading={isLoading}
                                     isPrivacyEnabled={isPrivacyEnabled}
                                     currency={profile?.currency || 'PHP'}
                                     onPress={() => {
                                         // navigation.navigate('Debt')
                                     }}
+                                    displayMode={debtDisplayMode}
+                                    onDisplayModeChange={handleDebtModeSwipe}
                                 />
                             );
 
@@ -726,6 +938,7 @@ const HomeScreen = ({ navigation }: any) => {
                                     spendingDifferencePercent={financialHealth.spendingDifferencePercent}
                                     investmentsTotal={investmentTotal}
                                     cashBalance={financialHealth.cashBalance}
+                                    netWorth={financialHealth.netWorth}
                                     isLoading={isLoading}
                                     isPrivacyEnabled={isPrivacyEnabled}
                                     currency={profile?.currency || 'PHP'}
@@ -763,6 +976,8 @@ const HomeScreen = ({ navigation }: any) => {
                 onInvestmentDisplayModeChange={handleInvestmentModeSave}
                 financialHealthDisplayMode={financialHealthDisplayMode}
                 onFinancialHealthDisplayModeChange={handleFinancialHealthModeSave}
+                debtDisplayMode={savedDebtDisplayMode || 'Total'}
+                onDebtDisplayModeChange={handleDebtModeSave}
             />
 
             <ReviewAppModal

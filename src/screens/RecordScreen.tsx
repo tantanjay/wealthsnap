@@ -25,6 +25,7 @@ const RecordScreen = ({ navigation, route }: any) => {
     const [investmentType, setInvestmentType] = useState<InvestmentType>('STOCKS');
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
+    const [editingDebt, setEditingDebt] = useState<any | null>(null);
     const [capturedImageUri, setCapturedImageUri] = useState<string | null>(null);
     const [currency, setCurrency] = useState('PHP');
 
@@ -32,10 +33,10 @@ const RecordScreen = ({ navigation, route }: any) => {
     const [selectedDebtType, setSelectedDebtType] = useState<DebtType>('LOAN');
 
     // Ref to hold current state for access in focus effect without re-triggering
-    const stateRef = useRef({ viewMode, modalVisible, editingTransaction, editingInvestment });
+    const stateRef = useRef({ viewMode, modalVisible, editingTransaction, editingInvestment, editingDebt });
     useEffect(() => {
-        stateRef.current = { viewMode, modalVisible, editingTransaction, editingInvestment };
-    }, [viewMode, modalVisible, editingTransaction, editingInvestment]);
+        stateRef.current = { viewMode, modalVisible, editingTransaction, editingInvestment, editingDebt };
+    }, [viewMode, modalVisible, editingTransaction, editingInvestment, editingDebt]);
 
     // Listen for tab press events to reopen modal
     useEffect(() => {
@@ -58,6 +59,7 @@ const RecordScreen = ({ navigation, route }: any) => {
         setModalVisible(true);
         setEditingTransaction(null);
         setEditingInvestment(null);
+        setEditingDebt(null);
         setCapturedImageUri(null);
     }, []);
 
@@ -103,11 +105,11 @@ const RecordScreen = ({ navigation, route }: any) => {
 
     useFocusEffect(
         useCallback(() => {
-            const { transaction, investment } = route.params || {};
+            const { transaction, investment, debt } = route.params || {};
             // Access current state via ref to avoid effect re-runs on local state changes
-            const { viewMode, modalVisible, editingTransaction, editingInvestment } = stateRef.current;
+            const { viewMode, modalVisible, editingTransaction, editingInvestment, editingDebt } = stateRef.current;
 
-            if (transaction || investment) {
+            if (transaction || investment || debt) {
                 // Determine if we need to process (check against current state to avoid loops)
                 // However, navigation params should drive the state.
 
@@ -129,6 +131,7 @@ const RecordScreen = ({ navigation, route }: any) => {
                         quantity: typeof investment.quantity === 'string' ? new BigNumber(investment.quantity) : investment.quantity,
                         price: typeof investment.price === 'string' ? new BigNumber(investment.price) : investment.price,
                         fees: investment.fees ? (typeof investment.fees === 'string' ? new BigNumber(investment.fees) : investment.fees) : undefined,
+                        exchangeRate: investment.exchangeRate ? (typeof investment.exchangeRate === 'string' ? new BigNumber(investment.exchangeRate) : investment.exchangeRate) : undefined,
                     };
                     if (editingInvestment?.id !== deserializedInvestment.id) {
                         setEditingInvestment(deserializedInvestment);
@@ -136,10 +139,31 @@ const RecordScreen = ({ navigation, route }: any) => {
                         setViewMode('INVESTMENT');
                         setModalVisible(false);
                     }
+                } else if (debt) {
+                    // DEBT EDITING
+                    // Deserialize BigNumbers
+                    const deserializedDebt = {
+                        ...debt,
+                        initialAmount: new BigNumber(debt.initialAmount),
+                        interestRate: new BigNumber(debt.interestRate),
+                        minPayment: new BigNumber(debt.minPayment),
+                        fees: debt.fees ? new BigNumber(debt.fees) : undefined,
+                    };
+
+                    if (editingDebt?.id !== deserializedDebt.id) {
+                        setEditingDebt(deserializedDebt);
+                        setSelectedDebtType(debt.type);
+                        setViewMode('DEBT');
+                        setModalVisible(false);
+                    } else {
+                        // Ensure modal is hidden even if same debt (e.g. re-navigated)
+                        if (modalVisible) setModalVisible(false);
+                        if (viewMode !== 'DEBT') setViewMode('DEBT');
+                    }
                 }
 
                 // Clear params immediately to prevent re-processing
-                navigation.setParams({ transaction: undefined, investment: undefined });
+                navigation.setParams({ transaction: undefined, investment: undefined, debt: undefined });
             } else {
                 if (viewMode === 'MENU' && !modalVisible) {
                     setModalVisible(true);
@@ -293,6 +317,7 @@ const RecordScreen = ({ navigation, route }: any) => {
         setViewMode('MENU');
         setEditingTransaction(null);
         setEditingInvestment(null);
+        setEditingDebt(null);
         navigation.goBack();
     };
 
@@ -337,10 +362,11 @@ const RecordScreen = ({ navigation, route }: any) => {
             {/* Debt Form */}
             {viewMode === 'DEBT' && (
                 <DebtForm
-                    key={`DEBT-${selectedDebtType}-${currency}`}
-                    currency={currency} // [NEW] Pass currency prop
+                    key={`DEBT-${selectedDebtType}-${currency}-${route.params?.debt?.id || 'new'}`}
+                    currency={currency}
                     onSave={handleTransactionSave}
                     onCancel={handleTransactionCancel}
+                    initialDebt={editingDebt || undefined}
                 />
             )}
 
