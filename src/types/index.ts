@@ -191,3 +191,28 @@ export interface DividendHistory {
     createdAt?: string;
     updatedAt?: string;
 }
+
+export type DebtInterestType = 'FIXED' | 'VARIABLE' | 'FLAT' | 'NONE';
+export type DebtDirection = 'PAYABLE' | 'RECEIVABLE';
+export type DebtStatus = 'ACTIVE' | 'PAID_OFF' | 'FORGIVEN';
+
+export interface Debt {
+    id: string;
+    name: string;
+    type: DebtType;
+    direction: DebtDirection;
+    initialAmount: BigNumber;
+    currency: string;
+    interestRate: BigNumber;
+    interestType: DebtInterestType;
+    minPayment: BigNumber;
+    fees?: BigNumber;
+    startDate?: string;
+    termMonths?: number;
+    dueDate?: string;
+    status: DebtStatus;
+    notes?: string;
+    contactId?: string;
+    createdAt: string;
+    updatedAt: string;
+}

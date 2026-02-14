@@ -9,13 +9,14 @@ import { TransactionForm } from '@components/transaction/TransactionForm';
 import { TransferForm } from '@components/transaction/TransferForm';
 import { InvestmentForm } from '@components/investments/InvestmentForm';
 import { ReceiptReviewForm } from '@components/ai/ReceiptReviewForm';
+import { DebtsForm } from '@components/debts/DebtsForm'; // [NEW]
 import { useAlert } from '@context/AlertContext';
 import { Transaction, TransactionType, ReceiptAnalysisResult, InvestmentType, DebtType, Investment } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveTransactionWithReceipt } from '@services/domain/transactionService';
 import { getUserProfile } from '@services/core/storageService';
 
-type ViewMode = 'MENU' | 'TRANSACTION' | 'INVESTMENT' | 'AI' | 'AI_REVIEW';
+type ViewMode = 'MENU' | 'TRANSACTION' | 'INVESTMENT' | 'AI' | 'AI_REVIEW' | 'DEBT'; // [MODIFIED]
 
 const RecordScreen = ({ navigation, route }: any) => {
     const [viewMode, setViewMode] = useState<ViewMode>('MENU');
@@ -27,7 +28,8 @@ const RecordScreen = ({ navigation, route }: any) => {
     const [capturedImageUri, setCapturedImageUri] = useState<string | null>(null);
     const [currency, setCurrency] = useState('PHP');
 
-
+    // [NEW] Debt State (No editing support for now, just creating)
+    const [selectedDebtType, setSelectedDebtType] = useState<DebtType>('LOAN');
 
     // Ref to hold current state for access in focus effect without re-triggering
     const stateRef = useRef({ viewMode, modalVisible, editingTransaction, editingInvestment });
@@ -62,7 +64,7 @@ const RecordScreen = ({ navigation, route }: any) => {
     // Handle Android Back Button
     useEffect(() => {
         const backAction = () => {
-            if (viewMode === 'TRANSACTION' || viewMode === 'INVESTMENT') {
+            if (viewMode === 'TRANSACTION' || viewMode === 'INVESTMENT' || viewMode === 'DEBT') {
                 handleTransactionCancel();
                 return true;
             }
@@ -165,7 +167,9 @@ const RecordScreen = ({ navigation, route }: any) => {
     };
 
     const handleDebtSelect = (debtType: DebtType) => {
-        showAlert('Coming Soon', `${debtType} recording will be available in a future update.`);
+        setSelectedDebtType(debtType);
+        setViewMode('DEBT');
+        setModalVisible(false);
     };
 
     const handleAISelect = (aiType: 'BROWSE' | 'CAPTURE', imageUri?: string) => {
@@ -295,7 +299,7 @@ const RecordScreen = ({ navigation, route }: any) => {
 
 
     return (
-        <ScreenWrapper scrollable={viewMode !== 'TRANSACTION' && viewMode !== 'AI_REVIEW' && viewMode !== 'INVESTMENT'}>
+        <ScreenWrapper scrollable={viewMode !== 'TRANSACTION' && viewMode !== 'AI_REVIEW' && viewMode !== 'INVESTMENT' && viewMode !== 'DEBT'}>
             {/* Transaction Form */}
             {viewMode === 'TRANSACTION' && transactionType !== 'TRANSFER_IN' && transactionType !== 'TRANSFER_OUT' && (
                 <TransactionForm
@@ -325,6 +329,16 @@ const RecordScreen = ({ navigation, route }: any) => {
                     investmentType={investmentType}
                     initialInvestment={editingInvestment || undefined}
                     currency={currency}
+                    onSave={handleTransactionSave}
+                    onCancel={handleTransactionCancel}
+                />
+            )}
+
+            {/* Debt Form */}
+            {viewMode === 'DEBT' && (
+                <DebtsForm
+                    key={`DEBT-${selectedDebtType}-${currency}`}
+                    currency={currency} // [NEW] Pass currency prop
                     onSave={handleTransactionSave}
                     onCancel={handleTransactionCancel}
                 />
