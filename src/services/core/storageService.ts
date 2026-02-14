@@ -208,7 +208,7 @@ export const getHomeInvestmentDisplayMode = async (): Promise<InvestmentDisplayM
     }
 };
 
-export type DebtDisplayMode = 'Total' | 'Month';
+export type DebtDisplayMode = 'Total' | 'Month' | 'Obligations';
 
 export const saveHomeDebtDisplayMode = async (mode: DebtDisplayMode): Promise<void> => {
     try {
@@ -221,7 +221,7 @@ export const saveHomeDebtDisplayMode = async (mode: DebtDisplayMode): Promise<vo
 export const getHomeDebtDisplayMode = async (): Promise<DebtDisplayMode | null> => {
     try {
         const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.DEBT_DISPLAY_MODE);
-        return (mode === 'Total' || mode === 'Month') ? mode as DebtDisplayMode : null;
+        return (mode === 'Total' || mode === 'Month' || mode === 'Obligations') ? mode as DebtDisplayMode : null;
     } catch (error) {
         console.error('Failed to get home debt display mode:', error);
         return null;
