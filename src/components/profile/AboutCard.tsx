@@ -9,6 +9,7 @@ interface AboutCardProps {
     onWhyFree: () => void;
     onDevMessage: () => void;
     onManifesto: () => void;
+    onContact: () => void;
     onSupport: () => void;
     version: string;
 }
@@ -18,6 +19,7 @@ const AboutCard: React.FC<AboutCardProps> = ({
     onWhyFree,
     onDevMessage,
     onManifesto,
+    onContact,
     onSupport,
     version
 }) => {
@@ -65,6 +67,16 @@ const AboutCard: React.FC<AboutCardProps> = ({
                 <Ionicons name="telescope-outline" size={18} color={colors.primary} />
                 <Text style={{ color: colors.primary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
                     Vision, Philosophy & Goals
+                </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                onPress={onContact}
+                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
+            >
+                <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primary} />
+                <Text style={{ color: colors.primary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
+                    Contact the Developer
                 </Text>
             </TouchableOpacity>
 
