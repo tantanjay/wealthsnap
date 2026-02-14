@@ -314,14 +314,24 @@ const HistoryScreen = ({ navigation }: any) => {
         // Calculate Total Monthly Debt Obligations
         const totalMonthlyDebtObligations = calculateTotalDebtObligations(allDebts);
 
+        // Adjust for Period (Yearly View requires 12x)
+        let totalPeriodDebtObligations = totalMonthlyDebtObligations;
+        if (viewMode === 'LIST' && timeFrame === 'YEARLY') {
+            totalPeriodDebtObligations = totalMonthlyDebtObligations.multipliedBy(12);
+        }
+
         // Calculate how much debt was ALREADY paid this period (to avoid double deduction)
         // We look at TRANSFER_OUT transactions with a debtId in the current view's transactions
+        // Note: dashboardTransactions is already filtered by the current view's period (Day/Week/Month/Year)
         const debtPaymentsMade = dashboardTransactions
             .filter(t => t.type === 'TRANSFER_OUT' && t.debtId)
             .reduce((acc, t) => acc.plus(t.amount.abs()), new BigNumber(0));
 
         // Remaining Obligation = Total - Paid (Floor at 0, don't credit extra payments)
-        const remainingDebtObligations = BigNumber.max(0, totalMonthlyDebtObligations.minus(debtPaymentsMade));
+        // For Daily/Weekly views, we still subtract the *full* remaining monthly obligation in the 
+        // subsequent steps (divided by 30 or 7), so we calculate the remaining *monthly* obligation here.
+        // However, for Yearly view, we need the remaining *yearly* obligation.
+        const remainingDebtObligations = BigNumber.max(0, totalPeriodDebtObligations.minus(debtPaymentsMade));
 
         // --- CALCULATION LOGIC ---
         let amount = new BigNumber(0);
@@ -414,7 +424,8 @@ const HistoryScreen = ({ navigation }: any) => {
         return {
             amount,
             dailyBurnRate,
-            projectedVariableSpend
+            projectedVariableSpend,
+            remainingDebtObligations
         };
     }, [summary, recurrenceRules, currentDate, timeFrame, viewMode, allTransactions]);
 
