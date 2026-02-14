@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ASYNC_KEYS } from '@constants/config';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 10;
+export const DATABASE_VERSION = 11;
 
 /**
  * Create all database tables and indexes
@@ -28,7 +28,7 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             creationMethod TEXT,
             isRecurring INTEGER DEFAULT 0,
             recurrenceId TEXT,
-            transferAccount TEXT CHECK(transferAccount IN ('OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT', 'CASH_ATM', 'DIGITAL_WALLET', 'CRYPTO', 'RECEIVABLE', 'TIME_DEPOSIT')),
+            transferAccount TEXT CHECK(transferAccount IN ('OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT', 'CASH_ATM', 'DIGITAL_WALLET', 'CRYPTO', 'RECEIVABLE', 'TIME_DEPOSIT', 'LOAN', 'CREDIT_CARD', 'MORTGAGE', 'STUDENT_LOAN', 'I_OWE_YOU', 'YOU_OWE_ME')),
             linkedTransactionId TEXT,
             investmentId TEXT,
             debtId TEXT,
@@ -354,6 +354,65 @@ export const migrateToVersion10 = async (db: SQLite.SQLiteDatabase): Promise<voi
 
     } catch (error) {
         console.error('[Migration] Failed version 10 migration:', error);
+        throw error;
+    }
+};
+/**
+ * Migrate to Version 11: Update transactions table check constraint for transferAccount
+ */
+export const migrateToVersion11 = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+    try {
+        console.log('[Migration] Starting migration to version 11...');
+
+        // 1. Rename existing table
+        await db.execAsync('ALTER TABLE transactions RENAME TO transactions_old');
+
+        // 2. Create new table with updated CHECK constraint
+        await db.execAsync(`
+            CREATE TABLE IF NOT EXISTS transactions (
+                id TEXT PRIMARY KEY,
+                date TEXT NOT NULL,
+                amount TEXT NOT NULL,
+                type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'TRANSFER_IN', 'TRANSFER_OUT', 'CAPITAL_LOSS', 'CAPITAL_GAIN')),
+                category TEXT,
+                subCategory TEXT,
+                note TEXT,
+                creationMethod TEXT,
+                isRecurring INTEGER DEFAULT 0,
+                recurrenceId TEXT,
+                transferAccount TEXT CHECK(transferAccount IN ('OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT', 'CASH_ATM', 'DIGITAL_WALLET', 'CRYPTO', 'RECEIVABLE', 'TIME_DEPOSIT', 'LOAN', 'CREDIT_CARD', 'MORTGAGE', 'STUDENT_LOAN', 'I_OWE_YOU', 'YOU_OWE_ME')),
+                linkedTransactionId TEXT,
+                investmentId TEXT,
+                debtId TEXT,
+                createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+                updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // 3. Copy data
+        await db.execAsync(`
+            INSERT INTO transactions (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId, createdAt, updatedAt)
+            SELECT id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId, createdAt, updatedAt
+            FROM transactions_old
+        `);
+
+        // 4. Drop old table
+        await db.execAsync('DROP TABLE transactions_old');
+
+        // 5. Recreate Indexes
+        await db.execAsync(`
+            CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC);
+            CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+            CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category);
+            CREATE INDEX IF NOT EXISTS idx_transactions_recurring ON transactions(isRecurring);
+        `);
+
+        // 6. Update Version
+        await setDatabaseVersion(db, 11);
+        console.log('[Migration] Successfully migrated to version 11');
+
+    } catch (error) {
+        console.error('[Migration] Failed version 11 migration:', error);
         throw error;
     }
 };

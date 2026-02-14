@@ -11,9 +11,10 @@ import { Skeleton } from '@components/common/Skeleton';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
-import { Transaction, UserProfile, Investment, RecurrenceRule } from '@types';
+import { Transaction, UserProfile, Investment, RecurrenceRule, Debt } from '@types';
 import { deleteTransaction, getCachedTransactions } from '@services/domain/transactionService';
 import { deleteInvestment, getCachedInvestments } from '@services/domain/investmentService';
+import { getAllDebts, deleteDebt } from '@services/domain/debtService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile } from '@services/core/storageService';
 import { HistoryCalendar } from '@components/history/HistoryCalendar';
@@ -21,12 +22,17 @@ import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
 import { HistoryCalendarHelpModal } from '@components/history/HistoryCalendarHelpModal';
 import { HistorySafeToSpendHelpModal } from '@components/history/HistorySafeToSpendHelpModal';
 import { HistorySummary } from '@components/history/HistorySummary';
+import DebtOptionsModal from '@components/debts/DebtOptionsModal';
 
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
-type HistoryItem = Transaction | Investment;
+type HistoryItem = Transaction | Investment | Debt;
 
 const isInvestment = (item: HistoryItem): item is Investment => {
     return (item as Investment).symbol !== undefined && (item as Investment).action !== undefined;
+};
+
+const isDebt = (item: HistoryItem): item is Debt => {
+    return (item as Debt).minPayment !== undefined && (item as Debt).initialAmount !== undefined;
 };
 
 interface TransactionSection {
@@ -50,12 +56,14 @@ const HistoryScreen = ({ navigation }: any) => {
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
     const [allInvestments, setAllInvestments] = useState<Investment[]>([]);
+    const [allDebts, setAllDebts] = useState<Debt[]>([]);
     const [recurrenceRules, setRecurrenceRules] = useState<RecurrenceRule[]>([]);
     const [timeFrame, setTimeFrame] = useState<TimeFrame>('DAILY');
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
+    const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'LIST' | 'CALENDAR'>('LIST');
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(new Date());
@@ -96,12 +104,14 @@ const HistoryScreen = ({ navigation }: any) => {
     const loadData = async () => {
         try {
             setIsLoading(true);
-            const [transactions, investments] = await Promise.all([
+            const [transactions, investments, debts] = await Promise.all([
                 getCachedTransactions(),
-                getCachedInvestments()
+                getCachedInvestments(),
+                getAllDebts()
             ]);
             setAllTransactions(transactions);
             setAllInvestments(investments);
+            setAllDebts(debts);
         } catch (error) {
             console.error('Error loading HistoryScreen data:', error);
         } finally {
@@ -113,6 +123,13 @@ const HistoryScreen = ({ navigation }: any) => {
         if (isPrivacyEnabled) return '****';
         return formatCurrencyAmount(amount, currency || profile?.currency || 'PHP');
     };
+
+    const getItemDate = useCallback((item: HistoryItem): Date => {
+        if (isDebt(item)) {
+            return new Date(item.startDate || item.createdAt);
+        }
+        return new Date(item.date);
+    }, []);
 
     // --- Date Logic Helpers ---
 
@@ -170,12 +187,12 @@ const HistoryScreen = ({ navigation }: any) => {
 
     // --- Computed Data ---
 
-    // Combine Transactions and Investments
+    // Combine Transactions, Investments, and Debts
     const allHistoryItems = useMemo((): HistoryItem[] => {
-        return [...allTransactions, ...allInvestments].sort((a, b) => {
-            return new Date(b.date).getTime() - new Date(a.date).getTime();
+        return [...allTransactions, ...allInvestments, ...allDebts].sort((a, b) => {
+            return getItemDate(b).getTime() - getItemDate(a).getTime();
         });
-    }, [allTransactions, allInvestments]);
+    }, [allTransactions, allInvestments, allDebts, getItemDate]);
 
     const investmentMap = useMemo(() => {
         return allInvestments.reduce((acc, inv) => {
@@ -190,16 +207,16 @@ const HistoryScreen = ({ navigation }: any) => {
             const start = new Date(selectedCalendarDate); start.setHours(0, 0, 0, 0);
             const end = new Date(selectedCalendarDate); end.setHours(23, 59, 59, 999);
             return allHistoryItems.filter(t => {
-                const tDate = new Date(t.date);
+                const tDate = getItemDate(t);
                 return tDate >= start && tDate <= end;
             });
         }
         const { start, end } = getStartEndOfPeriod(currentDate, timeFrame);
         return allHistoryItems.filter(t => {
-            const tDate = new Date(t.date);
+            const tDate = getItemDate(t);
             return tDate >= start && tDate <= end;
         });
-    }, [allHistoryItems, currentDate, timeFrame, viewMode, selectedCalendarDate]);
+    }, [allHistoryItems, currentDate, timeFrame, viewMode, selectedCalendarDate, getItemDate]);
 
     const calendarTransactions = useMemo(() => {
         // Transactions for the currently displayed month in calendar
@@ -381,7 +398,7 @@ const HistoryScreen = ({ navigation }: any) => {
         const grouped: { [key: string]: HistoryItem[] } = {};
 
         filteredData.forEach(item => {
-            const dateKey = new Date(item.date).toDateString();
+            const dateKey = getItemDate(item).toDateString();
             if (!grouped[dateKey]) grouped[dateKey] = [];
             grouped[dateKey].push(item);
         });
@@ -389,7 +406,7 @@ const HistoryScreen = ({ navigation }: any) => {
         const newSections: TransactionSection[] = Object.keys(grouped).map(dateKey => {
             const items = grouped[dateKey];
             const totalAmount = items.reduce((sum, item) => {
-                if (isInvestment(item)) return sum;
+                if (isInvestment(item) || isDebt(item)) return sum;
 
                 const t = item as Transaction;
                 if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') {
@@ -411,7 +428,7 @@ const HistoryScreen = ({ navigation }: any) => {
                 data: items,
                 totalAmount,
                 count: items.length,
-                originalDate: new Date(items[0].date)
+                originalDate: getItemDate(items[0])
             };
         });
 
@@ -474,7 +491,7 @@ const HistoryScreen = ({ navigation }: any) => {
                                         {inv.symbol} <Text style={{ fontSize: 14, color: colors.textSecondary }}>({inv.action})</Text>
                                     </Text>
                                     <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                                        {inv.quantity.toString()} units @ {formatCurrency(nativePrice, inv.currency)}
+                                        {inv.quantity.toString()} units @ {formatCurrencyAmount(nativePrice, inv.currency || profile?.currency || 'PHP')}
                                         {plElement}
                                     </Text>
                                 </View>
@@ -488,6 +505,51 @@ const HistoryScreen = ({ navigation }: any) => {
                                 </Text>
                                 <View style={{ backgroundColor: iconColor + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
                                     <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>INVESTMENT</Text>
+                                </View>
+                            </View>
+                        </View>
+                    </Card>
+                </TouchableOpacity>
+            )
+        }
+
+        if (isDebt(item)) {
+            // Render Debt Item
+            const debt = item as Debt;
+            const isPayable = debt.direction === 'PAYABLE';
+            const iconColor = isPayable ? colors.error : colors.success;
+            const iconName = isPayable ? "arrow-down-circle-outline" : "arrow-up-circle-outline";
+
+            return (
+                <TouchableOpacity onPress={() => setSelectedDebt(debt)} style={{ marginBottom: 8 }} activeOpacity={0.9}>
+                    <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0, borderLeftWidth: 4, borderLeftColor: iconColor }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                                <View style={{
+                                    width: 36, height: 36, borderRadius: 18,
+                                    backgroundColor: iconColor + '15',
+                                    justifyContent: 'center', alignItems: 'center'
+                                }}>
+                                    <Ionicons name={iconName} size={18} color={iconColor} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
+                                        {debt.name}
+                                    </Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
+                                        {debt.type.replace(/_/g, ' ')} • {debt.interestRate.toString()}% {debt.interestType}
+                                    </Text>
+                                </View>
+                            </View>
+                            <View style={{ alignItems: 'flex-end' }}>
+                                <Text style={{
+                                    fontSize: 16, fontWeight: 'bold',
+                                    color: colors.text
+                                }}>
+                                    {formatCurrencyAmount(debt.initialAmount, debt.currency)}
+                                </Text>
+                                <View style={{ backgroundColor: iconColor + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
+                                    <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>DEBT</Text>
                                 </View>
                             </View>
                         </View>
@@ -546,10 +608,10 @@ const HistoryScreen = ({ navigation }: any) => {
             <TouchableOpacity
                 onPress={() => {
                     // Prevent opening options for auto-generated transactions
-                    if (t.investmentId) return;
+                    if (t.investmentId || t.debtId) return;
                     setSelectedTransaction(t);
                 }}
-                activeOpacity={t.investmentId ? 1 : 0.7}
+                activeOpacity={t.investmentId || t.debtId ? 1 : 0.7}
                 style={{ marginBottom: 8 }}
             >
                 <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0 }}>
@@ -579,7 +641,7 @@ const HistoryScreen = ({ navigation }: any) => {
                         </Text>
                     </View>
                 </Card>
-            </TouchableOpacity>
+            </TouchableOpacity >
         );
     };
 
@@ -771,6 +833,40 @@ const HistoryScreen = ({ navigation }: any) => {
                     await deleteInvestment(id);
                     loadData();
                     setSelectedInvestment(null);
+                }}
+                currency={profile?.currency}
+            />
+
+            <DebtOptionsModal
+                visible={!!selectedDebt}
+                debt={selectedDebt}
+                linkedTransaction={selectedDebt ? allTransactions.find(t => t.debtId === selectedDebt.id) || null : null}
+                onClose={() => setSelectedDebt(null)}
+                onDelete={async (id, deleteLinked) => {
+                    if (deleteLinked) {
+                        const linkedTxs = allTransactions.filter(t => t.debtId === id);
+                        for (const tx of linkedTxs) {
+                            await deleteTransaction(tx.id);
+                        }
+                    }
+                    await deleteDebt(id);
+                    loadData();
+                    setSelectedDebt(null);
+                }}
+                onEdit={(debt) => {
+                    // Serialize BigNumbers to strings/numbers for navigation
+                    const serializedDebt = {
+                        ...debt,
+                        initialAmount: debt.initialAmount.toString(),
+                        interestRate: debt.interestRate.toString(),
+                        minPayment: debt.minPayment.toString(),
+                        fees: debt.fees?.toString(),
+                        termMonths: debt.termMonths?.toString(),
+                    };
+                    // Navigate to Record Screen with debt param
+                    // @ts-ignore - navigation types need updating but this is safe
+                    navigation.navigate('Record', { debt: serializedDebt });
+                    setSelectedDebt(null);
                 }}
                 currency={profile?.currency}
             />

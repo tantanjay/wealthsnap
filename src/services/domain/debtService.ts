@@ -33,7 +33,7 @@ const prepareDebtValues = async (debt: Debt) => {
         debt.direction,
         encryptedAmount,
         debt.currency || 'PHP',
-        debt.interestRate.toString(), // Interest Rate is NOT encrypted per request? "note, this fields are encrypted: initialAmount, minPayment, fees, termMonths, notes, contactId" -> Rate is not in list.
+        debt.interestRate.toString(),
         debt.interestType,
         encryptedMinPayment,
         encryptedFees,

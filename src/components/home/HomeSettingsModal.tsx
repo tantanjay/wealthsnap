@@ -5,7 +5,7 @@ import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { ReorderList, ReorderItem } from '@components/common/ReorderList';
 
-import { HomeDisplayMode, InvestmentDisplayMode, HomeFinancialHealthDisplayMode } from '@services/core/storageService';
+import { HomeDisplayMode, InvestmentDisplayMode, HomeFinancialHealthDisplayMode, DebtDisplayMode } from '@services/core/storageService';
 
 interface HomeSettingsModalProps {
     visible: boolean;
@@ -21,6 +21,10 @@ interface HomeSettingsModalProps {
     investmentDisplayMode: InvestmentDisplayMode;
     onInvestmentDisplayModeChange: (mode: InvestmentDisplayMode) => void;
 
+    // Debt Settings
+    debtDisplayMode: DebtDisplayMode;
+    onDebtDisplayModeChange: (mode: DebtDisplayMode) => void;
+
     // Financial Health Settings
     financialHealthDisplayMode: HomeFinancialHealthDisplayMode;
     onFinancialHealthDisplayModeChange: (mode: HomeFinancialHealthDisplayMode) => void;
@@ -35,6 +39,8 @@ const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
     onDisplayModeChange,
     investmentDisplayMode,
     onInvestmentDisplayModeChange,
+    debtDisplayMode,
+    onDebtDisplayModeChange,
     financialHealthDisplayMode,
     onFinancialHealthDisplayModeChange
 }) => {
@@ -162,6 +168,17 @@ const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
                                 {renderRadioItem("Total Portfolio", "Total", investmentDisplayMode, onInvestmentDisplayModeChange)}
                                 <View style={{ borderBottomWidth: 0 }}>
                                     {renderRadioItem("Monthly Activity", "Month", investmentDisplayMode, onInvestmentDisplayModeChange)}
+                                </View>
+                            </View>
+
+                            {/* Debt Display Mode Section */}
+                            <Text style={[styles.sectionHeader, { color: colors.textSecondary, marginTop: 24 }]}>
+                                DEBT DISPLAY
+                            </Text>
+                            <View style={[styles.radioGroup, { backgroundColor: colors.surface }]}>
+                                {renderRadioItem("Total Debt", "Total", debtDisplayMode, onDebtDisplayModeChange)}
+                                <View style={{ borderBottomWidth: 0 }}>
+                                    {renderRadioItem("Monthly Activity", "Month", debtDisplayMode, onDebtDisplayModeChange)}
                                 </View>
                             </View>
                         </>
