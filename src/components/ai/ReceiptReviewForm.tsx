@@ -97,7 +97,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                 if (!isMounted) return;
 
                 if (result.isValidReceipt && result.items) {
-                    if (result.date) setDate(new Date(result.date));
+
                     if (result.merchantName) setMerchant(result.merchantName);
                     setItems(result.items);
 
