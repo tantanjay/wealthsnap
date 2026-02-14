@@ -21,13 +21,15 @@ interface HomeFinancialHealthCardProps {
     spendingDifferencePercent: number;
     investmentsTotal: BigNumber;
     cashBalance: BigNumber;
-    netWorth: BigNumber; // New Prop
+    netWorth: BigNumber;
+    investmentBoost: number; // New Prop
+    debtDrag: number; // New Prop
     onDisplayModeChange: (mode: HomeFinancialHealthDisplayMode) => void;
     onInfoPress: (mode: HomeFinancialHealthDisplayMode) => void;
     onSeeDetails: () => void;
 }
 
-const CARD_HEIGHT = 200;
+
 
 const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
     totalAssets,
@@ -39,6 +41,8 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
     investmentsTotal,
     cashBalance,
     netWorth,
+    investmentBoost,
+    debtDrag,
     isLoading,
     isPrivacyEnabled,
     currency,
@@ -50,6 +54,14 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
     const { colors } = useTheme();
     const scrollRef = useRef<ScrollView>(null);
     const [cardWidth, setCardWidth] = useState(0);
+    const [maxHeight, setMaxHeight] = useState(0);
+
+    const handleCardLayout = (event: any) => {
+        const { height } = event.nativeEvent.layout;
+        if (height > maxHeight) {
+            setMaxHeight(height);
+        }
+    };
 
     // Sync ScrollView with displayMode change
     useEffect(() => {
@@ -83,9 +95,9 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
 
     const getSpendingMessage = () => {
         const absDiff = Math.abs(spendingDifferencePercent);
-        if (spendingDifferencePercent < 0) return `Spending ${absDiff.toFixed(0)}% lower than usual`;
-        if (spendingDifferencePercent > 0) return `Spending ${absDiff.toFixed(0)}% higher than usual`;
-        return 'Spending is normal';
+        if (spendingDifferencePercent < 0) return `${absDiff.toFixed(0)}% lower`;
+        if (spendingDifferencePercent > 0) return `${absDiff.toFixed(0)}% higher`;
+        return 'Normal';
     };
 
     const getRunwayChangeContent = () => {
@@ -93,10 +105,10 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
         const isUp = runwayChange > 0;
         const iconName = isUp ? 'caret-up' : 'caret-down';
         const color = isUp ? colors.success : colors.error;
-        const text = `${isUp ? '+' : ''}${runwayChange.toFixed(1)} vs last month`;
+        const text = `${isUp ? '+' : ''}${runwayChange.toFixed(1)}`;
 
         return (
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
                 <Ionicons name={iconName} size={12} color={color} />
                 <Text style={{ color: color, fontSize: 12, marginLeft: 2 }}>{text}</Text>
             </View>
@@ -141,37 +153,87 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                 >
                     {/* Card 1: Financial Health Stats */}
                     <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
-                        <Card style={{ backgroundColor: colors.surface, padding: 20, marginBottom: 10, width: '100%', height: CARD_HEIGHT, justifyContent: 'space-between' }}>
-                            <View>
+                        <Card
+                            style={{
+                                backgroundColor: colors.surface,
+                                padding: 20,
+                                marginBottom: 10,
+                                width: '100%',
+                                minHeight: maxHeight > 0 ? maxHeight : undefined
+                            }}
+                            onLayout={handleCardLayout}
+                        >
+                            <View style={{ flex: 1 }}>
                                 {/* Runway */}
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.success + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
                                             <Ionicons name="hourglass-outline" size={16} color={colors.success} />
                                         </View>
-                                        <View>
-                                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Runway</Text>
-                                            {isLoading ? <Skeleton width={60} height={20} style={{ marginTop: 4 }} /> : (
-                                                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-                                                    {runwayInMonths === Infinity ? '∞' : runwayInMonths.toFixed(1)} months
-                                                </Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginRight: 6 }}>Runway:</Text>
+                                            {isLoading ? <Skeleton width={60} height={20} /> : (
+                                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                                                        {runwayInMonths === Infinity ? '∞' : runwayInMonths.toFixed(1)} months
+                                                    </Text>
+                                                    {!isLoading && getRunwayChangeContent()}
+                                                </View>
                                             )}
                                         </View>
                                     </View>
-                                    {isLoading ? <Skeleton width={80} height={16} /> : getRunwayChangeContent()}
                                 </View>
 
                                 {/* Budget */}
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.warning + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
                                             <Ionicons name="wallet-outline" size={16} color={colors.warning} />
                                         </View>
-                                        <View>
-                                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Months Budget: {isLoading ? '...' : `${monthBudgetPercent.toFixed(0)}%`}</Text>
-                                            {isLoading ? <Skeleton width={100} height={16} style={{ marginTop: 4 }} /> : (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginRight: 6 }}>Months Budget:</Text>
+                                            {isLoading ? <Skeleton width={40} height={16} /> : (
+                                                <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginRight: 8 }}>
+                                                    {monthBudgetPercent.toFixed(0)}%
+                                                </Text>
+                                            )}
+                                            {!isLoading && (
                                                 <Text style={{ color: colors.textSecondary, fontSize: 12, fontStyle: 'italic' }}>
-                                                    {getSpendingMessage()}
+                                                    ({getSpendingMessage()})
+                                                </Text>
+                                            )}
+                                        </View>
+                                    </View>
+                                </View>
+
+                                {/* Investment Boost */}
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.success + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                            <Ionicons name="stats-chart-outline" size={16} color={colors.success} />
+                                        </View>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginRight: 6 }}>Investment Boost:</Text>
+                                            {isLoading ? <Skeleton width={80} height={16} /> : (
+                                                <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                                                    +{investmentBoost.toFixed(1)} months
+                                                </Text>
+                                            )}
+                                        </View>
+                                    </View>
+                                </View>
+
+                                {/* Debts Drag */}
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.error + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                            <Ionicons name="trending-down-outline" size={16} color={colors.error} />
+                                        </View>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginRight: 6 }}>Debts Drag:</Text>
+                                            {isLoading ? <Skeleton width={80} height={16} /> : (
+                                                <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                                                    {debtDrag.toFixed(1)} months
                                                 </Text>
                                             )}
                                         </View>
@@ -183,8 +245,9 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                             <TouchableOpacity
                                 onPress={onSeeDetails}
                                 style={{
-                                    marginTop: 15,
-                                    backgroundColor: colors.primary,
+                                    marginTop: 'auto',
+                                    borderColor: colors.border,
+                                    borderWidth: 1,
                                     paddingVertical: 10,
                                     borderRadius: 8,
                                     flexDirection: 'row',
@@ -192,8 +255,8 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                     justifyContent: 'center'
                                 }}
                             >
-                                <Ionicons name="analytics-outline" size={20} color={colors.white} style={{ marginRight: 8 }} />
-                                <Text style={{ color: colors.white, fontWeight: '600' }}>See Details</Text>
+                                <Ionicons name="heart-circle-sharp" size={24} color={colors.text} style={{ marginRight: 8 }} />
+                                <Text style={{ color: colors.text, fontWeight: '600' }}>View Financial Health</Text>
                             </TouchableOpacity>
 
                         </Card>
@@ -201,7 +264,16 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
 
                     {/* Card 2: Net Worth */}
                     <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
-                        <Card style={{ backgroundColor: colors.surface, padding: 20, marginBottom: 10, width: '100%', height: CARD_HEIGHT, justifyContent: 'space-between' }}>
+                        <Card
+                            style={{
+                                backgroundColor: colors.surface,
+                                padding: 20,
+                                marginBottom: 10,
+                                width: '100%',
+                                minHeight: maxHeight > 0 ? maxHeight : undefined
+                            }}
+                            onLayout={handleCardLayout}
+                        >
                             <View>
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -222,17 +294,53 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                     )}
                                 </Text>
                             </View>
-                            <View>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                    Assets - (Debt + Interest)
-                                </Text>
+
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                                <View>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Assets</Text>
+                                    <Text style={{ color: colors.success, fontWeight: '600' }}>
+                                        {isLoading ? '...' : `+${formatCurrency(totalAssets)}`}
+                                    </Text>
+                                </View>
+                                <View>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Liabilities</Text>
+                                    <Text style={{ color: colors.error, fontWeight: '600' }}>
+                                        {isLoading ? '...' : `-${formatCurrency(totalAssets.minus(netWorth))}`}
+                                    </Text>
+                                </View>
                             </View>
+
+                            <TouchableOpacity
+                                onPress={onSeeDetails}
+                                style={{
+                                    marginTop: 'auto',
+                                    borderColor: colors.border,
+                                    borderWidth: 1,
+                                    paddingVertical: 10,
+                                    borderRadius: 8,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                <Ionicons name="heart-circle-sharp" size={24} color={colors.text} style={{ marginRight: 8 }} />
+                                <Text style={{ color: colors.text, fontWeight: '600' }}>View Financial Health</Text>
+                            </TouchableOpacity>
                         </Card>
                     </View>
 
                     {/* Card 3: Total Assets */}
                     <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
-                        <Card style={{ backgroundColor: colors.surface, padding: 20, marginBottom: 10, width: '100%', height: CARD_HEIGHT, justifyContent: 'space-between' }}>
+                        <Card
+                            style={{
+                                backgroundColor: colors.surface,
+                                padding: 20,
+                                marginBottom: 10,
+                                width: '100%',
+                                minHeight: maxHeight > 0 ? maxHeight : undefined
+                            }}
+                            onLayout={handleCardLayout}
+                        >
                             <View>
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -263,6 +371,23 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                     <Text style={{ color: colors.text, fontWeight: 'bold' }}>{isLoading ? '...' : formatCurrency(cashBalance)}</Text>
                                 </View>
                             </View>
+
+                            <TouchableOpacity
+                                onPress={onSeeDetails}
+                                style={{
+                                    marginTop: 'auto',
+                                    borderColor: colors.border,
+                                    borderWidth: 1,
+                                    paddingVertical: 10,
+                                    borderRadius: 8,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                <Ionicons name="heart-circle-sharp" size={24} color={colors.text} style={{ marginRight: 8 }} />
+                                <Text style={{ color: colors.text, fontWeight: '600' }}>View Financial Health</Text>
+                            </TouchableOpacity>
                         </Card>
                     </View>
                 </ScrollView>

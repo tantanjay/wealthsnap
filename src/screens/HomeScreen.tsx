@@ -24,6 +24,10 @@ import {
     calculateBurnRate,
     getCategoryBreakdown,
 } from '@utils/financialMetrics';
+import {
+    calculateDebtDrag,
+    calculateInvestmentBoost,
+} from '@utils/insightMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { processRecurrenceRules } from '@services/domain/recurrenceService';
 import { getCachedTransactions } from '@services/domain/transactionService';
@@ -76,14 +80,16 @@ const HomeScreen = ({ navigation }: any) => {
 
     const [financialHealth, setFinancialHealth] = useState({
         totalAssets: new BigNumber(0),
-        netWorth: new BigNumber(0), // New
-        totalProjectedLiability: new BigNumber(0), // New: Principal + Interest
+        netWorth: new BigNumber(0),
+        totalProjectedLiability: new BigNumber(0),
         runwayInMonths: 0,
         runwayChange: 0,
         topHoldings: [] as Array<{ symbol: string, percent: number }>,
         monthBudgetPercent: 0,
         spendingDifferencePercent: 0,
-        cashBalance: new BigNumber(0)
+        cashBalance: new BigNumber(0),
+        investmentBoost: 0,
+        debtDrag: 0
     });
 
     // Settings Modal State
@@ -626,6 +632,10 @@ const HomeScreen = ({ navigation }: any) => {
                 });
             }
 
+            // Calculate Investment Boost & Debt Drag
+            const investmentBoost = calculateInvestmentBoost(totalMarketValue, totalBurnRate);
+            const debtDrag = calculateDebtDrag(currentCashBalance, burnRate, totalDebtObligationsValue);
+
             setFinancialHealth({
                 totalAssets: assetsTotal,
                 netWorth: assetsTotal.minus(totalProjectedLiability),
@@ -635,7 +645,9 @@ const HomeScreen = ({ navigation }: any) => {
                 topHoldings: topHoldings,
                 monthBudgetPercent: monthBudgetPercent,
                 spendingDifferencePercent: spendingDifference,
-                cashBalance: currentCashBalance
+                cashBalance: currentCashBalance,
+                investmentBoost: investmentBoost,
+                debtDrag: debtDrag
             });
 
         } catch (error) {
@@ -977,6 +989,8 @@ const HomeScreen = ({ navigation }: any) => {
                                     investmentsTotal={investmentTotal}
                                     cashBalance={financialHealth.cashBalance}
                                     netWorth={financialHealth.netWorth}
+                                    investmentBoost={financialHealth.investmentBoost}
+                                    debtDrag={financialHealth.debtDrag}
                                     isLoading={isLoading}
                                     isPrivacyEnabled={isPrivacyEnabled}
                                     currency={profile?.currency || 'PHP'}
