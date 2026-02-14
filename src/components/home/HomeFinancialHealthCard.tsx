@@ -53,9 +53,9 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
     useEffect(() => {
         if (cardWidth > 0 && scrollRef.current) {
             let pageIndex = 0;
-            if (displayMode === 'NetWorth') pageIndex = 0;
-            if (displayMode === 'Assets') pageIndex = 1;
-            if (displayMode === 'Health') pageIndex = 2;
+            if (displayMode === 'Health') pageIndex = 0;
+            if (displayMode === 'NetWorth') pageIndex = 1;
+            if (displayMode === 'Assets') pageIndex = 2;
             scrollRef.current.scrollTo({ x: pageIndex * cardWidth, animated: true });
         }
     }, [displayMode, cardWidth]);
@@ -65,9 +65,9 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
         const width = event.nativeEvent.layoutMeasurement.width;
         const pageIndex = Math.round(contentOffsetX / width);
 
-        let newMode: HomeFinancialHealthDisplayMode = 'NetWorth';
-        if (pageIndex === 1) newMode = 'Assets';
-        if (pageIndex === 2) newMode = 'Health';
+        let newMode: HomeFinancialHealthDisplayMode = 'Health';
+        if (pageIndex === 1) newMode = 'NetWorth';
+        if (pageIndex === 2) newMode = 'Assets';
 
         if (newMode !== displayMode) {
             onDisplayModeChange(newMode);
@@ -110,9 +110,9 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                 </Text>
                 {/* Page Indicator */}
                 <View style={{ flexDirection: 'row', gap: 4 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Health' ? colors.primary : colors.border }} />
                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'NetWorth' ? colors.primary : colors.border }} />
                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Assets' ? colors.primary : colors.border }} />
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Health' ? colors.primary : colors.border }} />
                 </View>
             </View>
 
@@ -127,84 +127,17 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                         const width = e.nativeEvent.layout.width;
                         if (Math.abs(width - cardWidth) > 1) {
                             setCardWidth(width);
-                            if (displayMode === 'Assets' && width > 0) {
+                            if (displayMode === 'NetWorth' && width > 0) {
                                 scrollRef.current?.scrollTo({ x: width, animated: false });
                             }
-                            if (displayMode === 'Health' && width > 0) {
+                            if (displayMode === 'Assets' && width > 0) {
                                 scrollRef.current?.scrollTo({ x: width * 2, animated: false });
                             }
                         }
                     }}
                     scrollEventThrottle={16}
                 >
-                    {/* Card 0: Net Worth */}
-                    <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
-                        <Card style={{ backgroundColor: colors.surface, padding: 20, marginBottom: 10, width: '100%', height: CARD_HEIGHT, justifyContent: 'space-between' }}>
-                            <View>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <TouchableOpacity onPress={() => onInfoPress('NetWorth')} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={{ color: colors.textSecondary, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Net Worth</Text>
-                                            <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
-                                        </TouchableOpacity>
-                                    </View>
-                                    <View style={{ backgroundColor: colors.primary + '20', padding: 8, borderRadius: 12 }}>
-                                        <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
-                                    </View>
-                                </View>
-                                <Text style={{ color: colors.text, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
-                                    {isLoading ? (
-                                        <Skeleton width={150} height={40} style={{ backgroundColor: colors.border }} />
-                                    ) : (
-                                        formatCurrency(netWorth)
-                                    )}
-                                </Text>
-                            </View>
-                            <View>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                    Assets - (Debt + Interest)
-                                </Text>
-                            </View>
-                        </Card>
-                    </View>
-
-                    {/* Card 1: Total Assets */}
-                    <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
-                        <Card style={{ backgroundColor: colors.surface, padding: 20, marginBottom: 10, width: '100%', height: CARD_HEIGHT, justifyContent: 'space-between' }}>
-                            <View>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <TouchableOpacity onPress={() => onInfoPress('Assets')} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={{ color: colors.textSecondary, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Total Assets</Text>
-                                            <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
-                                        </TouchableOpacity>
-                                    </View>
-                                    <View style={{ backgroundColor: colors.primary + '20', padding: 8, borderRadius: 12 }}>
-                                        <Ionicons name="pie-chart-outline" size={24} color={colors.primary} />
-                                    </View>
-                                </View>
-                                <Text style={{ color: colors.text, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
-                                    {isLoading ? (
-                                        <Skeleton width={150} height={40} style={{ backgroundColor: colors.border }} />
-                                    ) : (
-                                        formatCurrency(totalAssets)
-                                    )}
-                                </Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
-                                <View>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Investments</Text>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>{isLoading ? '...' : formatCurrency(investmentsTotal)}</Text>
-                                </View>
-                                <View>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Cash Balance</Text>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>{isLoading ? '...' : formatCurrency(cashBalance)}</Text>
-                                </View>
-                            </View>
-                        </Card>
-                    </View>
-
-                    {/* Card 2: Financial Health Stats */}
+                    {/* Card 1: Financial Health Stats */}
                     <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
                         <Card style={{ backgroundColor: colors.surface, padding: 20, marginBottom: 10, width: '100%', height: CARD_HEIGHT, justifyContent: 'space-between' }}>
 
@@ -269,6 +202,73 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                 </View>
                             </View>
 
+                        </Card>
+                    </View>
+
+                    {/* Card 2: Net Worth */}
+                    <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
+                        <Card style={{ backgroundColor: colors.surface, padding: 20, marginBottom: 10, width: '100%', height: CARD_HEIGHT, justifyContent: 'space-between' }}>
+                            <View>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <TouchableOpacity onPress={() => onInfoPress('NetWorth')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Net Worth</Text>
+                                            <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={{ backgroundColor: colors.primary + '20', padding: 8, borderRadius: 12 }}>
+                                        <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
+                                    </View>
+                                </View>
+                                <Text style={{ color: colors.text, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
+                                    {isLoading ? (
+                                        <Skeleton width={150} height={40} style={{ backgroundColor: colors.border }} />
+                                    ) : (
+                                        formatCurrency(netWorth)
+                                    )}
+                                </Text>
+                            </View>
+                            <View>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                    Assets - (Debt + Interest)
+                                </Text>
+                            </View>
+                        </Card>
+                    </View>
+
+                    {/* Card 3: Total Assets */}
+                    <View style={{ width: cardWidth || '100%', paddingRight: 0 }}>
+                        <Card style={{ backgroundColor: colors.surface, padding: 20, marginBottom: 10, width: '100%', height: CARD_HEIGHT, justifyContent: 'space-between' }}>
+                            <View>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <TouchableOpacity onPress={() => onInfoPress('Assets')} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Total Assets</Text>
+                                            <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={{ backgroundColor: colors.primary + '20', padding: 8, borderRadius: 12 }}>
+                                        <Ionicons name="pie-chart-outline" size={24} color={colors.primary} />
+                                    </View>
+                                </View>
+                                <Text style={{ color: colors.text, fontSize: 36, fontWeight: 'bold', marginVertical: 10 }}>
+                                    {isLoading ? (
+                                        <Skeleton width={150} height={40} style={{ backgroundColor: colors.border }} />
+                                    ) : (
+                                        formatCurrency(totalAssets)
+                                    )}
+                                </Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                                <View>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Investments</Text>
+                                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>{isLoading ? '...' : formatCurrency(investmentsTotal)}</Text>
+                                </View>
+                                <View>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Cash Balance</Text>
+                                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>{isLoading ? '...' : formatCurrency(cashBalance)}</Text>
+                                </View>
+                            </View>
                         </Card>
                     </View>
                 </ScrollView>
