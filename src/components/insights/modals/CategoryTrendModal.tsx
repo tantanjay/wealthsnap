@@ -1,14 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, Dimensions, ScrollView } from 'react-native';
+import { View, Text, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
+import { getCategoryGroup } from '@constants/categories';
 import { getCategoryTrend } from '@utils/financialMetrics';
-import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { formatCurrencyAmount, formatCompactCurrency } from '@utils/currencyUtils';
 
 interface CategoryTrendModalProps {
     visible: boolean;
@@ -16,7 +17,7 @@ interface CategoryTrendModalProps {
     category: string;
     transactions: Transaction[];
     currency: string;
-    grouping?: 'CATEGORY' | 'SUB_CATEGORY';
+    grouping?: 'GROUP' | 'ITEM';
 }
 
 const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
@@ -25,47 +26,162 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
     category,
     transactions,
     currency,
-    grouping = 'CATEGORY'
+    grouping = 'GROUP'
 }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
+    const [timeRange, setTimeRange] = useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
+
+    // Calculate how many months of data to load based on selection
+    const monthsToLoad = useMemo(() => {
+        if (timeRange === '6M') return 6;
+        if (timeRange === '1Y') return 12;
+        if (timeRange === '3Y') return 36;
+
+        // For 'ALL', calculate months since first transaction for this category
+        // Filter transactions for this category first to find the first one
+        const categoryTransactions = transactions.filter(t => {
+            if (t.type !== 'EXPENSE') return false;
+
+            if (grouping === 'GROUP') {
+                return getCategoryGroup(t.category, t.type) === category;
+            } else {
+                return t.category === category;
+            }
+        });
+
+        if (categoryTransactions.length === 0) return 6;
+
+        const dates = categoryTransactions.map(t => new Date(t.date).getTime());
+        const minDate = new Date(Math.min(...dates));
+        const today = new Date();
+        const diff = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth()) + 1;
+        return Math.max(diff, 6);
+    }, [timeRange, transactions, category, grouping]);
 
     const trendData = useMemo(() => {
-        return getCategoryTrend(transactions, category, 'EXPENSE', 6, grouping);
-    }, [transactions, category, grouping]);
-
-
+        return getCategoryTrend(transactions, category, 'EXPENSE', monthsToLoad, grouping);
+    }, [transactions, category, grouping, monthsToLoad]);
 
     // Calculate stats
-
-    // 1. Sum using .plus() and a BigNumber starting value
     const total = trendData.data.reduce(
         (sum: BigNumber, val: BigNumber) => sum.plus(val),
         new BigNumber(0)
     );
 
-    // 2. Average using .dividedBy() with a zero-safety check
     const average = trendData.data.length > 0
         ? total.dividedBy(trendData.data.length)
         : new BigNumber(0);
 
-    // 3. Max using the static BigNumber.max method
-    // We use a fallback of 0 to handle empty arrays safely
     const max = trendData.data.length > 0
         ? BigNumber.max(...trendData.data)
         : new BigNumber(0);
+
+    // Pointer Config for Tap & Drag
+    const pointerConfig = useMemo(() => ({
+        pointerStripHeight: 160,
+        pointerStripColor: colors.border,
+        pointerStripWidth: 2,
+        pointerColor: colors.primary,
+        radius: 6,
+        pointerLabelWidth: 100,
+        pointerLabelHeight: 90,
+        activatePointersOnLongPress: true,
+        autoAdjustPointerLabelPosition: true,
+        pointerComponent: () => {
+            return (
+                <View style={{
+                    height: 10,
+                    width: 10,
+                    borderRadius: 5,
+                    backgroundColor: colors.primary,
+                    borderWidth: 2,
+                    borderColor: colors.surface
+                }} />
+            );
+        },
+        pointerLabelComponent: (items: any) => {
+            const item = items[0];
+            if (!item) return null;
+
+            return (
+                <View style={{
+                    height: 90,
+                    width: 100,
+                    justifyContent: 'center',
+                    marginTop: -30,
+                    marginLeft: -40,
+                }}>
+                    <View style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 8,
+                        borderRadius: 12,
+                        backgroundColor: colors.surface,
+                        elevation: 5,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 3.84,
+                        borderWidth: 1,
+                        borderColor: colors.border + '20'
+                    }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 10, marginBottom: 2, textAlign: 'center' }}>
+                            {item.label}
+                        </Text>
+                        <Text style={{ color: colors.text, fontSize: 13, fontWeight: 'bold', textAlign: 'center' }}>
+                            {formatCurrencyAmount(new BigNumber(item.value), currency)}
+                        </Text>
+                    </View>
+                </View>
+            );
+        },
+    }), [colors, currency]);
+
+    const renderTimeFilter = () => (
+        <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', backgroundColor: colors.border + '40', borderRadius: 8, padding: 2 }}>
+                {(['6M', '1Y', '3Y', 'ALL'] as const).map((range) => (
+                    <TouchableOpacity
+                        key={range}
+                        onPress={() => setTimeRange(range)}
+                        style={{
+                            paddingHorizontal: 12,
+                            paddingVertical: 6,
+                            borderRadius: 6,
+                            backgroundColor: timeRange === range ? colors.surface : 'transparent',
+                            elevation: timeRange === range ? 1 : 0,
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: timeRange === range ? 0.1 : 0,
+                            shadowRadius: 1
+                        }}
+                    >
+                        <Text style={{
+                            color: timeRange === range ? colors.primary : colors.textSecondary,
+                            fontWeight: timeRange === range ? '600' : '400',
+                            fontSize: 12,
+                        }}>
+                            {range}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+        </View>
+    );
 
     return (
         <BottomModal
             visible={visible}
             onClose={onClose}
             title={`${category} Trend`}
-            subtitle="Last 6 months"
+            subtitle={`Last ${monthsToLoad} months`}
         >
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 20 }}
             >
+                {renderTimeFilter()}
+
                 {/* Chart */}
                 {trendData.data.length > 0 && (
                     <View style={{ overflow: 'hidden', marginLeft: -20 }}>
@@ -73,12 +189,11 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
                             data={trendData.data.map((val, index) => ({
                                 value: val.toNumber(),
                                 label: trendData.labels[index],
-                                // Show label for every point or throttle?
-                                // Original code showed all labels if they fit, or "No Data"
                             }))}
                             height={220}
                             width={screenWidth - 40}
-                            spacing={(screenWidth - 80) / Math.max(trendData.data.length - 1, 1)}
+                            maxValue={max.multipliedBy(1.2).toNumber()}
+                            spacing={(screenWidth - 150) / Math.max(trendData.data.length - 1, 1)}
                             initialSpacing={20}
                             thickness={3}
                             color={colors.primary}
@@ -92,12 +207,10 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
                             dataPointsColor={colors.primary}
                             curved
                             curveType={0}
+                            yAxisLabelWidth={90}
                             xAxisLabelTexts={trendData.labels}
-                            formatYLabel={(value: string) => {
-                                const num = parseFloat(value);
-                                if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
-                                return num.toFixed(0);
-                            }}
+                            formatYLabel={(value: string) => formatCompactCurrency(value, currency)}
+                            pointerConfig={pointerConfig}
                         />
                     </View>
                 )}

@@ -94,7 +94,7 @@ export const getCategoryTrend = (
     category: string,
     type: BreakdownType = 'EXPENSE',
     months: number = 6,
-    grouping: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY'
+    grouping: 'GROUP' | 'ITEM' = 'GROUP'
 ) => {
     const result = {
         labels: [] as string[],
@@ -110,12 +110,13 @@ export const getCategoryTrend = (
         const categoryTotal = monthlyTransactions
             .filter(t => t.type === type)
             .filter(t => {
-                if (grouping === 'CATEGORY') {
+                if (grouping === 'GROUP') {
                     const group = getCategoryGroup(t.category, t.type);
                     return group === category;
                 } else {
-                    const key = (t.subCategory && t.subCategory !== 'undefined') ? t.subCategory : t.category;
-                    return key === category;
+                    // Item is stored in t.category
+                    // e.g. "Groceries" is the category, "Food & Lifestyle" is the group
+                    return t.category === category;
                 }
             })
             .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
@@ -222,7 +223,7 @@ export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: nu
     return monthsWithData > 0 ? totalExpense.dividedBy(monthsWithData) : new BigNumber(0);
 };
 
-export const getCategoryBreakdown = (transactions: Transaction[], type: BreakdownType, groupBy: 'CATEGORY' | 'SUB_CATEGORY' = 'CATEGORY') => {
+export const getCategoryBreakdown = (transactions: Transaction[], type: BreakdownType, groupBy: 'GROUP' | 'ITEM' = 'GROUP') => {
     const breakdown: { [key: string]: BigNumber } = {};
     let total = new BigNumber(0);
 
@@ -230,10 +231,11 @@ export const getCategoryBreakdown = (transactions: Transaction[], type: Breakdow
 
     filteredTransactions.forEach(t => {
         let key: string;
-        if (groupBy === 'CATEGORY') {
+        if (groupBy === 'GROUP') {
             key = getCategoryGroup(t.category, t.type);
         } else {
-            key = (t.subCategory && t.subCategory !== 'undefined') ? t.subCategory : t.category;
+            // Item is stored in t.category
+            key = t.category;
         }
 
         // Use absolute value for the total and breakdown if you want positive bars/charts

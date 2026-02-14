@@ -53,6 +53,7 @@ export const EXPENSE_CATEGORY_GROUPS = [
             { label: 'Subscriptions', value: 'Subscriptions', icon: 'repeat' },
             { label: 'Debt Principal', value: 'Principal', icon: 'trending-down' },
             { label: 'Interest Expense', value: 'Interest', icon: 'trending-down' },
+            { label: 'Loans', value: 'Loans', icon: 'business' },
             { label: 'Fees', value: 'Fees', icon: 'business' },
         ]
     },
