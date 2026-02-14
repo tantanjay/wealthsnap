@@ -42,7 +42,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
     const [contactInfo, setContactInfo] = useState(initialDebt?.contactId || '');
 
     // UI Configuration State
-    const [createTransaction, setCreateTransaction] = useState(false);
+
     const [showInterestTypeModal, setShowInterestTypeModal] = useState(false);
     const [showAmountCalculator, setShowAmountCalculator] = useState(false);
     const [showTransactionInfo, setShowTransactionInfo] = useState(false);
@@ -135,11 +135,25 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
         setMinPayment(calculatedPayment.toFixed(2));
     }, [amount, interestRate, termMonths, interestType]);
 
-    const handleSave = async () => {
+    const handleSave = () => {
         if (!name || !amount) {
             showAlert('Missing Info', 'Please provide a name and initial amount.');
             return;
         }
+
+        // If editing an existing debt, we just save directly (no new transaction prompt logic for edits usually)
+        // OR if you want to support adding transaction on edit, you'd need more logic.
+        // Assuming only NEW debts get the prompt, as per previous checkbox logic:
+        if (initialDebt) {
+            finalSave(false);
+        } else {
+            setShowTransactionInfo(true);
+        }
+    };
+
+    const finalSave = async (shouldCreateTransaction: boolean) => {
+        setShowTransactionInfo(false); // Close modal
+
 
         const newId = initialDebt?.id || generateUUID();
         const initialAmountBN = new BigNumber(amount);
@@ -167,7 +181,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
         try {
             await saveDebt(newDebt);
 
-            if (createTransaction) {
+            if (shouldCreateTransaction) {
                 // If taking a loan (PAYABLE) -> It's Cash In (Transfer In) to your pocket
                 // If lending money (RECEIVABLE) -> It's Cash Out (Transfer Out) from your pocket
 
@@ -526,35 +540,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                 </Card>
 
                 {/* Add Transaction Checkbox - Only for New Debts */}
-                {!initialDebt && (
-                    <Card style={{ marginBottom: 10, paddingVertical: 10 }}>
-                        <TouchableOpacity
-                            onPress={() => setCreateTransaction(!createTransaction)}
-                            activeOpacity={0.7}
-                            style={{ flexDirection: 'row', alignItems: 'center' }}
-                        >
-                            <Ionicons
-                                name={createTransaction ? "checkbox" : "square-outline"}
-                                size={24}
-                                color={createTransaction ? colors.primary : colors.textSecondary}
-                                style={{ marginRight: 12 }}
-                            />
-                            <View style={{ flex: 1 }}>
-                                <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>
-                                    Add corresponding transaction?
-                                </Text>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
-                                    {createTransaction
-                                        ? (direction === 'PAYABLE' ? "Will record as Income (Cash In)" : "Will record as Expense (Cash Out)")
-                                        : "No transaction will be recorded"}
-                                </Text>
-                            </View>
-                            <TouchableOpacity onPress={() => setShowTransactionInfo(true)} style={{ padding: 4 }}>
-                                <Ionicons name="information-circle-outline" size={22} color={colors.primary} />
-                            </TouchableOpacity>
-                        </TouchableOpacity>
-                    </Card>
-                )}
+
 
                 {/* Interest Section - Side by Side and Compact */}
                 <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
@@ -685,67 +671,78 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
                     <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 22, marginBottom: 20 }}>
-                        WealthSnap treats your finances as a connected ecosystem. When you take on debt or lend money, cash actually moves.
+                        WealthSnap treats your finances as a connected ecosystem. To keep your Cash Balance accurate, please clarify the cash flow.
                     </Text>
 
-                    {/* Visual Flow Diagram */}
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: colors.border }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' }}>🔄 The Money Flow</Text>
-
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <View style={{ alignItems: 'center', flex: 1 }}>
-                                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                                    <Ionicons name="wallet" size={24} color={colors.primary} />
-                                </View>
-                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>Cash / Bank</Text>
-                            </View>
-
-                            <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Ionicons name="swap-horizontal" size={24} color={colors.textSecondary} />
-                                <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 4 }}>Transaction</Text>
-                            </View>
-
-                            <View style={{ alignItems: 'center', flex: 1 }}>
-                                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.error + '20', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                                    <Ionicons name="document-text" size={24} color={colors.error} />
-                                </View>
-                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>Debt Record</Text>
-                            </View>
-                        </View>
-                    </View>
-
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 12 }}>What happens if checked?</Text>
-
-                    {/* Scenario: PAYABLE (Taking a Loan) */}
-                    <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-                        <View style={{ width: 4, backgroundColor: colors.success, borderRadius: 2, marginRight: 12 }} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Taking a Loan (Payable)</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
-                                You receive money. We record this as <Text style={{ fontWeight: 'bold', color: colors.success }}>Transfer In</Text> so your Cash Balance increases.
-                            </Text>
-                        </View>
-                    </View>
-
-                    {/* Scenario: RECEIVABLE (Lending Money) */}
-                    <View style={{ flexDirection: 'row', marginBottom: 24 }}>
-                        <View style={{ width: 4, backgroundColor: colors.error, borderRadius: 2, marginRight: 12 }} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Lending Money (Receivable)</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
-                                You give money away. We record this as an <Text style={{ fontWeight: 'bold', color: colors.error }}>Transfer Out</Text> so your Cash Balance decreases.
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={{ backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8, flexDirection: 'row' }}>
-                        <Ionicons name="bulb-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-                        <Text style={{ color: colors.primary, fontSize: 12, flex: 1, lineHeight: 18 }}>
-                            <Text style={{ fontWeight: 'bold' }}>Pro Tip:</Text> Uncheck this box if you are just tracking an old debt where the cash has already been spent/received long ago.
+                    {/* The Core Question */}
+                    <View style={{ backgroundColor: colors.primary + '10', padding: 20, borderRadius: 16, marginBottom: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.primary + '30' }}>
+                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.primary, textAlign: 'center', marginBottom: 8 }}>
+                            "Did this money actually enter my bank account or wallet?"
                         </Text>
                     </View>
 
-                    <View style={{ height: 40 }} />
+                    {/* Option 1: YES */}
+                    <TouchableOpacity
+                        onPress={() => finalSave(true)}
+                        style={{ flexDirection: 'row', marginBottom: 16, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}
+                    >
+                        <View style={{ alignItems: 'center', marginRight: 16, width: 40, paddingTop: 4 }}>
+                            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.success + '20', alignItems: 'center', justifyContent: 'center' }}>
+                                <Ionicons name="checkmark" size={20} color={colors.success} />
+                            </View>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>YES, I received the cash.</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
+                                Result: Debt Created + Cash Balance Updated {direction === 'PAYABLE' ? '(Income)' : '(Expense)'}
+                            </Text>
+                            <Text style={{ color: colors.success, fontSize: 12, fontWeight: 'bold', marginTop: 6 }}>TAP TO CONFIRM</Text>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Option 2: NO (Direct) */}
+                    <TouchableOpacity
+                        onPress={() => finalSave(false)}
+                        style={{ flexDirection: 'row', marginBottom: 16, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}
+                    >
+                        <View style={{ alignItems: 'center', marginRight: 16, width: 40, paddingTop: 4 }}>
+                            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.error + '20', alignItems: 'center', justifyContent: 'center' }}>
+                                <Ionicons name="close" size={20} color={colors.error} />
+                            </View>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>NO, it went straight to payment.</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
+                                Result: Debt Created Only. (No change to Cash Balance).
+                            </Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>
+                                e.g. Car Loan / Renovation paid to vendor.
+                            </Text>
+                            <Text style={{ color: colors.error, fontSize: 12, fontWeight: 'bold', marginTop: 6 }}>TAP TO CONFIRM</Text>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Option 3: NO (Untracked) */}
+                    <TouchableOpacity
+                        onPress={() => finalSave(false)}
+                        style={{ flexDirection: 'row', marginBottom: 24, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}
+                    >
+                        <View style={{ alignItems: 'center', marginRight: 16, width: 40, paddingTop: 4 }}>
+                            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.error + '20', alignItems: 'center', justifyContent: 'center' }}>
+                                <Ionicons name="close" size={20} color={colors.error} />
+                            </View>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>NO, it's a dedicated untracked expense.</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
+                                Result: Debt Created Only.
+                            </Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>
+                                I don't want this specific expense in my transaction history.
+                            </Text>
+                            <Text style={{ color: colors.error, fontSize: 12, fontWeight: 'bold', marginTop: 6 }}>TAP TO CONFIRM</Text>
+                        </View>
+                    </TouchableOpacity>
                 </ScrollView>
             </BottomModal>
 
