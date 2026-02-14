@@ -152,7 +152,7 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
                                         justifyContent: 'center'
                                     }}
                                 >
-                                    <Ionicons name="analytics" size={20} color={colors.white} style={{ marginRight: 8 }} />
+                                    <Ionicons name="analytics" size={24} color={colors.white} style={{ marginRight: 8 }} />
                                     <Text style={{ color: colors.white, fontWeight: '600' }}>View Financial Insights</Text>
                                 </TouchableOpacity>
                             )}
@@ -206,7 +206,7 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
                                         justifyContent: 'center'
                                     }}
                                 >
-                                    <Ionicons name="analytics" size={20} color={colors.white} style={{ marginRight: 8 }} />
+                                    <Ionicons name="analytics" size={24} color={colors.white} style={{ marginRight: 8 }} />
                                     <Text style={{ color: colors.white, fontWeight: '600' }}>View Financial Insights</Text>
                                 </TouchableOpacity>
                             )}
@@ -257,7 +257,7 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
                                         justifyContent: 'center'
                                     }}
                                 >
-                                    <Ionicons name="analytics" size={20} color={colors.white} style={{ marginRight: 8 }} />
+                                    <Ionicons name="analytics" size={24} color={colors.white} style={{ marginRight: 8 }} />
                                     <Text style={{ color: colors.white, fontWeight: '600' }}>View Financial Insights</Text>
                                 </TouchableOpacity>
                             )}
