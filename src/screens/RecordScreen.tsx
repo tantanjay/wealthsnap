@@ -9,14 +9,14 @@ import { TransactionForm } from '@components/transaction/TransactionForm';
 import { TransferForm } from '@components/transaction/TransferForm';
 import { InvestmentForm } from '@components/investments/InvestmentForm';
 import { ReceiptReviewForm } from '@components/ai/ReceiptReviewForm';
-import { DebtsForm } from '@components/debts/DebtsForm'; // [NEW]
+import { DebtForm } from '@components/debts/DebtForm';
 import { useAlert } from '@context/AlertContext';
 import { Transaction, TransactionType, ReceiptAnalysisResult, InvestmentType, DebtType, Investment } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveTransactionWithReceipt } from '@services/domain/transactionService';
 import { getUserProfile } from '@services/core/storageService';
 
-type ViewMode = 'MENU' | 'TRANSACTION' | 'INVESTMENT' | 'AI' | 'AI_REVIEW' | 'DEBT'; // [MODIFIED]
+type ViewMode = 'MENU' | 'TRANSACTION' | 'INVESTMENT' | 'AI' | 'AI_REVIEW' | 'DEBT';
 
 const RecordScreen = ({ navigation, route }: any) => {
     const [viewMode, setViewMode] = useState<ViewMode>('MENU');
@@ -28,7 +28,7 @@ const RecordScreen = ({ navigation, route }: any) => {
     const [capturedImageUri, setCapturedImageUri] = useState<string | null>(null);
     const [currency, setCurrency] = useState('PHP');
 
-    // [NEW] Debt State (No editing support for now, just creating)
+    // Debt State (No editing support for now, just creating)
     const [selectedDebtType, setSelectedDebtType] = useState<DebtType>('LOAN');
 
     // Ref to hold current state for access in focus effect without re-triggering
@@ -336,7 +336,7 @@ const RecordScreen = ({ navigation, route }: any) => {
 
             {/* Debt Form */}
             {viewMode === 'DEBT' && (
-                <DebtsForm
+                <DebtForm
                     key={`DEBT-${selectedDebtType}-${currency}`}
                     currency={currency} // [NEW] Pass currency prop
                     onSave={handleTransactionSave}

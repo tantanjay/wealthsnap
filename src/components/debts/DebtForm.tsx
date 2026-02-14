@@ -16,13 +16,13 @@ import { saveDebt } from '@services/domain/debtService';
 import { saveTransaction } from '@services/domain/transactionService';
 import { getTemplatesForCurrency, DebtTemplate } from '@constants/debtTemplates';
 
-interface DebtsFormProps {
+interface DebtFormProps {
     currency: string;
     onSave: () => void;
     onCancel: () => void;
 }
 
-export const DebtsForm: React.FC<DebtsFormProps> = ({ currency, onSave, onCancel }) => {
+export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel }) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
 
