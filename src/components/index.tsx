@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, ViewStyle, StyleProp, ActivityIndicator, View } from 'react-native';
+import { TouchableOpacity, Text, ViewStyle, StyleProp, ActivityIndicator, View, LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
@@ -77,25 +77,28 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, variant = 'prima
 interface CardProps {
     children: React.ReactNode;
     style?: StyleProp<ViewStyle>;
+    onLayout?: (event: LayoutChangeEvent) => void;
 }
 
-export const Card: React.FC<CardProps> = ({ children, style }) => {
+export const Card: React.FC<CardProps> = ({ children, style, onLayout }) => {
     const { colors } = useTheme();
     return (
-        <View style={[
-            {
-                backgroundColor: colors.surface,
-                borderRadius: 16,
-                padding: 16,
-                marginBottom: 16,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 4,
-            },
-            style
-        ]}>
+        <View
+            onLayout={onLayout}
+            style={[
+                {
+                    backgroundColor: colors.surface,
+                    borderRadius: 16,
+                    padding: 16,
+                    marginBottom: 16,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 8,
+                    elevation: 4,
+                },
+                style
+            ]}>
             {children}
         </View>
     );

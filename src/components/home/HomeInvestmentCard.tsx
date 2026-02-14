@@ -149,10 +149,13 @@ const HomeInvestmentCard: React.FC<HomeInvestmentCardProps> = ({
                                         backgroundColor: 'rgba(255,255,255,0.2)',
                                         paddingVertical: 8,
                                         alignItems: 'center',
-                                        borderRadius: 8
+                                        borderRadius: 8,
+                                        flexDirection: 'row',
+                                        justifyContent: 'center'
                                     }}
                                     onPress={onPress}
                                 >
+                                    <Ionicons name="briefcase" size={24} color={colors.white} style={{ marginRight: 8 }} />
                                     <Text style={{ color: colors.white, fontWeight: '600' }}>View Portfolio</Text>
                                 </TouchableOpacity>
                             )}
@@ -213,10 +216,13 @@ const HomeInvestmentCard: React.FC<HomeInvestmentCardProps> = ({
                                         backgroundColor: 'rgba(255,255,255,0.2)',
                                         paddingVertical: 8,
                                         alignItems: 'center',
-                                        borderRadius: 8
+                                        borderRadius: 8,
+                                        flexDirection: 'row',
+                                        justifyContent: 'center'
                                     }}
                                     onPress={onPress}
                                 >
+                                    <Ionicons name="briefcase" size={24} color={colors.white} style={{ marginRight: 8 }} />
                                     <Text style={{ color: colors.white, fontWeight: '600' }}>View Portfolio</Text>
                                 </TouchableOpacity>
                             )}
