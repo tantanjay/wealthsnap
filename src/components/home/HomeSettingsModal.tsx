@@ -142,9 +142,10 @@ const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
                                 FINANCIAL HEALTH DISPLAY
                             </Text>
                             <View style={[styles.radioGroup, { backgroundColor: colors.surface, marginBottom: 24 }]}>
-                                {renderRadioItem("Total Assets", "Assets", financialHealthDisplayMode, onFinancialHealthDisplayModeChange)}
+                                {renderRadioItem("Health Metrics", "Health", financialHealthDisplayMode, onFinancialHealthDisplayModeChange)}
+                                {renderRadioItem("Net Worth", "NetWorth", financialHealthDisplayMode, onFinancialHealthDisplayModeChange)}
                                 <View style={{ borderBottomWidth: 0 }}>
-                                    {renderRadioItem("Health Metrics", "Health", financialHealthDisplayMode, onFinancialHealthDisplayModeChange)}
+                                    {renderRadioItem("Total Assets", "Assets", financialHealthDisplayMode, onFinancialHealthDisplayModeChange)}
                                 </View>
                             </View>
 
