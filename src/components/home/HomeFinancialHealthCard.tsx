@@ -184,22 +184,22 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                     </View>
                                 </View>
 
-                                {/* Budget */}
+                                {/* Monthly Spending */}
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.warning + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
                                             <Ionicons name="wallet-outline" size={16} color={colors.warning} />
                                         </View>
                                         <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-                                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginRight: 6 }}>Months Budget:</Text>
-                                            {isLoading ? <Skeleton width={40} height={16} /> : (
+                                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginRight: 6 }}>Spending:</Text>
+                                            {isLoading ? <Skeleton width={60} height={16} /> : (
                                                 <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginRight: 8 }}>
-                                                    {monthBudgetPercent.toFixed(0)}%
+                                                    {getSpendingMessage()}
                                                 </Text>
                                             )}
                                             {!isLoading && (
                                                 <Text style={{ color: colors.textSecondary, fontSize: 12, fontStyle: 'italic' }}>
-                                                    ({getSpendingMessage()})
+                                                    ({monthBudgetPercent.toFixed(0)}% budget)
                                                 </Text>
                                             )}
                                         </View>
