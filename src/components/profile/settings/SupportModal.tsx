@@ -26,10 +26,12 @@ const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
     return (
         <BottomModal visible={visible} onClose={onClose}>
             <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 15 }}>
-                💙 Support Development
+                🧠 Back the Human Layer
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
-                WealthSnap is free because its architecture costs nothing to run. Your support simply helps me dedicate more time to its ongoing craft and future features.
+                WealthSnap is free because its architecture costs nothing to run.
+                {'\n\n'}
+                The logic, design, and decisions still come from one person. Supporting the project helps keep that human layer focused, motivated, and able to keep improving the app long-term.
             </Text>
 
             {/* Support Developer (Ko-fi) */}
