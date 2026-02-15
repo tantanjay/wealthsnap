@@ -1,4 +1,4 @@
-# WealthSnap – Features & Capabilities (Updated)
+# WealthSnap – Features & Capabilities
 
 ## ⭐ Highlight Features
 
