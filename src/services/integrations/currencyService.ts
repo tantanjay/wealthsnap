@@ -31,7 +31,6 @@ export const fetchExchangeRate = async (base: string, target: string, date?: str
             // For historical dates, cache is valid indefinitely (rates shouldn't change).
             // For latest rates, check expiry.
             if (date || (Date.now() - data.timestamp < CACHE_EXPIRY_MS)) {
-                // console.log(`[CurrencyService] Cache hit for ${cacheKey}: ${data.rate}`);
                 return data.rate;
             }
         }
@@ -45,7 +44,6 @@ export const fetchExchangeRate = async (base: string, target: string, date?: str
         const datePath = date || 'latest';
         const url = `${baseUrl}/${datePath}?base=${base}&symbols=${target}`;
 
-        // console.log(`[CurrencyService] Fetching ${url}`);
         const response = await fetch(url);
 
         if (!response.ok) {
