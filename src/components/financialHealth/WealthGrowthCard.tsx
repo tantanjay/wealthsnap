@@ -11,13 +11,14 @@ interface WealthGrowthCardProps {
     portfolioValue: BigNumber;
     annualReturnPercent: number;
     freedomAccelerationMonths: number;
-    scenarioInvestAmount: number; // e.g., 300
-    scenarioYearsEarlier: number; // e.g., 2.1
+    scenarioInvestAmount: number;
+    scenarioYearsEarlier: number;
     currency: string;
     isPrivacyEnabled: boolean;
     isLoading: boolean;
     hasInvestments: boolean;
-    onInfoPress: (title: string, content: string) => void;
+    isDefaultReturnRate?: boolean;
+    onInfoPress: () => void;
 }
 
 const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
@@ -30,6 +31,7 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
     isPrivacyEnabled,
     isLoading,
     hasInvestments,
+    isDefaultReturnRate,
     onInfoPress
 }) => {
     const { colors } = useTheme();
@@ -53,18 +55,22 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
         return (
             <Card style={[styles.card, { backgroundColor: colors.surface }]}>
                 <Text style={[styles.header, { color: colors.textSecondary }]}>WEALTH GROWTH</Text>
-
-                <Text style={{ color: colors.text, fontSize: 16, marginBottom: 20 }}>
-                    No active investments.
-                </Text>
-
+                <Text style={{ color: colors.text, fontSize: 16, marginBottom: 20 }}>No active investments.</Text>
                 <View style={styles.divider} />
-
                 <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 8 }]}>
-                    If you invest {formatMoney(new BigNumber(scenarioInvestAmount))}/month at 7%:
+                    If you invest {formatMoney(new BigNumber(scenarioInvestAmount))}/month at {annualReturnPercent.toFixed(1)}%:
                 </Text>
+                {isDefaultReturnRate && (
+                    <Text style={{ color: colors.textSecondary, fontSize: 10, marginBottom: 4, fontStyle: 'italic' }}>
+                        (No dividend data found. Defaulting to 7%)
+                    </Text>
+                )}
                 <Text style={{ color: colors.success, fontSize: 16, fontWeight: 'bold' }}>
-                    Freedom arrives {scenarioYearsEarlier.toFixed(1)} years earlier.
+                    Freedom arrives {
+                        scenarioYearsEarlier < 1
+                            ? `${(scenarioYearsEarlier * 12).toFixed(1)} months earlier.`
+                            : `${scenarioYearsEarlier.toFixed(1)} years earlier.`
+                    }
                 </Text>
             </Card>
         );
@@ -74,22 +80,14 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
         <Card style={[styles.card, { backgroundColor: colors.surface }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <Text style={[styles.header, { color: colors.textSecondary, marginBottom: 0 }]}>WEALTH GROWTH</Text>
-                <TouchableOpacity onPress={() => onInfoPress('Wealth Growth', 'This card tracks your investment performance and how it accelerates your journey to Financial Freedom.')}>
+                <TouchableOpacity onPress={onInfoPress}>
                     <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
             </View>
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>Portfolio Value:</Text>
-                        <TouchableOpacity
-                            style={{ marginLeft: 6 }}
-                            onPress={() => onInfoPress('Portfolio Value', 'Total current market value of all your investment holdings.')}
-                        >
-                            <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Portfolio Value:</Text>
                     <Text style={[styles.value, { color: colors.text }]}>
                         {formatMoney(portfolioValue)}
                     </Text>
@@ -100,15 +98,7 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>12-Month Return:</Text>
-                        <TouchableOpacity
-                            style={{ marginLeft: 6 }}
-                            onPress={() => onInfoPress('12-Month Return', 'How much your portfolio has grown (or shrunk) over the last year, expressed as a percentage.')}
-                        >
-                            <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>12-Month Return:</Text>
                     <Text style={[styles.value, { color: annualReturnPercent >= 0 ? colors.success : colors.error }]}>
                         {annualReturnPercent > 0 ? '+' : ''}{annualReturnPercent.toFixed(1)}%
                     </Text>
@@ -119,15 +109,7 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>Freedom Acceleration:</Text>
-                        <TouchableOpacity
-                            style={{ marginLeft: 6 }}
-                            onPress={() => onInfoPress('Freedom Acceleration', 'Your investments are "buying" you extra time. This is how many additional months of runway your investment gains are generating.')}
-                        >
-                            <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Freedom Acceleration:</Text>
                     <Text style={[styles.value, { color: colors.success, fontSize: 16, fontWeight: '500' }]}>
                         Investments add +{freedomAccelerationMonths.toFixed(1)} months of runway
                     </Text>
@@ -138,15 +120,7 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>If you invest {formatMoney(new BigNumber(scenarioInvestAmount))}/month:</Text>
-                        <TouchableOpacity
-                            style={{ marginLeft: 6 }}
-                            onPress={() => onInfoPress('Faster Freedom', 'Shows how much sooner you could reach Financial Freedom if you consistently invested this amount monthly at an assumed 7% return.')}
-                        >
-                            <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>If you invest {formatMoney(new BigNumber(scenarioInvestAmount))}/month:</Text>
                     <Text style={[styles.value, { color: colors.success, fontSize: 16 }]}>
                         Freedom arrives {scenarioYearsEarlier.toFixed(1)} years earlier
                     </Text>

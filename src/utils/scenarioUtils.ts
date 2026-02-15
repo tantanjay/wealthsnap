@@ -21,7 +21,7 @@ import { BigNumber } from 'bignumber.js';
  * @param currency ISO Currency Code (e.g. 'PHP', 'USD')
  * @returns Optimized scenario amount
  */
-export const getSmartScenarioAmount = (monthlyIncome: BigNumber, currency: string = 'USD'): number => {
+export const getSmartScenarioAmount = (monthlyIncome: BigNumber, currency: string = 'PHP'): number => {
     // 1. Minimums per Currency
     const currencyFloors: Record<string, number> = {
         'PHP': 1000,

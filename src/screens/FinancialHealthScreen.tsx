@@ -2,7 +2,6 @@ import React, { useCallback, useState } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, ScrollView, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import BottomModal from '@components/common/BottomModal';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
@@ -21,7 +20,8 @@ import {
     getCurrentMonthCumulative,
     getTransactionsByMonth,
     calculateTotals,
-    getTopExpenses
+    getTopExpenses,
+    getMonthlyTrends
 } from '@utils/financialMetrics';
 import { calculateProjectedDebtLiability, calculateTotalDebtObligations, calculatePrevDebtObligations } from '@utils/debtMetrics';
 import {
@@ -33,11 +33,13 @@ import {
     calculateFreedomAcceleration
 } from '@utils/insightMetrics';
 import { getSmartScenarioAmount } from '@utils/scenarioUtils';
+import { getAnnualDividend } from '@services/domain/dividendHistoryService';
 
 import FinancialStateCard from '@components/financialHealth/FinancialStateCard';
 import SpendingCashFlowCard from '@components/financialHealth/SpendingCashFlowCard';
 import DebtPressureCard from '@components/financialHealth/DebtPressureCard';
 import WealthGrowthCard from '@components/financialHealth/WealthGrowthCard';
+import FinancialHealthHelpModal, { HelpModalType } from '@components/financialHealth/FinancialHealthHelpModal';
 
 const FinancialHealthScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -54,11 +56,15 @@ const FinancialHealthScreen = ({ navigation }: any) => {
         runwayChange: 0,
         spendingDifference: 0,
         debtDragMonths: 0,
-        investmentBoostMonths: 0
+        investmentBoostMonths: 0,
+        totalCash: new BigNumber(0),
+        monthlyBurn: new BigNumber(0),
+        monthlyDebtObligations: new BigNumber(0)
     });
 
     const [cashFlowState, setCashFlowState] = useState({
         netFlow: new BigNumber(0),
+        averageNetFlow: new BigNumber(0),
         spendingTrendPercent: 0,
         spendingTrendDirection: 'flat' as 'up' | 'down' | 'flat',
         freedomImpactMonths: 0
@@ -70,7 +76,8 @@ const FinancialHealthScreen = ({ navigation }: any) => {
         freedomDelayYears: 0,
         scenarioAddedPayment: 200,
         scenarioMonthsSaved: 0,
-        isDebtFree: true
+        isDebtFree: true,
+        totalLiability: new BigNumber(0)
     });
 
     const [wealthState, setWealthState] = useState({
@@ -79,13 +86,17 @@ const FinancialHealthScreen = ({ navigation }: any) => {
         freedomAccelerationMonths: 0,
         scenarioInvestAmount: 300,
         scenarioYearsEarlier: 0,
-        hasInvestments: false
+        hasInvestments: false,
+        isDefaultReturnRate: false
     });
 
-    const [infoModal, setInfoModal] = useState({ visible: false, title: '', content: '' });
+    const [modalState, setModalState] = useState<{ visible: boolean; type: HelpModalType }>({
+        visible: false,
+        type: null
+    });
 
-    const handleInfoPress = (title: string, content: string) => {
-        setInfoModal({ visible: true, title, content });
+    const handleInfoPress = (type: HelpModalType) => {
+        setModalState({ visible: true, type });
     };
 
     const loadData = async () => {
@@ -95,12 +106,8 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             setProfile(p);
 
             const t = await getCachedTransactions();
-            setTransactions(t);
-            setTopExpenses(getTopExpenses(t)); // Calculate Top Expenses
-
             const inv = await getCachedInvestments();
             const debts = await getAllDebts();
-            const budgets = await getAllBudgets();
 
             const now = new Date();
             const currentMonthTransactions = getTransactionsByMonth(t, now);
@@ -108,6 +115,25 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             // --- 1. BASE FINANCIALS ---
             const { income: monthIncome, expense: monthExpense } = calculateTotals(currentMonthTransactions);
             const netFlow = monthIncome.minus(monthExpense);
+
+            const trends = getMonthlyTrends(t, 3);
+            let totalAvgIncome = new BigNumber(0);
+            let totalAvgExpense = new BigNumber(0);
+            let monthsCount = 0;
+
+            trends.incomeData.forEach((inc, idx) => {
+                totalAvgIncome = totalAvgIncome.plus(inc);
+                totalAvgExpense = totalAvgExpense.plus(trends.expenseData[idx]);
+                monthsCount++;
+            });
+
+            const averageNetFlow = monthsCount > 0
+                ? totalAvgIncome.minus(totalAvgExpense).dividedBy(monthsCount)
+                : netFlow;
+
+            const averageMonthlyIncome = monthsCount > 0
+                ? totalAvgIncome.dividedBy(monthsCount)
+                : monthIncome;
 
             let totalCash = new BigNumber(0);
             let oInc = new BigNumber(0), oExp = new BigNumber(0);
@@ -117,7 +143,6 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             });
             totalCash = oInc.minus(oExp);
 
-            // --- 2. RUNWAY & BURN RATE & RUNWAY CHANGE ---
             const burnRate6 = calculateBurnRate(t, 6);
             const burnRate3 = calculateBurnRate(t, 3);
             const baseBurnRate = burnRate6.gt(0) ? burnRate6 : (burnRate3.gt(0) ? burnRate3 : monthExpense);
@@ -127,60 +152,40 @@ const FinancialHealthScreen = ({ navigation }: any) => {
 
             const runway = totalBurnRate.gt(0) ? totalCash.dividedBy(totalBurnRate).toNumber() : 999;
 
-            // -- Real Runway Change Calculation --
-            // 1. Get Cash Balance at End of Last Month
             const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-            let prevCash = new BigNumber(0);
             let prevInc = new BigNumber(0), prevExp = new BigNumber(0);
             t.forEach(tx => {
                 const d = new Date(tx.date);
-                if (d <= endOfLastMonth) { // Only transactions up to end of last month
+                if (d <= endOfLastMonth) {
                     if (tx.type === 'INCOME' || tx.type === 'TRANSFER_IN') prevInc = prevInc.plus(tx.amount.abs());
                     if (tx.type === 'EXPENSE' || tx.type === 'TRANSFER_OUT') prevExp = prevExp.plus(tx.amount.abs());
                 }
             });
-            prevCash = prevInc.minus(prevExp);
-
-            // 2. Get Burn Rate End of Last Month (Calculate burn rate excluding this month's data window)
-            // 2. Get Burn Rate End of Last Month
+            const prevCash = prevInc.minus(prevExp);
             const prevBurnRateBase = calculateBurnRate(t, 6, endOfLastMonth);
-
-            // Filter debts that existed last month
-            // If debt.startDate (or createdAt) is after endOfLastMonth, it didn't exist yet.
             const prevMonthlyDebtObligations = calculatePrevDebtObligations(debts, endOfLastMonth);
             const prevTotalBurnRate = prevBurnRateBase.plus(prevMonthlyDebtObligations);
-
             const prevRunway = prevTotalBurnRate.gt(0) ? prevCash.dividedBy(prevTotalBurnRate).toNumber() : 999;
-
-            // 3. Difference
-            // If we have less than 1 month of data, change is 0
             const hasHistory = t.some(tx => new Date(tx.date) < new Date(now.getFullYear(), now.getMonth(), 1));
             const runwayChange = hasHistory ? (runway - prevRunway) : 0;
 
-            // --- 3. INSIGHTS: FINANCIAL STATE ---
             const debtDrag = calculateDebtDrag(totalCash, baseBurnRate, monthlyDebtObligations);
-
             const uniqueSymbols = [...new Set(inv.map(i => i.symbol))];
             const prices = await getLatestPrices(uniqueSymbols);
             const priceMap: Record<string, BigNumber> = {};
             Object.keys(prices).forEach(s => priceMap[s] = prices[s].price);
-
-            inv.forEach(i => {
-                if (!priceMap[i.symbol]) priceMap[i.symbol] = i.price;
-            });
+            inv.forEach(i => { if (!priceMap[i.symbol]) priceMap[i.symbol] = i.price; });
 
             const portfolioMetrics = getAllPortfolioMetrics(inv, priceMap);
             const totalPortfolioValue = portfolioMetrics.reduce((sum, m) => sum.plus(m.totalMarketValue), new BigNumber(0));
-
             const investmentBoost = calculateInvestmentBoost(totalPortfolioValue, totalBurnRate);
 
             const currentPacing = getCurrentMonthCumulative(currentMonthTransactions);
             const avgPacing = getCumulativeSpendingCurve(t, 3);
             let spendingDiff = 0;
             if (currentPacing.length > 0 && avgPacing.length > 0) {
-                const dayIndex = currentPacing.length - 1;
-                const cur = currentPacing[dayIndex];
-                const avg = avgPacing[Math.min(dayIndex, avgPacing.length - 1)];
+                const cur = currentPacing[currentPacing.length - 1];
+                const avg = avgPacing[Math.min(currentPacing.length - 1, avgPacing.length - 1)];
                 if (avg > 0) spendingDiff = ((cur - avg) / avg) * 100;
             }
 
@@ -189,106 +194,161 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                 runwayChange: runwayChange,
                 spendingDifference: spendingDiff,
                 debtDragMonths: debtDrag,
-                investmentBoostMonths: investmentBoost
+                investmentBoostMonths: investmentBoost,
+                totalCash,
+                monthlyBurn: totalBurnRate,
+                monthlyDebtObligations
             });
 
-            // --- 4. INSIGHTS: CASH FLOW ---
-            const spendingDirection = spendingDiff > 0 ? 'up' : spendingDiff < 0 ? 'down' : 'flat';
-            const freedomImpact = calculateFreedomImpact(netFlow, baseBurnRate.plus(monthlyDebtObligations));
-
+            const freedomImpact = calculateFreedomImpact(averageNetFlow, totalBurnRate);
             setCashFlowState({
                 netFlow,
+                averageNetFlow,
                 spendingTrendPercent: Math.abs(spendingDiff),
-                spendingTrendDirection: spendingDirection,
+                spendingTrendDirection: spendingDiff > 0 ? 'up' : spendingDiff < 0 ? 'down' : 'flat',
                 freedomImpactMonths: freedomImpact
             });
 
-            // --- SCENARIO AMOUNT SCALING ---
-            // Uses smart utility to respect currency floors (e.g. 1000 PHP) and 10% income target
-            const smartScenarioAmount = getSmartScenarioAmount(monthIncome, profile?.currency || 'USD');
+            let smartScenarioAmount = getSmartScenarioAmount(averageMonthlyIncome, p?.currency || 'PHP');
 
-            // --- 5. INSIGHTS: DEBT PRESSURE ---
+            // --- USER REQUEST: Use Historical Average Investment as Baseline ---
+            // 1. Get all BUY investments
+            const buys = inv.filter(i => i.action === 'BUY');
+
+            if (buys.length > 0) {
+                // 2. Find start date (min date)
+                const dates = buys.map(b => new Date(b.date).getTime());
+                const firstBuyDate = new Date(Math.min(...dates));
+                const today = new Date();
+
+                // 3. Calculate months active
+                // Avoid division by zero: assume at least 1 month
+                const monthsDiff = (today.getFullYear() - firstBuyDate.getFullYear()) * 12 + (today.getMonth() - firstBuyDate.getMonth());
+                const monthsActive = Math.max(1, monthsDiff);
+
+                // 4. Sum total invested amount
+                const totalInvested = buys.reduce((sum, b) => sum.plus(b.quantity.times(b.price)), new BigNumber(0));
+
+                // 5. Calculate Average Monthly Investment
+                const avgMonthlyInvested = totalInvested.dividedBy(monthsActive);
+
+                // 6. Apply Cap: Hard stop on excess current net flow (Average Net Flow - Debt Obligations)
+                // If Net Flow is negative, cap is 0 (can't invest more if losing money)
+                // averageNetFlow from getMonthlyTrends usually DOES NOT include debt payments (transfers), so we must subtract them.
+                const trueExcessCashFlow = averageNetFlow.minus(monthlyDebtObligations);
+                const netFlowCap = BigNumber.maximum(0, trueExcessCashFlow);
+
+                // The scenario amount is the lesser of Avg History OR Net Flow Cap
+                // However, if Avg History > Cap, it means user is already overextending or using different funds?
+                // The prompt says "hardstop on his excess current net flow". 
+                // Let's interpret as: Ideally invest Avg History, but limit to Available Cash flow.
+
+                if (avgMonthlyInvested.gt(0)) {
+                    smartScenarioAmount = BigNumber.minimum(avgMonthlyInvested, netFlowCap).toNumber();
+                }
+            }
             const activeDebts = debts.filter(d => d.status === 'ACTIVE');
-            const totalMonthlyPayments = activeDebts.reduce((sum, d) => sum.plus(d.minPayment), new BigNumber(0));
-
             let estimatedMonthlyInterest = new BigNumber(0);
             let totalLiability = new BigNumber(0);
-
             activeDebts.forEach(d => {
-                const balance = d.initialAmount;
                 const rate = d.interestRate.dividedBy(100).dividedBy(12);
-                estimatedMonthlyInterest = estimatedMonthlyInterest.plus(balance.times(rate));
-                totalLiability = totalLiability.plus(balance);
+                estimatedMonthlyInterest = estimatedMonthlyInterest.plus(d.initialAmount.times(rate));
+                totalLiability = totalLiability.plus(d.initialAmount);
             });
-
-            const annualSavings = netFlow.times(12).gt(0) ? netFlow.times(12) : new BigNumber(0);
+            const annualSavings = averageNetFlow.times(12).gt(0) ? averageNetFlow.times(12) : new BigNumber(0);
             const freedomDelay = calculateDebtFreedomDelay(totalLiability, annualSavings);
 
-            const monthsSaved = activeDebts.length > 0 ? 11 : 0; // Keeping placeholder for now as calculation logic is complex and not requested to be fixed yet, or is it?
-            // Actually, let's fix the Months Saved scenario too if we can, or just update currency. 
-            // The prompt specifically asked for Wealth Scenario fix. I'll stick to updating the AMOUNT displayed.
-
             setDebtState({
-                monthlyPayments: totalMonthlyPayments,
+                monthlyPayments: calculateTotalDebtObligations(debts),
                 interestCost: estimatedMonthlyInterest,
-                freedomDelayYears: freedomDelay > 50 ? 50 : freedomDelay,
+                freedomDelayYears: freedomDelay,
                 scenarioAddedPayment: smartScenarioAmount,
-                scenarioMonthsSaved: monthsSaved,
-                isDebtFree: activeDebts.length === 0
+                scenarioMonthsSaved: 0,
+                isDebtFree: activeDebts.length === 0,
+                totalLiability
             });
 
-            // --- 6. INSIGHTS: WEALTH GROWTH ---
-            const annualReturn = 7.2;
-            const freedomAccelRunway = investmentBoost;
+            // --- Calculate Dividend Yield ---
+            let totalAnnualDividendIncome = new BigNumber(0);
 
-            const yearsEarlier = calculateFreedomAcceleration(
+            // Loop through unique holdings to calculate total dividend income
+            // portfolioMetrics has one entry per symbol
+            for (const metric of portfolioMetrics) {
+                if (metric.currentQuantity.gt(0)) {
+                    const annualDivPerShare = await getAnnualDividend(metric.symbol);
+                    if (annualDivPerShare > 0) {
+                        totalAnnualDividendIncome = totalAnnualDividendIncome.plus(
+                            metric.currentQuantity.times(annualDivPerShare)
+                        );
+                    }
+                }
+            }
+
+            let calculatedYield = 0;
+            if (totalPortfolioValue.gt(0)) {
+                calculatedYield = totalAnnualDividendIncome.dividedBy(totalPortfolioValue).times(100).toNumber();
+            }
+
+            const useDefaultRate = calculatedYield === 0;
+            const finalReturnRate = useDefaultRate ? 7.2 : calculatedYield;
+
+            // Freedom Calculation:
+            // We should NOT include debt obligations in the "Freedom Number" target, because the assumption is
+            // you will be debt-free by the time you retire.
+            // So we use (Total Burn Rate - Debt Obligations) as the long-term living expense.
+            const freedomBurnRate = BigNumber.maximum(0, totalBurnRate.minus(monthlyDebtObligations));
+
+            const scenarioYears = calculateFreedomAcceleration(
                 totalPortfolioValue,
-                annualSavings.dividedBy(12),
-                totalBurnRate,
+                averageNetFlow,
+                freedomBurnRate,
                 new BigNumber(smartScenarioAmount),
-                0.07
+                finalReturnRate / 100
             );
 
             setWealthState({
                 portfolioValue: totalPortfolioValue,
-                annualReturnPercent: annualReturn,
-                freedomAccelerationMonths: freedomAccelRunway,
+                annualReturnPercent: finalReturnRate,
+                freedomAccelerationMonths: investmentBoost,
                 scenarioInvestAmount: smartScenarioAmount,
-                scenarioYearsEarlier: yearsEarlier,
-                hasInvestments: totalPortfolioValue.gt(0)
+                scenarioYearsEarlier: scenarioYears,
+                hasInvestments: totalPortfolioValue.gt(0),
+                isDefaultReturnRate: useDefaultRate
             });
 
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setIsLoading(false);
-        }
+        } catch (error) { console.error(error); } finally { setIsLoading(false); }
     };
 
-    useFocusEffect(
-        useCallback(() => {
-            loadData();
-        }, [])
-    );
-
-    const handleTransactionPress = (transaction: Transaction) => {
-        // Navigate to Transaction Details or similar
-        // For V2 MVP, we can just log or navigate to history
-        navigation.navigate('History', { screen: 'TransactionDetails', params: { transaction } });
-        // Assuming History stack handles it, or just generic navigation
-    };
+    useFocusEffect(useCallback(() => { loadData(); }, []));
 
     return (
         <ScreenWrapper scrollable={false}>
-            <ScrollView
-                contentContainerStyle={{ paddingBottom: 100 }}
-                showsVerticalScrollIndicator={false}
-            >
+            <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 15 }}>
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
                     <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', flex: 1 }}>Financial Health</Text>
+                </View>
+
+                {/* Disclaimer Banner */}
+                <View style={{
+                    backgroundColor: 'rgba(255, 149, 0, 0.15)', // Light orange background
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 24,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 149, 0, 0.3)',
+                    flexDirection: 'row',
+                    alignItems: 'flex-start'
+                }}>
+                    <Ionicons name="flash" size={24} color="#FF9500" style={{ marginRight: 12, marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>
+                            <Text style={{ fontWeight: 'bold', color: '#FF9500' }}>⚡ Beta Feature: </Text>
+                            This analysis uses strict, conservative math. It's designed to show the brutal truth about your financial runway and freedom date. Don't panic—use it to improve.
+                        </Text>
+                    </View>
                 </View>
 
                 <FinancialStateCard
@@ -298,7 +358,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     debtDragMonths={financialState.debtDragMonths}
                     investmentBoostMonths={financialState.investmentBoostMonths}
                     isLoading={isLoading}
-                    onInfoPress={handleInfoPress}
+                    onInfoPress={() => handleInfoPress('RUNWAY')}
                 />
 
                 <SpendingCashFlowCard
@@ -306,10 +366,10 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     spendingTrendPercent={cashFlowState.spendingTrendPercent}
                     spendingTrendDirection={cashFlowState.spendingTrendDirection}
                     freedomImpactMonths={cashFlowState.freedomImpactMonths}
-                    currency={profile?.currency || 'USD'}
+                    currency={profile?.currency || 'PHP'}
                     isPrivacyEnabled={isPrivacyEnabled}
                     isLoading={isLoading}
-                    onInfoPress={handleInfoPress}
+                    onInfoPress={() => handleInfoPress('CASH_FLOW')}
                 />
 
                 <DebtPressureCard
@@ -318,11 +378,11 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     freedomDelayYears={debtState.freedomDelayYears}
                     scenarioAddedPayment={debtState.scenarioAddedPayment}
                     scenarioMonthsSaved={debtState.scenarioMonthsSaved}
-                    currency={profile?.currency || 'USD'}
+                    currency={profile?.currency || 'PHP'}
                     isPrivacyEnabled={isPrivacyEnabled}
                     isLoading={isLoading}
                     isDebtFree={debtState.isDebtFree}
-                    onInfoPress={handleInfoPress}
+                    onInfoPress={() => handleInfoPress('DEBT')}
                 />
 
                 <WealthGrowthCard
@@ -331,26 +391,42 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     freedomAccelerationMonths={wealthState.freedomAccelerationMonths}
                     scenarioInvestAmount={wealthState.scenarioInvestAmount}
                     scenarioYearsEarlier={wealthState.scenarioYearsEarlier}
-                    currency={profile?.currency || 'USD'}
+                    currency={profile?.currency || 'PHP'}
                     isPrivacyEnabled={isPrivacyEnabled}
                     isLoading={isLoading}
                     hasInvestments={wealthState.hasInvestments}
-                    onInfoPress={handleInfoPress}
+                    isDefaultReturnRate={wealthState.isDefaultReturnRate}
+                    onInfoPress={() => handleInfoPress('WEALTH')}
                 />
-
             </ScrollView>
 
-            <BottomModal
-                visible={infoModal.visible}
-                onClose={() => setInfoModal({ ...infoModal, visible: false })}
-                title={infoModal.title}
-            >
-                <View style={{ padding: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24 }}>
-                        {infoModal.content}
-                    </Text>
-                </View>
-            </BottomModal>
+            <FinancialHealthHelpModal
+                visible={modalState.visible}
+                onClose={() => setModalState(prev => ({ ...prev, visible: false }))}
+                type={modalState.type}
+                data={{
+                    currency: profile?.currency || 'PHP',
+                    runwayMonths: financialState.runwayMonths,
+                    totalCash: financialState.totalCash,
+                    monthlyBurn: financialState.monthlyBurn,
+                    debtDragMonths: financialState.debtDragMonths,
+                    investmentBoostMonths: financialState.investmentBoostMonths,
+                    monthlyDebtObligations: financialState.monthlyDebtObligations,
+                    netFlow: cashFlowState.netFlow,
+                    avgNetFlow: cashFlowState.averageNetFlow,
+                    spendingTrendPercent: cashFlowState.spendingTrendPercent,
+                    spendingTrendDirection: cashFlowState.spendingTrendDirection,
+                    freedomImpactMonths: cashFlowState.freedomImpactMonths,
+                    totalDebt: debtState.totalLiability,
+                    freedomDelayYears: debtState.freedomDelayYears,
+                    monthlyPayments: debtState.monthlyPayments,
+                    interestCost: debtState.interestCost,
+                    portfolioValue: wealthState.portfolioValue,
+                    freedomAccelerationMonths: wealthState.freedomAccelerationMonths,
+                    scenarioInvestAmount: wealthState.scenarioInvestAmount,
+                    scenarioYearsEarlier: wealthState.scenarioYearsEarlier
+                }}
+            />
         </ScreenWrapper>
     );
 };
