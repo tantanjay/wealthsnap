@@ -13,7 +13,7 @@ interface FinancialStateCardProps {
     debtDragMonths: number;
     investmentBoostMonths: number;
     isLoading: boolean;
-    onInfoPress: (title: string, content: string) => void;
+    onInfoPress: () => void;
 }
 
 const FinancialStateCard: React.FC<FinancialStateCardProps> = ({
@@ -54,7 +54,7 @@ const FinancialStateCard: React.FC<FinancialStateCardProps> = ({
         <Card style={[styles.card, { backgroundColor: colors.surface }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <Text style={[styles.header, { color: colors.textSecondary, marginBottom: 0 }]}>FINANCIAL STATE</Text>
-                <TouchableOpacity onPress={() => onInfoPress('Financial State', 'This card summarizes your overall financial health based on your runway (cash / monthly burn rate).')}>
+                <TouchableOpacity onPress={onInfoPress}>
                     <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
             </View>
@@ -71,12 +71,7 @@ const FinancialStateCard: React.FC<FinancialStateCardProps> = ({
                     <Text style={[styles.runwayValue, { color: colors.text }]}>
                         {runwayMonths === Infinity ? '∞' : runwayMonths.toFixed(1)} months
                     </Text>
-                    <TouchableOpacity
-                        style={{ marginLeft: 8, marginBottom: 8 }}
-                        onPress={() => onInfoPress('Runway', 'Runway is the number of months you can survive on your current cash balance if your income stopped today. It assumes your spending habits and debt obligations remain constant.')}
-                    >
-                        <Ionicons name="help-circle-outline" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
+
                 </View>
 
                 {runwayChange !== 0 && (
@@ -106,12 +101,7 @@ const FinancialStateCard: React.FC<FinancialStateCardProps> = ({
                         <Text style={[styles.insightText, { color: colors.error }]}>
                             Debt drag: –{debtDragMonths.toFixed(1)} months
                         </Text>
-                        <TouchableOpacity
-                            style={{ marginLeft: 6 }}
-                            onPress={() => onInfoPress('Debt Drag', 'Debt Drag shows how many MONTHS of runway you are losing specifically due to debt payments. If you had zero debt, your runway would be this much longer.')}
-                        >
-                            <Ionicons name="information-circle-outline" size={16} color={colors.error} />
-                        </TouchableOpacity>
+
                     </View>
                 )}
 
@@ -120,12 +110,7 @@ const FinancialStateCard: React.FC<FinancialStateCardProps> = ({
                         <Text style={[styles.insightText, { color: colors.success }]}>
                             Investments boost: +{investmentBoostMonths.toFixed(1)} months
                         </Text>
-                        <TouchableOpacity
-                            style={{ marginLeft: 6 }}
-                            onPress={() => onInfoPress('Investment Boost', 'Investment Boost is the extra runway provided by your liquid investments. This shows how much longer you could survive if you sold your investments.')}
-                        >
-                            <Ionicons name="information-circle-outline" size={16} color={colors.success} />
-                        </TouchableOpacity>
+
                     </View>
                 )}
             </View>

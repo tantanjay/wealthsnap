@@ -11,13 +11,13 @@ interface DebtPressureCardProps {
     monthlyPayments: BigNumber;
     interestCost: BigNumber;
     freedomDelayYears: number;
-    scenarioAddedPayment: number; // e.g., 200
-    scenarioMonthsSaved: number; // e.g., 11
+    scenarioAddedPayment: number;
+    scenarioMonthsSaved: number;
     currency: string;
     isPrivacyEnabled: boolean;
     isLoading: boolean;
     isDebtFree: boolean;
-    onInfoPress: (title: string, content: string) => void;
+    onInfoPress: () => void;
 }
 
 const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
@@ -53,17 +53,9 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
         return (
             <Card style={[styles.card, { backgroundColor: colors.surface }]}>
                 <Text style={[styles.header, { color: colors.textSecondary }]}>DEBT PRESSURE</Text>
-
-                <Text style={{ color: colors.text, fontSize: 16, marginBottom: 8 }}>
-                    No active debt.
-                </Text>
-                <Text style={{ color: colors.text, fontSize: 16, marginBottom: 20 }}>
-                    No interest drag.
-                </Text>
-
-                <Text style={{ color: colors.success, fontSize: 16, fontWeight: 'bold' }}>
-                    Freedom fully compounding.
-                </Text>
+                <Text style={{ color: colors.text, fontSize: 16, marginBottom: 8 }}>No active debt.</Text>
+                <Text style={{ color: colors.text, fontSize: 16, marginBottom: 20 }}>No interest drag.</Text>
+                <Text style={{ color: colors.success, fontSize: 16, fontWeight: 'bold' }}>Freedom fully compounding.</Text>
             </Card>
         );
     }
@@ -72,22 +64,14 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
         <Card style={[styles.card, { backgroundColor: colors.surface }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <Text style={[styles.header, { color: colors.textSecondary, marginBottom: 0 }]}>DEBT PRESSURE</Text>
-                <TouchableOpacity onPress={() => onInfoPress('Debt Pressure', 'This card summarizes the cost of your debt and how it delays your Financial Freedom.')}>
+                <TouchableOpacity onPress={onInfoPress}>
                     <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
             </View>
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>Mandatory Payments:</Text>
-                        <TouchableOpacity
-                            style={{ marginLeft: 6 }}
-                            onPress={() => onInfoPress('Mandatory Payments', 'Total minimum monthly payments required by your lenders. This cash is locked and cannot be used for investing or saving.')}
-                        >
-                            <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Mandatory Payments:</Text>
                     <Text style={[styles.value, { color: colors.text }]}>
                         {formatMoney(monthlyPayments)} / month
                     </Text>
@@ -98,15 +82,7 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>Interest Cost:</Text>
-                        <TouchableOpacity
-                            style={{ marginLeft: 6 }}
-                            onPress={() => onInfoPress('Interest Cost', 'The amount of money you lose to interest every month. This is "dead money" that provides no value to you.')}
-                        >
-                            <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Interest Cost:</Text>
                     <Text style={[styles.value, { color: colors.error }]}>
                         {formatMoney(interestCost)} / month
                     </Text>
@@ -117,15 +93,7 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                        <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>Freedom Impact:</Text>
-                        <TouchableOpacity
-                            style={{ marginLeft: 6 }}
-                            onPress={() => onInfoPress('Freedom Delay', 'How much longer you have to work because of this debt. It calculates the opportunity cost of paying interest instead of investing.')}
-                        >
-                            <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    </View>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Freedom Impact:</Text>
                     <Text style={[styles.value, { color: colors.error, fontSize: 16, fontWeight: '500' }]}>
                         Debt delays financial freedom by {freedomDelayYears.toFixed(1)} years
                     </Text>
@@ -134,18 +102,10 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
 
             {scenarioMonthsSaved > 0 && (
                 <>
-                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                    <View style={styles.divider} />
                     <View style={styles.row}>
                         <View style={styles.column}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                                <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 0 }]}>If you add {formatMoney(new BigNumber(scenarioAddedPayment))}/month:</Text>
-                                <TouchableOpacity
-                                    style={{ marginLeft: 6 }}
-                                    onPress={() => onInfoPress('Faster Freedom', 'Shows how much sooner you could be debt-free (and reach Financial Freedom) if you paid a little extra each month.')}
-                                >
-                                    <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} />
-                                </TouchableOpacity>
-                            </View>
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>If you add {formatMoney(new BigNumber(scenarioAddedPayment))}/month:</Text>
                             <Text style={[styles.value, { color: colors.success, fontSize: 16 }]}>
                                 Freedom moves {scenarioMonthsSaved} months earlier
                             </Text>
@@ -191,7 +151,7 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 1,
-        backgroundColor: '#E0E0E0', // Will be overridden by theme if we passed it, handled mainly via opacity in Views usually
+        backgroundColor: '#E0E0E0',
         opacity: 0.1,
         marginVertical: 16,
     }
