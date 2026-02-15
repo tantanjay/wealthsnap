@@ -261,7 +261,7 @@ export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promi
 };
 
 /**
- * Calculate the total dividends paid in the last 12 months for a symbol
+ * Calculate the total dividends paid in the last 12 months for a symbol (Per Share)
  */
 export const getAnnualDividend = async (symbol: string): Promise<number> => {
     try {
@@ -271,14 +271,10 @@ export const getAnnualDividend = async (symbol: string): Promise<number> => {
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         const dateStr = oneYearAgo.toISOString().split('T')[0];
 
-        // We only care about PAID dividends for historical yield, 
-        // OR we can include declared ones if we want forward looking yield.
-        // Let's stick to last 12 months (Trailing 12 Months - TTM)
         const query = `
             SELECT amount FROM dividend_history 
             WHERE symbol = ? 
-            AND exDate >= ? 
-            AND type IN ('CASH', 'PROPERTY')
+                AND exDate >= ? 
         `;
 
         const rows = await db.getAllAsync<any>(query, [symbol, dateStr]);
@@ -288,10 +284,9 @@ export const getAnnualDividend = async (symbol: string): Promise<number> => {
             total = total.plus(r.amount);
         });
 
-        // If no history, return 0 as per plan
         return total.toNumber();
     } catch (error) {
-        console.error(`Error calculating annual dividend for ${symbol}:`, error);
+        console.error(`Error calculating annual dividend per share for ${symbol}:`, error);
         return 0;
     }
 };

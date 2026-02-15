@@ -7,7 +7,7 @@ import { BigNumber } from 'bignumber.js';
  * @returns Formatted string "Month Year" (e.g., "October 2026")
  */
 export const calculateLiquidityDate = (runwayMonths: number): string => {
-    if (!IsFinite(runwayMonths)) return 'Forever';
+    if (!Number.isFinite(runwayMonths)) return 'Forever';
     if (runwayMonths <= 0) return 'Today';
 
     const today = new Date();
@@ -59,7 +59,6 @@ export const calculateDebtDrag = (totalCash: BigNumber, livingExpenses: BigNumbe
     const runwayWithDebt = burnWithDebt.gt(0) ? totalCash.dividedBy(burnWithDebt).toNumber() : 999;
     const runwayWithoutDebt = burnWithoutDebt.gt(0) ? totalCash.dividedBy(burnWithoutDebt).toNumber() : 999;
 
-    // specific check for IsFinite replacement since uppercase IsFinite was a typo in previous function too
     if (!Number.isFinite(runwayWithDebt) || !Number.isFinite(runwayWithoutDebt)) return 0;
 
     return Math.max(0, runwayWithoutDebt - runwayWithDebt);
@@ -107,12 +106,6 @@ export const calculateDebtFreedomDelay = (totalDebtLiability: BigNumber, annualS
 
 /**
  * Calculates "Freedom Acceleration": How much earlier freedom comes if you invest extra $X/month.
- * Simplified "Rule of 72" or compound interest delta to see how much faster you hit a target number.
- * For this UI, we might use a simpler proxy: "Added Runway per Year"
- * Or: "Time to hit $1M" delta?
- * 
- * Let's use the UI request: "Investments add +0.7 months of runway" (This is Investment Boost, already done)
- * "Freedom arrives 2.1 years earlier" (Scenarios)
  * 
  * Scenario Calculation:
  * 1. Calculate time to reach Target (e.g. 25x Expenses) with Current Savings.
@@ -140,21 +133,18 @@ export const calculateFreedomAcceleration = (
     // If already at FI number, no acceleration
     if (currentNetWorth.gte(fiNumber)) return 0;
 
-    const calcYearsToGoal = (p: number, pmt: number, r: number, target: number): number => {
-        // Future Value of Annuity formula solved for n (number of periods)
-        // This is complex to solve analytically with existing principal.
-        // FV = P*(1+r)^n + PMT * (((1+r)^n - 1) / r)
-        // ... iterative approach or log formula might be better. 
-        // Nper function in Excel.
+    const MAX_SIM_YEARS = 500; // Increased limit for calculation delta only
+    const MAX_SIM_MONTHS = MAX_SIM_YEARS * 12;
 
-        if (pmt <= 0) return 99; // Never reach if not saving
+    const calcYearsToGoal = (p: number, pmt: number, r: number, target: number): number => {
+        if (pmt <= 0) return MAX_SIM_YEARS;
 
         let n = 0;
         let current = p;
         const monthlyRate = r / 12;
 
-        // Iterative approx (limit 1200 months = 100 years)
-        while (current < target && n < 1200) {
+        // Iterative approx
+        while (current < target && n < MAX_SIM_MONTHS) {
             current = current * (1 + monthlyRate) + pmt;
             n++;
         }
@@ -168,8 +158,9 @@ export const calculateFreedomAcceleration = (
     const yearsCurrent = calcYearsToGoal(p, monthlySavings.toNumber(), r, target);
     const yearsAccelerated = calcYearsToGoal(p, monthlySavings.plus(extraInvestment).toNumber(), r, target);
 
-    return Math.max(0, yearsCurrent - yearsAccelerated);
-};
+    const delta = Math.max(0, yearsCurrent - yearsAccelerated);
 
-// Helper for IsFinite check
-const IsFinite = (num: number) => Number.isFinite(num) && Math.abs(num) !== Infinity;
+    // If the delta is tiny (e.g. 0.01 years), it might still round to 0.0 in UI.
+    // Return the raw delta.
+    return delta;
+};
