@@ -1,165 +1,143 @@
-# WealthSnap – Features & Capabilities
+# WealthSnap – Features & Capabilities (Updated)
 
 ## ⭐ Highlight Features
 
-These represent the most impactful and differentiated capabilities of the app.
+- **Safe to Spend Algorithm**  
+  Calculates true discretionary income by subtracting fixed bills, **mandatory debt payments**, and a dynamic **Life Burnrate** (90-day rolling average).
 
-- **Safe to Spend Algorithm (v1.8.1)**
-  Calculates "True Discretionary Income" by subtracting fixed bills, debt obligations, *and* a dynamic **Life Burnrate** (90-day average of daily costs).
+- **Financial Runway & Freedom Timeline**  
+  Converts net liquid balance into survival time (e.g., *“11.0 months”*) and projects a **Liquidity / Freedom Date**.  
+  - Debt-aware burn rate  
+  - Shows how spending, saving, and investing **move freedom earlier or later**
 
-- **Financial Runway Metric**
-  Converts net liquid balance into time (e.g., **“11.0 months”**) to show how long funds will last without income.
-  - **Debt Aware**: Now explicitly subtracts **Minimum Debt Payments** from your monthly burn rate, showing a realistic survival timeline.
+- **Financial Health Intelligence**  
+  A top-level health system that evaluates:  
+  - **Stability Runway** (months without income)  
+  - **Net Cash Flow & Spending Trend**  
+  - **Debt Pressure & Interest Drag**  
+  - **Freedom Acceleration** from investments  
 
-- **Debt & Loan Management (v1.10.0)**
-  Comprehensive tracking for Loans, Credit Cards, and Mortgages with full amortization schedules and "True Cost" integration into financial health metrics.
-  - **Safe-to-Spend**: Deducts debt obligations before calculating discretionary income.
-  - **Savings Rate**: Treats debt repayments as expenses to show true net savings.
+- **Debt & Loan Management**  
+  Full lifecycle tracking for Loans, Credit Cards, Mortgages, and IOUs with amortization-aware financial health integration.  
+  - Debt reduces Safe-to-Spend *before* discretionary income  
+  - Debt repayments count as expenses for accurate Savings Rate  
+  - Interest cost explicitly measured as a freedom delay
 
-- **Global Currency & Native Assets (v1.9.0)**
-  Support for **150+ world currencies**. Invest in assets using their native currency (e.g., USD stocks while living in EUR zone) with auto-converted portfolio valuation.
+- **Global Currency & Native Assets**  
+  Support for 150+ currencies with native-currency investments and automatic home-currency valuation.
 
-- **Local-First, Zero-Knowledge Architecture**
-  All data stays on the device. No cloud sync, no external servers, no data collection.
+- **Local-First, Zero-Knowledge Architecture**  
+  All data remains on-device. No cloud sync, no tracking, no external storage.
 
-- **BYO AI (Gemini API)**
-  AI features are unlocked by supplying a personal Google Gemini API key—no bundled subscription required.
-
-- **Investment Allocation Treemap (v1.7.0)**
-  Heatmap-style visualization showing portfolio size and performance using green/red blocks.
-
-- **Smart Financial Alerts**
-  Automatic detection of **spending spikes (>50%)**, **significant runway drops (>25%)**, and **budget overruns**.
-
----
-
-## 💸 Debt & Loan Management (New in v1.10.0)
-
-- **Comprehensive Debt Form**
-  Track Loans, Credit Cards, Mortgages, and IOUs with specialized fields.
-  
-- **Amortization Schedules**
-  View full payment breakdowns (Principal vs Interest) for every month of the loan term.
-
-- **Smart Minimum Payments**
-  Auto-calculated based on interest rates and terms. These mandatory payments are automatically deducted from your Safe-to-Spend.
-
-- **Interest Types**
-  Support for Fixed, Variable, Flat, and No Interest loans.
-
-- **Payoff Projections**
-  Accurate forecast of when you will be debt-free based on current payment plans.
+- **Bring-Your-Own AI**  
+  Optional AI features unlocked via a personal Gemini API key—no subscriptions, no bundled costs.
 
 ---
 
-## 🌍 Global Currency & Assets
+## 💸 Debt & Loan Management
 
-- **Multi-Currency Support**
-  Select from over 150 currencies for your primary profile.
+- **Comprehensive Debt Profiles**  
+  Specialized forms for Loans, Credit Cards, Mortgages, and IOUs.
 
-- **Native Currency Investments**
-  Record stocks and crypto in their original trading currency (e.g., AAPL in USD).
+- **Full Amortization Engine**  
+  Monthly breakdown of:  
+  - Principal  
+  - Interest  
+  - Remaining balance  
+  for the entire loan term.
 
-- **Auto-Conversion**
-  Real-time exchange rates (via Frankfurter API) convert foreign assets to your home currency for total net worth calculation.
+- **Smart Minimum Payments**  
+  Automatically calculated based on:  
+  - Interest rate  
+  - Term  
+  - Interest type (Fixed, Variable, Flat, None)  
+  These payments are treated as **mandatory obligations** across all health metrics.
 
----
+- **True Cost Accounting**  
+  - Runway and Safe-to-Spend subtract mandatory debt payments  
+  - Net Worth includes projected future interest for conservative valuation  
+  - Savings Rate avoids double counting principal transfers
 
-## 📈 Investments & Assets
+- **Intelligent Debt Transactions**  
+  Detects whether debt funds entered your account or were paid directly to vendors—preventing inflated cash balances.
 
-- **Native Crypto Support**
-  Track cryptocurrency holdings alongside traditional stocks.
-
-- **"Double AI" Market Research (v1.8.0)**
-  Two-step AI agent system ("Researcher" & "Accountant") to fetch and format historical price/dividend data.
-
-- **Enhanced History**
-  Dedicated tabs for **Position History**, **Price History**, and **Dividend History**.
-
-- **Investment Insights**
-  - **Drop/Dip Detection:** Alerts for significant market moves.
-  - **Portfolio Drift:** Visual bars showing asset weight vs target.
-  - **Dividend Projector:** Monthly forecast of passive income.
-
-- **Stock & Sector Treemaps**
-  Interactive heatmaps to visualize portfolio performance at a glance.
+- **Debt Analytics Card**  
+  - Swipe between **Lifetime vs Monthly** views  
+  - Clear split between **Required Payments**, **Paid Principal**, and **Interest Cost**
 
 ---
 
 ## 🏥 Financial Health & Analytics
 
-- **Financial Health Card (v1.10.0)**
-  Top-of-dashboard view tracking Runway, Budget Health, and Net Worth.
+- **Financial Health Card**  
+  A dedicated dashboard surface summarizing:  
+  - Runway  
+  - Net Worth  
+  - Total Assets
 
-- **Net Worth Card**
-  Tracks Total Assets minus Total Liabilities (including projected interest for true cost awareness).
+- **Deep Health Analysis**  
+  - **Impact on Freedom**: months added or lost per year based on spending behavior  
+  - **Debt Delays Freedom**: years lost to interest and mandatory payments  
+  - **Wealth Growth Visuals**: shows how investing accelerates freedom
 
-- **Monthly Pulse**
-  Visualizes spending velocity against your 3-month average to detect early overspending.
+- **Advanced Net Worth**  
+  - Assets minus liabilities  
+  - Liabilities include projected interest for a true obligation view  
+  - Clear separation of mandatory vs discretionary cash flow
 
-- **Interactive Charts**
-  Tap-and-drag to inspect precise values on Savings Rate, Income, and Spending charts.
+- **Interactive Analytics**  
+  Tap, drag, and inspect precise values across savings, income, and spending trends with multi-year range filters.
 
-- **Time Range Filters**
-  Analyze data across 6M, 1Y, 3Y, or All Time ranges.
+---
+
+## 📅 Planning & Projections
+
+- **Loan Start-Date Awareness**  
+  Accurate forward projections, payoff timelines, and amortization forecasts.
+
+- **Exportable Schedules**  
+  Copy full loan tables for external analysis or record-keeping.
+
+---
+
+## 📈 Investments & Assets
+
+- Native crypto & stock tracking  
+- Dual-agent AI market research  
+- Dividend projection & portfolio drift  
+- Treemap visualizations
 
 ---
 
 ## ⚡ User Experience & Workflow
 
-- **Dedicated Transfers System**
-  Distinct "Money In" and "Money Out" transaction types that don't mess up your income/expense reports.
-
-- **Smart Document Scanner**
-  Google ML Kit-powered scanner for receipts with auto-edge detection.
-
-- **Smart History Calendar**
-  Daily view of finances with "Guilt Filter" heatmaps and "Ghost Forecast" for upcoming bills.
-
-- **Optimistic UI**
-  Instant interaction for adding/editing transactions with background data processing.
-
-- **Swipeable Dashboard**
-  Toggle between Total and Monthly views on key metric cards.
-
-- **System-Level Help Center**
-  Built-in guides for onboarding, financial math, and feature explanations.
+- Dedicated Transfers System  
+- Smart Document Scanner  
+- Smart History Calendar  
+- Optimistic UI  
+- Swipeable Dashboard  
+- Built-in Help Center
 
 ---
 
 ## ⚙️ Core Technology
 
-- **High-Precision Math Engine (v1.6.0)**
-  Powered by `BigNumber.js` for localized, arbitrary-precision financial calculations.
-
-- **Encrypted SQLite Storage**
-  AES-256 encrypted database for maximum security and performance.
-
-- **Background Processing**
-  Non-blocking data decryption and exchange rate syncing.
+- High-Precision Math Engine  
+- Encrypted SQLite Storage  
+- Background Processing
 
 ---
 
 ## 🛡️ Privacy & Security
 
-- **Global Privacy Mode**
-  One-tap toggle in the header to hide all sensitive values (replaced with `****`).
-
-- **Conditional Screenshot Protection**
-  Prevents screen capture when privacy mode is off (can be toggled).
-
-- **Biometric App Lock**
-  PIN and biometric protection with auto-lock timeout.
-
-- **Crash Safety**
-  Global error boundaries with local crash logging for debugging without data sharing.
+- Global Privacy Mode  
+- Conditional Screenshot Protection  
+- Biometric App Lock  
+- Local Crash Safety
 
 ---
 
 ## 💾 Data Portability
 
-- **CSV / TSV Import**
-  Bulk import transactions with smart validation and duplicate detection.
-
-- **Encrypted Backups**
-  Secure export and restore of local data.
+- CSV / TSV Import  
+- Encrypted Local Backups
