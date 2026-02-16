@@ -58,20 +58,25 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
                 <Text style={{ color: colors.text, fontSize: 16, marginBottom: 20 }}>No active investments.</Text>
                 <View style={styles.divider} />
                 <Text style={[styles.label, { color: colors.textSecondary, marginBottom: 8 }]}>
-                    If you invest {formatMoney(new BigNumber(scenarioInvestAmount))}/month at {annualReturnPercent.toFixed(1)}%:
+                    {scenarioInvestAmount > 0
+                        ? `If you invest ${formatMoney(new BigNumber(scenarioInvestAmount))}/month at ${annualReturnPercent.toFixed(1)}%:`
+                        : 'Need additional net flow to invest'
+                    }
                 </Text>
-                {isDefaultReturnRate && (
+                {isDefaultReturnRate && scenarioInvestAmount > 0 && (
                     <Text style={{ color: colors.textSecondary, fontSize: 10, marginBottom: 4, fontStyle: 'italic' }}>
                         (No dividend data found. Defaulting to 7%)
                     </Text>
                 )}
-                <Text style={{ color: colors.success, fontSize: 16, fontWeight: 'bold' }}>
-                    Self-sustain arrives {
-                        scenarioYearsEarlier < 1
-                            ? `${(scenarioYearsEarlier * 12).toFixed(1)} months earlier.`
-                            : `${scenarioYearsEarlier.toFixed(1)} years earlier.`
-                    }
-                </Text>
+                {scenarioInvestAmount > 0 && (
+                    <Text style={{ color: colors.success, fontSize: 16, fontWeight: 'bold' }}>
+                        Self-sustain arrives {
+                            scenarioYearsEarlier < 1
+                                ? `${(scenarioYearsEarlier * 12).toFixed(1)} months earlier.`
+                                : `${scenarioYearsEarlier.toFixed(1)} years earlier.`
+                        }
+                    </Text>
+                )}
             </Card>
         );
     }
@@ -120,10 +125,17 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>If you invest {formatMoney(new BigNumber(scenarioInvestAmount))}/month:</Text>
-                    <Text style={[styles.value, { color: colors.success, fontSize: 16 }]}>
-                        Self-sustain arrives {scenarioYearsEarlier.toFixed(1)} years earlier
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>
+                        {scenarioInvestAmount > 0
+                            ? `If you invest ${formatMoney(new BigNumber(scenarioInvestAmount))}/month:`
+                            : 'Need additional net flow to invest'
+                        }
                     </Text>
+                    {scenarioInvestAmount > 0 && (
+                        <Text style={[styles.value, { color: colors.success, fontSize: 16 }]}>
+                            Self-sustain arrives {scenarioYearsEarlier.toFixed(1)} years earlier
+                        </Text>
+                    )}
                 </View>
             </View>
         </Card>
