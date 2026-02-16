@@ -162,9 +162,6 @@ const InvestmentScreen = ({ navigation }: any) => {
         setRefreshing(false);
     }, [loadStats]);
 
-
-
-    // --- Bulk Fetch Logic ---
     const handleBulkFetchPrices = async (durationLabel: string) => {
         // Background process
         const showToast = (msg: string) => {
@@ -231,7 +228,6 @@ const InvestmentScreen = ({ navigation }: any) => {
         }
     };
 
-    // --- Dynamic Section Rendering ---
 
     const renderSection = (sectionId: string) => {
         switch (sectionId) {

@@ -718,7 +718,3 @@ const SetupScreen = ({ navigation }: any) => {
     );
 };
 export default SetupScreen;
-
-// Should be inside the return, but SetupScreen is huge.
-// Actually I need to put the modal inside the return block.
-// Let me target the closing tag of ScreenWrapper and insert it before.
