@@ -91,7 +91,7 @@ const SpendingCashFlowCard: React.FC<SpendingCashFlowCardProps> = ({
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>Impact on Freedom:</Text>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Impact on Self-Sustain:</Text>
                     <Text style={[styles.value, { color: impactColor, fontSize: 16 }]}>
                         {impactText}
                     </Text>

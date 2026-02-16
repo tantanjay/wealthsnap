@@ -55,7 +55,7 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
                 <Text style={[styles.header, { color: colors.textSecondary }]}>DEBT PRESSURE</Text>
                 <Text style={{ color: colors.text, fontSize: 16, marginBottom: 8 }}>No active debt.</Text>
                 <Text style={{ color: colors.text, fontSize: 16, marginBottom: 20 }}>No interest drag.</Text>
-                <Text style={{ color: colors.success, fontSize: 16, fontWeight: 'bold' }}>Freedom fully compounding.</Text>
+                <Text style={{ color: colors.success, fontSize: 16, fontWeight: 'bold' }}>Self-sustain fully compounding.</Text>
             </Card>
         );
     }
@@ -93,9 +93,9 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>Freedom Impact:</Text>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Self-sustain Impact:</Text>
                     <Text style={[styles.value, { color: colors.error, fontSize: 16, fontWeight: '500' }]}>
-                        Debt delays financial freedom by {freedomDelayYears.toFixed(1)} years
+                        Debt delays self-sustain by {freedomDelayYears.toFixed(1)} years
                     </Text>
                 </View>
             </View>
@@ -107,7 +107,7 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
                         <View style={styles.column}>
                             <Text style={[styles.label, { color: colors.textSecondary }]}>If you add {formatMoney(new BigNumber(scenarioAddedPayment))}/month:</Text>
                             <Text style={[styles.value, { color: colors.success, fontSize: 16 }]}>
-                                Freedom moves {scenarioMonthsSaved} months earlier
+                                Self-sustain moves {scenarioMonthsSaved} months earlier
                             </Text>
                         </View>
                     </View>
