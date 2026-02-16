@@ -346,7 +346,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     <View style={{ flex: 1 }}>
                         <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>
                             <Text style={{ fontWeight: 'bold', color: '#FF9500' }}>⚡ Beta Feature: </Text>
-                            This analysis uses strict, conservative math. It's designed to show the brutal truth about your financial runway and freedom date. Don't panic—use it to improve.
+                            This analysis uses strict, conservative math. It's designed to show the brutal truth about your financial runway and self-sustain date. Don't panic—use it to improve.
                         </Text>
                     </View>
                 </View>
