@@ -25,7 +25,7 @@ const HomeStack = createStackNavigator();
 const HomeStackNavigator = () => {
     return (
         <HomeStack.Navigator screenOptions={{ headerShown: false }}>
-            <HomeStack.Screen name="Home" component={HomeScreen} />
+            <HomeStack.Screen name="HomeMain" component={HomeScreen} />
             <HomeStack.Screen name="FinancialHealth" component={FinancialHealthScreen} />
             <HomeStack.Screen name="Insights" component={InsightScreen} />
             <HomeStack.Screen name="Debts" component={DebtScreen} />
