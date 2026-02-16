@@ -16,7 +16,7 @@ export type ContentItem =
     | { type: 'heading2'; text: string }
     | { type: 'heading3'; text: string }
     | { type: 'paragraph'; text: string }
-    | { type: 'bullet'; text: string }
+    | { type: 'bullet'; text: string; indent?: number }
     | { type: 'blockquote'; text: string }
     | { type: 'formula'; text: string }
     | { type: 'divider' }
