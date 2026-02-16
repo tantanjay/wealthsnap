@@ -66,7 +66,7 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
                     </Text>
                 )}
                 <Text style={{ color: colors.success, fontSize: 16, fontWeight: 'bold' }}>
-                    Freedom arrives {
+                    Self-sustain arrives {
                         scenarioYearsEarlier < 1
                             ? `${(scenarioYearsEarlier * 12).toFixed(1)} months earlier.`
                             : `${scenarioYearsEarlier.toFixed(1)} years earlier.`
@@ -109,7 +109,7 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>Freedom Acceleration:</Text>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Self-sustain Acceleration:</Text>
                     <Text style={[styles.value, { color: colors.success, fontSize: 16, fontWeight: '500' }]}>
                         Investments add +{freedomAccelerationMonths.toFixed(1)} months of runway
                     </Text>
@@ -122,7 +122,7 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
                 <View style={styles.column}>
                     <Text style={[styles.label, { color: colors.textSecondary }]}>If you invest {formatMoney(new BigNumber(scenarioInvestAmount))}/month:</Text>
                     <Text style={[styles.value, { color: colors.success, fontSize: 16 }]}>
-                        Freedom arrives {scenarioYearsEarlier.toFixed(1)} years earlier
+                        Self-sustain arrives {scenarioYearsEarlier.toFixed(1)} years earlier
                     </Text>
                 </View>
             </View>
