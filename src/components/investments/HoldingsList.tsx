@@ -36,8 +36,8 @@ type SortDirection = 'ASC' | 'DESC';
 const HoldingItemSkeleton = () => {
     const { colors } = useTheme();
     return (
+
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            {/* Header Skeleton */}
             <View style={styles.cardHeader}>
                 <View style={styles.tickerContainer}>
                     <Skeleton width={40} height={40} borderRadius={20} />
@@ -52,13 +52,13 @@ const HoldingItemSkeleton = () => {
                 </View>
             </View>
 
-            {/* Allocation Bar Skeleton */}
+
             <View style={{ marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Skeleton height={6} style={{ flex: 1 }} borderRadius={3} />
                 <Skeleton width={60} height={11} />
             </View>
 
-            {/* Metrics Grid Skeleton */}
+
             <View style={[styles.metricsGrid, { borderTopColor: colors.border }]}>
                 {[1, 2, 3].map((i) => (
                     <View key={i} style={styles.metricItem}>
@@ -82,10 +82,10 @@ const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled, onPress }: 
     const { colors } = useTheme();
     const isProfit = item.gainLoss >= 0;
 
-    // Calculate allocation percentage
+
     const allocationPercent = totalValue > 0 ? (item.totalValue / totalValue) * 100 : 0;
 
-    // Calculate estimated annual income
+
     const estAnnualIncome = (item.totalValue * item.divYield) / 100;
 
     return (
@@ -94,7 +94,7 @@ const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled, onPress }: 
             onPress={onPress}
             activeOpacity={0.7}
         >
-            {/* Header: Symbol & Name + Price */}
+
             <View style={styles.cardHeader}>
                 <View style={styles.tickerContainer}>
                     <View style={[styles.iconPlaceholder, { backgroundColor: colors.background }]}>
@@ -117,7 +117,7 @@ const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled, onPress }: 
                 </View>
             </View>
 
-            {/* Allocation Bar */}
+
             <View style={styles.allocationContainer}>
                 <View style={[styles.allocationBarBg, { backgroundColor: colors.border }]}>
                     <LinearGradient
@@ -132,9 +132,8 @@ const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled, onPress }: 
                 </Text>
             </View>
 
-            {/* Metrics Grid */}
+
             <View style={[styles.metricsGrid, { borderTopColor: colors.border }]}>
-                {/* Col 1: Value & Shares */}
                 <View style={styles.metricItem}>
                     <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Holdings</Text>
                     <Text style={[styles.metricValue, { color: colors.text }]}>
@@ -145,7 +144,7 @@ const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled, onPress }: 
                     </Text>
                 </View>
 
-                {/* Col 2: P/L */}
+
                 <View style={styles.metricItem}>
                     <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Profit/Loss</Text>
                     <Text style={[styles.metricValue, { color: isProfit ? colors.success : colors.error }]}>
@@ -153,7 +152,7 @@ const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled, onPress }: 
                     </Text>
                 </View>
 
-                {/* Col 3: Dividends */}
+
                 <View style={styles.metricItem}>
                     <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Dividends</Text>
                     <View style={styles.yieldContainer}>
@@ -176,7 +175,7 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency =
     const [selectedHolding, setSelectedHolding] = React.useState<Holding | null>(null);
     const [historyModalVisible, setHistoryModalVisible] = React.useState(false);
 
-    // Sort State
+
     const [sortOption, setSortOption] = React.useState<SortOption>('ALLOCATION');
     const [sortDirection, setSortDirection] = React.useState<SortDirection>('DESC');
     const [isSortModalVisible, setSortModalVisible] = React.useState(false);

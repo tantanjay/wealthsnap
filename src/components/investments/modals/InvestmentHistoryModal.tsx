@@ -57,16 +57,16 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<TabType>('POSITIONS');
 
-    // Data states
+
     const [transactions, setTransactions] = useState<HistoryItem[]>([]);
     const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([]);
     const [dividendHistory, setDividendHistory] = useState<DividendHistory[]>([]);
     const [asset, setAsset] = useState<Asset | null>(null);
 
-    // Summary states
+
     const [realizedPL, setRealizedPL] = useState(0);
 
-    // Edit Modal States
+
     const [priceFormVisible, setPriceFormVisible] = useState(false);
     const [dividendFormVisible, setDividendFormVisible] = useState(false);
     const [editingPrice, setEditingPrice] = useState<PriceHistory | null>(null);
@@ -78,18 +78,18 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     const [activeFetchMode, setActiveFetchMode] = useState<'price' | 'dividend'>('price');
     const [isFetching, setIsFetching] = useState(false);
 
-    // Investment Options Modal State
+
     const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
     const [linkedTransaction, setLinkedTransaction] = useState<Transaction | null>(null);
 
-    // Data Loading Functions
+
     const loadPositions = useCallback(async () => {
-        // 1. Fetch all investments for this symbol to get their IDs
+
         const allInvestments = await getAllInvestments();
         const symbolInvestments = allInvestments.filter(inv => inv.symbol === symbol);
         const investmentIds = new Set(symbolInvestments.map(inv => inv.id));
 
-        // Map investments to history items
+
         const investmentItems: HistoryItem[] = symbolInvestments.map(inv => ({
             id: inv.id,
             date: inv.date,
@@ -101,14 +101,14 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             originalInvestment: inv
         }));
 
-        // 2. Fetch all transactions to look for CAPITAL_GAIN/LOSS linked to these investments
+
         const allTransactions = await getAllTransactions();
         const linkedTransactions = allTransactions.filter(txn =>
             txn.investmentId && investmentIds.has(txn.investmentId) &&
             (txn.type === 'CAPITAL_GAIN' || txn.type === 'CAPITAL_LOSS')
         );
 
-        // Calculate Realized P/L
+
         let totalPL = 0;
         const plItems: HistoryItem[] = linkedTransactions.map(txn => {
             const val = txn.amount.toNumber();
@@ -126,7 +126,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
         setRealizedPL(totalPL);
 
-        // Merge and sort by date descending
+
         const combinedHistory = [...investmentItems, ...plItems].sort((a, b) =>
             new Date(b.date).getTime() - new Date(a.date).getTime()
         );
@@ -247,11 +247,9 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         );
     };
 
-    // --- AI Fetch Handlers ---
 
     const openFetchMenu = async (mode: 'price' | 'dividend') => {
-        // Validate Asset Type (Stock or Crypto Only)
-        // Check local transactions first for efficiency or fetch asset info
+
         let isSupportedAsset = false;
         const position = transactions.find(t =>
             t.originalInvestment?.type === 'STOCKS' ||
@@ -260,8 +258,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
         if (position) {
             isSupportedAsset = true;
-        } else {
-            // Fallback: Check Asset Service
+
             try {
                 const allAssets = await getAllAssets();
                 const asset = allAssets.find(a => a.symbol === symbol);
@@ -292,10 +289,10 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     const executeFetch = async (durationLabel: string) => {
         setIsFetchMenuVisible(false);
 
-        // 1. Determine prompt duration string
+
         let durationPrompt = '';
 
-        // Handle Price relative dates
+
         if (activeFetchMode === 'price') {
             if (durationLabel === 'Today') durationPrompt = 'Today';
             else if (durationLabel === 'Last 3 days') durationPrompt = 'Last 3 days';
@@ -307,7 +304,6 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             else if (durationLabel === 'Last 1 year') durationPrompt = 'Last 1 year';
             else return;
         } else {
-            // Handle Dividend years
             const currentYear = new Date().getFullYear();
             let targetYear = currentYear;
 
@@ -333,7 +329,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         setIsFetching(true);
 
         try {
-            // 2. Prepare Asset Request
+
             const allAssets = await getAllAssets();
             const assetInfo = allAssets.find(a => a.symbol === symbol);
 
@@ -342,7 +338,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                 exchange: assetInfo?.exchange || 'Unknown'
             };
 
-            // 3. Call Market Data Service
+
             if (activeFetchMode === 'price') {
                 try {
                     const savedCount = await refreshAssetPrices([assetRequest], durationPrompt, currency);
@@ -378,7 +374,6 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         }
     };
 
-    // --- CRUD Handlers ---
 
     // Prices
     const handleAddPrice = () => {
@@ -448,11 +443,11 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         );
     };
 
-    // Render Helpers
+
     const handlePositionPress = async (item: HistoryItem) => {
         if (!item.originalInvestment) return;
 
-        // Find linked transaction if any
+
         const allTxs = await getAllTransactions();
         const linked = allTxs.find(t => t.investmentId === item.originalInvestment?.id);
 
@@ -500,11 +495,11 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             sign = '-';
         }
 
-        // Calculate Native Amount if Investment has Exchange Rate
+
         let displayAmountValue = new BigNumber(item.amount);
         let displayCurrency = currency; // Default to profile currency
 
-        // Check if this item is part of an investment with exchange rate
+
         if (item.originalInvestment) {
             const inv = item.originalInvestment;
             displayCurrency = inv.currency || currency; // Use investment currency (e.g. USD)
@@ -567,7 +562,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         const isAiFetch = item.source === 'AI_FETCH';
         const canDelete = isManual || isAiFetch;
 
-        // Calculate Native Price if applicable
+
         let displayPrice = item.price;
         let displayCurrency = currency;
 
@@ -761,7 +756,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                 maxHeight="85%"
             >
                 <View style={styles.content}>
-                    {/* Tabs */}
+
                     <View style={[styles.tabContainer, { backgroundColor: 'rgba(0,0,0,0.05)' }]}>
                         {renderTabButton('POSITIONS', 'Positions')}
                         {renderTabButton('PRICES', 'Prices')}
@@ -930,7 +925,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                 }}
             />
 
-            {/* Fetch Duration Modal */}
+
             <BottomModal
                 visible={isFetchMenuVisible}
                 onClose={() => setIsFetchMenuVisible(false)}
@@ -945,8 +940,8 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                     </View>
 
                     <View style={{ backgroundColor: colors.surface, borderRadius: 12, overflow: 'hidden' }}>
+
                         {activeFetchMode === 'price' ? (
-                            // Price Options (Relative Days)
                             ['Today', 'Last 3 days', 'Last 7 days', 'Last 14 days', 'Last 31 days'].map((item, index, arr) => (
                                 <TouchableOpacity
                                     key={item}
@@ -964,8 +959,8 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                     <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
                                 </TouchableOpacity>
                             ))
+
                         ) : (
-                            // Dividend Options (Years)
                             (() => {
                                 const currentYear = new Date().getFullYear();
                                 const years = [];
