@@ -112,7 +112,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             const now = new Date();
             const currentMonthTransactions = getTransactionsByMonth(t, now);
 
-            // --- 1. BASE FINANCIALS ---
+
             const { income: monthIncome, expense: monthExpense } = calculateTotals(currentMonthTransactions);
             const netFlow = monthIncome.minus(monthExpense);
 
@@ -211,28 +211,21 @@ const FinancialHealthScreen = ({ navigation }: any) => {
 
             let smartScenarioAmount = getSmartScenarioAmount(averageMonthlyIncome, p?.currency || 'PHP');
 
-            // --- USER REQUEST: Use Historical Average Investment as Baseline ---
-            // 1. Get all BUY investments
             const buys = inv.filter(i => i.action === 'BUY');
 
             if (buys.length > 0) {
-                // 2. Find start date (min date)
                 const dates = buys.map(b => new Date(b.date).getTime());
                 const firstBuyDate = new Date(Math.min(...dates));
                 const today = new Date();
 
-                // 3. Calculate months active
                 // Avoid division by zero: assume at least 1 month
                 const monthsDiff = (today.getFullYear() - firstBuyDate.getFullYear()) * 12 + (today.getMonth() - firstBuyDate.getMonth());
                 const monthsActive = Math.max(1, monthsDiff);
 
-                // 4. Sum total invested amount
                 const totalInvested = buys.reduce((sum, b) => sum.plus(b.quantity.times(b.price)), new BigNumber(0));
 
-                // 5. Calculate Average Monthly Investment
                 const avgMonthlyInvested = totalInvested.dividedBy(monthsActive);
 
-                // 6. Apply Cap: Hard stop on excess current net flow (Average Net Flow - Debt Obligations)
                 // If Net Flow is negative, cap is 0 (can't invest more if losing money)
                 // averageNetFlow from getMonthlyTrends usually DOES NOT include debt payments (transfers), so we must subtract them.
                 const trueExcessCashFlow = averageNetFlow.minus(monthlyDebtObligations);
@@ -268,7 +261,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                 totalLiability
             });
 
-            // --- Calculate Dividend Yield ---
+
             let totalAnnualDividendIncome = new BigNumber(0);
 
             // Loop through unique holdings to calculate total dividend income

@@ -29,10 +29,8 @@ const RecordScreen = ({ navigation, route }: any) => {
     const [capturedImageUri, setCapturedImageUri] = useState<string | null>(null);
     const [currency, setCurrency] = useState('PHP');
 
-    // Debt State (No editing support for now, just creating)
     const [selectedDebtType, setSelectedDebtType] = useState<DebtType>('LOAN');
 
-    // Ref to hold current state for access in focus effect without re-triggering
     const stateRef = useRef({ viewMode, modalVisible, editingTransaction, editingInvestment, editingDebt });
     useEffect(() => {
         stateRef.current = { viewMode, modalVisible, editingTransaction, editingInvestment, editingDebt };
@@ -41,7 +39,6 @@ const RecordScreen = ({ navigation, route }: any) => {
     // Listen for tab press events to reopen modal
     useEffect(() => {
         const unsubscribe = navigation.addListener('tabPress', (e: any) => {
-            // Only intercept if we're already on this screen (focused)
             const isFocused = navigation.isFocused();
             if (isFocused && viewMode !== 'MENU' && viewMode !== 'AI_REVIEW' && !modalVisible) {
                 e.preventDefault();
@@ -52,9 +49,7 @@ const RecordScreen = ({ navigation, route }: any) => {
         return unsubscribe;
     }, [navigation, viewMode, modalVisible]);
 
-    // Handle Transaction Cancel (Moved up for useEffect dependency)
     const handleTransactionCancel = useCallback(() => {
-        // Reset to menu view and show modal again when canceling
         setViewMode('MENU');
         setModalVisible(true);
         setEditingTransaction(null);
@@ -77,7 +72,6 @@ const RecordScreen = ({ navigation, route }: any) => {
             }
             // If modal is open, let standard modal behavior handle it (or default back)
             if (viewMode === 'MENU' && modalVisible) {
-                // Let the modal close itself or navigation go back
                 return false;
             }
             return false;
@@ -106,13 +100,9 @@ const RecordScreen = ({ navigation, route }: any) => {
     useFocusEffect(
         useCallback(() => {
             const { transaction, investment, debt } = route.params || {};
-            // Access current state via ref to avoid effect re-runs on local state changes
             const { viewMode, modalVisible, editingTransaction, editingInvestment, editingDebt } = stateRef.current;
 
             if (transaction || investment || debt) {
-                // Determine if we need to process (check against current state to avoid loops)
-                // However, navigation params should drive the state.
-
                 if (transaction) {
                     const deserializedTransaction = {
                         ...transaction,
@@ -156,13 +146,11 @@ const RecordScreen = ({ navigation, route }: any) => {
                         setViewMode('DEBT');
                         setModalVisible(false);
                     } else {
-                        // Ensure modal is hidden even if same debt (e.g. re-navigated)
                         if (modalVisible) setModalVisible(false);
                         if (viewMode !== 'DEBT') setViewMode('DEBT');
                     }
                 }
 
-                // Clear params immediately to prevent re-processing
                 navigation.setParams({ transaction: undefined, investment: undefined, debt: undefined });
             } else {
                 if (viewMode === 'MENU' && !modalVisible) {
@@ -239,7 +227,6 @@ const RecordScreen = ({ navigation, route }: any) => {
                         updatedAt: new Date().toISOString(),
                     };
 
-                    // Clone receipt data but filters items for this transaction
                     const subReceiptData = {
                         ...receiptData,
                         items: items,
@@ -385,7 +372,6 @@ const RecordScreen = ({ navigation, route }: any) => {
                 onClose={() => {
                     setModalVisible(false);
                     if (viewMode === 'MENU' && navigation.canGoBack()) {
-                        // Only go back if we haven't selected anything yet and can go back
                         navigation.goBack();
                     }
                 }}
