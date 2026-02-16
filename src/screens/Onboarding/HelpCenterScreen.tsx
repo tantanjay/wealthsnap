@@ -169,6 +169,24 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
         );
     };
 
+    const renderFormattedText = (text: string, baseStyle: any) => {
+        const parts = text.split(/(\*\*.*?\*\*)/g);
+        return (
+            <Text style={baseStyle}>
+                {parts.map((part, i) => {
+                    if (part.startsWith('**') && part.endsWith('**')) {
+                        return (
+                            <Text key={i} style={{ fontWeight: 'bold' }}>
+                                {part.slice(2, -2)}
+                            </Text>
+                        );
+                    }
+                    return part;
+                })}
+            </Text>
+        );
+    };
+
     const renderDocument = (topic: HelpTopic) => {
         return (
             <View style={styles.documentWrapper}>
@@ -199,12 +217,22 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
                             case 'heading3':
                                 return <Text key={index} style={[styles.h3, { color: colors.text }]}>{item.text}</Text>;
                             case 'paragraph':
-                                return <Text key={index} style={[styles.p, { color: colors.textSecondary }]}>{item.text}</Text>;
+                                return (
+                                    <View key={index}>
+                                        {renderFormattedText(item.text, [styles.p, { color: colors.textSecondary }])}
+                                    </View>
+                                );
                             case 'bullet':
                                 return (
-                                    <View key={index} style={styles.bulletRow}>
+                                    <View
+                                        key={index}
+                                        style={[
+                                            styles.bulletRow,
+                                            item.indent ? { paddingLeft: item.indent * 20 } : null
+                                        ]}
+                                    >
                                         <Text style={[styles.bulletDot, { color: topic.color }]}>•</Text>
-                                        <Text style={[styles.bulletText, { color: colors.textSecondary }]}>{item.text}</Text>
+                                        {renderFormattedText(item.text, [styles.bulletText, { color: colors.textSecondary }])}
                                     </View>
                                 );
                             case 'blockquote':
