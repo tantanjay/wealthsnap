@@ -36,7 +36,7 @@ const VALID_SECTION_IDS = [
     'income', 'savings', 'alerts'
 ];
 
-const InsightsScreen = ({ navigation }: any) => {
+const InsightScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const [currency, setCurrency] = useState('PHP');
@@ -406,4 +406,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default InsightsScreen;
+export default InsightScreen;
