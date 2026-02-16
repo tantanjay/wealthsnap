@@ -30,6 +30,12 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
 
     if (!transaction) return null;
 
+    // Check for specific conditions to disable edit
+    const isDebtRepayment = transaction.type === 'TRANSFER_OUT' && transaction.subCategory === 'PRINCIPAL';
+    const canEdit = !isDebtRepayment;
+    const editDisabledReason = isDebtRepayment
+        ? "Debt repayments cannot be edited. Delete and recreate if needed."
+        : "";
 
     const handleDeletePress = () => {
         showAlert(
@@ -51,6 +57,10 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
 
 
     const handleEditPress = () => {
+        if (!canEdit) {
+            showAlert("Cannot Edit", editDisabledReason);
+            return;
+        }
         onEdit(transaction);
         onClose();
     };
@@ -96,12 +106,26 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
                 {/* Actions */}
                 <View style={styles.actions}>
                     <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: colors.surface }]}
+                        style={[styles.actionButton, { backgroundColor: colors.surface, opacity: canEdit ? 1 : 0.6 }]}
                         onPress={handleEditPress}
+                        disabled={!canEdit && false}
                     >
-                        <Ionicons name="create-outline" size={24} color={colors.primary} />
-                        <Text style={[styles.actionText, { color: colors.primary }]}>Edit Transaction</Text>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                        <View style={{ width: 24, alignItems: 'center' }}>
+                            <Ionicons name="create-outline" size={24} color={canEdit ? colors.primary : colors.textSecondary} />
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 16 }}>
+                            <Text style={[styles.actionText, { color: canEdit ? colors.primary : colors.textSecondary, marginLeft: 0 }]}>
+                                {canEdit ? "Edit Transaction" : "Cannot Edit Transaction"}
+                            </Text>
+                            {!canEdit && (
+                                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 16 }}>
+                                    {editDisabledReason}
+                                </Text>
+                            )}
+                        </View>
+                        <View style={{ width: 24, alignItems: 'center' }}>
+                            {canEdit && <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />}
+                        </View>
                     </TouchableOpacity>
 
                     <View style={[styles.separator, { backgroundColor: colors.border }]} />

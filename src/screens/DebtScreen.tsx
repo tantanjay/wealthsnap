@@ -4,19 +4,26 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
 import { useTheme } from '@context/ThemeContext';
+import { useAlert } from '@context/AlertContext';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { Debt, Transaction, UserProfile } from '@types';
 import * as Storage from '@services/core/storageService';
 import { getAllDebts } from '@services/domain/debtService';
 import { getCachedTransactions } from '@services/domain/transactionService';
 import { calculateBurnRate } from '@utils/financialMetrics';
-import { calculateDebtPayoffStrategy, calculateTotalDebtObligations, calculateCurrentDebtBalance } from '@utils/debtMetrics';
+import { calculateDebtPayoffStrategy, calculateCurrentDebtBalance } from '@utils/debtMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
+import BottomModal from '@components/common/BottomModal';
+import { TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { saveTransaction } from '@services/domain/transactionService';
+import { generateUUID } from '@utils/uuid';
+import { Button } from '@components/index';
 
 const { width } = Dimensions.get('window');
 
 const DebtScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
+    const { showAlert } = useAlert();
     const [isLoading, setIsLoading] = useState(true);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [debts, setDebts] = useState<Debt[]>([]);
@@ -32,6 +39,13 @@ const DebtScreen = ({ navigation }: any) => {
     const [interestLeakPerHour, setInterestLeakPerHour] = useState<BigNumber>(new BigNumber(0));
     const [lifeLostMonths, setLifeLostMonths] = useState<number>(0);
     const [payoffOrder, setPayoffOrder] = useState<Debt[]>([]);
+
+    // Payment Modal State
+    const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+    const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
+    const [principalAmount, setPrincipalAmount] = useState('');
+    const [interestAmount, setInterestAmount] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const loadData = async () => {
         try {
@@ -107,6 +121,111 @@ const DebtScreen = ({ navigation }: any) => {
             sorted.sort((a, b) => b.interestRate.minus(a.interestRate).toNumber());
         }
         setPayoffOrder(sorted);
+    };
+
+    const handleOpenPayment = (debt: Debt) => {
+        setSelectedDebt(debt);
+
+        // Auto-calculate Split based on Debt Type
+        const currentBalance = debt.initialAmount.abs(); // In payoffOrder, this IS the current balance
+        const rate = debt.interestRate.toNumber() / 100;
+        const monthlyRate = rate / 12;
+
+        let estimatedInterest = new BigNumber(0);
+
+        if (debt.interestType === 'NONE') {
+            estimatedInterest = new BigNumber(0);
+        } else if (debt.interestType === 'FLAT') {
+            // Need original amount for accurate FLAT calc
+            const originalDebt = debts.find(d => d.id === debt.id);
+            const originalAmount = originalDebt ? originalDebt.initialAmount.abs() : currentBalance;
+            estimatedInterest = originalAmount.times(monthlyRate);
+        } else {
+            // FIXED / VARIABLE (Reducing Balance)
+            estimatedInterest = currentBalance.times(monthlyRate);
+        }
+
+        const minPay = debt.minPayment;
+        let estimatedPrincipal = minPay.minus(estimatedInterest);
+
+        // Cap principal payment at remaining balance
+        if (estimatedPrincipal.gt(currentBalance)) {
+            estimatedPrincipal = currentBalance;
+        }
+
+        // edge case: if interest > minPayment (negative amortization scenario)
+        if (estimatedPrincipal.lt(0)) estimatedPrincipal = new BigNumber(0);
+
+        setPrincipalAmount(estimatedPrincipal.toFixed(2));
+        setInterestAmount(estimatedInterest.toFixed(2));
+        setPaymentModalVisible(true);
+    };
+
+    const handlePaymentSubmit = async () => {
+        if (!selectedDebt) return;
+
+        const pAmount = parseFloat(principalAmount);
+        const iAmount = parseFloat(interestAmount);
+
+        if ((isNaN(pAmount) || pAmount <= 0) && (isNaN(iAmount) || iAmount <= 0)) {
+            showAlert('Invalid Amount', 'Please enter a valid amount for Principal or Interest.');
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            const now = new Date().toISOString();
+
+            let principalTxId = '';
+            // 1. Principal Payment (TRANSFER_OUT)
+            if (!isNaN(pAmount) && pAmount > 0) {
+                const principalTx: Transaction = {
+                    id: generateUUID(),
+                    type: 'TRANSFER_OUT',
+                    amount: new BigNumber(Math.abs(pAmount)),
+                    category: 'Loans',
+                    subCategory: 'PRINCIPAL',
+                    date: now,
+                    note: `Debt Payment: ${selectedDebt.name}`,
+                    transferAccount: selectedDebt.type,
+                    isRecurring: false,
+                    debtId: selectedDebt.id,
+                    createdAt: now,
+                    updatedAt: now
+                };
+                await saveTransaction(principalTx);
+                principalTxId = principalTx.id;
+            }
+
+            // 2. Interest Payment (EXPENSE)
+            if (!isNaN(iAmount) && iAmount > 0) {
+                const interestTx: Transaction = {
+                    id: generateUUID(),
+                    type: 'EXPENSE',
+                    amount: new BigNumber(Math.abs(iAmount)),
+                    category: 'Fees',
+                    subCategory: 'INTEREST',
+                    date: now,
+                    transferAccount: selectedDebt.type,
+                    note: `Interest Payment: ${selectedDebt.name}`,
+                    isRecurring: false,
+                    debtId: selectedDebt.id,
+                    linkedTransactionId: principalTxId,
+                    createdAt: now,
+                    updatedAt: now
+                };
+                await saveTransaction(interestTx);
+            }
+
+            // Refresh data
+            await loadData();
+            setPaymentModalVisible(false);
+        } catch (error) {
+            console.error('Payment Error:', error);
+            showAlert('Error', 'Failed to save payment. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     useFocusEffect(useCallback(() => {
@@ -244,11 +363,105 @@ const DebtScreen = ({ navigation }: any) => {
                             </Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Min Payment</Text>
                         </View>
+                        <TouchableOpacity
+                            style={[styles.payButton, { backgroundColor: colors.primary }]}
+                            onPress={() => handleOpenPayment(debt)}
+                        >
+                            <Text style={styles.payButtonText}>Pay</Text>
+                        </TouchableOpacity>
                     </View>
                 ))}
 
-            </ScrollView>
-        </ScreenWrapper>
+                {/* Payment Modal */}
+                <BottomModal
+                    visible={paymentModalVisible}
+                    onClose={() => setPaymentModalVisible(false)}
+                    title="Record Payment"
+                    subtitle={selectedDebt ? `For ${selectedDebt.name}` : ''}
+                >
+                    <View style={{ gap: 16 }}>
+                        <View>
+                            <Text style={{ color: colors.text, marginBottom: 8, fontWeight: '600' }}>Principal Payment</Text>
+                            <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12 }}>
+                                Reduces your debt balance. (Type: Transfer Out)
+                            </Text>
+                            <TextInput
+                                style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+                                placeholder="0.00"
+                                placeholderTextColor={colors.textSecondary}
+                                keyboardType="numeric"
+                                value={principalAmount}
+                                onChangeText={setPrincipalAmount}
+                            />
+                        </View>
+
+                        <View>
+                            <Text style={{ color: colors.text, marginBottom: 8, fontWeight: '600' }}>Interest Payment</Text>
+                            <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12 }}>
+                                Cost of borrowing. Does not reduce balance. (Type: Expense)
+                            </Text>
+                            <TextInput
+                                style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+                                placeholder="0.00"
+                                placeholderTextColor={colors.textSecondary}
+                                keyboardType="numeric"
+                                value={interestAmount}
+                                onChangeText={setInterestAmount}
+                            />
+                        </View>
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>Total Payment</Text>
+                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 18 }}>
+                                {formatCurrencyAmount(new BigNumber((parseFloat(principalAmount) || 0) + (parseFloat(interestAmount) || 0)), currency)}
+                            </Text>
+                        </View>
+
+                        {/* Info Box for Adjusted Payment */}
+                        {selectedDebt && (
+                            (() => {
+                                const currentTotal = (parseFloat(principalAmount) || 0) + (parseFloat(interestAmount) || 0);
+                                const minPay = selectedDebt.minPayment.toNumber();
+                                // Check if significantly different from Min Payment (tolerance 0.01)
+                                const isDifferent = Math.abs(currentTotal - minPay) > 0.01;
+
+                                if (isDifferent) {
+                                    return (
+                                        <View style={{
+                                            backgroundColor: colors.background,
+                                            // subtle border or highlight
+                                            borderWidth: 1,
+                                            borderColor: colors.border,
+                                            padding: 12,
+                                            borderRadius: 8,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            marginTop: 4
+                                        }}>
+                                            <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                                            <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 1 }}>
+                                                {currentTotal < minPay
+                                                    ? "Payment adjusted to clear likely remaining balance."
+                                                    : "This amount differs from your standard minimum payment."}
+                                            </Text>
+                                        </View>
+                                    );
+                                }
+                                return null;
+                            })()
+                        )}
+
+                        <Button
+                            title={isSubmitting ? "Recording..." : "Confirm Payment"}
+                            onPress={handlePaymentSubmit}
+                            loading={isSubmitting}
+                            style={{ marginTop: 8 }}
+                        />
+                    </View>
+                </BottomModal>
+
+            </ScrollView >
+        </ScreenWrapper >
     );
 };
 
@@ -349,6 +562,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         marginBottom: 2,
+    },
+    payButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        marginLeft: 12,
+    },
+    payButtonText: {
+        color: '#FFF',
+        fontWeight: '600',
+        fontSize: 12,
+    },
+    input: {
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: 12,
+        fontSize: 16,
     },
 });
 

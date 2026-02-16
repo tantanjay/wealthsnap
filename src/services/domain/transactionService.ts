@@ -219,6 +219,9 @@ export const deleteTransaction = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
         await db.runAsync('DELETE FROM transactions WHERE id = ?', [id]);
+        await db.runAsync('DELETE FROM transaction_receipts WHERE transactionId = ?', [id]);
+        await db.runAsync('DELETE FROM transactions WHERE linkedTransactionId = ?', [id]);
+
         // Optimistic cache update: remove from cache instead of full invalidation
         DataCache.deleteTransactionFromCache(id);
     } catch (error) {
