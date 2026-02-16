@@ -919,7 +919,7 @@ const HomeScreen = ({ navigation }: any) => {
                                     isPrivacyEnabled={isPrivacyEnabled}
                                     currency={profile?.currency || 'PHP'}
                                     onPress={() => {
-                                        // navigation.navigate('Debt')
+                                        navigation.navigate('Debts');
                                     }}
                                     displayMode={debtDisplayMode}
                                     onDisplayModeChange={handleDebtModeSwipe}
