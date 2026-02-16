@@ -84,7 +84,7 @@ const HomeScreen = ({ navigation }: any) => {
         totalProjectedLiability: new BigNumber(0),
         runwayInMonths: 0,
         runwayChange: 0,
-        topHoldings: [] as Array<{ symbol: string, percent: number }>,
+        topHoldings: [] as { symbol: string, percent: number }[],
         monthBudgetPercent: 0,
         spendingDifferencePercent: 0,
         cashBalance: new BigNumber(0),
@@ -554,7 +554,7 @@ const HomeScreen = ({ navigation }: any) => {
             }
 
             // Top Holding (Dynamic by Asset Type)
-            const topHoldings: Array<{ symbol: string, percent: number }> = [];
+            const topHoldings: { symbol: string, percent: number }[] = [];
 
             if (portfolioMetrics.length > 0 && totalMarketValue.isGreaterThan(0)) {
                 // 1. Group by Asset Type
