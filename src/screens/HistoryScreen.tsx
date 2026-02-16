@@ -414,7 +414,7 @@ const HistoryScreen = ({ navigation }: any) => {
             projectedVariableSpend,
             remainingDebtObligations
         };
-    }, [summary, recurrenceRules, currentDate, timeFrame, viewMode, allTransactions]);
+    }, [summary, recurrenceRules, currentDate, timeFrame, viewMode, allTransactions, allDebts, dashboardTransactions]);
 
     const sections = useMemo((): TransactionSection[] => {
         const grouped: { [key: string]: HistoryItem[] } = {};
@@ -455,7 +455,7 @@ const HistoryScreen = ({ navigation }: any) => {
         });
 
         return newSections.sort((a, b) => b.originalDate.getTime() - a.originalDate.getTime());
-    }, [filteredData]);
+    }, [filteredData, getItemDate]);
 
 
     const renderItem = ({ item }: { item: HistoryItem }) => {

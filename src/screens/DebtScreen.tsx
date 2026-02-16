@@ -45,26 +45,7 @@ const DebtScreen = ({ navigation }: any) => {
     const [feeAmount, setFeeAmount] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const loadData = async () => {
-        try {
-            setIsLoading(true);
-            const [p, d, t] = await Promise.all([
-                Storage.getUserProfile(),
-                getAllDebts(),
-                getCachedTransactions()
-            ]);
-            setProfile(p);
-            setDebts(d);
-            setTransactions(t);
-            calculateMetrics(d, t, p, strategy, extraPayment);
-        } catch (error) {
-            console.error('Failed to load debt data:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const calculateMetrics = (
+    const calculateMetrics = useCallback((
         currentDebts: Debt[],
         currentTxns: Transaction[],
         userProfile: UserProfile | null,
@@ -166,7 +147,26 @@ const DebtScreen = ({ navigation }: any) => {
             }
         });
         setPayoffOrder(sorted);
-    };
+    }, []);
+
+    const loadData = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const [p, d, t] = await Promise.all([
+                Storage.getUserProfile(),
+                getAllDebts(),
+                getCachedTransactions()
+            ]);
+            setProfile(p);
+            setDebts(d);
+            setTransactions(t);
+            calculateMetrics(d, t, p, strategy, extraPayment);
+        } catch (error) {
+            console.error('Failed to load debt data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [calculateMetrics, strategy, extraPayment]);
 
     const handleOpenPayment = (debt: Debt) => {
         setSelectedDebt(debt);
@@ -297,14 +297,14 @@ const DebtScreen = ({ navigation }: any) => {
 
     useFocusEffect(useCallback(() => {
         loadData();
-    }, []));
+    }, [loadData]));
 
     // Re-calculate when strategy or extra payment changes (client-side only for speed)
     useEffect(() => {
         if (!isLoading) {
             calculateMetrics(debts, transactions, profile, strategy, extraPayment);
         }
-    }, [strategy, extraPayment]);
+    }, [strategy, extraPayment, calculateMetrics, debts, transactions, profile, isLoading]);
 
     const currency = profile?.currency || 'PHP';
 
