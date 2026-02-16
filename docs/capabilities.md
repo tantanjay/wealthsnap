@@ -1,143 +1,383 @@
+````markdown
 # WealthSnap – Features & Capabilities
 
-## ⭐ Highlight Features
-
-- **Safe to Spend Algorithm**  
-  Calculates true discretionary income by subtracting fixed bills, **mandatory debt payments**, and a dynamic **Life Burnrate** (90-day rolling average).
-
-- **Financial Runway & Freedom Timeline**  
-  Converts net liquid balance into survival time (e.g., *“11.0 months”*) and projects a **Liquidity / Freedom Date**.  
-  - Debt-aware burn rate  
-  - Shows how spending, saving, and investing **move freedom earlier or later**
-
-- **Financial Health Intelligence**  
-  A top-level health system that evaluates:  
-  - **Stability Runway** (months without income)  
-  - **Net Cash Flow & Spending Trend**  
-  - **Debt Pressure & Interest Drag**  
-  - **Freedom Acceleration** from investments  
-
-- **Debt & Loan Management**  
-  Full lifecycle tracking for Loans, Credit Cards, Mortgages, and IOUs with amortization-aware financial health integration.  
-  - Debt reduces Safe-to-Spend *before* discretionary income  
-  - Debt repayments count as expenses for accurate Savings Rate  
-  - Interest cost explicitly measured as a freedom delay
-
-- **Global Currency & Native Assets**  
-  Support for 150+ currencies with native-currency investments and automatic home-currency valuation.
-
-- **Local-First, Zero-Knowledge Architecture**  
-  All data remains on-device. No cloud sync, no tracking, no external storage.
-
-- **Bring-Your-Own AI**  
-  Optional AI features unlocked via a personal Gemini API key—no subscriptions, no bundled costs.
+WealthSnap is a privacy-first, computation-driven financial system designed to give you deterministic clarity over your money. Below is a complete breakdown of its major capabilities.
 
 ---
 
-## 💸 Debt & Loan Management
+# ⭐ Core Highlight Features
 
-- **Comprehensive Debt Profiles**  
-  Specialized forms for Loans, Credit Cards, Mortgages, and IOUs.
+## 💰 Safe-to-Spend Algorithm (True Discretionary Income)
 
-- **Full Amortization Engine**  
-  Monthly breakdown of:  
-  - Principal  
-  - Interest  
-  - Remaining balance  
-  for the entire loan term.
+WealthSnap calculates what you can *actually* spend without hurting your future.
 
-- **Smart Minimum Payments**  
-  Automatically calculated based on:  
-  - Interest rate  
-  - Term  
-  - Interest type (Fixed, Variable, Flat, None)  
-  These payments are treated as **mandatory obligations** across all health metrics.
+**Formula:**
 
-- **True Cost Accounting**  
-  - Runway and Safe-to-Spend subtract mandatory debt payments  
-  - Net Worth includes projected future interest for conservative valuation  
-  - Savings Rate avoids double counting principal transfers
+```
+(Current Cash + Future Income)
+- (Future Bills + Mandatory Debt Payments + Life Burnrate)
+= Safe-to-Spend
+```
 
-- **Intelligent Debt Transactions**  
-  Detects whether debt funds entered your account or were paid directly to vendors—preventing inflated cash balances.
+Where:
 
-- **Debt Analytics Card**  
-  - Swipe between **Lifetime vs Monthly** views  
-  - Clear split between **Required Payments**, **Paid Principal**, and **Interest Cost**
+- **Future Income** includes recurring income before period end  
+- **Mandatory Debt Payments** are treated as non-optional  
+- **Life Burnrate** is a rolling 90-day average of non-recurring daily spending  
+
+This ensures your “Guilt-Free Money” is conservative, survival-aware, and debt-adjusted.
 
 ---
 
-## 🏥 Financial Health & Analytics
+## 🏃 Financial Runway & Freedom Timeline
 
-- **Financial Health Card**  
-  A dedicated dashboard surface summarizing:  
-  - Runway  
-  - Net Worth  
-  - Total Assets
+Transforms your liquid balance into survival time.
 
-- **Deep Health Analysis**  
-  - **Impact on Freedom**: months added or lost per year based on spending behavior  
-  - **Debt Delays Freedom**: years lost to interest and mandatory payments  
-  - **Wealth Growth Visuals**: shows how investing accelerates freedom
+- Displays: `11.0 months`, etc.
+- Projects a **Liquidity / Freedom Date**
+- Fully debt-aware
+- Shows how behavior changes (spending, saving, investing) move freedom earlier or later
 
-- **Advanced Net Worth**  
-  - Assets minus liabilities  
-  - Liabilities include projected interest for a true obligation view  
-  - Clear separation of mandatory vs discretionary cash flow
+Includes:
 
-- **Interactive Analytics**  
-  Tap, drag, and inspect precise values across savings, income, and spending trends with multi-year range filters.
+- Impact on Self-Sustain (months gained/lost per year)
+- Debt Delay in years
+- Investment Acceleration effect
 
 ---
 
-## 📅 Planning & Projections
+## 🏥 Financial Health Intelligence System
 
-- **Loan Start-Date Awareness**  
-  Accurate forward projections, payoff timelines, and amortization forecasts.
+A top-level diagnostic engine that evaluates:
 
-- **Exportable Schedules**  
-  Copy full loan tables for external analysis or record-keeping.
+- **Stability Runway**
+- **Net Cash Flow**
+- **Spending Trend Baseline**
+- **Debt Pressure**
+- **Interest Drag**
+- **Freedom Acceleration**
 
----
-
-## 📈 Investments & Assets
-
-- Native crypto & stock tracking  
-- Dual-agent AI market research  
-- Dividend projection & portfolio drift  
-- Treemap visualizations
+Designed to show not just your numbers — but your trajectory.
 
 ---
 
-## ⚡ User Experience & Workflow
+## 🌍 Global Currency & Native Assets
 
-- Dedicated Transfers System  
-- Smart Document Scanner  
-- Smart History Calendar  
-- Optimistic UI  
-- Swipeable Dashboard  
-- Built-in Help Center
-
----
-
-## ⚙️ Core Technology
-
-- High-Precision Math Engine  
-- Encrypted SQLite Storage  
-- Background Processing
+- 150+ world currencies
+- Native-currency investment recording
+- Automatic home-currency conversion
+- Smart localization (decimal formats, symbols)
+- FX caching for performance efficiency
 
 ---
 
-## 🛡️ Privacy & Security
+## 🔐 Local-First, Zero-Knowledge Architecture
 
-- Global Privacy Mode  
-- Conditional Screenshot Protection  
-- Biometric App Lock  
-- Local Crash Safety
+- Fully offline-first
+- Encrypted SQLite storage
+- AES-256 encryption for sensitive data
+- No forced cloud sync
+- No analytics tracking
+- No server dependency
+
+Your data stays on your device.
 
 ---
 
-## 💾 Data Portability
+## 🤖 Bring-Your-Own AI (Optional)
 
-- CSV / TSV Import  
-- Encrypted Local Backups
+AI features are fully optional and user-controlled.
+
+- Uses your personal Gemini API key
+- No subscription lock-in
+- No bundled AI cost
+- Only selected data is transmitted
+- Entire database is never shared
+
+---
+
+# 💸 Debt & Loan Management
+
+A complete liability tracking system deeply integrated into financial health metrics.
+
+## 📋 Comprehensive Debt Profiles
+
+Supports:
+
+- Loans
+- Credit Cards
+- Mortgages
+- IOUs
+
+---
+
+## 📊 Full Amortization Engine
+
+Generates a complete month-by-month breakdown:
+
+- Principal
+- Interest
+- Remaining balance
+
+Supports:
+
+- Fixed interest
+- Variable interest
+- Flat rate
+- No interest
+
+---
+
+## 💳 Smart Minimum Payment Engine
+
+Automatically calculates required payments based on:
+
+- Interest rate
+- Term length
+- Interest type
+
+These payments are treated as **mandatory obligations** across:
+
+- Safe-to-Spend
+- Financial Runway
+- Net Worth
+- Savings Rate
+
+---
+
+## 🧮 True Cost Accounting
+
+- Debt repayments count toward expenses correctly
+- Savings Rate avoids double-counting principal
+- Net Worth includes projected future interest (conservative valuation)
+- Interest explicitly measured as “Freedom Delay”
+
+---
+
+## 🔄 Intelligent Debt Transactions
+
+- Detects whether funds entered your account
+- Prevents inflated cash balances
+- Principal and interest are auto-split
+- Linked transactions stay synchronized
+- Cascade deletion maintains data integrity
+
+---
+
+## 📊 Debt Analytics Card
+
+- Swipe between **Lifetime** and **Monthly** views
+- See:
+  - Required Payments
+  - Paid Principal
+  - Interest Cost
+- Clear separation of obligations vs activity
+
+---
+
+# 📈 Investments & Asset Management
+
+## 📊 Investment Tracking
+
+Supports:
+
+- Stocks
+- Funds
+- Crypto
+- Custom Assets (Asset Dictionary)
+
+---
+
+## 💹 Portfolio Intelligence
+
+- Realized P/L
+- Unrealized P/L
+- Allocation heatmap (Stock / Sector views)
+- Holdings list with sorting
+- Native currency support
+- Monthly vs Total portfolio view
+
+---
+
+## 📈 Dividend & Income Projections
+
+- Dividend tracking
+- Dividend projection chart
+- Price history
+- Dividend history
+- Manual and AI-assisted updates
+
+---
+
+## 🤖 Dual-Agent AI Market Engine (Optional)
+
+1. **Researcher AI** – gathers market data  
+2. **Accountant AI** – cleans and formats structured entries  
+
+Ensures higher reliability and structured output.
+
+---
+
+# 🏥 Financial Health & Analytics
+
+## 🧾 Financial Health Card
+
+Top-of-dashboard summary with swipeable views:
+
+- Health Metrics
+- Net Worth
+- Total Assets
+
+---
+
+## 📊 Advanced Net Worth Tracking
+
+- Assets minus liabilities
+- Liabilities include projected interest
+- Conservative projection model
+- Clear separation of mandatory vs discretionary cash flow
+
+---
+
+## 📉 Interactive Trend Analytics
+
+- Savings Rate Trend
+- Income Analysis
+- Spending Comparison
+- Monthly Pulse Projection
+
+Features:
+
+- Tap-to-inspect
+- Press-and-hold detail popups
+- Multi-range filters (6M, 1Y, 3Y, ALL)
+- Pro-rated projections
+- Dynamic scaling & split-color trends
+
+---
+
+# 📅 Planning & Projections
+
+## 🗓 Loan Start-Date Awareness
+
+- Accurate forward projections
+- Payoff timeline calculation
+- Amortization forecasting
+
+---
+
+## 📋 Exportable Schedules
+
+- Copy full amortization table
+- Ready for spreadsheet analysis
+
+---
+
+# 📆 Smart History Calendar
+
+A powerful alternate history view featuring:
+
+- Income / Expense / Transfer bars per day
+- Safe-to-Spend for period
+- Ghost Forecast (upcoming recurring bills)
+- Discretionary spending heatmap
+- Investment BUY/SELL signal markers
+- Interactive learning modal
+
+---
+
+# 🔔 Smart Alerts & Reminders
+
+## 📢 Real-Time Alerts
+
+- Budget breach detection
+- Category-level anomaly detection
+- Spending spike detection
+- Runway Drop Detection (≥25%)
+
+Alerts run immediately after saving transactions.
+
+---
+
+## ⏰ Reminder System
+
+- Recurring reminders
+- Background completion
+- Snooze options (15m → 3d)
+- Catch-up modal
+- Proper notification cleanup
+
+---
+
+# ⚡ User Experience & Workflow
+
+- Dedicated Transfers system
+- Smart category suggestions (last 30 days)
+- Horizontal quick-select categories
+- Rapid entry mode (auto “Add More”)
+- Smart Document Scanner
+- Swipeable balance cards
+- Persistent display preferences
+- Reorderable dashboard sections
+- Integrated Change Logs in Help Center
+
+---
+
+# 📚 Built-In Education & Transparency
+
+- Full Help Center
+- Financial Insights explanations
+- Math & Formula documentation
+- Vision & Philosophy modal
+- Terms & Privacy version tracking
+
+No black-box calculations.
+
+---
+
+# ⚙️ Core Technology
+
+- High-Precision BigNumber financial engine
+- Encrypted SQLite storage
+- Hybrid encryption model
+- Background decryption batching
+- Optimistic cache updates
+- Concurrency-safe transaction handling
+- Headless JS background tasks
+- Global error boundary with crash logs
+
+---
+
+# 🛡 Privacy & Security
+
+- Secure PIN lock
+- Intelligent auto-lock logic
+- Conditional screenshot blocking
+- Encrypted sensitive fields
+- Versioned Terms acceptance
+- Local crash telemetry only
+- No external storage permissions
+
+---
+
+# 💾 Data Portability
+
+- CSV / TSV bulk import
+- Duplicate detection
+- Strict validation engine
+- Encrypted local backup
+- Multi-format restore support
+- Smart 7-day backup reminder
+- Reminder auto-rescheduling after restore
+
+---
+
+# 🎯 Philosophy
+
+WealthSnap is built as a:
+
+> Personal Financial Operating System
+
+It does not just track expenses.  
+It models survival, obligation, acceleration, and freedom — locally, privately, and deterministically.
+````

@@ -1,83 +1,221 @@
-# WealthSnap — Your Financial Mirror
+# WealthSnap
 
-**Version:** v1.8.0  
-**Last Updated:** February 3, 2026  
-**Status:** Closed Testing (12-Tester Milestone)
-
----
-
-**WealthSnap** is an offline-first financial mirror built for absolute privacy. It provides a high-resolution reflection of your assets and progress—kept securely on your device, exactly where it belongs.
-
-Built by a developer who wanted a better way to see the *truth* in their numbers, WealthSnap combines **modern encryption standards** with **high-precision math**, without the subscriptions, ads, or cloud-sync trade-offs found in modern apps.
+**Private. Intelligent. Offline-First.**  
+WealthSnap is a powerful personal finance app designed to help you track money, analyze trends, manage investments, monitor debt, and understand your true financial health — all while keeping your data fully encrypted and stored locally on your device.
 
 ---
 
-## 🔭 Vision & Philosophy
+## 🔐 Privacy-First Architecture
 
-- **Your Standing, Reflected:** WealthSnap is a reflection tool, not a financial advisor. It does not provide recommendations or guidance—only a precise view of your own data.
-- **Privacy as a Foundation:** We don’t just protect your data—we don’t collect it. Your financial life stays on your device, not on a server.
-- **Accuracy Above All:** Every cent matters. WealthSnap uses an arbitrary-precision math engine to ensure totals reconcile perfectly over years of history.
+WealthSnap is built with a **zero-knowledge, offline-first philosophy**.
 
----
+- 🔒 **AES-256 Encryption** for sensitive data  
+- 📱 **Local Storage Only** (SQLite database)  
+- 🚫 No forced cloud sync  
+- 🧠 AI features are strictly **opt-in**  
+- 🔑 BYOK (Bring Your Own Key) for AI services  
+- 📦 Secure Backup & Restore support  
 
-## 🌍 What WealthSnap Does (In Plain Terms)
-
-- **Track Everything:** Income, expenses, transfers, and asset growth in one unified view.
-- **Investment Mirror:** Monitor your holdings, cost basis, and portfolio allocation without linking to a brokerage account.
-- **Smart Calendar:** See your “Safe-to-Spend” balance and visualize upcoming bills before they happen.
-- **Local Insights:** Understand your savings rate, burn rate, and financial runway using your own historical trends.
+Your financial data never leaves your device unless you explicitly choose to use optional AI features.
 
 ---
 
-## 🔐 Privacy & Security by Design
+## 💰 Core Features
 
-> Even the developer cannot see your data—because it never leaves your device.
-
-- **100% Offline-First:** No servers, no accounts, and no third-party tracking. The app works fully offline.
-- **Local Encryption:** Sensitive fields such as notes and amounts are encrypted using **AES-256**, leveraging device security features where supported.
-- **Total Ownership:** Your data is stored in a local SQLite database. You control the file, the backups, and the lifecycle of your data.
-
----
-
-## 🤖 Smart Tools (You Control the Key)
-
-WealthSnap includes optional smart features designed with **architectural integrity and user control**:
-
-- **Receipt Scanning:** Extract totals and dates using AI when enabled. Receipt data is stored locally and encrypted.
-- **Asset Price Fetching:** AI-assisted retrieval and cross-checking of publicly available market prices when enabled.
-- **Bring Your Own Key (BYOK):** To keep the app free and private, you may supply your own Google Gemini API key. Usage and billing are handled directly by the provider, and only when you choose to enable these features.
-
-All smart features are optional and can be disabled at any time.
+### 📊 Smart Financial Dashboard
+- Interactive **Financial Health Card**
+- Track:
+  - Stability Runway (months you can survive without income)
+  - Liquidity Date projection
+  - Net Flow & Spending Trend
+  - Debt Pressure & Interest Drag
+  - Wealth Growth Acceleration
+- Swipe between **Health Metrics**, **Net Worth**, and **Total Assets**
 
 ---
 
-## 💡 Why WealthSnap Is Free
-
-WealthSnap was built as a personal passion project. Its architecture allows it to remain free without monetizing users:
-
-1. **No Servers, No Ongoing Costs:** All data stays on your device.
-2. **No Data Collection:** There is no user data to sell or analyze.
-3. **Built for the Craft:** This app exists because the developer needed it—and decided to share it.
-
----
-
-## 🏗️ Technical Highlights (For the Curious)
-
-| Layer | Technology |
-|------|------------|
-| **Core** | React Native + Expo (New Architecture) |
-| **Database** | SQLite (Local-only, Schema V7) |
-| **Math Engine** | BigNumber.js (Arbitrary precision, no rounding errors) |
-| **Security** | AES-256 Encryption + Device Security Features |
+### 🧾 Transactions & Budgeting
+- Income & Expense tracking
+- Recurring transactions & reminders
+- Budget monitoring with smart color thresholds:
+  - 🟢 <70% Healthy
+  - 🟠 70–90% Warning
+  - 🔴 >90% Danger
+- Smart category suggestions
+- CSV/TSV bulk import
+- Calendar-based history view with:
+  - Safe-to-Spend calculation
+  - Ghost Forecast (upcoming bills)
+  - Discretionary heatmap
 
 ---
 
-## 📌 Developer’s Note
+### 📈 Investments & Portfolio Management
+Track and analyze:
+- Stocks
+- Funds
+- Crypto
+- Custom assets (via Asset Dictionary)
 
-WealthSnap is a 100% independent, solo-developed project. There are no venture capitalists, analytics dashboards, or support teams—just one engineer and a keyboard.
-
-Updates and support are provided on a **best-effort basis** during spare time. If this app brings clarity, the mission is accomplished. If something needs fixing, it will be addressed as time allows.
+Features include:
+- Buy / Sell / Dividends / Interest tracking
+- Unrealized & Realized P/L
+- Allocation Heatmap (Stock & Sector views)
+- Dividend projection chart
+- Price & dividend history management
+- Native currency recording (multi-currency support)
+- Automatic exchange rate conversion
+- AI-assisted price & dividend fetching
 
 ---
 
-*“Your money is private. Your data is yours. Accuracy builds trust.”*
+### 💳 Debt & Loan Management
+Comprehensive liability tracking:
+
+- Loans, Mortgages, Credit Cards, IOUs
+- Full amortization schedule
+- Fixed, Variable, Flat, or No interest types
+- Auto minimum payment calculation
+- Principal vs Interest split
+- Debt-integrated:
+  - Savings Rate
+  - Runway
+  - Safe-to-Spend
+- Monthly vs Lifetime debt tracking
+- One-tap payment recording
+
+---
+
+### 🤖 AI-Powered Tools (Optional)
+
+WealthSnap integrates optional AI tools.
+
+Features include:
+- Smart receipt analysis (amount, category, notes extraction)
+- AI-assisted stock price research
+- Smart Advisor insights
+- Anomaly & spending spike detection
+
+**Privacy Controls:**
+- You provide your own API key
+- Only selected data is transmitted
+- Images are not permanently stored
+- Local database is never shared
+
+---
+
+### 🔔 Smart Alerts & Reminders
+- Budget breach alerts
+- Spending spike detection
+- Runway drop detection (≥25%)
+- Background reminder completion & snooze
+- Catch-up mode for missed reminders
+- Interactive notification actions
+
+---
+
+### 🌍 Global Currency Support
+- 150+ world currencies
+- Smart localization (decimal formats, symbols)
+- Native-currency investment tracking
+- Real-time FX conversion
+
+---
+
+### 📊 Advanced Insights
+- Savings Rate Trend (interactive)
+- Income Analysis with projections
+- Spending Comparison (pro-rated)
+- Monthly Pulse Forecast
+- 10+ Financial Insight Cards
+- Customizable Insights dashboard
+- Reorderable cards & sections
+- Tap-to-inspect charts
+
+---
+
+## ⚡ Performance & Architecture
+
+WealthSnap is engineered for speed and reliability:
+
+- SQLite-based encrypted storage
+- High-precision financial engine
+- Background transaction decryption (chunked loading)
+- Optimistic UI cache updates
+- Exchange rate & market data caching
+- O(N) portfolio computation engine
+- Global Error Boundary with crash logging
+- Safe-area optimized UI
+- Headless JS background task support
+
+---
+
+## 🛡 Security
+
+- Secure PIN protection
+- Intelligent app lock behavior
+- Conditional screenshot blocking
+- Encrypted sensitive fields
+- Strict transfer handling (Transfer Out treated conservatively)
+- Versioned Terms & Privacy acceptance tracking
+
+---
+
+## 📦 Backup & Restore
+
+- Manual encrypted backup
+- Multi-MIME restore support
+- Backup reminder (every 7 days)
+- Automatic reminder rescheduling after restore
+
+---
+
+## 📚 Built-In Help Center
+
+WealthSnap includes a full in-app documentation system:
+
+- Getting Started Guide
+- Financial Insights Education
+- Full Mathematical Formulas
+- Change Logs
+- Terms of Use & Privacy
+- Vision, Philosophy & Goals
+
+Complete transparency on how every metric is calculated.
+
+---
+
+## 🎯 Philosophy
+
+WealthSnap is designed around three principles:
+
+1. **Clarity over complexity**
+2. **Privacy over convenience**
+3. **Education over guesswork**
+
+You don't just see numbers — you understand them.
+
+---
+
+## 🛠 Tech Stack (High Level)
+
+- React Native (Expo)
+- SQLite (expo-sqlite)
+- AES Encryption
+- BigNumber.js computation engine
+- React Native Gifted Charts
+- Headless JS background services
+
+---
+
+## 🚀 Vision
+
+WealthSnap is not just an expense tracker.  
+It’s a **Personal Financial Operating System** built to help you:
+
+- Survive
+- Stabilize
+- Grow
+- Self-sustain
+
+All while keeping your financial life completely private.
