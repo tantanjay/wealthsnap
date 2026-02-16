@@ -12,7 +12,7 @@ interface HomeFinancialHealthCardProps {
     totalAssets: BigNumber;
     runwayInMonths: number;
     runwayChange: number;
-    topHoldings: Array<{ symbol: string, percent: number }>;
+    topHoldings: { symbol: string, percent: number }[];
     isLoading: boolean;
     isPrivacyEnabled: boolean;
     currency: string;
