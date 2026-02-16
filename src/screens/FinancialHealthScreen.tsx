@@ -1,17 +1,16 @@
 import React, { useCallback, useState } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, ScrollView, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, ScrollView, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
-import { UserProfile, Transaction } from '@types';
+import { UserProfile } from '@types';
 import * as Storage from '@services/core/storageService';
 import { getCachedTransactions } from '@services/domain/transactionService';
 import { getCachedInvestments } from '@services/domain/investmentService';
 import { getAllDebts } from '@services/domain/debtService';
-import { getAllBudgets } from '@services/domain/budgetService';
 import { getLatestPrices } from '@services/domain/priceHistoryService';
 import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
 import {
@@ -20,14 +19,12 @@ import {
     getCurrentMonthCumulative,
     getTransactionsByMonth,
     calculateTotals,
-    getTopExpenses,
     getMonthlyTrends
 } from '@utils/financialMetrics';
-import { calculateProjectedDebtLiability, calculateTotalDebtObligations, calculatePrevDebtObligations } from '@utils/debtMetrics';
+import { calculateTotalDebtObligations, calculatePrevDebtObligations } from '@utils/debtMetrics';
 import {
     calculateDebtDrag,
     calculateInvestmentBoost,
-    calculateSpendingTrend,
     calculateFreedomImpact,
     calculateDebtFreedomDelay,
     calculateFreedomAcceleration
@@ -47,8 +44,6 @@ const FinancialHealthScreen = ({ navigation }: any) => {
 
     const [isLoading, setIsLoading] = useState(true);
     const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [topExpenses, setTopExpenses] = useState<Transaction[]>([]);
 
     // Metrics State
     const [financialState, setFinancialState] = useState({
@@ -339,7 +334,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     <View style={{ flex: 1 }}>
                         <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>
                             <Text style={{ fontWeight: 'bold', color: '#FF9500' }}>⚡ Beta Feature: </Text>
-                            This analysis uses strict, conservative math. It's designed to show the brutal truth about your financial runway and self-sustain date. Don't panic—use it to improve.
+                            This analysis uses strict, conservative math. It&apos;s designed to show the brutal truth about your financial runway and self-sustain date. Don&apos;t panic—use it to improve.
                         </Text>
                     </View>
                 </View>

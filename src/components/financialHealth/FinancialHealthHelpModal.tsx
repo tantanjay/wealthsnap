@@ -128,7 +128,7 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                 return (
                     <>
                         <Text style={[styles.introText, { color: colors.text }]}>
-                            Net Flow is your "Profit" after all expenses. We use your <Text style={{ fontWeight: 'bold' }}>3-month average</Text> to smooth out income timing.
+                            Net Flow is your &quot;Profit&quot; after all expenses. We use your <Text style={{ fontWeight: 'bold' }}>3-month average</Text> to smooth out income timing.
                         </Text>
 
                         {renderMathBlock(
@@ -159,7 +159,7 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                             (data.freedomImpactMonths || 0) > 0 ? colors.success : colors.error
                         )}
                         <Text style={[styles.explanation, { color: colors.textSecondary }]}>
-                            This represents how much future self-sustain you are "buying" with your monthly savings. At this rate, you gain {(data.freedomImpactMonths || 0).toFixed(1)} months of absolute self-sustain every year.
+                            This represents how much future self-sustain you are &quot;buying&quot; with your monthly savings. At this rate, you gain {(data.freedomImpactMonths || 0).toFixed(1)} months of absolute self-sustain every year.
                         </Text>
                     </>
                 );
@@ -174,7 +174,7 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                 return (
                     <>
                         <Text style={[styles.introText, { color: colors.text }]}>
-                            Debt acts as a "Self-Sustain Thief". This modal calculates exactly how much it's stealing from your future.
+                            Debt acts as a &quot;Self-Sustain Thief&quot;. This modal calculates exactly how much it&apos;s stealing from your future.
                         </Text>
 
                         {renderMathBlock(
@@ -210,7 +210,7 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                 return (
                     <>
                         <Text style={[styles.introText, { color: colors.text }]}>
-                            Your investments are "bought" self-sustain. This shows how much time they've already secured for you.
+                            Your investments are &quot;bought&quot; self-sustain. This shows how much time they&apos;ve already secured for you.
                         </Text>
 
                         {renderMathBlock(
