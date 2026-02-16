@@ -520,7 +520,7 @@ const HomeScreen = ({ navigation }: any) => {
             // Previous Avg Expense = (Total Expense - Month Expense) / (monthsActive - 1)
 
             // Month Budget % (Actual Budget Health)
-            // Fetch real budgets to match InsightsScreen logic
+            // Fetch real budgets to match InsightScreen logic
             const budgets = await getAllBudgets();
             let monthBudgetPercent = 0;
 
