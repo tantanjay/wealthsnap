@@ -9,11 +9,9 @@
     "newArchEnabled": true,
     "androidStatusBar": {
       "barStyle": "dark-content",
-      "backgroundColor": "#00000000",
       "translucent": true
     },
     "androidNavigationBar": {
-      "visible": "sticky-immersive",
       "backgroundColor": "#00000000"
     },
     "splash": {
