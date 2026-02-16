@@ -8,6 +8,158 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.9.0] — 2026-02-12
+
+### Added
+- **Interactive Insights**
+  - Savings Rate Trend chart now supports tap-to-inspect for exact monthly values.
+  - Long-press support on Income Analysis and Spending Comparison bars to view precise actual vs. projected amounts.
+
+- **Native Currency Investments**
+  - Investments can now be recorded in their native currency (USD, EUR, JPY, etc.).
+  - Automatic exchange rate fetching via Frankfurter API.
+  - Historical prices are converted to profile currency for accurate portfolio valuation.
+  - History view preserves original currency context for each transaction.
+
+- **Crypto Investments**
+  - Added **Crypto** as a first-class investment type.
+
+### Changed
+- Portfolio valuation logic updated to support multi-currency investment aggregation.
+- Background services enhanced to cache exchange rates and market data more efficiently.
+
+### Improved
+- Faster Insights rendering due to optimized background data synchronization.
+- Reduced external API usage through intelligent rate caching.
+
+### Fixed
+- Monthly Unrealized P/L calculation no longer includes sold investments.
+- Unrealized gains/losses are now correctly capped based on current holdings only.
+
+---
+
+## [1.8.2] — 2026-02-09
+
+### Added
+- **Monthly Pulse Interactions**
+  - Tap-and-drag inspection for actual spend, projections, and historical averages.
+
+- **Backup Safety**
+  - Smart reminder to prompt backups if none detected in the last 7 days.
+  - Added “Remind me later” snooze option for backup prompts.
+
+- **Community**
+  - In-app app review and rating prompt.
+
+### Changed
+- Replaced legacy charting library with \\\`react-native - gifted - charts\\\` for improved stability and interaction quality.
+
+### Fixed
+- Investment asset selector now correctly filters assets by selected type (Stocks vs. Funds).
+- Resolved a critical Android native crash caused by dropdown selection components.
+
+---
+
+## [1.8.1] — 2026-02-05
+
+### Added
+- **Runway Drop Smart Alert**
+  - Notification triggers when financial runway drops ≥25% month-over-month.
+
+- **Global Currency Support**
+  - Support for 150+ currencies with real-time search.
+  - Automatic localization for number formatting based on selected currency.
+
+- **Investment Management Enhancements**
+  - Edit and delete investments directly from History.
+  - Automatic sync between investment records and linked transactions.
+  - Cascading deletes for investment-linked transactions.
+  - Locked linked transactions to prevent inconsistencies.
+
+- **Portfolio Customization**
+  - Reorder Investment stats cards and dashboard sections.
+  - Persistent sorter preferences for Holdings list.
+
+- **Allocation Insights**
+  - Type-based filtering (Stocks, Funds, Crypto, etc.).
+  - Refined equity-only Stocks view with full-asset Sector overview.
+
+- **Profile Transparency**
+  - Vision, Philosophy & Goals modal.
+  - Updated Developer Message explaining long-term commitment.
+
+- **Help Center**
+  - Integrated in-app changelog and version history viewer.
+
+### Changed
+- **Safe-to-Spend Algorithm**
+  - Introduced True Discretionary Income model.
+  - Includes future recurring income, future bills, and dynamic burn rate.
+  - Transfers treated strictly to prevent false discretionary inflation.
+
+- **Financial Runway**
+  - Now accounts for both Transfer In and Transfer Out for accurate liquidity.
+
+- Header and navigation layout standardized across core screens.
+
+### Improved
+- Smart Alerts now run immediately after transaction save.
+- Reminder list sorted by upcoming schedule with active indicators.
+- Budget modal redesigned for clarity and smoother interaction.
+- Smart Advisor suggestions limited to active portfolio assets only.
+
+### Fixed
+- Investment Portfolio screen now refreshes instantly after adding investments.
+
+### Legal & Privacy
+- Simplified and clarified Terms & Privacy regarding:
+  - Local-only architecture
+  - AI usage
+  - Encryption
+  - Data deletion
+  - Governing law
+- Removed unused storage and media permissions for Play Store compliance.
+
+### Developer
+- Major internal refactoring and modularization for long-term maintainability.
+
+---
+
+## [1.8.0] — 2026-02-03
+
+### Added
+- **Asset Dictionary**
+  - Centralized asset manager in Profile settings.
+  - Custom asset symbols and types (Real Estate, Crypto, etc.).
+  - Fully supported in Backup & Restore.
+
+- **Enhanced Investment History**
+  - Position History (Buy, Sell, Dividend).
+  - Dedicated Price History and Dividend History tabs.
+  - Manual add/edit/delete for price and dividend entries.
+  - Per-asset AI-powered fetch for historical prices and dividends.
+  - Tools to clear and rebuild fetched history.
+
+### Changed
+- **Database Architecture**
+  - Complete rewrite of database initialization.
+  - Removed legacy waterfall migration system.
+  - Enforced latest schema (V7) on startup.
+  - Legacy versions (V1–V6) no longer auto-migrated to improve stability.
+
+- **Transaction Flow**
+  - Removed post-save alert popup.
+  - Defaulted save action to rapid “Add More” mode.
+
+### Improved
+- Faster cold start by eliminating migration logic during splash.
+- Reduced app bundle size by removing unused migration artifacts.
+
+### Fixed
+- Resolved Android modal input jumping caused by keyboard conflicts.
+
+---
+
 ## [1.7.0] — 2026-02-01
 
 ### Added
@@ -255,4 +407,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Offline-first personal finance tracking.
 - AES-256 encrypted local storage.
 - No accounts, no ads, no cloud dependency.
+
 `

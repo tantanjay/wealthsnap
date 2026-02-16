@@ -152,14 +152,14 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                         <View style={styles.spacer} />
 
                         {renderMathBlock(
-                            "IMPACT ON FREEDOM",
+                            "IMPACT ON SELF-SUSTAIN",
                             "(Annual Savings / Monthly Burn)",
                             `${formatMoney((data.avgNetFlow || new BigNumber(0)).times(12))} / ${formatMoney(data.monthlyBurn)}`,
                             `${(data.freedomImpactMonths || 0) > 0 ? '+' : ''}${(data.freedomImpactMonths || 0).toFixed(1)} Months/Year`,
                             (data.freedomImpactMonths || 0) > 0 ? colors.success : colors.error
                         )}
                         <Text style={[styles.explanation, { color: colors.textSecondary }]}>
-                            This represents how much future freedom you are "buying" with your monthly savings. At this rate, you gain {(data.freedomImpactMonths || 0).toFixed(1)} months of absolute freedom every year.
+                            This represents how much future self-sustain you are "buying" with your monthly savings. At this rate, you gain {(data.freedomImpactMonths || 0).toFixed(1)} months of absolute self-sustain every year.
                         </Text>
                     </>
                 );
@@ -174,11 +174,11 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                 return (
                     <>
                         <Text style={[styles.introText, { color: colors.text }]}>
-                            Debt acts as a "Freedom Thief". This modal calculates exactly how much it's stealing from your future.
+                            Debt acts as a "Self-Sustain Thief". This modal calculates exactly how much it's stealing from your future.
                         </Text>
 
                         {renderMathBlock(
-                            "FREEDOM DELAY",
+                            "SELF-SUSTAIN DELAY",
                             "Total Debt / Annual Savings",
                             `${formatMoney(data.totalDebt)} / ${formatMoney(new BigNumber(annualSavings))}`,
                             isForever ? "Forecast: Forever" : `${yearsToPayoff.toFixed(1)} Years`,
@@ -210,11 +210,11 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                 return (
                     <>
                         <Text style={[styles.introText, { color: colors.text }]}>
-                            Your investments are "bought" freedom. This shows how much time they've already secured for you.
+                            Your investments are "bought" self-sustain. This shows how much time they've already secured for you.
                         </Text>
 
                         {renderMathBlock(
-                            "FREEDOM ACCELERATION",
+                            "SELF-SUSTAIN ACCELERATION",
                             "Investment Value / Monthly Expenses",
                             `${formatMoney(data.portfolioValue)} / ${formatMoney(data.monthlyBurn)}`,
                             `+${(data.freedomAccelerationMonths || 0).toFixed(1)} Months`,
@@ -227,7 +227,7 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                         <View style={styles.spacer} />
 
                         {renderMathBlock(
-                            "FREEDOM ARRIVES EARLIER",
+                            "SELF-SUSTAIN ARRIVES EARLIER",
                             "Impact of Monthly Investment",
                             `Investing ${formatMoney(new BigNumber(data.scenarioInvestAmount || 0))} / month`,
                             `-${(data.scenarioYearsEarlier || 0).toFixed(1)} Years of Work`,

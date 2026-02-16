@@ -1,4 +1,4 @@
-import { CHANGELOG_MARKDOWN } from '@constants/changeLogData';
+import { CHANGELOG_MARKDOWN } from '@constants/changelog';
 import { parseMarkdownToContentItems } from '@utils/markdownParser';
 
 export interface HelpSlide {
