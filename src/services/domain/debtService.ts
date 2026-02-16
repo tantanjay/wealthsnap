@@ -1,10 +1,7 @@
 import { BigNumber } from 'bignumber.js';
-import { Debt, DebtStatus, DebtType, DebtInterestType, DebtDirection } from '@types';
+import { Debt, DebtStatus, DebtType, DebtDirection } from '@types';
 import { getDatabase } from '@services/database/databaseService';
 import { encryptField, bulkDecryptItems } from '@services/core/encryptionService';
-import { generateUUID } from '@utils/uuid';
-import { chunkArray } from '@utils/index';
-import * as DataCache from '@services/core/dataCache';
 
 // --- Constants & Helpers ---
 

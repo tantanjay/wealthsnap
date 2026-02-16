@@ -133,7 +133,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
 
         // Round to 2 decimals
         setMinPayment(calculatedPayment.toFixed(2));
-    }, [amount, interestRate, termMonths, interestType]);
+    }, [amount, interestRate, termMonths, interestType, isMinPaymentManual]);
 
     const handleSave = () => {
         if (!name || !amount) {
@@ -677,7 +677,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                     {/* The Core Question */}
                     <View style={{ backgroundColor: colors.primary + '10', padding: 20, borderRadius: 16, marginBottom: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.primary + '30' }}>
                         <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.primary, textAlign: 'center', marginBottom: 8 }}>
-                            "Did this money actually enter my bank account or wallet?"
+                            &quot;Did this money actually enter my bank account or wallet?&quot;
                         </Text>
                     </View>
 
@@ -733,12 +733,12 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                             </View>
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>NO, it's a dedicated untracked expense.</Text>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>NO, it&apos;s a dedicated untracked expense.</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
                                 Result: Debt Created Only.
                             </Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>
-                                I don't want this specific expense in my transaction history.
+                                I don&apos;t want this specific expense in my transaction history.
                             </Text>
                             <Text style={{ color: colors.error, fontSize: 12, fontWeight: 'bold', marginTop: 6 }}>TAP TO CONFIRM</Text>
                         </View>

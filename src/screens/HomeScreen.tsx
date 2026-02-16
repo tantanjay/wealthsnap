@@ -369,13 +369,6 @@ const HomeScreen = ({ navigation }: any) => {
                     return sum;
                 }, new BigNumber(0));
 
-                const debtInterestPaid = payments.reduce((sum, tx) => {
-                    if (tx.type === 'EXPENSE' && tx.subCategory !== 'INITIAL_TRANSACTION') {
-                        return sum.plus(tx.amount.abs());
-                    }
-                    return sum;
-                }, new BigNumber(0));
-
                 totalRepaid = totalRepaid.plus(debtPrincipalRepaid);
 
                 // Month Repaid

@@ -8,7 +8,7 @@ import { Button, Card } from '@components/index';
 import { CalculatorModal } from '@components/record/CalculatorModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
-import { Transaction, TransferAccount } from '@types';
+import { DebtType, Transaction, TransferAccount } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveTransaction } from '@services/domain/transactionService';
 
@@ -51,10 +51,10 @@ export const TransferForm: React.FC<TransferFormProps> = ({
 
     // Form state
     const [direction, setDirection] = useState<TransferDirection>(getInitialDirection());
-    const [destination, setDestination] = useState<TransferAccount | null>(initialTransaction?.transferAccount || null);
+    const [destination, setDestination] = useState<TransferAccount | DebtType | null>(initialTransaction?.transferAccount || null);
 
     // Default destination if switching to OUT and none selected
-    const [selectedDestOption, setSelectedDestOption] = useState<TransferAccount>(
+    const [selectedDestOption, setSelectedDestOption] = useState<TransferAccount | DebtType>(
         initialTransaction?.transferAccount || 'OTHER_ACCOUNT'
     );
 

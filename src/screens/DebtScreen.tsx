@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
@@ -9,17 +9,13 @@ import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { Debt, Transaction, UserProfile } from '@types';
 import * as Storage from '@services/core/storageService';
 import { getAllDebts } from '@services/domain/debtService';
-import { getCachedTransactions } from '@services/domain/transactionService';
+import { saveTransaction, getCachedTransactions } from '@services/domain/transactionService';
 import { calculateBurnRate } from '@utils/financialMetrics';
-import { calculateDebtPayoffStrategy, calculateCurrentDebtBalance, calculateDebtProgress, calculateNextPaymentBreakdown, getNextDueDate } from '@utils/debtMetrics';
+import * as DebtMetrics from '@utils/debtMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import BottomModal from '@components/common/BottomModal';
-import { TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import { saveTransaction } from '@services/domain/transactionService';
 import { generateUUID } from '@utils/uuid';
 import { Button } from '@components/index';
-
-const { width } = Dimensions.get('window');
 
 const DebtScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -30,7 +26,7 @@ const DebtScreen = ({ navigation }: any) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
     const [strategy, setStrategy] = useState<'SNOWBALL' | 'AVALANCHE'>('AVALANCHE');
-    const [extraPayment, setExtraPayment] = useState<number>(0); // User input for extra payment simulation
+    const [extraPayment] = useState<number>(0); // User input for extra payment simulation
 
     // Calculated State
     const [paidDebts, setPaidDebts] = useState<Debt[]>([]);
@@ -77,7 +73,7 @@ const DebtScreen = ({ navigation }: any) => {
     ) => {
         // 1. Calculate Real Current Balances
         const allDebtsWithBalances = currentDebts.map(d => {
-            const balance = calculateCurrentDebtBalance(d, currentTxns);
+            const balance = DebtMetrics.calculateCurrentDebtBalance(d, currentTxns);
             return { ...d, initialAmount: balance }; // Patching initialAmount for the helper
         });
 
@@ -112,7 +108,7 @@ const DebtScreen = ({ navigation }: any) => {
         }
 
         // 4. Payoff Strategy
-        const { freedomDate, totalInterest, payoffDates } = calculateDebtPayoffStrategy(
+        const { freedomDate, totalInterest } = DebtMetrics.calculateDebtPayoffStrategy(
             debtsWithBalances,
             currentExtra,
             currentStrategy
@@ -125,7 +121,7 @@ const DebtScreen = ({ navigation }: any) => {
 
         // Helper to check overdue status
         const checkOverdue = (d: Debt) => {
-            const nextDue = getNextDueDate(d, currentTxns);
+            const nextDue = DebtMetrics.getNextDueDate(d, currentTxns);
             if (!nextDue) return false;
 
             // Strictly compare DATES (ignore time)
@@ -136,7 +132,7 @@ const DebtScreen = ({ navigation }: any) => {
         };
 
         const checkDueSoon = (d: Debt) => {
-            const nextDue = getNextDueDate(d, currentTxns);
+            const nextDue = DebtMetrics.getNextDueDate(d, currentTxns);
             if (!nextDue) return false;
 
             const now = new Date();
@@ -323,6 +319,26 @@ const DebtScreen = ({ navigation }: any) => {
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
+                {/* Disclaimer Banner */}
+                <View style={{
+                    backgroundColor: 'rgba(255, 149, 0, 0.15)', // Light orange background
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 24,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 149, 0, 0.3)',
+                    flexDirection: 'row',
+                    alignItems: 'flex-start'
+                }}>
+                    <Ionicons name="flash" size={24} color="#FF9500" style={{ marginRight: 12, marginTop: 2 }} />
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>
+                            <Text style={{ fontWeight: 'bold', color: '#FF9500' }}>⚡ Beta Feature: </Text>
+                            This math exposes the raw cost of your debt. It doesn&apos;t account for bank re-pricing or hidden fees. Use this to plan your attack, but verify the final numbers with your lender.
+                        </Text>
+                    </View>
+                </View>
+
                 {/* 1. The Clock (Debt-Free Date) */}
                 <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <Text style={[styles.label, { color: colors.textSecondary }]}>ESTIMATED DEBT-FREE DATE</Text>
@@ -418,27 +434,19 @@ const DebtScreen = ({ navigation }: any) => {
                 {/* 5. Priority List */}
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>Priority Payoff Order</Text>
                 {payoffOrder.map((debt, index) => {
-                    const progress = calculateDebtProgress(debt.initialAmount, debt.initialAmount); // calculateCurrentDebtBalance returns "initialAmount" field patched with current balance in calculating metrics, but here 'debt' is from 'payoffOrder' which HAS 'initialAmount' as current balance.
-                    // Wait, in calculateMetrics:
-                    // const debtsWithBalances = activeDebts.map(d => { ... return { ...d, initialAmount: balance }; })
-                    // So debt.initialAmount IS the current balance.
-                    // But we need the ORIGINAL initial amount to calculate progress percent. 
-                    // We lost the original initialAmount in the mapping in calculateMetrics!
-
                     // RETRIEVE original debt to get true initial amount
                     const originalDebt = debts.find(d => d.id === debt.id);
                     const trueOriginal = originalDebt ? originalDebt.initialAmount : debt.initialAmount;
                     const trueCurrent = debt.initialAmount; // From payoffOrder (patched)
 
                     // Recalculate progress correctly
-                    const progressPercent = calculateDebtProgress(trueOriginal, trueCurrent);
+                    const progressPercent = DebtMetrics.calculateDebtProgress(trueOriginal, trueCurrent);
 
                     // Breakdowns
-                    const { principal, interest, totalEstimate } = calculateNextPaymentBreakdown(originalDebt || debt, trueCurrent);
+                    const { principal, interest } = DebtMetrics.calculateNextPaymentBreakdown(originalDebt || debt, trueCurrent);
 
                     // Next Due Date
-                    // Next Due Date
-                    const nextDue = getNextDueDate(originalDebt || debt, transactions);
+                    const nextDue = DebtMetrics.getNextDueDate(originalDebt || debt, transactions);
 
                     // Fix Overdue Logic: Strictly compare DATES (ignore time)
                     const isOverdue = nextDue && (() => {
@@ -601,14 +609,12 @@ const DebtScreen = ({ navigation }: any) => {
                                         <View style={{ alignItems: 'flex-end' }}>
                                             <Text style={{ fontSize: 10, color: colors.textSecondary, textTransform: 'uppercase', marginBottom: 2 }}>Total Cost</Text>
                                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                <Text style={{ fontSize: 12, color: colors.text, fontWeight: '600' }}>
+                                                <Text style={{ fontSize: 12, color: colors.text, fontWeight: '600', marginRight: 6 }}>
                                                     {formatCurrencyAmount(originalAmount, currency)}
                                                 </Text>
-                                                <Text style={{ fontSize: 10, color: colors.textSecondary, marginHorizontal: 4 }}>+</Text>
                                                 <Text style={{ fontSize: 12, color: colors.error, fontWeight: '600' }}>
                                                     {formatCurrencyAmount(totalInterestPaid, currency)}
                                                 </Text>
-                                                <Text style={{ fontSize: 10, color: colors.textSecondary, marginLeft: 2 }}>(Int.)</Text>
                                             </View>
                                         </View>
                                     </View>
@@ -674,7 +680,7 @@ const DebtScreen = ({ navigation }: any) => {
                                 }}>
                                     <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
                                     <Text style={{ color: colors.textSecondary, fontSize: 11, flex: 1, fontStyle: 'italic' }}>
-                                        Fees usually don't reduce your principal balance but are required for protection.
+                                        Fees usually don&apos;t reduce your principal balance but are required for protection.
                                     </Text>
                                 </View>
                                 <TextInput
@@ -797,6 +803,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         borderRadius: 8,
         padding: 4,
+    },
+    disclaimerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+        paddingHorizontal: 16,
+    },
+    disclaimerText: {
+        fontSize: 11,
+        fontStyle: 'italic',
     },
     toggleButton: {
         flex: 1,
