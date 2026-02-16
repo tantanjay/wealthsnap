@@ -105,7 +105,7 @@ export const deleteTransactionFromCache = (id: string): void => {
     lastTransactionWriteTime = Date.now();
 
     const action = (currentData: Transaction[]): Transaction[] => {
-        return currentData.filter(t => t.id !== id);
+        return currentData.filter(t => t.id !== id && t.linkedTransactionId !== id);
     };
 
     if (transactionCache) {

@@ -629,10 +629,13 @@ const HistoryScreen = ({ navigation }: any) => {
             <TouchableOpacity
                 onPress={() => {
                     // Prevent opening options for auto-generated transactions
-                    if (t.investmentId || t.debtId) return;
+                    // Exception: Allow Debt Repayments (TRANSFER_OUT + PRINCIPAL) so they can be deleted
+                    const isDebtRepayment = t.type === 'TRANSFER_OUT' && t.subCategory === 'PRINCIPAL';
+
+                    if ((t.investmentId || t.debtId) && !isDebtRepayment) return;
                     setSelectedTransaction(t);
                 }}
-                activeOpacity={t.investmentId || t.debtId ? 1 : 0.7}
+                activeOpacity={(t.investmentId || t.debtId) && !(t.type === 'TRANSFER_OUT' && t.subCategory === 'PRINCIPAL') ? 1 : 0.7}
                 style={{ marginBottom: 8 }}
             >
                 <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0 }}>
