@@ -1,54 +1,400 @@
-# WealthSnap: Comprehensive Technical Specifications (v1.8.0)
+# WealthSnap – Developer Technical README
 
-## 1. System Architecture & Evolution
-WealthSnap is a high-precision, offline-first personal finance engine built on React Native and the Expo New Architecture.
+> Private • Offline-First • High-Precision • Encrypted Finance Engine
 
-* **Persistence Layer**: Migrated from flat JSON files to a robust SQLite (`expo-sqlite`) implementation in v1.1.0 for scalability.
-* **Schema Management**: Transitioned from a "Waterfall" migration pattern to a streamlined V7 Schema Enforcement policy in v1.8.0 to ensure cold-start performance.
-* **Data Ingestion**: Support for bulk CSV/TSV imports with a structured `importService.ts` that handles date validation, duplicate detection, and 50-character note sanitization.
-* **Batch Processing**: Implemented non-blocking background decryption in 500-item chunks using `setTimeout(0)` to prevent main-thread jank during large dataset loads.
+WealthSnap is a privacy-first personal finance application built with React Native (Expo) using a fully local, encrypted SQLite architecture. This document explains the internal architecture, storage model, financial engine, background services, and development guidelines.
 
-## 2. Security & Privacy Engineering
-The security model is designed for "Zero-Knowledge" operation, ensuring no user data ever touches a remote server.
+---
 
-* **Hybrid Encryption**: Utilizes AES-256 for sensitive fields (amounts, notes) while keeping metadata (dates, category IDs) raw for high-speed SQL indexing.
-* **Hardware-Backed Keys**: Encryption keys are generated and stored in the device's Secure Hardware Enclave (SecureStore).
-* **Key Caching Logic**: To optimize performance, the AES-256 key is cached in memory after the initial hardware fetch, eliminating redundant SecureStore I/O calls during bulk operations.
-* **Dynamic Privacy UI**: 
-    * **Screenshot Protection**: Android Activity flags are toggled to block screenshots and app-switcher previews by default.
-    * **Conditional Bypass**: Screenshot protection is programmatically disabled only when "Privacy Mode" (masked values) is active, allowing for safe data sharing.
-    * **Smart Security Lock**: Intelligent re-authentication logic prevents the PIN lock from triggering during brief backgrounding tasks like camera usage or file sharing.
+# 🏗 Architecture Overview
 
-## 3. Financial Computation Engine
-Standard JavaScript floating-point numbers are discarded in favor of a high-precision decimal engine.
+## Core Principles
 
-* **Precision Layer**: Implementation of `BigNumber.js` for all financial calculations, ensuring totals reconcile perfectly even with 2000+ transaction histories.
-* **Investment Mathematics**:
-    * **Cost Basis**: Tracks unrealized Profit/Loss (P/L) against the latest known price per asset.
-    * **Realized P/L**: Automatically calculates capital gains/losses at the point of SELL transactions.
-    * **O(N) Optimization**: Investment computations use O(N) grouping to handle large portfolio histories without linear performance degradation.
-* **Predictive Analytics**: 
-    * **Monthly Pulse**: Uses linear regression based on 3M/6M/12M historical spending averages to project month-end totals.
-    * **Financial Runway**: Calculated using a lifetime "tracked balance" (Income - Expense) relative to current burn rate.
+- Offline-first (no mandatory backend)
+- Zero-knowledge design
+- Encrypted-by-default sensitive data
+- Deterministic financial computation
+- Optimistic UI with concurrency safety
+- Modular service-based architecture
 
-## 4. AI & Machine Learning Implementation (BYOK)
-WealthSnap leverages a "Bring Your Own Key" (BYOK) architecture to provide advanced AI features without centralizing user data.
+---
 
-* **On-Device Vision**: Integration of Google ML Kit for document edge detection and perspective correction during receipt scanning.
-* **Double-Pass AI Fetching**: 
-    1.  **Researcher Mode**: AI performs an iterative search for raw market and dividend data.
-    2.  **Accountant Mode**: A second pass with `Temperature 0` ensures the raw data is formatted into a precise, valid JSON structure for SQLite ingestion.
-* **Smart Categorization**: ML-based suggestions for categories based on the last 30 days of user behavior.
+# 📦 Tech Stack
 
-## 5. Background Services & OS Integration
-* **Headless JS (Android)**: A custom background task manager handles notification actions (Snooze/Complete) without requiring the UI to mount.
-* **Notification Engine**: Locally-triggered push notifications monitor recurring transactions and budget breaches daily in the background.
-* **Catch-up System**: Persistent tracking of snoozed or missed reminders using a batch-processing "Catch-up Modal" on next app launch.
-* **Telemetry**: Local-only Global Error Boundary that captures crash logs and saves them to the device for developer debugging without external transmission.
+### Core
+- React Native (Expo)
+- TypeScript
+- `expo-sqlite`
+- `expo-secure-store`
+- `react-native-gifted-charts`
+- Headless JS (background tasks)
 
-## 6. UI/UX Infrastructure
-* **Theming**: Reusable `SettingItem`, `BottomModal`, and `CustomAlert` components that adapt to system Safe Area Insets.
-* **Loading Patterns**: Comprehensive skeleton loading system for Home, History, and Insights dashboards to prevent content "jumping".
-* **Visual Data Tools**: 
-    * **Treemaps**: Color-coded investment allocation heatmap (Size = Value; Color = Performance).
-    * **Dynamic Charts**: Y-axis auto-scaling that switches between "Symmetric" and "Standard" modes based on dataset volatility.
+### Financial Engine
+- `BigNumber.js` for arbitrary precision arithmetic
+
+### AI (Optional)
+- Google Gemini API (BYOK – user supplied key)
+
+---
+
+# 🗄 Storage Architecture
+
+## Database Engine
+
+- SQLite (via `expo-sqlite`)
+- Encrypted sensitive fields (AES-256)
+- Metadata stored raw when safe (hybrid encryption model)
+- Strict local-only persistence
+
+### Database Policy (v1.8.0+)
+
+- Enforces latest schema on startup
+- Legacy waterfall migration system removed
+- Treats DB as fresh installation for outdated schemas (V1–V6 dropped)
+
+---
+
+## Encryption Model
+
+### Strategy
+- AES-256 encryption for sensitive fields:
+  - Transactions
+  - Budgets
+  - Investments
+  - Debt records
+  - API keys
+- Encryption key stored via SecureStore
+- Key cached in memory after first fetch (performance optimization)
+- Sequential encryption ensured during migrations
+
+### Hybrid Encryption
+
+Sensitive financial values: encrypted  
+Metadata & non-sensitive fields: plaintext (for performance and indexing)
+
+---
+
+# 💎 Financial Computation Engine
+
+Introduced in v1.6.0:
+
+- Replaced native JS float math with `BigNumber.js`
+- Arbitrary precision decimal math
+- Eliminates floating-point rounding drift
+- Ensures consistent long-term aggregation accuracy
+
+### Computation Patterns
+
+- All sums use BigNumber accumulation
+- Ratios use deterministic rounding rules
+- Derived metrics recomputed dynamically (not stored)
+- Historical recalculations allowed after engine upgrade
+
+---
+
+# ⚡ Performance Optimizations
+
+## Background Decryption
+
+- Chunked loading (500 records per batch)
+- Uses `setTimeout(0)` yielding to prevent UI blocking
+- Fully interactive UI during decryption
+
+## Optimistic Cache System
+
+Implements:
+
+- `addTransactionToCache`
+- `updateTransactionInCache`
+- `deleteTransactionFromCache`
+
+Prevents full reloads after CRUD.
+
+## Encryption Key Caching
+
+- SecureStore I/O reduced dramatically
+- Eliminated thousands of redundant reads
+
+## Portfolio Computation
+
+- O(N) grouping algorithm
+- Eliminated nested recalculation loops
+
+---
+
+# 🔄 Concurrency Safety
+
+Addressed race conditions between:
+
+- Background decryption
+- Optimistic updates
+- Investment computation
+- Exchange rate updates
+
+Fix:
+- Isolation of mutation operations
+- Deferred state reconciliation
+- Controlled cache invalidation
+
+---
+
+# 📊 Financial Logic Systems
+
+## Safe-to-Spend (v1.8.1 overhaul)
+
+```
+(Current Cash + Future Income)
+- (Future Bills + Burn Rate)
+= Safe-to-Spend
+```
+
+Where:
+
+- Future Income: recurring income before period end
+- Burn Rate: average non-recurring spend (last 3 months)
+- Transfers Out treated as expenses (strict policy)
+
+---
+
+## Financial Runway
+
+```
+Tracked Liquid Balance / Monthly Burn Rate
+```
+
+Includes:
+- Transfers
+- Debt minimum payments
+- Mandatory obligations
+
+Runway Drop Alert triggered at ≥25% decline MoM.
+
+---
+
+## Savings Rate
+
+Accounts for:
+- Income
+- Expenses
+- Debt principal
+- Avoids double-counting interest
+
+---
+
+# 💳 Debt Engine
+
+## Supported Interest Types
+
+- Fixed
+- Variable
+- Flat
+- None
+
+## Features
+
+- Auto minimum payment computation
+- Amortization schedule generator
+- Principal vs Interest split logic
+- Linked transactions
+- Cascade deletion
+
+---
+
+# 📈 Investment Engine
+
+## Investment Types
+
+- Stocks
+- Funds
+- Crypto
+- Custom Assets (via Asset Dictionary)
+
+## Core Capabilities
+
+- Buy / Sell / Dividend / Interest tracking
+- Realized & Unrealized P/L
+- Native currency recording
+- FX conversion to profile currency
+- Allocation heatmap
+- Dividend projections
+
+## Exchange Rate Handling
+
+- Background service caching
+- Rate reuse to reduce API load
+- Historical conversion normalization
+
+---
+
+# 🤖 AI Integration (Optional)
+
+## Architecture
+
+- User provides Gemini API key
+- Key encrypted locally
+- No global database transmission
+- Only selected data sent
+
+## AI Modules
+
+- Receipt Analyzer
+- Market Data Researcher (step 1)
+- Market Data Accountant (step 2 formatting)
+
+Two-stage AI model:
+1. Researcher (data gathering)
+2. Accountant (structured output)
+
+---
+
+# 🔔 Reminder & Notification System
+
+## Background Support
+
+- Headless JS task registration
+- Notification parsing (object/string safe)
+- Serialized action handling
+
+## Interactive Actions
+
+- Complete (background mark)
+- Snooze (15m + extended)
+- Catch-up modal on open
+
+## Cleanup Logic
+
+`clearAllData()` invokes:
+```
+notificationService.cancelAllNotifications()
+```
+
+---
+
+# 🧠 Smart Alerts Engine
+
+Triggers for:
+
+- Budget breaches
+- Spending spikes
+- Runway drop ≥25%
+- Category-level anomaly detection
+
+Immediate anomaly detection after transaction save (v1.8.1 fix).
+
+---
+
+# 🛡 Error Handling
+
+## Global Error Boundary
+
+- Prevents app crash
+- Shows fallback UI
+- Stores crash logs locally
+- Developer export option
+- Crash simulation toggle
+
+---
+
+# 📁 Project Structure
+
+```text
+/src
+    /components      # UI components (atoms, molecules, organisms)
+    /screens         # Screen-level components
+    /services        # Business logic and data management
+        /core        # Security, storage, and caching
+        /domain      # Domain-specific logic (investments, debt, etc.)
+        /integrations # External APIs (Gemini, currency, backup)
+        /background  # Background tasks and notifications
+        /database    # SQLite schema and service
+    /context         # React context providers
+    /hooks           # Custom React hooks
+    /navigation      # App navigation configuration
+    /utils           # Helper functions and metrics
+    /constants       # Configuration and static data
+    /types           # TypeScript interfaces and types
+    /styles          # Global styles and themes
+```
+
+---
+
+# 🔑 Centralized Storage Keys (v1.5.0)
+
+Refactored to unified `KEYS` configuration object:
+
+Benefits:
+- Prevents key drift
+- Easier migrations
+- Maintainable storage logic
+
+---
+
+# 🧪 Testing Focus Areas
+
+- Encryption integrity
+- Migration consistency
+- Background task reliability
+- Debt amortization correctness
+- FX conversion accuracy
+- High-volume transaction performance (2000+ records)
+- Concurrency during decrypt + create
+- Safe-to-Spend formula edge cases
+
+---
+
+# 🔐 Legal & Compliance
+
+- Local-only architecture
+- BYOK AI controller model
+- Data minimization enforced
+- Screenshot protection (conditional)
+- Versioned Terms acceptance tracking
+- Removed legacy storage permissions
+
+---
+
+# 🚀 Development Guidelines
+
+- Never use JS float math for financial computation
+- Always wrap arithmetic in BigNumber
+- Encrypt before persist
+- Avoid blocking the main thread
+- Ensure optimistic updates reconcile with background loaders
+- Treat Transfers Out conservatively
+- Maintain deterministic derived metrics
+
+---
+
+# 📱 Package
+
+```
+com.christian.soyosa.WealthSnap
+```
+
+---
+
+# 🧭 Philosophy for Developers
+
+WealthSnap is not built as a cloud SaaS.
+It is a **local financial engine**.
+
+The priority order is:
+
+1. Deterministic accuracy
+2. Privacy
+3. Performance
+4. UX polish
+5. Feature expansion
+
+---
+
+If contributing:
+
+- Maintain modular service separation
+- Avoid cross-service tight coupling
+- Preserve offline-first guarantees
+- Do not introduce server dependencies
+
+---
+
+**WealthSnap is a Personal Financial Operating System — built entirely on-device.**
