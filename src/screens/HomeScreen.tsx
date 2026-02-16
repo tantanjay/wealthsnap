@@ -131,13 +131,6 @@ const HomeScreen = ({ navigation }: any) => {
                 setSavedDisplayMode(savedMode);
             }
 
-            const savedInvestmentMode = await Storage.getHomeInvestmentDisplayMode();
-            if (savedInvestmentMode) {
-                setInvestmentDisplayMode(savedInvestmentMode);
-                setSavedInvestmentDisplayMode(savedInvestmentMode);
-
-            }
-
             const savedFinancialMode = await Storage.getHomeFinancialHealthDisplayMode();
             if (savedFinancialMode) {
                 setFinancialHealthDisplayMode(savedFinancialMode);
@@ -221,7 +214,6 @@ const HomeScreen = ({ navigation }: any) => {
             setMonthTransferOut(mTransOut);
 
             // --- Investment Computation ---
-            // 1. Group investments to find symbols and group data
             const groupedInvestments = inv.reduce((acc, item) => {
                 if (!acc[item.symbol]) acc[item.symbol] = [];
                 acc[item.symbol].push(item);
@@ -230,18 +222,14 @@ const HomeScreen = ({ navigation }: any) => {
 
             const uniqueSymbols = Object.keys(groupedInvestments);
 
-            // 2. Fetch latest prices from Price History
             const priceHistoryMap = await getLatestPrices(uniqueSymbols);
 
-            // 3. Build a comprehensive "Current Price Map"
-            // Priority: Price History > Latest Transaction Price > 0
             const currentPriceMap: Record<string, BigNumber> = {};
 
             uniqueSymbols.forEach(symbol => {
                 if (priceHistoryMap[symbol]) {
                     currentPriceMap[symbol] = priceHistoryMap[symbol].price;
                 } else {
-                    // Fallback: Find latest transaction for this symbol from the pre-grouped map
                     const symbolTxns = groupedInvestments[symbol].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
                     if (symbolTxns.length > 0) {
@@ -252,13 +240,11 @@ const HomeScreen = ({ navigation }: any) => {
                 }
             });
 
-            // 4. Calculate Portfolio Metrics (Unrealized P/L, Market Value)
             const portfolioMetrics = getAllPortfolioMetrics(inv, currentPriceMap);
 
             const totalMarketValue = portfolioMetrics.reduce((sum, m) => sum.plus(m.totalMarketValue), new BigNumber(0));
             const totalUnrealizedPL = portfolioMetrics.reduce((sum, m) => sum.plus(m.unrealizedPL), new BigNumber(0));
 
-            // 5. Calculate Realized P/L from Transactions (CAPITAL_GAIN/LOSS)
             let totalRealizedPL = new BigNumber(0);
             let mRealizedPL = new BigNumber(0);
 
@@ -282,16 +268,11 @@ const HomeScreen = ({ navigation }: any) => {
                 }
             });
 
-            // 6. Calculate Monthly Investment Metrics
-            // Monthly Invested: Sum of BUY amounts in current month
             let mInvested = new BigNumber(0);
             let mUnrealizedPL = new BigNumber(0);
-
-            // Helper maps for monthly calculations
             const monthlyBuys: Record<string, { qty: BigNumber, cost: BigNumber }> = {};
             const currentQuantities: Record<string, BigNumber> = {};
 
-            // Populate current quantities from portfolio metrics
             portfolioMetrics.forEach(m => {
                 currentQuantities[m.symbol] = m.currentQuantity;
             });
@@ -300,7 +281,6 @@ const HomeScreen = ({ navigation }: any) => {
                 const isMonth = new Date(item.date).getMonth() === currentMonth && new Date(item.date).getFullYear() === currentYear;
 
                 if (isMonth && item.action === 'BUY') {
-                    // Invested Amount (Cost Basis) - Activity Metric (shows how much you poured in this month)
                     const cost = item.price.times(item.quantity).plus(item.fees || 0);
                     mInvested = mInvested.plus(cost);
 
@@ -350,25 +330,10 @@ const HomeScreen = ({ navigation }: any) => {
             let mDebtBorrowed = new BigNumber(0);
             let mDebtRepaid = new BigNumber(0);
 
-            // Filter for ACTIVE debts for the main card totals (Balance)
-            // But for "Borrowed" and "Repaid", maybe include all?
-            // "Total Debt" usually implies Current Outstanding Balance.
-            // Let's iterate through ALL debts but primarily focus on Active for Balance.
-            // However, if a debt is PAID_OFF, its balance is 0.
-            // So iterating through all is safe if we calculate balance individually.
-
             // Helper to get transaction total for a specific debt
             const getDebtTransactions = (debtId: string, monthOnly: boolean = false) => {
                 return t.filter(tx => {
                     const isDebt = tx.debtId === debtId;
-                    const isPayment = tx.type === 'EXPENSE' || tx.type === 'TRANSFER_OUT'; // Assuming payments are expenses or transfers out
-                    // Note: 'TRANSFER_IN' from Debt Account to Cash = Borrowing (Increase Debt)?
-                    // Or 'INCOME' tagged with Debt?
-                    // Currently user creates Debt via "New Debt" -> Initial Amount.
-                    // Additional borrowing? "Edit Debt" or separate transaction?
-                    // For now, assume Initial Amount is the main Borrowed.
-                    // Payments are transactions linked to debtId.
-
                     if (!isDebt) return false;
                     if (monthOnly) {
                         return new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
@@ -501,11 +466,9 @@ const HomeScreen = ({ navigation }: any) => {
                 monthsActive = Math.max(1, diffMonths);
             }
 
-            // Align Runway with Insights (Liquid Balance / 6-Month Burn Rate)
             const average6MonthBurn = calculateBurnRate(t, 6);
             const average3MonthBurn = calculateBurnRate(t, 3);
 
-            // Fallback hierarchy matching InsightsScreen
             let burnRate = average6MonthBurn;
             if (burnRate.isLessThanOrEqualTo(0)) {
                 burnRate = average3MonthBurn.isGreaterThan(0) ? average3MonthBurn : mExp;

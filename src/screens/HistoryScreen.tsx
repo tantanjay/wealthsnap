@@ -132,8 +132,6 @@ const HistoryScreen = ({ navigation }: any) => {
         return new Date(item.date);
     }, []);
 
-    // --- Date Logic Helpers ---
-
     const getStartEndOfPeriod = (date: Date, mode: TimeFrame): { start: Date; end: Date } => {
         const start = new Date(date);
         const end = new Date(date);
@@ -186,7 +184,6 @@ const HistoryScreen = ({ navigation }: any) => {
         setCurrentDate(newDate);
     };
 
-    // --- Computed Data ---
 
     // Combine Transactions, Investments, and Debts
     const allHistoryItems = useMemo((): HistoryItem[] => {
@@ -220,10 +217,6 @@ const HistoryScreen = ({ navigation }: any) => {
     }, [allHistoryItems, currentDate, timeFrame, viewMode, selectedCalendarDate, getItemDate]);
 
     const calendarTransactions = useMemo(() => {
-        // Transactions for the currently displayed month in calendar
-        // Note: Calendar component likely expects specific Transaction type, 
-        // need to check if it handles Investments. For now, passing only transactions to Calendar 
-        // to avoid type errors unless we update Calendar component.
         const { start, end } = getStartEndOfPeriod(currentDate, 'MONTHLY');
         return allTransactions.filter(t => {
             const tDate = new Date(t.date);
@@ -292,9 +285,6 @@ const HistoryScreen = ({ navigation }: any) => {
 
     // Calculate Safe To Spend (Effective Balance)
     const safeToSpendData = useMemo(() => {
-        // --- LIFE BURNRATE LOGIC ---
-        // Calculate Average Daily Non-Recurring Spend (Life Burnrate)
-        // using last 90 days of data
         const burnRatePeriod = 90;
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - burnRatePeriod);
@@ -310,8 +300,6 @@ const HistoryScreen = ({ navigation }: any) => {
         const totalRecentSpend = recentNonRecurringExpenses.reduce((acc, t) => acc.plus(t.amount.abs()), new BigNumber(0));
         const dailyBurnRate = totalRecentSpend.dividedBy(burnRatePeriod);
 
-        // --- DEBT OBLIGATION LOGIC ---
-        // Calculate Total Monthly Debt Obligations
         const totalMonthlyDebtObligations = calculateTotalDebtObligations(allDebts);
 
         // Adjust for Period (Yearly View requires 12x)
@@ -333,7 +321,6 @@ const HistoryScreen = ({ navigation }: any) => {
         // However, for Yearly view, we need the remaining *yearly* obligation.
         const remainingDebtObligations = BigNumber.max(0, totalPeriodDebtObligations.minus(debtPaymentsMade));
 
-        // --- CALCULATION LOGIC ---
         let amount = new BigNumber(0);
         let projectedVariableSpend = new BigNumber(0);
 
@@ -470,7 +457,6 @@ const HistoryScreen = ({ navigation }: any) => {
         return newSections.sort((a, b) => b.originalDate.getTime() - a.originalDate.getTime());
     }, [filteredData]);
 
-    // --- Renderers ---
 
     const renderItem = ({ item }: { item: HistoryItem }) => {
         if (isInvestment(item)) {
