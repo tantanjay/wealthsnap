@@ -18,6 +18,8 @@ interface WealthGrowthCardProps {
     isLoading: boolean;
     hasInvestments: boolean;
     isDefaultReturnRate?: boolean;
+    monthlyBurn: BigNumber;
+    currentYearsToFreedom?: number;
     onInfoPress: () => void;
 }
 
@@ -32,6 +34,8 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
     isLoading,
     hasInvestments,
     isDefaultReturnRate,
+    monthlyBurn,
+    currentYearsToFreedom = 0,
     onInfoPress
 }) => {
     const { colors } = useTheme();
@@ -39,6 +43,11 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
     const formatMoney = (amount: BigNumber) => {
         if (isPrivacyEnabled) return '****';
         return formatCurrencyAmount(amount, currency);
+    };
+
+    const getMonthsGainedPerYear = (annualAmount: BigNumber) => {
+        if (monthlyBurn.lte(0)) return 0;
+        return annualAmount.dividedBy(monthlyBurn).toNumber();
     };
 
     if (isLoading) {
@@ -70,16 +79,25 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
                 )}
                 {scenarioInvestAmount > 0 && (
                     <Text style={{ color: colors.success, fontSize: 16, fontWeight: 'bold' }}>
-                        Self-sustain arrives {
-                            scenarioYearsEarlier < 1
+                        {currentYearsToFreedom > 100 ? (
+                            `Self-sustain becomes possible`
+                        ) : (
+                            `Self-sustain arrives ${scenarioYearsEarlier < 1
                                 ? `${(scenarioYearsEarlier * 12).toFixed(1)} months earlier.`
                                 : `${scenarioYearsEarlier.toFixed(1)} years earlier.`
-                        }
+                            }`
+                        )}
                     </Text>
                 )}
             </Card>
         );
     }
+
+    const currentAnnualDividend = portfolioValue.multipliedBy(annualReturnPercent / 100);
+    const monthsGainedCurrent = getMonthsGainedPerYear(currentAnnualDividend);
+
+    const projectedAnnualDividend = new BigNumber(scenarioInvestAmount * 12 * (annualReturnPercent / 100));
+    const monthsGainedProjected = getMonthsGainedPerYear(projectedAnnualDividend);
 
     return (
         <Card style={[styles.card, { backgroundColor: colors.surface }]}>
@@ -114,10 +132,15 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>Self-sustain Acceleration:</Text>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Annual Dividend Impact:</Text>
                     <Text style={[styles.value, { color: colors.success, fontSize: 16, fontWeight: '500' }]}>
-                        Investments add +{freedomAccelerationMonths.toFixed(1)} months of runway
+                        +{monthsGainedCurrent.toFixed(1)} months per year
                     </Text>
+                    {scenarioInvestAmount > 0 && (
+                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
+                            (+ {monthsGainedProjected.toFixed(1)} months / yr if investing)
+                        </Text>
+                    )}
                 </View>
             </View>
 
@@ -133,7 +156,11 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
                     </Text>
                     {scenarioInvestAmount > 0 && (
                         <Text style={[styles.value, { color: colors.success, fontSize: 16 }]}>
-                            Self-sustain arrives {scenarioYearsEarlier.toFixed(1)} years earlier
+                            {currentYearsToFreedom > 100 ? (
+                                `Self-sustain becomes possible`
+                            ) : (
+                                `Self-sustain arrives ${scenarioYearsEarlier.toFixed(1)} years earlier`
+                            )}
                         </Text>
                     )}
                 </View>
