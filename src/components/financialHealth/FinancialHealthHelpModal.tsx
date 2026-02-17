@@ -42,6 +42,9 @@ interface FinancialHealthHelpModalProps {
         freedomAccelerationMonths?: number;
         scenarioInvestAmount?: number;
         scenarioYearsEarlier?: number;
+        currentYearsToFreedom?: number;
+        acceleratedYearsToFreedom?: number;
+        currentMonthlyInvest?: number;
     };
 }
 
@@ -133,7 +136,7 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
 
                         {renderMathBlock(
                             "AVERAGE NET FLOW",
-                            "Avg Monthly Income - Avg Monthly Expense",
+                            "(Income + Transfers In) - (Expense + Transfers Out)",
                             `${formatMoney(data.avgNetFlow)} (3-month avg)`,
                             formatMoney(data.avgNetFlow),
                             isPositive ? colors.success : colors.error
@@ -153,13 +156,13 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
 
                         {renderMathBlock(
                             "IMPACT ON SELF-SUSTAIN",
-                            "(Annual Savings / Monthly Burn)",
+                            "(Annual Net Flow / Monthly Burn)",
                             `${formatMoney((data.avgNetFlow || new BigNumber(0)).times(12))} / ${formatMoney(data.monthlyBurn)}`,
                             `${(data.freedomImpactMonths || 0) > 0 ? '+' : ''}${(data.freedomImpactMonths || 0).toFixed(1)} Months/Year`,
                             (data.freedomImpactMonths || 0) > 0 ? colors.success : colors.error
                         )}
                         <Text style={[styles.explanation, { color: colors.textSecondary }]}>
-                            This represents how much future self-sustain you are &quot;buying&quot; with your monthly savings. At this rate, you gain {(data.freedomImpactMonths || 0).toFixed(1)} months of absolute self-sustain every year.
+                            This represents how much future self-sustain you are &quot;buying&quot; with your monthly net flow. At this rate, you gain {(data.freedomImpactMonths || 0).toFixed(1)} months of absolute self-sustain every year.
                         </Text>
                     </>
                 );
@@ -207,34 +210,111 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                 );
 
             case 'WEALTH':
+                const annualDividendImpact = (data.portfolioValue?.toNumber() || 0) * ((data.annualReturn || 0) / 100);
+                const monthlyBurnVal = data.monthlyBurn?.toNumber() || 1; // Avoid div by 0
+                const monthsGained = annualDividendImpact / monthlyBurnVal;
+
+                const potentialInvest = (data.scenarioInvestAmount || 0) * 12;
+                const potentialImpact = (potentialInvest * ((data.annualReturn || 0) / 100)) / monthlyBurnVal;
+
                 return (
                     <>
                         <Text style={[styles.introText, { color: colors.text }]}>
-                            Your investments are &quot;bought&quot; self-sustain. This shows how much time they&apos;ve already secured for you.
+                            Your investments are buying you time. This shows how much freedom you earn each year from your portfolio and potential contributions.
                         </Text>
 
                         {renderMathBlock(
-                            "SELF-SUSTAIN ACCELERATION",
-                            "Investment Value / Monthly Expenses",
-                            `${formatMoney(data.portfolioValue)} / ${formatMoney(data.monthlyBurn)}`,
-                            `+${(data.freedomAccelerationMonths || 0).toFixed(1)} Months`,
+                            "ANNUAL DIVIDEND IMPACT",
+                            "(Portfolio * Yield) / Monthly Burn",
+                            `${formatMoney(data.portfolioValue)} * ${(data.annualReturn || 0).toFixed(1)}% / ${formatMoney(data.monthlyBurn)}`,
+                            `+${monthsGained.toFixed(1)} Months / Yr`,
                             colors.success
                         )}
                         <Text style={[styles.explanation, { color: colors.textSecondary }]}>
-                            If you stopped working today, your investments alone would fund {(data.freedomAccelerationMonths || 0).toFixed(1)} months of your lifestyle.
+                            At your current yield, your portfolio passively generates enough to cover <Text style={{ fontWeight: 'bold' }}>{monthsGained.toFixed(1)} months</Text> of living expenses every single year.
                         </Text>
 
                         <View style={styles.spacer} />
 
                         {renderMathBlock(
-                            "SELF-SUSTAIN ARRIVES EARLIER",
-                            "Impact of Monthly Investment",
-                            `Investing ${formatMoney(new BigNumber(data.scenarioInvestAmount || 0))} / month`,
-                            `-${(data.scenarioYearsEarlier || 0).toFixed(1)} Years of Work`,
+                            "ACCELERATION FROM INVESTING",
+                            "(Monthly Investment * 12 * Yield) / Burn",
+                            `(${formatMoney(new BigNumber(data.scenarioInvestAmount || 0))} * 12 * ${(data.annualReturn || 0).toFixed(1)}%) / ${formatMoney(data.monthlyBurn)}`,
+                            `+${potentialImpact.toFixed(1)} Months / Yr`,
                             colors.success
                         )}
                         <Text style={[styles.explanation, { color: colors.textSecondary }]}>
-                            By committing to this <Text style={{ fontWeight: 'bold' }}>monthly investment</Text>, you literally buy back {(data.scenarioYearsEarlier || 0).toFixed(1)} years of your life from mandatory work.
+                            If you invest this amount, the compound growth alone will add another <Text style={{ fontWeight: 'bold' }}>{potentialImpact.toFixed(1)} months</Text> of runway every year.
+                        </Text>
+
+                        <View style={styles.spacer} />
+
+                        <View style={styles.spacer} />
+
+                        <View style={[styles.mathBlock, { backgroundColor: colors.surface }]}>
+                            <Text style={[styles.mathLabel, { color: colors.textSecondary }]}>TIME SAVED CALCULATION</Text>
+                            <Text style={{ color: colors.text, marginBottom: 12 }}>
+                                How long to reach Financial Freedom (25x annual spend)?
+                            </Text>
+
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Current Path</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>
+                                            {(data.currentMonthlyInvest || 0) > 0
+                                                ? `${formatMoney(new BigNumber(data.currentMonthlyInvest || 0))}/mo`
+                                                : "Insufficient Data"
+                                            }
+                                        </Text>
+                                    </View>
+                                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text, marginTop: 2 }}>
+                                        {(data.currentYearsToFreedom || 0) > 100
+                                            ? "Forever"
+                                            : `${(data.currentYearsToFreedom || 0).toFixed(1)} Years`
+                                        }
+                                    </Text>
+                                </View>
+                                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Accelerated</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>
+                                            {formatMoney(new BigNumber(data.scenarioInvestAmount || 0))}/mo
+                                        </Text>
+                                    </View>
+                                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.success, marginTop: 2 }}>
+                                        {(data.acceleratedYearsToFreedom || 0).toFixed(1)} Years
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                                    {(data.currentYearsToFreedom || 0) > 100 ? "" : "Time Bought:"}
+                                </Text>
+                                <Text style={[styles.result, { marginTop: 0, color: colors.success }]}>
+                                    {(data.currentYearsToFreedom || 0) > 100
+                                        ? "Self Sufficiency Possible"
+                                        : `${(data.scenarioYearsEarlier || 0).toFixed(1)} Years`
+                                    }
+                                </Text>
+                            </View>
+                        </View>
+
+                        <Text style={[styles.explanation, { color: colors.textSecondary }]}>
+                            {(data.currentYearsToFreedom || 0) > 100 ? (
+                                <>
+                                    Currently, you are not on track to reach Financial Freedom.
+                                    Investing this amount would make it possible to retire in <Text style={{ fontWeight: 'bold' }}>{(data.acceleratedYearsToFreedom || 0).toFixed(1)} years</Text>.
+                                </>
+                            ) : (
+                                <>
+                                    Currently, your Net Flow puts you on track to stop working in <Text style={{ fontWeight: 'bold' }}>{(data.currentYearsToFreedom || 0).toFixed(1)} years</Text>.
+                                    Investing the extra amount speeds this up to <Text style={{ fontWeight: 'bold' }}>{(data.acceleratedYearsToFreedom || 0).toFixed(1)} years</Text>.
+                                </>
+                            )}
                         </Text>
                     </>
                 );
