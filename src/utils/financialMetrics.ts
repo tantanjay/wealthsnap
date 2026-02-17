@@ -239,6 +239,47 @@ export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: nu
     return monthsWithData > 0 ? totalExpense.dividedBy(monthsWithData) : new BigNumber(0);
 };
 
+export const calculateAverageIncome = (allTransactions: Transaction[], monthsBack: number = 6, referenceDate: Date = new Date()): BigNumber => {
+    if (allTransactions.length === 0) return new BigNumber(0);
+
+    const today = referenceDate;
+    // Start from LAST month to avoid using partial current data which lowers the average artificially
+    // And for Income, including current month might INFLATE potential capacity if expenses haven't hit yet.
+    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+
+    // Find the earliest transaction date to determine account age
+    const firstTxDate = allTransactions.reduce((earliest, t) => {
+        const tDate = parseDate(t.date);
+        return tDate < earliest ? tDate : earliest;
+    }, new Date());
+
+    const firstTxMonthStart = new Date(firstTxDate.getFullYear(), firstTxDate.getMonth(), 1);
+
+    // Calculate full months of history available (up to last month)
+    const monthDiff = (lastMonthStart.getFullYear() - firstTxMonthStart.getFullYear()) * 12 +
+        (lastMonthStart.getMonth() - firstTxMonthStart.getMonth()) + 1;
+
+    // If less than 1 month of history (i.e., new user in their first month), return 0
+    // The UI handles this 0 fallback by showing "Calculating..." or falling back to current month logic
+    if (monthDiff < 1) return new BigNumber(0);
+
+    const effectiveMonths = Math.max(1, Math.min(monthsBack, monthDiff));
+    let totalIncome = new BigNumber(0);
+    // Fixed: We loop through effectiveMonths, so monthsWithData is effectively effectiveMonths
+    // Let's stick to the loop logic to be safe and consistent with burn rate.
+
+    // Sum income for the effective window (excluding current month)
+    for (let i = 0; i < effectiveMonths; i++) {
+        const d = new Date(today.getFullYear(), today.getMonth() - 1 - i, 1); // Start from previous month
+        const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
+
+        const { income } = calculateTotals(monthlyTransactions);
+        totalIncome = totalIncome.plus(income);
+    }
+
+    return effectiveMonths > 0 ? totalIncome.dividedBy(effectiveMonths) : new BigNumber(0);
+};
+
 export const getCategoryBreakdown = (transactions: Transaction[], type: BreakdownType, groupBy: 'GROUP' | 'ITEM' = 'GROUP') => {
     const breakdown: { [key: string]: BigNumber } = {};
     let total = new BigNumber(0);
@@ -277,7 +318,8 @@ export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: num
         labels: [] as string[],
         fullLabels: [] as string[],
         incomeData: [] as BigNumber[],
-        expenseData: [] as BigNumber[]
+        expenseData: [] as BigNumber[],
+        netCashFlowData: [] as BigNumber[]
     };
 
     const today = new Date();
@@ -288,8 +330,15 @@ export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: num
 
         const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
         const { income, expense } = calculateTotals(monthlyTransactions);
+
+        // Use calculateBalance to get Net Flow including Transfers (Income + TransferIn - Expense - TransferOut)
+        // We pass a future date as endDate to ensure we capture all transactions in this historical month
+        const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        const netCashFlow = calculateBalance(monthlyTransactions, monthEnd);
+
         result.incomeData.push(income);
         result.expenseData.push(expense);
+        result.netCashFlowData.push(netCashFlow);
     }
     return result;
 };

@@ -86,6 +86,14 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
                     <Text style={[styles.value, { color: colors.error }]}>
                         {formatMoney(interestCost)} / month
                     </Text>
+                    {interestCost.dividedBy(monthlyPayments).gt(0.5) && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                            <Ionicons name="information-circle-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, fontStyle: 'italic' }}>
+                                Early loan payments are mostly interest.
+                            </Text>
+                        </View>
+                    )}
                 </View>
             </View>
 
@@ -96,6 +104,9 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
                     <Text style={[styles.label, { color: colors.textSecondary }]}>Self-sustain Impact:</Text>
                     <Text style={[styles.value, { color: colors.error, fontSize: 16, fontWeight: '500' }]}>
                         Debt delays self-sustain by {freedomDelayYears.toFixed(1)} years
+                    </Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 12, fontStyle: 'italic', marginTop: 4 }}>
+                        This shrinks as you pay down principal.
                     </Text>
                 </View>
             </View>
