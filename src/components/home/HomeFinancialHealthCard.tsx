@@ -216,7 +216,7 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                             <Text style={{ color: colors.textSecondary, fontSize: 13, marginRight: 6 }}>Investment Boost:</Text>
                                             {isLoading ? <Skeleton width={80} height={16} /> : (
                                                 <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
-                                                    +{investmentBoost.toFixed(1)} months
+                                                    {investmentBoost > 0 ? `+${investmentBoost.toFixed(1)} months` : <Text style={{ color: colors.primary }}>Start Investing</Text>}
                                                 </Text>
                                             )}
                                         </View>
@@ -233,7 +233,7 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                             <Text style={{ color: colors.textSecondary, fontSize: 13, marginRight: 6 }}>Debts Drag:</Text>
                                             {isLoading ? <Skeleton width={80} height={16} /> : (
                                                 <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
-                                                    {debtDrag.toFixed(1)} months
+                                                    {debtDrag > 0 ? `${debtDrag.toFixed(1)} months` : <Text style={{ color: colors.success }}>Debt Free!</Text>}
                                                 </Text>
                                             )}
                                         </View>

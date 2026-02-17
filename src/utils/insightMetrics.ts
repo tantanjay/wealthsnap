@@ -117,7 +117,7 @@ export const calculateDebtFreedomDelay = (totalDebtLiability: BigNumber, annualS
  * @param monthlyExpenses Monthly expenses (to determine Target FI Number = 300 * Expenses)
  * @param extraInvestment Amount to add to monthly savings
  * @param returnRate Annual return rate (e.g. 0.07)
- * @returns Years saved
+ * @returns Object containing { saved, current, accelerated } in years
  */
 export const calculateFreedomAcceleration = (
     currentNetWorth: BigNumber,
@@ -125,13 +125,13 @@ export const calculateFreedomAcceleration = (
     monthlyExpenses: BigNumber,
     extraInvestment: BigNumber,
     returnRate: number = 0.07
-): number => {
-    if (monthlyExpenses.lte(0)) return 0;
+): { saved: number; current: number; accelerated: number; } => {
+    if (monthlyExpenses.lte(0)) return { saved: 0, current: 0, accelerated: 0 };
 
     const fiNumber = monthlyExpenses.times(300); // 25x Annual rule (25 * 12 = 300)
 
     // If already at FI number, no acceleration
-    if (currentNetWorth.gte(fiNumber)) return 0;
+    if (currentNetWorth.gte(fiNumber)) return { saved: 0, current: 0, accelerated: 0 };
 
     const MAX_SIM_YEARS = 500; // Increased limit for calculation delta only
     const MAX_SIM_MONTHS = MAX_SIM_YEARS * 12;
@@ -160,7 +160,9 @@ export const calculateFreedomAcceleration = (
 
     const delta = Math.max(0, yearsCurrent - yearsAccelerated);
 
-    // If the delta is tiny (e.g. 0.01 years), it might still round to 0.0 in UI.
-    // Return the raw delta.
-    return delta;
+    return {
+        saved: delta,
+        current: yearsCurrent,
+        accelerated: yearsAccelerated
+    };
 };

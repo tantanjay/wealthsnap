@@ -19,9 +19,11 @@ import {
     getCurrentMonthCumulative,
     getTransactionsByMonth,
     calculateTotals,
-    getMonthlyTrends
+    getMonthlyTrends,
+    calculateAverageIncome,
+    calculateBalance
 } from '@utils/financialMetrics';
-import { calculateTotalDebtObligations, calculatePrevDebtObligations } from '@utils/debtMetrics';
+import { calculateTotalDebtObligations, calculatePrevDebtObligations, calculateCurrentDebtBalance } from '@utils/debtMetrics';
 import {
     calculateDebtDrag,
     calculateInvestmentBoost,
@@ -37,6 +39,19 @@ import SpendingCashFlowCard from '@components/financialHealth/SpendingCashFlowCa
 import DebtPressureCard from '@components/financialHealth/DebtPressureCard';
 import WealthGrowthCard from '@components/financialHealth/WealthGrowthCard';
 import FinancialHealthHelpModal, { HelpModalType } from '@components/financialHealth/FinancialHealthHelpModal';
+
+interface WealthState {
+    portfolioValue: BigNumber;
+    annualReturnPercent: number;
+    freedomAccelerationMonths: number;
+    scenarioInvestAmount: number;
+    scenarioYearsEarlier: number;
+    currentYearsToFreedom: number;
+    acceleratedYearsToFreedom: number;
+    currentMonthlyInvest: number;
+    hasInvestments: boolean;
+    isDefaultReturnRate: boolean;
+}
 
 const FinancialHealthScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -75,12 +90,15 @@ const FinancialHealthScreen = ({ navigation }: any) => {
         totalLiability: new BigNumber(0)
     });
 
-    const [wealthState, setWealthState] = useState({
+    const [wealthState, setWealthState] = useState<WealthState>({
         portfolioValue: new BigNumber(0),
         annualReturnPercent: 0,
         freedomAccelerationMonths: 0,
         scenarioInvestAmount: 300,
         scenarioYearsEarlier: 0,
+        currentYearsToFreedom: 0,
+        acceleratedYearsToFreedom: 0,
+        currentMonthlyInvest: 0,
         hasInvestments: false,
         isDefaultReturnRate: false
     });
@@ -108,22 +126,26 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             const currentMonthTransactions = getTransactionsByMonth(t, now);
 
 
+
             const { income: monthIncome, expense: monthExpense } = calculateTotals(currentMonthTransactions);
-            const netFlow = monthIncome.minus(monthExpense);
+            // Use calculateBalance to include Transfers in Net Flow (Income + T_In - Expense - T_Out)
+            // This ensures investment contributions are deducted from "Cash Flow" to avoid double counting with Wealth Card
+            const netFlow = calculateBalance(currentMonthTransactions);
 
             const trends = getMonthlyTrends(t, 3);
+            let totalNetFlow = new BigNumber(0);
             let totalAvgIncome = new BigNumber(0);
-            let totalAvgExpense = new BigNumber(0);
             let monthsCount = 0;
 
             trends.incomeData.forEach((inc, idx) => {
                 totalAvgIncome = totalAvgIncome.plus(inc);
-                totalAvgExpense = totalAvgExpense.plus(trends.expenseData[idx]);
+                // metrics.ts updated to return netCashFlowData which includes transfers
+                totalNetFlow = totalNetFlow.plus(trends.netCashFlowData[idx]);
                 monthsCount++;
             });
 
             const averageNetFlow = monthsCount > 0
-                ? totalAvgIncome.minus(totalAvgExpense).dividedBy(monthsCount)
+                ? totalNetFlow.dividedBy(monthsCount)
                 : netFlow;
 
             const averageMonthlyIncome = monthsCount > 0
@@ -204,45 +226,64 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                 freedomImpactMonths: freedomImpact
             });
 
+            // Calculate Net Flow Cap (Max Potential Investment)
+            // Fix: Use 6-month average income (excluding current month) minus current total burn rate.
+            // This avoids "partial month" data inflating the surplus (e.g. 49k if income hit but bills haven't).
+            const conservativeAvgIncome = calculateAverageIncome(t, 6);
+            const investableSurplus = conservativeAvgIncome.minus(totalBurnRate);
+
+            const netFlowCap = BigNumber.maximum(0, investableSurplus);
+
+            // 2. Calculate Historical Investment (Current Path)
+            // CRITICAL: Only count investments that have a corresponding TRANSACTION record.
+            // This ensures we measuring actual Cash Flow divert to investing, not just portfolio updates.
+            const validInvestmentIds = new Set(t.filter(tx => tx.investmentId).map(tx => tx.investmentId));
+            const verifiedBuys = inv.filter(i => i.action === 'BUY' && validInvestmentIds.has(i.id));
+
             let smartScenarioAmount = getSmartScenarioAmount(averageMonthlyIncome, p?.currency || 'PHP');
+            let currentMonthlyInvest = new BigNumber(0);
 
-            const buys = inv.filter(i => i.action === 'BUY');
-
-            if (buys.length > 0) {
-                const dates = buys.map(b => new Date(b.date).getTime());
+            if (verifiedBuys.length > 0) {
+                const dates = verifiedBuys.map(b => new Date(b.date).getTime());
                 const firstBuyDate = new Date(Math.min(...dates));
                 const today = new Date();
-
-                // Avoid division by zero: assume at least 1 month
                 const monthsDiff = (today.getFullYear() - firstBuyDate.getFullYear()) * 12 + (today.getMonth() - firstBuyDate.getMonth());
                 const monthsActive = Math.max(1, monthsDiff);
+                const totalInvested = verifiedBuys.reduce((sum, b) => sum.plus(b.quantity.times(b.price)), new BigNumber(0));
 
-                const totalInvested = buys.reduce((sum, b) => sum.plus(b.quantity.times(b.price)), new BigNumber(0));
+                currentMonthlyInvest = totalInvested.dividedBy(monthsActive);
 
-                const avgMonthlyInvested = totalInvested.dividedBy(monthsActive);
-
-                // If Net Flow is negative, cap is 0 (can't invest more if losing money)
-                // averageNetFlow from getMonthlyTrends usually DOES NOT include debt payments (transfers), so we must subtract them.
-                const trueExcessCashFlow = averageNetFlow.minus(monthlyDebtObligations);
-                const netFlowCap = BigNumber.maximum(0, trueExcessCashFlow);
-
-                // The scenario amount is the lesser of Avg History OR Net Flow Cap
-                // However, if Avg History > Cap, it means user is already overextending or using different funds?
-                // The prompt says "hardstop on his excess current net flow". 
-                // Let's interpret as: Ideally invest Avg History, but limit to Available Cash flow.
-
-                if (avgMonthlyInvested.gt(0)) {
-                    smartScenarioAmount = BigNumber.minimum(avgMonthlyInvested, netFlowCap).toNumber();
+                // Update smartScenarioAmount for Debt usage
+                if (currentMonthlyInvest.gt(0)) {
+                    smartScenarioAmount = BigNumber.minimum(currentMonthlyInvest, netFlowCap).toNumber();
                 }
             }
+
+            // 3. Potential Path: Their max capacity (Net Flow - Debt)
+            // Strictly cap at sustainability.
+            const potentialMonthlyInvest = BigNumber.maximum(currentMonthlyInvest, netFlowCap);
+            const extraMonthlyInvest = potentialMonthlyInvest.minus(currentMonthlyInvest);
+
             const activeDebts = debts.filter(d => d.status === 'ACTIVE');
             let estimatedMonthlyInterest = new BigNumber(0);
             let totalLiability = new BigNumber(0);
+
+            // Calculate interest based on CURRENT BALANCE, not initial amount
             activeDebts.forEach(d => {
+                const currentBalance = calculateCurrentDebtBalance(d, t);
                 const rate = d.interestRate.dividedBy(100).dividedBy(12);
-                estimatedMonthlyInterest = estimatedMonthlyInterest.plus(d.initialAmount.times(rate));
-                totalLiability = totalLiability.plus(d.initialAmount);
+
+                // For Fixed/Variable, interest is on remaining balance
+                // For Flat, it might be on initial, but let's assume standard amortization for the "Pressure" card
+                if (d.interestType === 'FLAT') {
+                    estimatedMonthlyInterest = estimatedMonthlyInterest.plus(d.initialAmount.times(rate));
+                } else {
+                    estimatedMonthlyInterest = estimatedMonthlyInterest.plus(currentBalance.times(rate));
+                }
+
+                totalLiability = totalLiability.plus(currentBalance);
             });
+
             const annualSavings = averageNetFlow.times(12).gt(0) ? averageNetFlow.times(12) : new BigNumber(0);
             const freedomDelay = calculateDebtFreedomDelay(totalLiability, annualSavings);
 
@@ -281,16 +322,18 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             const finalReturnRate = useDefaultRate ? 7.2 : calculatedYield;
 
             // Freedom Calculation:
+            // Base: Current Historical Investment
+            // Extra: The gap to reach Potential
             // We should NOT include debt obligations in the "Freedom Number" target, because the assumption is
             // you will be debt-free by the time you retire.
             // So we use (Total Burn Rate - Debt Obligations) as the long-term living expense.
             const freedomBurnRate = BigNumber.maximum(0, totalBurnRate.minus(monthlyDebtObligations));
 
-            const scenarioYears = calculateFreedomAcceleration(
+            const { saved, current, accelerated } = calculateFreedomAcceleration(
                 totalPortfolioValue,
-                averageNetFlow,
+                currentMonthlyInvest,
                 freedomBurnRate,
-                new BigNumber(smartScenarioAmount),
+                extraMonthlyInvest,
                 finalReturnRate / 100
             );
 
@@ -298,10 +341,13 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                 portfolioValue: totalPortfolioValue,
                 annualReturnPercent: finalReturnRate,
                 freedomAccelerationMonths: investmentBoost,
-                scenarioInvestAmount: smartScenarioAmount,
-                scenarioYearsEarlier: scenarioYears,
+                scenarioInvestAmount: potentialMonthlyInvest.toNumber(), // Passing POTENTIAL for the "If you invest X" card text
+                scenarioYearsEarlier: saved,
+                currentYearsToFreedom: current,
+                acceleratedYearsToFreedom: accelerated,
                 hasInvestments: totalPortfolioValue.gt(0),
-                isDefaultReturnRate: useDefaultRate
+                isDefaultReturnRate: useDefaultRate,
+                currentMonthlyInvest: currentMonthlyInvest.toNumber() // New prop
             });
 
         } catch (error) { console.error(error); } finally { setIsLoading(false); }
@@ -384,6 +430,8 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     isLoading={isLoading}
                     hasInvestments={wealthState.hasInvestments}
                     isDefaultReturnRate={wealthState.isDefaultReturnRate}
+                    monthlyBurn={financialState.monthlyBurn}
+                    currentYearsToFreedom={wealthState.currentYearsToFreedom}
                     onInfoPress={() => handleInfoPress('WEALTH')}
                 />
             </ScrollView>
@@ -410,9 +458,13 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     monthlyPayments: debtState.monthlyPayments,
                     interestCost: debtState.interestCost,
                     portfolioValue: wealthState.portfolioValue,
+                    annualReturn: wealthState.annualReturnPercent,
                     freedomAccelerationMonths: wealthState.freedomAccelerationMonths,
                     scenarioInvestAmount: wealthState.scenarioInvestAmount,
-                    scenarioYearsEarlier: wealthState.scenarioYearsEarlier
+                    scenarioYearsEarlier: wealthState.scenarioYearsEarlier,
+                    currentYearsToFreedom: wealthState.currentYearsToFreedom,
+                    acceleratedYearsToFreedom: wealthState.acceleratedYearsToFreedom,
+                    currentMonthlyInvest: wealthState.currentMonthlyInvest
                 }}
             />
         </ScreenWrapper>
