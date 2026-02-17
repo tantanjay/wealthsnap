@@ -181,7 +181,6 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
         try {
             await saveDebt(newDebt);
 
-            const errors: any[] = [];
             const feesBN = new BigNumber(fees || 0);
 
             if (shouldCreateTransaction) {
