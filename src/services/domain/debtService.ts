@@ -2,6 +2,7 @@ import { BigNumber } from 'bignumber.js';
 import { Debt, DebtStatus, DebtType, DebtDirection } from '@types';
 import { getDatabase } from '@services/database/databaseService';
 import { encryptField, bulkDecryptItems } from '@services/core/encryptionService';
+import { chunkArray } from "@utils/index";
 
 // --- Constants & Helpers ---
 
@@ -105,5 +106,30 @@ export const deleteDebt = async (id: string): Promise<void> => {
     } catch (error) {
         console.error('Error deleting debt:', error);
         throw new Error('Failed to delete debt');
+    }
+};
+
+export const bulkSaveDebts = async (debts: Debt[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        const chunks = chunkArray(debts);
+
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            const preparedRows = await Promise.all(chunk.map(prepareDebtValues));
+
+            await db.withTransactionAsync(async () => {
+                for (const values of preparedRows) {
+                    await db.runAsync(UPSERT_DEBT_QUERY, values);
+                }
+            });
+
+            if (i < chunks.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+        }
+    } catch (error) {
+        console.error('Error bulk saving debts:', error);
+        throw new Error('Failed to bulk save debts');
     }
 };

@@ -145,13 +145,13 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
         // OR if you want to support adding transaction on edit, you'd need more logic.
         // Assuming only NEW debts get the prompt, as per previous checkbox logic:
         if (initialDebt) {
-            finalSave(false);
+            finalSave(false, false);
         } else {
             setShowTransactionInfo(true);
         }
     };
 
-    const finalSave = async (shouldCreateTransaction: boolean) => {
+    const finalSave = async (shouldCreateTransaction: boolean, shouldCreateFeeTxn: boolean = false) => {
         setShowTransactionInfo(false); // Close modal
 
 
@@ -181,6 +181,9 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
         try {
             await saveDebt(newDebt);
 
+            const errors: any[] = [];
+            const feesBN = new BigNumber(fees || 0);
+
             if (shouldCreateTransaction) {
                 // If taking a loan (PAYABLE) -> It's Cash In (Transfer In) to your pocket
                 // If lending money (RECEIVABLE) -> It's Cash Out (Transfer Out) from your pocket
@@ -194,10 +197,9 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                     txnType = 'TRANSFER_OUT';
                 }
 
-                const feesBN = new BigNumber(fees || 0);
                 const netAmount = initialAmountBN.minus(feesBN);
 
-                // Main Transaction (Net Amount)
+                // Main Transaction
                 const mainTxn: Transaction = {
                     id: generateUUID(),
                     date: new Date().toISOString(),
@@ -215,26 +217,26 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                 };
 
                 await saveTransaction(mainTxn);
+            }
 
-                // Add Fee Transaction if applicable
-                if (feesBN.gt(0)) {
-                    const feeTxn: Transaction = {
-                        id: generateUUID(),
-                        date: new Date().toISOString(),
-                        amount: feesBN,
-                        type: 'EXPENSE',
-                        category: 'Fees',
-                        subCategory: 'INITIAL_TRANSACTION',
-                        transferAccount: debtType,
-                        note: `Processing fees for ${name}`,
-                        creationMethod: 'MANUAL',
-                        isRecurring: false,
-                        debtId: newDebt.id,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                    };
-                    await saveTransaction(feeTxn);
-                }
+            // Fee Transaction
+            if (shouldCreateFeeTxn && feesBN.gt(0)) {
+                const feeTxn: Transaction = {
+                    id: generateUUID(),
+                    date: new Date().toISOString(),
+                    amount: feesBN,
+                    type: 'EXPENSE',
+                    category: 'Fees',
+                    subCategory: 'INITIAL_TRANSACTION',
+                    transferAccount: debtType,
+                    note: `Processing fees for ${name}`,
+                    creationMethod: 'MANUAL',
+                    isRecurring: false,
+                    debtId: newDebt.id,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                };
+                await saveTransaction(feeTxn);
             }
 
             onSave();
@@ -683,7 +685,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
 
                     {/* Option 1: YES */}
                     <TouchableOpacity
-                        onPress={() => finalSave(true)}
+                        onPress={() => finalSave(true, true)}
                         style={{ flexDirection: 'row', marginBottom: 16, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}
                     >
                         <View style={{ alignItems: 'center', marginRight: 16, width: 40, paddingTop: 4 }}>
@@ -702,7 +704,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
 
                     {/* Option 2: NO (Direct) */}
                     <TouchableOpacity
-                        onPress={() => finalSave(false)}
+                        onPress={() => finalSave(false, true)}
                         style={{ flexDirection: 'row', marginBottom: 16, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}
                     >
                         <View style={{ alignItems: 'center', marginRight: 16, width: 40, paddingTop: 4 }}>
@@ -713,18 +715,23 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                         <View style={{ flex: 1 }}>
                             <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>NO, it went straight to payment.</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
-                                Result: Debt Created Only. (No change to Cash Balance).
+                                Result: Debt Created. Fees recorded as Expense.
                             </Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>
                                 e.g. Car Loan / Renovation paid to vendor.
                             </Text>
-                            <Text style={{ color: colors.error, fontSize: 12, fontWeight: 'bold', marginTop: 6 }}>TAP TO CONFIRM</Text>
+                            <View style={{ marginTop: 6, backgroundColor: colors.surface, padding: 6, borderRadius: 6, borderWidth: 1, borderColor: colors.border }}>
+                                <Text style={{ fontSize: 11, color: colors.text, fontStyle: 'italic' }}>
+                                    Note: Any fees entered will be recorded as an expense.
+                                </Text>
+                            </View>
+                            <Text style={{ color: colors.error, fontSize: 12, fontWeight: 'bold', marginTop: 8 }}>TAP TO CONFIRM</Text>
                         </View>
                     </TouchableOpacity>
 
                     {/* Option 3: NO (Untracked) */}
                     <TouchableOpacity
-                        onPress={() => finalSave(false)}
+                        onPress={() => finalSave(false, false)}
                         style={{ flexDirection: 'row', marginBottom: 24, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}
                     >
                         <View style={{ alignItems: 'center', marginRight: 16, width: 40, paddingTop: 4 }}>

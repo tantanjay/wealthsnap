@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import JSZip from 'jszip';
 
-import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget, TransactionReceipt, Asset, PriceHistory, DividendHistory } from '@types';
+import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget, TransactionReceipt, Asset, PriceHistory, DividendHistory, Debt } from '@types';
 import { decryptData, encryptData } from '@services/core/encryptionService';
 import * as Storage from '@services/core/storageService';
 import { CONFIG } from '@constants/config';
@@ -15,6 +15,7 @@ import { bulkSaveReminders, getAllReminders, scheduleReminderNotifications } fro
 import { bulkSaveAssets, getAllAssets } from '@services/domain/assetService';
 import { bulkSavePriceHistories, getAllPriceHistories } from '@services/domain/priceHistoryService';
 import { bulkSaveDividendHistories, getAllDividendHistories } from '@services/domain/dividendHistoryService';
+import { bulkSaveDebts, getAllDebts } from '@services/domain/debtService';
 
 export interface BackupData {
     version: string;
@@ -22,6 +23,7 @@ export interface BackupData {
     profile: UserProfile | null;
     transactions: Transaction[];
     investments: Investment[];
+    debts: Debt[];
     categories: Category[];
     recurrenceRules: RecurrenceRule[];
     budgets: Budget[];
@@ -54,6 +56,7 @@ export const createBackup = async (password: string): Promise<string> => {
     const profile = await Storage.getUserProfile();
     const transactions = await getAllTransactions();
     const investments = await getAllInvestments();
+    const debts = await getAllDebts();
     const categories = await getAllCategories();
     const recurrenceRules = await getAllRecurrenceRules();
     const budgets = await getAllBudgets();
@@ -69,6 +72,7 @@ export const createBackup = async (password: string): Promise<string> => {
         profile,
         transactions,
         investments,
+        debts,
         categories,
         recurrenceRules,
         budgets,
@@ -249,6 +253,7 @@ export const restoreFromBackup = async (
 
     const { sanitized: cleanTransactions, map: transactionIdMap } = sanitizeIds(backupData.transactions);
     const { sanitized: cleanInvestments } = sanitizeIds(backupData.investments);
+    const { sanitized: cleanDebts } = sanitizeIds(backupData.debts);
     const { sanitized: cleanCategories } = sanitizeIds(backupData.categories);
     const { sanitized: cleanRecurrenceRules } = sanitizeIds(backupData.recurrenceRules);
     const { sanitized: cleanReminders } = sanitizeIds(backupData.reminders);
@@ -257,11 +262,12 @@ export const restoreFromBackup = async (
     await safeBulkSave(backupData.assets, bulkSaveAssets);
     await safeBulkSave(cleanTransactions, bulkSaveTransactions);
     await safeBulkSave(cleanInvestments, bulkSaveInvestments);
+    await safeBulkSave(cleanDebts, bulkSaveDebts);
     await safeBulkSave(cleanCategories, bulkSaveCategories);
     await safeBulkSave(cleanRecurrenceRules, bulkSaveRecurrenceRules);
     await safeBulkSave(cleanReminders, bulkSaveReminders);
-    await safeBulkSave(backupData.budgets, bulkSaveBudgets);
     await safeBulkSave(cleanTransactionReceipts, bulkSaveTransactionReceipts);
+    await safeBulkSave(backupData.budgets, bulkSaveBudgets);
     await safeBulkSave(backupData.priceHistories, bulkSavePriceHistories);
     await safeBulkSave(backupData.dividendHistories, bulkSaveDividendHistories);
 
