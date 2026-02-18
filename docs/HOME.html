@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WealthSnap — Your Financial Mirror</title>
+    <style>
+        :root {
+            --bg: #0b0f14;
+            --card: #121826;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+            --accent: #4f8cff;
+            --border: #1f2937;
+            --success: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
+            background: radial-gradient(1200px 600px at 10% -10%, #142044 0%, transparent 60%), var(--bg);
+            color: var(--text);
+            line-height: 1.65;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem 5rem;
+        }
+
+        header {
+            display: grid;
+            gap: 1.25rem;
+            margin-bottom: 3rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            background: rgba(79, 140, 255, 0.12);
+            color: var(--accent);
+            font-size: 0.8rem;
+            width: fit-content;
+        }
+
+        h1 {
+            font-size: clamp(2.2rem, 4vw, 3.2rem);
+            line-height: 1.15;
+            margin: 0;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--muted);
+            max-width: 720px;
+        }
+
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        section {
+            margin-top: 3.5rem;
+        }
+
+        section>h2 {
+            font-size: 1.6rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.25rem;
+        }
+
+        ul {
+            padding-left: 1.2rem;
+            margin: 0;
+        }
+
+        li {
+            margin-bottom: 0.6rem;
+        }
+
+        blockquote {
+            margin: 0;
+            padding: 1.25rem 1.5rem;
+            border-left: 3px solid var(--accent);
+            background: rgba(79, 140, 255, 0.08);
+            border-radius: 8px;
+            color: #dbeafe;
+            font-size: 0.95rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+        }
+
+        th,
+        td {
+            padding: 0.75rem 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        th {
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .highlight {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding-top: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <header>
+            <span class="badge">Privacy-First · Offline-First</span>
+            <h1>WealthSnap — Your Financial Mirror</h1>
+            <p class="subtitle">
+                A powerful personal financial operating system built for absolute privacy. High‑resolution insight into
+                your money —
+                securely stored on your device, exactly where it belongs.
+            </p>
+            <div class="meta">
+                <span><strong>Version:</strong> v1.10.0</span>
+                <span><strong>Last Updated:</strong> February 18, 2026</span>
+                <span><strong>Status:</strong> Release</span>
+            </div>
+        </header>
+
+        <section>
+            <h2>🛡️ Vision & Philosophy</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Clarity over Complexity</h3>
+                    <p>
+                        WealthSnap offers a precise, unbiased view of your financial reality. You don't just see numbers
+                        — you understand them.
+                    </p>
+                </div>
+                <div class="card">
+                    <h3>Privacy over Convenience</h3>
+                    <p>
+                        We don’t just protect your data — we don’t collect it. Your entire financial life stays on your
+                        device, not on a server.
+                    </p>
+                </div>
+                <div class="card">
+                    <h3>Education over Guesswork</h3>
+                    <p>
+                        Complete transparency on how every metric is calculated. Understand your true financial health
+                        with built-in formulas and guides.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>💰 Core Capabilities</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>📊 Smart Dashboard</h3>
+                    <ul>
+                        <li>Stability Runway tracking</li>
+                        <li>Liquidity Date projection</li>
+                        <li>Net Flow & Spending trends</li>
+                        <li>Debt Pressure & Interest Drag</li>
+                        <li>Wealth Growth acceleration</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>🧾 Budgeting & History</h3>
+                    <ul>
+                        <li>Safe-to-Spend calculations</li>
+                        <li>Ghost Forecast (upcoming bills)</li>
+                        <li>Interactive spending heatmap</li>
+                        <li>Category & Merchant suggestions</li>
+                        <li>CSV/TSV bulk import support</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>📈 Investment Mirror</h3>
+                    <ul>
+                        <li>Stocks, Crypto, Funds & Assets</li>
+                        <li>Multi-currency performance tracking</li>
+                        <li>Allocation & Sector heatmaps</li>
+                        <li>Dividend projection charts</li>
+                        <li>Unrealized & Realized P/L</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>💳 Debt Management</h3>
+                    <ul>
+                        <li>Full amortization schedules</li>
+                        <li>Fixed, Variable & Flat interest</li>
+                        <li>Principal vs Interest split</li>
+                        <li>One-tap payment recording</li>
+                        <li>Debt-integrated Runway calculation</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>🔐 Privacy & Security</h2>
+            <blockquote>
+                WealthSnap is built with a zero-knowledge, offline-first philosophy. Even the developer cannot see your
+                data.
+            </blockquote>
+            <div class="grid" style="margin-top: 1.25rem;">
+                <div class="card">
+                    <h3>AES-256 Encryption</h3>
+                    <p>Sensitive data is encrypted locally. No forced cloud sync or remote tracking.</p>
+                </div>
+                <div class="card">
+                    <h3>Local Storage Only</h3>
+                    <p>Your data lives in a local SQLite database. You control the files and backups.</p>
+                </div>
+                <div class="card">
+                    <h3>Secure App Lock</h3>
+                    <p>PIN protection and conditional screenshot blocking keep your visibility private.</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>🤖 AI-Powered Tools (Optional)</h2>
+            <div class="card">
+                <ul>
+                    <li><strong>Smart Receipt Analysis:</strong> Automatically extract amount, category, and notes from
+                        images.</li>
+                    <li><strong>Market Intelligence:</strong> AI-assisted stock price retrieval and dividend history
+                        research.</li>
+                    <li><strong>Smart Advisor:</strong> Anomaly detection and spending spike insights derived locally.
+                    </li>
+                    <li><strong>BYOK (Bring Your Own Key):</strong> Full control via your personal Gemini API key.</li>
+                </ul>
+                <p style="margin-top: 1rem; color: var(--muted);">
+                    AI features are strictly <strong>opt-in</strong>. Images and local data are never used for training
+                    or shared permanently.
+                </p>
+            </div>
+        </section>
+
+        <section>
+            <h2>🏗️ Technical Architecture</h2>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Implementation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Frontend</td>
+                            <td>React Native + Expo (Modern Architecture)</td>
+                        </tr>
+                        <tr>
+                            <td>Storage</td>
+                            <td>Encrypted SQLite (expo-sqlite)</td>
+                        </tr>
+                        <tr>
+                            <td>Math Engine</td>
+                            <td>BigNumber.js (Arbitrary precision computation)</td>
+                        </tr>
+                        <tr>
+                            <td>Performance</td>
+                            <td>Optimistic UI Cache + Background processing</td>
+                        </tr>
+                        <tr>
+                            <td>Security</td>
+                            <td>AES-256-CBC + Device Secure Store</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section>
+            <h2>📌 Developer’s Note</h2>
+            <div class="card">
+                <p>
+                    WealthSnap is a 100% independent, solo‑developed project. There are no venture capitalists,
+                    analytics dashboards, or support teams — just one engineer and a keyboard.
+                </p>
+                <p style="margin-top: 0.75rem;">
+                    Updates and support are provided on a <strong>best‑effort</strong> basis. If this app brings
+                    clarity, the mission is accomplished.
+                </p>
+            </div>
+        </section>
+
+        <footer>
+            <p><em>“Survive. Stabilize. Grow. Self-Sustain.”</em></p>
+        </footer>
+
+    </div>
+</body>
+
+</html>
