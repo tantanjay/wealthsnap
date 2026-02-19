@@ -33,6 +33,7 @@ const BackupModal: React.FC<BackupModalProps> = ({
             onClose={onClose}
             title="Create Backup"
             subtitle="Enter a password to encrypt your backup file."
+            dismissable={false}
         >
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={{
