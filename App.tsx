@@ -5,7 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import AppNavigator from '@navigation/AppNavigator';
 import BottomModal from '@components/common/BottomModal';
-import { SecurityProvider } from '@context/SecurityContext';
+import { SecurityProvider, useSecurity } from '@context/SecurityContext';
 import { PrivacyProvider } from '@context/PrivacyContext';
 import { AlertProvider } from '@context/AlertContext';
 import { ThemeProvider } from '@context/ThemeContext';
@@ -33,43 +33,10 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   const [initialRoute, setInitialRoute] = useState<'Onboarding' | 'Main' | 'LegalAcceptance'>('Onboarding');
-  const [pendingReminders, setPendingReminders] = useState<Reminder[]>([]);
-  const [showCatchup, setShowCatchup] = useState(false);
-
-  // Backup Reminder State
-  const [showBackupReminder, setShowBackupReminder] = useState(false);
-  const [showBackupModal, setShowBackupModal] = useState(false);
-  const [isBackupProcessing, setIsBackupProcessing] = useState(false);
 
   useEffect(() => {
     initNotifications();
     registerBackgroundFetchAsync();
-
-    const checkCatchup = async () => {
-      const pending = await getPendingReminders();
-      if (pending.length > 0) {
-        setPendingReminders(pending);
-        setShowCatchup(true);
-      }
-    };
-
-    const checkBackupStatus = async () => {
-      const lastBackup = await getLastBackupDate();
-      if (!lastBackup) {
-        // First run or never backed up. Initialize to NOW so we don't bug them for 7 days.
-        await saveLastBackupDate(new Date().toISOString());
-        return;
-      }
-
-      const now = new Date();
-      const last = new Date(lastBackup);
-      const diffTime = Math.abs(now.getTime() - last.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays >= 7) {
-        setShowBackupReminder(true);
-      }
-    };
 
     const checkOnboarding = async () => {
       try {
@@ -106,21 +73,7 @@ export default function App() {
     };
 
     // Initial checks
-    checkCatchup();
-    checkBackupStatus();
     checkOnboarding();
-
-    // Foreground check
-    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
-        checkCatchup();
-        checkBackupStatus();
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
   }, []);
 
   // Then show loading while checking onboarding
@@ -142,60 +95,7 @@ export default function App() {
               <PrivacyGuard />
               <SafeAreaProvider>
                 <StatusBar style="auto" />
-                <AppNavigator initialRoute={initialRoute} />
-                <CustomAlert />
-                <BottomModal
-                  visible={showCatchup}
-                  onClose={() => setShowCatchup(false)}
-                  title="Reminder Catch-up"
-                  maxHeight="85%"
-                  style={{ height: '85%' }}
-                  contentStyle={{ flex: 1 }}
-                >
-                  {showCatchup && (
-                    <ReminderCatchupModal
-                      pendingReminders={pendingReminders}
-                      onClose={() => setShowCatchup(false)}
-                    />
-                  )}
-                </BottomModal>
-
-                <BackupReminderModal
-                  visible={showBackupReminder}
-                  onClose={() => setShowBackupReminder(false)}
-                  onCreateBackup={() => {
-                    setShowBackupReminder(false);
-                    setShowBackupModal(true);
-                  }}
-                  onRemindLater={async () => {
-                    // Reset timer
-                    await saveLastBackupDate(new Date().toISOString());
-                    setShowBackupReminder(false);
-                  }}
-                />
-
-                <BackupModal
-                  visible={showBackupModal}
-                  onClose={() => setShowBackupModal(false)}
-                  onBackup={async (password) => {
-                    try {
-                      setIsBackupProcessing(true);
-                      const uri = await createBackup(password);
-                      setIsBackupProcessing(false);
-                      setShowBackupModal(false);
-
-                      if (await Sharing.isAvailableAsync()) {
-                        await Sharing.shareAsync(uri);
-                      }
-                    } catch (error) {
-                      setIsBackupProcessing(false);
-                      console.error(error);
-                      // Ideally show alert but we are outside normal context. 
-                      alert('Backup Failed: ' + (error as Error).message);
-                    }
-                  }}
-                  isProcessing={isBackupProcessing}
-                />
+                <AppContent initialRoute={initialRoute} />
               </SafeAreaProvider>
             </AlertProvider>
           </PrivacyProvider>
@@ -204,3 +104,123 @@ export default function App() {
     </ThemeProvider>
   );
 }
+
+// Inner component to access contexts (Security, etc)
+const AppContent = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'LegalAcceptance' }) => {
+  const security = useSecurity(); // Now available
+  // Safety check for security context availability (though it should be available given the provider above)
+  const isLocked = security ? security.isLocked : false;
+
+  const [pendingReminders, setPendingReminders] = useState<Reminder[]>([]);
+  const [showCatchup, setShowCatchup] = useState(false);
+
+  // Backup Reminder State
+  const [showBackupReminder, setShowBackupReminder] = useState(false);
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [isBackupProcessing, setIsBackupProcessing] = useState(false);
+
+  useEffect(() => {
+    const checkBackupsAndReminders = async () => {
+      // 1. Check Reminders (ONLY if not locked)
+      if (!isLocked) {
+        const pending = await getPendingReminders();
+        if (pending.length > 0) {
+          setPendingReminders(pending);
+          setShowCatchup(true);
+        }
+      }
+
+      // 2. Check Backups (Less critical, can also wait for unlock)
+      if (!isLocked) {
+        const lastBackup = await getLastBackupDate();
+        if (!lastBackup) {
+          await saveLastBackupDate(new Date().toISOString());
+          return;
+        }
+
+        const now = new Date();
+        const last = new Date(lastBackup);
+        const diffTime = Math.abs(now.getTime() - last.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays >= 7) {
+          setShowBackupReminder(true);
+        }
+      }
+    };
+
+    // Run on mount (if unlocked) or whenever lock state changes to UNLOCKED
+    if (!isLocked) {
+      checkBackupsAndReminders();
+    }
+
+    // Foreground check
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active' && !isLocked) {
+        checkBackupsAndReminders();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isLocked]); // Re-run when lock state changes
+
+  return (
+    <>
+      <AppNavigator initialRoute={initialRoute} />
+      <CustomAlert />
+
+      <BottomModal
+        visible={showCatchup}
+        onClose={() => setShowCatchup(false)}
+        title="Reminder Catch-up"
+        maxHeight="85%"
+        style={{ height: '85%' }}
+        contentStyle={{ flex: 1 }}
+      >
+        {showCatchup && (
+          <ReminderCatchupModal
+            pendingReminders={pendingReminders}
+            onClose={() => setShowCatchup(false)}
+          />
+        )}
+      </BottomModal>
+
+      <BackupReminderModal
+        visible={showBackupReminder}
+        onClose={() => setShowBackupReminder(false)}
+        onCreateBackup={() => {
+          setShowBackupReminder(false);
+          setShowBackupModal(true);
+        }}
+        onRemindLater={async () => {
+          await saveLastBackupDate(new Date().toISOString());
+          setShowBackupReminder(false);
+        }}
+      />
+
+      <BackupModal
+        visible={showBackupModal}
+        onClose={() => setShowBackupModal(false)}
+        onBackup={async (password) => {
+          try {
+            setIsBackupProcessing(true);
+            const uri = await createBackup(password);
+            setIsBackupProcessing(false);
+            setShowBackupModal(false);
+
+            if (await Sharing.isAvailableAsync()) {
+              await Sharing.shareAsync(uri);
+            }
+          } catch (error) {
+            setIsBackupProcessing(false);
+            console.error(error);
+            alert('Backup Failed: ' + (error as Error).message);
+          }
+        }}
+        isProcessing={isBackupProcessing}
+      />
+    </>
+  );
+};
