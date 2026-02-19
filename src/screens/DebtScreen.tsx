@@ -271,7 +271,7 @@ const DebtScreen = ({ navigation }: any) => {
                     type: 'EXPENSE',
                     amount: fAmount.abs(),
                     category: 'Fees',
-                    subCategory: 'INSURANCE',
+                    subCategory: 'FEES',
                     date: now,
                     transferAccount: selectedDebt.type,
                     note: `Fee/Insurance Payment: ${selectedDebt.name}`,
