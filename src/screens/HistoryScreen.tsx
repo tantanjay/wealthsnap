@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { Text, View, SectionList, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, View, SectionList, TouchableOpacity, StyleSheet, TextInput, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -27,6 +27,7 @@ import { calculateTotalDebtObligations } from '@utils/debtMetrics';
 
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 type HistoryItem = Transaction | Investment | Debt;
+type FilterType = 'ALL' | 'EXPENSE' | 'INVESTMENT' | 'DEBT' | 'INCOME' | 'CASH_FLOW';
 
 const isInvestment = (item: HistoryItem): item is Investment => {
     return (item as Investment).symbol !== undefined && (item as Investment).action !== undefined;
@@ -70,6 +71,10 @@ const HistoryScreen = ({ navigation }: any) => {
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(new Date());
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showSafeToSpendInfo, setShowSafeToSpendInfo] = useState(false);
+
+    // Filter & Search State
+    const [activeFilter, setActiveFilter] = useState<FilterType>('ALL');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useFocusEffect(
         useCallback(() => {
@@ -200,21 +205,64 @@ const HistoryScreen = ({ navigation }: any) => {
     }, [allInvestments]);
 
     const filteredData = useMemo(() => {
+        let items = allHistoryItems;
+
+        // 1. Time Frame Filter
         if (viewMode === 'CALENDAR') {
             // In calendar mode, list shows selected date's transactions
             const start = new Date(selectedCalendarDate); start.setHours(0, 0, 0, 0);
             const end = new Date(selectedCalendarDate); end.setHours(23, 59, 59, 999);
-            return allHistoryItems.filter(t => {
+            items = items.filter(t => {
+                const tDate = getItemDate(t);
+                return tDate >= start && tDate <= end;
+            });
+            return items;
+        } else {
+            const { start, end } = getStartEndOfPeriod(currentDate, timeFrame);
+            items = items.filter(t => {
                 const tDate = getItemDate(t);
                 return tDate >= start && tDate <= end;
             });
         }
-        const { start, end } = getStartEndOfPeriod(currentDate, timeFrame);
-        return allHistoryItems.filter(t => {
-            const tDate = getItemDate(t);
-            return tDate >= start && tDate <= end;
-        });
-    }, [allHistoryItems, currentDate, timeFrame, viewMode, selectedCalendarDate, getItemDate]);
+
+        // 2. Type Filter
+        if (activeFilter !== 'ALL') {
+            items = items.filter(item => {
+                if (activeFilter === 'INVESTMENT') return isInvestment(item);
+                if (activeFilter === 'DEBT') return isDebt(item);
+
+                if (isInvestment(item) || isDebt(item)) return false;
+
+                const t = item as Transaction;
+                if (activeFilter === 'EXPENSE') return t.type === 'EXPENSE';
+                if (activeFilter === 'INCOME') return t.type === 'INCOME';
+                if (activeFilter === 'CASH_FLOW') return t.type === 'TRANSFER_IN' || t.type === 'TRANSFER_OUT';
+                return false;
+            });
+        }
+
+        // 3. Search Filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            items = items.filter(item => {
+                if (isInvestment(item)) {
+                    return item.symbol.toLowerCase().includes(query) ||
+                        item.action.toLowerCase().includes(query);
+                }
+                if (isDebt(item)) {
+                    return item.name.toLowerCase().includes(query) ||
+                        (item.notes && item.notes.toLowerCase().includes(query));
+                }
+                const t = item as Transaction;
+                return t.category.toLowerCase().includes(query) ||
+                    (t.subCategory && t.subCategory.toLowerCase().includes(query)) ||
+                    (t.note && t.note.toLowerCase().includes(query)) ||
+                    (t.transferAccount && t.transferAccount.toLowerCase().includes(query));
+            });
+        }
+
+        return items;
+    }, [allHistoryItems, currentDate, timeFrame, viewMode, selectedCalendarDate, getItemDate, activeFilter, searchQuery]);
 
     const calendarTransactions = useMemo(() => {
         const { start, end } = getStartEndOfPeriod(currentDate, 'MONTHLY');
@@ -591,7 +639,7 @@ const HistoryScreen = ({ navigation }: any) => {
         let statusColor = isExpense ? colors.error : colors.success;
 
         if (isTransfer) {
-            statusColor = isTransferIn ? colors.error : colors.success;
+            statusColor = isTransferIn ? colors.success : colors.error;
             iconName = isTransferIn ? "arrow-down-circle-outline" : "arrow-up-circle-outline";
         } else if (t.creationMethod === 'AI') {
             iconName = "sparkles";
@@ -683,6 +731,7 @@ const HistoryScreen = ({ navigation }: any) => {
     return (
         <ScreenWrapper scrollable={false}>
             <SectionList
+                keyboardDismissMode="on-drag"
                 sections={isLoading ? [] : sections}
                 keyExtractor={item => item.id}
                 renderItem={renderItem}
@@ -733,6 +782,97 @@ const HistoryScreen = ({ navigation }: any) => {
                                 </TouchableOpacity>
                             </View>
                         </View>
+
+                        {/* Search Bar */}
+                        {viewMode === 'LIST' && (
+                            <View style={{ marginBottom: 12 }}>
+                                <View style={{
+                                    flexDirection: 'row', alignItems: 'center',
+                                    backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: 12, height: 44
+                                }}>
+                                    <Ionicons name="search" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
+                                    <TextInput
+                                        style={{ flex: 1, color: colors.text, fontSize: 16 }}
+                                        placeholder="Search notes, categories..."
+                                        placeholderTextColor={colors.textSecondary}
+                                        value={searchQuery}
+                                        onChangeText={setSearchQuery}
+                                    />
+                                    {searchQuery.length > 0 && (
+                                        <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                            <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Filter Bar */}
+                        {viewMode === 'LIST' && (
+                            <View style={{ marginBottom: 16 }}>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                                    <TouchableOpacity
+                                        onPress={() => setActiveFilter('ALL')}
+                                        style={{
+                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+                                            backgroundColor: activeFilter === 'ALL' ? colors.primary : colors.surface,
+                                        }}
+                                    >
+                                        <Text style={{ color: activeFilter === 'ALL' ? '#FFF' : colors.text, fontWeight: '600' }}>All</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => setActiveFilter('EXPENSE')}
+                                        style={{
+                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+                                            backgroundColor: activeFilter === 'EXPENSE' ? colors.error : colors.surface,
+                                        }}
+                                    >
+                                        <Text style={{ color: activeFilter === 'EXPENSE' ? '#FFF' : colors.text, fontWeight: '600' }}>Expenses</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => setActiveFilter('INCOME')}
+                                        style={{
+                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+                                            backgroundColor: activeFilter === 'INCOME' ? colors.success : colors.surface,
+                                        }}
+                                    >
+                                        <Text style={{ color: activeFilter === 'INCOME' ? '#FFF' : colors.text, fontWeight: '600' }}>Income</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => setActiveFilter('INVESTMENT')}
+                                        style={{
+                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+                                            backgroundColor: activeFilter === 'INVESTMENT' ? '#8E24AA' : colors.surface,
+                                        }}
+                                    >
+                                        <Text style={{ color: activeFilter === 'INVESTMENT' ? '#FFF' : colors.text, fontWeight: '600' }}>Investments</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => setActiveFilter('DEBT')}
+                                        style={{
+                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+                                            backgroundColor: activeFilter === 'DEBT' ? '#F57C00' : colors.surface,
+                                        }}
+                                    >
+                                        <Text style={{ color: activeFilter === 'DEBT' ? '#FFF' : colors.text, fontWeight: '600' }}>Debts</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => setActiveFilter('CASH_FLOW')}
+                                        style={{
+                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+                                            backgroundColor: activeFilter === 'CASH_FLOW' ? colors.info : colors.surface,
+                                        }}
+                                    >
+                                        <Text style={{ color: activeFilter === 'CASH_FLOW' ? '#FFF' : colors.text, fontWeight: '600' }}>Cash Flow</Text>
+                                    </TouchableOpacity>
+                                </ScrollView>
+                            </View>
+                        )}
 
                         {/* Mode Specific Controls */}
                         {viewMode === 'LIST' ? (
