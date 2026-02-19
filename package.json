@@ -77,9 +77,13 @@
   },
   "private": true,
   "overrides": {
-    "react-native-svg": "^15.15.2"
+    "react-native-svg": "^15.15.2",
+    "ajv": "^8.18.0",
+    "minimatch": "^10.0.0"
   },
   "resolutions": {
-    "react-native-svg": "^15.15.2"
+    "react-native-svg": "^15.15.2",
+    "ajv": "^8.18.0",
+    "minimatch": "^10.0.0"
   }
 }
