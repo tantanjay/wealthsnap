@@ -355,6 +355,7 @@ export const getPendingReminders = async (): Promise<Reminder[]> => {
                             case 'MONTHLY': {
                                 const targetDay = start.getDate();
                                 const lastDay = clampDayOfMonth(now.getFullYear(), now.getMonth(), targetDay);
+
                                 return now.getDate() === lastDay;
                             }
                             case 'QUARTERLY': {
