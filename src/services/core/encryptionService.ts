@@ -41,8 +41,7 @@ const getStorageKey = async (): Promise<string> => {
         return key;
     } catch (error) {
         console.error('Error accessing SecureStore for encryption key:', error);
-        // Fallback for dev/testing if SecureStore fails (should handle gracefully in prod)
-        return 'fallback-dev-key-do-not-use-in-prod';
+        throw new Error('Unable to retrieve device encryption key');
     }
 };
 

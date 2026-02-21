@@ -1,4 +1,4 @@
-````markdown
+
 # WealthSnap – Features & Capabilities
 
 WealthSnap is a privacy-first, computation-driven financial system designed to give you deterministic clarity over your money. Below is a complete breakdown of its major capabilities.
