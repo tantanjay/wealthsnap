@@ -107,6 +107,7 @@ const HomeScreen = ({ navigation }: any) => {
 
     const [savedInvestmentDisplayMode, setSavedInvestmentDisplayMode] = useState<Storage.InvestmentDisplayMode>('Total');
     const [savedDebtDisplayMode, setSavedDebtDisplayMode] = useState<Storage.DebtDisplayMode>('Total');
+    const [savedFinancialHealthDisplayMode, setSavedFinancialHealthDisplayMode] = useState<Storage.HomeFinancialHealthDisplayMode>('Health');
 
     const [cardOrder, setCardOrder] = useState<string[]>(['financial-health', 'cash-flow', 'portfolio', 'debt', 'transactions']);
 
@@ -131,9 +132,16 @@ const HomeScreen = ({ navigation }: any) => {
                 setSavedDisplayMode(savedMode);
             }
 
+            const savedInvestmentMode = await Storage.getHomeInvestmentDisplayMode();
+            if (savedInvestmentMode) {
+                setInvestmentDisplayMode(savedInvestmentMode);
+                setSavedInvestmentDisplayMode(savedInvestmentMode);
+            }
+
             const savedFinancialMode = await Storage.getHomeFinancialHealthDisplayMode();
             if (savedFinancialMode) {
                 setFinancialHealthDisplayMode(savedFinancialMode);
+                setSavedFinancialHealthDisplayMode(savedFinancialMode);
             }
 
             const savedDebtMode = await Storage.getHomeDebtDisplayMode();
@@ -166,8 +174,6 @@ const HomeScreen = ({ navigation }: any) => {
 
             // Process recurring rules first to ensure we fetch the latest transactions
             await processRecurrenceRules();
-
-
 
             const p = await Storage.getUserProfile();
             const t = await getCachedTransactions();
@@ -644,6 +650,7 @@ const HomeScreen = ({ navigation }: any) => {
 
     const handleFinancialHealthModeSave = async (newMode: Storage.HomeFinancialHealthDisplayMode) => {
         setFinancialHealthDisplayMode(newMode);
+        setSavedFinancialHealthDisplayMode(newMode);
         await Storage.saveHomeFinancialHealthDisplayMode(newMode);
     };
 
@@ -983,7 +990,7 @@ const HomeScreen = ({ navigation }: any) => {
                 onDisplayModeChange={handleModeSave}
                 investmentDisplayMode={savedInvestmentDisplayMode || 'Total'}
                 onInvestmentDisplayModeChange={handleInvestmentModeSave}
-                financialHealthDisplayMode={financialHealthDisplayMode}
+                financialHealthDisplayMode={savedFinancialHealthDisplayMode || 'Health'}
                 onFinancialHealthDisplayModeChange={handleFinancialHealthModeSave}
                 debtDisplayMode={savedDebtDisplayMode || 'Total'}
                 onDebtDisplayModeChange={handleDebtModeSave}

@@ -12,18 +12,15 @@ interface HomeInvestmentCardProps {
     total: BigNumber;
     realizedPL: BigNumber;
     unrealizedPL: BigNumber;
-
-    // Monthly Metrics
     monthInvested: BigNumber;
     monthRealizedPL: BigNumber;
     monthUnrealizedPL: BigNumber;
-
     isLoading: boolean;
     isPrivacyEnabled: boolean;
     currency: string;
-    onPress: () => void;
-
     displayMode: InvestmentDisplayMode;
+
+    onPress: () => void;
     onDisplayModeChange: (mode: InvestmentDisplayMode) => void;
 }
 
@@ -37,8 +34,8 @@ const HomeInvestmentCard: React.FC<HomeInvestmentCardProps> = ({
     isLoading,
     isPrivacyEnabled,
     currency,
-    onPress,
     displayMode,
+    onPress,
     onDisplayModeChange
 }) => {
     const { colors } = useTheme();
