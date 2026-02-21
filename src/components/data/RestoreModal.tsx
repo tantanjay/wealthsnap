@@ -33,6 +33,7 @@ const RestoreModal: React.FC<RestoreModalProps> = ({
             onClose={onClose}
             title="Restore Backup"
             subtitle="Enter the password for this backup file."
+            dismissable={false}
         >
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={{

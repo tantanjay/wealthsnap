@@ -71,15 +71,17 @@
     "@types/react": "~19.1.0",
     "babel-plugin-transform-remove-console": "^6.9.4",
     "babel-preset-expo": "~54.0.10",
-    "eslint": "^9.0.0",
-    "eslint-config-expo": "~10.0.0",
+    "eslint": "^9.18.0",
+    "eslint-config-expo": "~9.2.0",
     "typescript": "~5.9.2"
   },
   "private": true,
   "overrides": {
-    "react-native-svg": "^15.15.2"
+    "react-native-svg": "^15.15.2",
+    "minimatch": "^10.2.2"
   },
   "resolutions": {
-    "react-native-svg": "^15.15.2"
+    "react-native-svg": "^15.15.2",
+    "minimatch": "^10.2.2"
   }
 }
