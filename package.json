@@ -1,6 +1,6 @@
 {
   "name": "wealthsnap",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -15,7 +15,8 @@
       "exclude": [
         "@react-native-picker/picker",
         "react-native-screens",
-        "react-native-svg"
+        "react-native-svg",
+        "eslint-config-expo"
       ]
     }
   },
