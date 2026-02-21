@@ -93,8 +93,6 @@ WealthSnap integrates optional AI tools.
 Features include:
 - Smart receipt analysis (amount, category, notes extraction)
 - AI-assisted stock price research
-- Smart Advisor insights
-- Anomaly & spending spike detection
 
 **Privacy Controls:**
 - You provide your own API key
@@ -143,7 +141,6 @@ WealthSnap is engineered for speed and reliability:
 - Background transaction decryption (chunked loading)
 - Optimistic UI cache updates
 - Exchange rate & market data caching
-- O(N) portfolio computation engine
 - Global Error Boundary with crash logging
 - Safe-area optimized UI
 - Headless JS background task support

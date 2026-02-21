@@ -4,7 +4,7 @@ import JSZip from 'jszip';
 import { UserProfile, Transaction, Investment, Category, RecurrenceRule, Reminder, Budget, TransactionReceipt, Asset, PriceHistory, DividendHistory, Debt } from '@types';
 import { decryptData, encryptData } from '@services/core/encryptionService';
 import * as Storage from '@services/core/storageService';
-import { CONFIG } from '@constants/config';
+import { ASYNC_KEYS, CONFIG } from '@constants/config';
 import { generateUUID, isUUID } from '@utils/uuid';
 import { bulkSaveTransactionReceipts, bulkSaveTransactions, getAllTransactionReceipts, getAllTransactions } from '@services/domain/transactionService';
 import { bulkSaveInvestments, getAllInvestments } from '@services/domain/investmentService';
@@ -16,6 +16,7 @@ import { bulkSaveAssets, getAllAssets } from '@services/domain/assetService';
 import { bulkSavePriceHistories, getAllPriceHistories } from '@services/domain/priceHistoryService';
 import { bulkSaveDividendHistories, getAllDividendHistories } from '@services/domain/dividendHistoryService';
 import { bulkSaveDebts, getAllDebts } from '@services/domain/debtService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface BackupData {
     version: string;
@@ -236,6 +237,9 @@ export const restoreFromBackup = async (
     } else {
         throw new Error('INVALID_BACKUP_FORMAT');
     }
+
+    // Set to today so it wont prompt during restoring data
+    await AsyncStorage.setItem(ASYNC_KEYS.REVIEW_PROMPT.LAST_PROMPT, new Date().toISOString());
 
     // Restore Data
     // We clear all existing data first to ensure the restore is a complete replacement/clean slate.
