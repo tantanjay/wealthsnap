@@ -40,6 +40,12 @@
       ],
       "@navigation/*": [
         "src/navigation/*"
+      ],
+      "@fonts/*": [
+        "assets/fonts/*"
+      ],
+      "@images/*": [
+        "assets/images/*"
       ]
     }
   },
