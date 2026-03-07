@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import * as ImageManipulator from 'expo-image-manipulator';
 import { BigNumber } from 'bignumber.js';
 import { View, Text, ScrollView, TouchableOpacity, BackHandler, TextInput, ActivityIndicator, Platform, Modal, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -78,21 +77,9 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                     setCurrency(profile.currency);
                 }
 
-                // Optimize Image
-                if (isMounted) setProcessingStep('Preparing image...');
-
-                // Resize to max 1024px width (approx) to speed up upload
-                const manipResult = await ImageManipulator.manipulateAsync(
-                    imageUri,
-                    [{ resize: { width: 1024 } }],
-                    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-                );
-
-                if (!isMounted) return;
-
                 // Analyze Image
                 setProcessingStep('Extracting receipt data...');
-                const result = await analyzeReceiptImage(manipResult.uri);
+                const result = await analyzeReceiptImage(imageUri);
 
                 if (!isMounted) return;
 

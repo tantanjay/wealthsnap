@@ -127,6 +127,7 @@ const AppContent = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'L
         if (pending.length > 0) {
           setPendingReminders(pending);
           setShowCatchup(true);
+          return;
         }
       }
 
