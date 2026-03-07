@@ -222,6 +222,14 @@ const ProfileScreen = ({ navigation }: any) => {
                     version={appJson.expo.version}
                 />
 
+                <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+                    <Button
+                        title="View Thank You Screen (Temp)"
+                        onPress={() => navigation.navigate('ThankYou')}
+                        variant="outline"
+                    />
+                </View>
+
                 <View style={{ height: 40 }} />
             </ScrollView>
 
