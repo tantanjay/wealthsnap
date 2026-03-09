@@ -172,5 +172,6 @@ export const RECURRENCE_OPTIONS = [
     { label: 'Semi-Monthly', value: 'SEMI_MONTHLY' },
     { label: 'Monthly', value: 'MONTHLY' },
     { label: 'Quarterly', value: 'QUARTERLY' },
+    { label: 'Bi-Annual', value: 'BI_ANNUAL' },
     { label: 'Yearly', value: 'YEARLY' },
 ];

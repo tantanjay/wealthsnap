@@ -20,6 +20,7 @@ const FREQUENCIES: { label: string; value: ReminderFrequency }[] = [
     { label: 'Semi-Weekly', value: 'SEMI_WEEKLY' },
     { label: 'Monthly', value: 'MONTHLY' },
     { label: 'Quarterly', value: 'QUARTERLY' },
+    { label: 'Bi-Annual', value: 'BI_ANNUAL' },
     { label: 'Yearly', value: 'YEARLY' },
 ];
 

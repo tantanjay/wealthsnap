@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { BigNumber } from 'bignumber.js';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
@@ -57,6 +57,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     const [showCategoryModal, setShowCategoryModal] = useState(false);
 
     const [recentCategories, setRecentCategories] = useState<string[]>([]);
+    const categoryScrollRef = useRef<ScrollView>(null);
+
+    const ITEM_WIDTH = 90;
+    const ITEM_GAP = 8;
 
     const categoryGroups = type === 'EXPENSE' ? EXPENSE_CATEGORY_GROUPS : INCOME_CATEGORY_GROUPS;
 
@@ -67,6 +71,22 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         };
         fetchRecent();
     }, [type]);
+
+    const scrollToCategory = (cat: string) => {
+        if (categoryScrollRef.current) {
+            const categoriesToDisplay = [...recentCategories];
+            if (!categoriesToDisplay.includes(cat)) {
+                categoriesToDisplay.unshift(cat);
+            }
+
+            const index = categoriesToDisplay.indexOf(cat);
+            if (index !== -1) {
+                // index * (ITEM_WIDTH + ITEM_GAP) ensures the item BEFORE the selected one stays in view (often Search button)
+                const offset = index * (ITEM_WIDTH + ITEM_GAP);
+                categoryScrollRef.current.scrollTo({ x: offset, animated: true });
+            }
+        }
+    };
 
     const handleSave = async () => {
         if (!amount || !category) {
@@ -98,6 +118,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     break;
                 case 'QUARTERLY':
                     nextDue.setMonth(nextDue.getMonth() + 3);
+                    break;
+                case 'BI_ANNUAL':
+                    nextDue.setMonth(nextDue.getMonth() + 6);
                     break;
                 case 'YEARLY':
                     nextDue.setFullYear(nextDue.getFullYear() + 1);
@@ -287,9 +310,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 <View style={{ marginBottom: 10 }}>
                     <Text style={{ color: colors.textSecondary, marginBottom: 8, marginLeft: 4 }}>Category</Text>
                     <ScrollView
+                        ref={categoryScrollRef}
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ gap: 8 }}
+                        contentContainerStyle={{ gap: ITEM_GAP }}
                     >
                         {/* Search Button */}
                         <TouchableOpacity
@@ -409,6 +433,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     onSelect={(cat: string) => {
                         setCategory(cat);
                         setSubCategory('');
+                        scrollToCategory(cat);
                     }}
                     categoryGroups={categoryGroups}
                 />
