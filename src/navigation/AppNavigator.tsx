@@ -16,6 +16,7 @@ import HomeScreen from '@screens/HomeScreen';
 import InvestmentScreen from '@screens/InvestmentScreen';
 import HistoryScreen from '@screens/HistoryScreen';
 import RecordScreen from '@screens/RecordScreen';
+import ThankYouScreen from '@screens/ThankYouScreen';
 import { useTheme } from '@context/ThemeContext';
 
 const Stack = createStackNavigator();
@@ -84,6 +85,7 @@ const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 
                 <Stack.Screen name="Main" component={MainTabs} />
                 <Stack.Screen name="TermsAndPrivacy" component={TermsAndPrivacyScreen} />
                 <Stack.Screen name="LegalAcceptance" component={LegalAcceptanceScreen} />
+                <Stack.Screen name="ThankYou" component={ThankYouScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );
