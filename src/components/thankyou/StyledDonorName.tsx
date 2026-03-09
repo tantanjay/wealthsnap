@@ -28,6 +28,13 @@ export const StyledDonorName = ({ name, styleConfig }: { name: string, styleConf
 
     return (
         <Canvas style={{ width: canvasWidth, height: 100 }}>
+            {/* LAYER 0: Universal Drop Shadow for visibility on light backgrounds */}
+            <Text text={name} x={10.5} y={50.5} font={font}>
+                <Paint color="#000000" opacity={0.5}>
+                    <BlurMask blur={3} style="normal" />
+                </Paint>
+            </Text>
+
             {/* LAYER 1: The Outer Glow (if styleConfig.glow is true) */}
             {styleConfig.glow && (
                 <Text text={name} x={10} y={50} font={font}>
