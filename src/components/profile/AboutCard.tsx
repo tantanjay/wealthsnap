@@ -11,6 +11,7 @@ interface AboutCardProps {
     onManifesto: () => void;
     onContact: () => void;
     onSupport: () => void;
+    onViewThankYou?: () => void;
     version: string;
 }
 
@@ -21,6 +22,7 @@ const AboutCard: React.FC<AboutCardProps> = ({
     onManifesto,
     onContact,
     onSupport,
+    onViewThankYou,
     version
 }) => {
     const { colors } = useTheme();
@@ -79,6 +81,18 @@ const AboutCard: React.FC<AboutCardProps> = ({
                     Contact the Developer
                 </Text>
             </TouchableOpacity>
+
+            {onViewThankYou && (
+                <TouchableOpacity
+                    onPress={onViewThankYou}
+                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
+                >
+                    <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
+                    <Text style={{ color: colors.primary, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
+                        Supporter Wall
+                    </Text>
+                </TouchableOpacity>
+            )}
 
             <TouchableOpacity
                 onPress={onSupport}
