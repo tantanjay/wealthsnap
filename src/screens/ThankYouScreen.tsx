@@ -29,8 +29,8 @@ const FloatingName = ({ name, styleConfig }: { name: string, styleConfig: any })
     const [startY] = useState(() => Math.random() * height);
 
     // Choose a random target to drift to
-    const targetX = Math.random() * width - 150;
-    const targetY = Math.random() * height - 50;
+    const [targetX] = useState(() => Math.random() * width - 150);
+    const [targetY] = useState(() => Math.random() * height - 50);
 
     const translateX = useSharedValue(startX);
     const translateY = useSharedValue(startY);
@@ -57,13 +57,13 @@ const FloatingName = ({ name, styleConfig }: { name: string, styleConfig: any })
             -1,
             true
         );
-    }, [startX, startY, targetX, targetY]);
+    }, [startX, startY, targetX, targetY, translateX, translateY]);
 
     useEffect(() => {
         // Fade out slightly then back in whenever the name changes
         opacity.value = 0;
         opacity.value = withTiming(0.35, { duration: 1000 });
-    }, [name]);
+    }, [name, opacity]);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [
@@ -140,7 +140,11 @@ const ThankYouScreen = ({ navigation }: any) => {
             {/* Floating Background */}
             <View style={[StyleSheet.absoluteFillObject, { zIndex: 0, overflow: 'hidden' }]} pointerEvents="none">
                 {activeDonors.map((donor, index) => (
-                    <FloatingName key={index} name={donor} styleConfig={getStyleForName(donor)} />
+                    <FloatingName
+                        key={index}
+                        name={donor}
+                        styleConfig={getStyleForName(donor)}
+                    />
                 ))}
             </View>
 

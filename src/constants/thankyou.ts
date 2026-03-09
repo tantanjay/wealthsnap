@@ -3,6 +3,21 @@ export const DONORS = [
 ];
 
 export const NAME_STYLES = {
+
+    ninja: {
+        font: "Burnstown",
+        stroke: "#000",
+        strokeWidth: 3,
+        gradient: ["#2c2c2c", "#000"]
+    },
+
+    samurai: {
+        font: "Burnstown",
+        stroke: "#000",
+        strokeWidth: 3,
+        gradient: ["#b22222", "#8b0000"]
+    },
+
     angelic: {
         font: "CinzelRegular",
         stroke: "#fff",
@@ -172,26 +187,11 @@ export const NAME_STYLES = {
         gradient: ["#ffffff", "#ffcc00"]
     },
 
-
     dragonball: {
         font: "Saiyan",
         stroke: "#000",
         strokeWidth: 4,
         gradient: ["#FFD700", "#FF4500"],
         description: "Dragon Ball aura"
-    },
-
-    ninja: {
-        font: "Burnstown",
-        stroke: "#000",
-        strokeWidth: 3,
-        gradient: ["#2c2c2c", "#000"]
-    },
-
-    samurai: {
-        font: "Burnstown",
-        stroke: "#000",
-        strokeWidth: 3,
-        gradient: ["#b22222", "#8b0000"]
     },
 };
