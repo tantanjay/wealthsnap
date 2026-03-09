@@ -1028,7 +1028,6 @@ const HistoryScreen = ({ navigation }: any) => {
                         termMonths: debt.termMonths?.toString(),
                     };
                     // Navigate to Record Screen with debt param
-                    // @ts-ignore - navigation types need updating but this is safe
                     navigation.navigate('Record', { debt: serializedDebt });
                     setSelectedDebt(null);
                 }}

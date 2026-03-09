@@ -157,7 +157,7 @@ const ThankYouScreen = ({ navigation }: any) => {
                     Thank You!
                 </Text>
                 <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                    WealthSnap is a gift to the community, sustained by these legendary individuals.
+                    A heartfelt thank you to the individual keeping WealthSnap going with their support.
                 </Text>
 
                 <View style={styles.buttonWrapper}>
@@ -173,7 +173,7 @@ const ThankYouScreen = ({ navigation }: any) => {
             <BottomModal
                 visible={showList}
                 onClose={() => setShowList(false)}
-                title="Legendary Supporters"
+                title="Our Supporters"
                 maxHeight="85%"
             >
                 <View style={{ height: height * 0.6, width: '100%' }}>
