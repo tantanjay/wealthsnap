@@ -27,6 +27,9 @@ const calculateNextDueDate = (currentDate: Date, frequency: RecurrenceFrequency)
         case 'QUARTERLY':
             nextDate.setMonth(nextDate.getMonth() + 3);
             break;
+        case 'BI_ANNUAL':
+            nextDate.setMonth(nextDate.getMonth() + 6);
+            break;
         case 'YEARLY':
             nextDate.setFullYear(nextDate.getFullYear() + 1);
             break;

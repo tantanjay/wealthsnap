@@ -115,6 +115,18 @@ export const calculateNextOccurrence = (reminder: Reminder, fromDate: Date = new
                 }
                 break;
 
+            case 'BI_ANNUAL':
+                // Same as monthly but check month % 6 offset
+                const bMonthDiff = next.getMonth() - targetMonth;
+                if (bMonthDiff % 6 === 0) {
+                    const bDays = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+                    const bExpected = Math.min(targetDay, bDays);
+                    isValid = next.getDate() === bExpected;
+                } else {
+                    isValid = false;
+                }
+                break;
+
             case 'YEARLY':
                 // Same month and day (clamped)
                 if (next.getMonth() === targetMonth) {
@@ -168,6 +180,23 @@ export const calculateNextOccurrence = (reminder: Reminder, fromDate: Date = new
                     if (next.getDate() < qExpected) {
                         next.setDate(qExpected);
                         break; // Continue to validation
+                    }
+                }
+
+                // Otherwise move to next candidate month
+                next.setDate(1);
+                next.setMonth(next.getMonth() + 1);
+                break;
+            }
+            case 'BI_ANNUAL': {
+                // If we are in a valid bi-annual month
+                const bMonthDiff = next.getMonth() - targetMonth;
+                if (bMonthDiff % 6 === 0) {
+                    const bDays = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+                    const bExpected = Math.min(targetDay, bDays);
+                    if (next.getDate() < bExpected) {
+                        next.setDate(bExpected);
+                        break;
                     }
                 }
 
@@ -362,6 +391,15 @@ export const getPendingReminders = async (): Promise<Reminder[]> => {
                                 const targetMonth = start.getMonth();
                                 const targetDay = start.getDate();
                                 if ((now.getMonth() - targetMonth) % 3 === 0) {
+                                    const lastDay = clampDayOfMonth(now.getFullYear(), now.getMonth(), targetDay);
+                                    return now.getDate() === lastDay;
+                                }
+                                return false;
+                            }
+                            case 'BI_ANNUAL': {
+                                const targetMonth = start.getMonth();
+                                const targetDay = start.getDate();
+                                if ((now.getMonth() - targetMonth) % 6 === 0) {
                                     const lastDay = clampDayOfMonth(now.getFullYear(), now.getMonth(), targetDay);
                                     return now.getDate() === lastDay;
                                 }
