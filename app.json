@@ -4,9 +4,8 @@
     "slug": "WealthSnap",
     "version": "1.10.1",
     "orientation": "default",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "androidStatusBar": {
       "barStyle": "dark-content",
       "translucent": true
@@ -15,7 +14,7 @@
       "backgroundColor": "#00000000"
     },
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -27,7 +26,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0033CC"
       },
       "package": "com.christian.soyosa.WealthSnap",
@@ -45,11 +44,10 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-font",
@@ -67,8 +65,7 @@
       "expo-document-picker",
       "expo-notifications",
       "expo-background-fetch",
-      "expo-task-manager",
-      "react-native-document-scanner-plugin"
+      "expo-task-manager"
     ],
     "extra": {
       "eas": {
