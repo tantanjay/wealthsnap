@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.11.0] — 2026-03-09
+
+### Added
+- **Supporter Screen**
+  - Introduced a dedicated supporter recognition screen.
+  - Displays supporter names with dynamic animated styles.
+
+### Maintenance
+- **Platform Upgrade: Expo 55**
+  - Migrated core dependencies to Expo 55, React 19, and React Native 0.83.
+  - Resolved `react-hooks/exhaustive-deps` warnings in `ThankYouScreen`.
+  - Refined internal build configuration and dependency trees.
+
+---
+
 ## [1.10.2] — 2026-03-04
 
 ### Added
