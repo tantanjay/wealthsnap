@@ -4,15 +4,8 @@
     "slug": "WealthSnap",
     "version": "1.11.0",
     "orientation": "default",
+    "userInterfaceStyle": "automatic",
     "icon": "./assets/images/icon.png",
-    "userInterfaceStyle": "light",
-    "androidStatusBar": {
-      "barStyle": "dark-content",
-      "translucent": true
-    },
-    "androidNavigationBar": {
-      "backgroundColor": "#00000000"
-    },
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -56,10 +49,6 @@
       "fallbackToCacheTimeout": 0
     },
     "plugins": [
-      "expo-font",
-      "expo-secure-store",
-      "expo-sqlite",
-      "expo-local-authentication",
       [
         "expo-image-picker",
         {
@@ -67,9 +56,16 @@
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to scan receipts."
         }
       ],
-      "expo-document-picker",
+      [
+        "expo-navigation-bar"
+      ],
+      "expo-font",
+      "expo-secure-store",
+      "expo-sqlite",
+      "expo-local-authentication",
       "expo-notifications",
-      "expo-background-fetch",
+      "expo-background-task",
+      "expo-document-picker",
       "expo-task-manager",
       "expo-sharing",
       "@react-native-community/datetimepicker",
