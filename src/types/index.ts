@@ -17,7 +17,7 @@ export type InvestmentType = 'STOCKS' | 'FUNDS' | 'BONDS' | 'CRYPTO' | 'COMMODIT
 export type AssetType = 'STOCKS' | 'FUNDS' | 'CRYPTO' | 'FOREX' | 'REAL_ESTATE' | 'VEHICLE' | 'JEWELRY' | 'ART' | 'CASH' | 'OTHER';
 export type InvestmentAction = 'BUY' | 'SELL' | 'DIVIDEND' | 'INTEREST';
 export type DebtType = 'LOAN' | 'CREDIT_CARD' | 'MORTGAGE' | 'I_OWE_YOU' | 'YOU_OWE_ME';
-export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY' | 'BI_ANNUAL' | 'YEARLY';
 export type TransferAccount = 'OTHER_ACCOUNT' | 'INVESTMENTS' | 'DEBT' | 'CASH_ATM' | 'DIGITAL_WALLET' | 'CRYPTO' | 'RECEIVABLE' | 'TIME_DEPOSIT';
 
 export interface Transaction {
@@ -128,7 +128,7 @@ export interface ReceiptAnalysisResult {
     confidence: number; // 0-100
     validationError?: string; // Reason why it's not a receipt
 }
-export type ReminderFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+export type ReminderFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'BI_ANNUAL' | 'YEARLY';
 
 export type ReminderAction = 'SNOOZED' | 'COMPLETED' | 'DISMISSED';
 

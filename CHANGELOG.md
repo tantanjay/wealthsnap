@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.10.2] — 2026-03-04
+
+### Added
+- **Bi-Annual Recurrence**
+  - Added support for every-6-months frequency for both transactions and reminders.
+  - Implemented bi-annual pattern matching logic in the recurrence and notification services.
+
+### Improved
+- **Transaction Categories**
+  - Added smart horizontal scrolling when selecting a category via search.
+  - Refined scroll offset to maintain "Search" button visibility.
+  - Stabilized selection behavior to avoid unwanted jumps during direct taps.
+
+### Maintenance
+- Internal security audit and dependency updates.
+- General performance refinements and platform compatibility checks.
+
+---
+
+## [1.10.1] — 2026-02-19
+
+### Added
+- **Debt Backup & Restore**
+  - Full support for Debt records in app backups.
+  - Secure encryption and restoration of liabilities.
+- **History Screen Filters**
+  - New single-tap filters for Income, Expenses, Investments, Debts, and Cash Flow.
+  - Keyword search for notes, categories, and asset symbols.
+
+### Improved
+- **Debt Management**
+  - Added ability to record associated fees as an expense when using direct vendor payments.
+- **Wealth Growth Analytics**
+  - Projected paths now strictly use verified cash flow data for higher accuracy.
+  - "Potential Investment" logic now excludes partial-month income to prevent inflation.
+  - Refined Cash Flow aggregation to prevent double-counting transfers in growth stats.
+
+### Fixed
+- **Security**
+  - Resolved PIN conflict where reminder modals could appear over the security screen.
+- **Persistence**
+  - Fixed a bug where Home Screen dashboard card preferences were not correctly saved between sessions.
+
+---
+
 ## [1.10.0] — 2026-02-16
 
 ### Added
