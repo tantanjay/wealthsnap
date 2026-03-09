@@ -49,6 +49,12 @@
     "web": {
       "favicon": "./assets/images/favicon.png"
     },
+    "updates": {
+      "url": "https://u.expo.dev/ef38c9a6-19b2-4532-8ec8-f1b68e09dac1",
+      "enableBsdiffPatchSupport": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "plugins": [
       "expo-font",
       "expo-secure-store",
@@ -65,9 +71,9 @@
       "expo-notifications",
       "expo-background-fetch",
       "expo-task-manager",
+      "expo-sharing",
       "@react-native-community/datetimepicker",
-      "react-native-document-scanner-plugin",
-      "expo-sharing"
+      "react-native-document-scanner-plugin"
     ],
     "extra": {
       "eas": {

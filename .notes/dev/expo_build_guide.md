@@ -77,9 +77,16 @@ To see the status of your builds or download artifacts later:
 eas build:list
 ```
 
+## 5. EAS Update
+Use this to push updates to your application without requiring a full rebuild or submission to the Play Store.
+
+```bash
+eas update --channel production --message "Testing bytecode diffs"
+```
+
 ---
 
-## 5. Automated Version Bumping
+## 6. Automated Version Bumping
 Run this command to automatically increment the version in `package.json`, `app.json`, and the Android `versionCode` before building.
 
 ```bash
@@ -89,7 +96,7 @@ npm run bump-version -- [major|minor|patch]
 
 ---
 
-## 6. Android Emulator
+## 7. Android Emulator
 Commands to manage and launch Android emulators.
 
 **List Available AVDs:**
