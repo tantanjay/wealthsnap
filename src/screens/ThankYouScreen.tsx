@@ -6,9 +6,9 @@ import { Button } from '@components/index';
 import { Ionicons } from '@expo/vector-icons';
 import { StyledDonorName } from '@components/thankyou/StyledDonorName';
 import { DONORS, NAME_STYLES } from '@constants/thankyou';
-import BottomModal from '@components/common/BottomModal';
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, withSequence } from 'react-native-reanimated';
 import { FlashList } from '@shopify/flash-list';
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, withSequence } from 'react-native-reanimated';
+import BottomModal from '@components/common/BottomModal';
 
 const stylesKeys = Object.keys(NAME_STYLES);
 
