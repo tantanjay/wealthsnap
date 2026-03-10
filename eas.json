@@ -18,6 +18,7 @@
         "buildType": "app-bundle"
       },
       "env": {
+        "NODE_ENV": "production",
         "EXPO_NO_TELEMETRY": "1"
       },
       "channel": "production"
