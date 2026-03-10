@@ -80,6 +80,15 @@ eas build:list
 ## 5. EAS Update
 Use this to push updates to your application without requiring a full rebuild or submission to the Play Store.
 
+### Configure EAS Update
+Run this command to configure your Expo project to use EAS Update.
+
+```bash
+eas update:configure
+```
+
+### Push an Update
+
 ```bash
 eas update --channel production --message "Testing bytecode diffs"
 ```
