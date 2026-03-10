@@ -2,7 +2,7 @@
   "expo": {
     "name": "WealthSnap",
     "slug": "WealthSnap",
-    "version": "1.11.0",
+    "version": "1.11.1",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/images/icon.png",
@@ -23,7 +23,7 @@
         "backgroundColor": "#0033CC"
       },
       "package": "com.christian.soyosa.WealthSnap",
-      "versionCode": 19,
+      "versionCode": 20,
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",
