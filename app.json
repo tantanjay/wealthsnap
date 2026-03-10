@@ -25,9 +25,9 @@
       "package": "com.christian.soyosa.WealthSnap",
       "versionCode": 20,
       "permissions": [
-        "RECEIVE_BOOT_COMPLETED",
-        "SCHEDULE_EXACT_ALARM",
-        "VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.VIBRATE",
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT"
       ],
@@ -74,7 +74,11 @@
     "extra": {
       "eas": {
         "projectId": "ef38c9a6-19b2-4532-8ec8-f1b68e09dac1"
-      }
+      },
+      "expo-navigation-bar": {}
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
