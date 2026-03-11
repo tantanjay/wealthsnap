@@ -157,7 +157,7 @@ const ThankYouScreen = ({ navigation }: any) => {
                     Thank You!
                 </Text>
                 <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                    A heartfelt thank you to the individual keeping WealthSnap going with their support.
+                    Special thanks to the supporter whose generosity and encouragement are deeply appreciated.
                 </Text>
 
                 <View style={styles.buttonWrapper}>
