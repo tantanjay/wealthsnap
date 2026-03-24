@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, ColorSchemeName } from 'react-native';
 
 import { lightTheme, darkTheme } from '@styles/theme';
 import { ASYNC_KEYS } from '@constants/config';
@@ -48,7 +48,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     };
 
-    const updateTheme = (currentMode: ThemeMode, sysScheme: 'light' | 'dark' | null | undefined) => {
+    const updateTheme = (currentMode: ThemeMode, sysScheme: ColorSchemeName) => {
         if (currentMode === 'system') {
             setTheme(sysScheme === 'dark' ? darkTheme : lightTheme);
         } else {
