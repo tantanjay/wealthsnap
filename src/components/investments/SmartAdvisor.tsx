@@ -10,7 +10,7 @@ import { formatCurrencyAmount } from '@utils/currencyUtils';
 export interface Suggestion {
     ticker: string;
     reason: string;
-    type: 'crash' | 'dip' | 'balance';
+    type: 'crash' | 'dip' | 'balance' | 'div';
     price: number;
     hasDivSoon?: boolean;
 }
@@ -35,6 +35,9 @@ const SuggestionItem = ({ item, width, currency, isPrivacyEnabled }: { item: Sug
     } else if (item.type === 'dip') {
         color = colors.warning;
         icon = 'trending-down';
+    } else if (item.type === 'div' || item.hasDivSoon) {
+        color = "#4CAF50"; // Green for dividends
+        icon = 'cash-outline';
     }
 
     return (
@@ -71,6 +74,15 @@ const SuggestionItem = ({ item, width, currency, isPrivacyEnabled }: { item: Sug
 export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPriorityChange, activePriority, currency = 'PHP', isPrivacyEnabled = false }) => {
     const { colors } = useTheme();
     const [currentPage, setCurrentPage] = React.useState(0);
+    const flatListRef = React.useRef<FlatList>(null);
+
+    // Reset page and scroll to start when suggestions or priority change
+    React.useEffect(() => {
+        setCurrentPage(0);
+        if (flatListRef.current && suggestions && suggestions.length > 0) {
+            flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+        }
+    }, [activePriority, suggestions?.length]);
     const [showInfoModal, setShowInfoModal] = useState(false);
 
     // --- MATH RECALIBRATION ---
@@ -88,10 +100,18 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
     const totalPages = Math.ceil((suggestions?.length || 0) / 2);
 
     const onMomentumScrollEnd = (event: any) => {
-        const contentOffset = event.nativeEvent.contentOffset.x;
-        // Divide by the snap interval to get the current page index
-        const page = Math.round(contentOffset / snapInterval);
-        setCurrentPage(page);
+        const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
+        const x = contentOffset.x;
+        const width = layoutMeasurement.width;
+        const totalWidth = contentSize.width;
+
+        // If we are close to the end of the scroll, force the last page
+        if (x + width >= totalWidth - 20) {
+            setCurrentPage(totalPages - 1);
+        } else {
+            const page = Math.round(x / snapInterval);
+            setCurrentPage(page);
+        }
     };
 
     const renderItem = ({ item }: { item: Suggestion }) => (
@@ -185,10 +205,19 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
                         <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 16 }} />
 
                         {/* Data Requirement Note */}
-                        <View style={{ flexDirection: 'row', backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8 }}>
+                        <View style={{ flexDirection: 'row', backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8, marginBottom: 16 }}>
                             <Ionicons name="alert-circle-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
                             <Text style={{ flex: 1, color: colors.text, fontSize: 12, lineHeight: 18 }}>
-                                <Text style={{ fontWeight: 'bold' }}>Note:</Text> This feature requires at least <Text style={{ fontWeight: 'bold' }}>30 days of price history</Text> to work accurately. Regular price updates ensure the most accurate insights.
+                                <Text style={{ fontWeight: 'bold' }}>Note:</Text> This feature requires at least <Text style={{ fontWeight: 'bold' }}>30 days of price history</Text> to work accurately.
+                            </Text>
+                        </View>
+
+                        {/* Alert Hierarchy */}
+                        <View style={{ backgroundColor: colors.background, padding: 12, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: colors.warning }}>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 13, marginBottom: 4 }}>🔝 Alert Hierarchy</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 11, lineHeight: 16 }}>
+                                In the <Text style={{ fontWeight: 'bold' }}>"All"</Text> view, we prioritize urgent alerts (Crashes & Dividends) over long-term suggestions (Balance). 
+                                {"\n\n"}If a stock has multiple alerts, we show the most critical one and merge the reasons (e.g., <Text style={{ fontStyle: 'italic' }}>DIP + BAL</Text>). Specific tabs show all alerts for that category.
                             </Text>
                         </View>
                     </View>
@@ -254,6 +283,7 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
                 ) : (
                     <>
                         <FlatList
+                            ref={flatListRef}
                             data={suggestions}
                             renderItem={renderItem}
                             keyExtractor={(item, index) => item.ticker + index}
@@ -283,10 +313,10 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
                                         key={index}
                                         style={{
                                             height: 6,
-                                            width: currentPage === index ? 16 : 6,
+                                            width: (currentPage === index || (index === totalPages - 1 && currentPage >= totalPages - 1)) ? 16 : 6,
                                             borderRadius: 3,
-                                            backgroundColor: currentPage === index ? colors.primary : colors.border,
-                                            opacity: currentPage === index ? 1 : 0.5,
+                                            backgroundColor: (currentPage === index || (index === totalPages - 1 && currentPage >= totalPages - 1)) ? colors.primary : colors.border,
+                                            opacity: (currentPage === index || (index === totalPages - 1 && currentPage >= totalPages - 1)) ? 1 : 0.5,
                                         }}
                                     />
                                 ))}
