@@ -105,7 +105,7 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
                     suggestions.push({
                         ticker: asset.symbol,
                         reason: `📅 DIV SOON`,
-                        type: 'balance', // Use balance or a new type if UI supports it, existing UI uses balance for blue
+                        type: 'div',
                         price: currentPrice,
                         hasDivSoon: true
                     });
@@ -144,10 +144,16 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
                     const candidate = analysisAssets.find(a => a.sector === sector);
                     if (candidate) {
                         const currentPrice = latestPricesRecord[candidate.symbol]?.price?.toNumber() || 0;
-                        // Avoid duplicates if already suggested
-                        if (!suggestions.find(s => s.ticker === candidate.symbol)) {
+                        const existing = suggestions.find(s => s.ticker === candidate.symbol);
+
+                        if (existing) {
+                            // If already suggested (e.g. as a dip), append the balance reason
+                            if (!existing.reason.includes('BAL')) {
+                                existing.reason = `${existing.reason} + ⚖️ BAL`;
+                            }
+                        } else {
                             suggestions.push({
-                                ticker: candidate.symbol, // Access symbol directly as string
+                                ticker: candidate.symbol,
                                 reason: `⚖️ BALANCE (${sector})`,
                                 type: 'balance',
                                 price: currentPrice
@@ -160,12 +166,11 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
 
         // Sort and Limit
         // Prioritize: Crash > Div > Dip > Balance
-        const typePriority = { 'crash': 0, 'dip': 2, 'balance': 3 };
-        // Note: Divs might be 'balance' type but hasDivSoon=true. 
+        const typePriority = { 'crash': 0, 'div': 1, 'dip': 2, 'balance': 3 };
 
         return suggestions.sort((a, b) => {
-            const scoreA = (typePriority[a.type] || 9) - (a.hasDivSoon ? 1.5 : 0);
-            const scoreB = (typePriority[b.type] || 9) - (b.hasDivSoon ? 1.5 : 0);
+            const scoreA = typePriority[a.type] !== undefined ? typePriority[a.type] : 9;
+            const scoreB = typePriority[b.type] !== undefined ? typePriority[b.type] : 9;
             return scoreA - scoreB;
         });
 

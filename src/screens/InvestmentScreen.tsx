@@ -10,9 +10,9 @@ import { AllocationChart } from '@components/investments/AllocationChart';
 import { DividendChart } from '@components/investments/DividendChart';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
-import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding } from '@services/domain/investmentService';
+import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding, getActualDividendsGrouped } from '@services/domain/investmentService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
-import { getProjectedDividends } from '@services/domain/dividendHistoryService';
+import { getProjectedDividends, getDividendCalendar, CalendarEvent } from '@services/domain/dividendHistoryService';
 import { AssetRequest } from '@services/integrations/geminiService';
 import { refreshAssetPrices } from '@services/domain/marketDataService';
 import { getAllAssets } from '@services/domain/assetService';
@@ -48,7 +48,9 @@ const InvestmentScreen = ({ navigation }: any) => {
     const [holdings, setHoldings] = useState<PortfolioHolding[]>([]);
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [activePriority, setActivePriority] = useState<Priority>('all');
-    const [dividendChartData, setDividendChartData] = useState<{ labels: string[], data: number[] }>({ labels: [], data: [] });
+    const [dividendChartData, setDividendChartData] = useState<{ labels: string[], data: any[] }>({ labels: [], data: [] });
+    const [actualDividends, setActualDividends] = useState<Record<number, any>>({});
+    const [calendarData, setCalendarData] = useState<Record<number, CalendarEvent[]>>({});
 
     // Layout Settings
     const [showSettings, setShowSettings] = useState(false);
@@ -109,9 +111,13 @@ const InvestmentScreen = ({ navigation }: any) => {
             const projectedDividends = await getProjectedDividends(portfolioHoldings);
             setDividendChartData(projectedDividends);
 
-            // Initial Suggestions fetch
-            const newSuggestions = await getSmartSuggestions(activePriority);
-            setSuggestions(newSuggestions);
+            // Fetch Actual Dividends
+            const actualDivs = await getActualDividendsGrouped();
+            setActualDividends(actualDivs);
+
+            // Fetch Calendar Data
+            const calData = await getDividendCalendar(portfolioHoldings);
+            setCalendarData(calData);
 
             // Load layout preferences
             const currentStatsOrder = await Storage.getInvestmentStatsOrder();
@@ -132,7 +138,7 @@ const InvestmentScreen = ({ navigation }: any) => {
         } finally {
             setIsLoading(false);
         }
-    }, [activePriority]);
+    }, []); // Remove activePriority dependency
 
     useFocusEffect(
         useCallback(() => {
@@ -140,10 +146,17 @@ const InvestmentScreen = ({ navigation }: any) => {
         }, [loadStats])
     );
 
-    const updateSuggestions = async (priority: Priority) => {
+    // Separate effect for suggestions to avoid redundant full-stats load
+    React.useEffect(() => {
+        const fetchSuggestions = async () => {
+            const newSuggestions = await getSmartSuggestions(activePriority);
+            setSuggestions(newSuggestions);
+        };
+        fetchSuggestions();
+    }, [activePriority]);
+
+    const updateSuggestions = (priority: Priority) => {
         setActivePriority(priority);
-        const newSuggestions = await getSmartSuggestions(priority);
-        setSuggestions(newSuggestions);
     };
 
     const handleUpdateStatsOrder = async (newOrder: string[]) => {
@@ -158,9 +171,12 @@ const InvestmentScreen = ({ navigation }: any) => {
 
     const onRefresh = React.useCallback(async () => {
         setRefreshing(true);
-        await loadStats();
+        await Promise.all([
+            loadStats(),
+            getSmartSuggestions(activePriority).then(setSuggestions)
+        ]);
         setRefreshing(false);
-    }, [loadStats]);
+    }, [loadStats, activePriority]);
 
     const handleBulkFetchPrices = async (durationLabel: string) => {
         // Background process
@@ -272,8 +288,9 @@ const InvestmentScreen = ({ navigation }: any) => {
                 return (
                     <DividendChart
                         key="dividend_chart"
-                        labels={dividendChartData.labels.length > 0 ? dividendChartData.labels : ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]}
-                        data={dividendChartData.data.length > 0 ? dividendChartData.data : [0, 0, 0, 0, 0, 0]}
+                        projectedDividends={dividendChartData}
+                        actualDividends={actualDividends}
+                        calendarData={calendarData}
                         currency={currency}
                         isLoading={isLoading}
                         isPrivacyEnabled={isPrivacyEnabled}
