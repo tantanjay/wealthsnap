@@ -193,23 +193,15 @@ export const deleteAutoDividendHistory = async (symbol: string): Promise<void> =
 /**
  * Calculate projected dividends for the current year based on holdings
  */
-export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promise<{ labels: string[], data: number[] }> => {
+export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promise<{ labels: string[], data: { total: number, breakdown: { symbol: string, amount: number }[] }[] }> => {
     try {
         const db = await getDatabase();
 
         // Initialize monthly aggregators (Jan-Dec)
-        const monthlyTycoonAsync = new Array(12).fill(0);
+        const monthlyData = Array.from({ length: 12 }, () => ({ total: 0, breakdown: [] as { symbol: string, amount: number }[] }));
         const currentYear = new Date().getFullYear();
 
         for (const holding of holdings) {
-            // Get all dividend history for this symbol
-            // We get ALL history to be able to project forward if current year is missing, 
-            // but for MVP let's stick to matching months in the current year OR 
-            // if we want to be smarter: use last year's data projected to this year if this year is missing.
-            // Let's implement a "smart projection":
-            // 1. Look for confirmed/declared dividends for this year.
-            // 2. If a month has no declared dividend, look for a paid dividend from last year in the same month (approx ex-date).
-
             const history = await db.getAllAsync<any>(GET_DIVIDEND_HISTORY_BY_SYMBOL_QUERY, [holding.symbol]);
 
             // Map to better objects
@@ -219,11 +211,6 @@ export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promi
                 amount: new BigNumber(d.amount),
                 status: d.status
             }));
-
-            // Group by month to avoid double counting if multiple entries (unlikely for same type but good to be safe)
-            // Strategy: For each month 0-11:
-            // - Is there an entry for CurrentYear? Use it.
-            // - If not, is there an entry for LastYear? Use it as "Projected".
 
             for (let m = 0; m < 12; m++) {
                 // Find event for this month in current year
@@ -243,15 +230,16 @@ export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promi
 
                 if (dividendAmount.isGreaterThan(0)) {
                     // Calculate total: dividend per share * number of shares
-                    const totalProposed = dividendAmount.times(holding.shares);
-                    monthlyTycoonAsync[m] += totalProposed.toNumber();
+                    const totalProposed = dividendAmount.times(holding.shares).toNumber();
+                    monthlyData[m].total += totalProposed;
+                    monthlyData[m].breakdown.push({ symbol: holding.symbol, amount: totalProposed });
                 }
             }
         }
 
         return {
             labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-            data: monthlyTycoonAsync
+            data: monthlyData
         };
 
     } catch (error) {
@@ -290,3 +278,64 @@ export const getAnnualDividend = async (symbol: string): Promise<number> => {
         return 0;
     }
 };
+
+export interface CalendarEvent {
+    symbol: string;
+    amount: number;
+    paymentDate: string | null;
+    exDate: string;
+    status: string;
+}
+
+/**
+ * Get dividend events for the calendar view grouped by month
+ */
+export const getDividendCalendar = async (holdings: PortfolioHolding[], year: number = new Date().getFullYear()): Promise<Record<number, CalendarEvent[]>> => {
+    try {
+        const db = await getDatabase();
+        const calendar: Record<number, CalendarEvent[]> = {};
+        
+        // Initialize 0-11
+        for (let i = 0; i < 12; i++) {
+            calendar[i] = [];
+        }
+
+        for (const holding of holdings) {
+            // Get all dividend history for this symbol
+            const query = `SELECT * FROM dividend_history WHERE symbol = ?`;
+            const rows = await db.getAllAsync<any>(query, [holding.symbol]);
+            
+            // Map to helper objects
+            const events = rows.map(r => ({
+                month: new Date(r.exDate).getMonth(),
+                year: new Date(r.exDate).getFullYear(),
+                symbol: r.symbol,
+                amount: new BigNumber(r.amount).toNumber(),
+                paymentDate: r.paymentDate,
+                exDate: r.exDate,
+                status: r.status
+            }));
+
+            // For each month, find the best event to show
+            for (let m = 0; m < 12; m++) {
+                // 1. Try to find an event in the target year
+                let event = events.find(e => e.month === m && e.year === year);
+                
+                // 2. If not found, fallback to the previous year (to show the "usual" schedule)
+                if (!event) {
+                    event = events.find(e => e.month === m && e.year === year - 1);
+                }
+
+                if (event) {
+                    calendar[m].push(event);
+                }
+            }
+        }
+
+        return calendar;
+    } catch (error) {
+        console.error('Error fetching dividend calendar:', error);
+        return {};
+    }
+};
+
