@@ -382,3 +382,43 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
 
     return holdings.filter(h => h.shares > 0.000001);
 };
+
+export interface DividendBreakdown {
+    symbol: string;
+    amount: number;
+}
+
+export interface MonthlyDividend {
+    total: number;
+    breakdown: DividendBreakdown[];
+}
+
+export const getActualDividendsGrouped = async (): Promise<Record<number, MonthlyDividend[]>> => {
+    const investments = await getCachedInvestments();
+    const dividendMap: Record<number, MonthlyDividend[]> = {};
+
+    investments.forEach(inv => {
+        if (inv.action === 'DIVIDEND') {
+            const date = new Date(inv.date);
+            const year = date.getFullYear();
+            const month = date.getMonth(); // 0-11
+
+            if (!dividendMap[year]) {
+                dividendMap[year] = Array.from({ length: 12 }, () => ({ total: 0, breakdown: [] }));
+            }
+
+            const amount = inv.price.times(inv.quantity).toNumber();
+            dividendMap[year][month].total += amount;
+            
+            // Add to breakdown (group by symbol in the breakdown too)
+            const existing = dividendMap[year][month].breakdown.find(b => b.symbol === inv.symbol);
+            if (existing) {
+                existing.amount += amount;
+            } else {
+                dividendMap[year][month].breakdown.push({ symbol: inv.symbol, amount });
+            }
+        }
+    });
+
+    return dividendMap;
+};
