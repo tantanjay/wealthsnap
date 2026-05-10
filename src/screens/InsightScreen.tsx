@@ -56,10 +56,11 @@ const InsightScreen = ({ navigation }: any) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [debts, setDebts] = useState<import('@types').Debt[]>([]);
 
+    const selectedYear = selectedDate.getFullYear();
     // Update picker year when selected date changes (for external sync)
     useEffect(() => {
-        setPickerYear(selectedDate.getFullYear());
-    }, [selectedDate.getFullYear()]);
+        setPickerYear(selectedYear);
+    }, [selectedYear]);
 
     const availableRange = React.useMemo(() => {
         if (transactions.length === 0) {
