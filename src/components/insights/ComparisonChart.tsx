@@ -21,9 +21,10 @@ interface ComparisonChartProps {
     isPrivacyEnabled: boolean;
     transactions: Transaction[];
     isLoading?: boolean;
+    selectedDate?: Date;
 }
 
-const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year, currency, isPrivacyEnabled, transactions, isLoading = false }) => {
+const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year, currency, isPrivacyEnabled, transactions, isLoading = false, selectedDate = new Date() }) => {
     const [showInfoModal, setShowInfoModal] = React.useState(false);
     const [showInsightInfo, setShowInsightInfo] = React.useState(false);
     const [selectedBarIndex, setSelectedBarIndex] = React.useState<number | null>(null);
@@ -62,9 +63,11 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
     }, [transactions, monthsToLoad, activeView, timeRange, selectedYear]);
 
     // Pro-rate current month spending to estimate full month
-    const today = new Date();
-    const currentDay = today.getDate();
-    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const referenceDate = selectedDate;
+    const isCurrentMonth = referenceDate.getMonth() === new Date().getMonth() && referenceDate.getFullYear() === new Date().getFullYear();
+    const currentDay = isCurrentMonth ? new Date().getDate() : new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0).getDate();
+    const daysInMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0).getDate();
+    
     const proRatedExpense = currentDay > 0 ?
         currentMonthExpense.dividedBy(currentDay).multipliedBy(daysInMonth) : currentMonthExpense;
 
@@ -235,7 +238,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                         {activeView === 'MONTHLY' && timeRange === '1Y' && renderYearSelector()}
                         {(() => {
                             const barData = activeView === 'COMPARISON' ? [
-                                { label: "This M*", value: proRatedExpense, actual: currentMonthExpense, fullLabel: "This Month (Projected)", isProjected: true },
+                                { label: isCurrentMonth ? "This M*" : "Actual", value: proRatedExpense, actual: currentMonthExpense, fullLabel: isCurrentMonth ? "This Month (Projected)" : "Actual Monthly Spending", isProjected: isCurrentMonth },
                                 { label: "Last M", value: lastMonthExpense, actual: lastMonthExpense, fullLabel: "Last Month", isProjected: false },
                                 { label: "Avg 3M", value: averageExpense, actual: averageExpense, fullLabel: "3-Month Average", isProjected: false },
                                 { label: "Avg 6M", value: average6Month, actual: average6Month, fullLabel: "6-Month Average", isProjected: false },

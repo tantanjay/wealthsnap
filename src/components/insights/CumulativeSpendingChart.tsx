@@ -16,13 +16,15 @@ interface CumulativeSpendingChartProps {
     currency: string;
     isPrivacyEnabled: boolean;
     isLoading?: boolean;
+    selectedDate?: Date;
 }
 
 const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     transactions,
     currency,
     isPrivacyEnabled,
-    isLoading = false
+    isLoading = false,
+    selectedDate = new Date()
 }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
@@ -31,14 +33,16 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
 
     // 1. Calculate Raw Data (Stable)
     const { currentData, avgData, projectionData, insight } = useMemo(() => {
-        const today = new Date();
+        const today = selectedDate;
+        const isCurrentMonth = today.getMonth() === new Date().getMonth() && today.getFullYear() === new Date().getFullYear();
         const currentMonthTrans = getTransactionsByMonth(transactions, today);
 
-        const currentData = getCurrentMonthCumulative(currentMonthTrans);
+        const currentData = getCurrentMonthCumulative(currentMonthTrans, today);
         const avgData = getCumulativeSpendingCurve(transactions, period);
 
         const projectionData: number[] = [];
-        if (currentData.length > 0 && avgData.length > 0) {
+        // Only show projection for the current month
+        if (isCurrentMonth && currentData.length > 0 && avgData.length > 0) {
             const currentDay = currentData.length;
             const currentTotal = currentData[currentData.length - 1];
 
@@ -59,21 +63,23 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
             const avgAtThisDay = avgData[Math.min(dayIndex, avgData.length - 1)];
 
             const diff = currentTotal - avgAtThisDay;
+            const monthName = isCurrentMonth ? "" : today.toLocaleDateString('en-US', { month: 'short' }) + " ";
+
             if (diff > 0) {
                 insight = isPrivacyEnabled
-                    ? `Pacing **** above ${period}M avg`
-                    : `Pacing ${formatCompactCurrency(diff, currency)} above ${period}M avg`;
+                    ? `${monthName}Pacing **** above ${period}M avg`
+                    : `${monthName}Pacing ${formatCompactCurrency(diff, currency)} above ${period}M avg`;
             } else {
                 insight = isPrivacyEnabled
-                    ? `Pacing **** below ${period}M avg`
-                    : `Pacing ${formatCompactCurrency(Math.abs(diff), currency)} below ${period}M avg`;
+                    ? `${monthName}Pacing **** below ${period}M avg`
+                    : `${monthName}Pacing ${formatCompactCurrency(Math.abs(diff), currency)} below ${period}M avg`;
             }
         } else if (avgData.length === 0) {
             insight = "Not enough history for comparison";
         }
 
         return { currentData, avgData, projectionData, insight };
-    }, [transactions, period, currency, isPrivacyEnabled]);
+    }, [transactions, period, currency, isPrivacyEnabled, selectedDate]);
 
     // 2. Prepare DataSet (FIX: All logic inside useMemo to prevent re-renders)
     const dataSet = useMemo(() => {
