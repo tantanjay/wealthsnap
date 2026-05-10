@@ -17,9 +17,10 @@ interface SavingsRateTrendProps {
     privacyMode: boolean;
     isLoading?: boolean;
     currency: string;
+    selectedDate?: Date;
 }
 
-const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, privacyMode, isLoading = false, currency }) => {
+const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, privacyMode, isLoading = false, currency, selectedDate = new Date() }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
@@ -36,7 +37,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         if (transactions.length === 0) return 6;
         const dates = transactions.map(t => new Date(t.date).getTime());
         const minDate = new Date(Math.min(...dates));
-        const today = new Date();
+        const today = selectedDate;
         const diff = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth()) + 1;
         return Math.max(diff, 6); // Ensure at least 6 months shown even if data is new
     }, [timeRange, transactions]);
