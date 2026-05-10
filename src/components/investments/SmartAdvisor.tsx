@@ -82,7 +82,7 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
         if (flatListRef.current && suggestions && suggestions.length > 0) {
             flatListRef.current.scrollToOffset({ offset: 0, animated: true });
         }
-    }, [activePriority, suggestions?.length]);
+    }, [activePriority, suggestions]);
     const [showInfoModal, setShowInfoModal] = useState(false);
 
     // --- MATH RECALIBRATION ---
@@ -216,7 +216,7 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
                         <View style={{ backgroundColor: colors.background, padding: 12, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: colors.warning }}>
                             <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 13, marginBottom: 4 }}>🔝 Alert Hierarchy</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, lineHeight: 16 }}>
-                                In the <Text style={{ fontWeight: 'bold' }}>"All"</Text> view, we prioritize urgent alerts (Crashes & Dividends) over long-term suggestions (Balance). 
+                                In the <Text style={{ fontWeight: 'bold' }}>&quot;All&quot;</Text> view, we prioritize urgent alerts (Crashes & Dividends) over long-term suggestions (Balance).
                                 {"\n\n"}If a stock has multiple alerts, we show the most critical one and merge the reasons (e.g., <Text style={{ fontStyle: 'italic' }}>DIP + BAL</Text>). Specific tabs show all alerts for that category.
                             </Text>
                         </View>
