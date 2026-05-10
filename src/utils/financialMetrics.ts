@@ -343,6 +343,33 @@ export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: num
     return result;
 };
 
+export const getMonthlyTrendsForYear = (allTransactions: Transaction[], year: number) => {
+    const result = {
+        labels: [] as string[],
+        fullLabels: [] as string[],
+        incomeData: [] as BigNumber[],
+        expenseData: [] as BigNumber[],
+        netCashFlowData: [] as BigNumber[]
+    };
+
+    for (let month = 0; month < 12; month++) {
+        const d = new Date(year, month, 1);
+        result.labels.push(d.toLocaleString('default', { month: 'short' }));
+        result.fullLabels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
+
+        const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
+        const { income, expense } = calculateTotals(monthlyTransactions);
+
+        const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        const netCashFlow = calculateBalance(monthlyTransactions, monthEnd);
+
+        result.incomeData.push(income);
+        result.expenseData.push(expense);
+        result.netCashFlowData.push(netCashFlow);
+    }
+    return result;
+};
+
 // --- PULSE CHART METRICS ---
 
 export const getCumulativeSpendingCurve = (allTransactions: Transaction[], monthsBack: number): number[] => {
