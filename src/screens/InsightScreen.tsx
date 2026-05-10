@@ -14,6 +14,7 @@ import SmartAlerts from '@components/insights/SmartAlerts';
 import SavingsRateTrend from '@components/insights/SavingsRateTrend';
 import CumulativeSpendingChart from '@components/insights/CumulativeSpendingChart';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { Transaction } from '@types';
@@ -49,9 +50,34 @@ const InsightScreen = ({ navigation }: any) => {
     const [sectionOrder, setSectionOrder] = useState<string[]>([]);
 
     const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
+    const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+    const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [debts, setDebts] = useState<import('@types').Debt[]>([]);
+
+    // Update picker year when selected date changes (for external sync)
+    useEffect(() => {
+        setPickerYear(selectedDate.getFullYear());
+    }, [selectedDate.getFullYear()]);
+
+    const availableRange = React.useMemo(() => {
+        if (transactions.length === 0) {
+            const now = new Date();
+            return { minYear: now.getFullYear(), minMonth: now.getMonth(), maxYear: now.getFullYear(), maxMonth: now.getMonth() };
+        }
+
+        const dates = transactions.map(t => new Date(t.date).getTime());
+        const minDate = new Date(Math.min(...dates));
+        const maxDate = new Date(); // Always allow up to current month
+
+        return {
+            minYear: minDate.getFullYear(),
+            minMonth: minDate.getMonth(),
+            maxYear: maxDate.getFullYear(),
+            maxMonth: maxDate.getMonth()
+        };
+    }, [transactions]);
 
     const [data, setData] = useState({
         netCashFlow: new BigNumber(0),
@@ -282,9 +308,15 @@ const InsightScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
 
                 <View style={{ flex: 1, alignItems: 'center' }}>
-                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
-                        {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                    </Text>
+                    <TouchableOpacity
+                        onPress={() => setIsDatePickerVisible(true)}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                    >
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
+                            {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        </Text>
+                        <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+                    </TouchableOpacity>
                     {(selectedDate.getMonth() !== new Date().getMonth() || selectedDate.getFullYear() !== new Date().getFullYear()) && (
                         <TouchableOpacity
                             onPress={() => setSelectedDate(new Date())}
@@ -451,6 +483,80 @@ const InsightScreen = ({ navigation }: any) => {
                     await Storage.saveInsightsSectionOrder(newOrder);
                 }}
             />
+            {/* Month/Year Picker Modal */}
+            <BottomModal
+                visible={isDatePickerVisible}
+                onClose={() => setIsDatePickerVisible(false)}
+                title="Select Month & Year"
+                maxHeight="60%"
+            >
+                <View style={{ padding: 16 }}>
+                    {/* Year Selector */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                        <TouchableOpacity
+                            onPress={() => setPickerYear(prev => prev - 1)}
+                            disabled={pickerYear <= availableRange.minYear}
+                            style={{ padding: 10, opacity: pickerYear <= availableRange.minYear ? 0.2 : 1 }}
+                        >
+                            <Ionicons name="chevron-back" size={28} color={colors.primary} />
+                        </TouchableOpacity>
+
+                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text }}>{pickerYear}</Text>
+
+                        <TouchableOpacity
+                            onPress={() => setPickerYear(prev => prev + 1)}
+                            disabled={pickerYear >= availableRange.maxYear}
+                            style={{ padding: 10, opacity: pickerYear >= availableRange.maxYear ? 0.2 : 1 }}
+                        >
+                            <Ionicons name="chevron-forward" size={28} color={colors.primary} />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Months Grid */}
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
+                            const isSelected = selectedDate.getMonth() === index && selectedDate.getFullYear() === pickerYear;
+                            const isFuture = pickerYear > availableRange.maxYear || (pickerYear === availableRange.maxYear && index > availableRange.maxMonth);
+                            const isBeforeStart = pickerYear < availableRange.minYear || (pickerYear === availableRange.minYear && index < availableRange.minMonth);
+                            const isDisabled = isFuture || isBeforeStart;
+
+                            return (
+                                <TouchableOpacity
+                                    key={month}
+                                    onPress={() => {
+                                        const newDate = new Date(selectedDate);
+                                        newDate.setFullYear(pickerYear);
+                                        newDate.setMonth(index);
+                                        setSelectedDate(newDate);
+                                        setIsDatePickerVisible(false);
+                                    }}
+                                    disabled={isDisabled}
+                                    style={{
+                                        width: '22%',
+                                        paddingVertical: 14,
+                                        borderRadius: 12,
+                                        backgroundColor: isSelected ? colors.primary : colors.surface,
+                                        borderWidth: 1,
+                                        borderColor: isSelected ? colors.primary : colors.border,
+                                        alignItems: 'center',
+                                        opacity: isDisabled ? 0.15 : 1
+                                    }}
+                                >
+                                    <Text style={{
+                                        color: isSelected ? '#fff' : isDisabled ? colors.textSecondary : colors.text,
+                                        fontWeight: isSelected ? 'bold' : '500',
+                                        fontSize: 14
+                                    }}>
+                                        {month}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+
+                    <View style={{ height: 20 }} />
+                </View>
+            </BottomModal>
         </ScreenWrapper>
     );
 };
