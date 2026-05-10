@@ -304,6 +304,7 @@ const InsightScreen = ({ navigation }: any) => {
                                 average1Year={data.average1Year}
                                 currency={currency}
                                 isPrivacyEnabled={isPrivacyEnabled}
+                                transactions={transactions}
                                 isLoading={isLoading}
                             />
                         )
