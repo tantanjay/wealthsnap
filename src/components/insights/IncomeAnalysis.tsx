@@ -28,9 +28,10 @@ interface IncomeAnalysisProps {
     isPrivacyEnabled: boolean;
     transactions: Transaction[];
     isLoading?: boolean;
+    selectedDate?: Date;
 }
 
-const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialTrends, categoryBreakdown, currency, isPrivacyEnabled, transactions, isLoading = false }) => {
+const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialTrends, categoryBreakdown, currency, isPrivacyEnabled, transactions, isLoading = false, selectedDate = new Date() }) => {
     const { colors } = useTheme();
     const [showProjectionModal, setShowProjectionModal] = React.useState(false);
     const [showInfoModal, setShowInfoModal] = React.useState(false);
@@ -252,6 +253,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                 const rawData = [...activeMonthlyTrends.incomeData];
 
                                 // Last element is current month
+                                const isCurrentlyThisMonth = selectedDate.getMonth() === new Date().getMonth() && selectedDate.getFullYear() === new Date().getFullYear();
                                 const currentMonthIncome = rawData[rawData.length - 1] || new BigNumber(0);
 
                                 // Calculate Average from historical months (exclude current)
@@ -267,10 +269,10 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                     : currentMonthIncome;
 
                                 // Projection = Max(Current, Average)
-                                const proRatedIncome = BigNumber.max(currentMonthIncome, averageIncome);
+                                const proRatedIncome = isCurrentlyThisMonth ? BigNumber.max(currentMonthIncome, averageIncome) : currentMonthIncome;
 
-                                // Replace last label with * indicator
-                                if (labels.length > 0) {
+                                // Replace last label with * indicator only if it's the actual current month
+                                if (labels.length > 0 && isCurrentlyThisMonth) {
                                     labels[labels.length - 1] = labels[labels.length - 1] + "*";
                                     fullLabels[fullLabels.length - 1] = fullLabels[fullLabels.length - 1] + "*";
                                 }
@@ -278,7 +280,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                 const barData = labels.map((label, index) => {
                                     const today = new Date();
                                     const isActualCurrentMonth = selectedYear === today.getFullYear() && index === today.getMonth();
-                                    const isCurrentMonth = timeRange === '1Y' ? isActualCurrentMonth : (index === labels.length - 1);
+                                    const isCurrentMonth = timeRange === '1Y' ? (isActualCurrentMonth && isCurrentlyThisMonth) : (index === labels.length - 1 && isCurrentlyThisMonth);
 
                                     const value = isCurrentMonth ? proRatedIncome : (rawData[index] || 0);
                                     const actual = rawData[index] || 0;

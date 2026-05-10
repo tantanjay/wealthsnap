@@ -27,9 +27,10 @@ interface ExpenseAnalysisProps {
     onToggleGrouping: (grouping: 'GROUP' | 'ITEM') => void;
     transactions: Transaction[];
     isLoading?: boolean;
+    selectedDate?: Date;
 }
 
-const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, currency, isPrivacyEnabled, grouping, onToggleGrouping, transactions, isLoading = false }) => {
+const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, currency, isPrivacyEnabled, grouping, onToggleGrouping, transactions, isLoading = false, selectedDate = new Date() }) => {
     const { colors } = useTheme();
     const [budgets, setBudgets] = React.useState<Budget[]>([]);
     const [recurrences, setRecurrences] = React.useState<RecurrenceRule[]>([]);
