@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import BottomModal from '@components/common/BottomModal';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
+import { Transaction } from '@types';
+import { getMonthlyTrends, getMonthlyTrendsForYear } from '@utils/financialMetrics';
 import { CURRENCY_SYMBOLS, formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface ComparisonChartProps {
@@ -17,14 +19,47 @@ interface ComparisonChartProps {
     average1Year: BigNumber;
     currency: string;
     isPrivacyEnabled: boolean;
+    transactions: Transaction[];
     isLoading?: boolean;
 }
 
-const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year, currency, isPrivacyEnabled, isLoading = false }) => {
+const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year, currency, isPrivacyEnabled, transactions, isLoading = false }) => {
     const [showInfoModal, setShowInfoModal] = React.useState(false);
     const [showInsightInfo, setShowInsightInfo] = React.useState(false);
     const [selectedBarIndex, setSelectedBarIndex] = React.useState<number | null>(null);
+    const [activeView, setActiveView] = React.useState<'COMPARISON' | 'MONTHLY'>('COMPARISON');
+    const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
+    const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
+
+    const availableYears = useMemo(() => {
+        if (transactions.length === 0) return [new Date().getFullYear()];
+        const years = [...new Set(transactions.map(t => new Date(t.date).getFullYear()))];
+        return years.sort((a, b) => b - a);
+    }, [transactions]);
+
     const { colors } = useTheme();
+
+    // Calculate how many months of data to load based on selection
+    const monthsToLoad = useMemo(() => {
+        if (timeRange === '6M') return 6;
+        if (timeRange === '1Y') return 12;
+        if (timeRange === '3Y') return 36;
+
+        if (transactions.length === 0) return 6;
+        const dates = transactions.map(t => new Date(t.date).getTime());
+        const minDate = new Date(Math.min(...dates));
+        const today = new Date();
+        const diff = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth()) + 1;
+        return Math.max(diff, 6);
+    }, [timeRange, transactions]);
+
+    // Recalculate trends based on selected time range
+    const activeMonthlyTrends = useMemo(() => {
+        if (activeView === 'MONTHLY' && timeRange === '1Y') {
+            return getMonthlyTrendsForYear(transactions, selectedYear);
+        }
+        return getMonthlyTrends(transactions, monthsToLoad);
+    }, [transactions, monthsToLoad, activeView, timeRange, selectedYear]);
 
     // Pro-rate current month spending to estimate full month
     const today = new Date();
@@ -45,6 +80,55 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
             const diff = averageExpense.minus(proRatedExpense);
             return `Great job! On track to spend ${formatCurrencyAmount(diff, currency)} less than average.*`;
         }
+    };
+
+    const renderTimeFilter = () => (
+        <View style={{ flexDirection: 'row', backgroundColor: colors.border + '40', borderRadius: 8, padding: 2 }}>
+            {(['6M', '1Y', '3Y', 'ALL'] as const).map((range) => (
+                <Text
+                    key={range}
+                    onPress={() => setTimeRange(range)}
+                    style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 4,
+                        borderRadius: 6,
+                        backgroundColor: timeRange === range ? colors.surface : 'transparent',
+                        color: timeRange === range ? colors.primary : colors.textSecondary,
+                        fontWeight: timeRange === range ? '600' : '400',
+                        fontSize: 12,
+                        elevation: timeRange === range ? 1 : 0,
+                    }}
+                >
+                    {range}
+                </Text>
+            ))}
+        </View>
+    );
+
+    const renderYearSelector = () => {
+        if (availableYears.length <= 1 && availableYears[0] === new Date().getFullYear()) return null;
+
+        const currentIndex = availableYears.indexOf(selectedYear);
+        const hasNext = currentIndex > 0;
+        const hasPrev = currentIndex < availableYears.length - 1;
+
+        return (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, marginBottom: 12 }}>
+                <TouchableOpacity
+                    onPress={() => setSelectedYear(availableYears[currentIndex + 1])}
+                    disabled={!hasPrev}
+                >
+                    <Ionicons name="chevron-back" size={20} color={hasPrev ? colors.text : colors.border} />
+                </TouchableOpacity>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.text }}>{selectedYear}</Text>
+                <TouchableOpacity
+                    onPress={() => setSelectedYear(availableYears[currentIndex - 1])}
+                    disabled={!hasNext}
+                >
+                    <Ionicons name="chevron-forward" size={20} color={hasNext ? colors.text : colors.border} />
+                </TouchableOpacity>
+            </View>
+        );
     };
 
 
@@ -76,7 +160,9 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
         <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, marginTop: 20 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginRight: 8 }}>Spending Comparison</Text>
+                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginRight: 8 }}>
+                        {activeView === 'COMPARISON' ? 'Spending Comparison' : 'Monthly Spending'}
+                    </Text>
                     <TouchableOpacity onPress={() => setShowInfoModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
@@ -99,36 +185,101 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
             </View>
 
             <Card>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <View style={{ flexDirection: 'row', backgroundColor: colors.background, borderRadius: 8, padding: 2 }}>
+                        <TouchableOpacity
+                            onPress={() => setActiveView('MONTHLY')}
+                            style={{
+                                paddingVertical: 6,
+                                paddingHorizontal: 12,
+                                backgroundColor: activeView === 'MONTHLY' ? colors.surface : 'transparent',
+                                borderRadius: 6,
+                                borderWidth: activeView === 'MONTHLY' ? 1 : 0,
+                                borderColor: colors.border
+                            }}
+                        >
+                            <Text style={{
+                                color: activeView === 'MONTHLY' ? colors.text : colors.textSecondary,
+                                fontSize: 12,
+                                fontWeight: activeView === 'MONTHLY' ? '600' : '400'
+                            }}>Trend</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => setActiveView('COMPARISON')}
+                            style={{
+                                paddingVertical: 6,
+                                paddingHorizontal: 12,
+                                backgroundColor: activeView === 'COMPARISON' ? colors.surface : 'transparent',
+                                borderRadius: 6,
+                                borderWidth: activeView === 'COMPARISON' ? 1 : 0,
+                                borderColor: colors.border
+                            }}
+                        >
+                            <Text style={{
+                                color: activeView === 'COMPARISON' ? colors.text : colors.textSecondary,
+                                fontSize: 12,
+                                fontWeight: activeView === 'COMPARISON' ? '600' : '400'
+                            }}>Compare</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {activeView === 'MONTHLY' && renderTimeFilter()}
+                </View>
+
                 {isLoading ? (
                     <View style={{ height: 220, padding: 10 }}>
                         <Skeleton height={200} width="100%" borderRadius={16} />
                     </View>
                 ) : !isPrivacyEnabled ? (
                     <View style={{ height: 220, paddingVertical: 10 }}>
-                        {/* Custom Bar Chart with Y-Axis and Stacked First Bar */}
+                        {activeView === 'MONTHLY' && timeRange === '1Y' && renderYearSelector()}
                         {(() => {
-                            const barData = [
-                                { label: "This M*", value: proRatedExpense, actual: currentMonthExpense, isProjected: true },
-                                { label: "Last M", value: lastMonthExpense, actual: lastMonthExpense, isProjected: false },
-                                { label: "Avg 3M", value: averageExpense, actual: averageExpense, isProjected: false },
-                                { label: "Avg 6M", value: average6Month, actual: average6Month, isProjected: false },
-                                { label: "Avg 1Y", value: average1Year, actual: average1Year, isProjected: false },
-                            ];
+                            const barData = activeView === 'COMPARISON' ? [
+                                { label: "This M*", value: proRatedExpense, actual: currentMonthExpense, fullLabel: "This Month (Projected)", isProjected: true },
+                                { label: "Last M", value: lastMonthExpense, actual: lastMonthExpense, fullLabel: "Last Month", isProjected: false },
+                                { label: "Avg 3M", value: averageExpense, actual: averageExpense, fullLabel: "3-Month Average", isProjected: false },
+                                { label: "Avg 6M", value: average6Month, actual: average6Month, fullLabel: "6-Month Average", isProjected: false },
+                                { label: "Avg 1Y", value: average1Year, actual: average1Year, fullLabel: "1-Year Average", isProjected: false },
+                            ] : (() => {
+                                const labels = [...activeMonthlyTrends.labels];
+                                const fullLabels = activeMonthlyTrends.fullLabels ? [...activeMonthlyTrends.fullLabels] : [...labels];
+                                const rawData = [...activeMonthlyTrends.expenseData];
+
+                                return labels.map((label, index) => {
+                                    const today = new Date();
+                                    const isActualCurrentMonth = selectedYear === today.getFullYear() && index === today.getMonth();
+                                    const isCurrentMonth = timeRange === '1Y' ? isActualCurrentMonth : (index === labels.length - 1);
+
+                                    const actual = rawData[index] || new BigNumber(0);
+                                    const value = isCurrentMonth ? proRatedExpense : actual;
+
+                                    const showLabelInterval = Math.ceil(labels.length / 6);
+                                    const shouldShowLabel = index === 0 || index === labels.length - 1 || index % showLabelInterval === 0;
+
+                                    return {
+                                        label: shouldShowLabel ? (isCurrentMonth ? label + "*" : label) : '',
+                                        fullLabel: isCurrentMonth ? fullLabels[index] + "*" : fullLabels[index],
+                                        value,
+                                        actual,
+                                        isProjected: isCurrentMonth
+                                    };
+                                });
+                            })();
 
                             // Calculate Max Value safely
                             const maxValue = BigNumber.max(
                                 ...barData.map(b => b.value),
-                                new BigNumber(0) // Fallback to 0 if no data
+                                new BigNumber(0)
                             ).toNumber();
 
                             // Calculate Min Value safely
-                            const minValue = BigNumber.min(
+                            const minValue = activeView === 'COMPARISON' ? BigNumber.min(
                                 ...barData.map(b => b.isProjected ? b.actual : b.value),
-                                maxValue // Fallback to maxValue if no data, or new BigNumber(0)
-                            ).toNumber();
+                                maxValue
+                            ).toNumber() : 0;
 
-                            // Start Y-axis 15% below minimum
-                            const yMin = Math.max(0, minValue * 0.85);
+                            // Start Y-axis 15% below minimum for COMPARISON, or 0 for MONTHLY
+                            const yMin = activeView === 'COMPARISON' ? Math.max(0, minValue * 0.85) : 0;
                             const yMax = maxValue * 1.05; // 5% padding on top
                             const yRange = yMax - yMin;
                             const chartHeight = 150;
@@ -146,7 +297,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                     formatted = value / 1000;
                                     suffix = 'K';
                                 }
-                                yLabels.push(`${CURRENCY_SYMBOLS[currency]}${formatted.toFixed(1)}${suffix}`);
+                                yLabels.push(`${CURRENCY_SYMBOLS[currency] || currency}${formatted.toFixed(1)}${suffix}`);
                             }
 
                             return (
@@ -184,7 +335,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                                     >
                                                         {bar.isProjected ? (
                                                             // Stacked bar: actual (solid) + projected (lighter)
-                                                            <View style={{ width: '50%', borderRadius: 4, overflow: 'hidden' }}>
+                                                            <View style={{ width: activeView === 'COMPARISON' ? '50%' : '70%', borderRadius: 4, overflow: 'hidden' }}>
                                                                 {/* Projected portion (lighter, on top) */}
                                                                 <View style={{
                                                                     height: projectedHeight,
@@ -206,18 +357,18 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                                             // Regular solid bar
                                                             <View style={{
                                                                 height: Math.max(0, totalHeight),
-                                                                width: '50%',
+                                                                width: activeView === 'COMPARISON' ? '50%' : '70%',
                                                                 backgroundColor: isSelected ? 'rgba(255, 152, 0, 0.9)' : 'rgba(255, 152, 0, 1)',
                                                                 borderRadius: 4,
                                                             }} />
                                                         )}
                                                     </TouchableOpacity>
 
-                                                    {/* Tooltip Overlay - Rendered AFTER so it's on top */}
+                                                    {/* Tooltip Overlay */}
                                                     {isSelected && (
                                                         <View style={{
                                                             position: 'absolute',
-                                                            bottom: Math.max(0, totalHeight) + 8, // Dynamic positioning
+                                                            bottom: Math.max(0, totalHeight) + 8,
                                                             backgroundColor: colors.surface,
                                                             padding: 8,
                                                             borderRadius: 8,
@@ -225,14 +376,14 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                                             shadowOffset: { width: 0, height: 2 },
                                                             shadowOpacity: 0.15,
                                                             shadowRadius: 4,
-                                                            elevation: 10, // Ensure high elevation for Android
+                                                            elevation: 10,
                                                             minWidth: 100,
                                                             alignItems: 'center',
                                                             borderWidth: 1,
                                                             borderColor: colors.border,
-                                                            zIndex: 100 // High z-index
+                                                            zIndex: 100
                                                         }}>
-                                                            <Text style={{ color: colors.text, fontSize: 12, fontWeight: 'bold', marginBottom: 2 }}>{bar.label.replace('*', '')}</Text>
+                                                            <Text style={{ color: colors.text, fontSize: 12, fontWeight: 'bold', marginBottom: 2 }}>{bar.fullLabel.replace('*', '')}</Text>
                                                             <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
                                                                 Actual: <Text style={{ color: colors.text }}>{formatCurrencyAmount(bar.actual, currency)}</Text>
                                                             </Text>
@@ -241,7 +392,6 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                                                     Proj: <Text style={{ color: colors.text }}>{formatCurrencyAmount(bar.value, currency)}</Text>
                                                                 </Text>
                                                             )}
-                                                            {/* Arrow */}
                                                             <View style={{
                                                                 position: 'absolute',
                                                                 bottom: -6,
@@ -258,7 +408,18 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                                     )}
 
                                                     {/* Label */}
-                                                    <Text style={{ color: isSelected ? colors.primary : colors.textSecondary, fontSize: 10, marginTop: 6, fontWeight: isSelected ? 'bold' : 'normal' }}>
+                                                    <Text
+                                                        numberOfLines={1}
+                                                        style={{
+                                                            color: isSelected ? colors.primary : colors.textSecondary,
+                                                            fontSize: 10,
+                                                            marginTop: 6,
+                                                            width: activeView === 'COMPARISON' ? undefined : 40,
+                                                            textAlign: 'center',
+                                                            fontWeight: isSelected ? 'bold' : 'normal',
+                                                            opacity: bar.label || isSelected ? 1 : 0
+                                                        }}
+                                                    >
                                                         {bar.label}
                                                     </Text>
                                                 </View>

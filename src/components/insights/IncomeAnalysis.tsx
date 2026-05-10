@@ -10,7 +10,7 @@ import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
-import { getMonthlyTrends } from '@utils/financialMetrics';
+import { getMonthlyTrends, getMonthlyTrendsForYear } from '@utils/financialMetrics';
 import { CURRENCY_SYMBOLS, formatCompactCurrency } from '@utils/currencyUtils';
 
 interface IncomeAnalysisProps {
@@ -40,6 +40,13 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
 
     // Time Range Filter Logic
     const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
+    const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
+
+    const availableYears = useMemo(() => {
+        if (transactions.length === 0) return [new Date().getFullYear()];
+        const years = [...new Set(transactions.map(t => new Date(t.date).getFullYear()))];
+        return years.sort((a, b) => b - a);
+    }, [transactions]);
 
     // Calculate how many months of data to load based on selection
     const monthsToLoad = useMemo(() => {
@@ -58,8 +65,11 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
 
     // Recalculate trends based on selected time range
     const activeMonthlyTrends = useMemo(() => {
+        if (timeRange === '1Y') {
+            return getMonthlyTrendsForYear(transactions, selectedYear);
+        }
         return getMonthlyTrends(transactions, monthsToLoad);
-    }, [transactions, monthsToLoad]);
+    }, [transactions, monthsToLoad, timeRange, selectedYear]);
 
     const pieData = categoryBreakdown.map((item, index) => ({
         name: item.name,
@@ -114,12 +124,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                         color: timeRange === range ? colors.primary : colors.textSecondary,
                         fontWeight: timeRange === range ? '600' : '400',
                         fontSize: 12,
-                        overflow: 'hidden',
                         elevation: timeRange === range ? 1 : 0,
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: timeRange === range ? 0.1 : 0,
-                        shadowRadius: 1
                     }}
                 >
                     {range}
@@ -127,6 +132,32 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
             ))}
         </View>
     );
+
+    const renderYearSelector = () => {
+        if (availableYears.length <= 1 && availableYears[0] === new Date().getFullYear()) return null;
+
+        const currentIndex = availableYears.indexOf(selectedYear);
+        const hasNext = currentIndex > 0;
+        const hasPrev = currentIndex < availableYears.length - 1;
+
+        return (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, marginBottom: 12 }}>
+                <TouchableOpacity
+                    onPress={() => setSelectedYear(availableYears[currentIndex + 1])}
+                    disabled={!hasPrev}
+                >
+                    <Ionicons name="chevron-back" size={20} color={hasPrev ? colors.text : colors.border} />
+                </TouchableOpacity>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.text }}>{selectedYear}</Text>
+                <TouchableOpacity
+                    onPress={() => setSelectedYear(availableYears[currentIndex - 1])}
+                    disabled={!hasNext}
+                >
+                    <Ionicons name="chevron-forward" size={20} color={hasNext ? colors.text : colors.border} />
+                </TouchableOpacity>
+            </View>
+        );
+    };
 
     return (
         <View>
@@ -211,6 +242,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                         </View>
                     ) : activeTab === 'TREND' ? (
                         <View style={{ height: 220, paddingVertical: 10 }}>
+                            {activeTab === 'TREND' && timeRange === '1Y' && renderYearSelector()}
                             {(() => {
                                 // Prepare data with pro-rated projection (Historical Average Strategy)
                                 // Use historical average as the target for the current month's projection
@@ -244,7 +276,10 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                 }
 
                                 const barData = labels.map((label, index) => {
-                                    const isCurrentMonth = index === labels.length - 1;
+                                    const today = new Date();
+                                    const isActualCurrentMonth = selectedYear === today.getFullYear() && index === today.getMonth();
+                                    const isCurrentMonth = timeRange === '1Y' ? isActualCurrentMonth : (index === labels.length - 1);
+
                                     const value = isCurrentMonth ? proRatedIncome : (rawData[index] || 0);
                                     const actual = rawData[index] || 0;
 
