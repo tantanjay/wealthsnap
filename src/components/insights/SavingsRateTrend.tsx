@@ -40,7 +40,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         const today = selectedDate;
         const diff = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth()) + 1;
         return Math.max(diff, 6); // Ensure at least 6 months shown even if data is new
-    }, [timeRange, transactions]);
+    }, [timeRange, transactions, selectedDate]);
 
     const savingsData = useMemo(() => {
         const data = getSavingsRateTrend(transactions, monthsToLoad);
