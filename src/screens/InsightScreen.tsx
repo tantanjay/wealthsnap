@@ -43,6 +43,7 @@ const InsightScreen = ({ navigation }: any) => {
     const [refreshing, setRefreshing] = useState(false);
     const [expenseGrouping, setExpenseGrouping] = useState<'GROUP' | 'ITEM'>('ITEM');
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedDate, setSelectedDate] = useState(new Date());
 
     const [cardOrder, setCardOrder] = useState<string[]>([]);
     const [sectionOrder, setSectionOrder] = useState<string[]>([]);
@@ -74,13 +75,13 @@ const InsightScreen = ({ navigation }: any) => {
         dailyAverage: new BigNumber(0)
     });
 
-    const calculateMetrics = useCallback(async (currentTransactions: Transaction[], currentDebts: import('@types').Debt[], grouping: 'GROUP' | 'ITEM') => {
+    const calculateMetrics = useCallback(async (currentTransactions: Transaction[], currentDebts: import('@types').Debt[], grouping: 'GROUP' | 'ITEM', referenceDate: Date = new Date()) => {
         if (!currentTransactions || currentTransactions.length === 0) {
             setIsLoading(false);
             return;
         }
 
-        const today = new Date();
+        const today = referenceDate;
         const currentMonthTrans = Metrics.getTransactionsByMonth(currentTransactions, today);
         const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         const lastMonthTrans = Metrics.getTransactionsByMonth(currentTransactions, lastMonthDate);
@@ -163,7 +164,7 @@ const InsightScreen = ({ navigation }: any) => {
             budgetPerformance,
             topExpenseCategory: specificBreakdown[0] || { name: 'None', amount: new BigNumber(0), percentage: new BigNumber(0) },
             daysInMonth: new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate(),
-            dailyAverage: totals.expense.dividedBy(Math.max(1, today.getDate()))
+            dailyAverage: totals.expense.dividedBy(Math.max(1, (today.getMonth() === new Date().getMonth() && today.getFullYear() === new Date().getFullYear()) ? today.getDate() : new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()))
         });
     }, []);
 
@@ -196,13 +197,13 @@ const InsightScreen = ({ navigation }: any) => {
             setTransactions(safeTransactions);
             setDebts(allDebts);
             // We pass variables directly here to bypass the React state update delay
-            await calculateMetrics(safeTransactions, allDebts, expenseGrouping);
+            await calculateMetrics(safeTransactions, allDebts, expenseGrouping, selectedDate);
         } catch (error) {
             console.error("Error loading insights:", error);
         } finally {
             setIsLoading(false);
         }
-    }, [calculateMetrics, expenseGrouping]);
+    }, [calculateMetrics, expenseGrouping, selectedDate]);
 
     useFocusEffect(
         useCallback(() => {
@@ -210,12 +211,12 @@ const InsightScreen = ({ navigation }: any) => {
         }, [fetchAllData])
     );
 
-    // Only re-calculate breakdown if grouping changes specifically
+    // Only re-calculate breakdown if grouping or date changes specifically
     useEffect(() => {
         if (transactions.length > 0) {
-            calculateMetrics(transactions, debts, expenseGrouping);
+            calculateMetrics(transactions, debts, expenseGrouping, selectedDate);
         }
-    }, [expenseGrouping, calculateMetrics, transactions, debts]);
+    }, [expenseGrouping, calculateMetrics, transactions, debts, selectedDate]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -229,7 +230,9 @@ const InsightScreen = ({ navigation }: any) => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 15 }}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', flex: 1 }}>Financial Insights</Text>
+                <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>Financial Insights</Text>
+                </View>
                 <TouchableOpacity
                     onPress={togglePrivacy}
                     style={[
@@ -248,6 +251,60 @@ const InsightScreen = ({ navigation }: any) => {
                     onPress={() => setIsSettingsModalVisible(true)}
                 >
                     <Ionicons name="options-outline" size={20} color={colors.text} />
+                </TouchableOpacity>
+            </View>
+
+            {/* Month Selector */}
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.surface,
+                marginHorizontal: 4,
+                marginBottom: 15,
+                borderRadius: 12,
+                paddingVertical: 10,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+                elevation: 2,
+            }}>
+                <TouchableOpacity
+                    onPress={() => {
+                        const newDate = new Date(selectedDate);
+                        newDate.setMonth(newDate.getMonth() - 1);
+                        setSelectedDate(newDate);
+                    }}
+                    style={{ padding: 8 }}
+                >
+                    <Ionicons name="chevron-back" size={24} color={colors.primary} />
+                </TouchableOpacity>
+
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
+                        {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </Text>
+                    {(selectedDate.getMonth() !== new Date().getMonth() || selectedDate.getFullYear() !== new Date().getFullYear()) && (
+                        <TouchableOpacity
+                            onPress={() => setSelectedDate(new Date())}
+                            style={{ marginTop: 2 }}
+                        >
+                            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>Back to Today</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                <TouchableOpacity
+                    onPress={() => {
+                        const newDate = new Date(selectedDate);
+                        newDate.setMonth(newDate.getMonth() + 1);
+                        setSelectedDate(newDate);
+                    }}
+                    disabled={selectedDate.getMonth() === new Date().getMonth() && selectedDate.getFullYear() === new Date().getFullYear()}
+                    style={{ padding: 8, opacity: (selectedDate.getMonth() === new Date().getMonth() && selectedDate.getFullYear() === new Date().getFullYear()) ? 0.3 : 1 }}
+                >
+                    <Ionicons name="chevron-forward" size={24} color={colors.primary} />
                 </TouchableOpacity>
             </View>
 
@@ -277,6 +334,7 @@ const InsightScreen = ({ navigation }: any) => {
                                 topExpenseCategory={data.topExpenseCategory}
                                 dailyAverage={data.dailyAverage}
                                 cardOrder={cardOrder}
+                                selectedDate={selectedDate}
                             />
                         )
                     },
@@ -289,6 +347,7 @@ const InsightScreen = ({ navigation }: any) => {
                                 currency={currency}
                                 isPrivacyEnabled={isPrivacyEnabled}
                                 isLoading={isLoading}
+                                selectedDate={selectedDate}
                             />
                         )
                     },
@@ -306,6 +365,7 @@ const InsightScreen = ({ navigation }: any) => {
                                 isPrivacyEnabled={isPrivacyEnabled}
                                 transactions={transactions}
                                 isLoading={isLoading}
+                                selectedDate={selectedDate}
                             />
                         )
                     },
@@ -321,6 +381,7 @@ const InsightScreen = ({ navigation }: any) => {
                                 onToggleGrouping={setExpenseGrouping}
                                 transactions={transactions}
                                 isLoading={isLoading}
+                                selectedDate={selectedDate}
                             />
                         )
                     },
@@ -335,6 +396,7 @@ const InsightScreen = ({ navigation }: any) => {
                                 isPrivacyEnabled={isPrivacyEnabled}
                                 transactions={transactions}
                                 isLoading={isLoading}
+                                selectedDate={selectedDate}
                             />
                         )
                     },
@@ -347,6 +409,7 @@ const InsightScreen = ({ navigation }: any) => {
                                 privacyMode={isPrivacyEnabled}
                                 isLoading={isLoading}
                                 currency={currency}
+                                selectedDate={selectedDate}
                             />
                         )
                     },

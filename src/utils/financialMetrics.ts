@@ -406,9 +406,10 @@ export const getCumulativeSpendingCurve = (allTransactions: Transaction[], month
     return count === 0 ? [] : dailySums.map(s => s.dividedBy(count).toNumber());
 };
 
-export const getCurrentMonthCumulative = (currentMonthTransactions: Transaction[]): number[] => {
-    const today = new Date();
-    const currentDay = today.getDate();
+export const getCurrentMonthCumulative = (currentMonthTransactions: Transaction[], referenceDate: Date = new Date()): number[] => {
+    const today = referenceDate;
+    const isCurrentMonth = today.getMonth() === new Date().getMonth() && today.getFullYear() === new Date().getFullYear();
+    const currentDay = isCurrentMonth ? today.getDate() : new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const result: number[] = [];
     let runningTotal = new BigNumber(0);
 

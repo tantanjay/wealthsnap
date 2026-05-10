@@ -24,6 +24,7 @@ interface InsightsOverviewCardsProps {
     dailyAverage: BigNumber;
     cardOrder?: string[];
     onReorderCards?: (newOrder: string[]) => void;
+    selectedDate?: Date;
 }
 
 const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
@@ -40,7 +41,8 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
     topExpenseCategory,
     dailyAverage,
     cardOrder,
-    onReorderCards
+    onReorderCards,
+    selectedDate = new Date()
 }) => {
     const { colors } = useTheme();
 
@@ -53,84 +55,89 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
     const cardWidth = (Dimensions.get('window').width - 32 - 12) / 2; // (Screen - Padding - Gap) / 2
 
     // Memoize data to prevent re-creation on every render
-    const data = useMemo(() => [
-        {
-            id: 'financial-runway',
-            title: "Financial Runway",
-            value: currentBalance.isLessThanOrEqualTo(0) ? "0.0 months" : burnRate.isGreaterThan(0) ? `${currentBalance.dividedBy(burnRate).toFixed(1)} months` : "∞ months",
-            subValue: "Financial Safety Net",
-            color: currentBalance.dividedBy(burnRate).isGreaterThanOrEqualTo(6) ? '#4CAF50' : currentBalance.dividedBy(burnRate).isGreaterThanOrEqualTo(3) ? '#FF9800' : '#F44336',
-            hasInfo: true,
-            onInfoPress: () => setIsRunwayModalVisible(true)
-        },
-        {
-            id: 'budget-performance',
-            title: "Budget Health",
-            value: budgetPerformance.isGreaterThan(0) ? `${budgetPerformance.toFixed(0)}%` : "N/A",
-            subValue: budgetPerformance.isEqualTo(0) ? "No Budgets Set" : budgetPerformance.isLessThanOrEqualTo(100) ? "Under Budget" : "Over Budget",
-            color: budgetPerformance.isEqualTo(0) ? undefined : budgetPerformance.isLessThanOrEqualTo(70) ? '#4CAF50' : budgetPerformance.isLessThanOrEqualTo(90) ? '#FF9800' : '#F44336',
-            hasInfo: true,
-            onInfoPress: () => setIsBudgetModalVisible(true)
-        },
-        {
-            id: 'net-cash-flow',
-            title: "Net Cash Flow",
-            value: formatCurrencyAmount(netCashFlow, currency),
-            subValue: "This Month",
-            color: netCashFlow.isGreaterThanOrEqualTo(0) ? '#4CAF50' : '#F44336'
-        },
-        {
-            id: 'savings-rate',
-            title: "Savings Rate",
-            value: `${savingsRate.toFixed(1)}%`,
-            subValue: savingsRate.isLessThan(20) ? "Below Goal" : "Healthy",
-            color: savingsRate.isGreaterThanOrEqualTo(20) ? '#4CAF50' : '#FF9800'
-        },
-        {
-            id: 'total-income',
-            title: "Total Income",
-            value: formatCurrencyAmount(income, currency),
-            subValue: "This Month",
-            color: '#4CAF50'
-        },
-        {
-            id: 'total-expense',
-            title: "Total Expense",
-            value: formatCurrencyAmount(expense, currency),
-            subValue: "This Month",
-            color: '#F44336'
-        },
-        {
-            id: 'burn-rate',
-            title: "Burn Rate",
-            value: formatCurrencyAmount(burnRate, currency),
-            subValue: "Avg Monthly Expense",
-            color: undefined
-        },
-        {
-            id: 'avg-daily-spending',
-            title: "Daily Average",
-            value: formatCurrencyAmount(dailyAverage, currency),
-            subValue: "This Month",
-            color: undefined,
-            hasInfo: true,
-            onInfoPress: () => setIsDailyAvgModalVisible(true)
-        },
-        {
-            id: 'annual-spending',
-            title: "Annualized Exp.",
-            value: formatCurrencyAmount(burnRate.multipliedBy(12), currency),
-            subValue: "Based on Burn Rate",
-            color: undefined
-        },
-        {
-            id: 'largest-category',
-            title: "Top Category",
-            value: topExpenseCategory.name,
-            subValue: formatCurrencyAmount(topExpenseCategory.amount, currency),
-            color: undefined
-        }
-    ], [netCashFlow, income, expense, savingsRate, burnRate, currency, currentBalance, budgetPerformance, topExpenseCategory, dailyAverage]);
+    const data = useMemo(() => {
+        const isCurrentMonth = selectedDate.getMonth() === new Date().getMonth() && selectedDate.getFullYear() === new Date().getFullYear();
+        const monthLabel = isCurrentMonth ? "This Month" : selectedDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+
+        return [
+            {
+                id: 'financial-runway',
+                title: "Financial Runway",
+                value: currentBalance.isLessThanOrEqualTo(0) ? "0.0 months" : burnRate.isGreaterThan(0) ? `${currentBalance.dividedBy(burnRate).toFixed(1)} months` : "∞ months",
+                subValue: "Financial Safety Net",
+                color: currentBalance.dividedBy(burnRate).isGreaterThanOrEqualTo(6) ? '#4CAF50' : currentBalance.dividedBy(burnRate).isGreaterThanOrEqualTo(3) ? '#FF9800' : '#F44336',
+                hasInfo: true,
+                onInfoPress: () => setIsRunwayModalVisible(true)
+            },
+            {
+                id: 'budget-performance',
+                title: "Budget Health",
+                value: budgetPerformance.isGreaterThan(0) ? `${budgetPerformance.toFixed(0)}%` : "N/A",
+                subValue: budgetPerformance.isEqualTo(0) ? "No Budgets Set" : budgetPerformance.isLessThanOrEqualTo(100) ? "Under Budget" : "Over Budget",
+                color: budgetPerformance.isEqualTo(0) ? undefined : budgetPerformance.isLessThanOrEqualTo(70) ? '#4CAF50' : budgetPerformance.isLessThanOrEqualTo(90) ? '#FF9800' : '#F44336',
+                hasInfo: true,
+                onInfoPress: () => setIsBudgetModalVisible(true)
+            },
+            {
+                id: 'net-cash-flow',
+                title: "Net Cash Flow",
+                value: formatCurrencyAmount(netCashFlow, currency),
+                subValue: monthLabel,
+                color: netCashFlow.isGreaterThanOrEqualTo(0) ? '#4CAF50' : '#F44336'
+            },
+            {
+                id: 'savings-rate',
+                title: "Savings Rate",
+                value: `${savingsRate.toFixed(1)}%`,
+                subValue: savingsRate.isLessThan(20) ? "Below Goal" : "Healthy",
+                color: savingsRate.isGreaterThanOrEqualTo(20) ? '#4CAF50' : '#FF9800'
+            },
+            {
+                id: 'total-income',
+                title: "Total Income",
+                value: formatCurrencyAmount(income, currency),
+                subValue: monthLabel,
+                color: '#4CAF50'
+            },
+            {
+                id: 'total-expense',
+                title: "Total Expense",
+                value: formatCurrencyAmount(expense, currency),
+                subValue: monthLabel,
+                color: '#F44336'
+            },
+            {
+                id: 'burn-rate',
+                title: "Burn Rate",
+                value: formatCurrencyAmount(burnRate, currency),
+                subValue: "Avg Monthly Expense",
+                color: undefined
+            },
+            {
+                id: 'avg-daily-spending',
+                title: "Daily Average",
+                value: formatCurrencyAmount(dailyAverage, currency),
+                subValue: monthLabel,
+                color: undefined,
+                hasInfo: true,
+                onInfoPress: () => setIsDailyAvgModalVisible(true)
+            },
+            {
+                id: 'annual-spending',
+                title: "Annualized Exp.",
+                value: formatCurrencyAmount(burnRate.multipliedBy(12), currency),
+                subValue: "Based on Burn Rate",
+                color: undefined
+            },
+            {
+                id: 'largest-category',
+                title: "Top Category",
+                value: topExpenseCategory.name,
+                subValue: formatCurrencyAmount(topExpenseCategory.amount, currency),
+                color: undefined
+            }
+        ];
+    }, [netCashFlow, income, expense, savingsRate, burnRate, currency, currentBalance, budgetPerformance, topExpenseCategory, dailyAverage, selectedDate]);
 
     // Apply custom order if available
     const orderedData = useMemo(() => {
