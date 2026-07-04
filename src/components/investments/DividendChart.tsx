@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { formatCurrencyAmount, formatCompactNumber, formatCompactCurrency } from '@utils/currencyUtils';
@@ -176,37 +176,35 @@ export const DividendChart: React.FC<DividendChartProps> = ({
         const monthWidth = `${(100 / numColumns) - 2}%` as any;
 
         return (
-            <ScrollView showsVerticalScrollIndicator={true} style={{ flex: 1 }}>
-                <View style={styles.calendarGrid}>
-                    {months.map((month, idx) => {
-                        const events = calendarData[idx] || [];
-                        return (
-                            <View
-                                key={month}
-                                style={[
-                                    styles.calendarMonth,
-                                    {
-                                        width: monthWidth,
-                                        borderColor: colors.border,
-                                        backgroundColor: colors.surface
-                                    }
-                                ]}
-                            >
-                                <Text style={[styles.monthTitle, { color: colors.textSecondary }]}>{month}</Text>
-                                <View style={styles.assetList}>
-                                    {events.length > 0 ? events.map((ev, i) => (
-                                        <View key={i} style={[styles.assetBadge, { backgroundColor: colors.primary + '15' }]}>
-                                            <Text style={[styles.assetText, { color: colors.primary }]}>{ev.symbol}</Text>
-                                        </View>
-                                    )) : (
-                                        <Text style={{ fontSize: 8, color: colors.border, fontStyle: 'italic' }}>-</Text>
-                                    )}
-                                </View>
+            <View style={styles.calendarGrid}>
+                {months.map((month, idx) => {
+                    const events = calendarData[idx] || [];
+                    return (
+                        <View
+                            key={month}
+                            style={[
+                                styles.calendarMonth,
+                                {
+                                    width: monthWidth,
+                                    borderColor: colors.border,
+                                    backgroundColor: colors.surface
+                                }
+                            ]}
+                        >
+                            <Text style={[styles.monthTitle, { color: colors.textSecondary }]}>{month}</Text>
+                            <View style={styles.assetList}>
+                                {events.length > 0 ? events.map((ev, i) => (
+                                    <View key={i} style={[styles.assetBadge, { backgroundColor: colors.primary + '15' }]}>
+                                        <Text style={[styles.assetText, { color: colors.primary }]}>{ev.symbol}</Text>
+                                    </View>
+                                )) : (
+                                    <Text style={{ fontSize: 8, color: colors.border, fontStyle: 'italic' }}>-</Text>
+                                )}
                             </View>
-                        );
-                    })}
-                </View>
-            </ScrollView>
+                        </View>
+                    );
+                })}
+            </View>
         );
     };
 
@@ -270,7 +268,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                 {isLoading ? (
                     <Skeleton width="100%" height={220} borderRadius={12} />
                 ) : (
-                    <View style={{ height: 220 }}>
+                    <View style={activeTab === 'calendar' ? undefined : { height: 220 }}>
                         {renderContent()}
                     </View>
                 )}
