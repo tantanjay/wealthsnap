@@ -155,7 +155,7 @@ const ProfileScreen = ({ navigation }: any) => {
 
 
     return (
-        <ScreenWrapper>
+        <ScreenWrapper scrollable={false}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 <ProfileHeader />
 
