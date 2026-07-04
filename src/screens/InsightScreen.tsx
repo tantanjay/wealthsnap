@@ -252,7 +252,7 @@ const InsightScreen = ({ navigation }: any) => {
     }, [fetchAllData]);
 
     return (
-        <ScreenWrapper>
+        <ScreenWrapper scrollable={false}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 15 }}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
