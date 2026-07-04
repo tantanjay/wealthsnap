@@ -318,7 +318,7 @@ const InvestmentScreen = ({ navigation }: any) => {
     const activeSectionOrder = sectionOrder.length > 0 ? sectionOrder : defaultSectionOrder;
 
     return (
-        <ScreenWrapper style={{ paddingHorizontal: 0 }}>
+        <ScreenWrapper style={{ paddingHorizontal: 0 }} scrollable={false}>
             <ScrollView
                 contentContainerStyle={{ paddingBottom: 80 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
