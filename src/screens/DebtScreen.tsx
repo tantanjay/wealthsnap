@@ -55,7 +55,10 @@ const DebtScreen = ({ navigation }: any) => {
         // 1. Calculate Real Current Balances
         const allDebtsWithBalances = currentDebts.map(d => {
             const balance = DebtMetrics.calculateCurrentDebtBalance(d, currentTxns);
-            return { ...d, initialAmount: balance }; // Patching initialAmount for the helper
+            // Patching initialAmount to current balance for display/sorting helpers below,
+            // but keep the true original principal so FLAT-interest debts can still be
+            // projected correctly (FLAT interest is based on the original amount, not this patched balance).
+            return { ...d, initialAmount: balance, originalAmount: d.initialAmount };
         });
 
         const activeDebts = allDebtsWithBalances.filter(d => d.initialAmount.gt(0) && d.status === 'ACTIVE');
