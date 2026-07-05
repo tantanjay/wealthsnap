@@ -38,7 +38,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         const currentMonthTrans = getTransactionsByMonth(transactions, today);
 
         const currentData = getCurrentMonthCumulative(currentMonthTrans, today);
-        const avgData = getCumulativeSpendingCurve(transactions, period);
+        const avgData = getCumulativeSpendingCurve(transactions, period, today);
 
         const projectionData: number[] = [];
         // Only show projection for the current month

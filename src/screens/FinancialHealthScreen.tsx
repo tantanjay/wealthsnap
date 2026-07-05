@@ -264,7 +264,9 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             const potentialMonthlyInvest = BigNumber.maximum(currentMonthlyInvest, netFlowCap);
             const extraMonthlyInvest = potentialMonthlyInvest.minus(currentMonthlyInvest);
 
-            const activeDebts = debts.filter(d => d.status === 'ACTIVE');
+            // RECEIVABLE debts (money owed TO the user) aren't a liability - the Debt Pressure
+            // card and "isDebtFree" flag should only reflect debts the user actually owes.
+            const activeDebts = debts.filter(d => d.status === 'ACTIVE' && (d.direction || 'PAYABLE') === 'PAYABLE');
             let estimatedMonthlyInterest = new BigNumber(0);
             let totalLiability = new BigNumber(0);
 
