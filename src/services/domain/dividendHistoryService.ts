@@ -1,8 +1,55 @@
 import { BigNumber } from 'bignumber.js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDatabase } from "@services/database/databaseService";
 import { generateUUID } from "@utils/uuid";
 import { PortfolioHolding } from '@services/domain/investmentService';
+import { getAsset } from '@services/domain/assetService';
+import { fetchExchangeRate } from '@services/integrations/currencyService';
+import { decryptData } from '@services/core/encryptionService';
+import { ASYNC_KEYS } from '@constants/config';
 import { DividendHistory } from '@types';
+
+/**
+ * Helper to get user's default currency without importing storageService (circular dep prevention).
+ * Mirrors the same pattern used in priceHistoryService.ts
+ */
+const getDefaultCurrency = async (): Promise<string> => {
+    try {
+        const raw = await AsyncStorage.getItem(ASYNC_KEYS.USER_PROFILE);
+        if (raw) {
+            const decrypted: any = await decryptData(raw);
+            if (decrypted && decrypted.currency) {
+                return decrypted.currency;
+            }
+        }
+    } catch {
+        // ignore
+    }
+    return 'PHP';
+};
+
+/**
+ * dividend_history has no currency column - amounts are stored raw in the asset's native
+ * currency (both manual entry and the AI fetch save them unconverted). Convert to the user's
+ * profile currency here at read time, since callers compare/combine these amounts against
+ * profile-currency prices and holdings.
+ */
+const getDividendConversionRate = async (symbol: string): Promise<BigNumber> => {
+    try {
+        const [asset, profileCurrency] = await Promise.all([
+            getAsset(symbol),
+            getDefaultCurrency()
+        ]);
+
+        const assetCurrency = asset?.currency;
+        if (!assetCurrency || assetCurrency === profileCurrency) return new BigNumber(1);
+
+        const rate = await fetchExchangeRate(assetCurrency, profileCurrency);
+        return rate ? new BigNumber(rate) : new BigNumber(1);
+    } catch {
+        return new BigNumber(1);
+    }
+};
 
 // --- Queries ---
 
@@ -203,12 +250,13 @@ export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promi
 
         for (const holding of holdings) {
             const history = await db.getAllAsync<any>(GET_DIVIDEND_HISTORY_BY_SYMBOL_QUERY, [holding.symbol]);
+            const conversionRate = await getDividendConversionRate(holding.symbol);
 
             // Map to better objects
             const divEvents = history.map(d => ({
                 month: new Date(d.exDate).getMonth(), // 0-11
                 year: new Date(d.exDate).getFullYear(),
-                amount: new BigNumber(d.amount),
+                amount: new BigNumber(d.amount).times(conversionRate),
                 status: d.status
             }));
 
@@ -272,7 +320,8 @@ export const getAnnualDividend = async (symbol: string): Promise<number> => {
             total = total.plus(r.amount);
         });
 
-        return total.toNumber();
+        const conversionRate = await getDividendConversionRate(symbol);
+        return total.times(conversionRate).toNumber();
     } catch (error) {
         console.error(`Error calculating annual dividend per share for ${symbol}:`, error);
         return 0;
@@ -304,13 +353,14 @@ export const getDividendCalendar = async (holdings: PortfolioHolding[], year: nu
             // Get all dividend history for this symbol
             const query = `SELECT * FROM dividend_history WHERE symbol = ?`;
             const rows = await db.getAllAsync<any>(query, [holding.symbol]);
-            
+            const conversionRate = await getDividendConversionRate(holding.symbol);
+
             // Map to helper objects
             const events = rows.map(r => ({
                 month: new Date(r.exDate).getMonth(),
                 year: new Date(r.exDate).getFullYear(),
                 symbol: r.symbol,
-                amount: new BigNumber(r.amount).toNumber(),
+                amount: new BigNumber(r.amount).times(conversionRate).toNumber(),
                 paymentDate: r.paymentDate,
                 exDate: r.exDate,
                 status: r.status
