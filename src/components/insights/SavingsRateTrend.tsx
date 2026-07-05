@@ -43,7 +43,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
     }, [timeRange, transactions, selectedDate]);
 
     const savingsData = useMemo(() => {
-        const data = getSavingsRateTrend(transactions, monthsToLoad);
+        const data = getSavingsRateTrend(transactions, monthsToLoad, selectedDate);
 
         // Optimize labels for large datasets (prevent overcrowding)
         const labels = data.map((d, index) => {
@@ -69,7 +69,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
             }],
             rawData: data
         };
-    }, [transactions, monthsToLoad, colors.primary]);
+    }, [transactions, monthsToLoad, colors.primary, selectedDate]);
 
     // Pointer Config for Tap & Drag
     const pointerConfig = useMemo(() => ({

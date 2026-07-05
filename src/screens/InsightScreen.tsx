@@ -120,22 +120,28 @@ const InsightScreen = ({ navigation }: any) => {
         // Breakdowns & Trends
         const incomeBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'INCOME', 'ITEM'); // Income always by Item (specific source)
         const expenseBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', grouping);
-        const monthlyTrends = Metrics.getMonthlyTrends(currentTransactions, 6);
+        const monthlyTrends = Metrics.getMonthlyTrends(currentTransactions, 6, today);
 
-        // Averages for Runway
-        const average6Month = Metrics.calculateBurnRate(currentTransactions, 6);
-        const average1Year = Metrics.calculateBurnRate(currentTransactions, 12);
-        const average3Month = Metrics.calculateBurnRate(currentTransactions, 3);
+        // Averages for Runway/Burn Rate cards - always "as of today", since Runway is framed
+        // as "if your income stopped today", regardless of which month is being browsed.
+        const runwayAverage6Month = Metrics.calculateBurnRate(currentTransactions, 6);
+        const runwayAverage3Month = Metrics.calculateBurnRate(currentTransactions, 3);
 
         // Burn Rate logic: Fallback hierarchy to ensure Runway doesn't show NaN
-        let burnRate = average6Month;
+        let burnRate = runwayAverage6Month;
         if (burnRate.isLessThanOrEqualTo(0)) {
-            burnRate = average3Month.isGreaterThan(0) ? average3Month : totals.expense;
+            burnRate = runwayAverage3Month.isGreaterThan(0) ? runwayAverage3Month : totals.expense;
         }
 
         // --- INJECT DEBT OBLIGATIONS ---
         const totalDebtObligations = calculateTotalDebtObligations(currentDebts);
         burnRate = burnRate.plus(totalDebtObligations);
+
+        // Averages for the Spending Comparison chart - relative to the browsed month, so
+        // "This Month" and "Avg 3M/6M/1Y" are comparing the same point in time.
+        const average6Month = Metrics.calculateBurnRate(currentTransactions, 6, today);
+        const average1Year = Metrics.calculateBurnRate(currentTransactions, 12, today);
+        const average3Month = Metrics.calculateBurnRate(currentTransactions, 3, today);
 
         const allTimeTotals = Metrics.calculateTotals(currentTransactions);
 

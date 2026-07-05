@@ -137,8 +137,9 @@ export const calculateFreedomAcceleration = (
     const MAX_SIM_MONTHS = MAX_SIM_YEARS * 12;
 
     const calcYearsToGoal = (p: number, pmt: number, r: number, target: number): number => {
-        if (pmt <= 0) return MAX_SIM_YEARS;
-
+        // No early-return for pmt <= 0: existing capital can still compound to the target on
+        // its own with zero new contributions. The MAX_SIM_MONTHS cap below already keeps this
+        // safe (it naturally bottoms out at MAX_SIM_YEARS if growth truly never reaches target).
         let n = 0;
         let current = p;
         const monthlyRate = r / 12;
