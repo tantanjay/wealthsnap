@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,7 +41,12 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
 
     // Time Range Filter Logic
     const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
-    const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
+    const [selectedYear, setSelectedYear] = React.useState(selectedDate.getFullYear());
+
+    // Keep the in-chart year selector aligned with the month picker at the top of Insights
+    useEffect(() => {
+        setSelectedYear(selectedDate.getFullYear());
+    }, [selectedDate]);
 
     const availableYears = useMemo(() => {
         if (transactions.length === 0) return [new Date().getFullYear()];
@@ -59,18 +64,18 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
         if (transactions.length === 0) return 6;
         const dates = transactions.map(t => new Date(t.date).getTime());
         const minDate = new Date(Math.min(...dates));
-        const today = new Date();
+        const today = selectedDate;
         const diff = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth()) + 1;
         return Math.max(diff, 6); // Ensure at least 6 months shown even if data is new
-    }, [timeRange, transactions]);
+    }, [timeRange, transactions, selectedDate]);
 
     // Recalculate trends based on selected time range
     const activeMonthlyTrends = useMemo(() => {
         if (timeRange === '1Y') {
             return getMonthlyTrendsForYear(transactions, selectedYear);
         }
-        return getMonthlyTrends(transactions, monthsToLoad);
-    }, [transactions, monthsToLoad, timeRange, selectedYear]);
+        return getMonthlyTrends(transactions, monthsToLoad, selectedDate);
+    }, [transactions, monthsToLoad, timeRange, selectedYear, selectedDate]);
 
     const pieData = categoryBreakdown.map((item, index) => ({
         name: item.name,

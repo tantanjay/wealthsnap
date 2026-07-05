@@ -60,8 +60,8 @@ export const calculateSavingsRate = (income: BigNumber, expense: BigNumber): Big
     return savings.dividedBy(income).times(100);
 };
 
-export const getSavingsRateTrend = (transactions: Transaction[], months: number = 6) => {
-    const trends = getMonthlyTrends(transactions, months);
+export const getSavingsRateTrend = (transactions: Transaction[], months: number = 6, referenceDate: Date = new Date()) => {
+    const trends = getMonthlyTrends(transactions, months, referenceDate);
 
     return trends.labels.map((month, index) => {
         const income = trends.incomeData[index];
@@ -72,12 +72,15 @@ export const getSavingsRateTrend = (transactions: Transaction[], months: number 
         // But we kept 'calculateTotals' pure (Expenses only) for other metrics.
         // So we calculate debt payments for this specific month here.
 
-        const d = new Date();
+        const d = new Date(referenceDate);
         d.setMonth(d.getMonth() - (months - 1 - index)); // Re-calculate date for this index
         const monthlyTransactions = getTransactionsByMonth(transactions, d);
 
+        // subCategory === 'PRINCIPAL' excludes the one-time "lent this money out" transaction
+        // created when a RECEIVABLE debt is first added (also TRANSFER_OUT with debtId set,
+        // but subCategory 'INITIAL_TRANSACTION') - that's a new loan, not a repayment.
         const debtRepayments = monthlyTransactions
-            .filter(t => t.type === 'TRANSFER_OUT' && t.debtId)
+            .filter(t => t.type === 'TRANSFER_OUT' && t.debtId && t.subCategory === 'PRINCIPAL')
             .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
 
         expense = expense.plus(debtRepayments);
@@ -313,7 +316,7 @@ export const getCategoryBreakdown = (transactions: Transaction[], type: Breakdow
         .sort((a, b) => b.amount.comparedTo(a.amount) ?? 0);
 };
 
-export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: number = 6) => {
+export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: number = 6, referenceDate: Date = new Date()) => {
     const result = {
         labels: [] as string[],
         fullLabels: [] as string[],
@@ -322,7 +325,7 @@ export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: num
         netCashFlowData: [] as BigNumber[]
     };
 
-    const today = new Date();
+    const today = referenceDate;
     for (let i = monthsBack - 1; i >= 0; i--) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         result.labels.push(d.toLocaleString('default', { month: 'short' }));
@@ -372,8 +375,8 @@ export const getMonthlyTrendsForYear = (allTransactions: Transaction[], year: nu
 
 // --- PULSE CHART METRICS ---
 
-export const getCumulativeSpendingCurve = (allTransactions: Transaction[], monthsBack: number): number[] => {
-    const today = new Date();
+export const getCumulativeSpendingCurve = (allTransactions: Transaction[], monthsBack: number, referenceDate: Date = new Date()): number[] => {
+    const today = referenceDate;
     const dailySums: BigNumber[] = new Array(31).fill(null).map(() => new BigNumber(0));
     let count = 0;
 
