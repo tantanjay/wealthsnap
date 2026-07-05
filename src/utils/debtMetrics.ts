@@ -84,17 +84,28 @@ export const calculateProjectedDebtLiability = (debt: Debt, currentPrincipalBala
 };
 
 export const calculateTotalDebtObligations = (debts: Debt[]): BigNumber => {
+    // RECEIVABLE debts are money owed TO the user, not a liability - only PAYABLE
+    // debts should count toward "obligations" (burn rate, monthly payments, etc.)
     return debts
-        .filter(d => d.status === 'ACTIVE')
+        .filter(d => d.status === 'ACTIVE' && (d.direction || 'PAYABLE') === 'PAYABLE')
         .reduce((sum, d) => sum.plus(d.minPayment), new BigNumber(0));
 };
 
 export const calculatePrevDebtObligations = (debts: Debt[], date: Date): BigNumber => {
     return debts.reduce((sum, debt) => {
+        if ((debt.direction || 'PAYABLE') !== 'PAYABLE') return sum;
+
         // Only include if debt existed at that date
         // Use startDate or createdAt
         const startDate = new Date(debt.startDate || debt.createdAt);
-        if (startDate <= date && debt.status === 'ACTIVE') {
+        if (startDate > date) return sum;
+
+        // `status` has no history - a debt that's PAID_OFF today doesn't tell us WHEN it was
+        // paid off. Approximate using `updatedAt` (normally the payoff edit): if that's after
+        // `date`, the debt was still active as of the historical date in question.
+        const wasActiveAsOfDate = debt.status === 'ACTIVE' || new Date(debt.updatedAt) > date;
+
+        if (wasActiveAsOfDate) {
             return sum.plus(debt.minPayment);
         }
         return sum;

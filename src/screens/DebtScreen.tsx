@@ -226,12 +226,16 @@ const DebtScreen = ({ navigation }: any) => {
             setIsSubmitting(true);
             const now = new Date().toISOString();
 
+            // PAYABLE (you owe): repaying reduces your cash and interest is a cost.
+            // RECEIVABLE (owed to you): being repaid increases your cash and interest is income.
+            const isPayable = (selectedDebt.direction || 'PAYABLE') === 'PAYABLE';
+
             let principalTxId = '';
-            // 1. Principal Payment (TRANSFER_OUT)
+            // 1. Principal Payment
             if (!pAmount.isNaN() && pAmount.gt(0)) {
                 const principalTx: Transaction = {
                     id: generateUUID(),
-                    type: 'TRANSFER_OUT',
+                    type: isPayable ? 'TRANSFER_OUT' : 'TRANSFER_IN',
                     amount: pAmount.abs(),
                     category: 'Loans',
                     subCategory: 'PRINCIPAL',
@@ -247,11 +251,11 @@ const DebtScreen = ({ navigation }: any) => {
                 principalTxId = principalTx.id;
             }
 
-            // 2. Interest Payment (EXPENSE)
+            // 2. Interest Payment (EXPENSE if you're paying it, INCOME if you're earning it)
             if (!iAmount.isNaN() && iAmount.gt(0)) {
                 const interestTx: Transaction = {
                     id: generateUUID(),
-                    type: 'EXPENSE',
+                    type: isPayable ? 'EXPENSE' : 'INCOME',
                     amount: iAmount.abs(),
                     category: 'Interest',
                     subCategory: 'INTEREST',

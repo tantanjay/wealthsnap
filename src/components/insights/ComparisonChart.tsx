@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,7 +30,12 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
     const [selectedBarIndex, setSelectedBarIndex] = React.useState<number | null>(null);
     const [activeView, setActiveView] = React.useState<'COMPARISON' | 'MONTHLY'>('COMPARISON');
     const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
-    const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
+    const [selectedYear, setSelectedYear] = React.useState(selectedDate.getFullYear());
+
+    // Keep the in-chart year selector aligned with the month picker at the top of Insights
+    useEffect(() => {
+        setSelectedYear(selectedDate.getFullYear());
+    }, [selectedDate]);
 
     const availableYears = useMemo(() => {
         if (transactions.length === 0) return [new Date().getFullYear()];
@@ -49,18 +54,18 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
         if (transactions.length === 0) return 6;
         const dates = transactions.map(t => new Date(t.date).getTime());
         const minDate = new Date(Math.min(...dates));
-        const today = new Date();
+        const today = selectedDate;
         const diff = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth()) + 1;
         return Math.max(diff, 6);
-    }, [timeRange, transactions]);
+    }, [timeRange, transactions, selectedDate]);
 
     // Recalculate trends based on selected time range
     const activeMonthlyTrends = useMemo(() => {
         if (activeView === 'MONTHLY' && timeRange === '1Y') {
             return getMonthlyTrendsForYear(transactions, selectedYear);
         }
-        return getMonthlyTrends(transactions, monthsToLoad);
-    }, [transactions, monthsToLoad, activeView, timeRange, selectedYear]);
+        return getMonthlyTrends(transactions, monthsToLoad, selectedDate);
+    }, [transactions, monthsToLoad, activeView, timeRange, selectedYear, selectedDate]);
 
     // Pro-rate current month spending to estimate full month
     const referenceDate = selectedDate;
@@ -251,20 +256,23 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                 return labels.map((label, index) => {
                                     const today = new Date();
                                     const isActualCurrentMonth = selectedYear === today.getFullYear() && index === today.getMonth();
-                                    const isCurrentMonth = timeRange === '1Y' ? isActualCurrentMonth : (index === labels.length - 1);
+                                    // Only pro-rate/project a bar if it's the REAL current month (partial data).
+                                    // A fully-completed past month (e.g. browsing history via the month picker)
+                                    // should never be projected, even if it happens to be the last bar loaded.
+                                    const isProjectableBar = timeRange === '1Y' ? isActualCurrentMonth : (index === labels.length - 1 && isCurrentMonth);
 
                                     const actual = rawData[index] || new BigNumber(0);
-                                    const value = isCurrentMonth ? proRatedExpense : actual;
+                                    const value = isProjectableBar ? proRatedExpense : actual;
 
                                     const showLabelInterval = Math.ceil(labels.length / 6);
                                     const shouldShowLabel = index === 0 || index === labels.length - 1 || index % showLabelInterval === 0;
 
                                     return {
-                                        label: shouldShowLabel ? (isCurrentMonth ? label + "*" : label) : '',
-                                        fullLabel: isCurrentMonth ? fullLabels[index] + "*" : fullLabels[index],
+                                        label: shouldShowLabel ? (isProjectableBar ? label + "*" : label) : '',
+                                        fullLabel: isProjectableBar ? fullLabels[index] + "*" : fullLabels[index],
                                         value,
                                         actual,
-                                        isProjected: isCurrentMonth
+                                        isProjected: isProjectableBar
                                     };
                                 });
                             })();
