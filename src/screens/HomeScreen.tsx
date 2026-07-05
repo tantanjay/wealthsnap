@@ -15,7 +15,7 @@ import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
-import { UserProfile, Transaction, Investment } from '@types';
+import { UserProfile, Transaction, Investment, Debt } from '@types';
 import {
     getTransactionsByMonth,
     getCumulativeSpendingCurve,
@@ -350,6 +350,10 @@ const HomeScreen = ({ navigation }: any) => {
 
             let currentTotalDebt = new BigNumber(0);
 
+            // Principal repayments move opposite cash depending on who owes whom:
+            // PAYABLE (you owe) -> repayments are TRANSFER_OUT; RECEIVABLE (owed to you) -> repayments are TRANSFER_IN
+            const getRepaymentTxType = (debt: Debt) => (debt.direction || 'PAYABLE') === 'PAYABLE' ? 'TRANSFER_OUT' : 'TRANSFER_IN';
+
             allDebts.forEach(debt => {
                 // 1. Borrowed
                 totalBorrowed = totalBorrowed.plus(debt.initialAmount);
@@ -363,13 +367,14 @@ const HomeScreen = ({ navigation }: any) => {
 
                 // 2. Repaid (Payments) & Interest
                 const payments = getDebtTransactions(debt.id);
+                const repaymentTxType = getRepaymentTxType(debt);
 
                 // User Logic:
-                // Repaid = TRANSFER_OUT linked to debtId (Principal Payment)
+                // Repaid = Principal payment linked to debtId (TRANSFER_OUT for PAYABLE, TRANSFER_IN for RECEIVABLE)
                 // Interest = EXPENSE linked to debtId (excluding 'INITIAL_TRANSACTION' which is Fees)
 
                 const debtPrincipalRepaid = payments.reduce((sum, tx) => {
-                    if (tx.type === 'TRANSFER_OUT') {
+                    if (tx.type === repaymentTxType) {
                         return sum.plus(tx.amount.abs());
                     }
                     return sum;
@@ -380,7 +385,7 @@ const HomeScreen = ({ navigation }: any) => {
                 // Month Repaid
                 const monthPayments = getDebtTransactions(debt.id, true);
                 const monthPrincipalRepaid = monthPayments.reduce((sum, tx) => {
-                    if (tx.type === 'TRANSFER_OUT') {
+                    if (tx.type === repaymentTxType) {
                         return sum.plus(tx.amount.abs());
                     }
                     return sum;
@@ -406,8 +411,9 @@ const HomeScreen = ({ navigation }: any) => {
                 if (debt.status === 'ACTIVE') {
                     // 1. Calculate current principal balance
                     const payments = getDebtTransactions(debt.id);
+                    const repaymentTxType = getRepaymentTxType(debt);
                     const principalRepaid = payments.reduce((sum, tx) => {
-                        if (tx.type === 'TRANSFER_OUT') return sum.plus(tx.amount.abs());
+                        if (tx.type === repaymentTxType) return sum.plus(tx.amount.abs());
                         return sum;
                     }, new BigNumber(0));
 
@@ -429,11 +435,12 @@ const HomeScreen = ({ navigation }: any) => {
                     // Get all payments for this debt in current month
                     const monthPayments = getDebtTransactions(debt.id, true);
 
-                    // Sum of Principal (TRANSFER_OUT) + Interest (EXPENSE)
+                    // Sum of Principal (repayment type) + Interest (EXPENSE)
                     // Note: We exclude INITIAL_TRANSACTION fees if present, though typically they are one-off.
                     // We want to capture regular monthly payments.
+                    const repaymentTxType = getRepaymentTxType(debt);
                     const totalPaid = monthPayments.reduce((sum, tx) => {
-                        if (tx.type === 'TRANSFER_OUT' || (tx.type === 'EXPENSE' && tx.subCategory !== 'INITIAL_TRANSACTION')) {
+                        if (tx.type === repaymentTxType || (tx.type === 'EXPENSE' && tx.subCategory !== 'INITIAL_TRANSACTION')) {
                             return sum.plus(tx.amount.abs());
                         }
                         return sum;
