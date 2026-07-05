@@ -179,6 +179,10 @@ export const DividendChart: React.FC<DividendChartProps> = ({
             <View style={styles.calendarGrid}>
                 {months.map((month, idx) => {
                     const events = calendarData[idx] || [];
+                    // 12 months divides evenly by both 3 and 4 columns, so the last row is always
+                    // the final `numColumns` cells - skip their bottom margin so the grid doesn't
+                    // add a trailing gap the card then has to accommodate.
+                    const isLastRow = idx >= months.length - numColumns;
                     return (
                         <View
                             key={month}
@@ -188,7 +192,8 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                                     width: monthWidth,
                                     borderColor: colors.border,
                                     backgroundColor: colors.surface
-                                }
+                                },
+                                isLastRow && { marginBottom: 0 }
                             ]}
                         >
                             <Text style={[styles.monthTitle, { color: colors.textSecondary }]}>{month}</Text>
@@ -268,7 +273,11 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                 {isLoading ? (
                     <Skeleton width="100%" height={220} borderRadius={12} />
                 ) : (
-                    <View style={activeTab === 'calendar' ? undefined : { height: 220 }}>
+                    // key={activeTab} forces a clean remount per tab instead of reusing the same
+                    // native node across drastically different content shapes (fixed-height bar
+                    // chart vs. content-sized calendar grid), which was leaving stale layout
+                    // sizing behind when switching back from Calendar to Actual/Projected.
+                    <View key={activeTab} style={activeTab === 'calendar' ? undefined : { height: 220 }}>
                         {renderContent()}
                     </View>
                 )}
