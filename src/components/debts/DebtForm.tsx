@@ -196,18 +196,19 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                     txnType = 'TRANSFER_OUT';
                 }
 
-                const netAmount = initialAmountBN.minus(feesBN);
-
                 // Main Transaction
+                // NOTE: Use the full initialAmount here, not netted against fees. Fees are
+                // recorded as their own EXPENSE transaction below, so netting here as well
+                // would subtract the fee from your cash balance twice.
                 const mainTxn: Transaction = {
                     id: generateUUID(),
                     date: new Date().toISOString(),
-                    amount: netAmount,
+                    amount: initialAmountBN,
                     type: txnType,
                     category: 'Loans',
                     subCategory: 'INITIAL_TRANSACTION',
                     transferAccount: debtType,
-                    note: `Initial record for ${name}${feesBN.gt(0) ? ' (Net of fees)' : ''}`,
+                    note: `Initial record for ${name}`,
                     creationMethod: 'MANUAL',
                     isRecurring: false,
                     debtId: newDebt.id,
