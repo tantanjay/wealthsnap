@@ -117,7 +117,11 @@ export const calculateCurrentDebtBalance = (debt: Debt, transactions: Transactio
 };
 
 export const calculateDebtPayoffStrategy = (
-    debts: Debt[],
+    // `originalAmount` is optional: it's the TRUE original principal, needed to project
+    // FLAT interest correctly (which is calculated on the original amount, not the shrinking
+    // balance). Callers that patch `initialAmount` to the current balance should pass the
+    // real original amount here too; if omitted, FLAT debts fall back to using the balance.
+    debts: (Debt & { originalAmount?: BigNumber })[],
     extraPayment: number,
     strategy: 'SNOWBALL' | 'AVALANCHE'
 ) => {
@@ -147,8 +151,10 @@ export const calculateDebtPayoffStrategy = (
     let currentDebts = activeDebts.map(d => ({
         id: d.id,
         balance: d.initialAmount, // This MUST be current balance
+        originalAmount: d.originalAmount || d.initialAmount, // True original principal, for FLAT interest
         rate: d.interestRate.div(100).div(12),
         minPayment: d.minPayment,
+        interestType: d.interestType || 'FIXED',
         name: d.name
     }));
 
@@ -162,8 +168,17 @@ export const calculateDebtPayoffStrategy = (
         // 1. Pay minimums
         currentDebts.forEach(d => {
             if (d.balance.gt(0)) {
-                // Interest
-                const interest = d.balance.times(d.rate);
+                // Interest - respects interestType, same branching as calculateDebtSchedule
+                let interest: BigNumber;
+                if (d.interestType === 'NONE') {
+                    interest = new BigNumber(0);
+                } else if (d.interestType === 'FLAT') {
+                    // Flat interest is calculated on the original principal, not the shrinking balance
+                    interest = d.originalAmount.times(d.rate);
+                } else {
+                    // FIXED / VARIABLE (reducing balance)
+                    interest = d.balance.times(d.rate);
+                }
                 totalInterestPaid = totalInterestPaid.plus(interest);
                 d.balance = d.balance.plus(interest);
 
