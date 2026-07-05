@@ -8,6 +8,140 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.13.0] — 2026-07-05
+
+### Fixed
+- **Debt Tracker Accuracy**
+  - "Pay Now" on a Receivable debt (money owed to you) no longer deducts from your cash balance — repayments now correctly record as income/transfer-in, and earned interest posts as Income instead of an Expense.
+  - Home Screen "Total Debt"/"Repaid" figures now correctly reflect repayments on Receivable debts.
+  - Fixed double-counted fees when creating a new debt with "Yes, I received the cash" and a processing fee.
+  - Debt Strategy screen's payoff simulation now correctly models Flat-interest loans instead of treating every debt as reducing-balance, which previously understated total interest and overstated the debt-free date.
+  - Savings Rate no longer miscounts originating a new loan to someone as an ongoing debt repayment.
+- **Investment & Dividend Accuracy**
+  - Dividend Yield %, Projected Dividends, and the Dividend Calendar now correctly convert foreign-currency dividends into the profile currency, instead of comparing raw foreign amounts against profile-currency prices.
+- **Financial Insights**
+  - Browsing a past month via the month/year picker now correctly updates the Spending Comparison, Income Trend, Savings Rate, and Monthly Pulse average-comparison charts, instead of silently comparing the selected month against today's rolling averages.
+  - The in-chart year selector (1Y trend view) now stays in sync with the month picker.
+- **Financial Health**
+  - Receivable debts (money owed to you) are no longer counted as your own liability - fixes inflated Financial Runway burn rate, Debt Pressure interest cost/liability, and an incorrect "still has debt" state for users with zero real debt.
+  - "Years to Financial Independence" no longer defaults to a flat 500 years for users with existing portfolio value but no active monthly contribution; it now accounts for compound growth on existing capital.
+  - Improved accuracy of the month-over-month Runway Change trend for debts paid off since the prior month.
+
+### Maintenance
+- Updated dependencies and patched known security vulnerabilities.
+
+---
+
+## [1.12.0] — 2026-05-11
+
+### Added
+- **Historical Monthly Insights**
+  - New month and year selector on the Financial Insights screen for browsing any previous month/year.
+  - Calendar-style month picker with direct jump-to-month navigation.
+  - All charts, overview cards, and trend analyses react to the selected date, with projected data hidden for historical months.
+  - "Back to Today" shortcut.
+- **Redesigned Dividend Dashboard**
+  - New tabbed layout: Actual, Calendar, and Projected income views.
+  - Tap any chart bar to see which assets paid you that month.
+  - Dividends logged as direct income are now automatically captured for accurate charts.
+- **Insight & Analysis Upgrades**
+  - Comparison chart now includes a Trend/Compare toggle.
+  - Yearly data browsing for the 1Y trend view via year selector chevrons.
+  - Current month now shows a projected spending bar based on pace so far.
+
+### Improved
+- **Smart Advisor**
+  - Fixed inconsistent "Balance" suggestions; alerts are now intelligently merged and prioritized.
+  - Resolved pagination and scrolling issues in the carousel.
+  - Added an "Alert Hierarchy" explanation in the info modal.
+
+### Maintenance
+- Updated all dependencies to their latest versions.
+
+---
+
+## [1.11.2] — 2026-03-24
+
+### Maintenance
+- Bumped multiple core Expo libraries to their latest stable patch versions for stability and performance.
+
+---
+
+## [1.11.1] — 2026-03-11
+
+### Added
+- **Over-the-Air (OTA) Updates**
+  - Enabled EAS Update infrastructure to deliver bug fixes without a Play Store download.
+  - \\\`bsdiff\\\` patch support for smaller, faster update downloads.
+
+### Changed
+- Migrated background synchronization from the deprecated \\\`expo-background-fetch\\\` to \\\`expo-background-task\\\`.
+
+### Improved
+- App now automatically respects the device's system theme; "System" appearance syncs with OS Dark/Light mode.
+
+---
+
+## [1.11.0] — 2026-03-09
+
+### Added
+- **Supporter Screen**
+  - Introduced a dedicated supporter recognition screen.
+  - Displays supporter names with dynamic animated styles.
+
+### Maintenance
+- **Platform Upgrade: Expo 55**
+  - Migrated core dependencies to Expo 55, React 19, and React Native 0.83.
+  - Resolved \\\`react-hooks/exhaustive-deps\\\` warnings in \\\`ThankYouScreen\\\`.
+  - Refined internal build configuration and dependency trees.
+
+---
+
+## [1.10.2] — 2026-03-04
+
+### Added
+- **Bi-Annual Recurrence**
+  - Added support for every-6-months frequency for both transactions and reminders.
+  - Implemented bi-annual pattern matching logic in the recurrence and notification services.
+
+### Improved
+- **Transaction Categories**
+  - Added smart horizontal scrolling when selecting a category via search.
+  - Refined scroll offset to maintain "Search" button visibility.
+  - Stabilized selection behavior to avoid unwanted jumps during direct taps.
+
+### Maintenance
+- Internal security audit and dependency updates.
+- General performance refinements and platform compatibility checks.
+
+---
+
+## [1.10.1] — 2026-02-19
+
+### Added
+- **Debt Backup & Restore**
+  - Full support for Debt records in app backups.
+  - Secure encryption and restoration of liabilities.
+- **History Screen Filters**
+  - New single-tap filters for Income, Expenses, Investments, Debts, and Cash Flow.
+  - Keyword search for notes, categories, and asset symbols.
+
+### Improved
+- **Debt Management**
+  - Added ability to record associated fees as an expense when using direct vendor payments.
+- **Wealth Growth Analytics**
+  - Projected paths now strictly use verified cash flow data for higher accuracy.
+  - "Potential Investment" logic now excludes partial-month income to prevent inflation.
+  - Refined Cash Flow aggregation to prevent double-counting transfers in growth stats.
+
+### Fixed
+- **Security**
+  - Resolved PIN conflict where reminder modals could appear over the security screen.
+- **Persistence**
+  - Fixed a bug where Home Screen dashboard card preferences were not correctly saved between sessions.
+
+---
+
 ## [1.10.0] — 2026-02-16
 
 ### Added
