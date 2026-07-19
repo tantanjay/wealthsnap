@@ -31,7 +31,11 @@ export const useAIConsent = () => {
 
         showAlert(
             "AI Data Usage Consent",
-            "WealthSnap will send this data to Google Gemini for analysis. \n\nWe may send receipt images or stock symbol lists to Gemini API for processing. Do you consent?",
+            "WealthSnap sends data to Google Gemini to power AI features. Depending on what you use, this can include:\n\n" +
+            "• Receipt images, for scanning\n" +
+            "• Stock/asset symbols, for price and dividend lookups\n" +
+            "• Your financial summary (monthly income/expense breakdowns, investments, debts, and an overall net worth snapshot), for Chat\n\n" +
+            "Do you consent?",
             [
                 {
                     text: "Cancel",
@@ -43,7 +47,7 @@ export const useAIConsent = () => {
                 {
                     text: "I Consent",
                     onPress: async () => {
-                        await AIConsentService.setConsented(true);
+                        await AIConsentService.setConsented();
                         onConsent();
                     }
                 }

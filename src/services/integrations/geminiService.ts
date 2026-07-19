@@ -13,7 +13,7 @@ import { EXPENSE_CATEGORIES } from '@constants/categories';
 let genAIInstance: GoogleGenAI | null = null;
 let currentApiKey: string | null = null;
 
-const getGeminiClient = async () => {
+export const getGeminiClient = async () => {
     // 1. Try Storage
     const config = await getAIConfig();
     let apiKey = config?.apiKey;
@@ -77,7 +77,7 @@ const calculateImageTokens = (width: number, height: number): number => {
     return wTiles * hTiles * TOKENS_PER_IMAGE_BASE;
 };
 
-const estimateTokens = (text: string) => {
+export const estimateTokens = (text: string) => {
     const isJson = text.trim().startsWith('{') || text.trim().startsWith('[');
     return isJson ? Math.ceil(text.length / 3.2) : Math.ceil(text.length / 4);
 };
@@ -85,7 +85,7 @@ const estimateTokens = (text: string) => {
 // Gemini 3.x only accepts thinkingConfig.thinkingLevel; sending it to 2.5/1.5 models is a hard 400 error.
 const isGemini3Model = (modelName: string) => modelName.toLowerCase().includes('gemini-3');
 
-const withThinkingLevel = (modelName: string, level: ThinkingLevel) => {
+export const withThinkingLevel = (modelName: string, level: ThinkingLevel) => {
     return isGemini3Model(modelName) ? { thinkingConfig: { thinkingLevel: level } } : {};
 };
 
@@ -95,7 +95,13 @@ interface GeminiUsageMetadata {
     thoughtsTokenCount?: number;
 }
 
-const logUsage = async (endpoint: string, promptText: string, responseText: string, imageTokens: number, imageCount: number, durationMs: number, modelName: string = 'unknown', status: 'success' | 'error' = 'success', usage?: GeminiUsageMetadata) => {
+export interface LoggedUsage {
+    inputTokens: number;
+    outputTokens: number;
+    costUSD: BigNumber;
+}
+
+export const logUsage = async (endpoint: string, promptText: string, responseText: string, imageTokens: number, imageCount: number, durationMs: number, modelName: string = 'unknown', status: 'success' | 'error' = 'success', usage?: GeminiUsageMetadata): Promise<LoggedUsage> => {
     try {
         // Prefer the API's own token counts (captures thinking tokens); fall back to estimation on error paths.
         const inputTokens = usage?.promptTokenCount ?? (estimateTokens(promptText) + imageTokens);
@@ -150,8 +156,10 @@ const logUsage = async (endpoint: string, promptText: string, responseText: stri
         };
 
         await saveAIUsageLog(log);
+        return { inputTokens, outputTokens, costUSD: new BigNumber(totalCost) };
     } catch (e) {
         console.error('Failed to log usage:', e);
+        return { inputTokens: 0, outputTokens: 0, costUSD: new BigNumber(0) };
     }
 };
 

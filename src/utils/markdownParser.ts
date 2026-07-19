@@ -1,5 +1,22 @@
 import { ContentItem } from '@constants/helpContent';
 
+export interface InlineSegment {
+    text: string;
+    bold: boolean;
+}
+
+// Splits a line on **bold** markers into plain/bold runs, e.g. for rendering
+// inline emphasis inside a <Text> without a full markdown-to-JSX library.
+export const splitBoldSegments = (text: string): InlineSegment[] => {
+    return text
+        .split(/(\*\*.*?\*\*)/g)
+        .filter(Boolean)
+        .map(part => (part.startsWith('**') && part.endsWith('**'))
+            ? { text: part.slice(2, -2), bold: true }
+            : { text: part, bold: false }
+        );
+};
+
 export const parseMarkdownToContentItems = (markdown: string): ContentItem[] => {
     const lines = markdown.split('\n');
     const items: ContentItem[] = [];
