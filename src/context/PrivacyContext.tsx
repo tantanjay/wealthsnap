@@ -1,20 +1,29 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ASYNC_KEYS } from '@constants/config';
 
+// How long a "reveal for screenshot" override lasts before protection resumes.
+const SCREENSHOT_REVEAL_DURATION_MS = 15000;
+
 interface PrivacyContextType {
     isPrivacyEnabled: boolean;
     togglePrivacy: () => void;
+    isScreenshotRevealActive: boolean;
+    revealForScreenshot: () => void;
 }
 
 const PrivacyContext = createContext<PrivacyContextType>({
     isPrivacyEnabled: false,
     togglePrivacy: () => { },
+    isScreenshotRevealActive: false,
+    revealForScreenshot: () => { },
 });
 
 export const PrivacyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isPrivacyEnabled, setIsPrivacyEnabled] = useState(false);
+    const [isScreenshotRevealActive, setIsScreenshotRevealActive] = useState(false);
+    const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         loadPrivacySetting();
@@ -41,8 +50,20 @@ export const PrivacyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
     };
 
+    // Temporarily bypasses screenshot protection without persisting or unmasking anything.
+    const revealForScreenshot = () => {
+        if (revealTimerRef.current) {
+            clearTimeout(revealTimerRef.current);
+        }
+        setIsScreenshotRevealActive(true);
+        revealTimerRef.current = setTimeout(() => {
+            setIsScreenshotRevealActive(false);
+            revealTimerRef.current = null;
+        }, SCREENSHOT_REVEAL_DURATION_MS);
+    };
+
     return (
-        <PrivacyContext.Provider value={{ isPrivacyEnabled, togglePrivacy }}>
+        <PrivacyContext.Provider value={{ isPrivacyEnabled, togglePrivacy, isScreenshotRevealActive, revealForScreenshot }}>
             {children}
         </PrivacyContext.Provider>
     );

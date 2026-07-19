@@ -1,16 +1,18 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { Text, View, SectionList, TouchableOpacity, StyleSheet, TextInput, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 
 import TransactionOptionsModal from '@components/transaction/TransactionOptionsModal';
 import InvestmentOptionsModal from '@components/investments/modals/InvestmentOptionsModal';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import DraggableIconButton from '@components/common/DraggableIconButton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
+import { useFloatingGear } from '@context/FloatingGearContext';
 import { Transaction, UserProfile, Investment, RecurrenceRule, Debt } from '@types';
 import { deleteTransaction, getCachedTransactions } from '@services/domain/transactionService';
 import { deleteInvestment, getCachedInvestments } from '@services/domain/investmentService';
@@ -56,6 +58,8 @@ interface FinancialSummary {
 const HistoryScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
+    const { isDocked, registerSecondAction } = useFloatingGear();
+    const isFocused = useIsFocused();
     const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
     const [allInvestments, setAllInvestments] = useState<Investment[]>([]);
     const [allDebts, setAllDebts] = useState<Debt[]>([]);
@@ -84,6 +88,16 @@ const HistoryScreen = ({ navigation }: any) => {
             loadRecurrenceRules();
         }, [])
     );
+
+    useEffect(() => {
+        if (!isFocused) return;
+        registerSecondAction({
+            label: viewMode === 'LIST' ? 'Switch to Calendar View' : 'Switch to List View',
+            icon: viewMode === 'LIST' ? 'calendar-outline' : 'list-outline',
+            onPress: () => setViewMode(viewMode === 'LIST' ? 'CALENDAR' : 'LIST'),
+        });
+        return () => registerSecondAction(null);
+    }, [isFocused, viewMode, registerSecondAction]);
 
     const loadRecurrenceRules = async () => {
         const rules = await getAllRecurrenceRules();
@@ -756,31 +770,33 @@ const HistoryScreen = ({ navigation }: any) => {
                                     )}
                                 </View>
                             </View>
-                            <View style={{ flexDirection: 'row', gap: 12 }}>
-                                <TouchableOpacity
-                                    onPress={togglePrivacy}
-                                    style={[
-                                        styles.iconButton,
-                                        { backgroundColor: colors.surface }
-                                    ]}
-                                >
-                                    <Ionicons
-                                        name={isPrivacyEnabled ? 'eye-off' : 'eye'}
-                                        size={20}
-                                        color={colors.text}
-                                    />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={() => setViewMode(viewMode === 'LIST' ? 'CALENDAR' : 'LIST')}
-                                    style={[styles.iconButton, { backgroundColor: colors.surface }]}
-                                >
-                                    <Ionicons
-                                        name={viewMode === 'LIST' ? "calendar-outline" : "list-outline"}
-                                        size={20}
-                                        color={colors.text}
-                                    />
-                                </TouchableOpacity>
-                            </View>
+                            {isDocked && (
+                                <View style={{ flexDirection: 'row', gap: 12 }}>
+                                    <DraggableIconButton
+                                        onPress={togglePrivacy}
+                                        style={[
+                                            styles.iconButton,
+                                            { backgroundColor: colors.surface }
+                                        ]}
+                                    >
+                                        <Ionicons
+                                            name={isPrivacyEnabled ? 'eye-off' : 'eye'}
+                                            size={20}
+                                            color={colors.text}
+                                        />
+                                    </DraggableIconButton>
+                                    <DraggableIconButton
+                                        onPress={() => setViewMode(viewMode === 'LIST' ? 'CALENDAR' : 'LIST')}
+                                        style={[styles.iconButton, { backgroundColor: colors.surface }]}
+                                    >
+                                        <Ionicons
+                                            name={viewMode === 'LIST' ? "calendar-outline" : "list-outline"}
+                                            size={20}
+                                            color={colors.text}
+                                        />
+                                    </DraggableIconButton>
+                                </View>
+                            )}
                         </View>
 
                         {/* Search Bar */}

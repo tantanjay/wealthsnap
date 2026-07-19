@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import AppNavigator from '@navigation/AppNavigator';
 import BottomModal from '@components/common/BottomModal';
@@ -9,9 +10,11 @@ import { SecurityProvider, useSecurity } from '@context/SecurityContext';
 import { PrivacyProvider } from '@context/PrivacyContext';
 import { AlertProvider } from '@context/AlertContext';
 import { ThemeProvider } from '@context/ThemeContext';
+import { FloatingGearProvider } from '@context/FloatingGearContext';
 import { GlobalErrorBoundary } from '@components/common/GlobalErrorBoundary';
 import { PrivacyGuard } from '@components/common/PrivacyGuard';
 import { CustomAlert } from '@components/common/CustomAlert';
+import FloatingGearBubble from '@components/common/FloatingGearBubble';
 
 import { ReminderCatchupModal } from '@components/reminders/ReminderCatchupModal';
 import { Reminder } from '@types';
@@ -87,21 +90,25 @@ export default function App() {
 
   // Finally show the app
   return (
-    <ThemeProvider>
-      <GlobalErrorBoundary>
-        <SecurityProvider>
-          <PrivacyProvider>
-            <AlertProvider>
-              <PrivacyGuard />
-              <SafeAreaProvider>
-                <StatusBar style="auto" />
-                <AppContent initialRoute={initialRoute} />
-              </SafeAreaProvider>
-            </AlertProvider>
-          </PrivacyProvider>
-        </SecurityProvider>
-      </GlobalErrorBoundary>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <GlobalErrorBoundary>
+          <SecurityProvider>
+            <PrivacyProvider>
+              <AlertProvider>
+                <PrivacyGuard />
+                <SafeAreaProvider>
+                  <StatusBar style="auto" />
+                  <FloatingGearProvider>
+                    <AppContent initialRoute={initialRoute} />
+                  </FloatingGearProvider>
+                </SafeAreaProvider>
+              </AlertProvider>
+            </PrivacyProvider>
+          </SecurityProvider>
+        </GlobalErrorBoundary>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -170,6 +177,7 @@ const AppContent = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'L
   return (
     <>
       <AppNavigator initialRoute={initialRoute} />
+      <FloatingGearBubble />
       <CustomAlert />
 
       <BottomModal
