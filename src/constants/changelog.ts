@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Automatically generated in the background for every month with recorded activity, including a one-time backfill of past months on first launch.
   - Manual "Reprocess" option to regenerate all monthly summaries on demand.
 
+### Changed
+- Savings Trend's "Understanding Your Chart" guide now visualizes how Rate, Saved, and Cash Flow relate via an income breakdown diagram, instead of just describing them as a text list.
+
+### Fixed
+- Smart Alerts' "Alert Hierarchy" info text now correctly describes the actual 4-tier priority order (Crash → Dividend → Dip → Balance) and clarifies that only Balance notes merge onto an existing alert.
+
 ---
 
 ## [1.14.0] — 2026-07-19

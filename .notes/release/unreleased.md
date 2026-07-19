@@ -18,5 +18,13 @@ This lays the groundwork for future AI-assisted insights — the generation itse
 
 ---
 
+## 📖 More Accurate In-App Guides
+A pass through the "Understanding" guides on Insights and Investments to make sure they match how things actually work.
+
+- **Savings Trend**: The "Understanding Your Chart" guide now shows how its three views relate to each other with a visual income breakdown, instead of just listing them. A new diagram shows your monthly income splitting into Expenses, Invested, and Cash Left, with **Rate & Saved** bracketing the invested-plus-cash-left portion and **Cash Flow** bracketing cash left only — highlighted based on whichever tab you're viewing.
+- **Smart Alerts**: The "Alert Hierarchy" explanation now correctly describes the actual 4-tier priority order (Crash → Dividend → Dip → Balance) and clarifies that only Balance notes merge onto an existing alert — Crash, Dividend, and Dip alerts each still show as their own entry.
+
+---
+
 **Previous Version:** 1.14.0
 **Package:** `com.christian.soyosa.WealthSnap`
