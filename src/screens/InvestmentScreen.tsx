@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl, Platform, ToastAndroid } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { Skeleton } from '@components/common/Skeleton';
 import DraggableIconButton from '@components/common/DraggableIconButton';
@@ -31,6 +31,7 @@ const InvestmentScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const { isDocked, registerSecondAction } = useFloatingGear();
+    const routeName = useRoute().name;
     const { checkConsent } = useAIConsent();
     const [refreshing, setRefreshing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -149,16 +150,14 @@ const InvestmentScreen = ({ navigation }: any) => {
         }, [loadStats])
     );
 
-    useFocusEffect(
-        useCallback(() => {
-            registerSecondAction({
-                label: 'Screen Settings',
-                icon: 'options-outline',
-                onPress: () => setShowSettings(true),
-            });
-            return () => registerSecondAction(null);
-        }, [registerSecondAction])
-    );
+    useEffect(() => {
+        registerSecondAction(routeName, {
+            label: 'Screen Settings',
+            icon: 'options-outline',
+            onPress: () => setShowSettings(true),
+        });
+        return () => registerSecondAction(routeName, null);
+    }, [registerSecondAction, routeName]);
 
     // Separate effect for suggestions to avoid redundant full-stats load
     React.useEffect(() => {

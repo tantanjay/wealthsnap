@@ -6,11 +6,7 @@
     "orientation": "default",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/images/icon.png",
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -50,6 +46,14 @@
     },
     "plugins": [
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to scan receipts.",
@@ -68,8 +72,7 @@
       "expo-document-picker",
       "expo-task-manager",
       "expo-sharing",
-      "@react-native-community/datetimepicker",
-      "react-native-document-scanner-plugin"
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {

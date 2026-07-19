@@ -1,8 +1,8 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { Text, View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 import BottomModal from '@components/common/BottomModal';
 import DraggableIconButton from '@components/common/DraggableIconButton';
@@ -47,6 +47,7 @@ const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const { isDocked, registerSecondAction } = useFloatingGear();
+    const routeName = useRoute().name;
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
@@ -626,16 +627,14 @@ const HomeScreen = ({ navigation }: any) => {
         }, [checkReviewEligibility])
     );
 
-    useFocusEffect(
-        useCallback(() => {
-            registerSecondAction({
-                label: 'Screen Settings',
-                icon: 'options-outline',
-                onPress: () => setIsSettingsModalVisible(true),
-            });
-            return () => registerSecondAction(null);
-        }, [registerSecondAction])
-    );
+    useEffect(() => {
+        registerSecondAction(routeName, {
+            label: 'Screen Settings',
+            icon: 'options-outline',
+            onPress: () => setIsSettingsModalVisible(true),
+        });
+        return () => registerSecondAction(routeName, null);
+    }, [registerSecondAction, routeName]);
 
     const handleModeSwipe = (newMode: Storage.HomeDisplayMode) => {
         setDisplayMode(newMode);

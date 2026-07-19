@@ -42,7 +42,9 @@ export default function FloatingGearBubble() {
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
     useEffect(() => {
-        if (!isDocked && pendingPosition) {
+        if (isDocked) return;
+
+        if (pendingPosition) {
             // Land where dropped, then settle to the nearest edge just like a
             // manual drag release does, instead of staying wherever it landed.
             const snapX = pendingPosition.x + BUBBLE_SIZE / 2 < screenWidth / 2
@@ -55,6 +57,15 @@ export default function FloatingGearBubble() {
             translateX.value = pendingPosition.x;
             translateY.value = clampedY;
             translateX.value = withSpring(snapX);
+        } else {
+            // Restored floating from a previous app session - there's no drop
+            // point to remember, so land in a sensible default spot instead of
+            // the origin corner.
+            translateX.value = screenWidth - BUBBLE_SIZE - EDGE_MARGIN;
+            translateY.value = Math.min(
+                insets.top + EDGE_MARGIN + 120,
+                screenHeight - BUBBLE_SIZE - insets.bottom - EDGE_MARGIN
+            );
         }
     }, [isDocked, pendingPosition, screenWidth, screenHeight, insets.top, insets.bottom, translateX, translateY]);
 

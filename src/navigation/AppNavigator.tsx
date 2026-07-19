@@ -1,8 +1,10 @@
 import React from 'react';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+
+import { useFloatingGear } from '@context/FloatingGearContext';
 
 import WelcomeScreen from '@screens/onboarding/WelcomeScreen';
 import SetupScreen from '@screens/onboarding/SetupScreen';
@@ -65,6 +67,8 @@ const MainTabs = () => {
 
 const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'LegalAcceptance' }) => {
     const { colors } = useTheme();
+    const { setActiveRoute } = useFloatingGear();
+    const navigationRef = useNavigationContainerRef<Record<string, object | undefined>>();
     const navigationTheme = {
         ...DefaultTheme,
         colors: {
@@ -77,8 +81,21 @@ const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 
         },
     };
 
+    // Tracks the current leaf route name the moment navigation state changes,
+    // independent of the destination screen's own mount/focus effects - so the
+    // floating gear knows which screen's menu to show without waiting on it.
+    const syncActiveRoute = () => {
+        const routeName = navigationRef.getCurrentRoute()?.name;
+        if (routeName) setActiveRoute(routeName);
+    };
+
     return (
-        <NavigationContainer theme={navigationTheme}>
+        <NavigationContainer
+            ref={navigationRef}
+            theme={navigationTheme}
+            onReady={syncActiveRoute}
+            onStateChange={syncActiveRoute}
+        >
             <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
                 <Stack.Screen name="Onboarding" component={WelcomeScreen} />
                 <Stack.Screen name="Setup" component={SetupScreen} />

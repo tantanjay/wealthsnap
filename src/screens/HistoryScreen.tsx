@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { Text, View, SectionList, TouchableOpacity, StyleSheet, TextInput, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 import TransactionOptionsModal from '@components/transaction/TransactionOptionsModal';
 import InvestmentOptionsModal from '@components/investments/modals/InvestmentOptionsModal';
@@ -59,7 +59,7 @@ const HistoryScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const { isDocked, registerSecondAction } = useFloatingGear();
-    const isFocused = useIsFocused();
+    const routeName = useRoute().name;
     const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
     const [allInvestments, setAllInvestments] = useState<Investment[]>([]);
     const [allDebts, setAllDebts] = useState<Debt[]>([]);
@@ -90,14 +90,13 @@ const HistoryScreen = ({ navigation }: any) => {
     );
 
     useEffect(() => {
-        if (!isFocused) return;
-        registerSecondAction({
+        registerSecondAction(routeName, {
             label: viewMode === 'LIST' ? 'Switch to Calendar View' : 'Switch to List View',
             icon: viewMode === 'LIST' ? 'calendar-outline' : 'list-outline',
             onPress: () => setViewMode(viewMode === 'LIST' ? 'CALENDAR' : 'LIST'),
         });
-        return () => registerSecondAction(null);
-    }, [isFocused, viewMode, registerSecondAction]);
+        return () => registerSecondAction(routeName, null);
+    }, [viewMode, registerSecondAction, routeName]);
 
     const loadRecurrenceRules = async () => {
         const rules = await getAllRecurrenceRules();
