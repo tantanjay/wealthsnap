@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, ScrollView, TouchableOpacity, Text, RefreshControl, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -61,6 +61,25 @@ const InsightScreen = ({ navigation }: any) => {
     useEffect(() => {
         setPickerYear(selectedYear);
     }, [selectedYear]);
+
+    // Restore the last-selected Expense Analysis grouping (Group / Item) on mount
+    const isInitialGroupingLoad = useRef(true);
+    useEffect(() => {
+        const loadGrouping = async () => {
+            const saved = await Storage.getInsightsExpenseGrouping();
+            if (saved === 'GROUP' || saved === 'ITEM') {
+                setExpenseGrouping(saved);
+            }
+            isInitialGroupingLoad.current = false;
+        };
+        loadGrouping();
+    }, []);
+
+    useEffect(() => {
+        if (!isInitialGroupingLoad.current) {
+            Storage.saveInsightsExpenseGrouping(expenseGrouping);
+        }
+    }, [expenseGrouping]);
 
     const availableRange = React.useMemo(() => {
         if (transactions.length === 0) {

@@ -13,6 +13,7 @@ import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
 import { getMonthlyTrends, getMonthlyTrendsForYear } from '@utils/financialMetrics';
 import { CURRENCY_SYMBOLS, formatCompactCurrency } from '@utils/currencyUtils';
+import { saveInsightsIncomeTab, getInsightsIncomeTab, saveInsightsIncomeTimeRange, getInsightsIncomeTimeRange } from '@services/core/storageService';
 
 interface IncomeAnalysisProps {
     monthlyTrends: {
@@ -48,6 +49,29 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
     useEffect(() => {
         setSelectedYear(selectedDate.getFullYear());
     }, [selectedDate]);
+
+    // Restore the last-selected tab (Trend / Sources) and time range on mount
+    const isInitialPrefLoad = React.useRef(true);
+    useEffect(() => {
+        const loadPrefs = async () => {
+            const [savedTab, savedRange] = await Promise.all([
+                getInsightsIncomeTab(),
+                getInsightsIncomeTimeRange()
+            ]);
+            if (savedTab === 'TREND' || savedTab === 'SOURCES') setActiveTab(savedTab);
+            if (savedRange === '6M' || savedRange === '1Y' || savedRange === '3Y' || savedRange === 'ALL') setTimeRange(savedRange);
+            isInitialPrefLoad.current = false;
+        };
+        loadPrefs();
+    }, []);
+
+    useEffect(() => {
+        if (!isInitialPrefLoad.current) saveInsightsIncomeTab(activeTab);
+    }, [activeTab]);
+
+    useEffect(() => {
+        if (!isInitialPrefLoad.current) saveInsightsIncomeTimeRange(timeRange);
+    }, [timeRange]);
 
     const availableYears = useMemo(() => {
         if (transactions.length === 0) return [new Date().getFullYear()];

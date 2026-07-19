@@ -266,6 +266,23 @@ export const getHomeCardOrder = async (): Promise<string[] | null> => {
     }
 };
 
+export const saveHomeTransactionsTab = async (tab: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.TRANSACTIONS_TAB, tab);
+    } catch (error) {
+        console.error('Failed to save home transactions tab:', error);
+    }
+};
+
+export const getHomeTransactionsTab = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.TRANSACTIONS_TAB);
+    } catch (error) {
+        console.error('Failed to get home transactions tab:', error);
+        return null;
+    }
+};
+
 // ============= Insights Order (AsyncStorage) =============
 
 export const saveInsightsCardOrder = async (order: string[]): Promise<void> => {
@@ -300,6 +317,142 @@ export const getInsightsSectionOrder = async (): Promise<string[] | null> => {
         return data ? JSON.parse(data) : null;
     } catch (error) {
         console.error('Failed to get insights section order:', error);
+        return null;
+    }
+};
+
+export const saveInsightsExpenseGrouping = async (grouping: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.EXPENSE_GROUPING, grouping);
+    } catch (error) {
+        console.error('Failed to save insights expense grouping:', error);
+    }
+};
+
+export const getInsightsExpenseGrouping = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.EXPENSE_GROUPING);
+    } catch (error) {
+        console.error('Failed to get insights expense grouping:', error);
+        return null;
+    }
+};
+
+export const saveInsightsIncomeTab = async (tab: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.INCOME_TAB, tab);
+    } catch (error) {
+        console.error('Failed to save insights income tab:', error);
+    }
+};
+
+export const getInsightsIncomeTab = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.INCOME_TAB);
+    } catch (error) {
+        console.error('Failed to get insights income tab:', error);
+        return null;
+    }
+};
+
+export const saveInsightsIncomeTimeRange = async (range: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.INCOME_TIME_RANGE, range);
+    } catch (error) {
+        console.error('Failed to save insights income time range:', error);
+    }
+};
+
+export const getInsightsIncomeTimeRange = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.INCOME_TIME_RANGE);
+    } catch (error) {
+        console.error('Failed to get insights income time range:', error);
+        return null;
+    }
+};
+
+export const saveInsightsComparisonView = async (view: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.COMPARISON_VIEW, view);
+    } catch (error) {
+        console.error('Failed to save insights comparison view:', error);
+    }
+};
+
+export const getInsightsComparisonView = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.COMPARISON_VIEW);
+    } catch (error) {
+        console.error('Failed to get insights comparison view:', error);
+        return null;
+    }
+};
+
+export const saveInsightsComparisonTimeRange = async (range: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.COMPARISON_TIME_RANGE, range);
+    } catch (error) {
+        console.error('Failed to save insights comparison time range:', error);
+    }
+};
+
+export const getInsightsComparisonTimeRange = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.COMPARISON_TIME_RANGE);
+    } catch (error) {
+        console.error('Failed to get insights comparison time range:', error);
+        return null;
+    }
+};
+
+export const saveInsightsSavingsTab = async (tab: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.SAVINGS_TAB, tab);
+    } catch (error) {
+        console.error('Failed to save insights savings tab:', error);
+    }
+};
+
+export const getInsightsSavingsTab = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.SAVINGS_TAB);
+    } catch (error) {
+        console.error('Failed to get insights savings tab:', error);
+        return null;
+    }
+};
+
+export const saveInsightsSavingsTimeRange = async (range: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.SAVINGS_TIME_RANGE, range);
+    } catch (error) {
+        console.error('Failed to save insights savings time range:', error);
+    }
+};
+
+export const getInsightsSavingsTimeRange = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.SAVINGS_TIME_RANGE);
+    } catch (error) {
+        console.error('Failed to get insights savings time range:', error);
+        return null;
+    }
+};
+
+export const saveInsightsPulsePeriod = async (period: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.PULSE_PERIOD, period);
+    } catch (error) {
+        console.error('Failed to save insights pulse period:', error);
+    }
+};
+
+export const getInsightsPulsePeriod = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.PULSE_PERIOD);
+    } catch (error) {
+        console.error('Failed to get insights pulse period:', error);
         return null;
     }
 };
@@ -356,6 +509,76 @@ export const getInvestmentHoldingsSort = async (): Promise<{ option: string, dir
         return data ? JSON.parse(data) : null;
     } catch (error) {
         console.error('Failed to get investment holdings sort:', error);
+        return null;
+    }
+};
+
+export const saveInvestmentDividendTab = async (tab: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INVESTMENT_SCREEN.DIVIDEND_TAB, tab);
+    } catch (error) {
+        console.error('Failed to save investment dividend tab:', error);
+    }
+};
+
+export const getInvestmentDividendTab = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INVESTMENT_SCREEN.DIVIDEND_TAB);
+    } catch (error) {
+        console.error('Failed to get investment dividend tab:', error);
+        return null;
+    }
+};
+
+export const saveInvestmentAllocationTab = async (tab: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INVESTMENT_SCREEN.ALLOCATION_TAB, tab);
+    } catch (error) {
+        console.error('Failed to save investment allocation tab:', error);
+    }
+};
+
+export const getInvestmentAllocationTab = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INVESTMENT_SCREEN.ALLOCATION_TAB);
+    } catch (error) {
+        console.error('Failed to get investment allocation tab:', error);
+        return null;
+    }
+};
+
+export const saveInvestmentAdvisorPriority = async (priority: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INVESTMENT_SCREEN.ADVISOR_PRIORITY, priority);
+    } catch (error) {
+        console.error('Failed to save investment advisor priority:', error);
+    }
+};
+
+export const getInvestmentAdvisorPriority = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INVESTMENT_SCREEN.ADVISOR_PRIORITY);
+    } catch (error) {
+        console.error('Failed to get investment advisor priority:', error);
+        return null;
+    }
+};
+
+// ============= Debt Screen Preferences (AsyncStorage) =============
+
+export const saveDebtStrategy = async (strategy: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.DEBT_SCREEN.STRATEGY, strategy);
+    } catch (error) {
+        console.error('Failed to save debt strategy:', error);
+    }
+};
+
+export const getDebtStrategy = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.DEBT_SCREEN.STRATEGY);
+    } catch (error) {
+        console.error('Failed to get debt strategy:', error);
         return null;
     }
 };

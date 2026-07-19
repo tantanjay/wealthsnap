@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
@@ -13,6 +13,7 @@ import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
 import { getSavingsRateTrend } from '@utils/financialMetrics';
 import { formatCompactCurrency } from '@utils/currencyUtils';
+import { saveInsightsSavingsTab, getInsightsSavingsTab, saveInsightsSavingsTimeRange, getInsightsSavingsTimeRange } from '@services/core/storageService';
 
 interface SavingsRateTrendProps {
     transactions: Transaction[];
@@ -61,6 +62,29 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
     const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
     const [activeTab, setActiveTab] = React.useState<SavingsTab>('RATE');
     const [showInfoModal, setShowInfoModal] = React.useState(false);
+
+    // Restore the last-selected tab (Rate / Saved / Cash Flow) and time range on mount
+    const isInitialPrefLoad = useRef(true);
+    useEffect(() => {
+        const loadPrefs = async () => {
+            const [savedTab, savedRange] = await Promise.all([
+                getInsightsSavingsTab(),
+                getInsightsSavingsTimeRange()
+            ]);
+            if (savedTab === 'RATE' || savedTab === 'AMOUNT' || savedTab === 'CASH') setActiveTab(savedTab);
+            if (savedRange === '6M' || savedRange === '1Y' || savedRange === '3Y' || savedRange === 'ALL') setTimeRange(savedRange);
+            isInitialPrefLoad.current = false;
+        };
+        loadPrefs();
+    }, []);
+
+    useEffect(() => {
+        if (!isInitialPrefLoad.current) saveInsightsSavingsTab(activeTab);
+    }, [activeTab]);
+
+    useEffect(() => {
+        if (!isInitialPrefLoad.current) saveInsightsSavingsTimeRange(timeRange);
+    }, [timeRange]);
 
     const isPercent = activeTab === 'RATE';
     const activeMeta = SAVINGS_TAB_META[activeTab];
