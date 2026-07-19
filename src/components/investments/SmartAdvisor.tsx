@@ -216,8 +216,8 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
                         <View style={{ backgroundColor: colors.background, padding: 12, borderRadius: 8, borderLeftWidth: 3, borderLeftColor: colors.warning }}>
                             <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 13, marginBottom: 4 }}>🔝 Alert Hierarchy</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, lineHeight: 16 }}>
-                                In the <Text style={{ fontWeight: 'bold' }}>&quot;All&quot;</Text> view, we prioritize urgent alerts (Crashes & Dividends) over long-term suggestions (Balance).
-                                {"\n\n"}If a stock has multiple alerts, we show the most critical one and merge the reasons (e.g., <Text style={{ fontStyle: 'italic' }}>DIP + BAL</Text>). Specific tabs show all alerts for that category.
+                                In the <Text style={{ fontWeight: 'bold' }}>&quot;All&quot;</Text> view, alerts are ranked by urgency: <Text style={{ fontWeight: 'bold' }}>🔥 Crash</Text> → <Text style={{ fontWeight: 'bold' }}>📅 Dividend</Text> → <Text style={{ fontWeight: 'bold' }}>🔻 Dip</Text> → <Text style={{ fontWeight: 'bold' }}>⚖️ Balance</Text>.
+                                {"\n\n"}A <Text style={{ fontWeight: 'bold' }}>⚖️ Balance</Text> note gets merged onto a stock&apos;s existing alert instead of listing it twice (e.g., <Text style={{ fontStyle: 'italic' }}>DIP + BAL</Text>). Crash, Dividend, and Dip alerts each show as their own entry. Specific tabs show all alerts for that category.
                             </Text>
                         </View>
                     </View>
