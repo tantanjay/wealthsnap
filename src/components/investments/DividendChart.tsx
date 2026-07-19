@@ -379,13 +379,13 @@ const styles = StyleSheet.create({
         paddingTop: 4
     },
     calendarMonth: {
-        aspectRatio: 1,
         borderWidth: 1,
         borderRadius: 8,
-        padding: 4,
+        padding: 6,
         marginBottom: 8,
         alignItems: 'center',
-        minHeight: 60
+        justifyContent: 'center',
+        minHeight: 56
     },
     monthTitle: {
         fontSize: 10,
@@ -393,11 +393,9 @@ const styles = StyleSheet.create({
         marginBottom: 2
     },
     assetList: {
-        flex: 1,
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'center',
-        alignContent: 'center',
         gap: 2
     },
     assetBadge: {
