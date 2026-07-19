@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.14.0] — 2026-07-19
+
+### Added
+- **Savings Trend: Rate, Saved & Cash Flow**
+  - The Savings Trend chart now has three views: Rate (% of income kept), Saved (raw amount kept, including money moved into investments), and Cash Flow (what's actually left in cash after everything, including investments and other transfers out).
+  - Streak, Positive/Negative counts, Average, Current, and Best/Worst Month all recalculate for whichever view is active.
+- **Persistent Selections**
+  - Insights: Income Trend, Spending Comparison, and Savings Trend now remember their tab and time range (6M/1Y/3Y/ALL); Expense Analysis remembers Group vs. Item; Monthly Pulse remembers its 3M/6M/12M period.
+  - Investments: The Dividend chart remembers Actual/Calendar/Proj., the Allocation chart remembers Stocks/Sector/Type, and the Smart Advisor priority filter is remembered.
+  - Debt Strategy: The Avalanche/Snowball payoff toggle now persists.
+  - Home: Swiping a card (Financial Health, Cash Flow, Investments, Debts) to a different view now saves that choice immediately.
+
+### Changed
+- **Streamlined Time Range Selector**: The 6M/1Y/3Y/ALL button row on Insights charts is now a compact dropdown, applied consistently across Income Trend, Spending Comparison, Savings Rate Trend, and Category Trend, with uniform chart container sizing across all four.
+- **Home Settings**: Removed the old "Home Settings" screen that required manually picking and saving a default view for each card, since swiping a card now saves that choice automatically. The Recent/Top Expenses tab also now remembers your last pick.
+
+### Fixed
+- **Dividend Calendar tab sizing**: Switching to the Calendar tab and back could leave a large blank gap or stale chart height behind due to reused layout measurements; each tab now remounts and re-measures cleanly.
+- **Dividend Calendar portrait height**: Month cells were forced into perfect squares, making them far taller than needed in portrait's 3-column layout; cells now size to their content, shrinking the 4-row grid from ~440px to ~250px.
+
+---
+
 ## [1.13.0] — 2026-07-05
 
 ### Fixed
