@@ -418,6 +418,80 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                     </View>
                 </View>
 
+                {/* How the 3 metrics relate - visual income breakdown */}
+                <View style={{ marginBottom: 16 }}>
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>🔀 How They Relate</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 10 }}>
+                        Every month, your income splits into three pieces. Each tab measures a different slice:
+                    </Text>
+                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 6, textAlign: 'center' }}>Monthly Income</Text>
+
+                        {/* Stacked bar: Expenses / Invested / Cash Left */}
+                        <View style={{ flexDirection: 'row', height: 28, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>
+                            <View style={{ flex: 5, backgroundColor: '#F44336' }} />
+                            <View style={{ flex: 2, backgroundColor: '#2196F3' }} />
+                            <View style={{ flex: 3, backgroundColor: '#4CAF50' }} />
+                        </View>
+
+                        {/* Legend */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F44336' }} />
+                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Expenses</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#2196F3' }} />
+                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Invested</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50' }} />
+                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Cash Left</Text>
+                            </View>
+                        </View>
+
+                        {/* Bracket: Rate & Saved = Invested + Cash Left (right 70%) */}
+                        <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+                            <View style={{ flex: 5 }} />
+                            <View style={{
+                                flex: 5,
+                                borderTopWidth: 2,
+                                borderColor: (activeTab === 'RATE' || activeTab === 'AMOUNT') ? colors.primary : colors.border,
+                                paddingTop: 3
+                            }}>
+                                <Text style={{
+                                    color: (activeTab === 'RATE' || activeTab === 'AMOUNT') ? colors.primary : colors.textSecondary,
+                                    fontSize: 10,
+                                    fontWeight: '700',
+                                    textAlign: 'center'
+                                }}>Rate & Saved</Text>
+                            </View>
+                        </View>
+
+                        {/* Bracket: Cash Flow = Cash Left only (right 30%) */}
+                        <View style={{ flexDirection: 'row' }}>
+                            <View style={{ flex: 7 }} />
+                            <View style={{
+                                flex: 3,
+                                borderTopWidth: 2,
+                                borderColor: activeTab === 'CASH' ? '#4CAF50' : colors.border,
+                                paddingTop: 3
+                            }}>
+                                <Text style={{
+                                    color: activeTab === 'CASH' ? '#4CAF50' : colors.textSecondary,
+                                    fontSize: 10,
+                                    fontWeight: '700',
+                                    textAlign: 'center'
+                                }}>Cash Flow</Text>
+                            </View>
+                        </View>
+                    </View>
+                    <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 18, marginTop: 8 }}>
+                        <Text style={{ fontWeight: 'bold' }}>Rate</Text> and <Text style={{ fontWeight: 'bold' }}>Saved</Text> count money moved into investments as kept.{"\n"}
+                        <Text style={{ fontWeight: 'bold' }}>Cash Flow</Text> only counts what&apos;s actually left in your wallet.
+                    </Text>
+                </View>
+
                 {/* Chart Explanation */}
                 <View style={{ marginBottom: 16 }}>
                     <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📈 Reading the Chart</Text>
