@@ -63,7 +63,7 @@ const ChatScreen = ({ navigation }: any) => {
                 setLoadingContext(false);
             }
         })();
-    }, []);
+    }, [navigation, showAlert]);
 
     useEffect(() => {
         scrollRef.current?.scrollToEnd({ animated: true });

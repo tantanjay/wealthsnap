@@ -1,5 +1,5 @@
 import { getCachedTransactions } from '@services/domain/transactionService';
-import { getPortfolioStats } from '@services/domain/investmentService';
+import { getPortfolioStats, getPortfolioHoldings } from '@services/domain/investmentService';
 import { getAllDebts } from '@services/domain/debtService';
 import { getAllMonthlySummaries, MonthlySummaryRow } from '@services/domain/monthlySummaryService';
 import { getUserProfile } from '@services/core/storageService';
@@ -47,16 +47,17 @@ const yearMonthCutoff = (years: number): string => {
  * without re-querying the database for every range option.
  */
 export const fetchChatContextInputs = async (): Promise<ChatContextInputs> => {
-    const [transactions, debts, profile, summaries, portfolioStats] = await Promise.all([
+    const [transactions, debts, profile, summaries, portfolioStats, holdings] = await Promise.all([
         getCachedTransactions(),
         getAllDebts(),
         getUserProfile(),
         getAllMonthlySummaries(),
-        getPortfolioStats()
+        getPortfolioStats(),
+        getPortfolioHoldings()
     ]);
 
     const currency = profile?.currency || 'PHP';
-    const snapshot = buildFinancialSnapshotData(transactions, debts, portfolioStats);
+    const snapshot = buildFinancialSnapshotData(transactions, debts, portfolioStats, holdings);
     const snapshotText = renderFinancialSnapshotText(snapshot, currency);
 
     return { snapshotText, summaries };
