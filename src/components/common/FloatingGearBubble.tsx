@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -39,7 +39,7 @@ export default function FloatingGearBubble() {
     const startX = useSharedValue(0);
     const startY = useSharedValue(0);
 
-    const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+    const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
     useEffect(() => {
         if (!isDocked && pendingPosition) {
