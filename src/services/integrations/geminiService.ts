@@ -1,5 +1,5 @@
 import { BigNumber } from 'bignumber.js';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 
@@ -17,8 +17,8 @@ const getGeminiClient = async () => {
     // 1. Try Storage
     const config = await getAIConfig();
     let apiKey = config?.apiKey;
-    // Default to gemini-2.5-flash
-    let modelId = config?.modelId || 'gemini-2.5-flash';
+    // Default to gemini-3.5-flash
+    let modelId = config?.modelId || 'gemini-3.5-flash';
 
     if (!apiKey) {
         throw new Error("Gemini API Key is not configured. Please add it in Profile Settings.");
@@ -43,11 +43,14 @@ export const isGeminiConfigured = async (): Promise<boolean> => {
 };
 
 /**
- * Pricing per 1,000,000 tokens as of Jan 2026.
+ * Pricing per 1,000,000 tokens as of Jul 2026.
+ * Note: gemini-3.1-pro-preview has tiered pricing above 200k-token prompts
+ * ($4.00 in / $18.00 out); the rate below covers the common <=200k case.
  */
 const MODEL_PRICING: { [key: string]: { input: number; output: number } } = {
     // Latest Frontier Models
-    'gemini-3-pro-preview': { input: 2.00, output: 12.00 },
+    'gemini-3.5-flash': { input: 1.50, output: 9.00 },
+    'gemini-3.1-pro-preview': { input: 2.00, output: 12.00 },
     'gemini-3-flash': { input: 0.50, output: 3.00 },
 
     // Stable High-Efficiency Models
@@ -58,7 +61,7 @@ const MODEL_PRICING: { [key: string]: { input: number; output: number } } = {
     'gemini-1.5-flash': { input: 0.30, output: 2.50 },
     'gemini-1.5-pro': { input: 1.25, output: 5.00 },
 
-    'default': { input: 0.30, output: 2.50 } // Default to 2.5-flash pricing
+    'default': { input: 1.50, output: 9.00 } // Default to 3.5-flash pricing
 };
 
 // Base tokens for images <= 384px
@@ -79,10 +82,26 @@ const estimateTokens = (text: string) => {
     return isJson ? Math.ceil(text.length / 3.2) : Math.ceil(text.length / 4);
 };
 
-const logUsage = async (endpoint: string, promptText: string, responseText: string, imageTokens: number, imageCount: number, durationMs: number, modelName: string = 'unknown', status: 'success' | 'error' = 'success') => {
+// Gemini 3.x only accepts thinkingConfig.thinkingLevel; sending it to 2.5/1.5 models is a hard 400 error.
+const isGemini3Model = (modelName: string) => modelName.toLowerCase().includes('gemini-3');
+
+const withThinkingLevel = (modelName: string, level: ThinkingLevel) => {
+    return isGemini3Model(modelName) ? { thinkingConfig: { thinkingLevel: level } } : {};
+};
+
+interface GeminiUsageMetadata {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    thoughtsTokenCount?: number;
+}
+
+const logUsage = async (endpoint: string, promptText: string, responseText: string, imageTokens: number, imageCount: number, durationMs: number, modelName: string = 'unknown', status: 'success' | 'error' = 'success', usage?: GeminiUsageMetadata) => {
     try {
-        const inputTokens = estimateTokens(promptText) + imageTokens;
-        const outputTokens = estimateTokens(responseText);
+        // Prefer the API's own token counts (captures thinking tokens); fall back to estimation on error paths.
+        const inputTokens = usage?.promptTokenCount ?? (estimateTokens(promptText) + imageTokens);
+        const outputTokens = usage
+            ? (usage.candidatesTokenCount ?? 0) + (usage.thoughtsTokenCount ?? 0)
+            : estimateTokens(responseText);
 
         let pricing = MODEL_PRICING['default'];
 
@@ -91,8 +110,14 @@ const logUsage = async (endpoint: string, promptText: string, responseText: stri
             if (MODEL_PRICING[lowerModel]) {
                 pricing = MODEL_PRICING[lowerModel];
             } else {
-                if (lowerModel.includes('3')) {
-                    if (lowerModel.includes('pro')) pricing = MODEL_PRICING['gemini-3-pro-preview'];
+                if (lowerModel.includes('3.5')) {
+                    pricing = MODEL_PRICING['gemini-3.5-flash'];
+                }
+                else if (lowerModel.includes('3.1')) {
+                    pricing = MODEL_PRICING['gemini-3.1-pro-preview'];
+                }
+                else if (lowerModel.includes('3')) {
+                    if (lowerModel.includes('pro')) pricing = MODEL_PRICING['gemini-3.1-pro-preview'];
                     else if (lowerModel.includes('flash')) pricing = MODEL_PRICING['gemini-3-flash'];
                 }
                 else if (lowerModel.includes('2.5')) {
@@ -303,6 +328,8 @@ STEP 4: DATA INTEGRITY
                 temperature: 0.1,
                 responseMimeType: "application/json",
                 responseJsonSchema: receiptSchema,
+                // Extraction task with well-defined rules - doesn't need deep reasoning.
+                ...withThinkingLevel(modelName, ThinkingLevel.LOW),
             },
             contents: [
                 {
@@ -322,7 +349,7 @@ STEP 4: DATA INTEGRITY
 
         const text = response.text ? response.text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim() : '';
 
-        await logUsage('analyzeReceiptImage', prompt, text, imageTokens, 1, Date.now() - startTime, modelName, 'success');
+        await logUsage('analyzeReceiptImage', prompt, text, imageTokens, 1, Date.now() - startTime, modelName, 'success', response.usageMetadata);
 
         try {
             const parsedResult = JSON.parse(text);
@@ -442,13 +469,15 @@ A simple, line-by-line list. No commentary.
             config: {
                 tools: [{ googleSearch: {} }],
                 temperature: 1.0, // Higher temp helps synthesize search results better
+                // Synthesizing search results into accurate historical prices benefits from deeper reasoning.
+                ...withThinkingLevel(currentModelName, ThinkingLevel.HIGH),
             },
             contents: [{ role: 'user', parts: [{ text: researchPrompt }] }]
         });
 
         const rawResearchText = researchResponse.text || '';
 
-        await logUsage('fetchHistoricalPrices_Research', researchPrompt, rawResearchText, 0, 0, Date.now() - startTime, modelName, 'success');
+        await logUsage('fetchHistoricalPrices_Research', researchPrompt, rawResearchText, 0, 0, Date.now() - startTime, modelName, 'success', researchResponse.usageMetadata);
 
         // --- PASS 2: THE ACCOUNTANT (No Tools, Strict Schema Enabled) ---
         const formatPrompt = `
@@ -475,6 +504,8 @@ STRICT RULES:
                 temperature: 0.1,
                 responseMimeType: "application/json",
                 responseJsonSchema: assetPriceSchema,
+                // Pure reformatting of already-researched data - no reasoning needed.
+                ...withThinkingLevel(currentModelName, ThinkingLevel.LOW),
             },
             contents: [{ role: 'user', parts: [{ text: formatPrompt }] }]
         });
@@ -482,7 +513,7 @@ STRICT RULES:
         const finalJson = formatResponse.text || '[]';
         const parsed: FetchedPrice[] = JSON.parse(finalJson);
 
-        await logUsage('fetchHistoricalPrices_Accountant', formatPrompt, finalJson, 0, 0, Date.now() - startTime, modelName, 'success');
+        await logUsage('fetchHistoricalPrices_Accountant', formatPrompt, finalJson, 0, 0, Date.now() - startTime, modelName, 'success', formatResponse.usageMetadata);
 
         return parsed;
 
@@ -543,13 +574,17 @@ export const fetchDividendHistory = async (assets: AssetRequest[], duration: str
 
         const researchResponse = await genAI.models.generateContent({
             model: currentModelName,
-            config: { tools: [{ googleSearch: {} }] }, // Tools allowed here
+            config: {
+                tools: [{ googleSearch: {} }], // Tools allowed here
+                // Synthesizing search results into accurate dividend records benefits from deeper reasoning.
+                ...withThinkingLevel(currentModelName, ThinkingLevel.HIGH),
+            },
             contents: [{ role: 'user', parts: [{ text: researchPrompt }] }]
         });
 
         const rawResearchText = researchResponse.text || '';
 
-        await logUsage('fetchDividendHistory_Research', researchPrompt, rawResearchText, 0, 0, Date.now() - startTime, modelName, 'success');
+        await logUsage('fetchDividendHistory_Research', researchPrompt, rawResearchText, 0, 0, Date.now() - startTime, modelName, 'success', researchResponse.usageMetadata);
 
         // --- PASS 2: THE ACCOUNTANT (Strict JSON + No Tools) ---
         const accountantPrompt = `Convert this raw financial research into a structured JSON list:
@@ -567,6 +602,8 @@ export const fetchDividendHistory = async (assets: AssetRequest[], duration: str
             config: {
                 responseMimeType: "application/json",
                 responseJsonSchema: dividendHistorySchema,
+                // Pure reformatting of already-researched data - no reasoning needed.
+                ...withThinkingLevel(currentModelName, ThinkingLevel.LOW),
             },
             contents: [{ role: 'user', parts: [{ text: accountantPrompt }] }]
         });
@@ -574,7 +611,7 @@ export const fetchDividendHistory = async (assets: AssetRequest[], duration: str
         const finalJson = extractionResponse.text || '[]';
         const parsed: FetchedDividend[] = JSON.parse(finalJson);
 
-        await logUsage('fetchDividendHistory_Accountant', accountantPrompt, finalJson, 0, 0, Date.now() - startTime, modelName, 'success');
+        await logUsage('fetchDividendHistory_Accountant', accountantPrompt, finalJson, 0, 0, Date.now() - startTime, modelName, 'success', extractionResponse.usageMetadata);
 
         return parsed;
     } catch (error) {

@@ -23,9 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Time range selector redesigned as a compact dropdown across Insights charts.
 - Simplified Home Settings; swiping a card now saves its display mode directly.
+- Upgraded the built-in AI model powering receipt scanning and historical price/dividend fetching to Gemini 3.5 Flash.
+- AI requests now scale their reasoning depth to the task, keeping simple extractions fast and research-heavy lookups more thorough.
+- Bumped Expo SDK 55 dependencies to their latest patch versions for stability and performance.
 
 ### Fixed
 - Dividend Calendar tab sizing and portrait height issues.
+- AI usage cost estimates in the Usage Log now accurately reflect Gemini's actual token billing, including reasoning ("thinking") tokens that were previously undercounted.
 
 ---
 
@@ -578,29 +582,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - AES-256 encrypted local storage.
 - No accounts, no ads, no cloud dependency.
 
-[Unreleased]: https://github.com/tantanjay/wealthsnap/compare/v1.14.0...HEAD
-[1.14.0]: https://github.com/tantanjay/wealthsnap/compare/v1.13.0...v1.14.0
-[1.13.0]: https://github.com/tantanjay/wealthsnap/compare/v1.12.0...v1.13.0
-[1.12.0]: https://github.com/tantanjay/wealthsnap/compare/v1.11.2...v1.12.0
-[1.11.2]: https://github.com/tantanjay/wealthsnap/compare/v1.11.1...v1.11.2
-[1.11.1]: https://github.com/tantanjay/wealthsnap/compare/v1.11.0...v1.11.1
-[1.11.0]: https://github.com/tantanjay/wealthsnap/compare/v1.10.2...v1.11.0
-[1.10.2]: https://github.com/tantanjay/wealthsnap/compare/v1.10.1...v1.10.2
-[1.10.1]: https://github.com/tantanjay/wealthsnap/compare/v1.10.0...v1.10.1
-[1.10.0]: https://github.com/tantanjay/wealthsnap/compare/v1.9.0...v1.10.0
-[1.9.0]: https://github.com/tantanjay/wealthsnap/compare/v1.8.2...v1.9.0
-[1.8.2]: https://github.com/tantanjay/wealthsnap/compare/v1.8.1...v1.8.2
-[1.8.1]: https://github.com/tantanjay/wealthsnap/compare/v1.8.0...v1.8.1
-[1.8.0]: https://github.com/tantanjay/wealthsnap/compare/v1.7.0...v1.8.0
-[1.7.0]: https://github.com/tantanjay/wealthsnap/compare/v1.6.1...v1.7.0
-[1.6.1]: https://github.com/tantanjay/wealthsnap/compare/v1.6.0...v1.6.1
-[1.6.0]: https://github.com/tantanjay/wealthsnap/compare/v1.5.0...v1.6.0
-[1.5.0]: https://github.com/tantanjay/wealthsnap/compare/v1.4.0...v1.5.0
-[1.4.0]: https://github.com/tantanjay/wealthsnap/compare/v1.3.1...v1.4.0
-[1.3.1]: https://github.com/tantanjay/wealthsnap/compare/v1.3.0...v1.3.1
-[1.3.0]: https://github.com/tantanjay/wealthsnap/compare/v1.2.0...v1.3.0
-[1.2.0]: https://github.com/tantanjay/wealthsnap/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/tantanjay/wealthsnap/compare/v1.0.1...v1.1.0
-[1.0.1]: https://github.com/tantanjay/wealthsnap/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/tantanjay/wealthsnap/releases/tag/v1.0.0
 `
