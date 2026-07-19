@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+---
+
 ## [1.14.0] — 2026-07-19
 
 ### Added
@@ -32,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Financial Insights charts now reflect the browsed month instead of always comparing against today.
 - Financial Health no longer counts Receivable debts as liabilities; fixed Years to Independence and Runway Change accuracy.
 
-### Maintenance
+### Security
 - Updated dependencies and patched known security vulnerabilities.
 
 ---
@@ -44,17 +48,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Redesigned Dividend Dashboard with Actual/Calendar/Projected tabs.
 - Comparison chart Trend/Compare toggle and yearly browsing for the 1Y trend view.
 
-### Improved
+### Changed
 - Smart Advisor alerts merged/prioritized, fixed carousel pagination, added Alert Hierarchy explanation.
-
-### Maintenance
 - Updated all dependencies to their latest versions.
 
 ---
 
 ## [1.11.2] — 2026-03-24
 
-### Maintenance
+### Changed
 - Bumped multiple core Expo libraries to their latest stable patch versions for stability and performance.
 
 ---
@@ -68,8 +70,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - Migrated background synchronization from the deprecated `expo-background-fetch` to `expo-background-task`.
-
-### Improved
 - App now automatically respects the device's system theme; "System" appearance syncs with OS Dark/Light mode.
 
 ---
@@ -81,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Introduced a dedicated supporter recognition screen.
   - Displays supporter names with dynamic animated styles.
 
-### Maintenance
+### Changed
 - **Platform Upgrade: Expo 55**
   - Migrated core dependencies to Expo 55, React 19, and React Native 0.83.
   - Resolved `react-hooks/exhaustive-deps` warnings in `ThankYouScreen`.
@@ -96,15 +96,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Added support for every-6-months frequency for both transactions and reminders.
   - Implemented bi-annual pattern matching logic in the recurrence and notification services.
 
-### Improved
+### Changed
 - **Transaction Categories**
   - Added smart horizontal scrolling when selecting a category via search.
   - Refined scroll offset to maintain "Search" button visibility.
   - Stabilized selection behavior to avoid unwanted jumps during direct taps.
-
-### Maintenance
-- Internal security audit and dependency updates.
 - General performance refinements and platform compatibility checks.
+
+### Security
+- Internal security audit and dependency updates.
 
 ---
 
@@ -118,7 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - New single-tap filters for Income, Expenses, Investments, Debts, and Cash Flow.
   - Keyword search for notes, categories, and asset symbols.
 
-### Improved
+### Changed
 - **Debt Management**
   - Added ability to record associated fees as an expense when using direct vendor payments.
 - **Wealth Growth Analytics**
@@ -183,8 +183,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Transaction flow enhancement for debts:
   - Prompt asks whether money actually entered the account to prevent cash balance inflation.
 - Financial Health calculations integrated across Home, Insights, and Debt systems.
-
-### Improved
 - More conservative and realistic financial projections across Health, Runway, and Savings metrics.
 - Clearer separation between cash flow, liabilities, and long-term obligations.
 
@@ -209,8 +207,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Portfolio valuation logic updated to support multi-currency investment aggregation.
 - Background services enhanced to cache exchange rates and market data more efficiently.
-
-### Improved
 - Faster Insights rendering due to optimized background data synchronization.
 - Reduced external API usage through intelligent rate caching.
 
@@ -278,32 +274,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Introduced True Discretionary Income model.
   - Includes future recurring income, future bills, and dynamic burn rate.
   - Transfers treated strictly to prevent false discretionary inflation.
-
 - **Financial Runway**
   - Now accounts for both Transfer In and Transfer Out for accurate liquidity.
-
 - Header and navigation layout standardized across core screens.
-
-### Improved
 - Smart Alerts now run immediately after transaction save.
 - Reminder list sorted by upcoming schedule with active indicators.
 - Budget modal redesigned for clarity and smoother interaction.
 - Smart Advisor suggestions limited to active portfolio assets only.
-
-### Fixed
-- Investment Portfolio screen now refreshes instantly after adding investments.
-
-### Legal & Privacy
 - Simplified and clarified Terms & Privacy regarding:
   - Local-only architecture
   - AI usage
   - Encryption
   - Data deletion
   - Governing law
+- Major internal refactoring and modularization for long-term maintainability.
+
+### Removed
 - Removed unused storage and media permissions for Play Store compliance.
 
-### Developer
-- Major internal refactoring and modularization for long-term maintainability.
+### Fixed
+- Investment Portfolio screen now refreshes instantly after adding investments.
 
 ---
 
@@ -328,12 +318,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Removed legacy waterfall migration system.
   - Enforced latest schema (V7) on startup.
   - Legacy versions (V1–V6) no longer auto-migrated to improve stability.
-
 - **Transaction Flow**
   - Removed post-save alert popup.
   - Defaulted save action to rapid “Add More” mode.
-
-### Improved
 - Faster cold start by eliminating migration logic during splash.
 - Reduced app bundle size by removing unused migration artifacts.
 
@@ -394,25 +381,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Improved tablet and landscape responsiveness.
 - Investment calculation engine optimized to O(N) grouping.
 - Automated database migrations for investment price history.
-
-### Improved
 - Concurrency-safe transaction loading during background decryption.
 - Faster portfolio loading for large investment histories.
 - Clearer visual separation of transfers across analytics.
+- Added AI data transparency clauses (Section 2.4).
+- Clarified BYOK responsibility for Gemini API usage.
+- Added disclaimer for automated insights and projections.
 
 ### Fixed
 - Historical anomaly detection now calculates averages per month instead of per transaction.
 - Fixed infinite loop caused by Semi-Weekly reminder date calculations.
 - Resolved race condition where optimistic UI updates could be overwritten.
 
-### Legal & Privacy
-- Added AI data transparency clauses (Section 2.4).
-- Clarified BYOK responsibility for Gemini API usage.
-- Added disclaimer for automated insights and projections.
-
 ---
 
 ## [1.6.1] — 2026-01-28
+
 ### Fixed
 - Fixed app-wide crashes on Android caused by incompatible UUID generation.
 - Removed usage of `crypto.randomUUID`.
@@ -427,30 +411,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ---
 
 ## [1.6.0] — 2026-01-28
-### Changed
-- Introduced a new high-precision financial computation engine using `BigNumber.js`.
-- Recalculated historical and derived metrics using arbitrary precision math.
 
 ### Added
 - Background transaction decryption in non-blocking batches (500 items per chunk).
 - New **Provide Feedback** menu in Profile settings (Google Forms).
 - Expanded snooze options in Catch-up reminders (15m, 1h, 4h, 8h, 1d, 3d).
 
-### Improved
+### Changed
+- Introduced a new high-precision financial computation engine using `BigNumber.js`.
+- Recalculated historical and derived metrics using arbitrary precision math.
 - Reminder auto-rescheduling after backup restore.
 - Full notification cleanup when clearing app data.
-
-### Known Issues
-- Some charts or derived values may appear inconsistent due to recalculation changes.
-- Visual discrepancies may occur in certain analytics views.
+- *(Known issue)* Some charts or derived values may appear inconsistent due to recalculation changes.
+- *(Known issue)* Visual discrepancies may occur in certain analytics views.
 
 ---
 
 ## [1.5.0] — 2026-01-25
-### ⚠️ Breaking Changes
-- Security PIN reset required.
-- Encryption key alias changed; previously encrypted sensitive data may be unreadable.
-- Gemini AI API key must be reconfigured.
 
 ### Added
 - True background reminder actions (Complete / Snooze) without opening the app.
@@ -461,6 +438,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Developer tools for crash simulation and log export.
 
 ### Changed
+- **BREAKING:** Security PIN reset required.
+- **BREAKING:** Encryption key alias changed; previously encrypted sensitive data may be unreadable.
+- **BREAKING:** Gemini AI API key must be reconfigured.
 - Refactored internal storage architecture to centralized `KEYS` configuration.
 - Improved safe-area handling for headers and modals.
 
@@ -471,12 +451,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ---
 
 ## [1.4.0] — 2026-01-25
-### Changed
-- Updated Budget Health thresholds:
-  - Green: <70%
-  - Orange: 70–90%
-  - Red: >90%
-- Added projection footnote to Spending Comparison insights.
 
 ### Added
 - System-level Help Center with:
@@ -491,6 +465,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Standalone Terms & Privacy reference screen.
 - Improved legal UI with safe-area fixes and synced documents.
 
+### Changed
+- Updated Budget Health thresholds:
+  - Green: <70%
+  - Orange: 70–90%
+  - Red: >90%
+- Added projection footnote to Spending Comparison insights.
+
 ### Fixed
 - Misleading Budget Health color at 99% usage.
 - Startup crash caused by `NativeDatabase.prepareAsync` race condition.
@@ -498,13 +479,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ---
 
 ## [1.3.1] — 2026-01-23
+
 ### Added
 - Time range filters for Savings and Income charts (6M / 1Y / 3Y / ALL).
 - Expanded Overview section to 10 insight cards.
 - Manual paging system with visual indicators.
 - Insights layout customization with persistent settings.
 
-### Improved
+### Changed
 - Smart scaling and label density for large datasets.
 - Color-coded Savings Trend visuals.
 - Income projection consistency across all filters.
@@ -517,6 +499,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ---
 
 ## [1.3.0] — 2026-01-22
+
 ### Added
 - Optimistic cache system for instant transaction CRUD operations.
 - Skeleton loading states across Home, History, and Insights.
@@ -525,7 +508,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Monthly spending projection and pro-rated comparisons.
 - Local background smart alerts for spending deviations.
 
-### Improved
+### Changed
 - Initial transaction load time reduced by ~3× for large datasets.
 - Data migration system upgraded to a robust waterfall pattern.
 
@@ -538,6 +521,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ---
 
 ## [1.2.0] — 2026-01-21
+
 ### Added
 - AI-powered receipt analysis with Gemini AI.
 - API key acquisition guide and usage history.
@@ -545,7 +529,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Modern bottom modals for transaction actions.
 - Unified PIN entry UI.
 
-### Improved
+### Changed
 - Record flow UX and Android back button handling.
 - Dynamic modal resizing for calculators and recurring forms.
 
@@ -557,24 +541,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ---
 
 ## [1.1.0] — 2026-01-20
-### Changed
-- Migrated persistence layer from JSON files to SQLite.
-- Introduced automatic, lossless data migration.
 
 ### Added
 - Encrypted SQLite storage.
 - Conditional screenshot and app switcher protection.
 - Enhanced caching for faster data access.
 
+### Changed
+- Migrated persistence layer from JSON files to SQLite.
+- Introduced automatic, lossless data migration.
+
 ---
 
 ## [1.0.1] — 2026-01-19
+
 ### Added
 - Interactive onboarding guide explaining security and core features.
 - Help & Guide access from Profile settings.
 - Support Developer section with donation option.
 
-### Improved
+### Changed
 - Profile screen layout and visual consistency.
 - Gemini AI settings UX.
 
@@ -584,8 +570,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [1.0.0] — Initial Release
+## [1.0.0] — 2026-01-18
+
 ### Added
 - Offline-first personal finance tracking.
 - AES-256 encrypted local storage.
 - No accounts, no ads, no cloud dependency.
+
+[Unreleased]: https://github.com/tantanjay/wealthsnap/compare/v1.14.0...HEAD
+[1.14.0]: https://github.com/tantanjay/wealthsnap/compare/v1.13.0...v1.14.0
+[1.13.0]: https://github.com/tantanjay/wealthsnap/compare/v1.12.0...v1.13.0
+[1.12.0]: https://github.com/tantanjay/wealthsnap/compare/v1.11.2...v1.12.0
+[1.11.2]: https://github.com/tantanjay/wealthsnap/compare/v1.11.1...v1.11.2
+[1.11.1]: https://github.com/tantanjay/wealthsnap/compare/v1.11.0...v1.11.1
+[1.11.0]: https://github.com/tantanjay/wealthsnap/compare/v1.10.2...v1.11.0
+[1.10.2]: https://github.com/tantanjay/wealthsnap/compare/v1.10.1...v1.10.2
+[1.10.1]: https://github.com/tantanjay/wealthsnap/compare/v1.10.0...v1.10.1
+[1.10.0]: https://github.com/tantanjay/wealthsnap/compare/v1.9.0...v1.10.0
+[1.9.0]: https://github.com/tantanjay/wealthsnap/compare/v1.8.2...v1.9.0
+[1.8.2]: https://github.com/tantanjay/wealthsnap/compare/v1.8.1...v1.8.2
+[1.8.1]: https://github.com/tantanjay/wealthsnap/compare/v1.8.0...v1.8.1
+[1.8.0]: https://github.com/tantanjay/wealthsnap/compare/v1.7.0...v1.8.0
+[1.7.0]: https://github.com/tantanjay/wealthsnap/compare/v1.6.1...v1.7.0
+[1.6.1]: https://github.com/tantanjay/wealthsnap/compare/v1.6.0...v1.6.1
+[1.6.0]: https://github.com/tantanjay/wealthsnap/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/tantanjay/wealthsnap/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/tantanjay/wealthsnap/compare/v1.3.1...v1.4.0
+[1.3.1]: https://github.com/tantanjay/wealthsnap/compare/v1.3.0...v1.3.1
+[1.3.0]: https://github.com/tantanjay/wealthsnap/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/tantanjay/wealthsnap/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/tantanjay/wealthsnap/compare/v1.0.1...v1.1.0
+[1.0.1]: https://github.com/tantanjay/wealthsnap/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/tantanjay/wealthsnap/releases/tag/v1.0.0
