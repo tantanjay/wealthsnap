@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -7,6 +7,7 @@ import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { saveHomeTransactionsTab, getHomeTransactionsTab } from '@services/core/storageService';
 
 interface HomeTransactionsCardProps {
     recentTransactions: Transaction[];
@@ -27,6 +28,25 @@ const HomeTransactionsCard: React.FC<HomeTransactionsCardProps> = ({
 }) => {
     const { colors } = useTheme();
     const [activeTab, setActiveTab] = useState<'RECENT' | 'TOP'>('RECENT');
+
+    // Restore the last-selected tab (Recent / Top Expenses) on mount
+    const isInitialTabLoad = useRef(true);
+    useEffect(() => {
+        const loadTab = async () => {
+            const saved = await getHomeTransactionsTab();
+            if (saved === 'RECENT' || saved === 'TOP') {
+                setActiveTab(saved);
+            }
+            isInitialTabLoad.current = false;
+        };
+        loadTab();
+    }, []);
+
+    useEffect(() => {
+        if (!isInitialTabLoad.current) {
+            saveHomeTransactionsTab(activeTab);
+        }
+    }, [activeTab]);
 
     const getCategoryIcon = (category: string): string => {
         const iconMap: { [key: string]: string } = {

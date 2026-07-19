@@ -155,6 +155,25 @@ const InvestmentScreen = ({ navigation }: any) => {
         fetchSuggestions();
     }, [activePriority]);
 
+    // Restore the last-selected Smart Advisor priority filter on mount
+    const isInitialPriorityLoad = React.useRef(true);
+    React.useEffect(() => {
+        const loadPriority = async () => {
+            const saved = await Storage.getInvestmentAdvisorPriority();
+            if (saved === 'div' || saved === 'crash' || saved === 'balance' || saved === 'all') {
+                setActivePriority(saved);
+            }
+            isInitialPriorityLoad.current = false;
+        };
+        loadPriority();
+    }, []);
+
+    React.useEffect(() => {
+        if (!isInitialPriorityLoad.current) {
+            Storage.saveInvestmentAdvisorPriority(activePriority);
+        }
+    }, [activePriority]);
+
     const updateSuggestions = (priority: Priority) => {
         setActivePriority(priority);
     };

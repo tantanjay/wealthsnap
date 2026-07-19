@@ -11,6 +11,7 @@ import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
 import { getMonthlyTrends, getMonthlyTrendsForYear } from '@utils/financialMetrics';
 import { CURRENCY_SYMBOLS, formatCurrencyAmount } from '@utils/currencyUtils';
+import { saveInsightsComparisonView, getInsightsComparisonView, saveInsightsComparisonTimeRange, getInsightsComparisonTimeRange } from '@services/core/storageService';
 
 interface ComparisonChartProps {
     currentMonthExpense: BigNumber;
@@ -37,6 +38,29 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
     useEffect(() => {
         setSelectedYear(selectedDate.getFullYear());
     }, [selectedDate]);
+
+    // Restore the last-selected view (Trend / Compare) and time range on mount
+    const isInitialPrefLoad = React.useRef(true);
+    useEffect(() => {
+        const loadPrefs = async () => {
+            const [savedView, savedRange] = await Promise.all([
+                getInsightsComparisonView(),
+                getInsightsComparisonTimeRange()
+            ]);
+            if (savedView === 'COMPARISON' || savedView === 'MONTHLY') setActiveView(savedView);
+            if (savedRange === '6M' || savedRange === '1Y' || savedRange === '3Y' || savedRange === 'ALL') setTimeRange(savedRange);
+            isInitialPrefLoad.current = false;
+        };
+        loadPrefs();
+    }, []);
+
+    useEffect(() => {
+        if (!isInitialPrefLoad.current) saveInsightsComparisonView(activeView);
+    }, [activeView]);
+
+    useEffect(() => {
+        if (!isInitialPrefLoad.current) saveInsightsComparisonTimeRange(timeRange);
+    }, [timeRange]);
 
     const availableYears = useMemo(() => {
         if (transactions.length === 0) return [new Date().getFullYear()];
