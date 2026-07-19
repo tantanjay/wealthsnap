@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, Dimensions, ScrollView } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import TimeRangeSelector from '@components/common/TimeRangeSelector';
 import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
 import { getCategoryGroup } from '@constants/categories';
@@ -137,38 +138,6 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
         },
     }), [colors, currency]);
 
-    const renderTimeFilter = () => (
-        <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20 }}>
-            <View style={{ flexDirection: 'row', backgroundColor: colors.border + '40', borderRadius: 8, padding: 2 }}>
-                {(['6M', '1Y', '3Y', 'ALL'] as const).map((range) => (
-                    <TouchableOpacity
-                        key={range}
-                        onPress={() => setTimeRange(range)}
-                        style={{
-                            paddingHorizontal: 12,
-                            paddingVertical: 6,
-                            borderRadius: 6,
-                            backgroundColor: timeRange === range ? colors.surface : 'transparent',
-                            elevation: timeRange === range ? 1 : 0,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 1 },
-                            shadowOpacity: timeRange === range ? 0.1 : 0,
-                            shadowRadius: 1
-                        }}
-                    >
-                        <Text style={{
-                            color: timeRange === range ? colors.primary : colors.textSecondary,
-                            fontWeight: timeRange === range ? '600' : '400',
-                            fontSize: 12,
-                        }}>
-                            {range}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-        </View>
-    );
-
     return (
         <BottomModal
             visible={visible}
@@ -180,11 +149,13 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 20 }}
             >
-                {renderTimeFilter()}
+                <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20 }}>
+                    <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+                </View>
 
                 {/* Chart */}
                 {trendData.data.length > 0 && (
-                    <View style={{ overflow: 'hidden', marginLeft: -20 }}>
+                    <View style={{ height: 240, paddingVertical: 10, overflow: 'hidden', marginLeft: -20 }}>
                         <LineChart
                             data={trendData.data.map((val, index) => ({
                                 value: val.toNumber(),
