@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, Platform, ToastAndroid } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, RefreshControl, Platform, ToastAndroid } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { Skeleton } from '@components/common/Skeleton';
+import DraggableIconButton from '@components/common/DraggableIconButton';
 import { InvestmentStats } from '@components/investments/InvestmentStats';
 import { HoldingsList } from '@components/investments/HoldingsList';
 import { SmartAdvisor, Suggestion } from '@components/investments/SmartAdvisor';
@@ -10,6 +11,7 @@ import { AllocationChart } from '@components/investments/AllocationChart';
 import { DividendChart } from '@components/investments/DividendChart';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
+import { useFloatingGear } from '@context/FloatingGearContext';
 import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding, getActualDividendsGrouped } from '@services/domain/investmentService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
 import { getProjectedDividends, getDividendCalendar, CalendarEvent } from '@services/domain/dividendHistoryService';
@@ -28,6 +30,7 @@ const VALID_SECTION_IDS = ['stats_carousel', 'smart_advisor', 'allocation_chart'
 const InvestmentScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
+    const { isDocked, registerSecondAction } = useFloatingGear();
     const { checkConsent } = useAIConsent();
     const [refreshing, setRefreshing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -144,6 +147,17 @@ const InvestmentScreen = ({ navigation }: any) => {
         useCallback(() => {
             loadStats();
         }, [loadStats])
+    );
+
+    useFocusEffect(
+        useCallback(() => {
+            registerSecondAction({
+                label: 'Screen Settings',
+                icon: 'options-outline',
+                onPress: () => setShowSettings(true),
+            });
+            return () => registerSecondAction(null);
+        }, [registerSecondAction])
     );
 
     // Separate effect for suggestions to avoid redundant full-stats load
@@ -359,27 +373,29 @@ const InvestmentScreen = ({ navigation }: any) => {
                         )}
                         <Text style={[styles.title, { color: colors.text }]}>Portfolio</Text>
                     </View>
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                        <TouchableOpacity
-                            onPress={togglePrivacy}
-                            style={[
-                                styles.iconButton,
-                                { backgroundColor: colors.surface }
-                            ]}
-                        >
-                            <Ionicons
-                                name={isPrivacyEnabled ? 'eye-off' : 'eye'}
-                                size={20}
-                                color={colors.text}
-                            />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.iconButton, { backgroundColor: colors.surface }]}
-                            onPress={() => setShowSettings(true)}
-                        >
-                            <Ionicons name="options-outline" size={20} color={colors.text} />
-                        </TouchableOpacity>
-                    </View>
+                    {isDocked && (
+                        <View style={{ flexDirection: 'row', gap: 12 }}>
+                            <DraggableIconButton
+                                onPress={togglePrivacy}
+                                style={[
+                                    styles.iconButton,
+                                    { backgroundColor: colors.surface }
+                                ]}
+                            >
+                                <Ionicons
+                                    name={isPrivacyEnabled ? 'eye-off' : 'eye'}
+                                    size={20}
+                                    color={colors.text}
+                                />
+                            </DraggableIconButton>
+                            <DraggableIconButton
+                                style={[styles.iconButton, { backgroundColor: colors.surface }]}
+                                onPress={() => setShowSettings(true)}
+                            >
+                                <Ionicons name="options-outline" size={20} color={colors.text} />
+                            </DraggableIconButton>
+                        </View>
+                    )}
                 </View>
 
                 {/* Dynamic Sections */}
@@ -415,7 +431,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     title: {
         fontSize: 28,

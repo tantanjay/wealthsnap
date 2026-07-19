@@ -15,8 +15,10 @@ import SavingsRateTrend from '@components/insights/SavingsRateTrend';
 import CumulativeSpendingChart from '@components/insights/CumulativeSpendingChart';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import BottomModal from '@components/common/BottomModal';
+import DraggableIconButton from '@components/common/DraggableIconButton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
+import { useFloatingGear } from '@context/FloatingGearContext';
 import { Transaction } from '@types';
 import { getAllBudgets } from '@services/domain/budgetService';
 import { getAllDebts } from '@services/domain/debtService';
@@ -40,6 +42,7 @@ const VALID_SECTION_IDS = [
 const InsightScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
+    const { isDocked, registerSecondAction } = useFloatingGear();
     const [currency, setCurrency] = useState('PHP');
     const [refreshing, setRefreshing] = useState(false);
     const [expenseGrouping, setExpenseGrouping] = useState<'GROUP' | 'ITEM'>('ITEM');
@@ -263,6 +266,17 @@ const InsightScreen = ({ navigation }: any) => {
         }, [fetchAllData])
     );
 
+    useFocusEffect(
+        useCallback(() => {
+            registerSecondAction({
+                label: 'Screen Settings',
+                icon: 'options-outline',
+                onPress: () => setIsSettingsModalVisible(true),
+            });
+            return () => registerSecondAction(null);
+        }, [registerSecondAction])
+    );
+
     // Only re-calculate breakdown if grouping or date changes specifically
     useEffect(() => {
         if (transactions.length > 0) {
@@ -285,25 +299,29 @@ const InsightScreen = ({ navigation }: any) => {
                 <View style={{ flex: 1 }}>
                     <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>Financial Insights</Text>
                 </View>
-                <TouchableOpacity
-                    onPress={togglePrivacy}
-                    style={[
-                        styles.iconButton,
-                        { backgroundColor: colors.surface, marginRight: 10 }
-                    ]}
-                >
-                    <Ionicons
-                        name={isPrivacyEnabled ? 'eye-off' : 'eye'}
-                        size={20}
-                        color={colors.text}
-                    />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.iconButton, { backgroundColor: colors.surface }]}
-                    onPress={() => setIsSettingsModalVisible(true)}
-                >
-                    <Ionicons name="options-outline" size={20} color={colors.text} />
-                </TouchableOpacity>
+                {isDocked && (
+                    <>
+                        <DraggableIconButton
+                            onPress={togglePrivacy}
+                            style={[
+                                styles.iconButton,
+                                { backgroundColor: colors.surface, marginRight: 10 }
+                            ]}
+                        >
+                            <Ionicons
+                                name={isPrivacyEnabled ? 'eye-off' : 'eye'}
+                                size={20}
+                                color={colors.text}
+                            />
+                        </DraggableIconButton>
+                        <DraggableIconButton
+                            style={[styles.iconButton, { backgroundColor: colors.surface }]}
+                            onPress={() => setIsSettingsModalVisible(true)}
+                        >
+                            <Ionicons name="options-outline" size={20} color={colors.text} />
+                        </DraggableIconButton>
+                    </>
+                )}
             </View>
 
             {/* Month Selector */}

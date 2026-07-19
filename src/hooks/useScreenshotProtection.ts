@@ -10,12 +10,12 @@ import { usePrivacy } from '@context/PrivacyContext';
  * - OFF (Privacy Disabled/Visible Values): Prevents screenshots (FLAG_SECURE).
  */
 export const useScreenshotProtection = () => {
-    const { isPrivacyEnabled } = usePrivacy();
+    const { isPrivacyEnabled, isScreenshotRevealActive } = usePrivacy();
 
     useEffect(() => {
         const updateProtection = async () => {
             try {
-                if (isPrivacyEnabled) {
+                if (isPrivacyEnabled || isScreenshotRevealActive) {
                     await ScreenCapture.allowScreenCaptureAsync();
                 } else {
                     await ScreenCapture.preventScreenCaptureAsync();
@@ -26,5 +26,5 @@ export const useScreenshotProtection = () => {
         };
 
         updateProtection();
-    }, [isPrivacyEnabled]);
+    }, [isPrivacyEnabled, isScreenshotRevealActive]);
 };
