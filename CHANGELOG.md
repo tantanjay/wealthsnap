@@ -10,43 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [1.14.0] — 2026-07-19
 
 ### Added
-- **Savings Trend: Rate, Saved & Cash Flow**
-  - The Savings Trend chart now has three views: Rate (% of income kept), Saved (raw amount kept, including money moved into investments), and Cash Flow (what's actually left in cash after everything, including investments and other transfers out).
-  - Streak, Positive/Negative counts, Average, Current, and Best/Worst Month all recalculate for whichever view is active.
-- **Persistent Selections**
-  - Insights: Income Trend, Spending Comparison, and Savings Trend now remember their tab and time range (6M/1Y/3Y/ALL); Expense Analysis remembers Group vs. Item; Monthly Pulse remembers its 3M/6M/12M period.
-  - Investments: The Dividend chart remembers Actual/Calendar/Proj., the Allocation chart remembers Stocks/Sector/Type, and the Smart Advisor priority filter is remembered.
-  - Debt Strategy: The Avalanche/Snowball payoff toggle now persists.
-  - Home: Swiping a card (Financial Health, Cash Flow, Investments, Debts) to a different view now saves that choice immediately.
+- Savings Trend chart now has three views: Rate, Saved, and Cash Flow.
+- Chart tabs, time ranges, and toggles across Insights, Investments, Debt, and Home now persist between sessions.
 
 ### Changed
-- **Streamlined Time Range Selector**: The 6M/1Y/3Y/ALL button row on Insights charts is now a compact dropdown, applied consistently across Income Trend, Spending Comparison, Savings Rate Trend, and Category Trend, with uniform chart container sizing across all four.
-- **Home Settings**: Removed the old "Home Settings" screen that required manually picking and saving a default view for each card, since swiping a card now saves that choice automatically. The Recent/Top Expenses tab also now remembers your last pick.
+- Time range selector redesigned as a compact dropdown across Insights charts.
+- Simplified Home Settings; swiping a card now saves its display mode directly.
 
 ### Fixed
-- **Dividend Calendar tab sizing**: Switching to the Calendar tab and back could leave a large blank gap or stale chart height behind due to reused layout measurements; each tab now remounts and re-measures cleanly.
-- **Dividend Calendar portrait height**: Month cells were forced into perfect squares, making them far taller than needed in portrait's 3-column layout; cells now size to their content, shrinking the 4-row grid from ~440px to ~250px.
+- Dividend Calendar tab sizing and portrait height issues.
 
 ---
 
 ## [1.13.0] — 2026-07-05
 
 ### Fixed
-- **Debt Tracker Accuracy**
-  - "Pay Now" on a Receivable debt (money owed to you) no longer deducts from your cash balance — repayments now correctly record as income/transfer-in, and earned interest posts as Income instead of an Expense.
-  - Home Screen "Total Debt"/"Repaid" figures now correctly reflect repayments on Receivable debts.
-  - Fixed double-counted fees when creating a new debt with "Yes, I received the cash" and a processing fee.
-  - Debt Strategy screen's payoff simulation now correctly models Flat-interest loans instead of treating every debt as reducing-balance, which previously understated total interest and overstated the debt-free date.
-  - Savings Rate no longer miscounts originating a new loan to someone as an ongoing debt repayment.
-- **Investment & Dividend Accuracy**
-  - Dividend Yield %, Projected Dividends, and the Dividend Calendar now correctly convert foreign-currency dividends into the profile currency, instead of comparing raw foreign amounts against profile-currency prices.
-- **Financial Insights**
-  - Browsing a past month via the month/year picker now correctly updates the Spending Comparison, Income Trend, Savings Rate, and Monthly Pulse average-comparison charts, instead of silently comparing the selected month against today's rolling averages.
-  - The in-chart year selector (1Y trend view) now stays in sync with the month picker.
-- **Financial Health**
-  - Receivable debts (money owed to you) are no longer counted as your own liability — fixes inflated Financial Runway burn rate, Debt Pressure interest cost/liability, and an incorrect "still has debt" state for users with zero real debt.
-  - "Years to Financial Independence" no longer defaults to a flat 500 years for users with existing portfolio value but no active monthly contribution; it now accounts for compound growth on existing capital.
-  - Improved accuracy of the month-over-month Runway Change trend for debts paid off since the prior month.
+- Debt Tracker accuracy for Receivable debt payments, duplicate fees, Flat-interest payoff, and Savings Rate miscounts.
+- Dividend Yield and Projected Dividends now correctly convert foreign-currency amounts.
+- Financial Insights charts now reflect the browsed month instead of always comparing against today.
+- Financial Health no longer counts Receivable debts as liabilities; fixed Years to Independence and Runway Change accuracy.
 
 ### Maintenance
 - Updated dependencies and patched known security vulnerabilities.
@@ -56,25 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [1.12.0] — 2026-05-11
 
 ### Added
-- **Historical Monthly Insights**
-  - New month and year selector on the Financial Insights screen for browsing any previous month/year.
-  - Calendar-style month picker with direct jump-to-month navigation.
-  - All charts, overview cards, and trend analyses react to the selected date, with projected data hidden for historical months.
-  - "Back to Today" shortcut.
-- **Redesigned Dividend Dashboard**
-  - New tabbed layout: Actual, Calendar, and Projected income views.
-  - Tap any chart bar to see which assets paid you that month.
-  - Dividends logged as direct income are now automatically captured for accurate charts.
-- **Insight & Analysis Upgrades**
-  - Comparison chart now includes a Trend/Compare toggle.
-  - Yearly data browsing for the 1Y trend view via year selector chevrons.
-  - Current month now shows a projected spending bar based on pace so far.
+- Historical Monthly Insights: month/year selector with calendar picker and "Back to Today" shortcut.
+- Redesigned Dividend Dashboard with Actual/Calendar/Projected tabs.
+- Comparison chart Trend/Compare toggle and yearly browsing for the 1Y trend view.
 
 ### Improved
-- **Smart Advisor**
-  - Fixed inconsistent "Balance" suggestions; alerts are now intelligently merged and prioritized.
-  - Resolved pagination and scrolling issues in the carousel.
-  - Added an "Alert Hierarchy" explanation in the info modal.
+- Smart Advisor alerts merged/prioritized, fixed carousel pagination, added Alert Hierarchy explanation.
 
 ### Maintenance
 - Updated all dependencies to their latest versions.
