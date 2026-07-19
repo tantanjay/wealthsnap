@@ -11,6 +11,19 @@ export interface PortfolioStatsInput {
     totalDividends: number;
 }
 
+export interface HoldingInput {
+    symbol: string;
+    name?: string;
+    totalValue: number;
+}
+
+export interface HoldingAllocation {
+    symbol: string;
+    name?: string;
+    totalValue: number;
+    allocationPercent: number;
+}
+
 export interface FinancialSnapshotData {
     totalCash: number;
     totalInvestmentValue: number;
@@ -18,6 +31,7 @@ export interface FinancialSnapshotData {
     unrealizedPL: number;
     unrealizedPLPercent: number;
     totalDividends: number;
+    holdings: HoldingAllocation[];
     totalDebtLiability: number;
     monthlyBurnRate: number;
     runwayMonths: number | null; // null = infinite (no burn rate)
@@ -35,8 +49,23 @@ export interface FinancialSnapshotData {
 export const buildFinancialSnapshotData = (
     transactions: Transaction[],
     debts: Debt[],
-    portfolioStats: PortfolioStatsInput
+    portfolioStats: PortfolioStatsInput,
+    holdings: HoldingInput[] = []
 ): FinancialSnapshotData => {
+    // Allocation is a share of the authoritative portfolio total (from getPortfolioStats),
+    // not a sum of the holdings passed in here, so it stays consistent with totalInvestmentValue above.
+    const holdingAllocations: HoldingAllocation[] = holdings
+        .filter(h => h.totalValue > 0)
+        .map(h => ({
+            symbol: h.symbol,
+            name: h.name,
+            totalValue: h.totalValue,
+            allocationPercent: portfolioStats.totalEquity > 0
+                ? (h.totalValue / portfolioStats.totalEquity) * 100
+                : 0
+        }))
+        .sort((a, b) => b.totalValue - a.totalValue);
+
     let totalCash = new BigNumber(0);
     transactions.forEach(t => {
         if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') totalCash = totalCash.plus(t.amount.abs());
@@ -64,6 +93,7 @@ export const buildFinancialSnapshotData = (
         unrealizedPL: portfolioStats.unrealizedPL,
         unrealizedPLPercent: portfolioStats.unrealizedPLPercent,
         totalDividends: portfolioStats.totalDividends,
+        holdings: holdingAllocations,
         totalDebtLiability: totalDebtLiability.toNumber(),
         monthlyBurnRate: monthlyBurnRate.toNumber(),
         runwayMonths
@@ -80,6 +110,13 @@ export const renderFinancialSnapshotText = (data: FinancialSnapshotData, currenc
     lines.push(`  Realized P/L: ${fmt(data.realizedPL, currency)}`);
     lines.push(`  Unrealized P/L: ${fmt(data.unrealizedPL, currency)} (${data.unrealizedPLPercent.toFixed(1)}%)`);
     lines.push(`  Total Dividends Received: ${fmt(data.totalDividends, currency)}`);
+    if (data.holdings.length > 0) {
+        lines.push('  Allocation by Holding:');
+        data.holdings.forEach(h => {
+            const label = h.name ? `${h.symbol} (${h.name})` : h.symbol;
+            lines.push(`    ${label}: ${fmt(h.totalValue, currency)} (${h.allocationPercent.toFixed(1)}%)`);
+        });
+    }
     lines.push(`Total Debt Liability: ${fmt(data.totalDebtLiability, currency)}`);
     lines.push(`Monthly Burn Rate (incl. debt payments): ${fmt(data.monthlyBurnRate, currency)}`);
     lines.push(`Financial Runway: ${data.runwayMonths === null ? 'Infinite (no recurring burn)' : `${data.runwayMonths} months`}`);
