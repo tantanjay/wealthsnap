@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import TimeRangeSelector from '@components/common/TimeRangeSelector';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
@@ -89,29 +90,6 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
             return `Great job! On track to spend ${formatCurrencyAmount(diff, currency)} less than average.*`;
         }
     };
-
-    const renderTimeFilter = () => (
-        <View style={{ flexDirection: 'row', backgroundColor: colors.border + '40', borderRadius: 8, padding: 2 }}>
-            {(['6M', '1Y', '3Y', 'ALL'] as const).map((range) => (
-                <Text
-                    key={range}
-                    onPress={() => setTimeRange(range)}
-                    style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 4,
-                        borderRadius: 6,
-                        backgroundColor: timeRange === range ? colors.surface : 'transparent',
-                        color: timeRange === range ? colors.primary : colors.textSecondary,
-                        fontWeight: timeRange === range ? '600' : '400',
-                        fontSize: 12,
-                        elevation: timeRange === range ? 1 : 0,
-                    }}
-                >
-                    {range}
-                </Text>
-            ))}
-        </View>
-    );
 
     const renderYearSelector = () => {
         if (availableYears.length <= 1 && availableYears[0] === new Date().getFullYear()) return null;
@@ -231,7 +209,9 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                         </TouchableOpacity>
                     </View>
 
-                    {activeView === 'MONTHLY' && renderTimeFilter()}
+                    {activeView === 'MONTHLY' && (
+                        <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+                    )}
                 </View>
 
                 {isLoading ? (
