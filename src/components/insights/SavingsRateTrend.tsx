@@ -5,6 +5,7 @@ import { LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import TimeRangeSelector from '@components/common/TimeRangeSelector';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
@@ -279,36 +280,6 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         return { positiveCount, negativeCount, longestPositiveStreak, longestNegativeStreak };
     }, [savingsData.rawData]);
 
-    const renderTimeFilter = () => (
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-            <View style={{ flexDirection: 'row', backgroundColor: colors.border + '40', borderRadius: 8, padding: 2 }}>
-                {(['6M', '1Y', '3Y', 'ALL'] as const).map((range) => (
-                    <Text
-                        key={range}
-                        onPress={() => setTimeRange(range)}
-                        style={{
-                            paddingHorizontal: 12,
-                            paddingVertical: 4,
-                            borderRadius: 6,
-                            backgroundColor: timeRange === range ? colors.surface : 'transparent',
-                            color: timeRange === range ? colors.primary : colors.textSecondary,
-                            fontWeight: timeRange === range ? '600' : '400',
-                            fontSize: 12,
-                            overflow: 'hidden',
-                            elevation: timeRange === range ? 1 : 0,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 1 },
-                            shadowOpacity: timeRange === range ? 0.1 : 0,
-                            shadowRadius: 1
-                        }}
-                    >
-                        {range}
-                    </Text>
-                ))}
-            </View>
-        </View>
-    );
-
     const renderInfoModal = () => (
         <BottomModal
             visible={showInfoModal}
@@ -521,7 +492,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                             <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
                         </TouchableOpacity>
                     </View>
-                    {renderTimeFilter()}
+                    <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
                 </View>
                 <Card>
                     <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 20 }}>
@@ -542,7 +513,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                         <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                 </View>
-                {renderTimeFilter()}
+                <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
             </View>
             <Card>
 
@@ -616,11 +587,11 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                 </View>
 
                 {isLoading ? (
-                    <View style={{ height: 200, padding: 10 }}>
+                    <View style={{ height: 220, paddingVertical: 10 }}>
                         <Skeleton height={180} width="100%" borderRadius={16} />
                     </View>
                 ) : !privacyMode && (
-                    <View style={{ marginLeft: -10 }}>
+                    <View style={{ height: 220, paddingVertical: 10, marginLeft: -10 }}>
                         {/* MANUAL REFERENCE LINE (0%) - Rendered BEHIND chart to avoid tooltip overlap */}
                         <View style={{
                             position: 'absolute',
@@ -705,7 +676,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
 
                 {!isLoading && privacyMode && (
                     <View style={{
-                        height: 200,
+                        height: 220,
                         justifyContent: 'center',
                         alignItems: 'center',
                         backgroundColor: colors.border + '20',
