@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-gifted-charts';
 
 import BottomModal from '@components/common/BottomModal';
+import TimeRangeSelector from '@components/common/TimeRangeSelector';
 import MonthEndProjectionModal from '@components/insights/modals/MonthEndProjectionModal';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
@@ -116,29 +117,6 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
         return "Your income has been stable.";
     };
 
-    const renderTimeFilter = () => (
-        <View style={{ flexDirection: 'row', backgroundColor: colors.border + '40', borderRadius: 8, padding: 2 }}>
-            {(['6M', '1Y', '3Y', 'ALL'] as const).map((range) => (
-                <Text
-                    key={range}
-                    onPress={() => setTimeRange(range)}
-                    style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 4,
-                        borderRadius: 6,
-                        backgroundColor: timeRange === range ? colors.surface : 'transparent',
-                        color: timeRange === range ? colors.primary : colors.textSecondary,
-                        fontWeight: timeRange === range ? '600' : '400',
-                        fontSize: 12,
-                        elevation: timeRange === range ? 1 : 0,
-                    }}
-                >
-                    {range}
-                </Text>
-            ))}
-        </View>
-    );
-
     const renderYearSelector = () => {
         if (availableYears.length <= 1 && availableYears[0] === new Date().getFullYear()) return null;
 
@@ -238,7 +216,9 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                     </View>
 
                     {/* Time Range Filter - Only show for TREND tab */}
-                    {activeTab === 'TREND' && renderTimeFilter()}
+                    {activeTab === 'TREND' && (
+                        <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+                    )}
                 </View>
 
                 {!isPrivacyEnabled ? (
