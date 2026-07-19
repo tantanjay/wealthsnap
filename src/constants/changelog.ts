@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Monthly Summary**: a new Quick Actions menu item showing a narrative breakdown of each month's income, expenses, savings rate, investments, debt payments, transfers, budget alerts, and unusual spending.
+  - Automatically generated in the background for every month with recorded activity, including a one-time backfill of past months on first launch.
+  - Manual "Reprocess" option to regenerate all monthly summaries on demand.
+
 ---
 
 ## [1.14.0] — 2026-07-19

@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ASYNC_KEYS } from '@constants/config';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 11;
+export const DATABASE_VERSION = 12;
 
 /**
  * Create all database tables and indexes
@@ -236,6 +236,18 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
         CREATE INDEX IF NOT EXISTS idx_debts_status ON debts(status);
         CREATE INDEX IF NOT EXISTS idx_debts_type ON debts(type);
         CREATE INDEX IF NOT EXISTS idx_debts_direction ON debts(direction);
+
+        -- Monthly Summary table (precomputed narrative + structured data, one row per calendar month)
+        CREATE TABLE IF NOT EXISTS monthly_summary (
+            yearMonth TEXT PRIMARY KEY,  -- 'YYYY-MM'
+            isFinal INTEGER DEFAULT 0,   -- 1 once the month has fully closed; skipped on future syncs
+            summaryText TEXT NOT NULL,   -- rendered narrative block
+            summaryJson TEXT NOT NULL,   -- structured data backing the text
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_monthly_summary_final ON monthly_summary(isFinal);
     `);
 
 };
@@ -413,6 +425,22 @@ export const migrateToVersion11 = async (db: SQLite.SQLiteDatabase): Promise<voi
 
     } catch (error) {
         console.error('[Migration] Failed version 11 migration:', error);
+        throw error;
+    }
+};
+
+/**
+ * Migrate to Version 12: Add monthly_summary table
+ * Table creation itself is handled by createTables() (CREATE TABLE IF NOT EXISTS runs on
+ * every init), so there's nothing to alter for existing installs - this just bumps the version.
+ */
+export const migrateToVersion12 = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+    try {
+        console.log('[Migration] Starting migration to version 12...');
+        await setDatabaseVersion(db, 12);
+        console.log('[Migration] Successfully migrated to version 12');
+    } catch (error) {
+        console.error('[Migration] Failed version 12 migration:', error);
         throw error;
     }
 };
