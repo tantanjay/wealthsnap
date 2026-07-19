@@ -36,10 +36,19 @@ export const ASYNC_KEYS = {
         INVESTMENT_DISPLAY_MODE: '@wealthsnap_investment_display_mode',
         DEBT_DISPLAY_MODE: '@wealthsnap_debt_display_mode',
         CARD_ORDER: '@wealthsnap_card_order',
+        TRANSACTIONS_TAB: '@wealthsnap_home_transactions_tab',
     },
     INSIGHTS_SCREEN: {
         CARD_ORDER: '@wealthsnap_insights_card_order',
         SECTION_ORDER: '@wealthsnap_insights_section_order',
+        EXPENSE_GROUPING: '@wealthsnap_insights_expense_grouping',
+        INCOME_TAB: '@wealthsnap_insights_income_tab',
+        INCOME_TIME_RANGE: '@wealthsnap_insights_income_time_range',
+        COMPARISON_VIEW: '@wealthsnap_insights_comparison_view',
+        COMPARISON_TIME_RANGE: '@wealthsnap_insights_comparison_time_range',
+        SAVINGS_TAB: '@wealthsnap_insights_savings_tab',
+        SAVINGS_TIME_RANGE: '@wealthsnap_insights_savings_time_range',
+        PULSE_PERIOD: '@wealthsnap_insights_pulse_period',
     },
     HISTORY_SCREEN: {
         PREFERENCE: '@wealthsnap_history_prefs'
@@ -48,6 +57,12 @@ export const ASYNC_KEYS = {
         STATS_ORDER: '@wealthsnap_investment_stats_order',
         SECTION_ORDER: '@wealthsnap_investment_section_order',
         HOLDINGS_SORT: '@wealthsnap_investment_holdings_sort',
+        DIVIDEND_TAB: '@wealthsnap_investment_dividend_tab',
+        ALLOCATION_TAB: '@wealthsnap_investment_allocation_tab',
+        ADVISOR_PRIORITY: '@wealthsnap_investment_advisor_priority',
+    },
+    DEBT_SCREEN: {
+        STRATEGY: '@wealthsnap_debt_strategy',
     },
     CRASH_REPORT: '@wealthsnap_crash_report',
     DEVELOPER_MODE: '@wealthsnap_developer_mode',

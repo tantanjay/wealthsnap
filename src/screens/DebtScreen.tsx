@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,6 +27,25 @@ const DebtScreen = ({ navigation }: any) => {
 
     const [strategy, setStrategy] = useState<'SNOWBALL' | 'AVALANCHE'>('AVALANCHE');
     const [extraPayment] = useState<number>(0); // User input for extra payment simulation
+
+    // Restore the last-selected payoff strategy (Avalanche / Snowball) on mount
+    const isInitialStrategyLoad = useRef(true);
+    useEffect(() => {
+        const loadStrategy = async () => {
+            const saved = await Storage.getDebtStrategy();
+            if (saved === 'SNOWBALL' || saved === 'AVALANCHE') {
+                setStrategy(saved);
+            }
+            isInitialStrategyLoad.current = false;
+        };
+        loadStrategy();
+    }, []);
+
+    useEffect(() => {
+        if (!isInitialStrategyLoad.current) {
+            Storage.saveDebtStrategy(strategy);
+        }
+    }, [strategy]);
 
     // Calculated State
     const [paidDebts, setPaidDebts] = useState<Debt[]>([]);

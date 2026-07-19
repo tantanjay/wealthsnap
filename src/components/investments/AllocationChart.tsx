@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, LayoutChangeEvent } from 'react-native';
 
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
+import { saveInvestmentAllocationTab, getInvestmentAllocationTab } from '@services/core/storageService';
 
 // --- Interfaces ---
 interface Holding {
@@ -96,6 +97,25 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
     const [selectedTab, setSelectedTab] = useState<'stocks' | 'sector' | 'type'>('stocks');
     const [containerWidth, setContainerWidth] = useState(0);
     const chartHeight = 220;
+
+    // Restore the last-selected tab (Stocks / Sector / Type) on mount
+    const isInitialTabLoad = useRef(true);
+    useEffect(() => {
+        const loadTab = async () => {
+            const saved = await getInvestmentAllocationTab();
+            if (saved === 'stocks' || saved === 'sector' || saved === 'type') {
+                setSelectedTab(saved);
+            }
+            isInitialTabLoad.current = false;
+        };
+        loadTab();
+    }, []);
+
+    useEffect(() => {
+        if (!isInitialTabLoad.current) {
+            saveInvestmentAllocationTab(selectedTab);
+        }
+    }, [selectedTab]);
 
     const onLayout = useCallback((event: LayoutChangeEvent) => {
         const { width } = event.nativeEvent.layout;

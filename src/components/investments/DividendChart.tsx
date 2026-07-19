@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
@@ -6,6 +6,7 @@ import { formatCurrencyAmount, formatCompactNumber, formatCompactCurrency } from
 import { CalendarEvent } from '@services/domain/dividendHistoryService';
 import { MonthlyDividend } from '@services/domain/investmentService';
 import { Ionicons } from '@expo/vector-icons';
+import { saveInvestmentDividendTab, getInvestmentDividendTab } from '@services/core/storageService';
 
 interface DividendChartProps {
     projectedDividends: { labels: string[], data: MonthlyDividend[] };
@@ -42,6 +43,25 @@ export const DividendChart: React.FC<DividendChartProps> = ({
             setSelectedYear(availableYears[availableYears.length - 1]);
         }
     }, [actualDividends, availableYears, selectedYear]);
+
+    // Restore the last-selected tab (Actual / Calendar / Proj.) on mount
+    const isInitialTabLoad = useRef(true);
+    useEffect(() => {
+        const loadTab = async () => {
+            const saved = await getInvestmentDividendTab();
+            if (saved === 'actual' || saved === 'calendar' || saved === 'projected') {
+                setActiveTab(saved);
+            }
+            isInitialTabLoad.current = false;
+        };
+        loadTab();
+    }, []);
+
+    useEffect(() => {
+        if (!isInitialTabLoad.current) {
+            saveInvestmentDividendTab(activeTab);
+        }
+    }, [activeTab]);
 
     const actualYearData = actualDividends[selectedYear] || [];
     const actualTotal = actualYearData.reduce((acc, curr) => acc + curr.total, 0);

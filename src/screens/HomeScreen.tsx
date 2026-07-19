@@ -95,19 +95,11 @@ const HomeScreen = ({ navigation }: any) => {
     // Settings Modal State
     const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
 
-    // Active Display States (Swipeable)
+    // Active Display States (Swipeable) - persisted directly whenever the user swipes a card
     const [displayMode, setDisplayMode] = useState<Storage.HomeDisplayMode>('Overall');
     const [investmentDisplayMode, setInvestmentDisplayMode] = useState<Storage.InvestmentDisplayMode>('Total');
-
     const [debtDisplayMode, setDebtDisplayMode] = useState<Storage.DebtDisplayMode>('Total');
     const [financialHealthDisplayMode, setFinancialHealthDisplayMode] = useState<Storage.HomeFinancialHealthDisplayMode>('Health');
-
-    // Saved Configuration States (Settings)
-    const [savedDisplayMode, setSavedDisplayMode] = useState<Storage.HomeDisplayMode>('Overall');
-
-    const [savedInvestmentDisplayMode, setSavedInvestmentDisplayMode] = useState<Storage.InvestmentDisplayMode>('Total');
-    const [savedDebtDisplayMode, setSavedDebtDisplayMode] = useState<Storage.DebtDisplayMode>('Total');
-    const [savedFinancialHealthDisplayMode, setSavedFinancialHealthDisplayMode] = useState<Storage.HomeFinancialHealthDisplayMode>('Health');
 
     const [cardOrder, setCardOrder] = useState<string[]>(['financial-health', 'cash-flow', 'portfolio', 'debt', 'transactions']);
 
@@ -129,25 +121,21 @@ const HomeScreen = ({ navigation }: any) => {
             const savedMode = await Storage.getHomeDisplayMode();
             if (savedMode) {
                 setDisplayMode(savedMode);
-                setSavedDisplayMode(savedMode);
             }
 
             const savedInvestmentMode = await Storage.getHomeInvestmentDisplayMode();
             if (savedInvestmentMode) {
                 setInvestmentDisplayMode(savedInvestmentMode);
-                setSavedInvestmentDisplayMode(savedInvestmentMode);
             }
 
             const savedFinancialMode = await Storage.getHomeFinancialHealthDisplayMode();
             if (savedFinancialMode) {
                 setFinancialHealthDisplayMode(savedFinancialMode);
-                setSavedFinancialHealthDisplayMode(savedFinancialMode);
             }
 
             const savedDebtMode = await Storage.getHomeDebtDisplayMode();
             if (savedDebtMode) {
                 setDebtDisplayMode(savedDebtMode);
-                setSavedDebtDisplayMode(savedDebtMode);
             }
 
             // Load persisted card order
@@ -635,44 +623,24 @@ const HomeScreen = ({ navigation }: any) => {
         }, [checkReviewEligibility])
     );
 
-    const handleModeSave = async (newMode: Storage.HomeDisplayMode) => {
-        setDisplayMode(newMode);
-        setSavedDisplayMode(newMode);
-        await Storage.saveHomeDisplayMode(newMode);
-    };
-
     const handleModeSwipe = (newMode: Storage.HomeDisplayMode) => {
         setDisplayMode(newMode);
-    };
-
-    const handleInvestmentModeSave = async (newMode: Storage.InvestmentDisplayMode) => {
-        setInvestmentDisplayMode(newMode);
-        setSavedInvestmentDisplayMode(newMode);
-        await Storage.saveHomeInvestmentDisplayMode(newMode);
+        Storage.saveHomeDisplayMode(newMode);
     };
 
     const handleInvestmentModeSwipe = (newMode: Storage.InvestmentDisplayMode) => {
         setInvestmentDisplayMode(newMode);
-    };
-
-    const handleFinancialHealthModeSave = async (newMode: Storage.HomeFinancialHealthDisplayMode) => {
-        setFinancialHealthDisplayMode(newMode);
-        setSavedFinancialHealthDisplayMode(newMode);
-        await Storage.saveHomeFinancialHealthDisplayMode(newMode);
+        Storage.saveHomeInvestmentDisplayMode(newMode);
     };
 
     const handleFinancialHealthModeSwipe = (newMode: Storage.HomeFinancialHealthDisplayMode) => {
         setFinancialHealthDisplayMode(newMode);
-    };
-
-    const handleDebtModeSave = async (newMode: Storage.DebtDisplayMode) => {
-        setDebtDisplayMode(newMode);
-        setSavedDebtDisplayMode(newMode);
-        await Storage.saveHomeDebtDisplayMode(newMode);
+        Storage.saveHomeFinancialHealthDisplayMode(newMode);
     };
 
     const handleDebtModeSwipe = (newMode: Storage.DebtDisplayMode) => {
         setDebtDisplayMode(newMode);
+        Storage.saveHomeDebtDisplayMode(newMode);
     };
 
     const renderInfoModalContent = () => {
@@ -993,14 +961,6 @@ const HomeScreen = ({ navigation }: any) => {
                     setCardOrder(newOrder);
                     await Storage.saveHomeCardOrder(newOrder);
                 }}
-                displayMode={savedDisplayMode || 'Overall'}
-                onDisplayModeChange={handleModeSave}
-                investmentDisplayMode={savedInvestmentDisplayMode || 'Total'}
-                onInvestmentDisplayModeChange={handleInvestmentModeSave}
-                financialHealthDisplayMode={savedFinancialHealthDisplayMode || 'Health'}
-                onFinancialHealthDisplayModeChange={handleFinancialHealthModeSave}
-                debtDisplayMode={savedDebtDisplayMode || 'Total'}
-                onDebtDisplayModeChange={handleDebtModeSave}
             />
 
             <ReviewAppModal
