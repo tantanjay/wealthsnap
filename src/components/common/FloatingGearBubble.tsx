@@ -14,6 +14,8 @@ import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
+import { useAIConsent } from '@hooks/useAIConsent';
+import { navigationRef } from '@navigation/navigationRef';
 import BottomModal from './BottomModal';
 import MonthlySummaryModal from '@components/insights/modals/MonthlySummaryModal';
 
@@ -29,6 +31,7 @@ export default function FloatingGearBubble() {
     const insets = useSafeAreaInsets();
     const { isPrivacyEnabled, togglePrivacy, revealForScreenshot } = usePrivacy();
     const { showAlert } = useAlert();
+    const { checkConsent } = useAIConsent();
     const { isDocked, pendingPosition, secondAction, requestDock } = useFloatingGear();
 
     const [menuVisible, setMenuVisible] = useState(false);
@@ -172,6 +175,15 @@ export default function FloatingGearBubble() {
         setSummaryModalVisible(true);
     };
 
+    const handleOpenChat = () => {
+        closeMenu();
+        checkConsent(() => {
+            if (navigationRef.isReady()) {
+                navigationRef.navigate('Chat');
+            }
+        });
+    };
+
     const handleRevealForScreenshot = () => {
         showAlert(
             'Allow Screenshot?',
@@ -225,6 +237,14 @@ export default function FloatingGearBubble() {
                         <Text style={[styles.menuLabel, { color: colors.text }]}>{secondAction.label}</Text>
                     </TouchableOpacity>
                 )}
+
+                <TouchableOpacity
+                    style={[styles.menuRow, { borderBottomColor: colors.border }]}
+                    onPress={handleOpenChat}
+                >
+                    <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.text} />
+                    <Text style={[styles.menuLabel, { color: colors.text }]}>Chat</Text>
+                </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.menuRow, !isPrivacyEnabled && { borderBottomColor: colors.border }]}

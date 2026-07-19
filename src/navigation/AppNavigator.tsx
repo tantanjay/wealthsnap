@@ -1,10 +1,11 @@
 import React from 'react';
-import { NavigationContainer, DefaultTheme, useNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useFloatingGear } from '@context/FloatingGearContext';
+import { navigationRef } from '@navigation/navigationRef';
 
 import WelcomeScreen from '@screens/onboarding/WelcomeScreen';
 import SetupScreen from '@screens/onboarding/SetupScreen';
@@ -19,6 +20,7 @@ import InvestmentScreen from '@screens/InvestmentScreen';
 import HistoryScreen from '@screens/HistoryScreen';
 import RecordScreen from '@screens/RecordScreen';
 import ThankYouScreen from '@screens/ThankYouScreen';
+import ChatScreen from '@screens/ChatScreen';
 import { useTheme } from '@context/ThemeContext';
 
 const Stack = createStackNavigator();
@@ -68,7 +70,6 @@ const MainTabs = () => {
 const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'LegalAcceptance' }) => {
     const { colors } = useTheme();
     const { setActiveRoute } = useFloatingGear();
-    const navigationRef = useNavigationContainerRef<Record<string, object | undefined>>();
     const navigationTheme = {
         ...DefaultTheme,
         colors: {
@@ -103,6 +104,7 @@ const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 
                 <Stack.Screen name="TermsAndPrivacy" component={TermsAndPrivacyScreen} />
                 <Stack.Screen name="LegalAcceptance" component={LegalAcceptanceScreen} />
                 <Stack.Screen name="ThankYou" component={ThankYouScreen} />
+                <Stack.Screen name="Chat" component={ChatScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );
