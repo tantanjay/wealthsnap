@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 - Savings Trend chart now has three views: Rate, Saved, and Cash Flow.
 - Chart tabs, time ranges, and toggles across Insights, Investments, Debt, and Home now persist between sessions.
+- Floating Quick Actions gear: drag the Eye/Settings header buttons out to detach them into a draggable bubble with a quick-actions menu (Home, Investments, Insights, History).
+- "Reveal for Screenshot" quick action to temporarily bypass screenshot protection with confirmation; not persisted.
 
 ### Changed
 - Time range selector redesigned as a compact dropdown across Insights charts.
@@ -233,7 +235,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - In-app app review and rating prompt.
 
 ### Changed
-- Replaced legacy charting library with \\\`react-native - gifted - charts\\\` for improved stability and interaction quality.
+- Replaced legacy charting library with \\\`react-native-gifted-charts\\\` for improved stability and interaction quality.
 
 ### Fixed
 - Investment asset selector now correctly filters assets by selected type (Stocks vs. Funds).

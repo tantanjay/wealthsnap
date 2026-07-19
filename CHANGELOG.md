@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 - Savings Trend chart now has three views: Rate, Saved, and Cash Flow.
 - Chart tabs, time ranges, and toggles across Insights, Investments, Debt, and Home now persist between sessions.
+- Floating Quick Actions gear: drag the Eye/Settings header buttons out to detach them into a draggable bubble with a quick-actions menu (Home, Investments, Insights, History).
+- "Reveal for Screenshot" quick action to temporarily bypass screenshot protection with confirmation; not persisted.
 
 ### Changed
 - Time range selector redesigned as a compact dropdown across Insights charts.
