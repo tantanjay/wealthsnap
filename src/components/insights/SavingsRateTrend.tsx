@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
+import { BigNumber } from 'bignumber.js';
 import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { LinearGradient, Stop } from 'react-native-svg';
@@ -21,12 +22,52 @@ interface SavingsRateTrendProps {
     selectedDate?: Date;
 }
 
+type SavingsTab = 'RATE' | 'AMOUNT' | 'CASH';
+
+// Rate: % of income kept. Saved: raw amount kept, including money moved into investments
+// (a BUY isn't an "expense"). Cash Flow: what's actually left in cash after everything left
+// your wallet, including investments and other transfers out.
+const SAVINGS_TAB_META: Record<SavingsTab, { label: string; metricLabel: string }> = {
+    RATE: { label: 'Rate', metricLabel: 'Savings Rate' },
+    AMOUNT: { label: 'Saved', metricLabel: 'Amount Saved' },
+    CASH: { label: 'Cash Flow', metricLabel: 'Cash Flow' },
+};
+const SAVINGS_TAB_ORDER: SavingsTab[] = ['RATE', 'AMOUNT', 'CASH'];
+
+type SavingsMonth = { month: string; rate: number; income: BigNumber; expense: BigNumber; savings: BigNumber; cashFlow: BigNumber };
+
+const getMetricValue = (d: SavingsMonth, tab: SavingsTab): number => {
+    if (tab === 'RATE') return d.rate;
+    if (tab === 'AMOUNT') return d.savings.toNumber();
+    return d.cashFlow.toNumber();
+};
+
+// Round up to a "nice" chart boundary for currency amounts (1 / 2 / 5 x10^n)
+const getNiceCurrencyBoundary = (value: number): number => {
+    if (value <= 0) return 100;
+    const magnitude = 10 ** Math.floor(Math.log10(value));
+    const normalized = value / magnitude;
+    let niceNormalized = 10;
+    if (normalized <= 1) niceNormalized = 1;
+    else if (normalized <= 2) niceNormalized = 2;
+    else if (normalized <= 5) niceNormalized = 5;
+    return niceNormalized * magnitude;
+};
+
 const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, privacyMode, isLoading = false, currency, selectedDate = new Date() }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
     const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
+    const [activeTab, setActiveTab] = React.useState<SavingsTab>('RATE');
     const [showInfoModal, setShowInfoModal] = React.useState(false);
+
+    const isPercent = activeTab === 'RATE';
+    const activeMeta = SAVINGS_TAB_META[activeTab];
+
+    const formatValue = useCallback((value: number): string => {
+        return isPercent ? `${value.toFixed(1)}%` : formatCompactCurrency(value, currency, 1);
+    }, [isPercent, currency]);
 
     // Calculate how many months of data to load based on selection
     const monthsToLoad = useMemo(() => {
@@ -62,15 +103,15 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         });
 
         return {
-            labels: labels,
-            datasets: [{
-                data: data.map(d => d.rate),
-                color: (opacity = 1) => colors.primary,
-                strokeWidth: 3
-            }],
+            labels,
             rawData: data
         };
-    }, [transactions, monthsToLoad, colors.primary, selectedDate]);
+    }, [transactions, monthsToLoad, selectedDate]);
+
+    // The metric series for whichever tab is active (Rate %, Amount Saved, or Cash Flow)
+    const activeValues = useMemo(() => {
+        return savingsData.rawData.map(d => getMetricValue(d, activeTab));
+    }, [savingsData.rawData, activeTab]);
 
     // Pointer Config for Tap & Drag
     const pointerConfig = useMemo(() => ({
@@ -116,13 +157,13 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                 marginLeft = -100;
             }
 
-            // Y-Axis Positioning: 
+            // Y-Axis Positioning:
             // Since we use shifted values, the "visual" y is high for positive numbers.
             // We want to avoid blocking the point itself.
             let marginTop = -30; // Default (Above point)
 
             // Note: In CumulativeChart, logic was based on value > max * 0.8
-            // Here, we can try similar, but let's stick to simple "Above" usually works, 
+            // Here, we can try similar, but let's stick to simple "Above" usually works,
             // unless it's at the very top of the graph.
             // If item.value (shifted) is very high, move tooltip down.
             // yBoundary is max; value is shifted. Max visual ~ yBoundary * 2.
@@ -155,13 +196,13 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                         </Text>
 
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Savings Rate</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>{activeMeta.metricLabel}</Text>
                             <Text style={{
                                 color: item.originalValue >= 0 ? '#4CAF50' : '#F44336',
                                 fontSize: 12,
                                 fontWeight: '600'
                             }}>
-                                {item.originalValue.toFixed(1)}%
+                                {formatValue(item.originalValue)}
                             </Text>
                         </View>
 
@@ -183,35 +224,39 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                 </View>
             );
         },
-    }), [colors, currency, savingsData.rawData]);
+    }), [colors, currency, savingsData.rawData, activeMeta, formatValue]);
 
 
 
-    // Calculate average savings rate
-    const avgRate = useMemo(() => {
-        if (savingsData.rawData.length === 0) return 0;
-        const sum = savingsData.rawData.reduce((acc, d) => acc + d.rate, 0);
-        return Math.round((sum / savingsData.rawData.length) * 10) / 10;
-    }, [savingsData.rawData]);
+    // Calculate average for the active metric
+    const avgValue = useMemo(() => {
+        if (activeValues.length === 0) return 0;
+        const sum = activeValues.reduce((acc, v) => acc + v, 0);
+        const avg = sum / activeValues.length;
+        return isPercent ? Math.round(avg * 10) / 10 : avg;
+    }, [activeValues, isPercent]);
 
     // Calculate chart bounds for Symmetric Y-Axis
     const chartStats = useMemo(() => {
-        if (savingsData.rawData.length === 0) return { min: -100, max: 100, zeroOffset: 0.5, step: 25 };
+        if (activeValues.length === 0) return { min: -100, max: 100, zeroOffset: 0.5, step: 25 };
 
-        const rates = savingsData.rawData.map(d => d.rate);
-        const dataMax = Math.max(...rates);
-        const dataMin = Math.min(...rates);
+        const dataMax = Math.max(...activeValues);
+        const dataMin = Math.min(...activeValues);
 
         // Create symmetric chart boundary based on max absolute value
         const absMax = Math.max(Math.abs(dataMax), Math.abs(dataMin));
 
         // Round up to nearest nice number
-        let boundary = 100;
-        if (absMax <= 10) boundary = 10;
-        else if (absMax <= 25) boundary = 25;
-        else if (absMax <= 50) boundary = 50;
-        else if (absMax <= 100) boundary = 100;
-        else boundary = Math.ceil(absMax / 50) * 50;
+        let boundary: number;
+        if (isPercent) {
+            if (absMax <= 10) boundary = 10;
+            else if (absMax <= 25) boundary = 25;
+            else if (absMax <= 50) boundary = 50;
+            else if (absMax <= 100) boundary = 100;
+            else boundary = Math.ceil(absMax / 50) * 50;
+        } else {
+            boundary = getNiceCurrencyBoundary(absMax);
+        }
 
         const min = -boundary;
         const max = boundary;
@@ -221,24 +266,24 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         const step = (max - min) / sections;
 
         return { min, max, zeroOffset: 0.5, step };
-    }, [savingsData.rawData]);
+    }, [activeValues, isPercent]);
 
-    const latestRate = savingsData.rawData[savingsData.rawData.length - 1]?.rate || 0;
+    const latestValue = activeValues[activeValues.length - 1] || 0;
 
-    // Calculate consecutive positive/negative streak
+    // Calculate consecutive positive/negative streak (based on the active metric)
     const streak = useMemo(() => {
         // Filter out months with no transaction data
         const data = savingsData.rawData.filter(d => !d.income.isZero() || !d.expense.isZero());
         if (data.length === 0) return { count: 0, type: 'neutral' as const };
 
-        const lastRate = data[data.length - 1].rate;
+        const lastValue = getMetricValue(data[data.length - 1], activeTab);
         let count = 0;
-        const currentType = lastRate >= 0 ? 'positive' : 'negative';
+        const currentType = lastValue >= 0 ? 'positive' : 'negative';
 
         // Count backwards
         for (let i = data.length - 1; i >= 0; i--) {
-            const rate = data[i].rate;
-            const monthType = rate >= 0 ? 'positive' : 'negative';
+            const value = getMetricValue(data[i], activeTab);
+            const monthType = value >= 0 ? 'positive' : 'negative';
 
             if (monthType === currentType) {
                 count++;
@@ -248,9 +293,9 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         }
 
         return { count, type: currentType };
-    }, [savingsData.rawData]);
+    }, [savingsData.rawData, activeTab]);
 
-    // Calculate historical stats for selected range
+    // Calculate historical stats for selected range (based on the active metric)
     const historicalStats = useMemo(() => {
         // Filter out months with no transaction data
         const data = savingsData.rawData.filter(d => !d.income.isZero() || !d.expense.isZero());
@@ -264,7 +309,8 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         let currentNegativeStreak = 0;
 
         for (const item of data) {
-            if (item.rate >= 0) {
+            const value = getMetricValue(item, activeTab);
+            if (value >= 0) {
                 positiveCount++;
                 currentPositiveStreak++;
                 currentNegativeStreak = 0;
@@ -278,7 +324,9 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         }
 
         return { positiveCount, negativeCount, longestPositiveStreak, longestNegativeStreak };
-    }, [savingsData.rawData]);
+    }, [savingsData.rawData, activeTab]);
+
+    const exampleValue = isPercent ? '25%' : formatCompactCurrency(25000, currency, 0);
 
     const renderInfoModal = () => (
         <BottomModal
@@ -294,7 +342,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                         {/* Current Example */}
                         <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Current</Text>
-                            <Text style={{ color: '#4CAF50', fontSize: 18, fontWeight: 'bold' }}>25%</Text>
+                            <Text style={{ color: '#4CAF50', fontSize: 18, fontWeight: 'bold' }}>{exampleValue}</Text>
                         </View>
 
                         {/* Streak Example */}
@@ -319,11 +367,38 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                     </View>
                 </View>
 
+                {/* Tab Explanation */}
+                <View style={{ marginBottom: 16 }}>
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>🎛️ Rate, Saved &amp; Cash Flow</Text>
+                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, gap: 8 }}>
+                        <View>
+                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Rate</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                The % of your income you kept each month.
+                            </Text>
+                        </View>
+                        <View style={{ height: 1, backgroundColor: colors.border }} />
+                        <View>
+                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Saved</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                The raw amount you kept, including money moved into investments.
+                            </Text>
+                        </View>
+                        <View style={{ height: 1, backgroundColor: colors.border }} />
+                        <View>
+                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Cash Flow</Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                                What&apos;s actually left in cash after everything - including investments and other transfers out.
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+
                 {/* Chart Explanation */}
                 <View style={{ marginBottom: 16 }}>
                     <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📈 Reading the Chart</Text>
                     <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 12 }}>
-                        The line chart shows your savings rate trend over time. Here&apos;s what it means:
+                        The line chart shows your {activeMeta.metricLabel.toLowerCase()} trend over time. Here&apos;s what it means:
                     </Text>
 
                     {/* Visual examples side by side */}
@@ -373,16 +448,16 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                     </View>
                 </View>
 
-                {/* Current Rate Explanation */}
+                {/* Current Value Explanation */}
                 <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📊 Current Savings Rate</Text>
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📊 Current {activeMeta.metricLabel}</Text>
                     <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 8 }}>
-                        Your savings rate for the most recent month:
+                        Your {activeMeta.metricLabel.toLowerCase()} for the most recent month:
                     </Text>
                     <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                            • <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>Positive %</Text>: You saved money 💰{"\n"}
-                            • <Text style={{ color: '#F44336', fontWeight: 'bold' }}>Negative %</Text>: You overspent 📉
+                            • <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>{isPercent ? 'Positive %' : 'Positive amount'}</Text>: You saved money 💰{"\n"}
+                            • <Text style={{ color: '#F44336', fontWeight: 'bold' }}>{isPercent ? 'Negative %' : 'Negative amount'}</Text>: You overspent 📉
                         </Text>
                     </View>
                 </View>
@@ -446,14 +521,14 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                         <View>
                             <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Average</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                Average savings rate across all months
+                                Average {activeMeta.metricLabel.toLowerCase()} across all months
                             </Text>
                         </View>
                         <View style={{ height: 1, backgroundColor: colors.border }} />
                         <View>
                             <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Best & Worst Month</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                Highest and lowest rates in the period
+                                Highest and lowest values in the period
                             </Text>
                         </View>
                     </View>
@@ -464,23 +539,48 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         </BottomModal>
     );
 
+    const renderTabs = () => (
+        <View style={{ flexDirection: 'row', backgroundColor: colors.background, borderRadius: 8, padding: 2 }}>
+            {SAVINGS_TAB_ORDER.map((tab) => (
+                <TouchableOpacity
+                    key={tab}
+                    onPress={() => setActiveTab(tab)}
+                    style={{
+                        paddingVertical: 6,
+                        paddingHorizontal: 10,
+                        backgroundColor: activeTab === tab ? colors.surface : 'transparent',
+                        borderRadius: 6,
+                        borderWidth: activeTab === tab ? 1 : 0,
+                        borderColor: colors.border
+                    }}
+                >
+                    <Text style={{
+                        color: activeTab === tab ? colors.text : colors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: activeTab === tab ? '600' : '400'
+                    }}>{SAVINGS_TAB_META[tab].label}</Text>
+                </TouchableOpacity>
+            ))}
+        </View>
+    );
+
     // --- Center-zero workaround for gifted-charts (older versions) ---
 
     const yBoundary = chartStats.max; // symmetric boundary
     const yOffset = yBoundary;        // shift zero to center
 
-    const shiftedChartData = savingsData.datasets[0].data.map((val) => ({
+    const shiftedChartData = activeValues.map((val) => ({
         value: val + yOffset, // shift
         originalValue: val,   // keep real value for labels/colors
         dataPointColor: val < 0 ? '#F44336' : colors.primary,
     }));
 
-    if (!isLoading && savingsData.datasets[0].data.length === 0) {
+    if (!isLoading && savingsData.rawData.length === 0) {
         return (
             <View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Savings Rate</Text>
+                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Savings Trend</Text>
                         <TouchableOpacity
                             onPress={() => setShowInfoModal(true)}
                             style={{
@@ -508,14 +608,17 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         <View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Savings Rate</Text>
+                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>{activeMeta.metricLabel}</Text>
                     <TouchableOpacity onPress={() => setShowInfoModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                 </View>
-                <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
             </View>
             <Card>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    {renderTabs()}
+                    <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+                </View>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                     {/* Left side metrics */}
@@ -569,18 +672,18 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                         </View>
                     </View>
 
-                    {/* Right: Current Savings Rate */}
+                    {/* Right: Current Value */}
                     <View style={{ alignItems: 'flex-end' }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Current</Text>
                         {isLoading ? (
                             <Skeleton width={60} height={20} />
                         ) : (
                             <Text style={{
-                                color: latestRate >= 0 ? '#4CAF50' : '#F44336',
+                                color: latestValue >= 0 ? '#4CAF50' : '#F44336',
                                 fontSize: 18,
                                 fontWeight: 'bold'
                             }}>
-                                {privacyMode ? '••••' : `${latestRate}%`}
+                                {privacyMode ? '••••' : formatValue(latestValue)}
                             </Text>
                         )}
                     </View>
@@ -666,7 +769,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                             /* ---- LABEL FIX (UNSHIFT VALUES) ---- */
                             formatYLabel={(value: string) => {
                                 const realValue = Number(value) - yOffset;
-                                return `${realValue.toFixed(0)}%`;
+                                return isPercent ? `${realValue.toFixed(0)}%` : formatCompactCurrency(realValue, currency, 1);
                             }}
                             pointerConfig={pointerConfig}
                         />
@@ -691,20 +794,20 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                     <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
                         <View style={{ alignItems: 'center' }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Average</Text>
-                            <Text style={{ color: avgRate >= 0 ? '#4CAF50' : '#F44336', fontSize: 14, fontWeight: '600' }}>
-                                {privacyMode ? '••••' : `${avgRate}%`}
+                            <Text style={{ color: avgValue >= 0 ? '#4CAF50' : '#F44336', fontSize: 14, fontWeight: '600' }}>
+                                {privacyMode ? '••••' : formatValue(avgValue)}
                             </Text>
                         </View>
                         <View style={{ alignItems: 'center' }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Best Month</Text>
                             <Text style={{ color: '#4CAF50', fontSize: 14, fontWeight: '600' }}>
-                                {privacyMode ? '••••' : `${Math.max(...savingsData.rawData.map(d => d.rate))}%`}
+                                {privacyMode ? '••••' : formatValue(Math.max(...activeValues))}
                             </Text>
                         </View>
                         <View style={{ alignItems: 'center' }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Worst Month</Text>
                             <Text style={{ color: '#F44336', fontSize: 14, fontWeight: '600' }}>
-                                {privacyMode ? '••••' : `${Math.min(...savingsData.rawData.map(d => d.rate))}%`}
+                                {privacyMode ? '••••' : formatValue(Math.min(...activeValues))}
                             </Text>
                         </View>
                     </View>

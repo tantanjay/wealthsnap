@@ -93,7 +93,12 @@ export const getSavingsRateTrend = (transactions: Transaction[], months: number 
             rate: savingsRate.dp(1).toNumber(),
             income,
             expense,
-            savings: income.minus(expense)
+            // Raw amount kept (income - expense). Money moved into investments/other transfers
+            // isn't an "expense", so it's still counted as saved here.
+            savings: income.minus(expense),
+            // True cash movement for the month (Income + TransferIn - Expense - TransferOut) -
+            // this is what's left after money that went into investments or other transfers out.
+            cashFlow: trends.netCashFlowData[index]
         };
     });
 };
