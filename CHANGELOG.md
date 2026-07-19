@@ -22,9 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Time range selector redesigned as a compact dropdown across Insights charts.
 - Simplified Home Settings; swiping a card now saves its display mode directly.
+- Upgraded the built-in AI model powering receipt scanning and historical price/dividend fetching to Gemini 3.5 Flash.
+- AI requests now scale their reasoning depth to the task, keeping simple extractions fast and research-heavy lookups more thorough.
+- Bumped Expo SDK 55 dependencies to their latest patch versions for stability and performance.
 
 ### Fixed
 - Dividend Calendar tab sizing and portrait height issues.
+- AI usage cost estimates in the Usage Log now accurately reflect Gemini's actual token billing, including reasoning ("thinking") tokens that were previously undercounted.
 
 ---
 
