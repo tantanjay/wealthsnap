@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import BottomModal from '@components/common/BottomModal';
+import DraggableIconButton from '@components/common/DraggableIconButton';
 import HomeTransactionsCard from '@components/home/HomeTransactionsCard';
 import HomeSettingsModal from '@components/home/HomeSettingsModal';
 import HomeCashFlowCard from '@components/home/HomeCashFlowCard';
@@ -15,6 +16,7 @@ import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
+import { useFloatingGear } from '@context/FloatingGearContext';
 import { UserProfile, Transaction, Investment, Debt } from '@types';
 import {
     getTransactionsByMonth,
@@ -44,6 +46,7 @@ import { calculateProjectedDebtLiability, calculateTotalDebtObligations, calcula
 const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
+    const { isDocked, registerSecondAction } = useFloatingGear();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
@@ -623,6 +626,17 @@ const HomeScreen = ({ navigation }: any) => {
         }, [checkReviewEligibility])
     );
 
+    useFocusEffect(
+        useCallback(() => {
+            registerSecondAction({
+                label: 'Screen Settings',
+                icon: 'options-outline',
+                onPress: () => setIsSettingsModalVisible(true),
+            });
+            return () => registerSecondAction(null);
+        }, [registerSecondAction])
+    );
+
     const handleModeSwipe = (newMode: Storage.HomeDisplayMode) => {
         setDisplayMode(newMode);
         Storage.saveHomeDisplayMode(newMode);
@@ -805,30 +819,32 @@ const HomeScreen = ({ navigation }: any) => {
                             <Text style={{ color: colors.text, fontSize: 28, fontWeight: 'bold' }}>{profile?.name || 'User'}</Text>
                         )}
                     </TouchableOpacity>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                        <TouchableOpacity
-                            onPress={togglePrivacy}
-                            style={[
-                                styles.iconButton,
-                                { backgroundColor: colors.surface }
-                            ]}
-                        >
-                            <Ionicons
-                                name={isPrivacyEnabled ? 'eye-off' : 'eye'}
-                                size={20}
-                                color={colors.text}
-                            />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => setIsSettingsModalVisible(true)}
-                            style={[
-                                styles.iconButton,
-                                { backgroundColor: colors.surface }
-                            ]}
-                        >
-                            <Ionicons name="options-outline" size={20} color={colors.text} />
-                        </TouchableOpacity>
-                    </View>
+                    {isDocked && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                            <DraggableIconButton
+                                onPress={togglePrivacy}
+                                style={[
+                                    styles.iconButton,
+                                    { backgroundColor: colors.surface }
+                                ]}
+                            >
+                                <Ionicons
+                                    name={isPrivacyEnabled ? 'eye-off' : 'eye'}
+                                    size={20}
+                                    color={colors.text}
+                                />
+                            </DraggableIconButton>
+                            <DraggableIconButton
+                                onPress={() => setIsSettingsModalVisible(true)}
+                                style={[
+                                    styles.iconButton,
+                                    { backgroundColor: colors.surface }
+                                ]}
+                            >
+                                <Ionicons name="options-outline" size={20} color={colors.text} />
+                            </DraggableIconButton>
+                        </View>
+                    )}
                 </View>
 
                 {/* Dynamic Card Rendering */}
