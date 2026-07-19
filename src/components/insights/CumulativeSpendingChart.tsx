@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
 import { formatCompactCurrency } from '@utils/currencyUtils';
 import { getCumulativeSpendingCurve, getCurrentMonthCumulative, getTransactionsByMonth } from '@utils/financialMetrics';
+import { saveInsightsPulsePeriod, getInsightsPulsePeriod } from '@services/core/storageService';
 
 interface CumulativeSpendingChartProps {
     transactions: Transaction[];
@@ -30,6 +31,25 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     const screenWidth = Dimensions.get('window').width;
     const [period, setPeriod] = useState<3 | 6 | 12>(3);
     const [showInfo, setShowInfo] = useState(false);
+
+    // Restore the last-selected period (3M / 6M / 12M) on mount
+    const isInitialPeriodLoad = useRef(true);
+    useEffect(() => {
+        const loadPeriod = async () => {
+            const saved = await getInsightsPulsePeriod();
+            if (saved === '3' || saved === '6' || saved === '12') {
+                setPeriod(Number(saved) as 3 | 6 | 12);
+            }
+            isInitialPeriodLoad.current = false;
+        };
+        loadPeriod();
+    }, []);
+
+    useEffect(() => {
+        if (!isInitialPeriodLoad.current) {
+            saveInsightsPulsePeriod(String(period));
+        }
+    }, [period]);
 
     // 1. Calculate Raw Data (Stable)
     const { currentData, avgData, projectionData, insight } = useMemo(() => {
