@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, ScrollView, TouchableOpacity, Text, RefreshControl, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 
 import InsightsOverviewCards from '@components/insights/InsightsOverviewCards';
@@ -43,6 +43,7 @@ const InsightScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const { isDocked, registerSecondAction } = useFloatingGear();
+    const routeName = useRoute().name;
     const [currency, setCurrency] = useState('PHP');
     const [refreshing, setRefreshing] = useState(false);
     const [expenseGrouping, setExpenseGrouping] = useState<'GROUP' | 'ITEM'>('ITEM');
@@ -266,16 +267,14 @@ const InsightScreen = ({ navigation }: any) => {
         }, [fetchAllData])
     );
 
-    useFocusEffect(
-        useCallback(() => {
-            registerSecondAction({
-                label: 'Screen Settings',
-                icon: 'options-outline',
-                onPress: () => setIsSettingsModalVisible(true),
-            });
-            return () => registerSecondAction(null);
-        }, [registerSecondAction])
-    );
+    useEffect(() => {
+        registerSecondAction(routeName, {
+            label: 'Screen Settings',
+            icon: 'options-outline',
+            onPress: () => setIsSettingsModalVisible(true),
+        });
+        return () => registerSecondAction(routeName, null);
+    }, [registerSecondAction, routeName]);
 
     // Only re-calculate breakdown if grouping or date changes specifically
     useEffect(() => {

@@ -168,6 +168,26 @@ export const getHistoryTimeFrame = async (): Promise<string | null> => {
     }
 };
 
+// ============= Floating Gear Preferences (AsyncStorage) =============
+
+export const saveFloatingGearDocked = async (isDocked: boolean): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.FLOATING_GEAR.DOCKED, JSON.stringify(isDocked));
+    } catch (error) {
+        console.error('Failed to save floating gear docked state:', error);
+    }
+};
+
+export const getFloatingGearDocked = async (): Promise<boolean | null> => {
+    try {
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.FLOATING_GEAR.DOCKED);
+        return data ? JSON.parse(data) : null;
+    } catch (error) {
+        console.error('Failed to get floating gear docked state:', error);
+        return null;
+    }
+};
+
 // ============= Home Display Preferences (AsyncStorage) =============
 export type HomeDisplayMode = 'Overall' | 'Month' | 'MonthIncomeExpense';
 export type InvestmentDisplayMode = 'Total' | 'Month';
