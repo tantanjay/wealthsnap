@@ -18,6 +18,27 @@ This lays the groundwork for future AI-assisted insights — the generation itse
 
 ---
 
+## 💬 Chat
+Ask questions about your own finances in plain language, answered by Gemini.
+
+- **Grounded in your data**: before starting, pick how much history to include — 1, 2, 3, 5 years, or ALL — with each option showing an estimated token count up front. Chat is grounded in a live financial snapshot (total cash, investment value, realized/unrealized P/L, dividends received, debt, and runway) plus the Monthly Summaries for whichever range you pick.
+- **Streaming replies**: answers stream in as Gemini generates them instead of waiting for the full response, and render with proper formatting (headings, bold, bullet/numbered lists) instead of raw markdown.
+- **Cost transparency**: every reply shows its token count and USD cost, plus a running total for the whole session. A "View Context" button lets you see exactly what was sent to Gemini.
+- **Nothing saved**: conversations live only for that sitting — closing Chat and reopening it starts fresh with a new range selection.
+- **New Quick Actions entry**: reachable from the floating gear bubble, right alongside Monthly Summary.
+
+Uses the same Bring-Your-Own-Key Gemini setup as receipt scanning and price lookups, gated behind the existing API key and consent flow.
+
+---
+
+## 🔐 Updated AI Data Usage Consent
+Chat sends a much broader financial summary to Gemini than the app's existing AI features did, so the disclosure needed to catch up.
+
+- The "AI Data Usage Consent" dialog (shown before any AI feature is first used) now explicitly lists what's sent per feature — receipt images, stock/asset symbols, and, new for Chat, your financial summary — instead of a general one-line description.
+- If you already consented under the old wording, you'll see the updated disclosure once, the next time an AI feature runs, since it now covers a new category of data.
+
+---
+
 ## 📖 More Accurate In-App Guides
 A pass through the "Understanding" guides on Insights and Investments to make sure they match how things actually work.
 

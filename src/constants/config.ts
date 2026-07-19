@@ -1,5 +1,9 @@
 export const CONFIG = {
     TERMS_VERSION: 4,
+    // Bump whenever the AI Data Usage Consent disclosure changes what categories
+    // of data it discloses - existing users get re-prompted once, same idea as
+    // TERMS_VERSION above.
+    AI_CONSENT_VERSION: 1,
     ENABLE_DUMMY_DATA: false,
     SHOW_DEVELOPER_OPTIONS: false,
     SHOW_PAYPAL_SUPPORT: false,
