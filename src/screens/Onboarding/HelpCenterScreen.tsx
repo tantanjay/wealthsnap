@@ -7,6 +7,7 @@ import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { SPACING } from '@styles/theme';
 import { HELP_TOPICS, HelpTopic, HelpSlide } from '@constants/helpContent';
+import { splitBoldSegments } from '@utils/markdownParser';
 
 interface HelpCenterProps {
     onFinish: () => void;
@@ -170,19 +171,11 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
     };
 
     const renderFormattedText = (text: string, baseStyle: any) => {
-        const parts = text.split(/(\*\*.*?\*\*)/g);
         return (
             <Text style={baseStyle}>
-                {parts.map((part, i) => {
-                    if (part.startsWith('**') && part.endsWith('**')) {
-                        return (
-                            <Text key={i} style={{ fontWeight: 'bold' }}>
-                                {part.slice(2, -2)}
-                            </Text>
-                        );
-                    }
-                    return part;
-                })}
+                {splitBoldSegments(text).map((seg, i) =>
+                    seg.bold ? <Text key={i} style={{ fontWeight: 'bold' }}>{seg.text}</Text> : seg.text
+                )}
             </Text>
         );
     };
