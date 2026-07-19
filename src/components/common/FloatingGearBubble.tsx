@@ -15,6 +15,7 @@ import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
 import BottomModal from './BottomModal';
+import MonthlySummaryModal from '@components/insights/modals/MonthlySummaryModal';
 
 const BUBBLE_SIZE = 56;
 const EDGE_MARGIN = 8;
@@ -31,6 +32,7 @@ export default function FloatingGearBubble() {
     const { isDocked, pendingPosition, secondAction, requestDock } = useFloatingGear();
 
     const [menuVisible, setMenuVisible] = useState(false);
+    const [summaryModalVisible, setSummaryModalVisible] = useState(false);
     const [isActiveColor, setIsActiveColor] = useState(false);
     const revertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -165,6 +167,11 @@ export default function FloatingGearBubble() {
         closeMenu();
     };
 
+    const handleOpenMonthlySummary = () => {
+        closeMenu();
+        setSummaryModalVisible(true);
+    };
+
     const handleRevealForScreenshot = () => {
         showAlert(
             'Allow Screenshot?',
@@ -219,6 +226,14 @@ export default function FloatingGearBubble() {
                     </TouchableOpacity>
                 )}
 
+                <TouchableOpacity
+                    style={[styles.menuRow, !isPrivacyEnabled && { borderBottomColor: colors.border }]}
+                    onPress={handleOpenMonthlySummary}
+                >
+                    <Ionicons name="document-text-outline" size={20} color={colors.text} />
+                    <Text style={[styles.menuLabel, { color: colors.text }]}>Monthly Summary</Text>
+                </TouchableOpacity>
+
                 {!isPrivacyEnabled && (
                     <TouchableOpacity style={styles.menuRow} onPress={handleRevealForScreenshot}>
                         <Ionicons name="camera-outline" size={20} color={colors.text} />
@@ -226,6 +241,8 @@ export default function FloatingGearBubble() {
                     </TouchableOpacity>
                 )}
             </BottomModal>
+
+            <MonthlySummaryModal visible={summaryModalVisible} onClose={() => setSummaryModalVisible(false)} />
         </>
     );
 }

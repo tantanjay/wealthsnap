@@ -20,6 +20,7 @@ import { ReminderCatchupModal } from '@components/reminders/ReminderCatchupModal
 import { Reminder } from '@types';
 import { getDatabase } from '@services/database/databaseService';
 import { getPendingReminders } from '@services/domain/reminderService';
+import { syncMonthlySummaries } from '@services/domain/monthlySummaryService';
 import { isOnboardingComplete, getAcceptedTermsVersion, getLastBackupDate, saveLastBackupDate } from '@services/core/storageService';
 import { initNotifications, requestPermissions, registerBackgroundFetchAsync } from '@services/background';
 import { CONFIG } from '@constants/config';
@@ -47,6 +48,10 @@ export default function App() {
         // Ensure database is initialized and migrations are run
         await getDatabase();
         console.log('[App] Database initialized.');
+
+        // Fire-and-forget: keep monthly summaries up to date. Cheap after the first run,
+        // since already-finalized past months are skipped.
+        syncMonthlySummaries().catch(err => console.error('[App] Monthly summary sync failed:', err));
 
         // Request notification permission once on launch
         console.log('[App] Requesting permissions...');
