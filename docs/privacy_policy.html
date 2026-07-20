@@ -68,14 +68,20 @@
         authentication is handled by your OS.</p>
 
     <h3>2.3 User Content & Data Transit</h3>
-    <p>Financial data (budgets, transactions, notes) is stored locally. For AI features, only the data you select is
-        sent to Google Gemini. Sensitive values are encrypted (AES-256); metadata is stored in plain text for fast
+    <p>Financial data (budgets, transactions, notes) is stored locally. For AI features, only the data relevant to
+        that feature — receipt images, stock/asset symbols, or an aggregated financial summary for Chat — is sent to
+        Google Gemini. Sensitive values are encrypted (AES-256); metadata is stored in plain text for fast
         search. Decryption keys are stored in secure hardware enclaves.</p>
 
     <h3>2.4 AI Features & Third-Party Integration</h3>
     <ul>
         <li><strong>Data Sharing:</strong> Only the data you explicitly send for AI features is shared. Other app data
             remains local.</li>
+        <li><strong>Chat & Financial Summary:</strong> If you use Chat, WealthSnap sends Google Gemini a snapshot of
+            your finances (cash, investment value, realized/unrealized P/L, dividends, debt, runway, current-month
+            budgets) plus your Monthly Summaries for the history range you choose. You may exclude specific
+            transaction categories beforehand; excluded categories are sent only as a combined total, never broken out
+            individually. Chat conversations are not saved by WealthSnap.</li>
         <li><strong>User API Key:</strong> You provide your Google Gemini API key. You control the data, and your
             agreement with Google applies.</li>
         <li><strong>Data Use for Training:</strong> Free-tier keys may be used by Google for model training. Paid-tier
@@ -84,7 +90,8 @@
 
     <h2>3. THIRD-PARTY SERVICES</h2>
     <ul>
-        <li><strong>Google Gemini API:</strong> AI analysis of images and text.</li>
+        <li><strong>Google Gemini API:</strong> AI analysis of receipt images, stock/asset symbols, and, for Chat,
+            your financial summary.</li>
         <li><strong>Google ML Kit:</strong> On-device document scanning; no personal data sent.</li>
         <li><strong>Frankfurter API:</strong> Open-source currency exchange rates.</li>
         <li><strong>Expo:</strong> Used to build and update the app.</li>

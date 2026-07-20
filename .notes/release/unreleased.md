@@ -57,6 +57,8 @@ Chat sends a much broader financial summary to Gemini than the app's existing AI
 
 - The "AI Data Usage Consent" dialog (shown before any AI feature is first used) now explicitly lists what's sent per feature — receipt images, stock/asset symbols, and, new for Chat, your financial summary — instead of a general one-line description.
 - If you already consented under the old wording, you'll see the updated disclosure once, the next time an AI feature runs, since it now covers a new category of data.
+- The Terms of Service & Privacy Policy (in-app and the standalone `docs/privacy_policy.html`) now explicitly names the financial summary and Monthly Summaries that Chat sends to Gemini, instead of only describing receipt images and generic "data you select" language.
+- Since Terms now cover a new category of shared data, you'll be asked to re-accept them once, the next time you open the app.
 
 ---
 
