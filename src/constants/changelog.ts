@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [1.15.0] — 2026-07-20
+
 ### Added
 - **Monthly Summary**: auto-generated narrative breakdown of each month's finances, with manual reprocessing.
   - Budget alerts show what the budget was actually set to, not just the overage.
