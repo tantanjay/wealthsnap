@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+---
+
+## [1.15.0] — 2026-07-20
+
 ### Added
 - **Monthly Summary**: auto-generated narrative breakdown of each month's finances, with manual reprocessing.
   - Budget alerts show what the budget was actually set to, not just the overage.
@@ -610,7 +614,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - AES-256 encrypted local storage.
 - No accounts, no ads, no cloud dependency.
 
-[Unreleased]: https://github.com/tantanjay/wealthsnap/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/tantanjay/wealthsnap/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/tantanjay/wealthsnap/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/tantanjay/wealthsnap/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/tantanjay/wealthsnap/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/tantanjay/wealthsnap/compare/v1.11.2...v1.12.0
