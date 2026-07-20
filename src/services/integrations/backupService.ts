@@ -62,6 +62,7 @@ interface BackupManifestV2 {
     hasProfile: boolean;
     entities: string[];
     counts: Record<string, number>;
+    source: 'manual' | 'auto';
 }
 
 /**
@@ -69,9 +70,17 @@ interface BackupManifestV2 {
  * Writes the v2 container format: a plaintext manifest.json plus one AES-encrypted
  * file per entity under entities/, instead of a single monolithic blob.
  * @param password - The password to encrypt the backup data with
+ * @param onProgress - Optional progress callback
+ * @param source - 'manual' (default, user-triggered) or 'auto' (scheduled background backup).
+ *   Recorded in the plaintext manifest and the filename so a listing/restore UI can tell them
+ *   apart without decrypting anything.
  * @returns URI of the created backup file
  */
-export const createBackup = async (password: string, onProgress?: BackupProgressCallback): Promise<string> => {
+export const createBackup = async (
+    password: string,
+    onProgress?: BackupProgressCallback,
+    source: 'manual' | 'auto' = 'manual'
+): Promise<string> => {
     if (!password) {
         throw new Error('Backup password is required');
     }
@@ -117,13 +126,17 @@ export const createBackup = async (password: string, onProgress?: BackupProgress
         hasProfile: !!profile,
         entities: ENTITY_REGISTRY.map(d => d.key),
         counts,
+        source,
     };
     zip.file('manifest.json', JSON.stringify(manifest));
 
     onProgress?.({ stage: 'writing', label: 'Writing backup file…' });
     const zipBytes = await zip.generateAsync({ type: 'uint8array' });
 
-    const fileName = `wealthsnap_backup_${new Date().toISOString().split('T')[0]}.zip`;
+    const dateStr = new Date().toISOString().split('T')[0];
+    const fileName = source === 'auto'
+        ? `wealthsnap_backup_auto_${dateStr}.zip`
+        : `wealthsnap_backup_${dateStr}.zip`;
     const file = new File(Paths.document, fileName);
     file.write(zipBytes);
 

@@ -14,6 +14,7 @@ export const SECURE_KEYS = {
     ENCRYPTION_KEY: 'wealthsnap_data_encryption_key',
     PIN_CODE: 'wealthsnap_security_pin',
     AI_API_KEY: 'wealthsnap_ai_api_key',
+    AUTO_BACKUP_PASSWORD: 'wealthsnap_auto_backup_password',
 }
 
 export const ASYNC_KEYS = {
@@ -77,6 +78,12 @@ export const ASYNC_KEYS = {
     CRASH_REPORT: '@wealthsnap_crash_report',
     DEVELOPER_MODE: '@wealthsnap_developer_mode',
     BACKUP_TIMESTAMP: '@wealthsnap_backup_timestamp',
+    AUTO_BACKUP: {
+        ENABLED: '@wealthsnap_auto_backup_enabled',
+        FREQUENCY: '@wealthsnap_auto_backup_frequency',
+        FOLDER_URI: '@wealthsnap_auto_backup_folder_uri',
+        LAST_RUN: '@wealthsnap_auto_backup_last_run',
+    },
     REVIEW_PROMPT: {
         HAS_RATED: '@wealthsnap_review_has_rated',
         LAST_PROMPT: '@wealthsnap_review_last_prompt',

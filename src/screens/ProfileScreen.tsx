@@ -11,6 +11,7 @@ import SecurityCard from '@components/profile/SecurityCard';
 import HelpCenterScreen from '@screens/onboarding/HelpCenterScreen';
 import BudgetManagementModal from '@components/profile/BudgetManagementModal';
 import DataManagementCard from '@components/data/DataManagementCard';
+import AutoBackupCard from '@components/data/AutoBackupCard';
 import SupportModal from '@components/profile/settings/SupportModal';
 import ContactDeveloperModal from '@components/profile/settings/ContactDeveloperModal';
 import ProfileHeader from '@components/profile/ProfileHeader';
@@ -30,6 +31,7 @@ import { useAlert } from '@context/AlertContext';
 import { RecurrenceRule } from '@types';
 import { getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule } from '@services/domain/recurrenceService';
 import { getUserProfile } from '@services/core/storageService';
+import { runAutoBackupIfDue } from '@services/integrations/autoBackupService';
 import { CONFIG, ASYNC_KEYS } from '@constants/config';
 
 const ProfileScreen = ({ navigation }: any) => {
@@ -63,6 +65,8 @@ const ProfileScreen = ({ navigation }: any) => {
     // Developer Mode State
     const [isDevMode, setIsDevMode] = useState(false);
     const [devTapCount, setDevTapCount] = useState(0);
+    const [isRunningAutoBackup, setIsRunningAutoBackup] = useState(false);
+    const [autoBackupRefreshSignal, setAutoBackupRefreshSignal] = useState(0);
 
     // Crash Simulation State
     const [shouldCrash, setShouldCrash] = useState(false);
@@ -132,6 +136,23 @@ const ProfileScreen = ({ navigation }: any) => {
         );
     };
 
+    const handleRunAutoBackupNow = async () => {
+        setIsRunningAutoBackup(true);
+        try {
+            const result = await runAutoBackupIfDue({ force: true });
+            if (result.status === 'success') {
+                showAlert('Auto Backup', 'Backup completed successfully.');
+            } else if (result.status === 'skipped') {
+                showAlert('Auto Backup Skipped', result.reason);
+            } else {
+                showAlert('Auto Backup Failed', result.message);
+            }
+        } finally {
+            setIsRunningAutoBackup(false);
+            setAutoBackupRefreshSignal(prev => prev + 1);
+        }
+    };
+
     const handleDevTap = async () => {
         if (isDevMode) return;
 
@@ -170,6 +191,9 @@ const ProfileScreen = ({ navigation }: any) => {
                 {/* Data Management */}
                 <DataManagementCard navigation={navigation} />
 
+                {/* Auto Backup */}
+                <AutoBackupCard refreshSignal={autoBackupRefreshSignal} />
+
                 {/* Security */}
                 <SecurityCard />
 
@@ -201,6 +225,8 @@ const ProfileScreen = ({ navigation }: any) => {
                             }
                         }}
                         onSimulateCrash={() => setShouldCrash(true)}
+                        onRunAutoBackup={handleRunAutoBackupNow}
+                        isRunningAutoBackup={isRunningAutoBackup}
                     />
                 )}
 
