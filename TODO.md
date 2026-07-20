@@ -21,10 +21,8 @@ Currently every AI call is hardcoded to Google's `@google/genai` SDK. Goal: let 
 
 ## 💰 Budget Management
 
-- [ ] **Reality check button** — compare set budgets against actual spending patterns and surface two kinds of gaps ([BudgetManagementModal.tsx](src/components/profile/BudgetManagementModal.tsx)):
-  - Categories with a budget that's out of sync with reality (e.g. Food is set to ₱5,000 but actual average spend is ₱8,000) — suggest the realistic number
-  - Categories with no budget at all but that keep showing up in transactions — flag them as missing coverage
-- [ ] **Add total** — show a summed total label across all budgets, not just per-category amounts
+- [x] ~~**Reality check button** — compare set budgets against actual spending patterns and surface two kinds of gaps~~ — shipped as **Smart Suggestions** (sparkles icon, top-right of [BudgetManagementModal.tsx](src/components/profile/BudgetManagementModal.tsx)), opening [SmartSuggestionsModal.tsx](src/components/profile/SmartSuggestionsModal.tsx): computes trailing-12-month category averages via `getCategoryAverages`, lists out-of-sync budgets (>15% and >₱50 gap) and unbudgeted-but-spending categories, with an editable amount + delete-row per category and a bulk "Update Budgets" apply
+- [x] ~~**Add total** — show a summed total label across all budgets, not just per-category amounts~~
 
 ---
 

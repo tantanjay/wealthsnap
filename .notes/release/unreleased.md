@@ -31,6 +31,14 @@ Uses the same Bring-Your-Own-Key Gemini setup as receipt scanning and price look
 
 ---
 
+## 💰 Budget Management
+Two additions to make budgets easier to keep accurate over time.
+
+- **Total across budgets**: the budget list now shows a summed total next to the category count, so you can see your overall monthly budget commitment at a glance.
+- **Smart Suggestions**: tap the sparkles icon in Manage Budgets to compare your last 12 months of actual spending against your set budgets. It flags two kinds of gaps — a budget that's drifted out of sync with reality, and a category with real spending but no budget at all — and suggests a rounded, realistic number for each (nearest 10 or 100, scaled to the amount, so it reads naturally regardless of currency). Edit any suggested amount, or skip it with the trash icon — nothing is saved until you tap Update. Categories with an active recurring rule (Rent, Insurance, etc.) are excluded, since their amount is already fixed.
+
+---
+
 ## 🔐 Updated AI Data Usage Consent
 Chat sends a much broader financial summary to Gemini than the app's existing AI features did, so the disclosure needed to catch up.
 
