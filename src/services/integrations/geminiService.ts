@@ -1,6 +1,6 @@
 import { BigNumber } from 'bignumber.js';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
-import * as FileSystem from 'expo-file-system/legacy';
+import { File } from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 
 import { AIUsageLog, ReceiptAnalysisResult } from '@types';
@@ -235,9 +235,7 @@ export const analyzeReceiptImage = async (imageUri: string): Promise<ReceiptAnal
         const { uri: optimizedUri, width, height } = await optimizeImage(imageUri);
         imageTokens = calculateImageTokens(width, height);
 
-        const base64Image = await FileSystem.readAsStringAsync(optimizedUri, {
-            encoding: 'base64',
-        });
+        const base64Image = await new File(optimizedUri).base64();
 
         const { genAI, modelName } = await getGeminiClient();
 

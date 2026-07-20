@@ -1,27 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
+import { BackupProgress } from '@services/integrations/backupService';
 
-interface RestoreModalProps {
+type BackupRestoreMode = 'backup' | 'restore';
+
+interface BackupRestoreModalProps {
     visible: boolean;
+    mode: BackupRestoreMode;
     onClose: () => void;
-    onRestore: (password: string) => void;
+    onSubmit: (password: string) => void;
     isProcessing: boolean;
+    progress?: BackupProgress | null;
 }
 
-const RestoreModal: React.FC<RestoreModalProps> = ({
+const COPY: Record<BackupRestoreMode, { title: string; subtitle: string; idleLabel: string; processingLabel: string }> = {
+    backup: {
+        title: 'Create Backup',
+        subtitle: 'Enter a password to encrypt your backup file.',
+        idleLabel: 'Create & Share',
+        processingLabel: 'Creating...',
+    },
+    restore: {
+        title: 'Restore Backup',
+        subtitle: 'Enter the password for this backup file.',
+        idleLabel: 'Restore Data',
+        processingLabel: 'Restoring...',
+    },
+};
+
+const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
     visible,
+    mode,
     onClose,
-    onRestore,
-    isProcessing
+    onSubmit,
+    isProcessing,
+    progress,
 }) => {
     const { colors } = useTheme();
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const copy = COPY[mode];
 
     useEffect(() => {
         if (visible) setPassword('');
@@ -31,8 +54,8 @@ const RestoreModal: React.FC<RestoreModalProps> = ({
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Restore Backup"
-            subtitle="Enter the password for this backup file."
+            title={copy.title}
+            subtitle={copy.subtitle}
             dismissable={false}
         >
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -66,10 +89,16 @@ const RestoreModal: React.FC<RestoreModalProps> = ({
                     </TouchableOpacity>
                 </View>
 
+                {isProcessing && progress?.label ? (
+                    <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center', marginBottom: 12 }}>
+                        {progress.label}
+                    </Text>
+                ) : null}
+
                 <View style={{ gap: 10 }}>
                     <Button
-                        title={isProcessing ? "Restoring..." : "Restore Data"}
-                        onPress={() => onRestore(password)}
+                        title={isProcessing ? copy.processingLabel : copy.idleLabel}
+                        onPress={() => onSubmit(password)}
                         disabled={isProcessing}
                     />
                     <Button
@@ -84,4 +113,4 @@ const RestoreModal: React.FC<RestoreModalProps> = ({
     );
 };
 
-export default RestoreModal;
+export default BackupRestoreModal;

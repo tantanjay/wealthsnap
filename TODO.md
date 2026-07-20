@@ -42,54 +42,21 @@ Currently every AI call is hardcoded to Google's `@google/genai` SDK. Goal: let 
 - [ ] **Scheduled encrypted backup** — go beyond the current 7-day *reminder* ([BackupReminderModal.tsx](src/components/data/BackupReminderModal.tsx)) to an actual auto-run backup, encrypted and written to a user-chosen folder/cloud-drive path, instead of requiring a manual tap through [BackupModal.tsx](src/components/data/BackupModal.tsx) every time
   - Needs new settings surfaced in Profile — a toggle to enable/disable auto-backup, a folder/cloud-drive path picker, frequency (daily/weekly), and a "last auto-backup" timestamp — living alongside [DataManagementCard.tsx](src/components/data/DataManagementCard.tsx) in [ProfileScreen.tsx](src/screens/ProfileScreen.tsx:171)
 
-### 🔧 Backup & Restore v2 (Refactor)
+### 🔧 Backup & Restore v2 (Refactor) — ✅ shipped (Phases 1–3a), Phase 3b held back
 
-Current implementation audit: [backupService.ts](src/services/integrations/backupService.ts) (309 lines) does gather→stringify→encrypt→zip→write as one long `createBackup()`, and [DataManagementCard.tsx](src/components/data/DataManagementCard.tsx) (456 lines) bundles Backup, Restore, *and* CSV/TSV Import into a single component — that's the main source of the bloat. Also found: `BackupData.version` exists but restore never branches on it (compatibility today comes purely from optional fields + `safeBulkSave` skipping empty arrays), and the payload gets double-`JSON.stringify`'d before encryption (wasteful, and restore has a defensive unwind for it it shouldn't need).
+Implemented in full: UI split ([BackupRestoreModal.tsx](src/components/data/BackupRestoreModal.tsx), [CsvImportFlow.tsx](src/components/data/CsvImportFlow.tsx)), the v2 container format below ([backupEntities.ts](src/services/integrations/backupEntities.ts), rewritten [backupService.ts](src/services/integrations/backupService.ts)), and the File System API migration off `expo-file-system/legacy`. Along the way also fixed: the double-`JSON.stringify` bug, the ID-remap gap (`Transaction.investmentId`/`debtId`/`recurrenceId` and `Investment.recurrenceId` were previously left dangling on restore if those entities' legacy ids got regenerated — now generalized via `ENTITY_REGISTRY`'s `fkFields`), a null-item bug in `sanitizeIds` (falsy items were pushed into the output array instead of dropped), and a reminder-rescheduling bug (was scheduling notifications off the raw pre-sanitize array instead of the ids actually saved to SQLite). Also found and fixed two more `BackupModal`/`RestoreModal` call sites the original audit missed — `App.tsx`'s 7-day-reminder flow and `SetupScreen.tsx`'s onboarding restore — both now on the unified modal too.
 
-v2 direction (per discussion):
+**Phase 3b (JSZip → `fflate` streaming) intentionally not implemented** — turned out riskier/lower-value on inspection: needs a new dependency with a callback-driven API foreign to the rest of the codebase, and since `CryptoJS.AES` isn't incremental here, true streaming could only avoid buffering the whole multi-entity zip at once (not each entity's encrypt/decrypt step) — a real but small win, not worth the risk of unverified native-stream code in a backup feature. Phase 3a's switch to `uint8array` (from base64 strings) already removed the bigger memory cost. Revisit later if large backups prove to be an actual problem.
 
-- [ ] **Split the UI first** — pull CSV/TSV Import out of DataManagementCard.tsx into its own component; unify [BackupModal.tsx](src/components/data/BackupModal.tsx) and [RestoreModal.tsx](src/components/data/RestoreModal.tsx) into one shared password-entry modal (`mode: 'backup' | 'restore'`), since they're currently near-duplicates
-- [ ] **Progress feedback** — surface real progress during backup/restore ("Exporting transactions…", "Encrypting…", "Writing file…") instead of the current static "Creating…"/"Restoring…" label
-- [ ] **Backward compatibility** — the existing single-blob v1 format must keep restoring correctly through a dedicated legacy path; v2 only changes how *new* backups are written
+**Needs a real device/emulator verification pass** — everything above was checked via `tsc`/`eslint` (clean) plus a standalone Node script reproducing the pure ID-remap/container logic (all assertions passed, including the FK-remap fix, wrong-password rejection, and legacy double-stringify fallback), but none of it has run inside the actual RN app — no device/emulator/web build was available in the environment this was built in.
 
-#### v2 container format spec
+#### v2 container format spec — ✅ shipped as spec'd
 
-Keep the `.zip` wrapper (portable, one file to share/upload), but stop packing everything into one `backup.enc` blob. Instead:
+`manifest.json` (plaintext, `containerVersion`/`schemaVersion`/`createdAt`/`appVersion`/`entities`/`counts`) + `entities/*.enc` (one `JSON.stringify`'d-once, AES-encrypted file per entity) inside the same `.zip` wrapper. Restore dispatches on file presence (`manifest.json` → v2 reader; else `backup.enc` → untouched legacy reader) — see [backupService.ts](src/services/integrations/backupService.ts)'s `restoreFromBackup`/`restoreV2`/`restoreV1Legacy`, and [backupEntities.ts](src/services/integrations/backupEntities.ts) for the entity registry (`getAll`/`bulkSave`/`hasId`/`fkFields` per entity) that drives both create and restore.
 
-```
-wealthsnap_backup_2026-07-20.zip
-├── manifest.json              ← plaintext, no financial data
-└── entities/
-    ├── profile.enc
-    ├── transactions.enc
-    ├── investments.enc
-    ├── debts.enc
-    ├── categories.enc
-    ├── recurrenceRules.enc
-    ├── budgets.enc
-    ├── reminders.enc
-    ├── transactionReceipts.enc
-    ├── assets.enc
-    ├── priceHistories.enc
-    └── dividendHistories.enc
-```
+#### File System API Migration — ✅ shipped (the migration itself; streaming held back, see above)
 
-- **`manifest.json`** — unencrypted (contains no financial data, just structure): `{ containerVersion: 2, schemaVersion: "2.1", createdAt, appVersion, entities: [...], counts: { transactions: 4213, investments: 87, ... } }`. Readable *before* the user enters a password, so restore can validate the file and show real numbers ("This backup has 4,213 transactions, 87 investments…") up front instead of failing only after a full decrypt attempt.
-- **Each `entities/*.enc`** — that one entity's array, `JSON.stringify`'d *once* (fixes the current double-stringify bug) and AES-encrypted with the same backup password. Same encryption primitive as today (`CryptoJS.AES`), just scoped per-entity instead of one giant string.
-- **Self-aware restore = a file check, not a version field to trust**: if `manifest.json` exists → v2 reader; else if `backup.enc` exists at the root → legacy reader (today's `restoreFromBackup` path, untouched). No user-facing version picker either way.
-- **Restore order must preserve foreign keys** — `transactions.enc` has to be decrypted and ID-sanitized *before* `transactionReceipts.enc`, since receipts remap `transactionId` off the transaction ID map (same dependency that exists in today's code, just now spread across files instead of one object).
-- **Streaming depends on the File System Migration below** — as spec'd with today's tooling (JSZip + `expo-file-system/legacy`), this isn't true chunked disk I/O: JSZip still assembles the final archive in memory before `writeAsStringAsync` writes it in one shot. Per-entity processing still helps (no single giant JSON string + giant ciphertext string coexisting in memory, real per-entity progress ticks), but *real* streaming needs the library swap described below.
-- **No forward-compat requirement** — only *new* app versions need to read *old* (v1) backups. Old app versions are not expected to read v2 backups.
-
-#### File System API Migration (prerequisite for real streaming)
-
-Every file I/O call in the app (backup, restore, receipt image handling) goes through `expo-file-system/legacy` — 4 files import it: [geminiService.ts](src/services/integrations/geminiService.ts), [ProfileScreen.tsx](src/screens/ProfileScreen.tsx), [backupService.ts](src/services/integrations/backupService.ts), [DataManagementCard.tsx](src/components/data/DataManagementCard.tsx). That was the working choice back when this project started on Expo SDK 52/53, where the modern API wasn't reliable enough to build on.
-
-- Expo SDK 54 promoted the modern File System API to the *default* export and moved the old one to `/legacy`. The currently-installed `expo-file-system@55.0.24` changelog shows only incremental bug/security fixes since then (a permission check, a path-traversal fix in 55.0.22), not API churn — a reasonable signal it's matured, though it deserves a real test pass before depending on it, not just a changelog read.
-- [ ] Migrate all 4 files off `expo-file-system/legacy` onto the modern `File`/`Directory`/`Paths` API
-- [ ] Once migrated, use `File.writableStream()` / `readableStream()` (native file handles — see [streams.d.ts](node_modules/expo-file-system/build/streams.d.ts)) for backup/restore instead of one-shot `writeAsStringAsync`/`readAsStringAsync`
-- [ ] Swap JSZip for a streaming-capable zip library (e.g. `fflate`'s incremental `Zip`/`Unzip` classes, which push/pull compressed chunks instead of buffering the whole archive) so compression output can be piped straight into the writable stream above
-- [ ] This is the actual precondition for true low-memory streaming backups — the per-entity-files spec above works without it, but stays "smaller buffers," not "no buffering"
+All 4 files (`geminiService.ts`, `ProfileScreen.tsx`, `backupService.ts`, and CSV import — now in `CsvImportFlow.tsx`) migrated off `expo-file-system/legacy` onto the modern `File`/`Directory`/`Paths` API. `backupService.ts` also switched its zip I/O from base64 strings to `Uint8Array` throughout (`JSZip`'s `type: 'uint8array'`, `File.write()`/`.bytes()`), which was the main memory-pressure win from this migration even without the streaming library swap.
 
 ---
 
