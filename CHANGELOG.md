@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Savings Trend's "Understanding Your Chart" guide now includes a visual income breakdown diagram.
 - AI Data Usage Consent now lists exactly what's sent per feature.
+- Terms of Service & Privacy Policy now explicitly disclose the financial summary and Monthly Summaries Chat sends to Gemini; existing users will be asked to re-accept once.
 - Backup and Restore now show real progress instead of a static "Creating…"/"Restoring…" label.
 - New backups use a more efficient format that encrypts each data type separately.
 
