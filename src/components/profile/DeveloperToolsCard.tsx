@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
@@ -7,9 +7,11 @@ import { useTheme } from '@context/ThemeContext';
 interface DeveloperToolsCardProps {
     onShareLogs: () => void;
     onSimulateCrash: () => void;
+    onRunAutoBackup: () => void;
+    isRunningAutoBackup?: boolean;
 }
 
-const DeveloperToolsCard: React.FC<DeveloperToolsCardProps> = ({ onShareLogs, onSimulateCrash }) => {
+const DeveloperToolsCard: React.FC<DeveloperToolsCardProps> = ({ onShareLogs, onSimulateCrash, onRunAutoBackup, isRunningAutoBackup }) => {
     const { colors } = useTheme();
 
     return (
@@ -28,6 +30,23 @@ const DeveloperToolsCard: React.FC<DeveloperToolsCardProps> = ({ onShareLogs, on
                 <Ionicons name="share-social-outline" size={18} color={colors.text} />
                 <Text style={{ color: colors.text, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
                     Share Crash Log
+                </Text>
+            </TouchableOpacity>
+
+            <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 15 }} />
+
+            <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
+                onPress={onRunAutoBackup}
+                disabled={isRunningAutoBackup}
+            >
+                {isRunningAutoBackup ? (
+                    <ActivityIndicator size="small" color={colors.text} />
+                ) : (
+                    <Ionicons name="cloud-upload-outline" size={18} color={colors.text} />
+                )}
+                <Text style={{ color: colors.text, fontSize: 14, marginLeft: 6, fontWeight: '600' }}>
+                    {isRunningAutoBackup ? 'Running Auto Backup…' : 'Run Auto Backup Now'}
                 </Text>
             </TouchableOpacity>
 
