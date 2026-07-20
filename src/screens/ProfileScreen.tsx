@@ -3,7 +3,7 @@ import { Text, View, StyleSheet, ScrollView, Linking, ToastAndroid } from 'react
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system/legacy';
+import { File, Paths } from 'expo-file-system';
 
 import appJson from '@app.json';
 import BottomModal from '@components/common/BottomModal';
@@ -186,12 +186,12 @@ const ProfileScreen = ({ navigation }: any) => {
                                     return;
                                 }
 
-                                const path = FileSystem.documentDirectory + 'crash_report.json';
-                                await FileSystem.writeAsStringAsync(path, logs);
+                                const logFile = new File(Paths.document, 'crash_report.json');
+                                logFile.write(logs);
 
                                 if (await Sharing.isAvailableAsync()) {
                                     temporarilyDisableLock();
-                                    await Sharing.shareAsync(path);
+                                    await Sharing.shareAsync(logFile.uri);
                                 } else {
                                     showAlert('Error', 'Sharing is not available on this device');
                                 }

@@ -25,8 +25,8 @@ import { isOnboardingComplete, getAcceptedTermsVersion, getLastBackupDate, saveL
 import { initNotifications, requestPermissions, registerBackgroundFetchAsync } from '@services/background';
 import { CONFIG } from '@constants/config';
 import BackupReminderModal from '@components/data/BackupReminderModal';
-import BackupModal from '@components/data/BackupModal';
-import { createBackup } from '@services/integrations/backupService';
+import BackupRestoreModal from '@components/data/BackupRestoreModal';
+import { createBackup, BackupProgress } from '@services/integrations/backupService';
 import * as Sharing from 'expo-sharing';
 
 // Standard JS date math is safer since I don't know dependencies.
@@ -130,6 +130,7 @@ const AppContent = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'L
   const [showBackupReminder, setShowBackupReminder] = useState(false);
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [isBackupProcessing, setIsBackupProcessing] = useState(false);
+  const [backupProgress, setBackupProgress] = useState<BackupProgress | null>(null);
 
   useEffect(() => {
     const checkBackupsAndReminders = async () => {
@@ -214,14 +215,16 @@ const AppContent = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'L
         }}
       />
 
-      <BackupModal
+      <BackupRestoreModal
         visible={showBackupModal}
+        mode="backup"
         onClose={() => setShowBackupModal(false)}
-        onBackup={async (password) => {
+        onSubmit={async (password) => {
           try {
             setIsBackupProcessing(true);
-            const uri = await createBackup(password);
+            const uri = await createBackup(password, setBackupProgress);
             setIsBackupProcessing(false);
+            setBackupProgress(null);
             setShowBackupModal(false);
 
             if (await Sharing.isAvailableAsync()) {
@@ -229,11 +232,13 @@ const AppContent = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'L
             }
           } catch (error) {
             setIsBackupProcessing(false);
+            setBackupProgress(null);
             console.error(error);
             alert('Backup Failed: ' + (error as Error).message);
           }
         }}
         isProcessing={isBackupProcessing}
+        progress={backupProgress}
       />
     </>
   );
