@@ -88,16 +88,18 @@ Comprehensive liability tracking:
 
 ### 🤖 AI-Powered Tools (Optional)
 
-WealthSnap integrates optional AI tools.
+WealthSnap integrates optional AI tools, powered by your own Gemini API key.
 
 Features include:
 - Smart receipt analysis (amount, category, notes extraction)
 - AI-assisted stock price research
+- **Chat**: ask questions about your own finances in plain language, grounded in a live snapshot of your data (cash, investments, P/L, dividends, debt, runway) plus your Monthly Summaries — with streaming replies and per-message cost/token transparency
 
 **Privacy Controls:**
 - You provide your own API key
-- Only selected data is transmitted
+- A consent dialog itemizes exactly what each AI feature sends — receipt images, stock/asset symbols, or your financial summary — before it's ever used
 - Images are not permanently stored
+- Chat conversations are not saved — each session starts fresh
 - Local database is never shared
 
 ---
@@ -129,6 +131,17 @@ Features include:
 - Customizable Insights dashboard
 - Reorderable cards & sections
 - Tap-to-inspect charts
+
+---
+
+### 🗓️ Monthly Summary
+Your month at a glance, written in plain language instead of raw numbers.
+
+- Narrative breakdown of income, expenses, savings rate, net cash flow, investment activity, debt payments, transfers, budget alerts, and unusual spending
+- Generated automatically in the background for every month you have data for, with a one-time catch-up of past months
+- Current month stays up to date; the previous month finalizes automatically once it closes
+- Manual "Reprocess All Months" option for regenerating summaries after editing older data
+- Pure local computation — no AI calls or cost involved
 
 ---
 
