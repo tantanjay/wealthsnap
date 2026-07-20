@@ -1,6 +1,7 @@
 const fs = require('fs');
 const md = fs.readFileSync('CHANGELOG.md', 'utf8').replace(/\n\[.+?\]: https:\/\/github\.com\/[\s\S]*$/, '\n');
-const tsSrc = fs.readFileSync('src/constants/changelog.ts', 'utf8').replace('export const CHANGELOG_MARKDOWN', 'var CHANGELOG_MARKDOWN');
+let CHANGELOG_MARKDOWN;
+const tsSrc = fs.readFileSync('src/constants/changelog.ts', 'utf8').replace('export const CHANGELOG_MARKDOWN', 'CHANGELOG_MARKDOWN');
 eval(tsSrc);
 // Template literals normalize \r\n -> \n in their cooked value per the ECMAScript spec,
 // so compare on that same basis rather than expecting byte-identical CRLF preservation.
@@ -19,4 +20,5 @@ if (rendered === expected) {
             break;
         }
     }
+    process.exit(1);
 }
