@@ -138,6 +138,9 @@ const getAutoBackupPassword = async (): Promise<string | null> => {
 const isDue = (settings: AutoBackupSettings): boolean => {
     if (!settings.lastRunAt) return true;
     const elapsedMs = Date.now() - new Date(settings.lastRunAt).getTime();
+    // An unparseable lastRunAt would make elapsedMs NaN, and NaN >= anything is always false -
+    // treat that as "due" instead of silently disabling auto-backup forever for that user.
+    if (Number.isNaN(elapsedMs)) return true;
     const dueMs = FREQUENCY_DAYS[settings.frequency] * 24 * 60 * 60 * 1000;
     return elapsedMs >= dueMs;
 };
