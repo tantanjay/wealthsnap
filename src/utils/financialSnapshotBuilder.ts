@@ -24,6 +24,24 @@ export interface HoldingAllocation {
     allocationPercent: number;
 }
 
+export interface BudgetInput {
+    category: string;
+    amount: BigNumber;
+}
+
+export interface BudgetSnapshotItem {
+    category: string;
+    budgeted: number;
+    spent: number;
+    percentUsed: number;
+    status: 'safe' | 'warning' | 'over';
+}
+
+export interface PrivateCategoriesTotal {
+    income: number;
+    expense: number;
+}
+
 export interface FinancialSnapshotData {
     totalCash: number;
     totalInvestmentValue: number;
@@ -35,6 +53,8 @@ export interface FinancialSnapshotData {
     totalDebtLiability: number;
     monthlyBurnRate: number;
     runwayMonths: number | null; // null = infinite (no burn rate)
+    budgets: BudgetSnapshotItem[]; // current calendar month, budgeted categories only
+    privateCategoriesTotal: PrivateCategoriesTotal | null; // lifetime lump sum for excluded categories, null when nothing's excluded
 }
 
 /**
@@ -50,8 +70,16 @@ export const buildFinancialSnapshotData = (
     transactions: Transaction[],
     debts: Debt[],
     portfolioStats: PortfolioStatsInput,
-    holdings: HoldingInput[] = []
+    holdings: HoldingInput[] = [],
+    budgets: BudgetInput[] = [],
+    excludeCategories: string[] = []
 ): FinancialSnapshotData => {
+    // `transactions` must always be the FULL, unfiltered set - every total below
+    // (cash, burn rate, debt, budgets) needs the complete picture to stay accurate.
+    // Excluded categories are only ever hidden from *category-level* detail below,
+    // never subtracted from the underlying data, otherwise aggregates like Total
+    // Cash silently drift from the user's real numbers.
+    const excludeSet = new Set(excludeCategories);
     // Allocation is a share of the authoritative portfolio total (from getPortfolioStats),
     // not a sum of the holdings passed in here, so it stays consistent with totalInvestmentValue above.
     const holdingAllocations: HoldingAllocation[] = holdings
@@ -86,6 +114,41 @@ export const buildFinancialSnapshotData = (
         ? totalCash.dividedBy(monthlyBurnRate).dp(1).toNumber()
         : null;
 
+    const now = new Date();
+    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const spentByCategory = new Map<string, BigNumber>();
+    transactions
+        .filter(t => t.type === 'EXPENSE' && t.date.startsWith(currentYearMonth))
+        .forEach(t => {
+            spentByCategory.set(t.category, (spentByCategory.get(t.category) || new BigNumber(0)).plus(t.amount.abs()));
+        });
+
+    let privateCategoriesTotal: PrivateCategoriesTotal | null = null;
+    if (excludeSet.size > 0) {
+        let privateIncome = new BigNumber(0);
+        let privateExpense = new BigNumber(0);
+        transactions.forEach(t => {
+            if (!excludeSet.has(t.category)) return;
+            if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') privateIncome = privateIncome.plus(t.amount.abs());
+            if (t.type === 'EXPENSE' || t.type === 'TRANSFER_OUT') privateExpense = privateExpense.plus(t.amount.abs());
+        });
+        privateCategoriesTotal = { income: privateIncome.toNumber(), expense: privateExpense.toNumber() };
+    }
+
+    const visibleBudgets = excludeSet.size > 0 ? budgets.filter(b => !excludeSet.has(b.category)) : budgets;
+    const budgetItems: BudgetSnapshotItem[] = visibleBudgets.map(b => {
+        const spent = spentByCategory.get(b.category) || new BigNumber(0);
+        const percentUsed = b.amount.isGreaterThan(0) ? spent.dividedBy(b.amount).times(100).dp(0).toNumber() : 0;
+        const status: BudgetSnapshotItem['status'] = percentUsed > 100 ? 'over' : percentUsed >= 80 ? 'warning' : 'safe';
+        return {
+            category: b.category,
+            budgeted: b.amount.toNumber(),
+            spent: spent.toNumber(),
+            percentUsed,
+            status
+        };
+    }).sort((a, b) => b.percentUsed - a.percentUsed);
+
     return {
         totalCash: totalCash.toNumber(),
         totalInvestmentValue: portfolioStats.totalEquity,
@@ -96,7 +159,9 @@ export const buildFinancialSnapshotData = (
         holdings: holdingAllocations,
         totalDebtLiability: totalDebtLiability.toNumber(),
         monthlyBurnRate: monthlyBurnRate.toNumber(),
-        runwayMonths
+        runwayMonths,
+        budgets: budgetItems,
+        privateCategoriesTotal
     };
 };
 
@@ -120,5 +185,18 @@ export const renderFinancialSnapshotText = (data: FinancialSnapshotData, currenc
     lines.push(`Total Debt Liability: ${fmt(data.totalDebtLiability, currency)}`);
     lines.push(`Monthly Burn Rate (incl. debt payments): ${fmt(data.monthlyBurnRate, currency)}`);
     lines.push(`Financial Runway: ${data.runwayMonths === null ? 'Infinite (no recurring burn)' : `${data.runwayMonths} months`}`);
+    if (data.budgets.length > 0) {
+        lines.push('Current Month Budgets:');
+        data.budgets.forEach(b => {
+            const statusLabel = b.status === 'over' ? ' (OVER BUDGET)' : b.status === 'warning' ? ' (near limit)' : '';
+            lines.push(`  ${b.category}: ${fmt(b.spent, currency)} spent of ${fmt(b.budgeted, currency)} budget (${b.percentUsed}%)${statusLabel}`);
+        });
+    }
+    if (data.privateCategoriesTotal) {
+        lines.push(`Private Categories: Income ${fmt(data.privateCategoriesTotal.income, currency)}, Expenses ${fmt(data.privateCategoriesTotal.expense, currency)}`);
+        lines.push('  "Private" is not a real category name - it stands in for one or more of the user\'s own transaction categories (e.g. Credit Payment) that they chose to hide from this conversation before sending it to you. You are not told which category name(s) these are, or any individual transaction inside them - only this combined lifetime total across every month.');
+        lines.push('  These amounts are already included in every total above and in the monthly summaries below (Total Cash, Burn Rate, Income/Expense figures) - they are just not broken out by category or by month. If asked what is inside "Private," say you don\'t have visibility into it (by design) and the user would need to check the app themselves.');
+    }
+    lines.push('Note: "Savings Rate" in the monthly summaries below = (Income - Expenses) / Income x 100. Money moved to investments, debt payments, or transfers between your own accounts is not counted as an "Expense" here, so it still counts as savings even though it left your cash on hand.');
     return lines.join('\n');
 };

@@ -9,6 +9,8 @@
 A new way to see your month at a glance, written in plain language instead of raw numbers.
 
 - **Narrative breakdown**: for any month, see income and expenses by category, savings rate, net cash flow, investment activity (buys, sells, dividends, realized P/L), debt payments and remaining balances, transfers, budget alerts, and unusual spending — all rendered as a readable summary block, not a spreadsheet.
+- **Budget alerts show the full picture**: a flagged category now shows what the budget was actually set to alongside the overage, not just the percentage used.
+- **Notes surface in top expenses**: if a transaction has a written note, it now shows next to that expense in the "Top Expenses" line — the note is often the thing that explains why it happened.
 - **Automatic generation**: summaries are built in the background for every month you have data for, including a one-time catch-up of past months the first time this runs after updating. Already-closed months are cached, so this stays fast even with years of history.
 - **Always up to date**: the current month keeps refreshing as you add transactions; a daily background check finalizes the previous month once it closes.
 - **New Quick Actions entry**: accessible from the floating gear bubble's Quick Actions menu — pick a month from the chip selector to view its summary.
@@ -21,9 +23,11 @@ This lays the groundwork for future AI-assisted insights — the generation itse
 ## 💬 Chat
 Ask questions about your own finances in plain language, answered by Gemini.
 
-- **Grounded in your data**: before starting, pick how much history to include — 1, 2, 3, 5 years, or ALL — with each option showing an estimated token count up front. Chat is grounded in a live financial snapshot (total cash, investment value, realized/unrealized P/L, dividends received, debt, and runway) plus the Monthly Summaries for whichever range you pick.
+- **Grounded in your data**: before starting, pick how much history to include — 1, 2, 3, 5 years, or ALL — with each option showing an estimated token count up front. Chat is grounded in a live financial snapshot (total cash, investment value, realized/unrealized P/L, dividends received, debt, runway, and your current-month budgets) plus the Monthly Summaries for whichever range you pick.
+- **Keep sensitive categories private**: before picking a range, choose any transaction categories you'd rather not send at all (e.g. Remittance). Excluded categories are folded into a single "Private Categories" lifetime total instead of being broken out by category or by month — Gemini sees that the amount exists and is told what "Private" means, but never which category or transaction it came from. Every other total (Total Cash, burn rate, income/expense figures) is still computed from your complete data, so hiding a category never throws off the real numbers. Your choice is remembered for next time.
+- **Try it with a tap**: three example questions are suggested each time you start a conversation, drawn at random from a larger pool geared toward things no single dashboard screen already answers — trends, trade-offs, and "what's actually holding me back" rather than a number that's already sitting on a card.
 - **Streaming replies**: answers stream in as Gemini generates them instead of waiting for the full response, and render with proper formatting (headings, bold, bullet/numbered lists) instead of raw markdown.
-- **Cost transparency**: every reply shows its token count and USD cost, plus a running total for the whole session. A "View Context" button lets you see exactly what was sent to Gemini.
+- **Cost transparency**: every reply shows its token count and USD cost, plus a running total for the whole session. A "View Context" button lets you see exactly what was sent to Gemini, with a "Copy Context" action and a privacy reminder to only paste it somewhere you trust if you copy it elsewhere.
 - **Nothing saved**: conversations live only for that sitting — closing Chat and reopening it starts fresh with a new range selection.
 - **New Quick Actions entry**: reachable from the floating gear bubble, right alongside Monthly Summary.
 
