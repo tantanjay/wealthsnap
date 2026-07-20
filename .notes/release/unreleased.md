@@ -43,6 +43,15 @@ Two additions to make budgets easier to keep accurate over time.
 
 ---
 
+## 📦 Backup & Restore
+Behind-the-scenes work to make backups more reliable, plus a small visible improvement.
+
+- **Real progress feedback**: Backup and Restore now show what's actually happening — "Encrypting Investments…", "Restoring Transactions…", and so on — instead of a static "Creating…" / "Restoring…" label. Applies everywhere you can back up or restore: Profile's Data Management, the onboarding restore flow, and the 7-day backup reminder.
+- **More reliable restores**: fixed an edge case where a transaction's link to its investment, debt, or recurring rule could break during restore if that record's ID needed to be regenerated. Reminder notifications rescheduled after a restore now also correctly reference the reminder as it was actually saved, instead of a stale ID from the backup file.
+- **New backup file format**: new backups now encrypt each type of data (transactions, investments, and so on) separately instead of one combined block, improving reliability. Backups made by older app versions still restore exactly as before.
+
+---
+
 ## 🔐 Updated AI Data Usage Consent
 Chat sends a much broader financial summary to Gemini than the app's existing AI features did, so the disclosure needed to catch up.
 

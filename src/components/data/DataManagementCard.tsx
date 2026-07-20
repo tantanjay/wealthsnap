@@ -1,25 +1,19 @@
-import React, { useState, useCallback } from 'react';
-import { Text, View, StyleSheet, Modal, BackHandler } from 'react-native';
+import React, { useState } from 'react';
+import { Text, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, CommonActions, NavigationProp } from '@react-navigation/native';
+import { CommonActions, NavigationProp } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
-import BackupModal from '@components/data/BackupModal';
-import RestoreModal from '@components/data/RestoreModal';
-import ImportDataModal from '@components/data/ImportDataModal';
-import ImportProcessScreen from '@components/data/ImportProcessScreen';
+import BackupRestoreModal from '@components/data/BackupRestoreModal';
+import CsvImportFlow from '@components/data/CsvImportFlow';
 import SettingItem from '@components/common/SettingItem';
 import { Card } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { useSecurity } from '@context/SecurityContext';
-import { Transaction } from '@types';
 import { clearAllData, getUserProfile, saveLastBackupDate } from '@services/core/storageService';
-import { createBackup, restoreFromBackup } from '@services/integrations';
-import { bulkSaveTransactions, getAllTransactions } from '@services/domain/transactionService';
-import * as Import from '@services/integrations';
+import { createBackup, restoreFromBackup, BackupProgress } from '@services/integrations/backupService';
 
 interface DataManagementCardProps {
     navigation: NavigationProp<any>;
@@ -30,50 +24,15 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
     const { temporarilyDisableLock } = useSecurity();
 
     // Backup/Restore State
-    const [showBackupModal, setShowBackupModal] = useState(false);
-    const [showRestoreModal, setShowRestoreModal] = useState(false);
+    const [modalMode, setModalMode] = useState<'backup' | 'restore' | null>(null);
     const [restoreFileUri, setRestoreFileUri] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [progress, setProgress] = useState<BackupProgress | null>(null);
 
     // Import State
-    const [showImportModal, setShowImportModal] = useState(false);
-    const [showImportProcess, setShowImportProcess] = useState(false);
-    const [isImportProcessing, setIsImportProcessing] = useState(false);
-    const [isImportSaving, setIsImportSaving] = useState(false);
-    const [importSummary, setImportSummary] = useState<Import.ImportSummary | null>(null);
-    const [pendingTransactions, setPendingTransactions] = useState<Transaction[]>([]);
-    const [currency, setCurrency] = useState('PHP');
+    const [showImportFlow, setShowImportFlow] = useState(false);
 
     const { showAlert } = useAlert();
-
-    // Fetch currency on focus
-    useFocusEffect(
-        useCallback(() => {
-            const fetchCurrency = async () => {
-                const profile = await getUserProfile();
-                if (profile?.currency) {
-                    setCurrency(profile.currency);
-                }
-            };
-            fetchCurrency();
-        }, [])
-    );
-
-    // Handle back button during import process
-    useFocusEffect(
-        useCallback(() => {
-            const backAction = () => {
-                if (showImportProcess) {
-                    // Block back during import process
-                    return true;
-                }
-                return false;
-            };
-
-            const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
-            return () => backHandler.remove();
-        }, [showImportProcess])
-    );
 
     /**
      * Wipes all data (SQLite + AsyncStorage) and resets the app state.
@@ -112,9 +71,10 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
 
         try {
             setIsProcessing(true);
-            const uri = await createBackup(password);
+            const uri = await createBackup(password, setProgress);
             setIsProcessing(false);
-            setShowBackupModal(false);
+            setProgress(null);
+            setModalMode(null);
 
             if (await Sharing.isAvailableAsync()) {
                 temporarilyDisableLock();
@@ -124,6 +84,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
             }
         } catch (error) {
             setIsProcessing(false);
+            setProgress(null);
             showAlert('Error', 'Failed to create backup: ' + (error as Error).message);
         }
     };
@@ -148,7 +109,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
 
             if (result.assets && result.assets.length > 0) {
                 setRestoreFileUri(result.assets[0].uri);
-                setShowRestoreModal(true);
+                setModalMode('restore');
             }
         } catch {
             showAlert('Error', 'Failed to pick file');
@@ -168,9 +129,10 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
 
         try {
             setIsProcessing(true);
-            await restoreFromBackup(restoreFileUri, password);
+            await restoreFromBackup(restoreFileUri, password, setProgress);
             setIsProcessing(false);
-            setShowRestoreModal(false);
+            setProgress(null);
+            setModalMode(null);
 
             await saveLastBackupDate(new Date().toISOString());
 
@@ -199,6 +161,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
             ]);
         } catch (error) {
             setIsProcessing(false);
+            setProgress(null);
             const msg = (error as Error).message;
             if (msg === 'INVALID_PASSWORD') {
                 showAlert('Error', 'Incorrect password.');
@@ -206,136 +169,6 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
                 showAlert('Error', 'Failed to restore: ' + msg);
             }
         }
-    };
-
-    /**
-     * Handle file selection for import
-     */
-    const handleSelectImportFile = async () => {
-        try {
-            temporarilyDisableLock();
-            const result = await DocumentPicker.getDocumentAsync({
-                type: ['text/csv', 'text/tab-separated-values', 'text/plain', '*/*'],
-                copyToCacheDirectory: true,
-            });
-
-            if (result.canceled) return;
-
-            if (result.assets && result.assets.length > 0) {
-                setShowImportModal(false);
-                setShowImportProcess(true);
-                setIsImportProcessing(true);
-                setImportSummary(null);
-                setPendingTransactions([]);
-
-                await processImportFile(result.assets[0].uri);
-            }
-        } catch {
-            showAlert('Error', 'Failed to pick file');
-        }
-    };
-
-    /**
-     * Process the import file
-     */
-    const processImportFile = async (fileUri: string) => {
-        try {
-            // Read file content
-            const content = await FileSystem.readAsStringAsync(fileUri);
-
-            // Parse CSV/TSV
-            const { headers, rows } = Import.parseCSV(content);
-
-            // Validate headers
-            const headerError = Import.validateHeaders(headers);
-            if (headerError) {
-                setIsImportProcessing(false);
-                setShowImportProcess(false);
-                showAlert('Invalid File Format', headerError);
-                return;
-            }
-
-            if (rows.length === 0) {
-                setIsImportProcessing(false);
-                setShowImportProcess(false);
-                showAlert('Empty File', 'The file contains no data rows to import.');
-                return;
-            }
-
-            // Get existing transactions for duplicate detection
-            const existingTransactions = await getAllTransactions();
-
-            // Validate data
-            const validationResult = Import.validateImportData(rows, existingTransactions);
-
-            if (!validationResult.isValid) {
-                setIsImportProcessing(false);
-                setShowImportProcess(false);
-
-                const errorDetails = Import.formatValidationErrors(validationResult.errors);
-                const errorCount = validationResult.errors.length;
-
-                showAlert(
-                    'Validation Errors',
-                    `Found ${errorCount} error${errorCount > 1 ? 's' : ''} in your file.`,
-                    [{ text: 'OK' }],
-                    { details: errorDetails }
-                );
-                return;
-            }
-
-            // Prepare transactions
-            const transactions = Import.prepareTransactions(validationResult.validRows);
-            const summary = Import.calculateImportSummary(transactions);
-
-            setPendingTransactions(transactions);
-            setImportSummary(summary);
-            setIsImportProcessing(false);
-
-        } catch (error) {
-            setIsImportProcessing(false);
-            setShowImportProcess(false);
-            showAlert('Error', 'Failed to process file: ' + (error as Error).message);
-        }
-    };
-
-    /**
-     * Confirm and save imported transactions
-     */
-    const handleConfirmImport = async () => {
-        setIsImportSaving(true);
-
-        // Short delay to allow the UI to render the loading state before heavy processing begins
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        try {
-            await bulkSaveTransactions(pendingTransactions);
-
-            setIsImportSaving(false);
-            setShowImportProcess(false);
-            setPendingTransactions([]);
-            setImportSummary(null);
-
-            showAlert(
-                'Import Successful',
-                `Successfully imported ${pendingTransactions.length} transactions!`
-            );
-
-        } catch (error) {
-            setIsImportSaving(false);
-            showAlert('Error', 'Failed to save transactions: ' + (error as Error).message);
-        }
-    };
-
-    /**
-     * Cancel import
-     */
-    const handleCancelImport = () => {
-        setShowImportProcess(false);
-        setPendingTransactions([]);
-        setImportSummary(null);
-        setIsImportProcessing(false);
-        setIsImportSaving(false);
     };
 
     return (
@@ -352,7 +185,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
                     icon="cloud-upload"
                     title="Backup Data"
                     subtitle="Create encrypted backup file"
-                    onPress={() => setShowBackupModal(true)}
+                    onPress={() => setModalMode('backup')}
                     iconBg={colors.success + '20'}
                     iconColor={colors.success}
                 />
@@ -368,7 +201,7 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
                     icon="download-outline"
                     title="Import Transactions"
                     subtitle="Load from CSV or TSV file"
-                    onPress={() => setShowImportModal(true)}
+                    onPress={() => setShowImportFlow(true)}
                     iconBg={colors.accent + '20'}
                     iconColor={colors.accent}
                 />
@@ -383,49 +216,18 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
                 />
             </Card>
 
-            {/* Import Modal */}
-            <ImportDataModal
-                visible={showImportModal}
-                onClose={() => setShowImportModal(false)}
-                onSelectFile={handleSelectImportFile}
+            <CsvImportFlow
+                visible={showImportFlow}
+                onRequestClose={() => setShowImportFlow(false)}
             />
 
-            {/* Import Process Screen (Full Screen Modal) */}
-            <Modal
-                visible={showImportProcess}
-                animationType="slide"
-                presentationStyle="fullScreen"
-                onRequestClose={() => {
-                    // Block back during processing/saving
-                    if (!isImportProcessing && !isImportSaving) {
-                        handleCancelImport();
-                    }
-                }}
-            >
-                <ImportProcessScreen
-                    isProcessing={isImportProcessing}
-                    isSaving={isImportSaving}
-                    summary={importSummary}
-                    currency={currency}
-                    onConfirm={handleConfirmImport}
-                    onCancel={handleCancelImport}
-                />
-            </Modal>
-
-            {/* Backup Modal */}
-            <BackupModal
-                visible={showBackupModal}
-                onClose={() => setShowBackupModal(false)}
-                onBackup={handleCreateBackup}
+            <BackupRestoreModal
+                visible={modalMode !== null}
+                mode={modalMode ?? 'backup'}
+                onClose={() => setModalMode(null)}
+                onSubmit={modalMode === 'restore' ? handleRestore : handleCreateBackup}
                 isProcessing={isProcessing}
-            />
-
-            {/* Restore Modal */}
-            <RestoreModal
-                visible={showRestoreModal}
-                onClose={() => setShowRestoreModal(false)}
-                onRestore={handleRestore}
-                isProcessing={isProcessing}
+                progress={progress}
             />
         </>
     );
@@ -452,5 +254,3 @@ const styles = StyleSheet.create({
 });
 
 export default DataManagementCard;
-
-

@@ -24,9 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Savings Trend's "Understanding Your Chart" guide now includes a visual income breakdown diagram.
 - AI Data Usage Consent now lists exactly what's sent per feature.
+- Backup and Restore now show real progress instead of a static "Creating…"/"Restoring…" label.
+- New backups use a more efficient format that encrypts each data type separately.
 
 ### Fixed
 - Smart Alerts' "Alert Hierarchy" info text now correctly describes the actual 4-tier priority order.
+- Restoring a backup could break a transaction's link to its investment, debt, or recurring rule if that record's ID needed regenerating.
+- Reminder notifications rescheduled after a restore could reference a stale ID instead of the one actually saved.
 
 ---
 

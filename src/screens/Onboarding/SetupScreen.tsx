@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 
-import RestoreModal from '@components/data/RestoreModal';
+import BackupRestoreModal from '@components/data/BackupRestoreModal';
 import BottomModal from '@components/common/BottomModal';
 import PinCreationScreen from '@screens/security/PinCreationScreen';
 import TermsContent from '@components/onboarding/TermsContent';
@@ -17,7 +17,7 @@ import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { UserProfile } from '@types';
 import { generateUUID } from '@utils/uuid';
-import { restoreFromBackup, generateDummyData } from '@services/integrations';
+import { restoreFromBackup, generateDummyData, BackupProgress } from '@services/integrations';
 import { saveUserProfile, setOnboardingComplete, saveAcceptedTermsVersion, saveLastBackupDate } from '@services/core/storageService';
 import { CURRENCIES, getCurrencyInfo } from '@utils/currencyData';
 import { CONFIG } from '@constants/config';
@@ -42,6 +42,7 @@ const SetupScreen = ({ navigation }: any) => {
     // Restore State
     const [showRestoreModal, setShowRestoreModal] = useState(false);
     const [restoreFileUri, setRestoreFileUri] = useState<string | null>(null);
+    const [restoreProgress, setRestoreProgress] = useState<BackupProgress | null>(null);
 
     // Profile State
     const [name, setName] = useState('');
@@ -92,8 +93,9 @@ const SetupScreen = ({ navigation }: any) => {
 
         try {
             setIsRestoring(true);
-            await restoreFromBackup(restoreFileUri, password);
+            await restoreFromBackup(restoreFileUri, password, setRestoreProgress);
             setIsRestoring(false);
+            setRestoreProgress(null);
             setShowRestoreModal(false);
 
             await saveLastBackupDate(new Date().toISOString());
@@ -107,6 +109,7 @@ const SetupScreen = ({ navigation }: any) => {
             ], { cancelable: false });
         } catch (error) {
             setIsRestoring(false);
+            setRestoreProgress(null);
             const msg = (error as Error).message;
             if (msg === 'INVALID_PASSWORD') {
                 showAlert('Error', 'Incorrect password.');
@@ -619,11 +622,13 @@ const SetupScreen = ({ navigation }: any) => {
             </ScrollView>
 
             {/* Restore Modal */}
-            <RestoreModal
+            <BackupRestoreModal
                 visible={showRestoreModal}
+                mode="restore"
                 onClose={() => setShowRestoreModal(false)}
-                onRestore={confirmRestore}
+                onSubmit={confirmRestore}
                 isProcessing={isRestoring}
+                progress={restoreProgress}
             />
 
             {/* Currency Selection Modal */}
