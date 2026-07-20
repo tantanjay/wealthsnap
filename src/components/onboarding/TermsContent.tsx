@@ -46,13 +46,16 @@ const TermsContent: React.FC = () => {
                 <Text style={styles.bold}>2.2 Biometric Data:</Text> We use device biometrics (FaceID, TouchID) for secure access. Your biometric data never leaves your device; authentication is handled by your OS.
             </Text>
             <Text style={styles.termsText}>
-                <Text style={styles.bold}>2.3 User Content & Data Transit:</Text> Financial data (budgets, transactions, notes) is stored locally. For AI features, only the data you select is sent to Google Gemini. Sensitive values are encrypted (AES-256); metadata is stored in plain text for fast search. Decryption keys are stored in secure hardware enclaves.
+                <Text style={styles.bold}>2.3 User Content & Data Transit:</Text> Financial data (budgets, transactions, notes) is stored locally. For AI features, only the data relevant to that feature — receipt images, stock/asset symbols, or an aggregated financial summary for Chat — is sent to Google Gemini. Sensitive values are encrypted (AES-256); metadata is stored in plain text for fast search. Decryption keys are stored in secure hardware enclaves.
             </Text>
             <Text style={styles.termsText}>
                 <Text style={styles.bold}>2.4 AI Features & Third-Party Integration:</Text>
             </Text>
             <Text style={[styles.termsText, styles.bullet]}>
                 • <Text style={styles.bold}>Data Sharing:</Text> Only the data you explicitly send for AI features is shared. Other app data remains local.
+            </Text>
+            <Text style={[styles.termsText, styles.bullet]}>
+                • <Text style={styles.bold}>Chat & Financial Summary:</Text> If you use Chat, WealthSnap sends Google Gemini a snapshot of your finances (cash, investment value, realized/unrealized P/L, dividends, debt, runway, current-month budgets) plus your Monthly Summaries for the history range you choose. You may exclude specific transaction categories beforehand; excluded categories are sent only as a combined total, never broken out individually. Chat conversations are not saved by WealthSnap.
             </Text>
             <Text style={[styles.termsText, styles.bullet]}>
                 • <Text style={styles.bold}>User API Key:</Text> You provide your Google Gemini API key. You control the data and your agreement with Google applies.
@@ -63,7 +66,7 @@ const TermsContent: React.FC = () => {
 
             <Text style={styles.termsHeading}>3. THIRD-PARTY SERVICES</Text>
             <Text style={styles.termsText}>
-                • <Text style={styles.bold}>Google Gemini API:</Text> AI analysis of images and text.{'\n'}
+                • <Text style={styles.bold}>Google Gemini API:</Text> AI analysis of receipt images, stock/asset symbols, and, for Chat, your financial summary.{'\n'}
                 • <Text style={styles.bold}>Google ML Kit:</Text> On-device document scanning; no personal data sent.{'\n'}
                 • <Text style={styles.bold}>Frankfurter API:</Text> Open-source currency exchange rates.{'\n'}
                 • <Text style={styles.bold}>Expo:</Text> Used to build and update the app.
