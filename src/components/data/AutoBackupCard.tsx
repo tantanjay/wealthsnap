@@ -26,6 +26,8 @@ const FREQUENCY_OPTIONS: { label: string; value: AutoBackupFrequency }[] = [
     { label: 'Every 2 weeks', value: 'biweekly' },
 ];
 
+const MIN_PASSWORD_LENGTH = 4;
+
 const formatLastRun = (iso: string | null): string => {
     if (!iso) return 'Not run yet';
     const d = new Date(iso);
@@ -119,8 +121,8 @@ const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
     };
 
     const handleSavePassword = async (password: string) => {
-        if (!password || password.length < 4) {
-            showAlert('Error', 'Password must be at least 4 characters.');
+        if (!password || password.length < MIN_PASSWORD_LENGTH) {
+            showAlert('Error', `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
             return;
         }
         await setAutoBackupPassword(password);
@@ -284,6 +286,8 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ visible, mode, onClose, o
         }
     }, [visible]);
 
+    const isPasswordTooShort = password.length < MIN_PASSWORD_LENGTH;
+
     const handleSubmit = () => {
         if (password !== confirmPassword) {
             showAlert('Error', 'Passwords do not match.');
@@ -347,7 +351,7 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ visible, mode, onClose, o
                 </View>
 
                 <View style={{ gap: 10 }}>
-                    <Button title="Save" onPress={handleSubmit} />
+                    <Button title="Save" onPress={handleSubmit} disabled={isPasswordTooShort} />
                     <Button variant="outline" title="Cancel" onPress={onClose} />
                 </View>
             </ScrollView>
