@@ -603,6 +603,26 @@ export const getDebtStrategy = async (): Promise<string | null> => {
     }
 };
 
+// ============= Chat Screen Preferences (AsyncStorage) =============
+
+export const saveChatExcludedCategories = async (categories: string[]): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.CHAT_SCREEN.EXCLUDED_CATEGORIES, JSON.stringify(categories));
+    } catch (error) {
+        console.error('Failed to save chat excluded categories:', error);
+    }
+};
+
+export const getChatExcludedCategories = async (): Promise<string[] | null> => {
+    try {
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.CHAT_SCREEN.EXCLUDED_CATEGORIES);
+        return data ? JSON.parse(data) : null;
+    } catch (error) {
+        console.error('Failed to get chat excluded categories:', error);
+        return null;
+    }
+};
+
 // ============= Backup Timestamp (AsyncStorage) =============
 
 export const saveLastBackupDate = async (date: string): Promise<void> => {

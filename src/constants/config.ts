@@ -68,6 +68,9 @@ export const ASYNC_KEYS = {
     DEBT_SCREEN: {
         STRATEGY: '@wealthsnap_debt_strategy',
     },
+    CHAT_SCREEN: {
+        EXCLUDED_CATEGORIES: '@wealthsnap_chat_excluded_categories',
+    },
     FLOATING_GEAR: {
         DOCKED: '@wealthsnap_floating_gear_docked',
     },
