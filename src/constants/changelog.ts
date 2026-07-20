@@ -12,7 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - **Monthly Summary**: auto-generated narrative breakdown of each month's finances, with manual reprocessing.
+  - Budget alerts show what the budget was actually set to, not just the overage.
+  - Top expenses include the transaction's note, when one was written.
 - **Chat**: ask Gemini questions about your finances, grounded in your own data.
+  - Financial snapshot includes your current-month budgets.
+  - Exclude sensitive categories from what's sent to Gemini, remembered for next time.
+  - Three example questions suggested at random each time you start a conversation.
+  - "View Context" has a "Copy Context" action and a privacy reminder alongside it.
 - **Budget total**: Manage Budgets now shows a summed total across all categories.
 - **Smart Suggestions**: suggests realistic budget amounts based on your last 12 months of spending.
 

@@ -28,12 +28,12 @@ Currently every AI call is hardcoded to Google's `@google/genai` SDK. Goal: let 
 
 ## 💬 Chat
 
-- [ ] **Sanity context** — in the date-range picker, add a follow-up question letting users exclude specific sensitive categories (e.g. Remittance) from what's sent to the LLM ([TimeRangeSelector.tsx](src/components/common/TimeRangeSelector.tsx) / range-selection step in [ChatScreen.tsx](src/screens/ChatScreen.tsx))
-- [ ] **Include Budgets in Snapshot** — add budget data to the financial snapshot built in [chatContextService.ts](src/services/domain/chatContextService.ts)
-- [ ] **Monthly Summary over-budget detail** — when a category is flagged over budget, also include what the budget was actually set to, not just the overage
-- [ ] **Explain savings rate** — clarify/expand what "savings rate" means in the context sent to the LLM so it has enough to reason about accurately
-- [ ] **Top spending notes** — if a transaction has a written note, surface it in the top-spending summary since a note is often a flag worth explaining
-- [ ] **Copy context button labeling** — in "View Context", relabel the Copy button (e.g. "Copy to use in your own AI subscription") and add a privacy disclaimer near it ([ChatScreen.tsx:86](src/screens/ChatScreen.tsx:86))
+- [x] ~~**Sanity context** — in the date-range picker, add a follow-up question letting users exclude specific sensitive categories (e.g. Credit Payment) from what's sent to the LLM~~ — added a category-exclusion step before the range picker in [ChatScreen.tsx](src/screens/ChatScreen.tsx), backed by `getAvailableCategories`/`fetchChatContextInputs(excludeCategories)` in [chatContextService.ts](src/services/domain/chatContextService.ts). Excluded categories are stripped from category-level detail (breakdowns, top expenses, budget alerts) and rolled into one lifetime "Private Categories" line in the snapshot — but totals (Total Cash, burn rate, monthly income/expense/savings rate) always compute from the full unfiltered data, so hiding a category can no longer skew those numbers (first cut of this wrongly dropped the transactions outright, which corrupted Total Cash — fixed same session)
+- [x] ~~**Include Budgets in Snapshot** — add budget data to the financial snapshot built in chatContextService.ts~~ — `buildFinancialSnapshotData` now takes `budgets` and renders a "Current Month Budgets" section ([financialSnapshotBuilder.ts](src/utils/financialSnapshotBuilder.ts))
+- [x] ~~**Monthly Summary over-budget detail** — when a category is flagged over budget, also include what the budget was actually set to, not just the overage~~ — `BudgetAlert` now carries `budgetAmount`/`spentAmount` ([monthlySummaryBuilder.ts](src/utils/monthlySummaryBuilder.ts))
+- [x] ~~**Explain savings rate** — clarify/expand what "savings rate" means in the context sent to the LLM so it has enough to reason about accurately~~ — added a one-time glossary note in the snapshot text explaining the formula and that transfers/investments/debt payments count as savings, not expenses
+- [x] ~~**Top spending notes** — if a transaction has a written note, surface it in the top-spending summary since a note is often a flag worth explaining~~ — `TopTransactionItem.note` flows through to the "Top Expenses" line
+- [x] ~~**Copy context button labeling** — in "View Context", relabel the Copy button and add a privacy disclaimer near it~~ — button now reads "Copy for another AI" with a disclaimer banner above the context text in [ChatScreen.tsx](src/screens/ChatScreen.tsx)
 
 ---
 

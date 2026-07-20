@@ -23,6 +23,7 @@ export interface TopTransactionItem {
     category: string;
     amount: number;
     date: string;
+    note?: string;
 }
 
 export interface SpendingSpike {
@@ -36,6 +37,8 @@ export interface BudgetAlert {
     category: string;
     percentUsed: number;
     status: 'warning' | 'over';
+    budgetAmount: number;
+    spentAmount: number;
 }
 
 export interface MonthlySummaryData {
@@ -114,8 +117,15 @@ export const buildMonthlySummaryData = (
     allTransactions: Transaction[],
     allInvestments: Investment[],
     allDebts: Debt[],
-    budgets: Budget[]
+    budgets: Budget[],
+    excludeCategories: string[] = []
 ): MonthlySummaryData => {
+    // `allTransactions` must always be the FULL, unfiltered set - income/expense/
+    // netCashFlow/savingsRate below are computed from it directly so those totals
+    // stay accurate even when some categories are hidden from the breakdown further
+    // down. Excluded categories are only ever stripped from category-level detail
+    // (byCategory, topExpenses, spendingSpikes, budgetAlerts), never from the totals.
+    const excludeSet = new Set(excludeCategories);
     const monthTx = allTransactions.filter(t => isInMonth(t.date, yearMonth));
     const monthInv = allInvestments.filter(i => isInMonth(i.date, yearMonth));
 
@@ -204,7 +214,11 @@ export const buildMonthlySummaryData = (
     );
 
     // --- Budget alerts (uses CURRENT budget settings as an approximation for past months) ---
-    const expenseByCategory = sumByCategory(expenseTx.map(t => ({ category: t.category, amount: t.amount })));
+    // Excluded categories are stripped from this list only - `income`/`expense` totals above
+    // were already computed from the unfiltered transactions, so they stay accurate. This list
+    // (and everything derived from it below: budgetAlerts, spendingSpikes) just won't itemize them.
+    const expenseByCategory = sumByCategory(expenseTx.map(t => ({ category: t.category, amount: t.amount })))
+        .filter(c => !excludeSet.has(c.category));
     const budgetAlerts: BudgetAlert[] = [];
     budgets.forEach(b => {
         const spent = expenseByCategory.find(c => c.category === b.category);
@@ -214,16 +228,19 @@ export const buildMonthlySummaryData = (
             budgetAlerts.push({
                 category: b.category,
                 percentUsed: Math.round(percentage),
-                status: percentage > 100 ? 'over' : 'warning'
+                status: percentage > 100 ? 'over' : 'warning',
+                budgetAmount: b.amount.toNumber(),
+                spentAmount: spent.amount
             });
         }
     });
 
     // --- Top expenses this month ---
-    const topExpenses: TopTransactionItem[] = [...expenseTx]
+    const topExpenses: TopTransactionItem[] = expenseTx
+        .filter(t => !excludeSet.has(t.category))
         .sort((a, b) => b.amount.abs().comparedTo(a.amount.abs()) ?? 0)
         .slice(0, 3)
-        .map(t => ({ category: t.subCategory || t.category, amount: t.amount.abs().toNumber(), date: t.date }));
+        .map(t => ({ category: t.subCategory || t.category, amount: t.amount.abs().toNumber(), date: t.date, note: t.note }));
 
     // --- Spending spikes: this month's category total vs its trailing 3-month average ---
     const spendingSpikes: SpendingSpike[] = [];
@@ -267,6 +284,7 @@ export const buildMonthlySummaryData = (
             total: income.toNumber(),
             recurringTotal: recurringIncome.toNumber(),
             byCategory: sumByCategory(incomeTx.map(t => ({ category: t.category, amount: t.amount })))
+                .filter(c => !excludeSet.has(c.category))
         },
         expense: { total: expense.toNumber(), byCategory: expenseByCategory },
         netCashFlow,
@@ -330,7 +348,7 @@ export const renderMonthlySummaryText = (data: MonthlySummaryData, currency: str
     if (data.budgetAlerts.length) {
         lines.push('Budget Alerts:');
         data.budgetAlerts.forEach(a =>
-            lines.push(`  ${a.category}: ${a.percentUsed}% used${a.status === 'over' ? ' (OVER BUDGET)' : ''}`)
+            lines.push(`  ${a.category}: ${currency} ${fmt(a.spentAmount)} spent of ${currency} ${fmt(a.budgetAmount)} budget (${a.percentUsed}% used)${a.status === 'over' ? ' (OVER BUDGET)' : ''}`)
         );
     }
 
@@ -342,9 +360,10 @@ export const renderMonthlySummaryText = (data: MonthlySummaryData, currency: str
     }
 
     if (data.topExpenses.length) {
-        const items = data.topExpenses.map(t =>
-            `${t.category} ${currency} ${fmt(t.amount)} (${new Date(t.date).toLocaleDateString('default', { month: 'short', day: 'numeric' })})`
-        );
+        const items = data.topExpenses.map(t => {
+            const noteSuffix = t.note ? ` - note: "${t.note}"` : '';
+            return `${t.category} ${currency} ${fmt(t.amount)} (${new Date(t.date).toLocaleDateString('default', { month: 'short', day: 'numeric' })})${noteSuffix}`;
+        });
         lines.push(`Top Expenses: ${items.join(' | ')}`);
     }
 

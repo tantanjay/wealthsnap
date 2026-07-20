@@ -12,12 +12,14 @@ import { generateUUID } from '@utils/uuid';
 import {
     fetchChatContextInputs,
     assembleContextForRange,
+    getAvailableCategories,
     RANGE_OPTIONS,
     ChatContext,
     ChatContextInputs,
     ChatHistoryRange
 } from '@services/domain/chatContextService';
 import { sendChatMessage, ChatTurn } from '@services/integrations/geminiChatService';
+import * as Storage from '@services/core/storageService';
 import { BigNumber } from 'bignumber.js';
 
 interface ChatMessage {
@@ -33,12 +35,50 @@ interface ChatMessage {
 const formatCost = (cost: BigNumber) => `$${cost.toFixed(4)}`;
 const formatTokens = (n: number) => n.toLocaleString('en-US');
 
+// Deliberately steers away from single-number lookups already visible on a
+// dashboard card (e.g. "how much debt do I owe") - the point of chat is
+// synthesis across months/categories/accounts that no single screen shows.
+// A larger pool than shown at once - 3 are picked at random each time Phase B
+// loads, so returning users see fresh examples instead of the same 3 every time.
+const SUGGESTED_PROMPTS = [
+    "Based on my spending patterns, what's realistically holding my savings rate back?",
+    'Is my spending trending in a direction I should be worried about?',
+    'Which of my recurring expenses would free up the most cash if I cut it?',
+    'Am I financially resilient right now, given my burn rate and debt obligations together?',
+    "What's driving the difference between this month's spending and my usual pattern?",
+    'Right now, does it make more sense for me to pay down debt or keep investing?',
+    'Is my portfolio too concentrated in one holding relative to my overall net worth?',
+    'What would actually need to change for my savings rate to hit 20%?',
+    'Am I too reliant on one income source, and what happens to my runway if it stopped?',
+    'Which spending category has grown the fastest relative to my income over time?',
+    "What's one habit in my spending that's quietly eating into my savings?",
+    'If I want to be debt-free in 2 years, what would need to change starting now?',
+    'How much of my net worth is actually liquid versus tied up in investments or debt?',
+    'Looking at my top expenses with notes, is there a pattern worth flagging?',
+    'Are my investment gains outpacing what my debt is costing me in interest?',
+    'If this month repeated for the next 6 months, where would I end up?',
+    'Which budget category is quietly creeping toward being a problem?',
+    "Compare my income growth to my expense growth over the months you have - who's winning?",
+    'Based on everything you can see, what would you fix first if this were your budget?',
+    "Is there a gap between what I say I'm saving for and how I'm actually spending?"
+];
+
+const pickRandomPrompts = (pool: string[], count: number): string[] => {
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+};
+
 const ChatScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
     const insets = useSafeAreaInsets();
 
-    const [loadingContext, setLoadingContext] = useState(true);
+    const [loadingCategories, setLoadingCategories] = useState(true);
+    const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+    const [excludedCategories, setExcludedCategories] = useState<Set<string>>(new Set());
+    const [categoriesConfirmed, setCategoriesConfirmed] = useState(false);
+
+    const [loadingContext, setLoadingContext] = useState(false);
     const [contextInputs, setContextInputs] = useState<ChatContextInputs | null>(null);
     const [selectedRange, setSelectedRange] = useState<{ label: string; ctx: ChatContext } | null>(null);
 
@@ -46,13 +86,43 @@ const ChatScreen = ({ navigation }: any) => {
     const [inputText, setInputText] = useState('');
     const [sending, setSending] = useState(false);
     const [contextModalVisible, setContextModalVisible] = useState(false);
+    const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
 
     const scrollRef = useRef<ScrollView>(null);
 
     useEffect(() => {
         (async () => {
             try {
-                const inputs = await fetchChatContextInputs();
+                const [categories, persistedExcluded] = await Promise.all([
+                    getAvailableCategories(),
+                    Storage.getChatExcludedCategories()
+                ]);
+                setAvailableCategories(categories);
+
+                // Pre-select last time's exclusions, dropping any category that
+                // no longer exists in the data.
+                if (persistedExcluded && persistedExcluded.length > 0) {
+                    const categorySet = new Set(categories);
+                    setExcludedCategories(new Set(persistedExcluded.filter(c => categorySet.has(c))));
+                }
+
+                // Nothing to ask about - skip straight to the range picker.
+                if (categories.length === 0) setCategoriesConfirmed(true);
+            } catch (error) {
+                console.error('[ChatScreen] Failed to load categories:', error);
+                setCategoriesConfirmed(true);
+            } finally {
+                setLoadingCategories(false);
+            }
+        })();
+    }, []);
+
+    useEffect(() => {
+        if (!categoriesConfirmed) return;
+        (async () => {
+            setLoadingContext(true);
+            try {
+                const inputs = await fetchChatContextInputs(Array.from(excludedCategories));
                 setContextInputs(inputs);
             } catch (error) {
                 console.error('[ChatScreen] Failed to load context:', error);
@@ -63,11 +133,30 @@ const ChatScreen = ({ navigation }: any) => {
                 setLoadingContext(false);
             }
         })();
-    }, [navigation, showAlert]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [categoriesConfirmed]);
+
+    const toggleCategoryExclusion = (category: string) => {
+        setExcludedCategories(prev => {
+            const next = new Set(prev);
+            if (next.has(category)) next.delete(category);
+            else next.add(category);
+            return next;
+        });
+    };
+
+    const handleConfirmCategories = () => {
+        Storage.saveChatExcludedCategories(Array.from(excludedCategories));
+        setCategoriesConfirmed(true);
+    };
 
     useEffect(() => {
         scrollRef.current?.scrollToEnd({ animated: true });
     }, [messages]);
+
+    useEffect(() => {
+        if (selectedRange) setSuggestedPrompts(pickRandomPrompts(SUGGESTED_PROMPTS, 3));
+    }, [selectedRange]);
 
     const sessionTotals = messages.reduce(
         (acc, m) => ({
@@ -86,14 +175,14 @@ const ChatScreen = ({ navigation }: any) => {
     const handleCopyContext = async () => {
         if (!selectedRange) return;
         await Clipboard.setStringAsync(selectedRange.ctx.contextText);
-        showAlert('Copied', 'Context copied to clipboard - paste it into any other AI chat.');
+        showAlert('Copied', 'Context copied to clipboard - paste it into your own AI subscription (ChatGPT, Claude, etc). Only share it with a service you trust.');
     };
 
-    const handleSend = async () => {
-        const text = inputText.trim();
+    const handleSend = async (overrideText?: string) => {
+        const text = (overrideText ?? inputText).trim();
         if (!text || sending || !selectedRange) return;
 
-        setInputText('');
+        if (overrideText === undefined) setInputText('');
         const userMsg: ChatMessage = { id: generateUUID(), role: 'user', text };
         const aiMsgId = generateUUID();
         const aiMsg: ChatMessage = { id: aiMsgId, role: 'model', text: '', streaming: true };
@@ -135,6 +224,82 @@ const ChatScreen = ({ navigation }: any) => {
             {right}
         </View>
     );
+
+    // --- Phase 0: sensitive-category exclusion ---
+    if (!categoriesConfirmed) {
+        return (
+            <View style={{ flex: 1, backgroundColor: colors.background }}>
+                {renderHeader('Chat')}
+                <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 8 }}>
+                        Anything you&apos;d rather keep out of this?
+                    </Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 20, lineHeight: 18 }}>
+                        Tap a category to exclude it from the data sent to the AI (e.g. Credit Payment). Everything else is included by default.
+                    </Text>
+
+                    {loadingCategories ? (
+                        <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                            <ActivityIndicator color={colors.primary} />
+                        </View>
+                    ) : (
+                        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 8, paddingBottom: 12 }} showsVerticalScrollIndicator={false}>
+                            {availableCategories.map(category => {
+                                const isExcluded = excludedCategories.has(category);
+                                return (
+                                    <TouchableOpacity
+                                        key={category}
+                                        onPress={() => toggleCategoryExclusion(category)}
+                                        style={{
+                                            flexDirection: 'row',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            padding: 14,
+                                            borderRadius: 12,
+                                            backgroundColor: isExcluded ? colors.border + '30' : colors.surface,
+                                            borderWidth: 1,
+                                            borderColor: isExcluded ? colors.textSecondary : colors.border
+                                        }}
+                                    >
+                                        <Text style={{
+                                            color: isExcluded ? colors.textSecondary : colors.text,
+                                            fontSize: 15,
+                                            fontWeight: '500',
+                                            textDecorationLine: isExcluded ? 'line-through' : 'none'
+                                        }}>
+                                            {category}
+                                        </Text>
+                                        <Ionicons
+                                            name={isExcluded ? 'eye-off-outline' : 'eye-outline'}
+                                            size={18}
+                                            color={isExcluded ? colors.textSecondary : colors.primary}
+                                        />
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    )}
+
+                    <TouchableOpacity
+                        onPress={handleConfirmCategories}
+                        disabled={loadingCategories}
+                        style={{
+                            backgroundColor: colors.primary,
+                            borderRadius: 12,
+                            paddingVertical: 14,
+                            alignItems: 'center',
+                            marginTop: 12,
+                            marginBottom: Math.max(insets.bottom, 16)
+                        }}
+                    >
+                        <Text style={{ color: colors.textLight, fontSize: 15, fontWeight: '600' }}>
+                            {excludedCategories.size > 0 ? `Continue (${excludedCategories.size} excluded)` : 'Continue'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
 
     // --- Phase A: range picker ---
     if (!selectedRange) {
@@ -209,9 +374,34 @@ const ChatScreen = ({ navigation }: any) => {
 
             <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 8 }}>
                 {messages.length === 0 && (
-                    <Text style={{ color: colors.textSecondary, fontStyle: 'italic', textAlign: 'center', marginTop: 20 }}>
-                        Ask anything about your income, spending, investments, or debt.
-                    </Text>
+                    <View style={{ marginTop: 20 }}>
+                        <Text style={{ color: colors.textSecondary, fontStyle: 'italic', textAlign: 'center', marginBottom: 16 }}>
+                            Ask anything about your income, spending, investments, or debt.
+                        </Text>
+                        {suggestedPrompts.length > 0 && (
+                            <View style={{ gap: 8 }}>
+                                {suggestedPrompts.map((prompt, idx) => (
+                                    <TouchableOpacity
+                                        key={idx}
+                                        onPress={() => handleSend(prompt)}
+                                        disabled={sending}
+                                        style={{
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            backgroundColor: colors.surface,
+                                            borderWidth: 1,
+                                            borderColor: colors.border,
+                                            borderRadius: 14,
+                                            padding: 12
+                                        }}
+                                    >
+                                        <Ionicons name="sparkles-outline" size={16} color={colors.primary} style={{ marginRight: 10 }} />
+                                        <Text style={{ color: colors.text, fontSize: 13, flex: 1 }}>{prompt}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
+                    </View>
                 )}
                 {messages.map(m => (
                     <View
@@ -271,7 +461,7 @@ const ChatScreen = ({ navigation }: any) => {
                     editable={!sending}
                 />
                 <TouchableOpacity
-                    onPress={handleSend}
+                    onPress={() => handleSend()}
                     disabled={sending || !inputText.trim()}
                     style={{
                         width: 44,
@@ -298,13 +488,39 @@ const ChatScreen = ({ navigation }: any) => {
                 maxHeight="85%"
                 style={{ height: '85%' }}
                 contentStyle={{ flex: 1 }}
-                headerRight={
-                    <TouchableOpacity onPress={handleCopyContext} style={{ padding: 4, marginRight: 8 }}>
-                        <Ionicons name="copy-outline" size={22} color={colors.primary} />
-                    </TouchableOpacity>
-                }
             >
                 <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+                    <TouchableOpacity
+                        onPress={handleCopyContext}
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            alignSelf: 'flex-start',
+                            backgroundColor: colors.primary + '15',
+                            borderRadius: 20,
+                            paddingVertical: 8,
+                            paddingHorizontal: 14,
+                            marginBottom: 12
+                        }}
+                    >
+                        <Ionicons name="copy-outline" size={16} color={colors.primary} />
+                        <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600', marginLeft: 6 }}>
+                            Copy Context
+                        </Text>
+                    </TouchableOpacity>
+                    <View style={{
+                        flexDirection: 'row',
+                        backgroundColor: colors.warning + '20',
+                        borderRadius: 10,
+                        padding: 10,
+                        marginBottom: 12,
+                        gap: 8
+                    }}>
+                        <Ionicons name="shield-outline" size={16} color={colors.textSecondary} style={{ marginTop: 1 }} />
+                        <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17, flex: 1 }}>
+                            This is your raw financial data. If you copy it elsewhere, only paste it into an AI service whose privacy policy you trust - WealthSnap has no control over how a third party handles it once copied.
+                        </Text>
+                    </View>
                     <View style={{
                         backgroundColor: colors.surface,
                         borderRadius: 12,
