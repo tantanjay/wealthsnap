@@ -2,11 +2,10 @@
   "expo": {
     "name": "WealthSnap",
     "slug": "WealthSnap",
-    "version": "1.14.0",
+    "version": "1.15.0",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/images/icon.png",
-
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -21,7 +20,7 @@
         "backgroundColor": "#0033CC"
       },
       "package": "com.christian.soyosa.WealthSnap",
-      "versionCode": 24,
+      "versionCode": 25,
       "permissions": [
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.SCHEDULE_EXACT_ALARM",
