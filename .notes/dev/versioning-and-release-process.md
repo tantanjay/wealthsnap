@@ -51,6 +51,9 @@ Full spec: [keepachangelog.com/en/1.1.0](https://keepachangelog.com/en/1.1.0/). 
   Insert the new version's line right after `[Unreleased]`, and update `[Unreleased]`'s base to the new version.
 - Bullet content should describe *what changed for the user*, not implementation detail — this file (via `changelog.ts`) is rendered directly in the in-app Help Center, so it's user-facing copy, not a commit log.
 - **Keep bullets terse — one short sentence, no rationale or mechanism explanation.** `CHANGELOG.md` is a scannable list, not documentation: match the length of the shortest existing entries (e.g. "Dividend Calendar tab sizing and portrait height issues.", "Time range selector redesigned as a compact dropdown across Insights charts."), not the longest. If a feature needs the fuller "why/how" treatment, that's what `.notes/release/unreleased.md` / `.notes/release/vX.Y.Z.md` are for (per Section 2) — don't pad the CHANGELOG bullet to compensate for not having written the longer doc.
+- **Never give something its own `Changed`/`Fixed`/`Deprecated`/`Removed` bullet if the feature it touches is itself still an `### Added` bullet within the same `[Unreleased]` section.** Those four headers describe a difference from the last *released* version — if the feature hasn't shipped yet, there's no public "before" state to diff against, so a refinement made to it pre-release is just part of what "Added" means, not a change from it. Nest it as a sub-bullet under that feature's own `### Added` line instead, the way multi-part features are documented in already-released entries (e.g. 1.7.0's "Budget-Aware Smart Alerts", 1.10.0's "Financial Health Card"). Only use `Changed`/`Fixed`/etc. for touching a feature that shipped in an *earlier, already-released* version.
+  - Example of the mistake: while `Chat` is still sitting under `### Added` in `[Unreleased]`, don't also write a `### Changed` bullet like "Chat's financial snapshot now includes budgets" — that's Chat before it ever existed publicly. Fold it into Chat's own `### Added` bullet as a sub-bullet instead.
+  - `Savings Trend's "Understanding Your Chart" guide now includes a visual income breakdown diagram` is correctly `### Changed`, because Savings Trend itself shipped back in 1.14.0 — there's a real prior released state being changed.
 
 ---
 
@@ -115,6 +118,7 @@ All 24 releases from `v1.0.0` through `v1.14.0` were backfilled with tags on 202
 - [ ] Decide the version bump (PATCH/MINOR/MAJOR) using the rules in Section 1
 - [ ] Bump `"version"` in `package.json` **and** `expo.version` in `app.json` — keep them equal
 - [ ] Move `[Unreleased]` content in `CHANGELOG.md` into a new `## [X.Y.Z] — YYYY-MM-DD` section, categorized per Section 3
+- [ ] Check no `Changed`/`Fixed`/etc. bullet actually belongs nested under an `Added` bullet in the same section (Section 3's last rule) — this only matters while still in `[Unreleased]`, so it's easy to miss once things get moved under a dated heading
 - [ ] Add the new version's link-reference line at the bottom of `CHANGELOG.md`; update `[Unreleased]`'s compare base
 - [ ] Regenerate `src/constants/changelog.ts` from `CHANGELOG.md` (Section 4) — verify it matches before committing
 - [ ] (Optional but consistent with existing practice) write `.notes/release/vX.Y.Z.md` with the fuller user-facing writeup
