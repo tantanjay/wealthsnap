@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - "View Context" has a "Copy Context" action and a privacy reminder alongside it.
 - **Budget total**: Manage Budgets now shows a summed total across all categories.
 - **Smart Suggestions**: suggests realistic budget amounts based on your last 12 months of spending.
+- **Auto Backup**: schedule automatic encrypted backups (weekly or every 2 weeks) instead of relying on manual exports.
+  - Backup password is stored securely on-device so backups can run in the background without prompting.
+  - Choose a destination folder on Android; iOS backups land in WealthSnap's on-device folder, reachable via the Files app.
+  - Warns immediately if a chosen folder doesn't actually support automatic writes, a known limitation with some cloud providers.
 
 ### Changed
 - Savings Trend's "Understanding Your Chart" guide now includes a visual income breakdown diagram.
