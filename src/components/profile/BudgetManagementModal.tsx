@@ -4,8 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { CategorySelectModal } from '@components/record/CategorySelectModal';
+import SmartSuggestionsModal from '@components/profile/SmartSuggestionsModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { BigNumber } from 'bignumber.js';
+
 import { Budget } from '@types';
 import { getAllBudgets, setBudget, deleteBudget } from '@services/domain/budgetService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
@@ -26,6 +29,7 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
     const [view, setView] = useState<'LIST' | 'FORM'>('LIST');
+    const [showSuggestions, setShowSuggestions] = useState(false);
 
     useEffect(() => {
         if (visible) {
@@ -104,6 +108,8 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
         );
     };
 
+    const totalBudget = budgets.reduce((sum, b) => sum.plus(b.amount), new BigNumber(0));
+
     const getCategoryIcon = (categoryValue: string): string => {
         for (const group of EXPENSE_CATEGORY_GROUPS) {
             const cat = group.items.find(c => c.value === categoryValue);
@@ -118,13 +124,34 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
             onClose={onClose}
             title={view === 'LIST' ? "Manage Budgets" : undefined}
             maxHeight="85%"
+            headerRight={view === 'LIST' ? (
+                <TouchableOpacity
+                    onPress={() => setShowSuggestions(true)}
+                    style={{ padding: 4, marginRight: 8 }}
+                >
+                    <Ionicons name="sparkles-outline" size={22} color={colors.primary} />
+                </TouchableOpacity>
+            ) : undefined}
         >
             <View style={{ height: '100%' }}>
                 {view === 'LIST' ? (
                     <View style={{ flex: 1 }}>
-                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 10, paddingHorizontal: 20 }}>
-                            Your Budgets ({budgets.length})
-                        </Text>
+                        <View style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 10,
+                            paddingHorizontal: 20
+                        }}>
+                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
+                                Your Budgets ({budgets.length})
+                            </Text>
+                            {budgets.length > 0 && (
+                                <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600' }}>
+                                    Total: {formatCurrencyAmount(totalBudget, currency)}
+                                </Text>
+                            )}
+                        </View>
 
                         <FlatList
                             data={budgets}
@@ -316,6 +343,13 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
                         setShowCategoryModal(false);
                     }}
                     categoryGroups={EXPENSE_CATEGORY_GROUPS}
+                />
+
+                <SmartSuggestionsModal
+                    visible={showSuggestions}
+                    onClose={() => setShowSuggestions(false)}
+                    currency={currency}
+                    onApplied={loadBudgets}
                 />
             </View>
         </BottomModal>

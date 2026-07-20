@@ -10,15 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- **Monthly Summary**: a new Quick Actions menu item showing an auto-generated narrative breakdown of each month's income, expenses, investments, debts, and unusual spending, with a manual "Reprocess" option to regenerate on demand.
-- **Chat**: a new Quick Actions menu item for asking Gemini free-form questions about your finances, grounded in a live financial snapshot and your Monthly Summaries for a chosen history range. Replies stream in with token count and cost shown per message; conversations aren't saved.
+- **Monthly Summary**: auto-generated narrative breakdown of each month's finances, with manual reprocessing.
+- **Chat**: ask Gemini questions about your finances, grounded in your own data.
+- **Budget total**: Manage Budgets now shows a summed total across all categories.
+- **Smart Suggestions**: suggests realistic budget amounts based on your last 12 months of spending.
 
 ### Changed
-- Savings Trend's "Understanding Your Chart" guide now visualizes how Rate, Saved, and Cash Flow relate via an income breakdown diagram, instead of just describing them as a text list.
-- AI Data Usage Consent now explicitly lists what's sent per feature (receipt images, stock/asset symbols, and, new for Chat, your financial summary) instead of a general description; previously-consented users will see the updated disclosure once.
+- Savings Trend's "Understanding Your Chart" guide now includes a visual income breakdown diagram.
+- AI Data Usage Consent now lists exactly what's sent per feature.
 
 ### Fixed
-- Smart Alerts' "Alert Hierarchy" info text now correctly describes the actual 4-tier priority order (Crash → Dividend → Dip → Balance) and clarifies that only Balance notes merge onto an existing alert.
+- Smart Alerts' "Alert Hierarchy" info text now correctly describes the actual 4-tier priority order.
 
 ---
 

@@ -50,6 +50,7 @@ Full spec: [keepachangelog.com/en/1.1.0](https://keepachangelog.com/en/1.1.0/). 
   ```
   Insert the new version's line right after `[Unreleased]`, and update `[Unreleased]`'s base to the new version.
 - Bullet content should describe *what changed for the user*, not implementation detail — this file (via `changelog.ts`) is rendered directly in the in-app Help Center, so it's user-facing copy, not a commit log.
+- **Keep bullets terse — one short sentence, no rationale or mechanism explanation.** `CHANGELOG.md` is a scannable list, not documentation: match the length of the shortest existing entries (e.g. "Dividend Calendar tab sizing and portrait height issues.", "Time range selector redesigned as a compact dropdown across Insights charts."), not the longest. If a feature needs the fuller "why/how" treatment, that's what `.notes/release/unreleased.md` / `.notes/release/vX.Y.Z.md` are for (per Section 2) — don't pad the CHANGELOG bullet to compensate for not having written the longer doc.
 
 ---
 
