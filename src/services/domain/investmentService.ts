@@ -224,12 +224,14 @@ export const getPortfolioStats = async () => {
     let totalEquity = new BigNumber(0);
     let unrealizedPL = new BigNumber(0);
     let totalCostBasis = new BigNumber(0);
+    let totalRealizedCostBasis = new BigNumber(0);
     let totalDividends = new BigNumber(0);
 
     metrics.forEach(m => {
         totalEquity = totalEquity.plus(m.totalMarketValue);
         unrealizedPL = unrealizedPL.plus(m.unrealizedPL);
         totalCostBasis = totalCostBasis.plus(m.totalCostBasis);
+        totalRealizedCostBasis = totalRealizedCostBasis.plus(m.realizedCostBasis);
     });
 
     // 5. Calculate Realized P/L from Transactions (Source of Truth)
@@ -275,9 +277,15 @@ export const getPortfolioStats = async () => {
         ? unrealizedPL.dividedBy(totalCostBasis).times(100).toNumber()
         : 0;
 
+    // Realized P/L % relative to the cost basis of the shares actually sold (not remaining holdings)
+    const realizedPLPercent = totalRealizedCostBasis.isGreaterThan(0)
+        ? totalRealizedPL.dividedBy(totalRealizedCostBasis).times(100).toNumber()
+        : 0;
+
     return {
         totalEquity: totalEquity.toNumber(),
         realizedPL: totalRealizedPL.toNumber(),
+        realizedPLPercent,
         unrealizedPL: unrealizedPL.toNumber(),
         unrealizedPLPercent: detailsUnrealizedPLPercent,
         totalDividends: totalDividends.toNumber(),

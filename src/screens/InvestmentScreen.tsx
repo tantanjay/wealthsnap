@@ -42,6 +42,7 @@ const InvestmentScreen = ({ navigation }: any) => {
     const [portfolioStats, setPortfolioStats] = useState({
         totalEquity: 0,
         realizedPL: 0,
+        realizedPLPercent: 0,
         unrealizedPL: 0,
         unrealizedPLPercent: 0,
         totalDividends: 0,
@@ -285,6 +286,7 @@ const InvestmentScreen = ({ navigation }: any) => {
                         key="stats_carousel"
                         totalEquity={portfolioStats.totalEquity}
                         realizedPL={portfolioStats.realizedPL}
+                        realizedPLPercent={portfolioStats.realizedPLPercent}
                         unrealizedPL={portfolioStats.unrealizedPL}
                         unrealizedPLPercent={portfolioStats.unrealizedPLPercent}
                         totalDividends={portfolioStats.totalDividends}

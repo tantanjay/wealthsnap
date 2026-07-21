@@ -1,5 +1,6 @@
 import React from 'react';
 import { Canvas, Text, LinearGradient, vec, BlurMask, Paint, useFont } from "@shopify/react-native-skia";
+import { useTheme } from '@context/ThemeContext';
 
 // NOTE: React Native's 'require' MUST be a static string at compile time. 
 // It does NOT support template literals like require(`@fonts/${name}.ttf`).
@@ -21,6 +22,13 @@ export const StyledDonorName = ({ name, styleConfig }: { name: string, styleConf
     const fontSource = FONT_MAP[styleConfig.font];
     const font = useFont(fontSource, 32);
 
+    // Many name styles (e.g. "ninja", "shadow", "demon") use near-black strokes/gradients
+    // that vanish against a dark background. A black shadow only helps on light backgrounds,
+    // so flip it to a light backlight in dark mode to keep every style legible either way.
+    const { theme } = useTheme();
+    const isDark = theme.mode === 'dark';
+    const backlightColor = isDark ? '#FFFFFF' : '#000000';
+
     if (!font) return null;
 
     const textWidth = font.measureText(name).width;
@@ -28,10 +36,10 @@ export const StyledDonorName = ({ name, styleConfig }: { name: string, styleConf
 
     return (
         <Canvas style={{ width: canvasWidth, height: 100 }}>
-            {/* LAYER 0: Universal Drop Shadow for visibility on light backgrounds */}
+            {/* LAYER 0: Universal backlight/shadow for contrast against the current theme's background */}
             <Text text={name} x={10.5} y={50.5} font={font}>
-                <Paint color="#000000" opacity={0.5}>
-                    <BlurMask blur={3} style="normal" />
+                <Paint color={backlightColor} opacity={isDark ? 0.6 : 0.5}>
+                    <BlurMask blur={isDark ? 5 : 3} style="normal" />
                 </Paint>
             </Text>
 

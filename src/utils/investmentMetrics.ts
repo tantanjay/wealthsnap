@@ -11,6 +11,7 @@ export interface PortfolioMetrics {
     totalCostBasis: BigNumber; // Total book value (Avg Price * Quantity)
     totalMarketValue: BigNumber; // Current Price * Quantity (need current price input)
     realizedPL: BigNumber;
+    realizedCostBasis: BigNumber; // Sum of cost-of-goods-sold across all SELLs, for realizedPL%
     unrealizedPL: BigNumber;
     totalPL: BigNumber;
 }
@@ -44,6 +45,7 @@ export const calculatePortfolioMetrics = (
     let currentQuantity = new BigNumber(0);
     let totalCostBasis = new BigNumber(0); // This tracks the "Book Value"
     let realizedPL = new BigNumber(0);
+    let realizedCostBasis = new BigNumber(0); // Cost of shares sold, for realizedPL%
 
     sortedInvestments.forEach(inv => {
         const price = new BigNumber(inv.price);
@@ -69,6 +71,7 @@ export const calculatePortfolioMetrics = (
                 : new BigNumber(0);
 
             const costOfSoldShares = averageCostPerShare.times(quantity);
+            realizedCostBasis = realizedCostBasis.plus(costOfSoldShares);
 
             // Proceeds = (Price * Qty) - Fees
             const proceeds = price.times(quantity).minus(fees);
@@ -113,6 +116,7 @@ export const calculatePortfolioMetrics = (
         totalCostBasis,
         totalMarketValue,
         realizedPL,
+        realizedCostBasis,
         unrealizedPL,
         totalPL: realizedPL.plus(unrealizedPL)
     };
