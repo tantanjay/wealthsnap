@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - **Help Center**: two new guides, Debt Strategy and Investments.
-  - Clarified the Investments guide's Cost Basis and Smart Advisor drop-threshold formulas after a review pass.
 
 ### Changed
 - Help Center's Financial Insights and Math & Formulas guides updated to match the current Insights screen.
