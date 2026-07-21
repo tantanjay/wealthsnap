@@ -65,6 +65,8 @@ export const EXPENSE_CATEGORY_GROUPS = [
             { label: 'Internet', value: 'Internet', icon: 'wifi' },
             { label: 'Mobile Postpaid', value: 'Mobile Postpaid', icon: 'phone-portrait' },
             { label: 'Mobile Prepaid', value: 'Mobile Prepaid', icon: 'call' },
+            { label: 'Electronics', value: 'Electronics', icon: 'desktop' },
+            { label: 'Gadgets & Devices', value: 'Gadgets & Devices', icon: 'watch' },
             { label: 'Tech Gear', value: 'Tech Gear', icon: 'hardware-chip' },
             { label: 'Gaming & Top-ups', value: 'Gaming & Top-ups', icon: 'game-controller' },
         ]

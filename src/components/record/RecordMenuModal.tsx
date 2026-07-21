@@ -12,6 +12,7 @@ import { useAlert } from '@context/AlertContext';
 import { DebtType, InvestmentType, TransactionType } from '@types';
 import { useAIConsent } from '@hooks/useAIConsent';
 import { getAllAssets } from '@services/domain/assetService';
+import { navigationRef } from '@navigation/navigationRef';
 
 export interface RecordMenuModalProps {
     visible: boolean;
@@ -85,6 +86,15 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
         });
     };
 
+    const handleOpenChat = () => {
+        checkConsent(() => {
+            onClose();
+            if (navigationRef.isReady()) {
+                navigationRef.navigate('Chat');
+            }
+        });
+    };
+
     const handleInvestmentSelect = async (type: InvestmentType) => {
         try {
             const assets = await getAllAssets();
@@ -114,6 +124,7 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
             items: [
                 { id: 'scan', icon: 'scan', label: 'Scan', color: '#9333EA', onPress: handleCapture },
                 { id: 'upload', icon: 'images', label: 'Upload', color: '#9333EA', onPress: handleBrowse },
+                { id: 'chat', icon: 'chatbubble-ellipses', label: 'Chat', color: '#9333EA', onPress: handleOpenChat },
             ]
         },
         {
@@ -151,8 +162,8 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="New Record"
-            subtitle="Choose what you want to record"
+            title="Quick Actions"
+            subtitle="Choose what you want to do"
             maxHeight="85%"
             style={{ width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center' }}
         >
