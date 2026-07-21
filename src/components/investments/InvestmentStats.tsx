@@ -10,6 +10,7 @@ import { InvestmentEquityHelpModal } from './modals/InvestmentEquityHelpModal';
 interface InvestmentStatsProps {
     totalEquity: number;
     realizedPL: number;
+    realizedPLPercent: number;
     unrealizedPL: number;
     unrealizedPLPercent: number;
     totalDividends: number;
@@ -68,6 +69,7 @@ const StatCard = ({ label, value, subValue, color, icon, width, onIconPress }: a
 export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
     totalEquity,
     realizedPL,
+    realizedPLPercent,
     unrealizedPL,
     unrealizedPLPercent,
     totalDividends,
@@ -141,7 +143,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
                         fontWeight: 'bold',
                         fontSize: 12
                     }}>
-                        {realizedPL >= 0 ? '+' : ''}{(0).toFixed(2)}%
+                        {realizedPL >= 0 ? '+' : ''}{realizedPLPercent.toFixed(2)}%
                     </Text>
                 ),
                 color: colors.text
@@ -200,7 +202,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
             // Items not in the order array go to the end
             return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
         });
-    }, [cardOrder, isPrivacyEnabled, totalEquity, currency, colors, realizedPL, unrealizedPL, unrealizedPLPercent, totalDividends, thisMonthDividends, thisMonthInvested]);
+    }, [cardOrder, isPrivacyEnabled, totalEquity, currency, colors, realizedPL, realizedPLPercent, unrealizedPL, unrealizedPLPercent, totalDividends, thisMonthDividends, thisMonthInvested]);
 
     const totalPages = Math.ceil(cards.length / 2);
 

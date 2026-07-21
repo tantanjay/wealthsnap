@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Help Center**: two new guides, Debt Strategy (payoff strategies, interest cost, payment recording, formulas) and Investments (portfolio stats, Allocation Chart, Dividend Chart, Smart Advisor, formulas).
+
+### Changed
+- Help Center's Financial Insights and Math & Formulas guides updated to match the current Insights screen (month browsing, debt-adjusted Runway/Burn Rate, redesigned Savings Rate Trend, accurate Smart Alert thresholds).
+
+### Fixed
+- Investments: Realized P/L's percentage always showed a hardcoded 0.00% instead of the actual return on shares sold.
+- Supporter Screen: some donor name styles (e.g. Ninja, Shadow, Demon) could become unreadable against a dark background.
+
 ---
 
 ## [1.15.0] — 2026-07-20
