@@ -11,9 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - **Help Center**: two new guides, Debt Strategy and Investments.
+- Two new expense categories: Electronics and Gadgets & Devices.
 
 ### Changed
 - Help Center's Financial Insights and Math & Formulas guides updated to match the current Insights screen.
+- Chat moved from the Floating Quick Actions menu into the Record menu.
+- Record menu renamed from "New Record" to "Quick Actions".
 
 ### Fixed
 - Debt Strategy: Interest Leak now respects each debt's interest type instead of always using the shrinking balance.

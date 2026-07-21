@@ -39,5 +39,16 @@ Fixed a dark mode legibility bug on the Supporter (Thank You) screen.
 
 ---
 
+## 🗂️ Record Menu
+- **Chat moved into the Record menu**: previously only reachable via the Floating Quick Actions gear, Chat is now the third AI Assistant option in the Record menu, alongside Scan and Upload.
+- **Renamed the Record menu header**: "New Record" / "Choose what you want to record" is now "Quick Actions" / "Choose what you want to do", since the menu covers more than just adding records now.
+
+---
+
+## 🏷️ Categories
+- **Two new Tech categories**: added Electronics and Gadgets & Devices to the Communication & Tech group, alongside Tech Gear.
+
+---
+
 **Previous Version:** 1.15.0
 **Package:** `com.christian.soyosa.WealthSnap`
