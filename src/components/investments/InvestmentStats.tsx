@@ -10,9 +10,10 @@ import { InvestmentEquityHelpModal } from './modals/InvestmentEquityHelpModal';
 interface InvestmentStatsProps {
     totalEquity: number;
     realizedPL: number;
-    realizedPLPercent: number;
+    // null when cost basis is $0 but there's a real gain/loss (e.g. free/gifted shares)
+    realizedPLPercent: number | null;
     unrealizedPL: number;
-    unrealizedPLPercent: number;
+    unrealizedPLPercent: number | null;
     totalDividends: number;
     thisMonthDividends?: number;
     thisMonthInvested?: number;
@@ -143,7 +144,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
                         fontWeight: 'bold',
                         fontSize: 12
                     }}>
-                        {realizedPL >= 0 ? '+' : ''}{realizedPLPercent.toFixed(2)}%
+                        {realizedPLPercent === null ? 'N/A' : `${realizedPL >= 0 ? '+' : ''}${realizedPLPercent.toFixed(2)}%`}
                     </Text>
                 ),
                 color: colors.text
@@ -166,7 +167,7 @@ export const InvestmentStats: React.FC<InvestmentStatsProps> = ({
                         fontWeight: 'bold',
                         fontSize: 12
                     }}>
-                        {unrealizedPL >= 0 ? '+' : ''}{unrealizedPLPercent.toFixed(2)}%
+                        {unrealizedPLPercent === null ? 'N/A' : `${unrealizedPL >= 0 ? '+' : ''}${unrealizedPLPercent.toFixed(2)}%`}
                     </Text>
                 )
             },

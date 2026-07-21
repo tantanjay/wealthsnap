@@ -17,7 +17,8 @@ interface Holding {
     price: number;
     totalValue: number;
     gainLoss: number;
-    gainLossPercent: number;
+    // null when cost basis is $0 but there's a real gain/loss (e.g. free/gifted shares)
+    gainLossPercent: number | null;
     divYield: number;
 }
 
@@ -112,7 +113,7 @@ const HoldingItem = ({ item, currency, totalValue, isPrivacyEnabled, onPress }: 
                         {isPrivacyEnabled ? "••••" : formatCurrencyAmount(item.price, currency)}
                     </Text>
                     <Text style={[styles.pnlPercent, { color: isProfit ? colors.success : colors.error }]}>
-                        {isPrivacyEnabled ? "••••" : `${isProfit ? '+' : ''}${item.gainLossPercent.toFixed(2)}%`}
+                        {isPrivacyEnabled ? "••••" : (item.gainLossPercent === null ? 'N/A' : `${isProfit ? '+' : ''}${item.gainLossPercent.toFixed(2)}%`)}
                     </Text>
                 </View>
             </View>
@@ -238,7 +239,7 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency =
                     comparison = a.gainLoss - b.gainLoss;
                     break;
                 case 'PL_PERCENT':
-                    comparison = a.gainLossPercent - b.gainLossPercent;
+                    comparison = (a.gainLossPercent ?? 0) - (b.gainLossPercent ?? 0);
                     break;
                 case 'YIELD':
                     comparison = a.divYield - b.divYield;

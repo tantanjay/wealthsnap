@@ -245,10 +245,17 @@ export const calculateDebtPayoffStrategy = (
     const finalDate = new Date(startDate);
     finalDate.setMonth(finalDate.getMonth() + monthsToFreedom);
 
+    // Any debt still carrying a balance after the 100-year cap means its minimum payment
+    // never covered its interest (negative amortization) — it was never actually going to
+    // reach zero, not just "slow." Surface these so the UI can warn instead of silently
+    // showing a ~100-year freedom date built on runaway interest.
+    const unpayableDebtIds = currentDebts.filter(d => d.balance.gt(0)).map(d => d.id);
+
     return {
         freedomDate: finalDate,
         totalInterest: totalInterestPaid,
-        payoffDates
+        payoffDates,
+        unpayableDebtIds
     };
 };
 
@@ -305,16 +312,27 @@ export const getNextDueDate = (debt: Debt, transactions: Transaction[]): Date | 
     // 1. Initial Candidate: The occurrence in the CURRENT month
     let candidateDate = new Date(now.getFullYear(), now.getMonth(), day);
 
-    // 2. Check if a PRINCIPAL payment occurred in this candidate month
-    const paidThisMonth = transactions.some(t => {
-        if (t.debtId !== debt.id || t.type !== 'TRANSFER_OUT') return false;
-        const tDate = new Date(t.date);
-        return tDate.getMonth() === candidateDate.getMonth() &&
-            tDate.getFullYear() === candidateDate.getFullYear();
-    });
+    // 2. Sum everything paid toward this debt in the candidate month — principal, interest,
+    // and fees, matching the transaction types `handlePaymentSubmit` actually logs for this
+    // debt's direction. A partial/extra payment shouldn't silently roll the due date forward
+    // while the rest of the minimum is still owed, so we compare the total against minPayment
+    // rather than just checking that *a* payment happened.
+    const isPayable = (debt.direction || 'PAYABLE') === 'PAYABLE';
+    const principalType = isPayable ? 'TRANSFER_OUT' : 'TRANSFER_IN';
+    const interestType = isPayable ? 'EXPENSE' : 'INCOME';
 
-    // 3. If paid, advance to NEXT month
-    if (paidThisMonth) {
+    const paidThisMonth = transactions
+        .filter(t => t.debtId === debt.id)
+        .filter(t => {
+            const tDate = new Date(t.date);
+            return tDate.getMonth() === candidateDate.getMonth() &&
+                tDate.getFullYear() === candidateDate.getFullYear();
+        })
+        .filter(t => t.type === principalType || t.type === interestType || (t.type === 'EXPENSE' && t.category === 'Fees'))
+        .reduce((sum, t) => sum.plus(t.amount), new BigNumber(0));
+
+    // 3. Only advance to NEXT month once the cumulative payment meets the minimum
+    if (paidThisMonth.gte(debt.minPayment)) {
         candidateDate = new Date(now.getFullYear(), now.getMonth() + 1, day);
     }
 

@@ -55,6 +55,7 @@ const DebtScreen = ({ navigation }: any) => {
     const [interestLeakPerHour, setInterestLeakPerHour] = useState<BigNumber>(new BigNumber(0));
     const [lifeLostMonths, setLifeLostMonths] = useState<number>(0);
     const [payoffOrder, setPayoffOrder] = useState<Debt[]>([]);
+    const [unpayableDebtNames, setUnpayableDebtNames] = useState<string[]>([]);
 
     // Payment Modal State
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
@@ -91,10 +92,16 @@ const DebtScreen = ({ navigation }: any) => {
         setTotalDebt(totalBalance);
 
         // 2. Interest Leak (Hourly)
+        // Must respect interestType like every other interest calc in this screen: FLAT debts
+        // accrue on the original principal (originalAmount), not the shrinking balance, and NONE
+        // debts accrue nothing. d.initialAmount here is already patched to the current balance.
         let yearlyInterest = new BigNumber(0);
         debtsWithBalances.forEach(d => {
+            if (d.interestType === 'NONE') return;
+
             const rate = d.interestRate.div(100);
-            yearlyInterest = yearlyInterest.plus(d.initialAmount.times(rate));
+            const base = d.interestType === 'FLAT' ? d.originalAmount : d.initialAmount;
+            yearlyInterest = yearlyInterest.plus(base.times(rate));
         });
         // Hourly = Yearly / 365 / 24
         const hourlyLeak = yearlyInterest.div(365).div(24);
@@ -111,13 +118,16 @@ const DebtScreen = ({ navigation }: any) => {
         }
 
         // 4. Payoff Strategy
-        const { freedomDate, totalInterest } = DebtMetrics.calculateDebtPayoffStrategy(
+        const { freedomDate, totalInterest, unpayableDebtIds } = DebtMetrics.calculateDebtPayoffStrategy(
             debtsWithBalances,
             currentExtra,
             currentStrategy
         );
         setDebtFreeDate(freedomDate);
         setTotalInterestToPay(totalInterest);
+        setUnpayableDebtNames(
+            debtsWithBalances.filter(d => unpayableDebtIds.includes(d.id)).map(d => d.name)
+        );
 
         // 5. Payoff Order
         let sorted = [...debtsWithBalances];
@@ -364,6 +374,30 @@ const DebtScreen = ({ navigation }: any) => {
                         </Text>
                     </View>
                 </View>
+
+                {/* Unpayable-at-Minimum Warning */}
+                {unpayableDebtNames.length > 0 && (
+                    <View style={{
+                        backgroundColor: 'rgba(255, 59, 48, 0.12)',
+                        borderRadius: 12,
+                        padding: 16,
+                        marginBottom: 24,
+                        borderWidth: 1,
+                        borderColor: 'rgba(255, 59, 48, 0.35)',
+                        flexDirection: 'row',
+                        alignItems: 'flex-start'
+                    }}>
+                        <Ionicons name="warning" size={24} color={colors.error} style={{ marginRight: 12, marginTop: 2 }} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.error, fontWeight: 'bold', fontSize: 13, marginBottom: 4 }}>
+                                Minimum Payment Won&apos;t Clear This Debt
+                            </Text>
+                            <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>
+                                {unpayableDebtNames.join(', ')} {unpayableDebtNames.length === 1 ? "doesn't" : "don't"} cover the interest at the current minimum payment — the balance will stay the same or grow instead of shrinking. Increase the payment above the minimum to make real progress.
+                            </Text>
+                        </View>
+                    </View>
+                )}
 
                 {/* 1. The Clock (Debt-Free Date) */}
                 <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>

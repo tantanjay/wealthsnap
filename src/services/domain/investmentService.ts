@@ -273,14 +273,16 @@ export const getPortfolioStats = async () => {
         }
     });
 
+    // null when cost basis is $0 but there's a real gain/loss (e.g. free/gifted shares) —
+    // the percent is mathematically undefined, not 0%.
     const detailsUnrealizedPLPercent = totalCostBasis.isGreaterThan(0)
         ? unrealizedPL.dividedBy(totalCostBasis).times(100).toNumber()
-        : 0;
+        : (unrealizedPL.isZero() ? 0 : null);
 
     // Realized P/L % relative to the cost basis of the shares actually sold (not remaining holdings)
     const realizedPLPercent = totalRealizedCostBasis.isGreaterThan(0)
         ? totalRealizedPL.dividedBy(totalRealizedCostBasis).times(100).toNumber()
-        : 0;
+        : (totalRealizedPL.isZero() ? 0 : null);
 
     return {
         totalEquity: totalEquity.toNumber(),
@@ -314,7 +316,9 @@ export interface PortfolioHolding {
     price: number;
     totalValue: number;
     gainLoss: number;
-    gainLossPercent: number;
+    // null when cost basis is $0 but there's a real gain/loss (e.g. free/gifted shares) —
+    // the percent is mathematically undefined, not 0%.
+    gainLossPercent: number | null;
     divYield: number;
     sector: string;
     name?: string;
@@ -366,7 +370,7 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
 
         const gainLossPercent = m.totalCostBasis.isGreaterThan(0)
             ? m.unrealizedPL.dividedBy(m.totalCostBasis).times(100).toNumber()
-            : 0;
+            : (m.unrealizedPL.isZero() ? 0 : null);
 
         const currentPrice = priceMap[m.symbol] ? priceMap[m.symbol].toNumber() : 0;
         const annualDiv = dividendMap.get(m.symbol) || 0;
