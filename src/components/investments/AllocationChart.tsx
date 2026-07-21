@@ -12,7 +12,8 @@ interface Holding {
     price: number;
     totalValue: number;
     gainLoss: number;
-    gainLossPercent: number;
+    // null when cost basis is $0 but there's a real gain/loss (e.g. free/gifted shares)
+    gainLossPercent: number | null;
     divYield: number;
     sector?: string;
     type?: string;
@@ -140,16 +141,19 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
             return filteredHoldings.map(h => {
                 const isGain = h.gainLoss >= 0;
                 const glSign = isGain ? '+' : '';
+                // null means a real gain/loss with an undefined percent (e.g. $0 cost basis) —
+                // treat it as strong intensity for the color since we know it's non-trivial.
+                const glMagnitude = h.gainLossPercent ?? 100;
                 const color = isGain
-                    ? `rgba(16, 185, 129, ${0.5 + (Math.min(h.gainLossPercent, 15) / 40)})`
-                    : `rgba(239, 68, 68, ${0.5 + (Math.min(Math.abs(h.gainLossPercent), 15) / 40)})`;
+                    ? `rgba(16, 185, 129, ${0.5 + (Math.min(glMagnitude, 15) / 40)})`
+                    : `rgba(239, 68, 68, ${0.5 + (Math.min(Math.abs(glMagnitude), 15) / 40)})`;
 
                 return {
                     id: h.symbol,
                     value: h.totalValue,
                     label: h.symbol,
                     weight: `${((h.totalValue / totalPortfolioValue) * 100).toFixed(1)}%`,
-                    performance: `${glSign}${h.gainLossPercent.toFixed(1)}%`,
+                    performance: h.gainLossPercent === null ? 'N/A' : `${glSign}${h.gainLossPercent.toFixed(1)}%`,
                     color,
                 };
             });

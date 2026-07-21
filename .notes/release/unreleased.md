@@ -10,15 +10,26 @@ Two new guides, plus a refresh of two that had drifted out of sync with the app.
 
 - **New: Debt Strategy guide** — explains Payable vs Receivable debts, the Estimated Debt-Free Date/Interest Leak/Time Cost cards, the Avalanche vs Snowball payoff strategies (and that the strategy toggle currently reorders your Priority Payoff list rather than changing the projected payoff date, since extra-payment simulation isn't wired to a UI control yet), how a recorded payment splits into Principal/Interest/Fee, the four interest types, and the underlying formulas (balance reduction, interest accrual, payoff simulation, progress %).
 - **New: Investments guide** — explains the four Portfolio Stats cards, the Holdings List, the Allocation Chart (Stocks/Sector/Type treemap), the Dividend Chart (Actual/Calendar/Projected), and Smart Advisor's four alert types (Crash, Dip, Dividend, Balance) with their actual thresholds, plus formulas for cost basis, unrealized P/L, and dividend yield.
+  - A review pass caught two wording issues before this guide shipped: the Cost Basis formula's "Old Cost Basis" term was ambiguous (total dollar value vs. per-share — now spelled out explicitly), and the Smart Advisor drop formula's sign didn't match its own threshold text ("Drop of 15% or more" next to a formula that produces a negative number — now uses an unsigned "how far below the high" convention that matches how it reads).
 - **Financial Insights guide**: updated to reflect month browsing (tap the month label or use the chevrons to view any past month), the debt-adjusted Financial Runway and Burn Rate cards, the redesigned Savings Rate Trend chart (now three switchable views — Rate, Saved, Cash Flow), and the Comparison Chart's Trend/Compare modes. Smart Alerts now lists its actual three alert types (Budget Exceeded, Spending Spike, Runway Drop) instead of a vague description.
 - **Math & Formulas guide**: formulas updated to match, including the debt-obligation addition to Burn Rate/Runway, the per-view Savings Rate Trend formulas, and the correct Spending Spike thresholds (previously showed a hardcoded "$1,000" absolute-difference threshold that didn't match the code or this app's currency).
 
 ---
 
+## 💳 Debt Strategy
+Three fixes to the Debt Strategy screen's math and payment tracking, found during a review of the new Help Center guide.
+
+- **Interest Leak now respects interest type**: it was computing every debt's hourly interest off its current shrinking balance, even Flat-rate debts — which contradicts how Flat interest actually works elsewhere in the app (always charged on the original principal, never the paid-down balance). Flat-rate debts were showing an ever-decreasing "leak" as you paid them off, when the true interest cost stays constant until payoff. Now branches by interest type, matching the Next Payment Breakdown and payoff simulation.
+- **Due date no longer rolls forward on a partial payment**: previously, any principal payment at all — even a small extra payment early in the month — marked the month as "paid" and silently advanced the due date to next month, hiding the fact that the rest of the minimum was still owed (and suppressing the Due Soon/Overdue flag with it). It now sums everything paid toward that debt this month (principal, interest, fees) and only advances once that total meets the minimum payment.
+- **Warning for debts that can't be paid off at their minimum**: if a debt's minimum payment doesn't even cover its own interest, the balance never shrinks — the payoff simulation would previously just run out its 100-year cap and quietly show a distant "debt-free" date built on runaway interest, no different from every other debt. A red warning banner now names any debt in this state, so it's obvious the minimum needs to go up rather than looking like a routine slow payoff.
+
+---
+
 ## 📈 Investments
-Fixed the Realized P/L stat card showing a meaningless percentage.
+Two fixes to how gain/loss percentages are calculated, the second found during a review of the new Help Center guide.
 
 - **Accurate Realized P/L %**: the percentage under Realized P/L was hardcoded to always display "0.00%" no matter your actual gains or losses. It now reflects your real return — realized profit/loss divided by the original cost basis of the shares you actually sold (not your remaining holdings), computed the same way Unrealized P/L's percentage already was.
+- **"N/A" instead of a misleading 0% for free shares**: if you record shares with a $0 cost basis (a stock grant, airdrop, or gift), any resulting gain has no defined percentage to divide by — showing "0%" made a real profit look like a flat break-even. Unrealized P/L, Realized P/L, the Holdings List's per-holding percentage, and the Allocation Chart now all show "N/A" in that specific case instead, while a position with genuinely zero cost basis *and* zero value (i.e. nothing held) still correctly shows 0%.
 
 ---
 

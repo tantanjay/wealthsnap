@@ -39,7 +39,16 @@ const InvestmentScreen = ({ navigation }: any) => {
 
     const [valuationDate, setValuationDate] = useState<string | null>(null);
 
-    const [portfolioStats, setPortfolioStats] = useState({
+    const [portfolioStats, setPortfolioStats] = useState<{
+        totalEquity: number;
+        realizedPL: number;
+        realizedPLPercent: number | null;
+        unrealizedPL: number;
+        unrealizedPLPercent: number | null;
+        totalDividends: number;
+        thisMonthDividends: number;
+        thisMonthInvested: number;
+    }>({
         totalEquity: 0,
         realizedPL: 0,
         realizedPLPercent: 0,

@@ -400,6 +400,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'heading3', text: 'Estimated Debt-Free Date' },
             { type: 'blockquote', text: 'Shows: When you\'ll be debt-free, simulated month by month using your active debts\' minimum payments.' },
             { type: 'bullet', text: 'Includes total interest you\'re projected to pay along the way' },
+            { type: 'bullet', text: 'If a debt\'s minimum payment doesn\'t cover its own interest, a red warning banner names it — its balance would otherwise never shrink' },
 
             { type: 'heading3', text: 'Interest Leak' },
             { type: 'blockquote', text: 'Shows: How much interest is quietly accumulating every hour, based on your current balances and rates.' },
@@ -436,13 +437,16 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'formula', text: 'Balance = max(0, Original Amount − Payments Toward Principal So Far)' },
 
             { type: 'heading3', text: 'Interest Leak' },
-            { type: 'formula', text: 'Hourly Leak = (Σ Current Balance × Annual Rate ÷ 100) ÷ 365 ÷ 24' },
+            { type: 'formula', text: 'Hourly Leak = (Σ Annual Interest) ÷ 365 ÷ 24' },
+            { type: 'bullet', text: 'Fixed / Variable / None: Annual Interest = Current Balance × Annual Rate ÷ 100 (0 for None)' },
+            { type: 'bullet', text: 'Flat: Annual Interest = Original Amount × Annual Rate ÷ 100 — always based on what you originally borrowed, since Flat interest never shrinks as you pay it down' },
 
             { type: 'heading3', text: 'Debt-Free Date & Total Interest' },
             { type: 'paragraph', text: 'Simulated month by month (up to 100 years): each month, interest accrues on every active debt, then its minimum payment is applied.' },
             { type: 'bullet', text: 'Fixed / Variable: Interest = Current Balance × (Rate ÷ 12)' },
             { type: 'bullet', text: 'Flat: Interest = Original Amount × (Rate ÷ 12) — always based on what you originally borrowed' },
             { type: 'paragraph', text: 'Debt-Free Date is the month every balance reaches zero. Total Interest is every month\'s interest summed across all debts.' },
+            { type: 'blockquote', text: 'If a debt\'s minimum payment doesn\'t even cover its interest, the balance never shrinks — a warning banner calls this out by name instead of quietly showing a ~100-year freedom date.' },
 
             { type: 'heading3', text: 'Payoff Progress' },
             { type: 'formula', text: 'Progress % = (Original Amount − Current Balance) ÷ Original Amount × 100' },
@@ -452,13 +456,15 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'formula', text: 'Principal = Minimum Payment − Interest, capped at the remaining balance' },
 
             { type: 'heading3', text: 'Next Due Date' },
-            { type: 'paragraph', text: 'Based on the day-of-month you started the debt. If you\'ve already made a payment this calendar month, the due date rolls to next month.' },
+            { type: 'paragraph', text: 'Based on the day-of-month you started the debt. The due date only rolls to next month once what you\'ve paid toward this debt so far this month (principal + interest + fees) adds up to at least your minimum payment — a partial or extra payment alone won\'t hide the remaining balance still due.' },
 
             { type: 'divider' },
             { type: 'heading2', text: 'Edge Cases Handled' },
             { type: 'bullet', text: 'Debts fully paid off (or forgiven) move to the "Paid Off" list with their timeline and total interest cost' },
             { type: 'bullet', text: 'A balance that reaches zero mid-simulation stops accruing further interest' },
-            { type: 'bullet', text: 'Interest exceeding the minimum payment never produces a negative principal amount' }
+            { type: 'bullet', text: 'Interest exceeding the minimum payment never produces a negative principal amount' },
+            { type: 'bullet', text: 'A minimum payment that doesn\'t cover interest is flagged with a warning naming the debt, instead of silently projecting a distant or inflated payoff' },
+            { type: 'bullet', text: 'A partial payment below your minimum doesn\'t prematurely mark the month as "paid" and hide the remaining Due Soon / Overdue status' }
         ]
     },
     {
@@ -525,7 +531,8 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading3', text: 'Cost Basis' },
             { type: 'paragraph', text: 'Uses weighted-average cost, not FIFO.' },
-            { type: 'formula', text: 'New Average Cost = (Old Cost Basis + Buy Price × Qty + Fees) ÷ (Old Qty + Qty)' },
+            { type: 'formula', text: 'New Average Cost = (Old Total Cost Basis + Buy Price × Qty + Fees) ÷ (Old Qty + Qty)' },
+            { type: 'paragraph', text: 'Old Total Cost Basis is the dollar value of everything you already held (Old Average Cost × Old Qty) — a total, not a per-share figure.' },
             { type: 'paragraph', text: 'Selling reduces quantity and cost basis proportionally — it never changes your average cost.' },
 
             { type: 'heading3', text: 'Realized P/L' },
@@ -541,7 +548,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'formula', text: 'Estimated Annual Income = Holding Value × Yield %' },
 
             { type: 'heading3', text: 'Smart Advisor Thresholds' },
-            { type: 'formula', text: 'Drop From 30-Day High = (Current Price − 30-Day High) ÷ 30-Day High' },
+            { type: 'formula', text: 'Drop From 30-Day High = (30-Day High − Current Price) ÷ 30-Day High × 100' },
             { type: 'bullet', text: 'Crash: Drop of 15% or more' },
             { type: 'bullet', text: 'Dip: Drop between 5% and 15%, or your price is 3%+ below your own average cost' },
             { type: 'bullet', text: 'Dividend: ex-dividend date within the next 30 days' },
@@ -553,7 +560,8 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'divider' },
             { type: 'heading2', text: 'Edge Cases Handled' },
             { type: 'bullet', text: 'No price history: Smart Advisor skips a holding rather than guessing' },
-            { type: 'bullet', text: 'Zero cost basis: Unrealized/Realized P/L % shows 0 instead of dividing by zero' },
+            { type: 'bullet', text: 'No holding at all (zero cost basis, zero market value): P/L % shows 0% instead of dividing by zero' },
+            { type: 'bullet', text: 'Free or gifted shares (zero cost basis, real market value): P/L % shows "N/A" instead of a misleading 0%, since the return is mathematically undefined, not flat' },
             { type: 'bullet', text: 'Non-stock holdings (Funds, Bonds, Crypto, etc.): excluded from Smart Advisor, which is stock-specific' }
         ]
     },

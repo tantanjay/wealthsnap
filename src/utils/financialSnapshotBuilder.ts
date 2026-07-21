@@ -7,7 +7,8 @@ export interface PortfolioStatsInput {
     totalEquity: number;
     realizedPL: number;
     unrealizedPL: number;
-    unrealizedPLPercent: number;
+    // null when cost basis is $0 but there's a real gain/loss (e.g. free/gifted shares)
+    unrealizedPLPercent: number | null;
     totalDividends: number;
 }
 
@@ -47,7 +48,7 @@ export interface FinancialSnapshotData {
     totalInvestmentValue: number;
     realizedPL: number;
     unrealizedPL: number;
-    unrealizedPLPercent: number;
+    unrealizedPLPercent: number | null;
     totalDividends: number;
     holdings: HoldingAllocation[];
     totalDebtLiability: number;
@@ -173,7 +174,7 @@ export const renderFinancialSnapshotText = (data: FinancialSnapshotData, currenc
     lines.push(`Total Cash (lifetime net): ${fmt(data.totalCash, currency)}`);
     lines.push(`Total Investment Value: ${fmt(data.totalInvestmentValue, currency)}`);
     lines.push(`  Realized P/L: ${fmt(data.realizedPL, currency)}`);
-    lines.push(`  Unrealized P/L: ${fmt(data.unrealizedPL, currency)} (${data.unrealizedPLPercent.toFixed(1)}%)`);
+    lines.push(`  Unrealized P/L: ${fmt(data.unrealizedPL, currency)} (${data.unrealizedPLPercent === null ? 'N/A' : `${data.unrealizedPLPercent.toFixed(1)}%`})`);
     lines.push(`  Total Dividends Received: ${fmt(data.totalDividends, currency)}`);
     if (data.holdings.length > 0) {
         lines.push('  Allocation by Holding:');

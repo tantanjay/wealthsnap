@@ -10,14 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- **Help Center**: two new guides, Debt Strategy (payoff strategies, interest cost, payment recording, formulas) and Investments (portfolio stats, Allocation Chart, Dividend Chart, Smart Advisor, formulas).
+- **Help Center**: two new guides, Debt Strategy and Investments.
+  - Clarified the Investments guide's Cost Basis and Smart Advisor drop-threshold formulas after a review pass.
 
 ### Changed
-- Help Center's Financial Insights and Math & Formulas guides updated to match the current Insights screen (month browsing, debt-adjusted Runway/Burn Rate, redesigned Savings Rate Trend, accurate Smart Alert thresholds).
+- Help Center's Financial Insights and Math & Formulas guides updated to match the current Insights screen.
 
 ### Fixed
-- Investments: Realized P/L's percentage always showed a hardcoded 0.00% instead of the actual return on shares sold.
-- Supporter Screen: some donor name styles (e.g. Ninja, Shadow, Demon) could become unreadable against a dark background.
+- Debt Strategy: Interest Leak now respects each debt's interest type instead of always using the shrinking balance.
+- Debt Strategy: a debt's due date no longer rolls forward after just a partial payment.
+- Debt Strategy: debts whose minimum payment doesn't cover interest are now flagged with a warning.
+- Investments: Realized P/L's percentage always showed a hardcoded 0.00%.
+- Investments: Unrealized/Realized P/L% for free or gifted shares (zero cost basis) misleadingly showed 0% instead of "N/A".
+- Supporter Screen: some donor name styles could become unreadable against a dark background.
 
 ---
 
