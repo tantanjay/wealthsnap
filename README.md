@@ -41,6 +41,7 @@ Your financial data never leaves your device unless you explicitly choose to use
   - 🟢 <70% Healthy
   - 🟠 70–90% Warning
   - 🔴 >90% Danger
+- **Smart Budget Suggestions**: realistic amounts suggested from your last 12 months of spending
 - Smart category suggestions
 - CSV/TSV bulk import
 - Calendar-based history view with:
@@ -76,6 +77,7 @@ Comprehensive liability tracking:
 - Full amortization schedule
 - Fixed, Variable, Flat, or No interest types
 - Auto minimum payment calculation
+- Warns when a debt's minimum payment doesn't even cover its own interest
 - Principal vs Interest split
 - Debt-integrated:
   - Savings Rate
@@ -93,7 +95,7 @@ WealthSnap integrates optional AI tools, powered by your own Gemini API key.
 Features include:
 - Smart receipt analysis (amount, category, notes extraction)
 - AI-assisted stock price research
-- **Chat**: ask questions about your own finances in plain language, grounded in a live snapshot of your data (cash, investments, P/L, dividends, debt, runway) plus your Monthly Summaries — with streaming replies and per-message cost/token transparency
+- **Chat**: ask questions about your own finances in plain language, grounded in a live snapshot of your data (cash, investments, P/L, dividends, debt, runway) plus your Monthly Summaries — with streaming replies, per-message cost/token transparency, and context caching to keep follow-up messages cheaper
 
 **Privacy Controls:**
 - You provide your own API key
@@ -123,7 +125,7 @@ Features include:
 ---
 
 ### 📊 Advanced Insights
-- Savings Rate Trend (interactive)
+- Savings Rate Trend — three switchable views: Rate, Saved, Cash Flow
 - Income Analysis with projections
 - Spending Comparison (pro-rated)
 - Monthly Pulse Forecast
@@ -153,6 +155,7 @@ WealthSnap is engineered for speed and reliability:
 - High-precision financial engine
 - Background transaction decryption (chunked loading)
 - Optimistic UI cache updates
+- Persistent chart, tab, and time-range preferences across sessions
 - Exchange rate & market data caching
 - Global Error Boundary with crash logging
 - Safe-area optimized UI
@@ -165,6 +168,7 @@ WealthSnap is engineered for speed and reliability:
 - Secure PIN protection
 - Intelligent app lock behavior
 - Conditional screenshot blocking
+- **Reveal for Screenshot**: temporarily bypass screenshot protection with confirmation, when you actually need to capture the screen
 - Encrypted sensitive fields
 - Strict transfer handling (Transfer Out treated conservatively)
 - Versioned Terms & Privacy acceptance tracking
@@ -174,6 +178,7 @@ WealthSnap is engineered for speed and reliability:
 ## 📦 Backup & Restore
 
 - Manual encrypted backup
+- **Auto Backup**: schedule automatic encrypted backups (weekly or every 2 weeks) that run in the background using a securely stored on-device password
 - Multi-MIME restore support
 - Backup reminder (every 7 days)
 - Automatic reminder rescheduling after restore
@@ -186,6 +191,8 @@ WealthSnap includes a full in-app documentation system:
 
 - Getting Started Guide
 - Financial Insights Education
+- Debt Strategy Guide
+- Investments Guide
 - Full Mathematical Formulas
 - Change Logs
 - Terms of Use & Privacy
