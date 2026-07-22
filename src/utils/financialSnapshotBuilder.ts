@@ -171,6 +171,7 @@ const fmt = (n: number, currency: string) =>
 
 export const renderFinancialSnapshotText = (data: FinancialSnapshotData, currency: string = 'PHP'): string => {
     const lines: string[] = ['=== Current Financial Snapshot ==='];
+    lines.push(`As of: ${new Date().toLocaleDateString('default', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`);
     lines.push(`Total Cash (lifetime net): ${fmt(data.totalCash, currency)}`);
     lines.push(`Total Investment Value: ${fmt(data.totalInvestmentValue, currency)}`);
     lines.push(`  Realized P/L: ${fmt(data.realizedPL, currency)}`);

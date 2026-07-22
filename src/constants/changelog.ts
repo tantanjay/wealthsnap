@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Help Center's Financial Insights and Math & Formulas guides updated to match the current Insights screen.
 - Chat moved from the Floating Quick Actions menu into the Record menu.
 - Record menu renamed from "New Record" to "Quick Actions".
+- Chat: lower cost per message — your financial context is now cached instead of being resent in full with every message.
+- Chat: context sent to Gemini now includes today's date and flags the current month as still in progress.
+- New app icon, also applied to the Android adaptive icon and web favicon.
 
 ### Fixed
 - Debt Strategy: Interest Leak now respects each debt's interest type instead of always using the shrinking balance.

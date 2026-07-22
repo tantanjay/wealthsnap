@@ -1,0 +1,47 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="W growth arrow with padlock and bar chart">
+  <defs>
+    <linearGradient id="teal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#79D4E0"/>
+      <stop offset="100%" stop-color="#2E9BC6"/>
+    </linearGradient>
+    <linearGradient id="tealBar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#66C7D8"/>
+      <stop offset="100%" stop-color="#2E93BF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- background -->
+  <rect width="1024" height="1024" fill="#1B202E"/>
+
+  <!-- balanced ascending bars -->
+  <g fill="url(#tealBar)">
+    <rect x="200" y="640" width="86" height="150" rx="8"/>
+    <rect x="314" y="560" width="86" height="230" rx="8"/>
+    <rect x="428" y="480" width="86" height="310" rx="8"/>
+    <rect x="542" y="400" width="86" height="390" rx="8"/>
+    <rect x="656" y="320" width="86" height="470" rx="8"/>
+  </g>
+  <!-- shared baseline -->
+  <rect x="192" y="782" width="558" height="10" rx="5" fill="#2E93BF"/>
+
+  <!-- padlock halo (dark gap around lock) -->
+  <g stroke="#1B202E" fill="#1B202E">
+    <path d="M 612 355 L 612 306 A 38 38 0 0 1 688 306 L 688 355" fill="none" stroke-width="66" stroke-linecap="round"/>
+    <path d="M 577 340 L 723 340 L 723 438 L 650 506 L 577 438 Z" stroke-width="44" stroke-linejoin="round"/>
+  </g>
+  <!-- padlock -->
+  <path d="M 612 355 L 612 306 A 38 38 0 0 1 688 306 L 688 355" fill="none" stroke="url(#teal)" stroke-width="30" stroke-linecap="round"/>
+  <path d="M 577 340 L 723 340 L 723 438 L 650 506 L 577 438 Z" fill="url(#teal)" stroke="url(#teal)" stroke-width="14" stroke-linejoin="round"/>
+
+  <!-- W + arrow halo (dark gap where it crosses bars and lock) -->
+  <g stroke="#1B202E" fill="none">
+    <path d="M 170 330 L 350 705 L 487 420 L 624 705 L 833 345" stroke-width="120" stroke-linecap="round" stroke-linejoin="round"/>
+    <polygon points="905,225 889,378 777,312" fill="#1B202E" stroke-width="46" stroke-linejoin="round"/>
+  </g>
+
+  <!-- W stroke flowing into the arrow -->
+  <path d="M 170 330 L 350 705 L 487 420 L 624 705 L 833 345"
+        fill="none" stroke="url(#teal)" stroke-width="74"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <polygon points="905,225 889,378 777,312" fill="url(#teal)"/>
+</svg>

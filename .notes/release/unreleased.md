@@ -32,6 +32,19 @@ Two fixes to how gain/loss percentages are calculated, the second found during a
 
 ---
 
+## 💬 Chat
+Lower cost per message, plus a fix for a way the AI could misread your data.
+
+- **Lower cost per message**: the financial context block (spending history, portfolio, debts) was being resent — and re-billed — in full on every single message in a conversation. It's now cached once per session via Gemini's context caching and reused for the rest of the conversation, with cached tokens billed at a fraction of the normal rate. Falls back to sending it inline as before if a cache can't be created or expires mid-session, so nothing breaks if caching isn't available.
+- **AI now knows what day it is**: the context previously gave no sense of today's date, so an almost-empty current month could get compared against a full prior month as if they were equivalent (e.g. "your spending is down 80% this month"). The context now states today's date, and the current month's summary is explicitly labeled as in progress with a reminder not to compare it directly against a complete month.
+
+---
+
+## 🎨 App Icon
+- **Refreshed app icon**: new icon design, also applied to the Android adaptive icon and web favicon.
+
+---
+
 ## 📦 Auto Backup
 - **Folder picker no longer left the app locked**: choosing a backup destination folder on Android backgrounds the app to show the system folder picker, same as the manual backup/restore file pickers. Unlike those, it wasn't exempted from the security lock, so returning to WealthSnap could drop you on the PIN/biometric screen. Picking or canceling a folder now temporarily disables the lock the same way the file pickers already do.
 

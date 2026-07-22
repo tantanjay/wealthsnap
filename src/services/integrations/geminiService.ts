@@ -46,22 +46,27 @@ export const isGeminiConfigured = async (): Promise<boolean> => {
  * Pricing per 1,000,000 tokens as of Jul 2026.
  * Note: gemini-3.1-pro-preview has tiered pricing above 200k-token prompts
  * ($4.00 in / $18.00 out); the rate below covers the common <=200k case.
+ *
+ * cachedInput is the rate for tokens served from an explicit context cache
+ * (genAI.caches.create) - Gemini has consistently priced these at ~25% of
+ * the standard input rate across model generations, so it's derived rather
+ * than independently sourced per model.
  */
-const MODEL_PRICING: { [key: string]: { input: number; output: number } } = {
+const MODEL_PRICING: { [key: string]: { input: number; output: number; cachedInput: number } } = {
     // Latest Frontier Models
-    'gemini-3.5-flash': { input: 1.50, output: 9.00 },
-    'gemini-3.1-pro-preview': { input: 2.00, output: 12.00 },
-    'gemini-3-flash': { input: 0.50, output: 3.00 },
+    'gemini-3.5-flash': { input: 1.50, output: 9.00, cachedInput: 0.375 },
+    'gemini-3.1-pro-preview': { input: 2.00, output: 12.00, cachedInput: 0.50 },
+    'gemini-3-flash': { input: 0.50, output: 3.00, cachedInput: 0.125 },
 
     // Stable High-Efficiency Models
-    'gemini-2.5-flash': { input: 0.30, output: 2.50 },
-    'gemini-2.5-flash-lite': { input: 0.10, output: 0.40 },
+    'gemini-2.5-flash': { input: 0.30, output: 2.50, cachedInput: 0.075 },
+    'gemini-2.5-flash-lite': { input: 0.10, output: 0.40, cachedInput: 0.025 },
 
     // Legacy support
-    'gemini-1.5-flash': { input: 0.30, output: 2.50 },
-    'gemini-1.5-pro': { input: 1.25, output: 5.00 },
+    'gemini-1.5-flash': { input: 0.30, output: 2.50, cachedInput: 0.075 },
+    'gemini-1.5-pro': { input: 1.25, output: 5.00, cachedInput: 0.3125 },
 
-    'default': { input: 1.50, output: 9.00 } // Default to 3.5-flash pricing
+    'default': { input: 1.50, output: 9.00, cachedInput: 0.375 } // Default to 3.5-flash pricing
 };
 
 // Base tokens for images <= 384px
@@ -93,6 +98,7 @@ interface GeminiUsageMetadata {
     promptTokenCount?: number;
     candidatesTokenCount?: number;
     thoughtsTokenCount?: number;
+    cachedContentTokenCount?: number;
 }
 
 export interface LoggedUsage {
@@ -137,7 +143,11 @@ export const logUsage = async (endpoint: string, promptText: string, responseTex
             }
         }
 
-        const inputCost = (inputTokens / 1000000) * pricing.input;
+        // promptTokenCount already includes cached tokens - split it so the cached
+        // portion is billed at the discounted rate instead of the full input rate.
+        const cachedTokens = Math.min(usage?.cachedContentTokenCount ?? 0, inputTokens);
+        const freshInputTokens = inputTokens - cachedTokens;
+        const inputCost = (freshInputTokens / 1000000) * pricing.input + (cachedTokens / 1000000) * pricing.cachedInput;
         const outputCost = (outputTokens / 1000000) * pricing.output;
         const totalCost = status === 'error' ? 0 : (inputCost + outputCost);
 

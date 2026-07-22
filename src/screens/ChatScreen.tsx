@@ -18,7 +18,7 @@ import {
     ChatContextInputs,
     ChatHistoryRange
 } from '@services/domain/chatContextService';
-import { sendChatMessage, ChatTurn } from '@services/integrations/geminiChatService';
+import { sendChatMessage, createChatCache, deleteChatCache, ChatTurn, ChatCache } from '@services/integrations/geminiChatService';
 import * as Storage from '@services/core/storageService';
 import { BigNumber } from 'bignumber.js';
 
@@ -87,8 +87,10 @@ const ChatScreen = ({ navigation }: any) => {
     const [sending, setSending] = useState(false);
     const [contextModalVisible, setContextModalVisible] = useState(false);
     const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
+    const [chatCache, setChatCache] = useState<ChatCache | null>(null);
 
     const scrollRef = useRef<ScrollView>(null);
+    const chatCacheRef = useRef<ChatCache | null>(null);
 
     useEffect(() => {
         (async () => {
@@ -158,6 +160,31 @@ const ChatScreen = ({ navigation }: any) => {
         if (selectedRange) setSuggestedPrompts(pickRandomPrompts(SUGGESTED_PROMPTS, 3));
     }, [selectedRange]);
 
+    useEffect(() => {
+        chatCacheRef.current = chatCache;
+    }, [chatCache]);
+
+    // The context block is fixed for the whole session once a range is picked,
+    // so cache it once here instead of re-sending/re-billing it on every message.
+    // Built in the background - messages sent before it resolves just fall back
+    // to sending the context inline (handled in sendChatMessage).
+    useEffect(() => {
+        if (!selectedRange) return;
+        let cancelled = false;
+        (async () => {
+            const created = await createChatCache(selectedRange.ctx.contextText);
+            if (!cancelled && created) setChatCache(created);
+        })();
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedRange]);
+
+    useEffect(() => {
+        return () => {
+            if (chatCacheRef.current) deleteChatCache(chatCacheRef.current.name);
+        };
+    }, []);
+
     const sessionTotals = messages.reduce(
         (acc, m) => ({
             tokens: acc.tokens + (m.inputTokens || 0) + (m.outputTokens || 0),
@@ -195,7 +222,7 @@ const ChatScreen = ({ navigation }: any) => {
         try {
             const result = await sendChatMessage(selectedRange.ctx.contextText, historyTurns, (delta) => {
                 setMessages(prev => prev.map(m => (m.id === aiMsgId ? { ...m, text: m.text + delta } : m)));
-            });
+            }, chatCache ?? undefined);
 
             setMessages(prev => prev.map(m => (m.id === aiMsgId ? {
                 ...m,
@@ -205,6 +232,13 @@ const ChatScreen = ({ navigation }: any) => {
                 outputTokens: result.outputTokens,
                 costUSD: result.costUSD
             } : m)));
+
+            if (result.cacheInvalid) {
+                setChatCache(null);
+                createChatCache(selectedRange.ctx.contextText).then(created => {
+                    if (created) setChatCache(created);
+                });
+            }
         } catch (error) {
             console.error('[ChatScreen] Send failed:', error);
             setMessages(prev => prev.map(m => (m.id === aiMsgId ? {
