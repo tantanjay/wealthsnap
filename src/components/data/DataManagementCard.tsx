@@ -19,12 +19,14 @@ interface DataManagementCardProps {
     navigation: NavigationProp<any>;
 }
 
+type ModalMode = 'backup' | 'restore';
+
 const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) => {
     const { colors } = useTheme();
     const { temporarilyDisableLock } = useSecurity();
 
     // Backup/Restore State
-    const [modalMode, setModalMode] = useState<'backup' | 'restore' | null>(null);
+    const [modalMode, setModalMode] = useState<ModalMode | null>(null);
     const [restoreFileUri, setRestoreFileUri] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState<BackupProgress | null>(null);
@@ -204,6 +206,14 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
                     onPress={() => setShowImportFlow(true)}
                     iconBg={colors.accent + '20'}
                     iconColor={colors.accent}
+                />
+                <SettingItem
+                    icon="sync-circle"
+                    title="Sync from Device"
+                    subtitle="Merge data with a nearby device over WiFi"
+                    onPress={() => navigation.navigate('LiveSync')}
+                    iconBg={colors.primary + '20'}
+                    iconColor={colors.primary}
                 />
                 <SettingItem
                     icon="trash"

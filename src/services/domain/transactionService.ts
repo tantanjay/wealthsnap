@@ -7,13 +7,23 @@ import * as DataCache from '@services/core/dataCache';
 import { checkAndNotifyAnomalies } from '@services/background/notificationService';
 import { getTransactionsByMonth } from '@utils/financialMetrics';
 import { getAllBudgets } from '@services/domain/budgetService';
+import { upsertTombstone } from '@services/domain/tombstoneService';
 
 // --- Constants & Helpers ---
 
 const UPSERT_TRANSACTION_QUERY = `
-  INSERT OR REPLACE INTO transactions 
+  INSERT OR REPLACE INTO transactions
   (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
+// Used only by merge-sync: unlike UPSERT_TRANSACTION_QUERY, this binds createdAt/updatedAt
+// explicitly so the incoming record's real timestamps survive the write instead of being
+// re-stamped to "now" by SQLite's DEFAULT CURRENT_TIMESTAMP.
+const UPSERT_TRANSACTION_FOR_MERGE_QUERY = `
+  INSERT OR REPLACE INTO transactions
+  (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId, createdAt, updatedAt)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 const UPSERT_RECEIPT_QUERY = `
@@ -93,6 +103,44 @@ export const bulkSaveTransactionReceipts = async (receipts: TransactionReceipt[]
     } catch (error) {
         console.error('Error bulk saving receipts:', error);
         throw new Error('Failed to bulk save transaction receipts');
+    }
+};
+
+/**
+ * Merge-sync only: upserts transactions while preserving their real createdAt/updatedAt,
+ * so a subsequent sync can still tell which side has the newer edit. Not used by normal
+ * app saves or by backup restore.
+ */
+export const bulkUpsertTransactionsForMerge = async (transactions: Transaction[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        const chunks = chunkArray(transactions);
+        const now = new Date().toISOString();
+
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            const preparedRows = await Promise.all(chunk.map(prepareTransactionValues));
+
+            await db.withTransactionAsync(async () => {
+                for (let j = 0; j < chunk.length; j++) {
+                    const txn = chunk[j];
+                    await db.runAsync(UPSERT_TRANSACTION_FOR_MERGE_QUERY, [
+                        ...preparedRows[j],
+                        txn.createdAt || now,
+                        txn.updatedAt || now
+                    ]);
+                }
+            });
+
+            if (i < chunks.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+        }
+
+        DataCache.invalidateTransactionCache();
+    } catch (error) {
+        console.error('Error merge-upserting transactions:', error);
+        throw new Error('Failed to merge-upsert transactions');
     }
 };
 
@@ -218,9 +266,22 @@ export const getTransactionCount = async (): Promise<number> => {
 export const deleteTransaction = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
+
+        // Look up the paired transfer leg before it gets cascaded away, so it can be
+        // tombstoned too - otherwise a synced device would never learn it was deleted.
+        const pairedLeg = await db.getFirstAsync<{ id: string }>(
+            'SELECT id FROM transactions WHERE linkedTransactionId = ?',
+            [id]
+        );
+
         await db.runAsync('DELETE FROM transactions WHERE id = ?', [id]);
         await db.runAsync('DELETE FROM transaction_receipts WHERE transactionId = ?', [id]);
         await db.runAsync('DELETE FROM transactions WHERE linkedTransactionId = ?', [id]);
+
+        await upsertTombstone('transactions', id);
+        if (pairedLeg) {
+            await upsertTombstone('transactions', pairedLeg.id);
+        }
 
         // Optimistic cache update: remove from cache instead of full invalidation
         DataCache.deleteTransactionFromCache(id);

@@ -21,6 +21,7 @@ import HistoryScreen from '@screens/HistoryScreen';
 import RecordScreen from '@screens/RecordScreen';
 import ThankYouScreen from '@screens/ThankYouScreen';
 import ChatScreen from '@screens/ChatScreen';
+import LiveSyncScreen from '@screens/LiveSyncScreen';
 import { useTheme } from '@context/ThemeContext';
 
 const Stack = createStackNavigator();
@@ -105,6 +106,7 @@ const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 
                 <Stack.Screen name="LegalAcceptance" component={LegalAcceptanceScreen} />
                 <Stack.Screen name="ThankYou" component={ThankYouScreen} />
                 <Stack.Screen name="Chat" component={ChatScreen} />
+                <Stack.Screen name="LiveSync" component={LiveSyncScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

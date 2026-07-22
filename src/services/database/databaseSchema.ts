@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ASYNC_KEYS } from '@constants/config';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 12;
+export const DATABASE_VERSION = 13;
 
 /**
  * Create all database tables and indexes
@@ -73,7 +73,8 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             name TEXT NOT NULL,
             type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'BOTH')),
             icon TEXT,
-            createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
         CREATE INDEX IF NOT EXISTS idx_categories_type ON categories(type);
@@ -88,7 +89,8 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             nextDueDate TEXT NOT NULL,
             transactionTemplate TEXT NOT NULL, -- JSON string of transaction template
             isActive INTEGER DEFAULT 1,
-            createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
         CREATE INDEX IF NOT EXISTS idx_recurrence_active ON recurrence_rules(isActive);
@@ -248,6 +250,17 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
         );
 
         CREATE INDEX IF NOT EXISTS idx_monthly_summary_final ON monthly_summary(isFinal);
+
+        -- Tombstones for multi-device merge sync: records a delete so it can propagate
+        -- to another device instead of being silently dropped or resurrected on merge.
+        CREATE TABLE IF NOT EXISTS deleted_records (
+            entityType TEXT NOT NULL,
+            id TEXT NOT NULL,
+            deletedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (entityType, id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_deleted_records_deletedAt ON deleted_records(deletedAt DESC);
     `);
 
 };
@@ -441,6 +454,37 @@ export const migrateToVersion12 = async (db: SQLite.SQLiteDatabase): Promise<voi
         console.log('[Migration] Successfully migrated to version 12');
     } catch (error) {
         console.error('[Migration] Failed version 12 migration:', error);
+        throw error;
+    }
+};
+
+/**
+ * Migrate to Version 13: Add updatedAt to categories/recurrence_rules for merge-sync
+ * last-write-wins comparisons. deleted_records is a brand-new table, already created
+ * by createTables() (CREATE TABLE IF NOT EXISTS runs on every init), so nothing to
+ * alter for it here - this only needs the two additive ALTER TABLEs plus a version bump.
+ */
+export const migrateToVersion13 = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+    try {
+        console.log('[Migration] Starting migration to version 13...');
+
+        try {
+            await db.execAsync(`ALTER TABLE categories ADD COLUMN updatedAt TEXT DEFAULT CURRENT_TIMESTAMP`);
+        } catch (e) {
+            console.log('[Migration] Column categories.updatedAt might already exist or error:', e);
+        }
+
+        try {
+            await db.execAsync(`ALTER TABLE recurrence_rules ADD COLUMN updatedAt TEXT DEFAULT CURRENT_TIMESTAMP`);
+        } catch (e) {
+            console.log('[Migration] Column recurrence_rules.updatedAt might already exist or error:', e);
+        }
+
+        await setDatabaseVersion(db, 13);
+        console.log('[Migration] Successfully migrated to version 13');
+
+    } catch (error) {
+        console.error('[Migration] Failed version 13 migration:', error);
         throw error;
     }
 };

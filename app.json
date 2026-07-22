@@ -11,7 +11,8 @@
       "infoPlist": {
         "NSFaceIDUsageDescription": "WealthSnap uses FaceID to unlock your locally stored financial dashboard. Your biometric data never leaves your device and is not accessible by the developer.",
         "UIFileSharingEnabled": true,
-        "LSSupportsOpeningDocumentsInPlace": true
+        "LSSupportsOpeningDocumentsInPlace": true,
+        "NSLocalNetworkUsageDescription": "WealthSnap uses your local WiFi network to sync data directly with your other device."
       }
     },
     "android": {
@@ -58,11 +59,17 @@
         "expo-image-picker",
         {
           "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to scan receipts.",
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to scan receipts."
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to scan receipts and QR codes for device sync."
         }
       ],
       [
         "expo-navigation-bar"
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to scan receipts and QR codes for device sync."
+        }
       ],
       "expo-font",
       "expo-secure-store",

@@ -9,13 +9,23 @@ import { getLatestPrices } from "@services/domain/priceHistoryService";
 import { getAllTransactions } from "@services/domain/transactionService";
 import { getAllAssets } from "@services/domain/assetService";
 import { getAnnualDividend } from "@services/domain/dividendHistoryService";
+import { upsertTombstone } from "@services/domain/tombstoneService";
 
 // --- Constants & Helpers ---
 
 const UPSERT_INVESTMENT_QUERY = `
-  INSERT OR REPLACE INTO investments 
+  INSERT OR REPLACE INTO investments
   (id, date, symbol, type, action, quantity, price, currency, exchange_rate, fees, notes, creationMethod, isRecurring, recurrenceId)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
+// Used only by merge-sync: unlike UPSERT_INVESTMENT_QUERY, this binds createdAt/updatedAt
+// explicitly so the incoming record's real timestamps survive the write instead of being
+// re-stamped to "now" by SQLite's DEFAULT CURRENT_TIMESTAMP.
+const UPSERT_INVESTMENT_FOR_MERGE_QUERY = `
+  INSERT OR REPLACE INTO investments
+  (id, date, symbol, type, action, quantity, price, currency, exchange_rate, fees, notes, creationMethod, isRecurring, recurrenceId, createdAt, updatedAt)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 /**
@@ -76,6 +86,34 @@ export const bulkSaveInvestments = async (investments: Investment[]): Promise<vo
     } catch (error) {
         console.error('Error bulk saving investments:', error);
         throw new Error('Failed to bulk save investments');
+    }
+};
+
+/**
+ * Merge-sync only: upserts investments while preserving their real createdAt/updatedAt,
+ * so a subsequent sync can still tell which side has the newer edit. Not used by normal
+ * app saves or by backup restore.
+ */
+export const bulkUpsertInvestmentsForMerge = async (investments: Investment[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        const now = new Date().toISOString();
+
+        await db.withTransactionAsync(async () => {
+            for (const inv of investments) {
+                const values = await prepareInvestmentValues(inv);
+                await db.runAsync(UPSERT_INVESTMENT_FOR_MERGE_QUERY, [
+                    ...values,
+                    inv.createdAt || now,
+                    inv.updatedAt || now
+                ]);
+            }
+        });
+
+        invalidateInvestmentCache();
+    } catch (error) {
+        console.error('Error merge-upserting investments:', error);
+        throw new Error('Failed to merge-upsert investments');
     }
 };
 
@@ -300,6 +338,7 @@ export const deleteInvestment = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
         await db.runAsync('DELETE FROM investments WHERE id = ?', [id]);
+        await upsertTombstone('investments', id);
         invalidateInvestmentCache();
     } catch (error) {
         console.error('Error deleting investment:', error);

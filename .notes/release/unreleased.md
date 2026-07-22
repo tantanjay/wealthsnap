@@ -5,6 +5,16 @@
 
 ---
 
+## 🔄 Sync from Device
+A new way to keep two phones in sync without a cloud account — WealthSnap has no server, so this works directly between your devices over WiFi.
+
+- **Pair with a QR code**: from Profile → Data Management → Sync from Device, one phone shows a QR code and the other scans it. Scanning is the only thing that authorizes the connection — there's no password to type, and nothing is broadcast on the network for another device to see or impersonate.
+- **Two-way merge, not a one-way restore**: unlike Restore (which wipes and replaces everything), syncing merges — new entries from either device end up on both, and if the same entry was edited on both sides, the newer edit wins. Deletes are tracked too, so removing something on one device removes it from the other the next time they sync.
+- **Self-expiring, one-time codes**: a shown QR code stops working after 60 seconds, and immediately after the first successful sync, so an old code can't be scanned again later.
+- **Same WiFi network required**: both devices need to be on the same WiFi to connect directly — there's no internet or cloud relay involved.
+
+---
+
 ## 📖 Help Center
 Two new guides, plus a refresh of two that had drifted out of sync with the app.
 

@@ -4,6 +4,7 @@ import { getDatabase } from "@services/database/databaseService";
 import { saveTransaction } from '@services/domain/transactionService';
 import { generateUUID } from '@utils/uuid';
 import { decryptField, encryptField } from "@services/core/encryptionService";
+import { upsertTombstone } from '@services/domain/tombstoneService';
 
 // =============================================================================
 // DOMAIN LOGIC
@@ -166,6 +167,47 @@ export const saveRecurrenceRule = async (rule: RecurrenceRule): Promise<void> =>
     }
 };
 
+/**
+ * Merge-sync only: upserts recurrence rules while preserving their real
+ * createdAt/updatedAt. saveRecurrenceRule/bulkSaveRecurrenceRules omit these columns
+ * (so SQLite's DEFAULT CURRENT_TIMESTAMP always re-stamps them to "now") which is fine
+ * for normal saves, but would break last-write-wins comparisons on a later sync.
+ */
+export const bulkUpsertRecurrenceRulesForMerge = async (rules: RecurrenceRule[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        const now = new Date().toISOString();
+
+        await db.withTransactionAsync(async () => {
+            for (const rule of rules) {
+                const encryptedTemplate = await encryptField(JSON.stringify(rule.transactionTemplate));
+                const encryptedName = rule.name ? await encryptField(rule.name) : null;
+
+                await db.runAsync(
+                    `INSERT OR REPLACE INTO recurrence_rules
+                     (id, name, frequency, startDate, endDate, nextDueDate, transactionTemplate, isActive, createdAt, updatedAt)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        rule.id,
+                        encryptedName,
+                        rule.frequency,
+                        rule.startDate || null,
+                        rule.endDate || null,
+                        rule.nextDueDate,
+                        encryptedTemplate,
+                        rule.isActive ? 1 : 0,
+                        rule.createdAt || now,
+                        rule.updatedAt || now
+                    ]
+                );
+            }
+        });
+    } catch (error) {
+        console.error('Error merge-upserting recurrence rules:', error);
+        throw new Error('Failed to merge-upsert recurrence rules');
+    }
+};
+
 export const getAllRecurrenceRules = async (): Promise<RecurrenceRule[]> => {
     try {
         const db = await getDatabase();
@@ -201,7 +243,9 @@ export const getAllRecurrenceRules = async (): Promise<RecurrenceRule[]> => {
                 endDate: row.endDate,
                 nextDueDate: row.nextDueDate,
                 transactionTemplate: template,
-                isActive: row.isActive === 1
+                isActive: row.isActive === 1,
+                createdAt: row.createdAt,
+                updatedAt: row.updatedAt
             };
         }));
 
@@ -216,6 +260,7 @@ export const deleteRecurrenceRule = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
         await db.runAsync('DELETE FROM recurrence_rules WHERE id = ?', [id]);
+        await upsertTombstone('recurrenceRules', id);
     } catch (error) {
         console.error('Error deleting recurrence rule:', error);
         throw new Error('Failed to delete recurrence rule');
