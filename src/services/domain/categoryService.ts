@@ -45,6 +45,40 @@ export const saveCategory = async (category: Category): Promise<void> => {
     }
 };
 
+/**
+ * Merge-sync only: upserts categories while preserving their real createdAt/updatedAt.
+ * saveCategory/bulkSaveCategories omit these columns (so SQLite's DEFAULT CURRENT_TIMESTAMP
+ * always re-stamps them to "now") which is fine for normal saves, but would break
+ * last-write-wins comparisons on a later sync.
+ */
+export const bulkUpsertCategoriesForMerge = async (categories: Category[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        const now = new Date().toISOString();
+
+        await db.withTransactionAsync(async () => {
+            for (const cat of categories) {
+                await db.runAsync(
+                    `INSERT OR REPLACE INTO categories
+                     (id, name, type, icon, createdAt, updatedAt)
+                     VALUES (?, ?, ?, ?, ?, ?)`,
+                    [
+                        cat.id,
+                        cat.name,
+                        cat.type,
+                        cat.icon || null,
+                        cat.createdAt || now,
+                        cat.updatedAt || now
+                    ]
+                );
+            }
+        });
+    } catch (error) {
+        console.error('Error merge-upserting categories:', error);
+        throw new Error('Failed to merge-upsert categories');
+    }
+};
+
 export const getAllCategories = async (): Promise<Category[]> => {
     try {
         const db = await getDatabase();
@@ -53,7 +87,9 @@ export const getAllCategories = async (): Promise<Category[]> => {
             id: row.id,
             name: row.name,
             type: row.type,
-            icon: row.icon
+            icon: row.icon,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt
         }));
     } catch (error) {
         console.error('Error getting categories:', error);

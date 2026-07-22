@@ -3,6 +3,7 @@ import { Debt, DebtStatus, DebtType, DebtDirection } from '@types';
 import { getDatabase } from '@services/database/databaseService';
 import { encryptField, bulkDecryptItems } from '@services/core/encryptionService';
 import { chunkArray } from "@utils/index";
+import { upsertTombstone } from '@services/domain/tombstoneService';
 
 // --- Constants & Helpers ---
 
@@ -103,6 +104,7 @@ export const deleteDebt = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
         await db.runAsync('DELETE FROM debts WHERE id = ?', [id]);
+        await upsertTombstone('debts', id);
     } catch (error) {
         console.error('Error deleting debt:', error);
         throw new Error('Failed to delete debt');

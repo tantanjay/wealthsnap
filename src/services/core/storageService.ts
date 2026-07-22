@@ -666,6 +666,7 @@ export const clearAllData = async (): Promise<void> => {
             DELETE FROM price_history;
             DELETE FROM dividend_history;
             DELETE FROM assets;
+            DELETE FROM deleted_records;
         `);
 
         DataCache.invalidateAllCaches();

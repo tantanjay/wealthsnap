@@ -71,6 +71,8 @@ export interface Category {
     icon?: string;
     color?: string;
     isDefault?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface RecurrenceRule {
@@ -82,11 +84,15 @@ export interface RecurrenceRule {
     nextDueDate: string;
     transactionTemplate: Omit<Transaction, 'id' | 'date' | 'createdAt' | 'updatedAt' | 'isRecurring'>;
     isActive: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface Budget {
     category: string;
     amount: BigNumber;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface AIConfig {

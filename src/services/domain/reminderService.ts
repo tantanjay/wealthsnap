@@ -6,6 +6,7 @@ import { getDatabase } from "@services/database/databaseService";
 import { generateUUID } from '@utils/uuid';
 import { decryptField, encryptField } from "@services/core/encryptionService";
 import { REMINDER_PREFIXES } from '@constants/reminders';
+import { upsertTombstone } from '@services/domain/tombstoneService';
 
 // =============================================================================
 // DOMAIN LOGIC
@@ -482,6 +483,44 @@ export const bulkSaveReminders = async (reminders: Reminder[]): Promise<void> =>
     }
 };
 
+/**
+ * Merge-sync only: upserts reminders while preserving their real createdAt/updatedAt.
+ * bulkSaveReminders/saveReminder always stamp updatedAt to "now" (by design, for normal
+ * app saves); this variant binds the incoming record's updatedAt verbatim so a subsequent
+ * sync can still tell which side has the newer edit.
+ */
+export const bulkUpsertRemindersForMerge = async (reminders: Reminder[]): Promise<void> => {
+    try {
+        const db = await getDatabase();
+        const now = new Date().toISOString();
+
+        await db.withTransactionAsync(async () => {
+            for (const reminder of reminders) {
+                const encryptedTitle = await encryptField(reminder.title);
+                await db.runAsync(
+                    `INSERT OR REPLACE INTO reminders
+                     (id, title, frequency, startDate, times, isActive, lastTriggered, createdAt, updatedAt)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        reminder.id,
+                        encryptedTitle,
+                        reminder.frequency,
+                        reminder.startDate,
+                        JSON.stringify(reminder.times),
+                        reminder.isActive ? 1 : 0,
+                        reminder.lastTriggered || null,
+                        reminder.createdAt || now,
+                        reminder.updatedAt || now
+                    ]
+                );
+            }
+        });
+    } catch (error) {
+        console.error('Error merge-upserting reminders:', error);
+        throw new Error('Failed to merge-upsert reminders');
+    }
+};
+
 export const saveReminder = async (reminder: Reminder): Promise<void> => {
     try {
         const db = await getDatabase();
@@ -542,6 +581,7 @@ export const deleteReminder = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
         await db.runAsync('DELETE FROM reminders WHERE id = ?', [id]);
+        await upsertTombstone('reminders', id);
     } catch (error) {
         console.error('Error deleting reminder:', error);
         throw new Error('Failed to delete reminder');
