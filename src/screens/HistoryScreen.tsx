@@ -6,7 +6,6 @@ import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 import TransactionOptionsModal from '@components/transaction/TransactionOptionsModal';
 import InvestmentOptionsModal from '@components/investments/modals/InvestmentOptionsModal';
-import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import DraggableIconButton from '@components/common/DraggableIconButton';
@@ -26,18 +25,11 @@ import { HistorySafeToSpendHelpModal } from '@components/history/HistorySafeToSp
 import { HistorySummary } from '@components/history/HistorySummary';
 import DebtOptionsModal from '@components/debts/DebtOptionsModal';
 import { calculateTotalDebtObligations } from '@utils/debtMetrics';
+import HistoryListItem, { HistoryItem, isInvestment, isDebt } from '@components/history/HistoryListItem';
+import HistorySectionHeader from '@components/history/HistorySectionHeader';
 
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
-type HistoryItem = Transaction | Investment | Debt;
 type FilterType = 'ALL' | 'EXPENSE' | 'INVESTMENT' | 'DEBT' | 'INCOME' | 'CASH_FLOW';
-
-const isInvestment = (item: HistoryItem): item is Investment => {
-    return (item as Investment).symbol !== undefined && (item as Investment).action !== undefined;
-};
-
-const isDebt = (item: HistoryItem): item is Debt => {
-    return (item as Debt).minPayment !== undefined && (item as Debt).initialAmount !== undefined;
-};
 
 interface TransactionSection {
     title: string;
@@ -138,10 +130,13 @@ const HistoryScreen = ({ navigation }: any) => {
         }
     };
 
-    const formatCurrency = (amount: BigNumber, currency?: string) => {
+    // Memoized so HistoryListItem/HistorySectionHeader (both React.memo-wrapped) receive a
+    // stable function reference and can actually skip re-rendering when unrelated state
+    // changes - a fresh closure every render would defeat memoization entirely.
+    const formatCurrency = useCallback((amount: BigNumber, currency?: string) => {
         if (isPrivacyEnabled) return '****';
         return formatCurrencyAmount(amount, currency || profile?.currency || 'PHP');
-    };
+    }, [isPrivacyEnabled, profile?.currency]);
 
     const getItemDate = useCallback((item: HistoryItem): Date => {
         if (isDebt(item)) {
@@ -216,6 +211,19 @@ const HistoryScreen = ({ navigation }: any) => {
             return acc;
         }, {} as Record<string, Investment>);
     }, [allInvestments]);
+
+    // Precomputed once here instead of the old approach of running allTransactions.find(...)
+    // inside renderItem for every single SELL row - that was O(rows x transactions) on every
+    // render; this is O(transactions) once, whenever allTransactions actually changes.
+    const linkedPLByInvestmentId = useMemo(() => {
+        const map: Record<string, Transaction> = {};
+        allTransactions.forEach(t => {
+            if ((t.type === 'CAPITAL_GAIN' || t.type === 'CAPITAL_LOSS') && t.investmentId) {
+                map[t.investmentId] = t;
+            }
+        });
+        return map;
+    }, [allTransactions]);
 
     const filteredData = useMemo(() => {
         let items = allHistoryItems;
@@ -519,227 +527,26 @@ const HistoryScreen = ({ navigation }: any) => {
     }, [filteredData, getItemDate]);
 
 
-    const renderItem = ({ item }: { item: HistoryItem }) => {
-        if (isInvestment(item)) {
-            // Render Investment Item
-            const inv = item as Investment;
-            // Distinct color for investments (Purple/Blue)
-            const iconColor = '#8E24AA';
+    // Thin wrappers around the React.memo-wrapped HistoryListItem/HistorySectionHeader -
+    // memoized themselves so SectionList gets stable renderItem/renderSectionHeader
+    // references, and so the memo comparison on the child components below actually has a
+    // chance to bail out instead of comparing against a brand-new prop object every render.
+    const renderItem = useCallback(({ item }: { item: HistoryItem }) => (
+        <HistoryListItem
+            item={item}
+            formatCurrency={formatCurrency}
+            investmentMap={investmentMap}
+            linkedPLByInvestmentId={linkedPLByInvestmentId}
+            profileCurrency={profile?.currency}
+            onSelectTransaction={setSelectedTransaction}
+            onSelectInvestment={setSelectedInvestment}
+            onSelectDebt={setSelectedDebt}
+        />
+    ), [formatCurrency, investmentMap, linkedPLByInvestmentId, profile?.currency]);
 
-            // Conversion Logic for Display
-            const rate = inv.exchangeRate ? new BigNumber(inv.exchangeRate) : new BigNumber(1);
-            // If rate > 1, we assume stored values are in Profile Currency and need conversion for display
-            // But only if we want to show in "Native" currency.
-            // Since inv.currency might be 'USD', we definitely want to match values to the symbol.
-
-            const nativePrice = inv.price.dividedBy(rate);
-            const nativeTotal = nativePrice.multipliedBy(inv.quantity);
-
-            // Find linked P/L for SELL actions
-            let plElement = null;
-            if (inv.action === 'SELL') {
-                const linkedTx = allTransactions.find(t =>
-                    (t.type === 'CAPITAL_GAIN' || t.type === 'CAPITAL_LOSS') &&
-                    t.investmentId === inv.id
-                );
-                if (linkedTx) {
-                    const isGain = linkedTx.type === 'CAPITAL_GAIN';
-                    const nativePL = linkedTx.amount.dividedBy(rate);
-
-                    plElement = (
-                        <Text>
-                            {" • "}<Text style={{ color: isGain ? colors.success : colors.error, fontWeight: 'bold' }}>
-                                {isGain ? '+' : '-'}{formatCurrency(nativePL.abs(), inv.currency)}
-                            </Text>
-                        </Text>
-                    );
-                }
-            }
-
-            return (
-                <TouchableOpacity onPress={() => setSelectedInvestment(inv)} style={{ marginBottom: 8 }} activeOpacity={0.9}>
-                    <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0, borderLeftWidth: 4, borderLeftColor: iconColor }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                                <View style={{
-                                    width: 36, height: 36, borderRadius: 18,
-                                    backgroundColor: iconColor + '15',
-                                    justifyContent: 'center', alignItems: 'center'
-                                }}>
-                                    <Ionicons name="stats-chart" size={18} color={iconColor} />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-                                        {inv.symbol} <Text style={{ fontSize: 14, color: colors.textSecondary }}>({inv.action})</Text>
-                                    </Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                                        {inv.quantity.toString()} units @ {formatCurrencyAmount(nativePrice, inv.currency || profile?.currency || 'PHP')}
-                                        {plElement}
-                                    </Text>
-                                </View>
-                            </View>
-                            <View style={{ alignItems: 'flex-end' }}>
-                                <Text style={{
-                                    fontSize: 16, fontWeight: 'bold',
-                                    color: colors.text
-                                }}>
-                                    {formatCurrency(nativeTotal, inv.currency)}
-                                </Text>
-                                <View style={{ backgroundColor: iconColor + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
-                                    <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>INVESTMENT</Text>
-                                </View>
-                            </View>
-                        </View>
-                    </Card>
-                </TouchableOpacity>
-            )
-        }
-
-        if (isDebt(item)) {
-            // Render Debt Item
-            const debt = item as Debt;
-            const isPayable = debt.direction === 'PAYABLE';
-            const iconColor = isPayable ? colors.error : colors.success;
-            const iconName = isPayable ? "arrow-down-circle-outline" : "arrow-up-circle-outline";
-
-            return (
-                <TouchableOpacity onPress={() => setSelectedDebt(debt)} style={{ marginBottom: 8 }} activeOpacity={0.9}>
-                    <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0, borderLeftWidth: 4, borderLeftColor: iconColor }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                                <View style={{
-                                    width: 36, height: 36, borderRadius: 18,
-                                    backgroundColor: iconColor + '15',
-                                    justifyContent: 'center', alignItems: 'center'
-                                }}>
-                                    <Ionicons name={iconName} size={18} color={iconColor} />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-                                        {debt.name}
-                                    </Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                                        {debt.type.replace(/_/g, ' ')} • {debt.interestRate.toString()}% {debt.interestType}
-                                    </Text>
-                                </View>
-                            </View>
-                            <View style={{ alignItems: 'flex-end' }}>
-                                <Text style={{
-                                    fontSize: 16, fontWeight: 'bold',
-                                    color: colors.text
-                                }}>
-                                    {formatCurrencyAmount(debt.initialAmount, debt.currency)}
-                                </Text>
-                                <View style={{ backgroundColor: iconColor + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
-                                    <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>DEBT</Text>
-                                </View>
-                            </View>
-                        </View>
-                    </Card>
-                </TouchableOpacity>
-            );
-        }
-
-        const t = item as Transaction;
-        const isExpense = t.type === 'EXPENSE';
-        const isTransferIn = t.type === 'TRANSFER_IN';
-        const isTransferOut = t.type === 'TRANSFER_OUT';
-        const isTransfer = isTransferIn || isTransferOut;
-        const isNegativeFlow = isExpense || isTransferOut;
-
-        // Determine Icon and Color based on logic
-        let iconName: any = "wallet";
-        let statusColor = isExpense ? colors.error : colors.success;
-
-        if (isTransfer) {
-            statusColor = isTransferIn ? colors.success : colors.error;
-            iconName = isTransferIn ? "arrow-down-circle-outline" : "arrow-up-circle-outline";
-        } else if (t.creationMethod === 'AI') {
-            iconName = "sparkles";
-        } else if (t.isRecurring) {
-            iconName = "repeat";
-        }
-
-        const getDisplayName = () => {
-            if (isTransfer) {
-                const toTitleCase = (value?: string) =>
-                    value
-                        ?.toLowerCase()
-                        .replace(/_/g, ' ')
-                        .replace(/\b\w/g, c => c.toUpperCase());
-
-                return isTransferIn ? `From ${toTitleCase(t.transferAccount)}` : `To ${toTitleCase(t.transferAccount)}`;
-            }
-            return t.category;
-        };
-
-        // Resolve Currency and Amount for Display
-        // If linked to investment, respect investment currency and rate
-        let displayAmount = t.amount;
-        let displayCurrency = undefined;
-
-        if (t.investmentId && investmentMap[t.investmentId]) {
-            const inv = investmentMap[t.investmentId];
-            displayCurrency = inv.currency;
-            if (inv.exchangeRate) {
-                displayAmount = displayAmount.dividedBy(inv.exchangeRate);
-            }
-        }
-
-        return (
-            <TouchableOpacity
-                onPress={() => {
-                    // Prevent opening options for auto-generated transactions
-                    // Exception: Allow Debt Repayments (TRANSFER_OUT + PRINCIPAL) so they can be deleted
-                    const isDebtRepayment = t.type === 'TRANSFER_OUT' && t.subCategory === 'PRINCIPAL';
-
-                    if ((t.investmentId || t.debtId) && !isDebtRepayment) return;
-                    setSelectedTransaction(t);
-                }}
-                activeOpacity={(t.investmentId || t.debtId) && !(t.type === 'TRANSFER_OUT' && t.subCategory === 'PRINCIPAL') ? 1 : 0.7}
-                style={{ marginBottom: 8 }}
-            >
-                <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                            <View style={{
-                                width: 36, height: 36, borderRadius: 18,
-                                backgroundColor: statusColor + '15',
-                                justifyContent: 'center', alignItems: 'center'
-                            }}>
-                                <Ionicons name={iconName} size={18} color={statusColor} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-                                    {getDisplayName()}
-                                </Text>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                                    {t.note || t.subCategory || t.type}
-                                </Text>
-                            </View>
-                        </View>
-                        <Text style={{
-                            color: isNegativeFlow ? colors.error : colors.success,
-                            fontSize: 16, fontWeight: 'bold'
-                        }}>
-                            {isNegativeFlow ? '-' : '+'}{formatCurrency(displayAmount, displayCurrency)}
-                        </Text>
-                    </View>
-                </Card>
-            </TouchableOpacity >
-        );
-    };
-
-    const renderSectionHeader = ({ section: { title, count, totalAmount } }: { section: TransactionSection }) => (
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, marginTop: 10, paddingHorizontal: 4 }}>
-            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>
-                {title} <Text style={{ color: colors.textSecondary, fontWeight: 'normal' }}>({count})</Text>
-            </Text>
-            <Text style={{ color: totalAmount.isGreaterThanOrEqualTo(0) ? colors.success : colors.text, fontSize: 14, fontWeight: 'bold' }}>
-                {totalAmount.isGreaterThanOrEqualTo(0) ? '+' : ''}{formatCurrency(totalAmount)}
-            </Text>
-        </View>
-    );
+    const renderSectionHeader = useCallback(({ section: { title, count, totalAmount } }: { section: TransactionSection }) => (
+        <HistorySectionHeader title={title} count={count} totalAmount={totalAmount} formatCurrency={formatCurrency} />
+    ), [formatCurrency]);
 
     return (
         <ScreenWrapper scrollable={false}>
@@ -968,7 +775,7 @@ const HistoryScreen = ({ navigation }: any) => {
                 visible={!!selectedTransaction}
                 transaction={selectedTransaction}
                 onClose={() => setSelectedTransaction(null)}
-                onEdit={(t) => { setSelectedTransaction(null); navigation.navigate('Record', { transaction: { ...t, amount: t.amount.toString() } }); }}
+                onEdit={(t) => { setSelectedTransaction(null); navigation.navigate('Actions', { transaction: { ...t, amount: t.amount.toString() } }); }}
                 onDelete={async (id) => { await deleteTransaction(id); loadData(); setSelectedTransaction(null); }}
                 currency={profile?.currency}
             />
@@ -999,7 +806,7 @@ const HistoryScreen = ({ navigation }: any) => {
                         fees: inv.fees ? inv.fees.toString() : undefined,
                         exchangeRate: inv.exchangeRate ? inv.exchangeRate.toString() : undefined
                     };
-                    navigation.navigate('Record', { investment: serializedInvestment });
+                    navigation.navigate('Actions', { investment: serializedInvestment });
                 }}
                 onDelete={async (id, deleteLinked) => {
                     if (deleteLinked) {
@@ -1042,8 +849,8 @@ const HistoryScreen = ({ navigation }: any) => {
                         fees: debt.fees?.toString(),
                         termMonths: debt.termMonths?.toString(),
                     };
-                    // Navigate to Record Screen with debt param
-                    navigation.navigate('Record', { debt: serializedDebt });
+                    // Navigate to Actions Screen with debt param
+                    navigation.navigate('Actions', { debt: serializedDebt });
                     setSelectedDebt(null);
                 }}
                 currency={profile?.currency}

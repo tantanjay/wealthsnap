@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Two new expense categories: Electronics and Gadgets & Devices.
 
 ### Changed
+- History: list rows no longer re-render when nothing about them changed, smoothing out search/filter/scroll on a large transaction history.
 - Help Center's Financial Insights and Math & Formulas guides updated to match the current Insights screen.
 - Chat moved from the Floating Quick Actions menu into the Record menu.
 - Record menu renamed from "New Record" to "Quick Actions".

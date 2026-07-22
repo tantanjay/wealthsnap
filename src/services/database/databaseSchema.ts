@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ASYNC_KEYS } from '@constants/config';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 13;
+export const DATABASE_VERSION = 14;
 
 /**
  * Create all database tables and indexes
@@ -262,7 +262,35 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
 
         CREATE INDEX IF NOT EXISTS idx_deleted_records_deletedAt ON deleted_records(deletedAt DESC);
     `);
+};
 
+/**
+ * Adds a column to an existing table with no default, then backfills it in a separate
+ * UPDATE. SQLite rejects ALTER TABLE ADD COLUMN with a non-constant default like
+ * CURRENT_TIMESTAMP on an existing table (confirmed against a real device - CREATE TABLE
+ * allows it, ALTER TABLE ADD COLUMN does not), so this is the correct pattern for adding a
+ * "when was this last touched" column via migration. Used by migrateToVersion14 below.
+ */
+const addColumnWithBackfill = async (db: SQLite.SQLiteDatabase, table: string, column: string): Promise<void> => {
+    try {
+        await db.execAsync(`ALTER TABLE ${table} ADD COLUMN ${column} TEXT`);
+    } catch (e: any) {
+        // Log anything that isn't the expected "already exists" case - swallowing every
+        // error here unconditionally is exactly what let the original CURRENT_TIMESTAMP
+        // default issue go undiagnosed. Not rethrown: a real failure here shouldn't take
+        // down the entire app's database access on every single user's launch.
+        if (!e?.message?.includes('duplicate column name')) {
+            console.error(`[Database] Unexpected error adding ${table}.${column}:`, e);
+        }
+    }
+    try {
+        // Runs regardless of whether ADD COLUMN just succeeded or the column already
+        // existed - WHERE ... IS NULL makes it a safe no-op once already backfilled, and
+        // catches the case where a previous run added the column but never got this far.
+        await db.execAsync(`UPDATE ${table} SET ${column} = COALESCE(createdAt, CURRENT_TIMESTAMP) WHERE ${column} IS NULL`);
+    } catch (e: any) {
+        console.error(`[Database] Unexpected error backfilling ${table}.${column}:`, e);
+    }
 };
 
 /**
@@ -459,32 +487,46 @@ export const migrateToVersion12 = async (db: SQLite.SQLiteDatabase): Promise<voi
 };
 
 /**
- * Migrate to Version 13: Add updatedAt to categories/recurrence_rules for merge-sync
- * last-write-wins comparisons. deleted_records is a brand-new table, already created
- * by createTables() (CREATE TABLE IF NOT EXISTS runs on every init), so nothing to
- * alter for it here - this only needs the two additive ALTER TABLEs plus a version bump.
+ * Migrate to Version 13: originally intended to add updatedAt to categories/recurrence_rules
+ * for merge-sync last-write-wins comparisons via a plain `ALTER TABLE ... ADD COLUMN
+ * updatedAt TEXT DEFAULT CURRENT_TIMESTAMP`. That statement is actually rejected by SQLite
+ * on an existing table - it only allows non-constant defaults like CURRENT_TIMESTAMP in
+ * CREATE TABLE, not ALTER TABLE ADD COLUMN (confirmed against a real device after a build
+ * shipped with the broken version and every launch silently swallowed the failure). Left
+ * as a no-op, version-bump-only migration rather than reused for the real fix, since a
+ * migration function only ever runs once per device - any device that already ran this
+ * broken version and got its database_version recorded as 13 needs a *new* version number
+ * to retry under, not a fixed body under the old one. See migrateToVersion14.
  */
 export const migrateToVersion13 = async (db: SQLite.SQLiteDatabase): Promise<void> => {
     try {
         console.log('[Migration] Starting migration to version 13...');
-
-        try {
-            await db.execAsync(`ALTER TABLE categories ADD COLUMN updatedAt TEXT DEFAULT CURRENT_TIMESTAMP`);
-        } catch (e) {
-            console.log('[Migration] Column categories.updatedAt might already exist or error:', e);
-        }
-
-        try {
-            await db.execAsync(`ALTER TABLE recurrence_rules ADD COLUMN updatedAt TEXT DEFAULT CURRENT_TIMESTAMP`);
-        } catch (e) {
-            console.log('[Migration] Column recurrence_rules.updatedAt might already exist or error:', e);
-        }
-
         await setDatabaseVersion(db, 13);
         console.log('[Migration] Successfully migrated to version 13');
-
     } catch (error) {
         console.error('[Migration] Failed version 13 migration:', error);
+        throw error;
+    }
+};
+
+/**
+ * Migrate to Version 14: the real fix for what migrateToVersion13 above was supposed to
+ * do - add updatedAt to categories and recurrence_rules, needed for merge-sync's
+ * last-write-wins comparisons. Uses addColumnWithBackfill (add the column bare, then a
+ * separate UPDATE to backfill it) instead of a plain ALTER TABLE with a CURRENT_TIMESTAMP
+ * default, which SQLite rejects on an existing table. Runs for every device regardless of
+ * whether it already limped through version 13 with the column missing, since this is a
+ * new version number none of them have seen yet.
+ */
+export const migrateToVersion14 = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+    try {
+        console.log('[Migration] Starting migration to version 14...');
+        await addColumnWithBackfill(db, 'categories', 'updatedAt');
+        await addColumnWithBackfill(db, 'recurrence_rules', 'updatedAt');
+        await setDatabaseVersion(db, 14);
+        console.log('[Migration] Successfully migrated to version 14');
+    } catch (error) {
+        console.error('[Migration] Failed version 14 migration:', error);
         throw error;
     }
 };

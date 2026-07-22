@@ -2,7 +2,7 @@ import { getAllCategories, bulkUpsertCategoriesForMerge } from '@services/domain
 import { getAllDebts, bulkSaveDebts, deleteDebt } from '@services/domain/debtService';
 import { getAllRecurrenceRules, bulkUpsertRecurrenceRulesForMerge, deleteRecurrenceRule } from '@services/domain/recurrenceService';
 import { getAllInvestments, bulkUpsertInvestmentsForMerge, deleteInvestment } from '@services/domain/investmentService';
-import { getAllTransactions, bulkUpsertTransactionsForMerge, deleteTransaction } from '@services/domain/transactionService';
+import { getAllTransactions, bulkUpsertTransactionsForMerge, deleteTransactionForMerge } from '@services/domain/transactionService';
 import { getAllReminders, bulkUpsertRemindersForMerge, deleteReminder } from '@services/domain/reminderService';
 import { getAllBudgets, bulkUpsertBudgetsForMerge, deleteBudget } from '@services/domain/budgetService';
 
@@ -28,7 +28,10 @@ export const SYNC_ENTITY_REGISTRY: SyncEntityDescriptor[] = [
     { key: 'debts', label: 'Debts', getAll: getAllDebts, bulkUpsertForMerge: bulkSaveDebts, deleteOne: deleteDebt, idField: 'id' },
     { key: 'recurrenceRules', label: 'Recurring Rules', getAll: getAllRecurrenceRules, bulkUpsertForMerge: bulkUpsertRecurrenceRulesForMerge, deleteOne: deleteRecurrenceRule, idField: 'id' },
     { key: 'investments', label: 'Investments', getAll: getAllInvestments, bulkUpsertForMerge: bulkUpsertInvestmentsForMerge, deleteOne: deleteInvestment, idField: 'id' },
-    { key: 'transactions', label: 'Transactions', getAll: getAllTransactions, bulkUpsertForMerge: bulkUpsertTransactionsForMerge, deleteOne: deleteTransaction, idField: 'id' },
+    // deleteTransactionForMerge (not deleteTransaction) - a merge-driven delete must not
+    // cascade to the paired transfer leg, since the merge plan already decided that leg's
+    // fate independently. See deleteTransactionForMerge's doc comment in transactionService.ts.
+    { key: 'transactions', label: 'Transactions', getAll: getAllTransactions, bulkUpsertForMerge: bulkUpsertTransactionsForMerge, deleteOne: deleteTransactionForMerge, idField: 'id' },
     { key: 'reminders', label: 'Reminders', getAll: getAllReminders, bulkUpsertForMerge: bulkUpsertRemindersForMerge, deleteOne: deleteReminder, idField: 'id' },
     { key: 'budgets', label: 'Budgets', getAll: getAllBudgets, bulkUpsertForMerge: bulkUpsertBudgetsForMerge, deleteOne: deleteBudget, idField: 'category' },
 ];

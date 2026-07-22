@@ -267,27 +267,57 @@ export const deleteTransaction = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
 
-        // Look up the paired transfer leg before it gets cascaded away, so it can be
-        // tombstoned too - otherwise a synced device would never learn it was deleted.
-        const pairedLeg = await db.getFirstAsync<{ id: string }>(
-            'SELECT id FROM transactions WHERE linkedTransactionId = ?',
-            [id]
-        );
+        await db.withTransactionAsync(async () => {
+            // Look up the paired transfer leg before it gets cascaded away, so it can be
+            // tombstoned too - otherwise a synced device would never learn it was deleted.
+            const pairedLeg = await db.getFirstAsync<{ id: string }>(
+                'SELECT id FROM transactions WHERE linkedTransactionId = ?',
+                [id]
+            );
 
-        await db.runAsync('DELETE FROM transactions WHERE id = ?', [id]);
-        await db.runAsync('DELETE FROM transaction_receipts WHERE transactionId = ?', [id]);
-        await db.runAsync('DELETE FROM transactions WHERE linkedTransactionId = ?', [id]);
+            await db.runAsync('DELETE FROM transactions WHERE id = ?', [id]);
+            await db.runAsync('DELETE FROM transaction_receipts WHERE transactionId = ?', [id]);
+            await db.runAsync('DELETE FROM transactions WHERE linkedTransactionId = ?', [id]);
 
-        await upsertTombstone('transactions', id);
-        if (pairedLeg) {
-            await upsertTombstone('transactions', pairedLeg.id);
-        }
+            await upsertTombstone('transactions', id);
+            if (pairedLeg) {
+                await upsertTombstone('transactions', pairedLeg.id);
+            }
+        });
 
         // Optimistic cache update: remove from cache instead of full invalidation
         DataCache.deleteTransactionFromCache(id);
     } catch (error) {
         console.error('Error deleting transaction:', error);
         throw new Error('Failed to delete transaction');
+    }
+};
+
+/**
+ * Merge-sync only: deletes a single transaction WITHOUT cascading to its paired transfer
+ * leg. Normal deletes (deleteTransaction above) cascade because deleting one leg of a
+ * transfer locally should always remove its pair too - there's no conflicting state to
+ * consider on a single device. But a merge-driven delete is different: the merge plan
+ * already decided each leg's fate independently (e.g. it may have decided to KEEP the
+ * other leg because it was edited more recently elsewhere), and cascading here would
+ * silently discard that decision and delete a leg the plan explicitly chose to preserve.
+ * If the other leg should also go, its own tombstone (if present) drives its own
+ * deleteOne call independently - this function only ever touches the exact id it's given.
+ */
+export const deleteTransactionForMerge = async (id: string): Promise<void> => {
+    try {
+        const db = await getDatabase();
+
+        await db.withTransactionAsync(async () => {
+            await db.runAsync('DELETE FROM transactions WHERE id = ?', [id]);
+            await db.runAsync('DELETE FROM transaction_receipts WHERE transactionId = ?', [id]);
+            await upsertTombstone('transactions', id);
+        });
+
+        DataCache.deleteTransactionFromCache(id);
+    } catch (error) {
+        console.error('Error merge-deleting transaction:', error);
+        throw new Error('Failed to merge-delete transaction');
     }
 };
 

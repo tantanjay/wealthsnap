@@ -30,6 +30,12 @@ const LiveSyncScreen = ({ navigation }: any) => {
     const [hasScanned, setHasScanned] = useState(false);
 
     const sessionRef = useRef<LiveSyncSession | null>(null);
+    // Guards handleBarcodeScanned against firing twice for the same code. `hasScanned`
+    // (state) is what disables the CameraView's onBarcodeScanned prop, but React state
+    // updates aren't synchronous - the camera can fire another scan event in the gap
+    // before the re-render actually removes the prop. This ref is checked and set
+    // synchronously, so a near-simultaneous second call is caught immediately.
+    const hasScannedRef = useRef(false);
 
     useEffect(() => {
         return () => {
@@ -92,12 +98,14 @@ const LiveSyncScreen = ({ navigation }: any) => {
                 return;
             }
         }
+        hasScannedRef.current = false;
         setHasScanned(false);
         setState('scanning');
     };
 
     const handleBarcodeScanned = (result: BarcodeScanningResult) => {
-        if (hasScanned) return;
+        if (hasScannedRef.current) return;
+        hasScannedRef.current = true;
 
         let payload: QrPayload;
         try {
@@ -105,6 +113,7 @@ const LiveSyncScreen = ({ navigation }: any) => {
             if (!parsed?.ip || !parsed?.port || !parsed?.key) throw new Error('malformed');
             payload = parsed;
         } catch {
+            hasScannedRef.current = false; // not a real scan - let the camera keep trying
             setErrorMessage("That code isn't a WealthSnap sync code.");
             setState('error');
             return;
@@ -289,6 +298,8 @@ const styles = StyleSheet.create({
         width: 260,
         height: 260,
         borderRadius: 16,
+        // Intentionally not theme-aware: QR scanners need high contrast (dark modules on a
+        // light background) to read reliably, regardless of whether the app is in dark mode.
         backgroundColor: '#FFFFFF',
         justifyContent: 'center',
         alignItems: 'center',
