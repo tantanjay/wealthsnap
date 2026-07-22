@@ -47,7 +47,7 @@ const MainTabs = () => {
                     let iconName: keyof typeof Ionicons.glyphMap = 'ellipse';
                     if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
                     else if (route.name === 'Investment') iconName = focused ? 'trending-up' : 'trending-up-outline';
-                    else if (route.name === 'Record') iconName = focused ? 'add-circle' : 'add-circle-outline';
+                    else if (route.name === 'Actions') iconName = focused ? 'add-circle' : 'add-circle-outline';
                     else if (route.name === 'History') iconName = focused ? 'time' : 'time-outline';
                     else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
                     return <Ionicons name={iconName} size={size} color={color} />;
@@ -60,7 +60,7 @@ const MainTabs = () => {
         >
             <Tab.Screen name="Home" component={HomeStackNavigator} />
             <Tab.Screen name="Investment" component={InvestmentScreen} />
-            <Tab.Screen name="Record" component={RecordScreen} />
+            <Tab.Screen name="Actions" component={RecordScreen} />
             <Tab.Screen name="History" component={HistoryScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
