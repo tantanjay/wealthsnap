@@ -17,6 +17,8 @@ const UPSERT_DEBT_QUERY = `
  * Encrypts fields and returns the array of values in the correct SQL order
  */
 const prepareDebtValues = async (debt: Debt) => {
+    const now = new Date().toISOString();
+
     // Encrypted Fields: initialAmount, minPayment, fees, termMonths, notes, contactId
     const encryptedAmount = await encryptField(debt.initialAmount);
     const encryptedMinPayment = await encryptField(debt.minPayment);
@@ -42,8 +44,12 @@ const prepareDebtValues = async (debt: Debt) => {
         debt.status,
         encryptedNotes,
         encryptedContact,
-        debt.createdAt,
-        debt.updatedAt
+        // Every normal app-facing save already supplies these (Debt's type requires them,
+        // and DebtForm stamps updatedAt itself before calling save) - the fallback matters
+        // specifically for bulkSaveDebts's other caller, the merge engine, which ingests a
+        // peer's JSON over the network where a malformed/corrupted record could omit them.
+        debt.createdAt || now,
+        debt.updatedAt || now
     ];
 };
 

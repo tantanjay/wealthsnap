@@ -15,6 +15,11 @@ A new way to keep two phones in sync without a cloud account — WealthSnap has 
 
 ---
 
+## ⚡ Performance
+- **Smoother History screen**: list rows now skip re-rendering when nothing about them actually changed — typing in search, switching a filter, or opening a transaction's details no longer re-renders every visible row. Most noticeable with a large transaction history.
+
+---
+
 ## 📖 Help Center
 Two new guides, plus a refresh of two that had drifted out of sync with the app.
 

@@ -273,20 +273,31 @@ export const applySyncPackage = async (
         plans[d.key] = await buildMergePlan(d, incoming[d.key] ?? [], tombsForType);
     }
 
-    // Phase D - apply. Only phase that writes to SQLite.
+    // Phase D - apply. Only phase that writes to SQLite. Each entity is applied in
+    // isolation: a failure on one (a corrupt record, an unexpected constraint) shouldn't
+    // block every other entity that would otherwise have merged successfully. Failures are
+    // collected and thrown together once every entity has been attempted, after Phase E
+    // has still run for whatever did succeed - see below.
     let added = 0, updated = 0, removed = 0;
+    const failures: string[] = [];
     for (let i = 0; i < SYNC_ENTITY_REGISTRY.length; i++) {
         const d = SYNC_ENTITY_REGISTRY[i];
         const plan = plans[d.key];
         onProgress?.({ stage: 'applying', label: `Applying ${d.label}…`, current: i + 1, total: SYNC_ENTITY_REGISTRY.length });
-        await applyMergePlan(d, plan);
-        added += plan.addedCount;
-        updated += plan.updatedCount;
-        removed += plan.toDeleteIds.length;
+        try {
+            await applyMergePlan(d, plan);
+            added += plan.addedCount;
+            updated += plan.updatedCount;
+            removed += plan.toDeleteIds.length;
+        } catch (err) {
+            console.error(`Error applying merge plan for ${d.key}:`, err);
+            failures.push(d.key);
+        }
     }
 
     // Phase E - housekeeping. No navigation reset happens after sync (unlike restore), so
-    // in-memory caches must be invalidated explicitly here.
+    // in-memory caches must be invalidated explicitly here. Runs regardless of Phase D
+    // failures above, so whatever did merge successfully is still reflected immediately.
     DataCache.invalidateAllCaches();
     if (plans.reminders?.toUpsert.length) {
         for (const reminder of plans.reminders.toUpsert) {
@@ -296,6 +307,10 @@ export const applySyncPackage = async (
                 });
             }
         }
+    }
+
+    if (failures.length > 0) {
+        throw new Error(`SYNC_PARTIAL_FAILURE: ${failures.join(', ')}`);
     }
 
     onProgress?.({ stage: 'done', label: 'Sync complete' });
