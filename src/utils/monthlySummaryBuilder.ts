@@ -307,7 +307,12 @@ export const renderMonthlySummaryText = (data: MonthlySummaryData, currency: str
     const [y, m] = data.yearMonth.split('-').map(Number);
     const monthLabel = new Date(y, m - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
 
-    lines.push(`=== ${monthLabel} ===`);
+    const now = new Date();
+    const isCurrentMonth = data.yearMonth === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const inProgressNote = isCurrentMonth
+        ? ` (IN PROGRESS - only through ${now.toLocaleDateString('default', { month: 'short', day: 'numeric' })}, not a complete month - do not compare its totals directly against a full prior month)`
+        : '';
+    lines.push(`=== ${monthLabel}${inProgressNote} ===`);
 
     const incomeDelta = data.momIncomeChangePercent !== null
         ? ` (${data.momIncomeChangePercent >= 0 ? '+' : ''}${data.momIncomeChangePercent}% vs last month)`

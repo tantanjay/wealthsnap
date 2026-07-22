@@ -43,7 +43,55 @@ export interface ChatReplyResult {
     inputTokens: number;
     outputTokens: number;
     costUSD: BigNumber;
+    // Set when the supplied cache had expired/been evicted server-side and the
+    // call had to fall back to sending the context inline - caller should
+    // discard its cache reference and create a fresh one.
+    cacheInvalid?: boolean;
 }
+
+export interface ChatCache {
+    name: string;
+    modelName: string;
+}
+
+/**
+ * Creates an explicit Gemini context cache for the (large, session-static)
+ * financial context block, so it isn't re-sent and re-billed at full price
+ * on every message - only the growing conversation history is sent fresh.
+ * Returns null on any failure (context too small for the model's caching
+ * floor, model doesn't support caching, network error, etc) - callers should
+ * treat that as "just send the context inline like before".
+ */
+export const createChatCache = async (contextText: string): Promise<ChatCache | null> => {
+    try {
+        const { genAI, modelName } = await getGeminiClient();
+        const fullSystemInstruction = `${FORMATTING_GUIDANCE}\n\n${contextText}`;
+
+        const cache = await genAI.caches.create({
+            model: modelName,
+            config: {
+                systemInstruction: fullSystemInstruction,
+                displayName: 'wealthsnap-chat-context',
+                ttl: '3600s'
+            }
+        });
+
+        if (!cache.name) return null;
+        return { name: cache.name, modelName };
+    } catch (error) {
+        console.warn('[geminiChatService] Cache creation skipped:', error);
+        return null;
+    }
+};
+
+export const deleteChatCache = async (name: string): Promise<void> => {
+    try {
+        const { genAI } = await getGeminiClient();
+        await genAI.caches.delete({ name });
+    } catch (error) {
+        console.warn('[geminiChatService] Cache delete failed:', error);
+    }
+};
 
 // How much of the replayed conversation to keep, in estimated tokens - oldest
 // turns are dropped first once the budget is exceeded. No summarization for v1;
@@ -73,7 +121,8 @@ const trimHistory = (history: ChatTurn[]): ChatTurn[] => {
 export const sendChatMessage = async (
     systemInstruction: string,
     history: ChatTurn[],
-    onChunk: (textDelta: string) => void
+    onChunk: (textDelta: string) => void,
+    cache?: ChatCache
 ): Promise<ChatReplyResult> => {
     const startTime = Date.now();
     let modelName = 'unknown';
@@ -91,38 +140,62 @@ export const sendChatMessage = async (
             parts: [{ text: turn.text }]
         }));
 
+        // A cache built under a different model is unusable - just skip it.
+        const useCache = !!cache && cache.modelName === modelName;
+
         let fullText = '';
         let usage;
+        let cacheInvalid = false;
 
-        await withStreamingFetch(async () => {
-            const stream = await genAI.models.generateContentStream({
-                model: modelName,
-                config: {
-                    systemInstruction: fullSystemInstruction,
-                    // Conversational synthesis over already-provided context - doesn't need deep reasoning.
-                    ...withThinkingLevel(modelName, ThinkingLevel.LOW)
-                },
-                contents
+        const runStream = async (withCache: boolean) => {
+            fullText = '';
+            await withStreamingFetch(async () => {
+                const stream = await genAI.models.generateContentStream({
+                    model: modelName,
+                    config: {
+                        // The cache already carries the system instruction - sending
+                        // both is redundant/rejected, so they're mutually exclusive.
+                        ...(withCache ? { cachedContent: cache!.name } : { systemInstruction: fullSystemInstruction }),
+                        // Conversational synthesis over already-provided context - doesn't need deep reasoning.
+                        ...withThinkingLevel(modelName, ThinkingLevel.LOW)
+                    },
+                    contents
+                });
+
+                for await (const chunk of stream) {
+                    const delta = chunk.text || '';
+                    if (delta) {
+                        fullText += delta;
+                        onChunk(delta);
+                    }
+                    // usageMetadata only arrives on the final chunk of the stream.
+                    if (chunk.usageMetadata) {
+                        usage = chunk.usageMetadata;
+                    }
+                }
             });
+        };
 
-            for await (const chunk of stream) {
-                const delta = chunk.text || '';
-                if (delta) {
-                    fullText += delta;
-                    onChunk(delta);
-                }
-                // usageMetadata only arrives on the final chunk of the stream.
-                if (chunk.usageMetadata) {
-                    usage = chunk.usageMetadata;
-                }
+        try {
+            await runStream(useCache);
+        } catch (streamError) {
+            // The cache references are checked server-side before any content is
+            // generated, so a stale/evicted cache fails before streaming any text -
+            // safe to silently retry uncached rather than surface the error.
+            const message = streamError instanceof Error ? streamError.message : String(streamError);
+            if (useCache && /cach/i.test(message) && /(not found|expired|invalid)/i.test(message)) {
+                cacheInvalid = true;
+                await runStream(false);
+            } else {
+                throw streamError;
             }
-        });
+        }
 
         const { inputTokens, outputTokens, costUSD } = await logUsage(
             'chatMessage', promptText, fullText, 0, 0, Date.now() - startTime, modelName, 'success', usage
         );
 
-        return { fullText, inputTokens, outputTokens, costUSD };
+        return { fullText, inputTokens, outputTokens, costUSD, cacheInvalid };
     } catch (error) {
         await logUsage('chatMessage', promptText, '', 0, 0, Date.now() - startTime, modelName, 'error');
         throw error;
