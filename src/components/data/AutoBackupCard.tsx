@@ -8,6 +8,7 @@ import SettingItem from '@components/common/SettingItem';
 import { Card, Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { useSecurity } from '@context/SecurityContext';
 import * as Security from '@services/core/securityService';
 import {
     AutoBackupFrequency,
@@ -43,6 +44,7 @@ interface AutoBackupCardProps {
 const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
+    const { temporarilyDisableLock } = useSecurity();
 
     const [enabled, setEnabled] = useState(false);
     const [frequency, setFrequency] = useState<AutoBackupFrequency>('weekly');
@@ -98,11 +100,13 @@ const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
         }
 
         if (Platform.OS === 'android' && !folderUri) {
+            temporarilyDisableLock();
             handleFolderPickResult(await pickAutoBackupFolder());
         }
     };
 
     const handlePickFolder = async () => {
+        temporarilyDisableLock();
         handleFolderPickResult(await pickAutoBackupFolder());
     };
 
@@ -133,6 +137,7 @@ const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
         // password prompt is out of the way - but only when this save came from first
         // turning auto-backup on, not from a later "change password" tap.
         if (passwordModalMode === 'set' && Platform.OS === 'android' && !folderUri) {
+            temporarilyDisableLock();
             handleFolderPickResult(await pickAutoBackupFolder());
         }
     };

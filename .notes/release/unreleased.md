@@ -32,6 +32,11 @@ Two fixes to how gain/loss percentages are calculated, the second found during a
 
 ---
 
+## 📦 Auto Backup
+- **Folder picker no longer left the app locked**: choosing a backup destination folder on Android backgrounds the app to show the system folder picker, same as the manual backup/restore file pickers. Unlike those, it wasn't exempted from the security lock, so returning to WealthSnap could drop you on the PIN/biometric screen. Picking or canceling a folder now temporarily disables the lock the same way the file pickers already do.
+
+---
+
 ## 🎉 Supporter Screen
 Fixed a dark mode legibility bug on the Supporter (Thank You) screen.
 
