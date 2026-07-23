@@ -76,9 +76,9 @@ Lower cost per message, plus a fix for a way the AI could misread your data.
 ---
 
 ## 🎉 Supporter Screen
-Fixed a dark mode legibility bug on the Supporter (Thank You) screen.
+Fixed a legibility bug on the Supporter (Thank You) screen affecting both light and dark mode.
 
-- **Readable in dark mode**: several donor name styles (Ninja, Shadow, Demon, and others that lean on near-black strokes and gradients) rely on a drop shadow behind the text for contrast. That shadow was hardcoded black, which only helps against a light background — in dark mode it blended into the background and made those names hard to read. The shadow now flips to a light backlight when the app is in dark mode, so every style stays legible regardless of theme.
+- **Readable in both themes**: every donor name style previously used one fixed stroke/gradient palette, so it only ever looked right in whichever theme it happened to be tuned for — near-black styles (Ninja, Shadow, Demon, Emerald, Magma, and others) faded into the dark background, while pale styles (Angelic, Crystal, Anime, and others) washed out against the light background. Each style now defines separate colors for light and dark mode, so it stays clearly legible regardless of theme.
 
 ---
 

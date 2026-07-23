@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Investments: Realized P/L's percentage always showed a hardcoded 0.00%.
 - Investments: Unrealized/Realized P/L% for free or gifted shares (zero cost basis) misleadingly showed 0% instead of "N/A".
 - Auto Backup: choosing a folder on Android could leave the app stuck on the lock screen after returning from the system folder picker.
-- Supporter Screen: some donor name styles could become unreadable against a dark background.
+- Supporter Screen: several donor name styles were unreadable or washed out depending on light/dark mode.
 - Home: the Financial Health card's "Net Worth" display mode didn't persist between sessions.
 - Clearing all data no longer leaves old Monthly Summaries behind.
 - Fixed a rare case where a pending transaction change could resurface after a full data reset.

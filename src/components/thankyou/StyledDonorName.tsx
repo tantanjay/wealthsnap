@@ -22,11 +22,13 @@ export const StyledDonorName = ({ name, styleConfig }: { name: string, styleConf
     const fontSource = FONT_MAP[styleConfig.font];
     const font = useFont(fontSource, 32);
 
-    // Many name styles (e.g. "ninja", "shadow", "demon") use near-black strokes/gradients
-    // that vanish against a dark background. A black shadow only helps on light backgrounds,
-    // so flip it to a light backlight in dark mode to keep every style legible either way.
+    // Each style config carries separate `light`/`dark` stroke+gradient variants
+    // (see NAME_STYLES in @constants/thankyou) so colors are always chosen to
+    // contrast with the current theme's background, rather than relying on a
+    // single fixed palette plus a generic backlight.
     const { theme } = useTheme();
     const isDark = theme.mode === 'dark';
+    const variant = isDark ? styleConfig.dark : styleConfig.light;
     const backlightColor = isDark ? '#FFFFFF' : '#000000';
 
     if (!font) return null;
@@ -46,7 +48,7 @@ export const StyledDonorName = ({ name, styleConfig }: { name: string, styleConf
             {/* LAYER 1: The Outer Glow (if styleConfig.glow is true) */}
             {styleConfig.glow && (
                 <Text text={name} x={10} y={50} font={font}>
-                    <Paint color={styleConfig.stroke} opacity={0.5}>
+                    <Paint color={variant.stroke} opacity={0.5}>
                         <BlurMask blur={8} style="normal" />
                     </Paint>
                 </Text>
@@ -58,9 +60,9 @@ export const StyledDonorName = ({ name, styleConfig }: { name: string, styleConf
                 x={10}
                 y={50}
                 font={font}
-                color={styleConfig.stroke}
+                color={variant.stroke}
                 style="stroke"
-                strokeWidth={styleConfig.strokeWidth}
+                strokeWidth={variant.strokeWidth}
             />
 
             {/* LAYER 3: The Gradient Fill */}
@@ -68,7 +70,7 @@ export const StyledDonorName = ({ name, styleConfig }: { name: string, styleConf
                 <LinearGradient
                     start={vec(0, 20)}
                     end={vec(0, 60)}
-                    colors={styleConfig.gradient}
+                    colors={variant.gradient}
                 />
             </Text>
         </Canvas>
