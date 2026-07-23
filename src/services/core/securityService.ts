@@ -1,10 +1,28 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
+import CryptoJS from 'crypto-js';
 
 import { ASYNC_KEYS, SECURE_KEYS } from '@constants/config';
 
-// ============= Biometrics =============
+// ============= PIN =============
+
+// A SHA-256 hex digest is always 64 hex chars - used to tell a hashed PIN apart from a
+// legacy plaintext one (PINs are numeric-only and much shorter), so existing installs can
+// be upgraded in place on their next successful unlock instead of needing a forced PIN reset.
+const HASH_PATTERN = /^[a-f0-9]{64}$/i;
+const hashPin = (pin: string): string => CryptoJS.SHA256(pin).toString();
+
+const MAX_PIN_ATTEMPTS = 5;
+const PIN_LOCKOUT_DURATION_MS = 30 * 1000;
+
+export interface PinVerifyResult {
+    success: boolean;
+    // > 0 while locked out - the attempt was rejected without even checking the PIN
+    lockedOutMs?: number;
+    // Only set on a wrong (non-lockout-triggering) attempt
+    remainingAttempts?: number;
+}
 
 export type TimeoutOption = 'immediately' | 'daily' | 'weekly' | 'monthly';
 
@@ -17,20 +35,65 @@ export const TIMEOUT_OPTIONS: { label: string; value: TimeoutOption; durationMs:
 
 export const setPin = async (pin: string): Promise<void> => {
     try {
-        await SecureStore.setItemAsync(SECURE_KEYS.PIN_CODE, pin);
+        await SecureStore.setItemAsync(SECURE_KEYS.PIN_CODE, hashPin(pin));
     } catch (error) {
         console.error('Error setting PIN:', error);
         throw error;
     }
 };
 
-export const verifyPin = async (inputPin: string): Promise<boolean> => {
+const clearPinLockoutState = async (): Promise<void> => {
+    await AsyncStorage.multiRemove([ASYNC_KEYS.SECURITY.FAILED_PIN_ATTEMPTS, ASYNC_KEYS.SECURITY.PIN_LOCKOUT_UNTIL]);
+};
+
+/**
+ * Remaining lockout time in ms, or 0 if not currently locked out. Exposed separately from
+ * verifyPin so the UI can check on mount (e.g. app was killed and reopened mid-lockout)
+ * without spending an attempt.
+ */
+export const getPinLockoutRemainingMs = async (): Promise<number> => {
+    const lockoutUntilStr = await AsyncStorage.getItem(ASYNC_KEYS.SECURITY.PIN_LOCKOUT_UNTIL);
+    if (!lockoutUntilStr) return 0;
+    const remaining = parseInt(lockoutUntilStr, 10) - Date.now();
+    return remaining > 0 ? remaining : 0;
+};
+
+export const verifyPin = async (inputPin: string): Promise<PinVerifyResult> => {
     try {
-        const storedPin = await SecureStore.getItemAsync(SECURE_KEYS.PIN_CODE);
-        return storedPin === inputPin;
+        const lockedOutMs = await getPinLockoutRemainingMs();
+        if (lockedOutMs > 0) {
+            return { success: false, lockedOutMs };
+        }
+
+        const stored = await SecureStore.getItemAsync(SECURE_KEYS.PIN_CODE);
+        if (!stored) return { success: false };
+
+        const isLegacyPlaintext = !HASH_PATTERN.test(stored);
+        const isMatch = isLegacyPlaintext ? stored === inputPin : stored === hashPin(inputPin);
+
+        if (isMatch) {
+            // Upgrade a legacy plaintext PIN to a hash now that we've verified it, so this
+            // device never has to fall back to plaintext comparison again.
+            if (isLegacyPlaintext) await setPin(inputPin);
+            await clearPinLockoutState();
+            return { success: true };
+        }
+
+        const failedAttemptsStr = await AsyncStorage.getItem(ASYNC_KEYS.SECURITY.FAILED_PIN_ATTEMPTS);
+        const failedAttempts = (failedAttemptsStr ? parseInt(failedAttemptsStr, 10) : 0) + 1;
+
+        if (failedAttempts >= MAX_PIN_ATTEMPTS) {
+            const lockoutUntil = Date.now() + PIN_LOCKOUT_DURATION_MS;
+            await AsyncStorage.setItem(ASYNC_KEYS.SECURITY.PIN_LOCKOUT_UNTIL, lockoutUntil.toString());
+            await AsyncStorage.removeItem(ASYNC_KEYS.SECURITY.FAILED_PIN_ATTEMPTS);
+            return { success: false, lockedOutMs: PIN_LOCKOUT_DURATION_MS };
+        }
+
+        await AsyncStorage.setItem(ASYNC_KEYS.SECURITY.FAILED_PIN_ATTEMPTS, failedAttempts.toString());
+        return { success: false, remainingAttempts: MAX_PIN_ATTEMPTS - failedAttempts };
     } catch (error) {
         console.error('Error verifying PIN:', error);
-        return false;
+        return { success: false };
     }
 };
 
@@ -46,6 +109,7 @@ export const isPinSet = async (): Promise<boolean> => {
 export const deletePin = async (): Promise<void> => {
     try {
         await SecureStore.deleteItemAsync(SECURE_KEYS.PIN_CODE);
+        await clearPinLockoutState();
     } catch (error) {
         console.error('Error deleting PIN:', error);
     }

@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fixed a rare case where a pending transaction change could resurface after a full data reset.
 - Semi-Weekly reminders now appear in the missed-reminders catch-up list.
 
+### Security
+- Debt name and interest rate are now encrypted at rest, matching other debt fields.
+- PIN is now stored as a hash instead of plaintext, with a temporary lockout after repeated wrong attempts.
+
 ---
 
 ## [1.15.0] — 2026-07-20

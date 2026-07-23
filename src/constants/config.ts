@@ -25,6 +25,8 @@ export const ASYNC_KEYS = {
         PRIVACY_ENABLED: '@wealthsnap_privacy_enabled',
         TIMEOUT_SETTING: '@wealthsnap_security_timeout',
         LAST_ACTIVE: '@wealthsnap_security_last_active',
+        FAILED_PIN_ATTEMPTS: '@wealthsnap_failed_pin_attempts',
+        PIN_LOCKOUT_UNTIL: '@wealthsnap_pin_lockout_until',
     },
     AI: {
         PROVIDER: '@wealthsnap_ai_provider',

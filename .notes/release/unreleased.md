@@ -85,11 +85,15 @@ Fixed a dark mode legibility bug on the Supporter (Thank You) screen.
 ---
 
 ## 🛠️ Reliability Fixes
-A handful of smaller bugs found during a code review, not tied to a specific feature above.
-
 - **Home's "Net Worth" display mode now persists**: choosing Net Worth as the Financial Health card's view previously wasn't recognized when the app reloaded the saved preference, so it silently fell back to the default view instead of staying selected.
 - **Clearing app data now fully resets Monthly Summaries**: the data-wipe step (used by Restore and other resets) skipped the Monthly Summary table, so old AI-generated month narratives could still show up in Insights after a reset. Also fixed a related edge case where a transaction change made right as the app was starting up could resurface later after a full reset.
 - **Semi-Weekly reminders now appear in Catch-up**: reminders set to repeat every 3 days were silently excluded from the missed-reminders catch-up list and would never prompt you.
+
+---
+
+## 🔒 Security
+- **Debt name and interest rate are now encrypted**: every other debt field (amount, payments, fees, notes) was already encrypted at rest — name and interest rate were the two exceptions. Existing debts are re-encrypted automatically the next time the app starts, no action needed.
+- **PIN is now hashed, with a lockout after repeated wrong attempts**: your PIN was previously stored as-is in the device's secure storage; it's now stored as a one-way hash instead, so it can't be read back even if that storage were somehow compromised. Entering the wrong PIN 5 times in a row now locks PIN entry for 30 seconds before another attempt is allowed (Face ID/Touch ID unlock isn't affected by this). Existing PINs are upgraded to a hash automatically the next time you unlock successfully — no need to reset it.
 
 ---
 

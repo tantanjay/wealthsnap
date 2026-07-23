@@ -1,9 +1,10 @@
 import * as SQLite from 'expo-sqlite';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ASYNC_KEYS } from '@constants/config';
+import { encryptField } from '@services/core/encryptionService';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 14;
+export const DATABASE_VERSION = 15;
 
 /**
  * Create all database tables and indexes
@@ -527,6 +528,41 @@ export const migrateToVersion14 = async (db: SQLite.SQLiteDatabase): Promise<voi
         console.log('[Migration] Successfully migrated to version 14');
     } catch (error) {
         console.error('[Migration] Failed version 14 migration:', error);
+        throw error;
+    }
+};
+
+/**
+ * Migrate to Version 15: encrypt debts.name and debts.interestRate, which were stored in
+ * plaintext since the debts table was introduced - every other identifying/monetary column
+ * on that table (initialAmount, minPayment, fees, termMonths, notes, contactId) was already
+ * field-encrypted by debtService. Re-encrypts existing rows in place so debtService can
+ * switch to always encrypting/decrypting both columns without needing a dual
+ * plaintext-or-encrypted fallback read path.
+ */
+export const migrateToVersion15 = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+    try {
+        console.log('[Migration] Starting migration to version 15...');
+
+        const rows = await db.getAllAsync<{ id: string; name: string; interestRate: string }>(
+            'SELECT id, name, interestRate FROM debts'
+        );
+
+        await db.withTransactionAsync(async () => {
+            for (const row of rows) {
+                const encryptedName = await encryptField(row.name);
+                const encryptedRate = await encryptField(row.interestRate);
+                await db.runAsync(
+                    'UPDATE debts SET name = ?, interestRate = ? WHERE id = ?',
+                    [encryptedName, encryptedRate, row.id]
+                );
+            }
+        });
+
+        await setDatabaseVersion(db, 15);
+        console.log('[Migration] Successfully migrated to version 15');
+    } catch (error) {
+        console.error('[Migration] Failed version 15 migration:', error);
         throw error;
     }
 };

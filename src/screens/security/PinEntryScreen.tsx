@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Vibration } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
-import { authenticateBiometrics, getBiometricType, hasBiometrics, verifyPin } from '@services/core/securityService';
+import { authenticateBiometrics, getBiometricType, getPinLockoutRemainingMs, hasBiometrics, verifyPin } from '@services/core/securityService';
 
 interface PinEntryScreenProps {
     onSuccess: () => void;
@@ -15,6 +15,8 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
     const { colors } = useTheme();
     const [pin, setPinState] = useState('');
     const [error, setError] = useState(false);
+    const [message, setMessage] = useState<string | null>(null);
+    const [lockoutRemainingMs, setLockoutRemainingMs] = useState(0);
     const [biometricsAvailable, setBiometricsAvailable] = useState(false);
     const [biometricType, setBiometricType] = useState<'FINGERPRINT' | 'FACIAL_RECOGNITION' | 'IRIS' | 'UNKNOWN'>('UNKNOWN');
 
@@ -40,7 +42,36 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
         checkBiometrics();
     }, [checkBiometrics]);
 
+    // Catches the case where the app was killed and reopened while still mid-lockout.
+    useEffect(() => {
+        getPinLockoutRemainingMs().then(ms => {
+            if (ms > 0) setLockoutRemainingMs(ms);
+        });
+    }, []);
+
+    // Countdown ticker while locked out
+    useEffect(() => {
+        if (lockoutRemainingMs <= 0) return;
+
+        const interval = setInterval(() => {
+            setLockoutRemainingMs(prev => {
+                const next = prev - 1000;
+                if (next <= 0) {
+                    setMessage(null);
+                    return 0;
+                }
+                setMessage(`Too many attempts. Try again in ${Math.ceil(next / 1000)}s`);
+                return next;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [lockoutRemainingMs > 0]);
+
+    const isLockedOut = lockoutRemainingMs > 0;
+
     const handlePress = (num: string) => {
+        if (isLockedOut) return;
         if (pin.length < PIN_LENGTH) {
             setPinState(prev => prev + num);
             setError(false);
@@ -48,29 +79,42 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
     };
 
     const handleDelete = () => {
+        if (isLockedOut) return;
         setPinState(prev => prev.slice(0, -1));
         setError(false);
     };
 
     const checkPin = useCallback(async (currentPin: string) => {
-        const isValid = await verifyPin(currentPin);
-        if (isValid) {
+        const result = await verifyPin(currentPin);
+        if (result.success) {
+            setMessage(null);
             onSuccess();
-        } else {
-            setError(true);
-            Vibration.vibrate();
-            setTimeout(() => {
-                setPinState('');
-                // Keep error state briefly
-            }, 500);
+            return;
         }
+
+        setError(true);
+        Vibration.vibrate();
+
+        if (result.lockedOutMs) {
+            setMessage(`Too many attempts. Try again in ${Math.ceil(result.lockedOutMs / 1000)}s`);
+            setLockoutRemainingMs(result.lockedOutMs);
+        } else if (result.remainingAttempts !== undefined) {
+            setMessage(`Incorrect PIN - ${result.remainingAttempts} attempt${result.remainingAttempts === 1 ? '' : 's'} left`);
+        } else {
+            setMessage('Incorrect PIN');
+        }
+
+        setTimeout(() => {
+            setPinState('');
+            // Keep error state briefly
+        }, 500);
     }, [onSuccess]);
 
     useEffect(() => {
-        if (pin.length === PIN_LENGTH) {
+        if (pin.length === PIN_LENGTH && !isLockedOut) {
             checkPin(pin);
         }
-    }, [pin, checkPin]);
+    }, [pin, checkPin, isLockedOut]);
 
     const renderDots = () => {
         return (
@@ -118,8 +162,8 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
                         );
                     }
                     return (
-                        <TouchableOpacity key={index} style={styles.key} onPress={() => handlePress(key)}>
-                            <Text style={[styles.keyText, { color: colors.text }]}>{key}</Text>
+                        <TouchableOpacity key={index} style={styles.key} disabled={isLockedOut} onPress={() => handlePress(key)}>
+                            <Text style={[styles.keyText, { color: isLockedOut ? colors.textSecondary : colors.text }]}>{key}</Text>
                         </TouchableOpacity>
                     );
                 })}
@@ -181,7 +225,9 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
         errorText: {
             color: 'red',
             marginTop: 20,
-            height: 20,
+            minHeight: 20,
+            textAlign: 'center',
+            paddingHorizontal: 20,
         }
     });
 
@@ -196,7 +242,7 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
             {renderDots()}
             {renderKeypad()}
 
-            <Text style={styles.errorText}>{error ? 'Incorrect PIN' : ''}</Text>
+            <Text style={styles.errorText}>{error || message ? (message || 'Incorrect PIN') : ''}</Text>
         </View>
     );
 };
