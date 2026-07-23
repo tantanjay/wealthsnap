@@ -1,7 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 import { RecurrenceRule, Transaction, RecurrenceFrequency } from '@types';
 import { getDatabase } from "@services/database/databaseService";
-import { saveTransaction } from '@services/domain/transactionService';
+import { bulkSaveTransactions } from '@services/domain/transactionService';
 import { generateUUID } from '@utils/uuid';
 import { decryptField, encryptField } from "@services/core/encryptionService";
 import { upsertTombstone } from '@services/domain/tombstoneService';
@@ -44,6 +44,11 @@ export const processRecurrenceRules = async (): Promise<number> => {
         const now = new Date();
         let processedCount = 0;
 
+        // Accumulate across all rules so the whole catch-up pass is a couple of bulk
+        // writes instead of one DB round-trip per generated transaction/rule.
+        const newTransactions: Transaction[] = [];
+        const updatedRules: RecurrenceRule[] = [];
+
         for (const rule of rules) {
             if (!rule.isActive) continue;
 
@@ -71,7 +76,7 @@ export const processRecurrenceRules = async (): Promise<number> => {
                     creationMethod: 'RECURRENCE',
                 };
 
-                await saveTransaction(newTransaction);
+                newTransactions.push(newTransaction);
 
                 // Calculate next date
                 nextDueDate = calculateNextDueDate(nextDueDate, rule.frequency);
@@ -81,12 +86,18 @@ export const processRecurrenceRules = async (): Promise<number> => {
             }
 
             if (ruleUpdated) {
-                const updatedRule: RecurrenceRule = {
+                updatedRules.push({
                     ...rule,
                     nextDueDate: nextDueDate.toISOString(),
-                };
-                await saveRecurrenceRule(updatedRule);
+                });
             }
+        }
+
+        if (newTransactions.length > 0) {
+            await bulkSaveTransactions(newTransactions);
+        }
+        if (updatedRules.length > 0) {
+            await bulkSaveRecurrenceRules(updatedRules);
         }
 
         return processedCount;
