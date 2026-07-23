@@ -17,6 +17,7 @@ A new way to keep two phones in sync without a cloud account — WealthSnap has 
 
 ## ⚡ Performance
 - **Smoother History screen**: list rows now skip re-rendering when nothing about them actually changed — typing in search, switching a filter, or opening a transaction's details no longer re-renders every visible row. Most noticeable with a large transaction history.
+- **Faster recurring transaction catch-up**: generating missed recurring transactions after being away for a while now happens as a couple of batched writes instead of one database write per transaction, so a long gap since your last visit catches up much faster.
 
 ---
 
@@ -80,6 +81,15 @@ Fixed a dark mode legibility bug on the Supporter (Thank You) screen.
 
 ## 🏷️ Categories
 - **Two new Tech categories**: added Electronics and Gadgets & Devices to the Communication & Tech group, alongside Tech Gear.
+
+---
+
+## 🛠️ Reliability Fixes
+A handful of smaller bugs found during a code review, not tied to a specific feature above.
+
+- **Home's "Net Worth" display mode now persists**: choosing Net Worth as the Financial Health card's view previously wasn't recognized when the app reloaded the saved preference, so it silently fell back to the default view instead of staying selected.
+- **Clearing app data now fully resets Monthly Summaries**: the data-wipe step (used by Restore and other resets) skipped the Monthly Summary table, so old AI-generated month narratives could still show up in Insights after a reset. Also fixed a related edge case where a transaction change made right as the app was starting up could resurface later after a full reset.
+- **Semi-Weekly reminders now appear in Catch-up**: reminders set to repeat every 3 days were silently excluded from the missed-reminders catch-up list and would never prompt you.
 
 ---
 

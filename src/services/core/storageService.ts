@@ -261,7 +261,7 @@ export const saveHomeFinancialHealthDisplayMode = async (mode: HomeFinancialHeal
 export const getHomeFinancialHealthDisplayMode = async (): Promise<HomeFinancialHealthDisplayMode | null> => {
     try {
         const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.FINANCIAL_HEALTH_DISPLAY_MODE);
-        return (mode === 'Assets' || mode === 'Health') ? mode as HomeFinancialHealthDisplayMode : null;
+        return (mode === 'NetWorth' || mode === 'Assets' || mode === 'Health') ? mode as HomeFinancialHealthDisplayMode : null;
     } catch (error) {
         console.error('Failed to get home financial health display mode:', error);
         return null;
@@ -666,6 +666,7 @@ export const clearAllData = async (): Promise<void> => {
             DELETE FROM price_history;
             DELETE FROM dividend_history;
             DELETE FROM assets;
+            DELETE FROM monthly_summary;
             DELETE FROM deleted_records;
         `);
 

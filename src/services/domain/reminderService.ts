@@ -382,6 +382,13 @@ export const getPendingReminders = async (): Promise<Reminder[]> => {
                         switch (reminder.frequency) {
                             case 'DAILY': return true;
                             case 'WEEKLY': return now.getDay() === start.getDay();
+                            case 'SEMI_WEEKLY': {
+                                // Every 3 days from start date - same day-diff math as calculateNextOccurrence
+                                const d1 = new Date(now); d1.setHours(0, 0, 0, 0);
+                                const d2 = new Date(start); d2.setHours(0, 0, 0, 0);
+                                const diffDays = Math.round((d1.getTime() - d2.getTime()) / (1000 * 60 * 60 * 24));
+                                return diffDays % 3 === 0;
+                            }
                             case 'MONTHLY': {
                                 const targetDay = start.getDate();
                                 const lastDay = clampDayOfMonth(now.getFullYear(), now.getMonth(), targetDay);

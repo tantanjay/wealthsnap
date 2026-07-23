@@ -143,6 +143,6 @@ export const invalidateInvestmentCache = (): void => {
 // ============= Clear All Caches =============
 
 export const invalidateAllCaches = (): void => {
-    transactionCache = null;
-    investmentCache = null;
+    invalidateTransactionCache();
+    invalidateInvestmentCache();
 };

@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - History: list rows no longer re-render when nothing about them changed, smoothing out search/filter/scroll on a large transaction history.
+- Recurring transactions: catching up on missed occurrences after being away for a while is now faster.
 - Help Center's Financial Insights and Math & Formulas guides updated to match the current Insights screen.
 - Chat moved from the Floating Quick Actions menu into the Record menu.
 - Record menu renamed from "New Record" to "Quick Actions".
@@ -33,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Investments: Unrealized/Realized P/L% for free or gifted shares (zero cost basis) misleadingly showed 0% instead of "N/A".
 - Auto Backup: choosing a folder on Android could leave the app stuck on the lock screen after returning from the system folder picker.
 - Supporter Screen: some donor name styles could become unreadable against a dark background.
+- Home: the Financial Health card's "Net Worth" display mode didn't persist between sessions.
+- Clearing all data no longer leaves old Monthly Summaries behind.
+- Fixed a rare case where a pending transaction change could resurface after a full data reset.
+- Semi-Weekly reminders now appear in the missed-reminders catch-up list.
 
 ---
 
