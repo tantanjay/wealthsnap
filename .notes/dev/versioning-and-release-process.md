@@ -93,6 +93,7 @@ Found and (mostly) fixed while writing this doc — flagged so future-you doesn'
 - 1.13.0 was a MINOR bump containing only fixes — should have been PATCH.
 - `package.json` briefly had version `1.1.1` (commit `7f79293`, "ai initial") that was never a real release — just a WIP bump superseded by 1.2.0. Not documented in the changelog, and that's correct — don't add an entry for it if you ever see it referenced.
 - `CHANGELOG.md`'s `1.0.1` entry had no corresponding `package.json` version bump (`package.json` stayed at `1.0.0` even though the commit was titled `"v1.0.1"`). Tag/version drift like this is exactly what this doc exists to prevent — bump `package.json`/`app.json` *every* time you cut a release, even a small one.
+- `CHANGELOG.md` dates reflect when the entry was written/backfilled, not necessarily the actual Play Store release date — several versions (e.g. 1.14.0/1.15.0, 1.5.0/1.4.0, 1.6.0/1.6.1) show same-day or next-day dates because the changelog update was forgotten until later and then dated with whatever day it was finally written. Don't treat these dates as a verified release history.
 
 These are not renumbered — the versions already shipped to users/Play Store, so rewriting history would be misleading. This is a "don't do this going forward" list, not a to-do list.
 
