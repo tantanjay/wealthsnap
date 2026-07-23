@@ -19,8 +19,10 @@ const UPSERT_DEBT_QUERY = `
 const prepareDebtValues = async (debt: Debt) => {
     const now = new Date().toISOString();
 
-    // Encrypted Fields: initialAmount, minPayment, fees, termMonths, notes, contactId
+    // Encrypted Fields: name, initialAmount, interestRate, minPayment, fees, termMonths, notes, contactId
+    const encryptedName = await encryptField(debt.name);
     const encryptedAmount = await encryptField(debt.initialAmount);
+    const encryptedRate = await encryptField(debt.interestRate.toString());
     const encryptedMinPayment = await encryptField(debt.minPayment);
     const encryptedFees = debt.fees ? await encryptField(debt.fees) : null;
     const encryptedTerm = debt.termMonths ? await encryptField(debt.termMonths.toString()) : null;
@@ -29,12 +31,12 @@ const prepareDebtValues = async (debt: Debt) => {
 
     return [
         debt.id,
-        debt.name,
+        encryptedName,
         debt.type,
         debt.direction,
         encryptedAmount,
         debt.currency || 'PHP',
-        debt.interestRate.toString(),
+        encryptedRate,
         debt.interestType,
         encryptedMinPayment,
         encryptedFees,
@@ -72,14 +74,14 @@ export const saveDebt = async (debt: Debt): Promise<void> => {
 export const getAllDebts = async (): Promise<Debt[]> => {
     try {
         const db = await getDatabase();
-        // Order by status (Active first), then closest due date or name
-        const rows = await db.getAllAsync<any>('SELECT * FROM debts ORDER BY status ASC, name ASC');
+        const rows = await db.getAllAsync<any>('SELECT * FROM debts');
 
-        // Decrypt columns
-        const encryptedColumns = ['initialAmount', 'minPayment', 'fees', 'termMonths', 'notes', 'contactId'];
+        // Decrypt columns (name and interestRate are ciphertext, so sorting has to happen
+        // after decryption below rather than via SQL ORDER BY)
+        const encryptedColumns = ['name', 'initialAmount', 'interestRate', 'minPayment', 'fees', 'termMonths', 'notes', 'contactId'];
         const decryptedRows = await bulkDecryptItems<any>(rows, encryptedColumns);
 
-        return decryptedRows.map(row => ({
+        const debts = decryptedRows.map(row => ({
             id: row.id,
             name: row.name,
             type: row.type as DebtType,
@@ -99,6 +101,14 @@ export const getAllDebts = async (): Promise<Debt[]> => {
             createdAt: row.createdAt,
             updatedAt: row.updatedAt
         }));
+
+        // Order by status, then name - replicates the old `ORDER BY status ASC, name ASC`
+        // SQL clause, which no longer works now that name is stored encrypted.
+        return debts.sort((a, b) => {
+            const statusCompare = a.status.localeCompare(b.status);
+            if (statusCompare !== 0) return statusCompare;
+            return (a.name || '').localeCompare(b.name || '');
+        });
 
     } catch (error) {
         console.error('Error getting debts:', error);
