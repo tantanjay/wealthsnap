@@ -15,6 +15,15 @@ A new way to keep two phones in sync without a cloud account — WealthSnap has 
 
 ---
 
+## 📊 Export to Excel
+A new way to get your data out of WealthSnap as a plain file you can open directly in Excel or Google Sheets — for personal analysis, taxes, or sharing with an accountant. This is separate from Backup, which stays password-encrypted and is meant for restoring into the app, not for reading.
+
+- **One file, four sheets**: from Profile → Data Management → Export to Excel, generates a single .xlsx with your full Transactions ledger, every Investment record (buys, sells, dividends, and interest), your Debts, and a dedicated Debt Payments sheet listing every payment, fee, and initial draw linked to a debt, joined to that debt's name for readability.
+- **Debt payments appear in both places**: rather than pulling debt-linked transactions out of the main ledger, they stay in the Transactions sheet too so your cashflow totals stay complete, and are also broken out in Debt Payments for a focused view per debt.
+- **Unencrypted by design**: unlike Backup, this writes plain, human-readable values with no password — treat the resulting file like any other sensitive financial document once it leaves the app.
+
+---
+
 ## ⚡ Performance
 - **Smoother History screen**: list rows now skip re-rendering when nothing about them actually changed — typing in search, switching a filter, or opening a transaction's details no longer re-renders every visible row. Most noticeable with a large transaction history.
 - **Faster recurring transaction catch-up**: generating missed recurring transactions after being away for a while now happens as a couple of batched writes instead of one database write per transaction, so a long gap since your last visit catches up much faster.
