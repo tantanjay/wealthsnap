@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Sync from Device**: merge your data directly with another device over WiFi — show a QR code on one, scan it with the other, no cloud and no typed password.
   - Edits and deletes merge in both directions; the newer change wins if the same record was edited on both devices.
   - Pairing codes expire after 60 seconds and can only be used once.
+- **Export to Excel**: save transactions, investments, debts, and debt payments to a single multi-sheet .xlsx file for viewing outside the app.
+  - Debt-linked transactions appear in both the Transactions sheet and a dedicated Debt Payments sheet.
+  - Unlike Backup, the exported file is plain and not encrypted.
 - **Help Center**: two new guides, Debt Strategy and Investments.
 - Two new expense categories: Electronics and Gadgets & Devices.
 

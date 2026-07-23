@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { Text, View, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CommonActions, NavigationProp } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
@@ -14,6 +14,7 @@ import { useAlert } from '@context/AlertContext';
 import { useSecurity } from '@context/SecurityContext';
 import { clearAllData, getUserProfile, saveLastBackupDate } from '@services/core/storageService';
 import { createBackup, restoreFromBackup, BackupProgress } from '@services/integrations/backupService';
+import { exportToExcel } from '@services/integrations/exportService';
 
 interface DataManagementCardProps {
     navigation: NavigationProp<any>;
@@ -33,6 +34,9 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
 
     // Import State
     const [showImportFlow, setShowImportFlow] = useState(false);
+
+    // Export State
+    const [isExporting, setIsExporting] = useState(false);
 
     const { showAlert } = useAlert();
 
@@ -173,6 +177,27 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
         }
     };
 
+    /**
+     * Exports all data to a plain (unencrypted) multi-sheet .xlsx file for viewing in Excel.
+     */
+    const handleExport = async () => {
+        try {
+            setIsExporting(true);
+            const uri = await exportToExcel();
+            setIsExporting(false);
+
+            if (await Sharing.isAvailableAsync()) {
+                temporarilyDisableLock();
+                await Sharing.shareAsync(uri);
+            } else {
+                showAlert('Success', 'Export created at ' + uri);
+            }
+        } catch (error) {
+            setIsExporting(false);
+            showAlert('Error', 'Failed to export: ' + (error as Error).message);
+        }
+    };
+
     return (
         <>
             <Card style={{ marginBottom: 16 }}>
@@ -206,6 +231,15 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
                     onPress={() => setShowImportFlow(true)}
                     iconBg={colors.accent + '20'}
                     iconColor={colors.accent}
+                />
+                <SettingItem
+                    icon="grid-outline"
+                    title="Export to Excel"
+                    subtitle="Save transactions, investments & debts as .xlsx"
+                    onPress={isExporting ? undefined : handleExport}
+                    iconBg={colors.accent + '20'}
+                    iconColor={colors.accent}
+                    rightElement={isExporting ? <ActivityIndicator size="small" color={colors.accent} /> : undefined}
                 />
                 <SettingItem
                     icon="sync-circle"

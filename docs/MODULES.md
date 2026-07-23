@@ -149,6 +149,7 @@ Reached from Profile. Local backups, CSV import, sample data.
 - `src/services/integrations/autoBackupService.ts`
 - `src/services/integrations/backupEntities.ts`
 - `src/services/integrations/importService.ts`
+- `src/services/integrations/exportService.ts`
 - `src/services/integrations/dummyDataService.ts`
 
 ## Multi-Device Sync
