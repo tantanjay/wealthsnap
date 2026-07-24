@@ -84,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - A rare timing issue during first-time encryption key setup could generate two different keys, permanently locking a handful of records behind the one that didn't get saved.
 - Encrypted fields now include an integrity check, so data decrypted with the wrong key is caught instead of silently shown as garbled text or numbers.
 - If the device's secure key storage becomes inaccessible, the app now surfaces a clear error instead of silently showing your data as empty.
+- Local data encryption now uses your device key directly instead of deriving it fresh on every operation, closing a theoretical weakness and making encrypt/decrypt faster.
 
 ---
 
