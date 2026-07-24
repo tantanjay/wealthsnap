@@ -80,6 +80,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - PIN is now stored as a hash instead of plaintext, with a temporary lockout after repeated wrong attempts.
 - Monthly Summary: notes and debt names cached for AI-generated summaries are now encrypted at rest, matching everywhere else they appear.
 - Chat and Monthly Summary: transaction notes are now sanitized before being included in AI context.
+- A rare timing issue during first-time encryption key setup could generate two different keys, permanently locking a handful of records behind the one that didn't get saved.
+- Encrypted fields now include an integrity check, so data decrypted with the wrong key is caught instead of silently shown as garbled text or numbers.
+- If the device's secure key storage becomes inaccessible, the app now surfaces a clear error instead of silently showing your data as empty.
 
 ---
 

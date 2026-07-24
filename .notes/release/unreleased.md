@@ -170,6 +170,9 @@ Fixed a legibility bug on the Supporter (Thank You) screen affecting both light 
 ## 🔒 Security
 - **Debt name and interest rate are now encrypted**: every other debt field (amount, payments, fees, notes) was already encrypted at rest — name and interest rate were the two exceptions. Existing debts are re-encrypted automatically the next time the app starts, no action needed.
 - **PIN is now hashed, with a lockout after repeated wrong attempts**: your PIN was previously stored as-is in the device's secure storage; it's now stored as a one-way hash instead, so it can't be read back even if that storage were somehow compromised. Entering the wrong PIN 5 times in a row now locks PIN entry for 30 seconds before another attempt is allowed (Face ID/Touch ID unlock isn't affected by this). Existing PINs are upgraded to a hash automatically the next time you unlock successfully — no need to reset it.
+- **Closed a rare encryption key race**: on a device's very first encrypt operation ever (e.g. importing or restoring data as your first action), two operations happening at the exact same moment could each generate their own random encryption key, with only one actually saved — anything encrypted under the other became unreadable. Concurrent operations now share a single key generation instead of racing.
+- **Encrypted fields now self-check on decrypt**: previously, decrypting a field with the wrong key could — by chance — produce plausible-looking but wrong text or numbers with no indication anything was off. Encrypted fields now carry a lightweight integrity marker so a wrong-key decrypt is caught rather than silently accepted (applies to data written from this point forward).
+- **Clearer failure if secure storage becomes inaccessible**: if the device's secure key storage itself can't be reached (rare, and generally indicates a deeper device issue), the app now surfaces that clearly instead of quietly showing your data as empty.
 
 ---
 
