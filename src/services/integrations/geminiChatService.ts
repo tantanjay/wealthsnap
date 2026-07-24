@@ -42,6 +42,7 @@ export interface ChatReplyResult {
     fullText: string;
     inputTokens: number;
     outputTokens: number;
+    cachedTokens: number;
     costUSD: BigNumber;
     // Set when the supplied cache had expired/been evicted server-side and the
     // call had to fall back to sending the context inline - caller should
@@ -52,6 +53,12 @@ export interface ChatReplyResult {
 export interface ChatCache {
     name: string;
     modelName: string;
+    // Writing the cache is itself billed once, at the standard (non-discounted)
+    // input rate - separate from the per-message discounted rate charged for
+    // reading it later. Surfaced so callers can count it exactly once instead
+    // of it being silently missing from usage totals.
+    creationTokens: number;
+    creationCostUSD: BigNumber;
 }
 
 /**
@@ -77,7 +84,14 @@ export const createChatCache = async (contextText: string): Promise<ChatCache | 
         });
 
         if (!cache.name) return null;
-        return { name: cache.name, modelName };
+
+        const creationTokens = cache.usageMetadata?.totalTokenCount ?? estimateTokens(fullSystemInstruction);
+        const { costUSD: creationCostUSD } = await logUsage(
+            'chatCacheCreate', fullSystemInstruction, '', 0, 0, 0, modelName, 'success',
+            { promptTokenCount: creationTokens }
+        );
+
+        return { name: cache.name, modelName, creationTokens, creationCostUSD };
     } catch (error) {
         console.warn('[geminiChatService] Cache creation skipped:', error);
         return null;
@@ -191,11 +205,11 @@ export const sendChatMessage = async (
             }
         }
 
-        const { inputTokens, outputTokens, costUSD } = await logUsage(
+        const { inputTokens, outputTokens, cachedTokens, costUSD } = await logUsage(
             'chatMessage', promptText, fullText, 0, 0, Date.now() - startTime, modelName, 'success', usage
         );
 
-        return { fullText, inputTokens, outputTokens, costUSD, cacheInvalid };
+        return { fullText, inputTokens, outputTokens, cachedTokens, costUSD, cacheInvalid };
     } catch (error) {
         await logUsage('chatMessage', promptText, '', 0, 0, Date.now() - startTime, modelName, 'error');
         throw error;

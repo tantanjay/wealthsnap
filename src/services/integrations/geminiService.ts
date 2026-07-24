@@ -104,6 +104,7 @@ interface GeminiUsageMetadata {
 export interface LoggedUsage {
     inputTokens: number;
     outputTokens: number;
+    cachedTokens: number;
     costUSD: BigNumber;
 }
 
@@ -166,10 +167,10 @@ export const logUsage = async (endpoint: string, promptText: string, responseTex
         };
 
         await saveAIUsageLog(log);
-        return { inputTokens, outputTokens, costUSD: new BigNumber(totalCost) };
+        return { inputTokens, outputTokens, cachedTokens, costUSD: new BigNumber(totalCost) };
     } catch (e) {
         console.error('Failed to log usage:', e);
-        return { inputTokens: 0, outputTokens: 0, costUSD: new BigNumber(0) };
+        return { inputTokens: 0, outputTokens: 0, cachedTokens: 0, costUSD: new BigNumber(0) };
     }
 };
 

@@ -82,9 +82,11 @@ Three fixes found during a deep code review of previously shipped features.
 ---
 
 ## 💬 Chat
-Lower cost per message, plus a fix for a way the AI could misread your data.
+Lower cost per message, more accurate history, and a fix for a way the AI could misread your data.
 
 - **Lower cost per message**: the financial context block (spending history, portfolio, debts) was being resent — and re-billed — in full on every single message in a conversation. It's now cached once per session via Gemini's context caching and reused for the rest of the conversation, with cached tokens billed at a fraction of the normal rate. Falls back to sending it inline as before if a cache can't be created or expires mid-session, so nothing breaks if caching isn't available.
+  - The token/cost totals shown in a conversation no longer double-count the cached context on every message — previously each message re-added roughly one full context's worth of tokens to the running total even though most of it was billed at the cheap cached rate. The one-time cost of creating the cache itself is now included instead of being silently untracked. Large totals are also abbreviated (e.g. "65k", "1.2M") instead of long digit strings.
+- **History range picker could understate how much data you actually have**: the "~X tokens" estimate shown for each history range (1Y/2Y/3Y/5Y/ALL), and the context actually sent to Gemini, reads monthly summaries from a cache that's refreshed in the background when the app launches. Opening Chat shortly after launching (or restarting) the app could catch that refresh still in progress, showing a much smaller estimate — and sending a much smaller context — than your real history would produce.
 - **AI now knows what day it is**: the context previously gave no sense of today's date, so an almost-empty current month could get compared against a full prior month as if they were equivalent (e.g. "your spending is down 80% this month"). The context now states today's date, and the current month's summary is explicitly labeled as in progress with a reminder not to compare it directly against a complete month.
 
 ---

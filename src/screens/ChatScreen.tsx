@@ -33,7 +33,17 @@ interface ChatMessage {
 }
 
 const formatCost = (cost: BigNumber) => `$${cost.toFixed(4)}`;
-const formatTokens = (n: number) => n.toLocaleString('en-US');
+
+const formatCompact = (v: number) => {
+    const s = v.toFixed(1);
+    return s.endsWith('.0') ? s.slice(0, -2) : s;
+};
+
+const formatTokens = (n: number): string => {
+    if (n < 1000) return n.toLocaleString('en-US');
+    if (n < 1_000_000) return `${formatCompact(n / 1000)}k`;
+    return `${formatCompact(n / 1_000_000)}M`;
+};
 
 // Deliberately steers away from single-number lookups already visible on a
 // dashboard card (e.g. "how much debt do I owe") - the point of chat is
@@ -88,6 +98,9 @@ const ChatScreen = ({ navigation }: any) => {
     const [contextModalVisible, setContextModalVisible] = useState(false);
     const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
     const [chatCache, setChatCache] = useState<ChatCache | null>(null);
+    // One-time cost of writing the cache(s) created this session - counted once
+    // here rather than per-message, since createChatCache already bills it once.
+    const [cacheCreationStats, setCacheCreationStats] = useState<{ tokens: number; costUSD: BigNumber }>({ tokens: 0, costUSD: new BigNumber(0) });
 
     const scrollRef = useRef<ScrollView>(null);
     const chatCacheRef = useRef<ChatCache | null>(null);
@@ -173,7 +186,13 @@ const ChatScreen = ({ navigation }: any) => {
         let cancelled = false;
         (async () => {
             const created = await createChatCache(selectedRange.ctx.contextText);
-            if (!cancelled && created) setChatCache(created);
+            if (!cancelled && created) {
+                setChatCache(created);
+                setCacheCreationStats(prev => ({
+                    tokens: prev.tokens + created.creationTokens,
+                    costUSD: prev.costUSD.plus(created.creationCostUSD)
+                }));
+            }
         })();
         return () => { cancelled = true; };
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -190,7 +209,7 @@ const ChatScreen = ({ navigation }: any) => {
             tokens: acc.tokens + (m.inputTokens || 0) + (m.outputTokens || 0),
             costUSD: acc.costUSD.plus(m.costUSD || new BigNumber(0))
         }),
-        { tokens: 0, costUSD: new BigNumber(0) }
+        { tokens: cacheCreationStats.tokens, costUSD: cacheCreationStats.costUSD }
     );
 
     const handleSelectRange = (range: ChatHistoryRange, label: string) => {
@@ -228,7 +247,12 @@ const ChatScreen = ({ navigation }: any) => {
                 ...m,
                 text: result.fullText,
                 streaming: false,
-                inputTokens: result.inputTokens,
+                // Excludes the cached portion of the prompt - the cache carries the
+                // (large, session-static) context on every turn, so counting it here
+                // would make the tally balloon by roughly one context size per
+                // message even though it's barely billed. This reflects the tokens
+                // actually processed fresh for this turn.
+                inputTokens: result.inputTokens - result.cachedTokens,
                 outputTokens: result.outputTokens,
                 costUSD: result.costUSD
             } : m)));
@@ -236,7 +260,13 @@ const ChatScreen = ({ navigation }: any) => {
             if (result.cacheInvalid) {
                 setChatCache(null);
                 createChatCache(selectedRange.ctx.contextText).then(created => {
-                    if (created) setChatCache(created);
+                    if (created) {
+                        setChatCache(created);
+                        setCacheCreationStats(prev => ({
+                            tokens: prev.tokens + created.creationTokens,
+                            costUSD: prev.costUSD.plus(created.creationCostUSD)
+                        }));
+                    }
                 });
             }
         } catch (error) {
