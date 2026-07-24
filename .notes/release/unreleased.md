@@ -12,6 +12,8 @@ A new way to keep two phones in sync without a cloud account — WealthSnap has 
 - **Two-way merge, not a one-way restore**: unlike Restore (which wipes and replaces everything), syncing merges — new entries from either device end up on both, and if the same entry was edited on both sides, the newer edit wins. Deletes are tracked too, so removing something on one device removes it from the other the next time they sync.
 - **Self-expiring, one-time codes**: a shown QR code stops working after 60 seconds, and immediately after the first successful sync, so an old code can't be scanned again later.
 - **Same WiFi network required**: both devices need to be on the same WiFi to connect directly — there's no internet or cloud relay involved.
+- **More resilient deletes**: deleting a transaction, budget, debt, recurring rule, reminder, or investment now records that deletion atomically with the delete itself, so an interrupted sync can't leave a deletion that never makes it to the other device.
+- **Partial sync results are now visible**: if one part of a sync fails (an unexpected or corrupted record) while the rest succeeds, you'll see a summary of what did and didn't go through instead of a blanket "Sync Failed" screen.
 
 ---
 
@@ -46,6 +48,7 @@ Three fixes to the Debt Strategy screen's math and payment tracking, found durin
 - **Interest Leak now respects interest type**: it was computing every debt's hourly interest off its current shrinking balance, even Flat-rate debts — which contradicts how Flat interest actually works elsewhere in the app (always charged on the original principal, never the paid-down balance). Flat-rate debts were showing an ever-decreasing "leak" as you paid them off, when the true interest cost stays constant until payoff. Now branches by interest type, matching the Next Payment Breakdown and payoff simulation.
 - **Due date no longer rolls forward on a partial payment**: previously, any principal payment at all — even a small extra payment early in the month — marked the month as "paid" and silently advanced the due date to next month, hiding the fact that the rest of the minimum was still owed (and suppressing the Due Soon/Overdue flag with it). It now sums everything paid toward that debt this month (principal, interest, fees) and only advances once that total meets the minimum payment.
 - **Warning for debts that can't be paid off at their minimum**: if a debt's minimum payment doesn't even cover its own interest, the balance never shrinks — the payoff simulation would previously just run out its 100-year cap and quietly show a distant "debt-free" date built on runaway interest, no different from every other debt. A red warning banner now names any debt in this state, so it's obvious the minimum needs to go up rather than looking like a routine slow payoff.
+- **Due date no longer skips ahead for debts with no minimum payment**: a debt with its minimum payment left at $0 (an informal, interest-free loan, for example) was treated as if that $0 minimum had already been met the instant the month began, so its due date always showed one month ahead of the real one and never flagged as overdue or due soon.
 
 ---
 
@@ -54,6 +57,7 @@ Two fixes to how gain/loss percentages are calculated, the second found during a
 
 - **Accurate Realized P/L %**: the percentage under Realized P/L was hardcoded to always display "0.00%" no matter your actual gains or losses. It now reflects your real return — realized profit/loss divided by the original cost basis of the shares you actually sold (not your remaining holdings), computed the same way Unrealized P/L's percentage already was.
 - **"N/A" instead of a misleading 0% for free shares**: if you record shares with a $0 cost basis (a stock grant, airdrop, or gift), any resulting gain has no defined percentage to divide by — showing "0%" made a real profit look like a flat break-even. Unrealized P/L, Realized P/L, the Holdings List's per-holding percentage, and the Allocation Chart now all show "N/A" in that specific case instead, while a position with genuinely zero cost basis *and* zero value (i.e. nothing held) still correctly shows 0%.
+- **Deleting an investment now cleans up its linked Realized P/L entry**: deleting a sold position previously left its Capital Gain/Loss transaction behind with no matching cost basis, silently skewing the Realized P/L% shown elsewhere in the portfolio. Deleting an investment now removes that linked entry too.
 
 ---
 
@@ -85,6 +89,7 @@ Fixed a legibility bug on the Supporter (Thank You) screen affecting both light 
 ## 🗂️ Record Menu
 - **Chat moved into the Record menu**: previously only reachable via the Floating Quick Actions gear, Chat is now the third AI Assistant option in the Record menu, alongside Scan and Upload.
 - **Renamed the Record menu header**: "New Record" / "Choose what you want to record" is now "Quick Actions" / "Choose what you want to do", since the menu covers more than just adding records now.
+- **Bottom tab renamed from "Record" to "Actions"**: matches the Record menu's own "Quick Actions" rename above.
 
 ---
 
