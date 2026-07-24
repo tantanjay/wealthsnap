@@ -52,7 +52,7 @@ export const fetchExchangeRate = async (base: string, target: string, date?: str
 
         const data = await response.json();
 
-        if (data && data.rates && data.rates[target]) {
+        if (data && data.rates && typeof data.rates[target] === 'number') {
             const rate = data.rates[target];
 
             // 3. Save to Cache

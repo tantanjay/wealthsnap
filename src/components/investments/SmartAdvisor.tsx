@@ -145,7 +145,7 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
                             <Ionicons name="flame" size={24} color={colors.error} style={{ marginBottom: 8 }} />
                             <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Significant Drop</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, lineHeight: 14 }}>
-                                Detected when a stock drops significantly (&gt;10%) from recent highs.
+                                Detected when a stock drops significantly (&gt;15%) from recent highs.
                             </Text>
                         </View>
 

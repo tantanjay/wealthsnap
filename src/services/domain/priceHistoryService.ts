@@ -53,7 +53,6 @@ export const bulkSavePriceHistories = async (priceHistories: PriceHistory[]): Pr
                     history.volume ? new BigNumber(history.volume).toString() : null,
                     history.timestamp,
                     history.source || 'MANUAL',
-                    history.source || 'MANUAL',
                     history.currency || 'PHP', // Fallback if bulk data is missing currency
                     history.exchangeRate ? new BigNumber(history.exchangeRate).toString() : '1'
                 ]);
@@ -122,11 +121,11 @@ export const getLatestPrices = async (symbols: string[]): Promise<Record<string,
 export const addPriceHistory = async (
     symbol: string,
     price: BigNumber | number | string,
-    metadata?: { high?: BigNumber | number, low?: BigNumber | number, volume?: BigNumber | number, source?: string, timestamp?: string, currency?: string, exchangeRate?: BigNumber | number | string }
+    metadata?: { id?: string, high?: BigNumber | number, low?: BigNumber | number, volume?: BigNumber | number, source?: string, timestamp?: string, currency?: string, exchangeRate?: BigNumber | number | string }
 ): Promise<void> => {
     try {
         const db = await getDatabase();
-        const id = generateUUID();
+        const id = metadata?.id || generateUUID();
         const timestamp = metadata?.timestamp || new Date().toISOString();
         const currency = metadata?.currency || await getDefaultCurrency();
 
@@ -227,12 +226,15 @@ export const getPriceHistory = async (
         let query = `SELECT * FROM price_history WHERE symbol = ?`;
         const params: any[] = [symbol];
 
+        // date(...) normalizes both bare 'YYYY-MM-DD' (AI_FETCH) and full ISO timestamps
+        // (MANUAL) to a calendar day before comparing, so a boundary-day row isn't dropped
+        // just because its timestamp format sorts differently as plain text.
         if (startDate) {
-            query += ` AND timestamp >= ?`;
+            query += ` AND date(timestamp) >= date(?)`;
             params.push(startDate);
         }
         if (endDate) {
-            query += ` AND timestamp <= ?`;
+            query += ` AND date(timestamp) <= date(?)`;
             params.push(endDate);
         }
 
@@ -277,12 +279,13 @@ export const getPriceHistoryForSymbols = async (
         let query = `SELECT * FROM price_history WHERE symbol IN (${placeholders})`;
         const params: any[] = [...symbols];
 
+        // See getPriceHistory() above for why date(...) normalization is needed here.
         if (startDate) {
-            query += ` AND timestamp >= ?`;
+            query += ` AND date(timestamp) >= date(?)`;
             params.push(startDate);
         }
         if (endDate) {
-            query += ` AND timestamp <= ?`;
+            query += ` AND date(timestamp) <= date(?)`;
             params.push(endDate);
         }
 
