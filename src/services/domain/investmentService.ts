@@ -3,10 +3,11 @@ import { Investment } from "@types";
 import { getDatabase } from "@services/database/databaseService";
 import { bulkDecryptItems, encryptField } from "@services/core/encryptionService";
 import { chunkArray } from "@utils/index";
-import { invalidateInvestmentCache, getInvestmentCache, setInvestmentCache, isValid, getTransactionCache, setTransactionCache } from "@services/core/dataCache";
+import { invalidateInvestmentCache, getInvestmentCache, setInvestmentCache, isValid, getTransactionCache, setTransactionCache, deleteTransactionFromCache } from "@services/core/dataCache";
+import { parseDate } from "@utils/financialMetrics";
 import { getAllPortfolioMetrics } from "@utils/investmentMetrics";
 import { getLatestPrices } from "@services/domain/priceHistoryService";
-import { getAllTransactions, deleteTransaction } from "@services/domain/transactionService";
+import { getAllTransactions } from "@services/domain/transactionService";
 import { getAllAssets } from "@services/domain/assetService";
 import { getAnnualDividend } from "@services/domain/dividendHistoryService";
 import { upsertTombstone } from "@services/domain/tombstoneService";
@@ -286,13 +287,15 @@ export const getPortfolioStats = async () => {
 
     // 6. Calculate Dividends separately (from actions) and This Month's Metrics
     const now = new Date();
-    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
 
     let thisMonthDividends = new BigNumber(0);
     let thisMonthInvested = new BigNumber(0);
 
     investments.forEach(inv => {
-        const isCurrentMonth = inv.date.startsWith(currentMonthStr);
+        const d = parseDate(inv.date);
+        const isCurrentMonth = d.getMonth() === currentMonth && d.getFullYear() === currentYear;
 
         if (inv.action === 'DIVIDEND') {
             const val = inv.price.times(inv.quantity);
@@ -343,16 +346,28 @@ export const deleteInvestment = async (id: string): Promise<void> => {
         // investment regardless of whether the caller chose to keep other linked
         // transactions (e.g. the original BUY's transfer). Otherwise a leftover
         // CAPITAL_GAIN/LOSS transaction with no matching cost basis corrupts realizedPLPercent.
-        const allTxs = await getAllTransactions();
-        const linkedPLTxs = allTxs.filter(t => t.investmentId === id && (t.type === 'CAPITAL_GAIN' || t.type === 'CAPITAL_LOSS'));
+        const linkedPLIds = (await db.getAllAsync<{ id: string }>(
+            `SELECT id FROM transactions WHERE investmentId = ? AND type IN ('CAPITAL_GAIN', 'CAPITAL_LOSS')`,
+            [id]
+        )).map(r => r.id);
 
         await db.withTransactionAsync(async () => {
             await db.runAsync('DELETE FROM investments WHERE id = ?', [id]);
             await upsertTombstone('investments', id);
+
+            // Delete linked P/L transactions + their tombstones inside the same transaction
+            // so a crash can't leave orphaned CAPITAL_GAIN/LOSS rows without their investment.
+            for (const txId of linkedPLIds) {
+                await db.runAsync('DELETE FROM transactions WHERE id = ?', [txId]);
+                await upsertTombstone('transactions', txId);
+            }
         });
 
-        for (const tx of linkedPLTxs) {
-            await deleteTransaction(tx.id);
+        // Raw SQL above bypasses deleteTransaction()'s own optimistic cache update - without
+        // this, getCachedTransactions() (e.g. Chat's context) could keep serving an
+        // already-deleted CAPITAL_GAIN/LOSS row for up to its 15-minute TTL.
+        for (const txId of linkedPLIds) {
+            deleteTransactionFromCache(txId);
         }
 
         invalidateInvestmentCache();
@@ -476,7 +491,7 @@ export const getActualDividendsGrouped = async (): Promise<Record<number, Monthl
 
             const amount = inv.price.times(inv.quantity).toNumber();
             dividendMap[year][month].total += amount;
-            
+
             // Add to breakdown (group by symbol in the breakdown too)
             const existing = dividendMap[year][month].breakdown.find(b => b.symbol === inv.symbol);
             if (existing) {
