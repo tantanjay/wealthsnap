@@ -1,6 +1,6 @@
 import { BigNumber } from 'bignumber.js';
 import { Transaction, Investment, Debt, Budget } from '@types';
-import { calculateTotals, calculateSavingsRate, calculateBalance } from '@utils/financialMetrics';
+import { calculateTotals, calculateSavingsRate, calculateBalance, parseDate } from '@utils/financialMetrics';
 import { calculateCurrentDebtBalance } from '@utils/debtMetrics';
 
 export interface CategoryAmount {
@@ -66,7 +66,17 @@ export interface MonthlySummaryData {
     spendingSpikes: SpendingSpike[];
 }
 
-const isInMonth = (dateStr: string, yearMonth: string) => dateStr.startsWith(yearMonth);
+// Transaction/investment dates are stored as full ISO instants (toISOString()), so a plain
+// string prefix match compares UTC calendar dates against a yearMonth boundary computed from
+// local time elsewhere - wrong near month boundaries for any non-zero timezone offset. Always
+// go through the device's local calendar date instead, consistent with the rest of the app
+// (e.g. financialMetrics.ts's getTransactionsByMonth).
+const toLocalYearMonth = (dateStr: string): string => {
+    const d = parseDate(dateStr);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const isInMonth = (dateStr: string, yearMonth: string) => toLocalYearMonth(dateStr) === yearMonth;
 
 const sumByCategory = (items: { category: string; amount: BigNumber }[]): CategoryAmount[] => {
     const totals = new Map<string, BigNumber>();
@@ -82,7 +92,7 @@ const sumByCategory = (items: { category: string; amount: BigNumber }[]): Catego
 export const getEarliestYearMonth = (transactions: Transaction[], investments: Investment[]): string | null => {
     let earliest: string | null = null;
     const consider = (dateStr: string) => {
-        const ym = dateStr.slice(0, 7);
+        const ym = toLocalYearMonth(dateStr);
         if (!earliest || ym < earliest) earliest = ym;
     };
     transactions.forEach(t => consider(t.date));
@@ -223,7 +233,9 @@ export const buildMonthlySummaryData = (
     budgets.forEach(b => {
         const spent = expenseByCategory.find(c => c.category === b.category);
         if (!spent) return;
-        const percentage = new BigNumber(spent.amount).dividedBy(b.amount).times(100).toNumber();
+        const percentage = b.amount.isGreaterThan(0)
+            ? new BigNumber(spent.amount).dividedBy(b.amount).times(100).toNumber()
+            : 0;
         if (percentage >= 80) {
             budgetAlerts.push({
                 category: b.category,
@@ -251,11 +263,11 @@ export const buildMonthlySummaryData = (
     );
     const priorByCategory = new Map<string, { total: BigNumber; months: Set<string> }>();
     allTransactions
-        .filter(t => t.type === 'EXPENSE' && priorMonths.includes(t.date.slice(0, 7)))
+        .filter(t => t.type === 'EXPENSE' && priorMonths.includes(toLocalYearMonth(t.date)))
         .forEach(t => {
             const entry = priorByCategory.get(t.category) || { total: new BigNumber(0), months: new Set<string>() };
             entry.total = entry.total.plus(t.amount.abs());
-            entry.months.add(t.date.slice(0, 7));
+            entry.months.add(toLocalYearMonth(t.date));
             priorByCategory.set(t.category, entry);
         });
 
@@ -366,7 +378,12 @@ export const renderMonthlySummaryText = (data: MonthlySummaryData, currency: str
 
     if (data.topExpenses.length) {
         const items = data.topExpenses.map(t => {
-            const noteSuffix = t.note ? ` - note: "${t.note}"` : '';
+            // Notes are free text (user-entered, or receipt-OCR-derived) and get spliced
+            // directly into the context sent to the AI - strip quotes/newlines/control
+            // characters so a note can't break out of its `note: "..."` delimiter or inject
+            // stray formatting/instructions into the surrounding text.
+            const cleanNote = t.note ? t.note.replace(/["\r\n]+/g, ' ').replace(/[\x00-\x1F\x7F]/g, '').trim() : '';
+            const noteSuffix = cleanNote ? ` - note: "${cleanNote}"` : '';
             return `${t.category} ${currency} ${fmt(t.amount)} (${new Date(t.date).toLocaleDateString('default', { month: 'short', day: 'numeric' })})${noteSuffix}`;
         });
         lines.push(`Top Expenses: ${items.join(' | ')}`);

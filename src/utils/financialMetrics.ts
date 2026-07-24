@@ -567,9 +567,21 @@ export const detectAnomalies = (currentMonthTransactions: Transaction[], allTran
     return anomalies;
 };
 
-export const getCategoryAverages = (allTransactions: Transaction[], monthsBack: number = 3) => {
+export interface CategoryAverage {
+    average: number;
+    // How many of the window's months this specific category actually had spending in -
+    // distinct from `totalMonths`, which is the same divisor shared by every category (the
+    // window smooths a category's total evenly across the whole window regardless of how
+    // sporadically it actually occurred). Callers can use this to flag categories where the
+    // average is a "smoothed occasional cost" rather than a genuine recurring monthly one.
+    activeMonths: number;
+    totalMonths: number;
+}
+
+export const getCategoryAverages = (allTransactions: Transaction[], monthsBack: number = 3): { [key: string]: CategoryAverage } => {
     const today = new Date();
     const totalsByCategory: { [key: string]: BigNumber } = {};
+    const activeMonthsByCategory: { [key: string]: Set<string> } = {};
 
     // 1. Define date boundaries
     const startHistory = new Date(today.getFullYear(), today.getMonth() - monthsBack, 1);
@@ -588,20 +600,29 @@ export const getCategoryAverages = (allTransactions: Transaction[], monthsBack: 
         return isMatch;
     });
 
-    // 3. Aggregate totals using absolute values
+    // 3. Aggregate totals using absolute values, and track which months each category
+    // itself was actually active in (not just the shared window-wide month count above).
     historyTransactions.forEach(t => {
+        const d = parseDate(t.date);
+        const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
         totalsByCategory[t.category] = (totalsByCategory[t.category] || new BigNumber(0)).plus(t.amount.abs());
+        if (!activeMonthsByCategory[t.category]) activeMonthsByCategory[t.category] = new Set<string>();
+        activeMonthsByCategory[t.category].add(monthKey);
     });
 
     // 4. Calculate averages
-    const averages: { [key: string]: number } = {};
 
     // We divide by the actual number of months found, or the requested monthsBack
     // This prevents "diluting" averages for new users
     const divisor = uniqueMonths.size > 0 ? uniqueMonths.size : monthsBack;
 
+    const averages: { [key: string]: CategoryAverage } = {};
     Object.keys(totalsByCategory).forEach(key => {
-        averages[key] = totalsByCategory[key].dividedBy(divisor).toNumber();
+        averages[key] = {
+            average: totalsByCategory[key].dividedBy(divisor).toNumber(),
+            activeMonths: activeMonthsByCategory[key]?.size ?? 0,
+            totalMonths: divisor
+        };
     });
 
     return averages;

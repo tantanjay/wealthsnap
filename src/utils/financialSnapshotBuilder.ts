@@ -1,6 +1,6 @@
 import { BigNumber } from 'bignumber.js';
 import { Transaction, Debt } from '@types';
-import { calculateBurnRate } from '@utils/financialMetrics';
+import { calculateBurnRate, parseDate } from '@utils/financialMetrics';
 import { calculateTotalDebtObligations, calculateCurrentDebtBalance } from '@utils/debtMetrics';
 
 export interface PortfolioStatsInput {
@@ -117,9 +117,16 @@ export const buildFinancialSnapshotData = (
 
     const now = new Date();
     const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    // Dates are stored as full ISO instants - a string prefix match compares UTC calendar
+    // dates against a local-time month boundary, misclassifying transactions near month
+    // boundaries for any non-zero timezone offset. Compare local calendar months instead.
+    const isCurrentLocalMonth = (dateStr: string) => {
+        const d = parseDate(dateStr);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === currentYearMonth;
+    };
     const spentByCategory = new Map<string, BigNumber>();
     transactions
-        .filter(t => t.type === 'EXPENSE' && t.date.startsWith(currentYearMonth))
+        .filter(t => t.type === 'EXPENSE' && isCurrentLocalMonth(t.date))
         .forEach(t => {
             spentByCategory.set(t.category, (spentByCategory.get(t.category) || new BigNumber(0)).plus(t.amount.abs()));
         });

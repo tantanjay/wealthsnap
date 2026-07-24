@@ -16,6 +16,7 @@ interface FloatingGearContextType {
     setActiveRoute: (routeName: string) => void;
     requestUndock: (x: number, y: number) => void;
     requestDock: () => void;
+    updatePosition: (x: number, y: number) => void;
 }
 
 const FloatingGearContext = createContext<FloatingGearContextType | undefined>(undefined);
@@ -80,6 +81,14 @@ export const FloatingGearProvider: React.FC<{ children: React.ReactNode }> = ({ 
         saveFloatingGearDocked(true);
     }, []);
 
+    // Tracks where the bubble actually is after a manual drag, in memory only (not persisted
+    // across restarts - see the restore effect above). Without this, a rotation re-runs the
+    // landing effect from the stale detach-time position instead of wherever the bubble was
+    // last dragged to, snapping it back to where it first appeared.
+    const updatePosition = useCallback((x: number, y: number) => {
+        setPendingPosition({ x, y });
+    }, []);
+
     const secondAction = useMemo(
         () => (activeRouteName ? actionsByRoute[activeRouteName] ?? null : null),
         [activeRouteName, actionsByRoute]
@@ -87,7 +96,7 @@ export const FloatingGearProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     return (
         <FloatingGearContext.Provider
-            value={{ isDocked, pendingPosition, secondAction, registerSecondAction, setActiveRoute, requestUndock, requestDock }}
+            value={{ isDocked, pendingPosition, secondAction, registerSecondAction, setActiveRoute, requestUndock, requestDock, updatePosition }}
         >
             {children}
         </FloatingGearContext.Provider>

@@ -29,7 +29,7 @@ export default function FloatingGearBubble() {
     const insets = useSafeAreaInsets();
     const { isPrivacyEnabled, togglePrivacy, revealForScreenshot } = usePrivacy();
     const { showAlert } = useAlert();
-    const { isDocked, pendingPosition, secondAction, requestDock } = useFloatingGear();
+    const { isDocked, pendingPosition, secondAction, requestDock, updatePosition } = useFloatingGear();
 
     const [menuVisible, setMenuVisible] = useState(false);
     const [summaryModalVisible, setSummaryModalVisible] = useState(false);
@@ -138,6 +138,9 @@ export default function FloatingGearBubble() {
             );
             translateX.value = withSpring(snapX);
             translateY.value = withSpring(clampedY);
+            // Remember where the bubble actually settled so a later rotation (which re-runs
+            // the landing effect below) recomputes from here, not the original detach point.
+            runOnJS(updatePosition)(snapX, clampedY);
         });
 
     const composed = Gesture.Race(pan, tap);
@@ -227,7 +230,12 @@ export default function FloatingGearBubble() {
                 )}
 
                 <TouchableOpacity
-                    style={[styles.menuRow, !isPrivacyEnabled && { borderBottomColor: colors.border }]}
+                    style={[
+                        styles.menuRow,
+                        // Monthly Summary is the last row whenever Reveal for Screenshot is hidden -
+                        // drop its border in that case instead of leaving an unthemed default line.
+                        !isPrivacyEnabled ? { borderBottomColor: colors.border } : styles.noBorder
+                    ]}
                     onPress={handleOpenMonthlySummary}
                 >
                     <Ionicons name="document-text-outline" size={20} color={colors.text} />
@@ -235,7 +243,7 @@ export default function FloatingGearBubble() {
                 </TouchableOpacity>
 
                 {!isPrivacyEnabled && (
-                    <TouchableOpacity style={styles.menuRow} onPress={handleRevealForScreenshot}>
+                    <TouchableOpacity style={[styles.menuRow, styles.noBorder]} onPress={handleRevealForScreenshot}>
                         <Ionicons name="camera-outline" size={20} color={colors.text} />
                         <Text style={[styles.menuLabel, { color: colors.text }]}>Reveal for Screenshot</Text>
                     </TouchableOpacity>
@@ -269,6 +277,9 @@ const styles = StyleSheet.create({
         gap: 12,
         paddingVertical: 14,
         borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    noBorder: {
+        borderBottomWidth: 0,
     },
     menuLabel: {
         fontSize: 16,

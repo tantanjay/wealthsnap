@@ -113,6 +113,8 @@ const SetupScreen = ({ navigation }: any) => {
             const msg = (error as Error).message;
             if (msg === 'INVALID_PASSWORD') {
                 showAlert('Error', 'Incorrect password.');
+            } else if (msg === 'RESTORE_FAILED_ROLLED_BACK' || msg === 'RESTORE_FAILED_ROLLBACK_FAILED') {
+                showAlert('Restore Failed', 'The restore failed partway through. Please try again.');
             } else {
                 showAlert('Error', 'Failed to restore: ' + msg);
             }

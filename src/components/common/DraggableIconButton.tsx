@@ -31,11 +31,13 @@ export default function DraggableIconButton({ children, onPress, style }: Dragga
     const homeWindowY = useSharedValue(0);
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
+    const hasMeasured = useSharedValue(false);
 
     const measureHome = () => {
         viewRef.current?.measureInWindow((x, y) => {
             homeWindowX.value = x;
             homeWindowY.value = y;
+            hasMeasured.value = true;
         });
     };
 
@@ -54,7 +56,11 @@ export default function DraggableIconButton({ children, onPress, style }: Dragga
         .onEnd((e) => {
             const distance = Math.hypot(e.translationX, e.translationY);
 
-            if (distance > DETACH_THRESHOLD) {
+            // hasMeasured guards against detaching before the first onLayout measurement
+            // resolves (a tight race right after mount) - homeWindowX/Y would still be their
+            // (0, 0) default, computing a drop position from the raw gesture delta instead of
+            // the button's real screen position. Fall back to snapping back in that case.
+            if (distance > DETACH_THRESHOLD && hasMeasured.value) {
                 const dropX = homeWindowX.value + e.translationX;
                 const dropY = homeWindowY.value + e.translationY;
                 translateX.value = 0;

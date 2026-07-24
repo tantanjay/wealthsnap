@@ -71,7 +71,8 @@ const buildFilteredMonthlySummaries = (
     investments: Investment[],
     debts: Debt[],
     budgets: Budget[],
-    excludeCategories: string[]
+    excludeCategories: string[],
+    currency: string
 ): MonthlySummaryRow[] => {
     const earliest = getEarliestYearMonth(transactions, investments);
     if (!earliest) return [];
@@ -85,7 +86,7 @@ const buildFilteredMonthlySummaries = (
         return {
             yearMonth,
             isFinal: yearMonth < currentYearMonth,
-            summaryText: renderMonthlySummaryText(data),
+            summaryText: renderMonthlySummaryText(data, currency),
             summaryJson: data,
             createdAt: '',
             updatedAt: ''
@@ -127,7 +128,7 @@ export const fetchChatContextInputs = async (excludeCategories: string[] = []): 
     const snapshotText = renderFinancialSnapshotText(snapshot, currency);
 
     const summaries = excludeCategories.length > 0
-        ? buildFilteredMonthlySummaries(transactions, allInvestments, debts, budgets, excludeCategories)
+        ? buildFilteredMonthlySummaries(transactions, allInvestments, debts, budgets, excludeCategories, currency)
         : cachedSummaries;
 
     return { snapshotText, summaries };
