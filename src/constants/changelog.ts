@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Record menu renamed from "New Record" to "Quick Actions".
 - Bottom tab bar's "Record" label renamed to "Actions" to match.
 - Chat: lower cost per message — your financial context is now cached instead of being resent in full with every message.
+  - Token/cost totals no longer double-count the cached context each message, now include the one-time cache-creation cost, and large numbers are abbreviated (e.g. "65k", "1.2M").
 - Chat: context sent to Gemini now includes today's date and flags the current month as still in progress.
 - New app icon, also applied to the Android adaptive icon and web favicon.
 
@@ -62,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Restore: a backup containing investment price history could fail to restore, or corrupt currency/exchange-rate data, due to a bulk-insert parameter mismatch.
 - Background tasks (recurring transactions, Monthly Summary sync, Auto Backup) could silently stop running after updating from an older version.
 - Monthly Summary: a spending percentage against a $0 budget could display as "Infinity%".
+- Chat: the history range picker's token estimate (and the context actually sent) could understate your real history if Chat was opened before the background monthly-summary sync had finished, most likely right after launching the app.
 - Monthly Summary and Chat: amounts were always labeled in PHP regardless of your actual currency.
 - Monthly Summary and Chat: a transaction logged near a month boundary could be filed under the wrong month depending on your timezone.
 - CSV Import: an income transaction could be wrongly rejected as a duplicate of an unrelated expense.
