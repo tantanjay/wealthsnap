@@ -721,7 +721,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                         fees: inv.fees ? inv.fees.toString() : undefined,
                         exchangeRate: inv.exchangeRate ? inv.exchangeRate.toString() : undefined
                     };
-                    navigation.navigate('Record', { investment: serializedInvestment });
+                    navigation.navigate('Actions', { investment: serializedInvestment });
                 }}
                 onDelete={async (id, deleteLinked) => {
                     try {

@@ -119,8 +119,10 @@ export const getAllDebts = async (): Promise<Debt[]> => {
 export const deleteDebt = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
-        await db.runAsync('DELETE FROM debts WHERE id = ?', [id]);
-        await upsertTombstone('debts', id);
+        await db.withTransactionAsync(async () => {
+            await db.runAsync('DELETE FROM debts WHERE id = ?', [id]);
+            await upsertTombstone('debts', id);
+        });
     } catch (error) {
         console.error('Error deleting debt:', error);
         throw new Error('Failed to delete debt');

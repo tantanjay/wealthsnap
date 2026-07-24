@@ -6,7 +6,7 @@ import { chunkArray } from "@utils/index";
 import { invalidateInvestmentCache, getInvestmentCache, setInvestmentCache, isValid, getTransactionCache, setTransactionCache } from "@services/core/dataCache";
 import { getAllPortfolioMetrics } from "@utils/investmentMetrics";
 import { getLatestPrices } from "@services/domain/priceHistoryService";
-import { getAllTransactions } from "@services/domain/transactionService";
+import { getAllTransactions, deleteTransaction } from "@services/domain/transactionService";
 import { getAllAssets } from "@services/domain/assetService";
 import { getAnnualDividend } from "@services/domain/dividendHistoryService";
 import { upsertTombstone } from "@services/domain/tombstoneService";
@@ -337,8 +337,24 @@ export const getPortfolioStats = async () => {
 export const deleteInvestment = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
-        await db.runAsync('DELETE FROM investments WHERE id = ?', [id]);
-        await upsertTombstone('investments', id);
+
+        // Realized gain/loss transactions only exist as a byproduct of this investment's
+        // sale - they have no meaning without it, so they're deleted along with the
+        // investment regardless of whether the caller chose to keep other linked
+        // transactions (e.g. the original BUY's transfer). Otherwise a leftover
+        // CAPITAL_GAIN/LOSS transaction with no matching cost basis corrupts realizedPLPercent.
+        const allTxs = await getAllTransactions();
+        const linkedPLTxs = allTxs.filter(t => t.investmentId === id && (t.type === 'CAPITAL_GAIN' || t.type === 'CAPITAL_LOSS'));
+
+        await db.withTransactionAsync(async () => {
+            await db.runAsync('DELETE FROM investments WHERE id = ?', [id]);
+            await upsertTombstone('investments', id);
+        });
+
+        for (const tx of linkedPLTxs) {
+            await deleteTransaction(tx.id);
+        }
+
         invalidateInvestmentCache();
     } catch (error) {
         console.error('Error deleting investment:', error);
