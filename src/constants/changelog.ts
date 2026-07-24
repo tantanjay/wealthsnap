@@ -42,6 +42,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Investments: Unrealized/Realized P/L% for free or gifted shares (zero cost basis) misleadingly showed 0% instead of "N/A".
 - Investments: deleting an investment now also removes its linked Realized P/L entry, keeping Realized P/L% accurate.
 - Auto Backup: choosing a folder on Android could leave the app stuck on the lock screen after returning from the system folder picker.
+- Auto Backup: a run interrupted mid-write could leave a corrupted file under the real backup name.
+- Restore: a restore that fails partway through now rolls back to your previous data instead of leaving it lost.
+- Monthly Summary: a spending percentage against a $0 budget could display as "Infinity%".
+- Monthly Summary and Chat: amounts were always labeled in PHP regardless of your actual currency.
+- Monthly Summary and Chat: a transaction logged near a month boundary could be filed under the wrong month depending on your timezone.
+- CSV Import: an income transaction could be wrongly rejected as a duplicate of an unrelated expense.
+- Floating Quick Actions gear: rotating the device after manually repositioning the bubble snapped it back to where it first appeared.
+- Floating Quick Actions gear: the last row in the menu showed a stray border in some cases.
+- Smart Suggestions: a one-off expense could be suggested as a recurring monthly budget; now flagged as occasional instead.
+- Smart Suggestions: applying multiple budgets gave no indication if some failed while others succeeded.
+- Smart Suggestions: new users with no prior-month history saw a false "budgets already match" message.
 - Supporter Screen: several donor name styles were unreadable or washed out depending on light/dark mode.
 - Home: the Financial Health card's "Net Worth" display mode didn't persist between sessions.
 - Clearing all data no longer leaves old Monthly Summaries behind.
@@ -51,6 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Security
 - Debt name and interest rate are now encrypted at rest, matching other debt fields.
 - PIN is now stored as a hash instead of plaintext, with a temporary lockout after repeated wrong attempts.
+- Monthly Summary: notes and debt names cached for AI-generated summaries are now encrypted at rest, matching everywhere else they appear.
+- Chat and Monthly Summary: transaction notes are now sanitized before being included in AI context.
 
 ---
 

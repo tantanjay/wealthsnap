@@ -76,6 +76,45 @@ Lower cost per message, plus a fix for a way the AI could misread your data.
 
 ## 📦 Auto Backup
 - **Folder picker no longer left the app locked**: choosing a backup destination folder on Android backgrounds the app to show the system folder picker, same as the manual backup/restore file pickers. Unlike those, it wasn't exempted from the security lock, so returning to WealthSnap could drop you on the PIN/biometric screen. Picking or canceling a folder now temporarily disables the lock the same way the file pickers already do.
+- **No more corrupted backups from an interrupted write**: a scheduled backup writes straight to disk in the background, where the OS can suspend or kill the app mid-write with no warning. Previously that could leave a truncated, unreadable file sitting under the real backup's filename with no indication anything was wrong. It now writes to a temporary file first and only moves it into place once the write finishes, so an interruption never corrupts the file you'd actually try to restore from later.
+
+---
+
+## 💾 Restore
+- **A failed restore no longer costs you your data**: restoring wipes your existing data before writing the backup's data back in its place. If something went wrong partway through that second step (a corrupted entity in the backup file, a storage error), you'd previously be left with neither the old data nor a complete new one. Restore now snapshots your current data first, and automatically rolls back to it if anything fails partway through — you'll see a clear "your previous data has been restored, nothing was lost" message instead.
+
+---
+
+## 📅 Monthly Summary
+Several fixes found during a deep code review of previously shipped features, covering both the in-app Monthly Summary view and the copy of it sent to Chat.
+
+- **Notes and debt names are now encrypted at rest**: Monthly Summary caches a narrative + structured snapshot per month, including transaction notes and debt names — the same fields that are encrypted everywhere else they're stored. That cache was being written in plain text, running automatically in the background regardless of whether you'd consented to AI features at all. It's now encrypted the same way, and existing cached summaries are cleared once so they regenerate correctly.
+- **Amounts now show your real currency**: every amount in Monthly Summary (and the copy sent to Chat) was labeled "PHP" regardless of your profile's actual currency setting.
+- **Transactions near a month boundary now land in the right month**: dates are stored as UTC timestamps, and Monthly Summary was comparing them as UTC calendar dates against a month boundary computed from your local time — for timezones ahead of UTC, a transaction logged late at night could get filed under the previous month instead of the one it actually happened in.
+- **A $0 budget no longer shows "Infinity%"**: a budget category with its amount set to zero could show up as an impossible over-budget percentage instead of being skipped.
+- **Transaction notes are now sanitized before reaching the AI**: notes (including ones transcribed by receipt scanning) were spliced directly into the text sent to Gemini with no escaping. A note containing quotes or line breaks could distort the surrounding context; it's now stripped of anything that could do that first.
+
+---
+
+## 🎯 Floating Quick Actions Gear
+Two UI fixes found during a deep code review of previously shipped features.
+
+- **Manual repositioning now survives rotation**: after dragging the floating bubble to a preferred spot, rotating the device used to snap it back to wherever it first landed when detached, discarding the manual placement. It now remembers where you last dropped it for the rest of the session.
+- **No more stray border on the last menu row**: depending on which optional rows were showing, the actual last row in the Quick Actions menu could show a leftover default-colored border instead of no border at all.
+
+---
+
+## 🎯 Smart Suggestions
+Three fixes found during a deep code review of previously shipped features.
+
+- **Occasional expenses are now labeled, not suggested as a recurring cost**: a one-off expense (a single car repair, say) was averaged the same way as a genuinely monthly one, suggesting a budget that implied it happens every month. Categories active in only a few months are now footnoted as occasional instead.
+- **Applying suggestions now reports partial success accurately**: if one budget failed to save while others succeeded, you'd previously just see a generic failure with no indication anything had gone through. It now reports exactly how many succeeded and which ones failed, and only removes the successful ones from the list.
+- **New users no longer see a false "already matches" message**: with no prior-month spending history yet, the empty suggestions list said your budgets already matched your spending — there was simply no data to compare against. It now says so.
+
+---
+
+## 📥 CSV Import
+- **Income no longer falsely flagged as a duplicate expense**: a few categories (Insurance, Interest, Others, Uncategorized) are valid for both income and expenses. Duplicate detection didn't check which type a row was, so a legitimate income transaction could be rejected as a duplicate of an unrelated expense sharing the same date, amount, and category.
 
 ---
 
