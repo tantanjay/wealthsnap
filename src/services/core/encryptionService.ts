@@ -19,13 +19,45 @@ let keyPromise: Promise<string> | null = null;
 // one that doesn't is either legacy data encrypted before this marker existed (real, valid value -
 // kept as-is for backward compatibility) or a wrong-key decrypt that happened to produce valid
 // UTF-8 - this only protects data written after this fix, not retroactively.
-const FIELD_INTEGRITY_MARKER = 'WSF1';
+const FIELD_INTEGRITY_MARKER = 'WSF1';
+
+// A hex-string key passed to CryptoJS.AES.encrypt/decrypt is treated as a *passphrase*: CryptoJS
+// derives the real AES key/IV from it via a single-round-MD5 KDF (EVP_BytesToKey) on every single
+// call, discarding most of the strength of the actual random 256-bit key generated in
+// getStorageKey() below - and paying that KDF cost on every encrypt/decrypt. Only the
+// device-local SecureStore key goes through this new explicit-key+IV path; a caller-supplied
+// `secret` (password-protected backups/sync) still goes through the classic passphrase mode
+// below, since that's the correct, standard way to derive a key from an arbitrary user-typed
+// password and needs to stay independently restorable from just that password. ':' can never
+// appear in base64 output, so this prefix can never collide with a legacy (or password-mode)
+// ciphertext, which is always plain base64.
+const DEVICE_KEY_FORMAT_PREFIX = 'v2:';
+
+const encryptWithDeviceKey = (plaintext: string, hexKey: string): string => {
+    const keyWordArray = CryptoJS.enc.Hex.parse(hexKey);
+    const iv = CryptoJS.lib.WordArray.random(16);
+    const cipherTextBase64 = CryptoJS.AES.encrypt(plaintext, keyWordArray, { iv }).toString();
+    return `${DEVICE_KEY_FORMAT_PREFIX}${iv.toString(CryptoJS.enc.Base64)}:${cipherTextBase64}`;
+};
+
+const decryptWithDeviceKey = (ciphertext: string, hexKey: string): string => {
+    if (ciphertext.startsWith(DEVICE_KEY_FORMAT_PREFIX)) {
+        const rest = ciphertext.slice(DEVICE_KEY_FORMAT_PREFIX.length);
+        const sepIdx = rest.indexOf(':');
+        const iv = CryptoJS.enc.Base64.parse(rest.slice(0, sepIdx));
+        const keyWordArray = CryptoJS.enc.Hex.parse(hexKey);
+        const bytes = CryptoJS.AES.decrypt(rest.slice(sepIdx + 1), keyWordArray, { iv });
+        return bytes.toString(CryptoJS.enc.Utf8);
+    }
+    // Legacy passphrase-mode ciphertext, encrypted before this format existed - decrypt exactly
+    // as before.
+    return CryptoJS.AES.decrypt(ciphertext, hexKey).toString(CryptoJS.enc.Utf8);
+};
 
 const decryptFieldSync = (ciphertext: string | null | undefined, key: string): string | null => {
     if (!ciphertext) return null;
     try {
-        const bytes = CryptoJS.AES.decrypt(ciphertext, key);
-        const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+        const decryptedString = decryptWithDeviceKey(ciphertext, key);
         if (!decryptedString) return null;
         return decryptedString.startsWith(FIELD_INTEGRITY_MARKER)
             ? decryptedString.slice(FIELD_INTEGRITY_MARKER.length)
@@ -81,9 +113,14 @@ const getStorageKey = async (): Promise<string> => {
  */
 export const encryptData = async (data: any, secret?: string): Promise<string> => {
     try {
-        const key = secret || await getStorageKey();
         const jsonString = JSON.stringify(data);
-        return CryptoJS.AES.encrypt(jsonString, key).toString();
+        if (secret) {
+            // User-supplied password - keep classic passphrase mode, the standard way to derive
+            // a key from an arbitrary password.
+            return CryptoJS.AES.encrypt(jsonString, secret).toString();
+        }
+        const key = await getStorageKey();
+        return encryptWithDeviceKey(jsonString, key);
     } catch (error) {
         console.error('Error encrypting data:', error);
         throw new Error('Encryption failed');
@@ -97,13 +134,23 @@ export const encryptData = async (data: any, secret?: string): Promise<string> =
  * @returns Decrypted data object or null if failure
  */
 export const decryptData = async (ciphertext: string, secret?: string): Promise<any | null> => {
+    if (secret) {
+        try {
+            const bytes = CryptoJS.AES.decrypt(ciphertext, secret);
+            const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+            return decryptedString ? JSON.parse(decryptedString) : null;
+        } catch (error) {
+            console.error('Error decrypting data:', error);
+            return null;
+        }
+    }
+
     // Key retrieval failing (SecureStore itself inaccessible) is a systemic problem, not a
     // per-item decrypt failure - let it throw instead of collapsing to the same null every
     // caller already treats as "no data here".
-    const key = secret || await getStorageKey();
+    const key = await getStorageKey();
     try {
-        const bytes = CryptoJS.AES.decrypt(ciphertext, key);
-        const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+        const decryptedString = decryptWithDeviceKey(ciphertext, key);
         return decryptedString ? JSON.parse(decryptedString) : null;
     } catch (error) {
         // Common error: Wrong key or corrupted data
@@ -140,7 +187,7 @@ export const encryptField = async (
             stringValue = value;
         }
 
-        return CryptoJS.AES.encrypt(`${FIELD_INTEGRITY_MARKER}${stringValue}`, key).toString();
+        return encryptWithDeviceKey(`${FIELD_INTEGRITY_MARKER}${stringValue}`, key);
     } catch (error) {
         console.error('Error encrypting field:', error);
         throw new Error('Field encryption failed');
@@ -157,8 +204,7 @@ export const decryptField = async (ciphertext: string | null | undefined): Promi
     // See decryptData for why key retrieval is outside this try/catch.
     const key = await getStorageKey();
     try {
-        const bytes = CryptoJS.AES.decrypt(ciphertext, key);
-        const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+        const decryptedString = decryptWithDeviceKey(ciphertext, key);
         if (!decryptedString) return null;
         return decryptedString.startsWith(FIELD_INTEGRITY_MARKER)
             ? decryptedString.slice(FIELD_INTEGRITY_MARKER.length)
