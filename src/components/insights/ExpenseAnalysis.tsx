@@ -329,6 +329,7 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                 transactions={transactions}
                 currency={currency}
                 grouping={grouping}
+                selectedDate={selectedDate}
             />
 
             {/* Recurring Expenses Summary Modal */}

@@ -52,6 +52,22 @@ const getDividendConversionRate = async (symbol: string): Promise<BigNumber> => 
     }
 };
 
+/**
+ * Manual entries store exDate as a full ISO timestamp (round-trips safely through local Date
+ * getters); AI-fetched entries store a bare YYYY-MM-DD string, which JS parses as UTC midnight -
+ * reading that back with local .getMonth()/.getFullYear() then reapplies the device's local
+ * offset, shifting the date into the wrong month (or year, for Jan 1st) for negative-UTC-offset
+ * timezones. Detect the bare-date case and read its calendar components directly instead.
+ */
+const getExDateYearMonth = (exDate: string): { year: number; month: number } => {
+    const bareDateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(exDate);
+    if (bareDateMatch) {
+        return { year: Number(bareDateMatch[1]), month: Number(bareDateMatch[2]) - 1 };
+    }
+    const d = new Date(exDate);
+    return { year: d.getFullYear(), month: d.getMonth() };
+};
+
 // --- Queries ---
 
 const INSERT_DIVIDEND_HISTORY_QUERY = `
@@ -254,27 +270,26 @@ export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promi
             const conversionRate = await getDividendConversionRate(holding.symbol);
 
             // Map to better objects
-            const divEvents = history.map(d => ({
-                month: new Date(d.exDate).getMonth(), // 0-11
-                year: new Date(d.exDate).getFullYear(),
-                amount: new BigNumber(d.amount).times(conversionRate),
-                status: d.status
-            }));
+            const divEvents = history.map(d => {
+                const { year, month } = getExDateYearMonth(d.exDate);
+                return {
+                    month, // 0-11
+                    year,
+                    amount: new BigNumber(d.amount).times(conversionRate),
+                    status: d.status
+                };
+            });
 
             for (let m = 0; m < 12; m++) {
-                // Find event for this month in current year
-                const thisYearEvent = divEvents.find(e => e.month === m && e.year === currentYear);
+                // Sum every event in this month (not just the first found) - a symbol can pay
+                // more than once in the same month (a regular + special dividend, for instance).
+                const thisYearEvents = divEvents.filter(e => e.month === m && e.year === currentYear);
+                let dividendAmount = thisYearEvents.reduce((sum, e) => sum.plus(e.amount), new BigNumber(0));
 
-                let dividendAmount = new BigNumber(0);
-
-                if (thisYearEvent) {
-                    dividendAmount = thisYearEvent.amount;
-                } else {
+                if (dividendAmount.isZero()) {
                     // Fallback to last year
-                    const lastYearEvent = divEvents.find(e => e.month === m && e.year === currentYear - 1);
-                    if (lastYearEvent) {
-                        dividendAmount = lastYearEvent.amount;
-                    }
+                    const lastYearEvents = divEvents.filter(e => e.month === m && e.year === currentYear - 1);
+                    dividendAmount = lastYearEvents.reduce((sum, e) => sum.plus(e.amount), new BigNumber(0));
                 }
 
                 if (dividendAmount.isGreaterThan(0)) {
@@ -357,29 +372,31 @@ export const getDividendCalendar = async (holdings: PortfolioHolding[], year: nu
             const conversionRate = await getDividendConversionRate(holding.symbol);
 
             // Map to helper objects
-            const events = rows.map(r => ({
-                month: new Date(r.exDate).getMonth(),
-                year: new Date(r.exDate).getFullYear(),
-                symbol: r.symbol,
-                amount: new BigNumber(r.amount).times(conversionRate).toNumber(),
-                paymentDate: r.paymentDate,
-                exDate: r.exDate,
-                status: r.status
-            }));
+            const events = rows.map(r => {
+                const { year, month } = getExDateYearMonth(r.exDate);
+                return {
+                    month,
+                    year,
+                    symbol: r.symbol,
+                    amount: new BigNumber(r.amount).times(conversionRate).toNumber(),
+                    paymentDate: r.paymentDate,
+                    exDate: r.exDate,
+                    status: r.status
+                };
+            });
 
-            // For each month, find the best event to show
+            // For each month, show every event (not just the first found) - a symbol can pay
+            // more than once in the same month (a regular + special dividend, for instance).
             for (let m = 0; m < 12; m++) {
-                // 1. Try to find an event in the target year
-                let event = events.find(e => e.month === m && e.year === year);
-                
-                // 2. If not found, fallback to the previous year (to show the "usual" schedule)
-                if (!event) {
-                    event = events.find(e => e.month === m && e.year === year - 1);
+                // 1. Try events in the target year
+                let monthEvents = events.filter(e => e.month === m && e.year === year);
+
+                // 2. If none, fallback to the previous year (to show the "usual" schedule)
+                if (monthEvents.length === 0) {
+                    monthEvents = events.filter(e => e.month === m && e.year === year - 1);
                 }
 
-                if (event) {
-                    calendar[m].push(event);
-                }
+                calendar[m].push(...monthEvents);
             }
         }
 

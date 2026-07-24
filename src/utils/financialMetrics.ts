@@ -125,14 +125,15 @@ export const getCategoryTrend = (
     category: string,
     type: BreakdownType = 'EXPENSE',
     months: number = 6,
-    grouping: 'GROUP' | 'ITEM' = 'GROUP'
+    grouping: 'GROUP' | 'ITEM' = 'GROUP',
+    referenceDate: Date = new Date()
 ) => {
     const result = {
         labels: [] as string[],
         data: [] as BigNumber[]
     };
 
-    const today = new Date();
+    const today = referenceDate;
     for (let i = months - 1; i >= 0; i--) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         result.labels.push(d.toLocaleString('default', { month: 'short' }));

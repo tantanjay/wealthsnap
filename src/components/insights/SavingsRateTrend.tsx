@@ -63,7 +63,11 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
     const [activeTab, setActiveTab] = React.useState<SavingsTab>('RATE');
     const [showInfoModal, setShowInfoModal] = React.useState(false);
 
-    // Restore the last-selected tab (Rate / Saved / Cash Flow) and time range on mount
+    // Restore the last-selected tab (Rate / Saved / Cash Flow) and time range on mount.
+    // isInitialPrefLoad is flipped false either when the load resolves OR the instant the
+    // user taps a tab/range (see handleTabChange/handleTimeRangeChange below) - without that
+    // second path, a tap made before the still-in-flight AsyncStorage read resolves would get
+    // silently reverted by the load once it completes, since it applied its result unconditionally.
     const isInitialPrefLoad = useRef(true);
     useEffect(() => {
         const loadPrefs = async () => {
@@ -71,12 +75,24 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                 getInsightsSavingsTab(),
                 getInsightsSavingsTimeRange()
             ]);
-            if (savedTab === 'RATE' || savedTab === 'AMOUNT' || savedTab === 'CASH') setActiveTab(savedTab);
-            if (savedRange === '6M' || savedRange === '1Y' || savedRange === '3Y' || savedRange === 'ALL') setTimeRange(savedRange);
+            if (isInitialPrefLoad.current) {
+                if (savedTab === 'RATE' || savedTab === 'AMOUNT' || savedTab === 'CASH') setActiveTab(savedTab);
+                if (savedRange === '6M' || savedRange === '1Y' || savedRange === '3Y' || savedRange === 'ALL') setTimeRange(savedRange);
+            }
             isInitialPrefLoad.current = false;
         };
         loadPrefs();
     }, []);
+
+    const handleTabChange = (tab: SavingsTab) => {
+        isInitialPrefLoad.current = false;
+        setActiveTab(tab);
+    };
+
+    const handleTimeRangeChange = (range: '6M' | '1Y' | '3Y' | 'ALL') => {
+        isInitialPrefLoad.current = false;
+        setTimeRange(range);
+    };
 
     useEffect(() => {
         if (!isInitialPrefLoad.current) saveInsightsSavingsTab(activeTab);
@@ -255,9 +271,9 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
     // Calculate average for the active metric
     const avgValue = useMemo(() => {
         if (activeValues.length === 0) return 0;
-        const sum = activeValues.reduce((acc, v) => acc + v, 0);
-        const avg = sum / activeValues.length;
-        return isPercent ? Math.round(avg * 10) / 10 : avg;
+        const sum = activeValues.reduce((acc, v) => acc.plus(v), new BigNumber(0));
+        const avg = sum.dividedBy(activeValues.length);
+        return isPercent ? avg.dp(1, BigNumber.ROUND_HALF_UP).toNumber() : avg.toNumber();
     }, [activeValues, isPercent]);
 
     // Calculate chart bounds for Symmetric Y-Axis
@@ -642,7 +658,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
             {SAVINGS_TAB_ORDER.map((tab) => (
                 <TouchableOpacity
                     key={tab}
-                    onPress={() => setActiveTab(tab)}
+                    onPress={() => handleTabChange(tab)}
                     style={{
                         paddingVertical: 6,
                         paddingHorizontal: 10,
@@ -690,7 +706,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                             <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
                         </TouchableOpacity>
                     </View>
-                    <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+                    <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
                 </View>
                 <Card>
                     <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 20 }}>
@@ -715,7 +731,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
             <Card>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     {renderTabs()}
-                    <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+                    <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
                 </View>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>

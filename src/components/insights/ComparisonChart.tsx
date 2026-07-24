@@ -39,7 +39,11 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
         setSelectedYear(selectedDate.getFullYear());
     }, [selectedDate]);
 
-    // Restore the last-selected view (Trend / Compare) and time range on mount
+    // Restore the last-selected view (Trend / Compare) and time range on mount. Flipped false
+    // either when the load resolves OR the instant the user taps a view/range (see
+    // handleViewChange/handleTimeRangeChange below) - without that second path, a tap made
+    // before the still-in-flight AsyncStorage read resolves would get silently reverted by
+    // the load once it completes, since it applied its result unconditionally.
     const isInitialPrefLoad = React.useRef(true);
     useEffect(() => {
         const loadPrefs = async () => {
@@ -47,12 +51,24 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                 getInsightsComparisonView(),
                 getInsightsComparisonTimeRange()
             ]);
-            if (savedView === 'COMPARISON' || savedView === 'MONTHLY') setActiveView(savedView);
-            if (savedRange === '6M' || savedRange === '1Y' || savedRange === '3Y' || savedRange === 'ALL') setTimeRange(savedRange);
+            if (isInitialPrefLoad.current) {
+                if (savedView === 'COMPARISON' || savedView === 'MONTHLY') setActiveView(savedView);
+                if (savedRange === '6M' || savedRange === '1Y' || savedRange === '3Y' || savedRange === 'ALL') setTimeRange(savedRange);
+            }
             isInitialPrefLoad.current = false;
         };
         loadPrefs();
     }, []);
+
+    const handleViewChange = (view: 'COMPARISON' | 'MONTHLY') => {
+        isInitialPrefLoad.current = false;
+        setActiveView(view);
+    };
+
+    const handleTimeRangeChange = (range: '6M' | '1Y' | '3Y' | 'ALL') => {
+        isInitialPrefLoad.current = false;
+        setTimeRange(range);
+    };
 
     useEffect(() => {
         if (!isInitialPrefLoad.current) saveInsightsComparisonView(activeView);
@@ -198,7 +214,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <View style={{ flexDirection: 'row', backgroundColor: colors.background, borderRadius: 8, padding: 2 }}>
                         <TouchableOpacity
-                            onPress={() => setActiveView('MONTHLY')}
+                            onPress={() => handleViewChange('MONTHLY')}
                             style={{
                                 paddingVertical: 6,
                                 paddingHorizontal: 12,
@@ -215,7 +231,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                             }}>Trend</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            onPress={() => setActiveView('COMPARISON')}
+                            onPress={() => handleViewChange('COMPARISON')}
                             style={{
                                 paddingVertical: 6,
                                 paddingHorizontal: 12,
@@ -234,7 +250,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                     </View>
 
                     {activeView === 'MONTHLY' && (
-                        <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+                        <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
                     )}
                 </View>
 

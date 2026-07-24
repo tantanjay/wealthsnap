@@ -501,7 +501,7 @@ const HomeScreen = ({ navigation }: any) => {
                     prevBurnRate = burnRate;
                 }
 
-                const prevDebtObligations = calculatePrevDebtObligations(allDebts, prevDate);
+                const prevDebtObligations = calculatePrevDebtObligations(allDebts, prevDate, t);
                 const prevTotalBurnRate = prevBurnRate.plus(prevDebtObligations);
 
                 const prevRunway = prevTotalBurnRate.isGreaterThan(0)

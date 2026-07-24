@@ -341,9 +341,12 @@ const InsightScreen = ({ navigation }: any) => {
             }}>
                 <TouchableOpacity
                     onPress={() => {
-                        const newDate = new Date(selectedDate);
-                        newDate.setMonth(newDate.getMonth() - 1);
-                        setSelectedDate(newDate);
+                        // Built from y/m components with an explicit day=1, not via setMonth()
+                        // on the existing date - setMonth doesn't clamp, so navigating from a
+                        // day that doesn't exist in the target month (e.g. the 31st) rolls
+                        // forward into a different month than intended. Day is never used by
+                        // any consumer of selectedDate below (always whole-month lookups).
+                        setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1));
                     }}
                     style={{ padding: 8 }}
                 >
@@ -372,9 +375,7 @@ const InsightScreen = ({ navigation }: any) => {
 
                 <TouchableOpacity
                     onPress={() => {
-                        const newDate = new Date(selectedDate);
-                        newDate.setMonth(newDate.getMonth() + 1);
-                        setSelectedDate(newDate);
+                        setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1));
                     }}
                     disabled={selectedDate.getMonth() === new Date().getMonth() && selectedDate.getFullYear() === new Date().getFullYear()}
                     style={{ padding: 8, opacity: (selectedDate.getMonth() === new Date().getMonth() && selectedDate.getFullYear() === new Date().getFullYear()) ? 0.3 : 1 }}
@@ -567,10 +568,7 @@ const InsightScreen = ({ navigation }: any) => {
                                 <TouchableOpacity
                                     key={month}
                                     onPress={() => {
-                                        const newDate = new Date(selectedDate);
-                                        newDate.setFullYear(pickerYear);
-                                        newDate.setMonth(index);
-                                        setSelectedDate(newDate);
+                                        setSelectedDate(new Date(pickerYear, index, 1));
                                         setIsDatePickerVisible(false);
                                     }}
                                     disabled={isDisabled}
