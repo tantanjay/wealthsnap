@@ -2,7 +2,7 @@ import { getCachedTransactions } from '@services/domain/transactionService';
 import { getPortfolioStats, getPortfolioHoldings, getAllInvestments } from '@services/domain/investmentService';
 import { getAllDebts } from '@services/domain/debtService';
 import { getAllBudgets } from '@services/domain/budgetService';
-import { getAllMonthlySummaries, MonthlySummaryRow } from '@services/domain/monthlySummaryService';
+import { getAllMonthlySummaries, syncMonthlySummaries, MonthlySummaryRow } from '@services/domain/monthlySummaryService';
 import { getUserProfile } from '@services/core/storageService';
 import { buildFinancialSnapshotData, renderFinancialSnapshotText } from '@utils/financialSnapshotBuilder';
 import {
@@ -111,6 +111,15 @@ const buildFilteredMonthlySummaries = (
  * per-month breakdown can honor the exclusion.
  */
 export const fetchChatContextInputs = async (excludeCategories: string[] = []): Promise<ChatContextInputs> => {
+    // The DB-cached monthly_summary table is normally kept fresh by a fire-and-forget
+    // sync on app launch, but that can still be mid-flight if chat is opened shortly
+    // after a cold start - reading it before that finishes would silently truncate
+    // the context (only the snapshot, no monthly history). Awaiting here guarantees
+    // freshness; it's cheap on repeat calls since already-finalized months are skipped.
+    if (excludeCategories.length === 0) {
+        await syncMonthlySummaries();
+    }
+
     const [transactions, allInvestments, debts, profile, cachedSummaries, portfolioStats, holdings, budgets] = await Promise.all([
         getCachedTransactions(),
         getAllInvestments(),
