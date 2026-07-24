@@ -69,17 +69,18 @@ export const CHANGELOG_MARKDOWN = `
 
 **Important divergence from a literal mirror:** the in-app renderer ([`src/utils/markdownParser.ts`](../../src/utils/markdownParser.ts)) only understands `#`/`##`/`###` headings, `-`/`*` bullets, `>` blockquotes, and `---` dividers. It does **not** render markdown links. That means the link-reference footer block (`[X.Y.Z]: https://...`) is useful for `CHANGELOG.md` on GitHub, but would show up as ugly raw text if included in the in-app copy. **Strip the trailing link-reference block before generating `changelog.ts`** — only the version sections above it should be mirrored in.
 
-Regenerate with a small script rather than hand-editing (manual edits are how the two files drifted out of sync before — see [Section 5](#5-known-historical-drift-do-not-repeat)):
+Regenerate with the committed scripts rather than hand-editing or re-deriving the one-liner each
+time (manual edits are how the two files drifted out of sync before — see
+[Section 5](#5-known-historical-drift-do-not-repeat)):
 
-```js
-const fs = require('fs');
-let md = fs.readFileSync('CHANGELOG.md', 'utf8');
-md = md.replace(/\n\[.+?\]: https:\/\/github\.com\/[\s\S]*$/, '\n'); // drop link-reference footer
-const escaped = md.split('\\').join('\\\\').split('`').join('\\`').split('${').join('\\${');
-fs.writeFileSync('src/constants/changelog.ts', 'export const CHANGELOG_MARKDOWN = `\n' + escaped + '`\n');
+```bash
+npm run regen-changelog   # scripts/regen-changelog.js - rewrites src/constants/changelog.ts from CHANGELOG.md
+npm run verify-changelog  # scripts/verify-changelog.js - evaluates changelog.ts and diffs it against CHANGELOG.md
 ```
 
-Then verify it round-trips correctly (evaluate the exported string and diff it against `CHANGELOG.md` minus the footer) before committing.
+Always run `verify-changelog` after `regen-changelog` and before committing — it prints `MATCH` or
+`MISMATCH` (with the first differing byte and surrounding context) rather than just trusting the
+regen step worked.
 
 ---
 
@@ -121,7 +122,7 @@ All 24 releases from `v1.0.0` through `v1.14.0` were backfilled with tags on 202
 - [ ] Move `[Unreleased]` content in `CHANGELOG.md` into a new `## [X.Y.Z] — YYYY-MM-DD` section, categorized per Section 3
 - [ ] Check no `Changed`/`Fixed`/etc. bullet actually belongs nested under an `Added` bullet in the same section (Section 3's last rule) — this only matters while still in `[Unreleased]`, so it's easy to miss once things get moved under a dated heading
 - [ ] Add the new version's link-reference line at the bottom of `CHANGELOG.md`; update `[Unreleased]`'s compare base
-- [ ] Regenerate `src/constants/changelog.ts` from `CHANGELOG.md` (Section 4) — verify it matches before committing
+- [ ] `npm run regen-changelog` then `npm run verify-changelog` (Section 4) — confirm `MATCH` before committing
 - [ ] (Optional but consistent with existing practice) write `.notes/release/vX.Y.Z.md` with the fuller user-facing writeup
 - [ ] Commit, merge
 - [ ] `git tag vX.Y.Z` on the release commit, `git push origin vX.Y.Z`
