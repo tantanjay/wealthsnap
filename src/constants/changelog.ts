@@ -46,12 +46,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Investments: dividends paid twice in the same month could have one payment silently dropped from the Projected and Calendar views.
 - Investments: AI-fetched dividend dates could be misfiled into the wrong month or year depending on timezone.
 - Investments: Smart Advisor alerts could go stale after navigating away and back, until a manual refresh.
+- Investments: price history entries dated exactly on a range boundary could be excluded from Smart Advisor's 30-day high calculation.
+- Investments: a failed exchange-rate fetch during a price refresh could silently save an unconverted price mislabeled as your profile currency.
+- Investments: refreshing prices for the same stock at the same time could create duplicate price-history entries for the same day.
+- Investments: Smart Advisor's dividend alert could disappear on the actual ex-dividend date depending on your timezone.
+- Investments: Smart Advisor's Balance alert could never suggest a sector you had zero holdings in.
+- Investments: Smart Advisor could merge a Balance suggestion onto an existing Crash alert for the same stock into one confusing line.
+- Investments: Smart Advisor's help text said Crash alerts trigger at a 10% drop instead of the actual 15%.
 - Insights: month navigation could skip or fail to change months when browsing from the 29th-31st of a month.
 - Insights: Savings Rate Trend, Comparison Chart, Income Analysis, and Monthly Pulse could silently revert a tab/range tap made right after opening the screen.
 - Insights: the category trend drill-down ignored month-browsing and always showed the current month's data.
 - Auto Backup: choosing a folder on Android could leave the app stuck on the lock screen after returning from the system folder picker.
 - Auto Backup: a run interrupted mid-write could leave a corrupted file under the real backup name.
 - Restore: a restore that fails partway through now rolls back to your previous data instead of leaving it lost.
+- Restore: a backup containing investment price history could fail to restore, or corrupt currency/exchange-rate data, due to a bulk-insert parameter mismatch.
 - Background tasks (recurring transactions, Monthly Summary sync, Auto Backup) could silently stop running after updating from an older version.
 - Monthly Summary: a spending percentage against a $0 budget could display as "Infinity%".
 - Monthly Summary and Chat: amounts were always labeled in PHP regardless of your actual currency.
