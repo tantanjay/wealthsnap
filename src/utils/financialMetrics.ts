@@ -11,6 +11,13 @@ export const parseDate = (date: string | Date): Date => {
     return typeof date === 'string' ? new Date(date) : date;
 };
 
+// `date.toISOString().split('T')[0]` renders in UTC, which can land on the wrong calendar
+// day relative to the device's local time near midnight - use this instead anywhere the
+// stamp is meant to represent the day the user actually experienced (a filename date, a
+// local-calendar-day cutoff), consistent with the local-time comparisons used elsewhere.
+export const getLocalDateStamp = (date: Date = new Date()): string =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
 export const getTransactionsByMonth = (transactions: Transaction[], date: Date = new Date()) => {
     const targetMonth = date.getMonth();
     const targetYear = date.getFullYear();

@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import { getAllTransactions } from '@services/domain/transactionService';
 import { getAllInvestments } from '@services/domain/investmentService';
 import { getAllDebts } from '@services/domain/debtService';
+import { getLocalDateStamp } from '@utils/financialMetrics';
 
 const CURRENCY_FORMAT = '#,##0.00';
 
@@ -108,7 +109,7 @@ export const exportToExcel = async (): Promise<string> => {
 
     const base64 = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' }) as string;
 
-    const dateStr = new Date().toISOString().split('T')[0];
+    const dateStr = getLocalDateStamp();
     const file = new File(Paths.document, `wealthsnap_export_${dateStr}.xlsx`);
     file.write(base64, { encoding: 'base64' });
     return file.uri;
