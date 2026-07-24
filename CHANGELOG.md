@@ -37,12 +37,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Debt Strategy: a debt's due date no longer rolls forward after just a partial payment.
 - Debt Strategy: debts whose minimum payment doesn't cover interest are now flagged with a warning.
 - Debt Strategy: debts with no minimum payment set no longer show a due date one cycle ahead of the real one.
+- Debt Strategy: the Debt screen counted money owed to you (Receivable debts) as a liability in Total Debt, Interest Leak, and the payoff simulation.
+- Home and Financial Health: editing a paid-off debt's details later could skew the prior-month debt obligations used in the runway-change trend.
 - Investments: Realized P/L's percentage always showed a hardcoded 0.00%.
 - Investments: Unrealized/Realized P/L% for free or gifted shares (zero cost basis) misleadingly showed 0% instead of "N/A".
 - Investments: deleting an investment now also removes its linked Realized P/L entry, keeping Realized P/L% accurate.
+- Investments: dividends paid twice in the same month could have one payment silently dropped from the Projected and Calendar views.
+- Investments: AI-fetched dividend dates could be misfiled into the wrong month or year depending on timezone.
+- Investments: Smart Advisor alerts could go stale after navigating away and back, until a manual refresh.
+- Insights: month navigation could skip or fail to change months when browsing from the 29th-31st of a month.
+- Insights: Savings Rate Trend, Comparison Chart, Income Analysis, and Monthly Pulse could silently revert a tab/range tap made right after opening the screen.
+- Insights: the category trend drill-down ignored month-browsing and always showed the current month's data.
 - Auto Backup: choosing a folder on Android could leave the app stuck on the lock screen after returning from the system folder picker.
 - Auto Backup: a run interrupted mid-write could leave a corrupted file under the real backup name.
 - Restore: a restore that fails partway through now rolls back to your previous data instead of leaving it lost.
+- Background tasks (recurring transactions, Monthly Summary sync, Auto Backup) could silently stop running after updating from an older version.
 - Monthly Summary: a spending percentage against a $0 budget could display as "Infinity%".
 - Monthly Summary and Chat: amounts were always labeled in PHP regardless of your actual currency.
 - Monthly Summary and Chat: a transaction logged near a month boundary could be filed under the wrong month depending on your timezone.
