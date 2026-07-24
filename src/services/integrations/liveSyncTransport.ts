@@ -206,12 +206,25 @@ export const hostSyncSession = (callbacks: HostCallbacks): LiveSyncSession => {
     const expectedKeyHash = hashKey(sessionKey);
     let settled = false;
     let expiryTimer: ReturnType<typeof setTimeout> | null = null;
+    // Sockets that have connected but not yet completed the HELLO handshake - closed
+    // sockets remove themselves; anything left over is force-closed on expiry/cancel/timeout
+    // so a stalled or bogus connection can't keep a listening socket alive indefinitely.
+    const pendingSockets = new Set<Socket>();
+    const HANDSHAKE_TIMEOUT_MS = 10 * 1000;
 
     const server = TcpSocket.createServer((socket: Socket) => {
         if (settled) {
             socket.destroy();
             return;
         }
+
+        pendingSockets.add(socket);
+        const handshakeTimer = setTimeout(() => socket.destroy(), HANDSHAKE_TIMEOUT_MS);
+        const forgetPending = () => {
+            clearTimeout(handshakeTimer);
+            pendingSockets.delete(socket);
+        };
+        socket.on('close', forgetPending);
 
         const reader = new FrameReader();
         socket.on('data', (chunk: Buffer | string) => reader.feed(chunk));
@@ -247,6 +260,7 @@ export const hostSyncSession = (callbacks: HostCallbacks): LiveSyncSession => {
                 return;
             }
 
+            forgetPending(); // handshake succeeded - this socket is now the active exchange, not pending
             settled = true;
             if (expiryTimer) clearTimeout(expiryTimer);
             server.close();
@@ -283,6 +297,7 @@ export const hostSyncSession = (callbacks: HostCallbacks): LiveSyncSession => {
                     if (settled) return;
                     settled = true;
                     server.close();
+                    pendingSockets.forEach(s => s.destroy());
                     callbacks.onExpired();
                 }, HOST_TIMEOUT_SECONDS * 1000);
             });
@@ -296,6 +311,7 @@ export const hostSyncSession = (callbacks: HostCallbacks): LiveSyncSession => {
             settled = true;
             if (expiryTimer) clearTimeout(expiryTimer);
             server.close();
+            pendingSockets.forEach(s => s.destroy());
         },
     };
 };

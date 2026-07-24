@@ -199,20 +199,30 @@ const LiveSyncScreen = ({ navigation }: any) => {
         </View>
     );
 
-    const renderResult = () => (
-        <View style={styles.centerContent}>
-            <View style={[styles.bigIconContainer, { backgroundColor: colors.success + '20' }]}>
-                <Ionicons name="checkmark-circle" size={72} color={colors.success} />
+    const renderResult = () => {
+        const hasFailures = !!summary?.failures.length;
+        return (
+            <View style={styles.centerContent}>
+                <View style={[styles.bigIconContainer, { backgroundColor: (hasFailures ? colors.error : colors.success) + '20' }]}>
+                    <Ionicons name={hasFailures ? 'alert-circle' : 'checkmark-circle'} size={72} color={hasFailures ? colors.error : colors.success} />
+                </View>
+                <Text style={[styles.bigTitle, { color: colors.text }]}>
+                    {hasFailures ? 'Sync Partially Completed' : 'Sync Complete'}
+                </Text>
+                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                    {summary ? `${summary.added} added, ${summary.updated} updated, ${summary.removed} removed.` : ''}
+                </Text>
+                {hasFailures && (
+                    <Text style={[styles.subtitle, { color: colors.error }]}>
+                        {summary!.failures.length} failed to sync: {summary!.failures.join(', ')}. Try again to retry these.
+                    </Text>
+                )}
+                <View style={styles.buttonWrapper}>
+                    <Button title="Done" onPress={() => navigation.goBack()} style={styles.button} />
+                </View>
             </View>
-            <Text style={[styles.bigTitle, { color: colors.text }]}>Sync Complete</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                {summary ? `${summary.added} added, ${summary.updated} updated, ${summary.removed} removed.` : ''}
-            </Text>
-            <View style={styles.buttonWrapper}>
-                <Button title="Done" onPress={() => navigation.goBack()} style={styles.button} />
-            </View>
-        </View>
-    );
+        );
+    };
 
     const renderError = () => (
         <View style={styles.centerContent}>

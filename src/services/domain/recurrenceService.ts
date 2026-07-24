@@ -270,8 +270,10 @@ export const getAllRecurrenceRules = async (): Promise<RecurrenceRule[]> => {
 export const deleteRecurrenceRule = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
-        await db.runAsync('DELETE FROM recurrence_rules WHERE id = ?', [id]);
-        await upsertTombstone('recurrenceRules', id);
+        await db.withTransactionAsync(async () => {
+            await db.runAsync('DELETE FROM recurrence_rules WHERE id = ?', [id]);
+            await upsertTombstone('recurrenceRules', id);
+        });
     } catch (error) {
         console.error('Error deleting recurrence rule:', error);
         throw new Error('Failed to delete recurrence rule');

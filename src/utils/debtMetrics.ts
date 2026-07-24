@@ -331,8 +331,10 @@ export const getNextDueDate = (debt: Debt, transactions: Transaction[]): Date | 
         .filter(t => t.type === principalType || t.type === interestType || (t.type === 'EXPENSE' && t.category === 'Fees'))
         .reduce((sum, t) => sum.plus(t.amount), new BigNumber(0));
 
-    // 3. Only advance to NEXT month once the cumulative payment meets the minimum
-    if (paidThisMonth.gte(debt.minPayment)) {
+    // 3. Only advance to NEXT month once the cumulative payment meets the minimum.
+    // A $0 minimum has nothing to "meet" - guard against it so a debt with no minimum
+    // payment doesn't skip straight to next month on day one of the current month.
+    if (debt.minPayment.isGreaterThan(0) && paidThisMonth.gte(debt.minPayment)) {
         candidateDate = new Date(now.getFullYear(), now.getMonth() + 1, day);
     }
 

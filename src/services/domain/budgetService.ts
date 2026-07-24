@@ -98,8 +98,10 @@ export const setBudget = async (category: string, amount: number): Promise<void>
 export const deleteBudget = async (category: string): Promise<void> => {
     try {
         const db = await getDatabase();
-        await db.runAsync('DELETE FROM budgets WHERE category = ?', [category]);
-        await upsertTombstone('budgets', category);
+        await db.withTransactionAsync(async () => {
+            await db.runAsync('DELETE FROM budgets WHERE category = ?', [category]);
+            await upsertTombstone('budgets', category);
+        });
     } catch (error) {
         console.error('Error deleting budget:', error);
         throw error;

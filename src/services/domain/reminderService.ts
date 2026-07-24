@@ -587,8 +587,10 @@ export const getAllReminders = async (): Promise<Reminder[]> => {
 export const deleteReminder = async (id: string): Promise<void> => {
     try {
         const db = await getDatabase();
-        await db.runAsync('DELETE FROM reminders WHERE id = ?', [id]);
-        await upsertTombstone('reminders', id);
+        await db.withTransactionAsync(async () => {
+            await db.runAsync('DELETE FROM reminders WHERE id = ?', [id]);
+            await upsertTombstone('reminders', id);
+        });
     } catch (error) {
         console.error('Error deleting reminder:', error);
         throw new Error('Failed to delete reminder');

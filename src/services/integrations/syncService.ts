@@ -21,6 +21,7 @@ export interface SyncSummary {
     added: number;
     updated: number;
     removed: number;
+    failures: string[];
 }
 
 interface SyncManifest {
@@ -309,10 +310,6 @@ export const applySyncPackage = async (
         }
     }
 
-    if (failures.length > 0) {
-        throw new Error(`SYNC_PARTIAL_FAILURE: ${failures.join(', ')}`);
-    }
-
     onProgress?.({ stage: 'done', label: 'Sync complete' });
-    return { added, updated, removed };
+    return { added, updated, removed, failures };
 };
