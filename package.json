@@ -8,7 +8,9 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "bump-version": "node scripts/bump-version.js"
+    "bump-version": "node scripts/bump-version.js",
+    "regen-changelog": "node scripts/regen-changelog.js",
+    "verify-changelog": "node scripts/verify-changelog.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
