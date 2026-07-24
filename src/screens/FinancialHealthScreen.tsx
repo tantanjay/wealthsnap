@@ -180,7 +180,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             });
             const prevCash = prevInc.minus(prevExp);
             const prevBurnRateBase = calculateBurnRate(t, 6, endOfLastMonth);
-            const prevMonthlyDebtObligations = calculatePrevDebtObligations(debts, endOfLastMonth);
+            const prevMonthlyDebtObligations = calculatePrevDebtObligations(debts, endOfLastMonth, t);
             const prevTotalBurnRate = prevBurnRateBase.plus(prevMonthlyDebtObligations);
             const prevRunway = prevTotalBurnRate.gt(0) ? prevCash.dividedBy(prevTotalBurnRate).toNumber() : 999;
             const hasHistory = t.some(tx => new Date(tx.date) < new Date(now.getFullYear(), now.getMonth(), 1));

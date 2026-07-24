@@ -32,18 +32,27 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     const [period, setPeriod] = useState<3 | 6 | 12>(3);
     const [showInfo, setShowInfo] = useState(false);
 
-    // Restore the last-selected period (3M / 6M / 12M) on mount
+    // Restore the last-selected period (3M / 6M / 12M) on mount. Flipped false either when
+    // the load resolves OR the instant the user taps a period (see handlePeriodChange below) -
+    // without that second path, a tap made before the still-in-flight AsyncStorage read
+    // resolves would get silently reverted by the load once it completes, since it applied
+    // its result unconditionally.
     const isInitialPeriodLoad = useRef(true);
     useEffect(() => {
         const loadPeriod = async () => {
             const saved = await getInsightsPulsePeriod();
-            if (saved === '3' || saved === '6' || saved === '12') {
+            if (isInitialPeriodLoad.current && (saved === '3' || saved === '6' || saved === '12')) {
                 setPeriod(Number(saved) as 3 | 6 | 12);
             }
             isInitialPeriodLoad.current = false;
         };
         loadPeriod();
     }, []);
+
+    const handlePeriodChange = (value: 3 | 6 | 12) => {
+        isInitialPeriodLoad.current = false;
+        setPeriod(value);
+    };
 
     useEffect(() => {
         if (!isInitialPeriodLoad.current) {
@@ -331,7 +340,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                             {[3, 6, 12].map((m) => (
                                 <TouchableOpacity
                                     key={m}
-                                    onPress={() => setPeriod(m as any)}
+                                    onPress={() => handlePeriodChange(m as 3 | 6 | 12)}
                                     style={{
                                         paddingVertical: 4,
                                         paddingHorizontal: 12,

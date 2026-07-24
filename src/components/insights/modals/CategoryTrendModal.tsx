@@ -19,6 +19,7 @@ interface CategoryTrendModalProps {
     transactions: Transaction[];
     currency: string;
     grouping?: 'GROUP' | 'ITEM';
+    selectedDate?: Date;
 }
 
 const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
@@ -27,7 +28,8 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
     category,
     transactions,
     currency,
-    grouping = 'GROUP'
+    grouping = 'GROUP',
+    selectedDate = new Date()
 }) => {
     const { colors } = useTheme();
     const screenWidth = Dimensions.get('window').width;
@@ -55,14 +57,14 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
 
         const dates = categoryTransactions.map(t => new Date(t.date).getTime());
         const minDate = new Date(Math.min(...dates));
-        const today = new Date();
+        const today = selectedDate;
         const diff = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth()) + 1;
         return Math.max(diff, 6);
-    }, [timeRange, transactions, category, grouping]);
+    }, [timeRange, transactions, category, grouping, selectedDate]);
 
     const trendData = useMemo(() => {
-        return getCategoryTrend(transactions, category, 'EXPENSE', monthsToLoad, grouping);
-    }, [transactions, category, grouping, monthsToLoad]);
+        return getCategoryTrend(transactions, category, 'EXPENSE', monthsToLoad, grouping, selectedDate);
+    }, [transactions, category, grouping, monthsToLoad, selectedDate]);
 
     // Calculate stats
     const total = trendData.data.reduce(

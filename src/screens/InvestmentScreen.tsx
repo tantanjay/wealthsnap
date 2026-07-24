@@ -154,10 +154,24 @@ const InvestmentScreen = ({ navigation }: any) => {
         }
     }, []); // Remove activePriority dependency
 
+    // Kept separate from loadStats (a lighter, targeted fetch instead of a redundant full-stats
+    // load), but hoisted into a stable callback so it can also run on focus below - otherwise
+    // Smart Advisor's Crash/Dip/Dividend/Balance cards only refreshed on mount or when the
+    // priority filter chip changed, going stale after navigating away and back.
+    const fetchSuggestions = useCallback(async () => {
+        const newSuggestions = await getSmartSuggestions(activePriority);
+        setSuggestions(newSuggestions);
+    }, [activePriority]);
+
+    useEffect(() => {
+        fetchSuggestions();
+    }, [fetchSuggestions]);
+
     useFocusEffect(
         useCallback(() => {
             loadStats();
-        }, [loadStats])
+            fetchSuggestions();
+        }, [loadStats, fetchSuggestions])
     );
 
     useEffect(() => {
@@ -168,15 +182,6 @@ const InvestmentScreen = ({ navigation }: any) => {
         });
         return () => registerSecondAction(routeName, null);
     }, [registerSecondAction, routeName]);
-
-    // Separate effect for suggestions to avoid redundant full-stats load
-    React.useEffect(() => {
-        const fetchSuggestions = async () => {
-            const newSuggestions = await getSmartSuggestions(activePriority);
-            setSuggestions(newSuggestions);
-        };
-        fetchSuggestions();
-    }, [activePriority]);
 
     // Restore the last-selected Smart Advisor priority filter on mount
     const isInitialPriorityLoad = React.useRef(true);

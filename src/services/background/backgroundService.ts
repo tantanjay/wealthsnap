@@ -5,7 +5,13 @@ import { processRecurrenceRules } from '@services/domain/recurrenceService';
 import { syncMonthlySummaries } from '@services/domain/monthlySummaryService';
 import { runAutoBackupIfDue } from '@services/integrations/autoBackupService';
 
-const BACKGROUND_FETCH_TASK = 'BACKGROUND_FETCH_TASK';
+// Renamed from 'BACKGROUND_FETCH_TASK' when migrating from expo-background-fetch to
+// expo-background-task. isTaskRegisteredAsync only checks whether a task name is registered
+// at all - it has no notion of which library registered it, so reusing the old name meant
+// isRegistered was already true for every existing user (registered under the old scheduler),
+// and registerTaskAsync (which wires up the new OS-level scheduling mechanism) was silently
+// skipped for all of them. A new name forces every existing install to register fresh.
+const BACKGROUND_FETCH_TASK = 'BACKGROUND_TASK_V2';
 
 TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
     try {

@@ -91,7 +91,9 @@ export const calculateTotalDebtObligations = (debts: Debt[]): BigNumber => {
         .reduce((sum, d) => sum.plus(d.minPayment), new BigNumber(0));
 };
 
-export const calculatePrevDebtObligations = (debts: Debt[], date: Date): BigNumber => {
+export const calculatePrevDebtObligations = (debts: Debt[], date: Date, transactions: Transaction[]): BigNumber => {
+    const transactionsUpToDate = transactions.filter(t => new Date(t.date) <= date);
+
     return debts.reduce((sum, debt) => {
         if ((debt.direction || 'PAYABLE') !== 'PAYABLE') return sum;
 
@@ -101,11 +103,13 @@ export const calculatePrevDebtObligations = (debts: Debt[], date: Date): BigNumb
         if (startDate > date) return sum;
 
         // `status` has no history - a debt that's PAID_OFF today doesn't tell us WHEN it was
-        // paid off. Approximate using `updatedAt` (normally the payoff edit): if that's after
-        // `date`, the debt was still active as of the historical date in question.
-        const wasActiveAsOfDate = debt.status === 'ACTIVE' || new Date(debt.updatedAt) > date;
+        // paid off. Rather than guessing from `updatedAt` (stamped on any edit, not just a
+        // payoff - editing a paid-off debt's name/notes later would make it look active for
+        // months after it was actually paid off), reconstruct the real balance as of `date`
+        // from the transaction ledger, which is exact.
+        const balanceAsOfDate = calculateCurrentDebtBalance(debt, transactionsUpToDate);
 
-        if (wasActiveAsOfDate) {
+        if (balanceAsOfDate.isGreaterThan(0)) {
             return sum.plus(debt.minPayment);
         }
         return sum;

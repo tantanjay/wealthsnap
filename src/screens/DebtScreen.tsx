@@ -88,7 +88,13 @@ const DebtScreen = ({ navigation }: any) => {
 
         const debtsWithBalances = activeDebts;
 
-        const totalBalance = debtsWithBalances.reduce((sum, d) => sum.plus(d.initialAmount), new BigNumber(0));
+        // RECEIVABLE debts (money owed TO the user) are still shown/sorted below in Payoff
+        // Order so they stay visible and manageable on this screen, but they aren't a
+        // liability - exclude them from Total Debt, Interest Leak, and the payoff simulation,
+        // matching how Home and Financial Health already treat them.
+        const payableDebts = debtsWithBalances.filter(d => (d.direction || 'PAYABLE') === 'PAYABLE');
+
+        const totalBalance = payableDebts.reduce((sum, d) => sum.plus(d.initialAmount), new BigNumber(0));
         setTotalDebt(totalBalance);
 
         // 2. Interest Leak (Hourly)
@@ -96,7 +102,7 @@ const DebtScreen = ({ navigation }: any) => {
         // accrue on the original principal (originalAmount), not the shrinking balance, and NONE
         // debts accrue nothing. d.initialAmount here is already patched to the current balance.
         let yearlyInterest = new BigNumber(0);
-        debtsWithBalances.forEach(d => {
+        payableDebts.forEach(d => {
             if (d.interestType === 'NONE') return;
 
             const rate = d.interestRate.div(100);
@@ -119,7 +125,7 @@ const DebtScreen = ({ navigation }: any) => {
 
         // 4. Payoff Strategy
         const { freedomDate, totalInterest, unpayableDebtIds } = DebtMetrics.calculateDebtPayoffStrategy(
-            debtsWithBalances,
+            payableDebts,
             currentExtra,
             currentStrategy
         );
