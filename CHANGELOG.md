@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Sync from Device**: merge your data directly with another device over WiFi — show a QR code on one, scan it with the other, no cloud and no typed password.
   - Edits and deletes merge in both directions; the newer change wins if the same record was edited on both devices.
   - Pairing codes expire after 60 seconds and can only be used once.
+  - Deletions are written atomically, so an interrupted sync can't silently undo one.
+  - A sync that partially fails now shows exactly what did and didn't go through, instead of a blanket failure.
 - **Export to Excel**: save transactions, investments, debts, and debt payments to a single multi-sheet .xlsx file for viewing outside the app.
   - Debt-linked transactions appear in both the Transactions sheet and a dedicated Debt Payments sheet.
   - Unlike Backup, the exported file is plain and not encrypted.
@@ -25,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Help Center's Financial Insights and Math & Formulas guides updated to match the current Insights screen.
 - Chat moved from the Floating Quick Actions menu into the Record menu.
 - Record menu renamed from "New Record" to "Quick Actions".
+- Bottom tab bar's "Record" label renamed to "Actions" to match.
 - Chat: lower cost per message — your financial context is now cached instead of being resent in full with every message.
 - Chat: context sent to Gemini now includes today's date and flags the current month as still in progress.
 - New app icon, also applied to the Android adaptive icon and web favicon.
@@ -33,8 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Debt Strategy: Interest Leak now respects each debt's interest type instead of always using the shrinking balance.
 - Debt Strategy: a debt's due date no longer rolls forward after just a partial payment.
 - Debt Strategy: debts whose minimum payment doesn't cover interest are now flagged with a warning.
+- Debt Strategy: debts with no minimum payment set no longer show a due date one cycle ahead of the real one.
 - Investments: Realized P/L's percentage always showed a hardcoded 0.00%.
 - Investments: Unrealized/Realized P/L% for free or gifted shares (zero cost basis) misleadingly showed 0% instead of "N/A".
+- Investments: deleting an investment now also removes its linked Realized P/L entry, keeping Realized P/L% accurate.
 - Auto Backup: choosing a folder on Android could leave the app stuck on the lock screen after returning from the system folder picker.
 - Supporter Screen: several donor name styles were unreadable or washed out depending on light/dark mode.
 - Home: the Financial Health card's "Net Worth" display mode didn't persist between sessions.
