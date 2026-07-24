@@ -19,6 +19,7 @@ import { bulkSaveDividendHistories } from '@services/domain/dividendHistoryServi
 import { bulkSaveDebts } from '@services/domain/debtService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ENTITY_REGISTRY } from '@services/integrations/backupEntities';
+import { getLocalDateStamp } from '@utils/financialMetrics';
 
 export interface BackupData {
     version: string;
@@ -133,7 +134,7 @@ export const createBackup = async (
     onProgress?.({ stage: 'writing', label: 'Writing backup file…' });
     const zipBytes = await zip.generateAsync({ type: 'uint8array' });
 
-    const dateStr = new Date().toISOString().split('T')[0];
+    const dateStr = getLocalDateStamp();
     const fileName = source === 'auto'
         ? `wealthsnap_backup_auto_${dateStr}.zip`
         : `wealthsnap_backup_${dateStr}.zip`;

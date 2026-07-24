@@ -7,6 +7,7 @@ import * as DataCache from '@services/core/dataCache';
 import { scheduleReminderNotifications } from '@services/domain/reminderService';
 import { upsertTombstone, clearTombstone, getTombstoneMap, getTombstonesForTypes, Tombstone } from '@services/domain/tombstoneService';
 import { SYNC_ENTITY_REGISTRY, SyncEntityDescriptor } from '@services/integrations/syncEntities';
+import { getLocalDateStamp } from '@utils/financialMetrics';
 
 export interface SyncProgress {
     stage: 'gathering' | 'encrypting' | 'writing' | 'reading' | 'decrypting' | 'merging' | 'applying' | 'done';
@@ -104,7 +105,7 @@ export const createSyncPackage = async (
     onProgress?.({ stage: 'writing', label: 'Writing sync file…' });
     const zipBytes = await zip.generateAsync({ type: 'uint8array' });
 
-    const dateStr = new Date().toISOString().split('T')[0];
+    const dateStr = getLocalDateStamp();
     const file = new File(Paths.document, `wealthsnap_sync_${dateStr}.zip`);
     file.write(zipBytes);
 

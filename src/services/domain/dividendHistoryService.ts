@@ -8,6 +8,7 @@ import { fetchExchangeRate } from '@services/integrations/currencyService';
 import { decryptData } from '@services/core/encryptionService';
 import { ASYNC_KEYS } from '@constants/config';
 import { DividendHistory } from '@types';
+import { getLocalDateStamp } from '@utils/financialMetrics';
 
 /**
  * Helper to get user's default currency without importing storageService (circular dep prevention).
@@ -305,7 +306,7 @@ export const getAnnualDividend = async (symbol: string): Promise<number> => {
         // Get dividends from the last year
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-        const dateStr = oneYearAgo.toISOString().split('T')[0];
+        const dateStr = getLocalDateStamp(oneYearAgo);
 
         const query = `
             SELECT amount FROM dividend_history 
