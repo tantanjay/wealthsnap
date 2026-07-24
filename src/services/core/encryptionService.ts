@@ -8,11 +8,28 @@ import { CONFIG, SECURE_KEYS } from '@constants/config';
 // In-memory cache for the encryption key to avoid repeated SecureStore I/O
 let cachedKey: string | null = null;
 
+// In-flight key generation, so concurrent first-use callers (e.g. a bulk import racing multiple
+// encryptField calls before any key has ever been generated) await the same generation+persist
+// instead of each generating and persisting their own random key, only one of which survives.
+let keyPromise: Promise<string> | null = null;
+
+// Prefixed onto plaintext before encrypting field-level values (not the JSON blobs from
+// encryptData/decryptData, which already get a decent implicit integrity check from JSON.parse
+// failing on non-JSON garbage). A decrypt that recovers this marker is high-confidence correct;
+// one that doesn't is either legacy data encrypted before this marker existed (real, valid value -
+// kept as-is for backward compatibility) or a wrong-key decrypt that happened to produce valid
+// UTF-8 - this only protects data written after this fix, not retroactively.
+const FIELD_INTEGRITY_MARKER = 'WSF1';
+
 const decryptFieldSync = (ciphertext: string | null | undefined, key: string): string | null => {
     if (!ciphertext) return null;
     try {
         const bytes = CryptoJS.AES.decrypt(ciphertext, key);
-        return bytes.toString(CryptoJS.enc.Utf8) || null;
+        const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+        if (!decryptedString) return null;
+        return decryptedString.startsWith(FIELD_INTEGRITY_MARKER)
+            ? decryptedString.slice(FIELD_INTEGRITY_MARKER.length)
+            : decryptedString;
     } catch {
         return null;
     }
@@ -29,20 +46,31 @@ const getStorageKey = async (): Promise<string> => {
         return cachedKey;
     }
 
-    try {
-        let key = await SecureStore.getItemAsync(SECURE_KEYS.ENCRYPTION_KEY);
-        if (!key) {
-            // Generate a random 256-bit key (32 bytes -> 64 hex chars)
-            key = CryptoJS.lib.WordArray.random(32).toString();
-            await SecureStore.setItemAsync(SECURE_KEYS.ENCRYPTION_KEY, key);
-        }
-        // Cache the key in memory
-        cachedKey = key;
-        return key;
-    } catch (error) {
-        console.error('Error accessing SecureStore for encryption key:', error);
-        throw new Error('Unable to retrieve device encryption key');
+    // Join an already-in-flight generation instead of starting a second one.
+    if (keyPromise) {
+        return keyPromise;
     }
+
+    keyPromise = (async () => {
+        try {
+            let key = await SecureStore.getItemAsync(SECURE_KEYS.ENCRYPTION_KEY);
+            if (!key) {
+                // Generate a random 256-bit key (32 bytes -> 64 hex chars)
+                key = CryptoJS.lib.WordArray.random(32).toString();
+                await SecureStore.setItemAsync(SECURE_KEYS.ENCRYPTION_KEY, key);
+            }
+            // Cache the key in memory
+            cachedKey = key;
+            return key;
+        } catch (error) {
+            console.error('Error accessing SecureStore for encryption key:', error);
+            throw new Error('Unable to retrieve device encryption key');
+        } finally {
+            keyPromise = null;
+        }
+    })();
+
+    return keyPromise;
 };
 
 /**
@@ -69,8 +97,11 @@ export const encryptData = async (data: any, secret?: string): Promise<string> =
  * @returns Decrypted data object or null if failure
  */
 export const decryptData = async (ciphertext: string, secret?: string): Promise<any | null> => {
+    // Key retrieval failing (SecureStore itself inaccessible) is a systemic problem, not a
+    // per-item decrypt failure - let it throw instead of collapsing to the same null every
+    // caller already treats as "no data here".
+    const key = secret || await getStorageKey();
     try {
-        const key = secret || await getStorageKey();
         const bytes = CryptoJS.AES.decrypt(ciphertext, key);
         const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
         return decryptedString ? JSON.parse(decryptedString) : null;
@@ -109,7 +140,7 @@ export const encryptField = async (
             stringValue = value;
         }
 
-        return CryptoJS.AES.encrypt(stringValue, key).toString();
+        return CryptoJS.AES.encrypt(`${FIELD_INTEGRITY_MARKER}${stringValue}`, key).toString();
     } catch (error) {
         console.error('Error encrypting field:', error);
         throw new Error('Field encryption failed');
@@ -123,11 +154,15 @@ export const encryptField = async (
  */
 export const decryptField = async (ciphertext: string | null | undefined): Promise<string | null> => {
     if (!ciphertext) return null;
+    // See decryptData for why key retrieval is outside this try/catch.
+    const key = await getStorageKey();
     try {
-        const key = await getStorageKey();
         const bytes = CryptoJS.AES.decrypt(ciphertext, key);
         const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
-        return decryptedString || null;
+        if (!decryptedString) return null;
+        return decryptedString.startsWith(FIELD_INTEGRITY_MARKER)
+            ? decryptedString.slice(FIELD_INTEGRITY_MARKER.length)
+            : decryptedString;
     } catch (error) {
         console.error('Error decrypting field:', error);
         return null;
