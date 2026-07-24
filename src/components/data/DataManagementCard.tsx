@@ -171,6 +171,10 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
             const msg = (error as Error).message;
             if (msg === 'INVALID_PASSWORD') {
                 showAlert('Error', 'Incorrect password.');
+            } else if (msg === 'RESTORE_FAILED_ROLLED_BACK') {
+                showAlert('Restore Failed', 'The restore failed partway through, but your previous data has been restored - nothing was lost.');
+            } else if (msg === 'RESTORE_FAILED_ROLLBACK_FAILED') {
+                showAlert('Restore Failed', 'The restore failed and your data may be incomplete. Please check your data, and restore from a known-good backup if needed.');
             } else {
                 showAlert('Error', 'Failed to restore: ' + msg);
             }

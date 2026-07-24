@@ -158,8 +158,8 @@ const parseAmount = (value: string): number => {
 /**
  * Create a unique key for duplicate detection
  */
-const createTransactionKey = (date: string, amount: BigNumber, category: string, notes: string): string => {
-    return `${date}|${amount.toFixed(2)}|${category.toLowerCase()}|${(notes || '').toLowerCase()}`;
+const createTransactionKey = (date: string, amount: BigNumber, category: string, notes: string, type: TransactionType): string => {
+    return `${date}|${type}|${amount.toFixed(2)}|${category.toLowerCase()}|${(notes || '').toLowerCase()}`;
 };
 
 /**
@@ -180,7 +180,8 @@ export const validateImportData = (
             txn.date.split('T')[0], // Just the date part
             txn.amount,
             txn.category,
-            txn.note || ''
+            txn.note || '',
+            txn.type
         );
         existingKeys.add(key);
     });
@@ -233,7 +234,8 @@ export const validateImportData = (
         // Check for duplicates (only if other validations pass)
         if (rowErrors.length === 0) {
             const amount = hasIncome ? new BigNumber(parseAmount(row.income)) : new BigNumber(parseAmount(row.expense));
-            const key = createTransactionKey(row.date, amount, row.category, row.notes);
+            const rowType: TransactionType = hasIncome ? 'INCOME' : 'EXPENSE';
+            const key = createTransactionKey(row.date, amount, row.category, row.notes, rowType);
 
             if (existingKeys.has(key)) {
                 rowErrors.push('Duplicate transaction already exists in database');

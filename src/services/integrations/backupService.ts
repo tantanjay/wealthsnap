@@ -138,7 +138,15 @@ export const createBackup = async (
         ? `wealthsnap_backup_auto_${dateStr}.zip`
         : `wealthsnap_backup_${dateStr}.zip`;
     const file = new File(Paths.document, fileName);
-    file.write(zipBytes);
+    // Write to a temp file first, then move it into place. A process kill mid-write only ever
+    // corrupts the .tmp file - the real backup filename either doesn't exist yet or still holds
+    // the previous good backup, never a truncated/corrupt file under the name a restore or
+    // listing UI would trust.
+    const tempFile = new File(Paths.document, `${fileName}.tmp`);
+    if (tempFile.exists) tempFile.delete();
+    tempFile.write(zipBytes);
+    if (file.exists) file.delete();
+    tempFile.move(file);
 
     await Storage.saveLastBackupDate(new Date().toISOString());
 
@@ -447,7 +455,19 @@ async function restoreV2(zip: JSZip, password: string | undefined, onProgress?: 
         );
     }
 
-    // Phase D — only now do we wipe local data, after everything above has already succeeded.
+    // Phase D — snapshot the current data before wiping anything. Each entity's bulkSave
+    // commits per-chunk rather than as one all-or-nothing transaction, so a failure partway
+    // through Phase E below (a corrupt/malformed record, a storage error) can't simply be
+    // rolled back by SQLite itself - this snapshot is what Phase E's catch block restores
+    // instead, so a failed restore doesn't leave the device with neither the old data nor a
+    // complete new one.
+    onProgress?.({ stage: 'clearing', label: 'Backing up current data…' });
+    const preRestoreProfile = await Storage.getUserProfile();
+    const preRestoreSnapshot: Record<string, any[]> = {};
+    for (const d of ENTITY_REGISTRY) {
+        preRestoreSnapshot[d.key] = await d.getAll();
+    }
+
     onProgress?.({ stage: 'clearing', label: 'Clearing existing data…' });
     await AsyncStorage.setItem(ASYNC_KEYS.REVIEW_PROMPT.LAST_PROMPT, new Date().toISOString());
     await Storage.clearAllData();
@@ -462,10 +482,35 @@ async function restoreV2(zip: JSZip, password: string | undefined, onProgress?: 
 
     // Phase E — save. Registry order is purely for a readable progress sequence; there are
     // no DB-level FK constraints, so save order has no effect on success/failure.
-    for (let i = 0; i < ENTITY_REGISTRY.length; i++) {
-        const d = ENTITY_REGISTRY[i];
-        onProgress?.({ stage: 'restoring', label: `Restoring ${d.label}…`, current: i + 1, total: ENTITY_REGISTRY.length });
-        await safeBulkSave(sanitized[d.key], d.bulkSave);
+    try {
+        for (let i = 0; i < ENTITY_REGISTRY.length; i++) {
+            const d = ENTITY_REGISTRY[i];
+            onProgress?.({ stage: 'restoring', label: `Restoring ${d.label}…`, current: i + 1, total: ENTITY_REGISTRY.length });
+            await safeBulkSave(sanitized[d.key], d.bulkSave);
+        }
+    } catch (error) {
+        console.error('[Restore] Failed partway through - rolling back to pre-restore data:', error);
+        onProgress?.({ stage: 'clearing', label: 'Restore failed - restoring your previous data…' });
+        try {
+            await Storage.clearAllData();
+            if (preRestoreProfile) {
+                await Storage.saveUserProfile(preRestoreProfile);
+                if (preRestoreProfile.isOnboardingComplete) {
+                    await Storage.saveAcceptedTermsVersion(CONFIG.TERMS_VERSION);
+                    await Storage.setOnboardingComplete();
+                }
+            }
+            for (const d of ENTITY_REGISTRY) {
+                await safeBulkSave(preRestoreSnapshot[d.key], d.bulkSave);
+            }
+        } catch (rollbackError) {
+            // Worst case: neither the restore nor the rollback fully completed. Surface a
+            // distinct error so the UI can warn the user their data may be incomplete, rather
+            // than reporting the same generic restore failure as the recoverable case above.
+            console.error('[Restore] Rollback itself failed - data may be incomplete:', rollbackError);
+            throw new Error('RESTORE_FAILED_ROLLBACK_FAILED');
+        }
+        throw new Error('RESTORE_FAILED_ROLLED_BACK');
     }
 
     // Phase F — reschedule using the SANITIZED reminders (the ids actually written to SQLite),

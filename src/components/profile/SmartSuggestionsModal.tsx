@@ -16,6 +16,10 @@ import { EXPENSE_CATEGORY_GROUPS } from '@constants/categories';
 const SYNC_THRESHOLD_PCT = 15;
 const SYNC_THRESHOLD_MIN = 50;
 const HISTORY_MONTHS = 12;
+// A category active in fewer than this many of the history window's months gets its average
+// footnoted as "occasional" - the average is still a real number (this cost smoothed evenly
+// across the window), but it isn't a recurring monthly cost the way the suggestion otherwise implies.
+const INFREQUENT_MONTHS_THRESHOLD = 3;
 
 /**
  * Rounds to a "nice" number scaled to the amount's own magnitude (keeps ~2 significant
@@ -34,6 +38,9 @@ interface SuggestionRow {
     currentBudget: number | null;
     suggestedAmount: number;
     amountText: string;
+    isInfrequent: boolean;
+    activeMonths: number;
+    totalMonths: number;
 }
 
 interface SmartSuggestionsModalProps {
@@ -49,6 +56,11 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
     const [loading, setLoading] = useState(false);
     const [applying, setApplying] = useState(false);
     const [rows, setRows] = useState<SuggestionRow[]>([]);
+    // Distinguishes "we have spending history and it already matches your budgets" from
+    // "there's no history to compare against yet" (e.g. a brand-new user still in their
+    // first calendar month) - getCategoryAverages excludes the current in-progress month,
+    // so an empty `averages` result there means no data, not a genuine match.
+    const [hasHistory, setHasHistory] = useState(true);
 
     const getCategoryIcon = (categoryValue: string): string => {
         for (const group of EXPENSE_CATEGORY_GROUPS) {
@@ -68,6 +80,7 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
             ]);
 
             const averages = getCategoryAverages(transactions, HISTORY_MONTHS);
+            setHasHistory(Object.keys(averages).length > 0);
             const budgetMap = new Map(budgets.map(b => [b.category, b.amount.toNumber()]));
             // Recurring categories (Rent, Insurance, etc.) already have a known, fixed
             // amount - an average-based suggestion would just be second-guessing it.
@@ -77,23 +90,24 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
 
             const suggestions: (SuggestionRow & { gap: number })[] = [];
 
-            Object.entries(averages).forEach(([category, avg]) => {
-                if (avg < SYNC_THRESHOLD_MIN) return;
+            Object.entries(averages).forEach(([category, { average, activeMonths, totalMonths }]) => {
+                if (average < SYNC_THRESHOLD_MIN) return;
                 if (recurringCategories.has(category)) return;
 
                 const current = budgetMap.has(category) ? budgetMap.get(category)! : null;
-                const rounded = roundToNiceAmount(avg);
+                const rounded = roundToNiceAmount(average);
+                const isInfrequent = activeMonths < INFREQUENT_MONTHS_THRESHOLD;
 
                 if (current === null) {
-                    suggestions.push({ category, currentBudget: null, suggestedAmount: rounded, amountText: String(rounded), gap: avg });
+                    suggestions.push({ category, currentBudget: null, suggestedAmount: rounded, amountText: String(rounded), gap: average, isInfrequent, activeMonths, totalMonths });
                     return;
                 }
 
-                const diffAbs = Math.abs(avg - current);
+                const diffAbs = Math.abs(average - current);
                 const diffPct = current > 0 ? (diffAbs / current) * 100 : 100;
 
                 if (diffPct > SYNC_THRESHOLD_PCT && diffAbs > SYNC_THRESHOLD_MIN) {
-                    suggestions.push({ category, currentBudget: current, suggestedAmount: rounded, amountText: String(rounded), gap: diffAbs });
+                    suggestions.push({ category, currentBudget: current, suggestedAmount: rounded, amountText: String(rounded), gap: diffAbs, isInfrequent, activeMonths, totalMonths });
                 }
             });
 
@@ -130,17 +144,36 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
         }
 
         setApplying(true);
-        try {
-            for (const row of validRows) {
+        // Applied one at a time (not in a single all-or-nothing batch) so a failure partway
+        // through doesn't hide which budgets actually got saved - each result is tracked
+        // individually and reported accurately instead of a blanket success/failure message.
+        const succeeded: string[] = [];
+        const failed: string[] = [];
+        for (const row of validRows) {
+            try {
                 await setBudget(row.category, parseFloat(row.amountText));
+                succeeded.push(row.category);
+            } catch {
+                failed.push(row.category);
             }
+        }
+        setApplying(false);
+
+        if (succeeded.length > 0) {
+            setRows(prev => prev.filter(r => !succeeded.includes(r.category)));
             onApplied();
+        }
+
+        if (failed.length === 0) {
             onClose();
-            showAlert('Success', `Updated ${validRows.length} budget${validRows.length === 1 ? '' : 's'}`);
-        } catch {
-            showAlert('Error', 'Failed to update budgets');
-        } finally {
-            setApplying(false);
+            showAlert('Success', `Updated ${succeeded.length} budget${succeeded.length === 1 ? '' : 's'}`);
+        } else if (succeeded.length === 0) {
+            showAlert('Error', `Failed to update ${failed.length} budget${failed.length === 1 ? '' : 's'}: ${failed.join(', ')}`);
+        } else {
+            showAlert(
+                'Partially Updated',
+                `Updated ${succeeded.length} budget${succeeded.length === 1 ? '' : 's'}. Failed: ${failed.join(', ')}. You can try again for the remaining ones.`
+            );
         }
     };
 
@@ -185,7 +218,9 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
                             <View style={{ alignItems: 'center', marginTop: 40 }}>
                                 <Ionicons name="checkmark-circle-outline" size={48} color={colors.textSecondary} />
                                 <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 10 }}>
-                                    Your budgets already match your spending
+                                    {hasHistory
+                                        ? 'Your budgets already match your spending'
+                                        : "Not enough spending history yet - check back after your first full month"}
                                 </Text>
                             </View>
                         }
@@ -223,6 +258,11 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
                                         ) : (
                                             <Text style={{ color: isUp ? colors.warning : colors.success, fontSize: 11, fontWeight: '600', marginTop: 2 }}>
                                                 {isUp ? '▲' : '▼'} {formatCurrencyAmount(delta, currency)} vs current
+                                            </Text>
+                                        )}
+                                        {item.isInfrequent && (
+                                            <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2, fontStyle: 'italic' }}>
+                                                Occasional ({item.activeMonths}/{item.totalMonths} months) — smoothed average, not a recurring cost
                                             </Text>
                                         )}
                                     </View>

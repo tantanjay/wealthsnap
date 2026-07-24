@@ -3,6 +3,8 @@ import { getAllTransactions } from '@services/domain/transactionService';
 import { getAllInvestments } from '@services/domain/investmentService';
 import { getAllDebts } from '@services/domain/debtService';
 import { getAllBudgets } from '@services/domain/budgetService';
+import { getUserProfile } from '@services/core/storageService';
+import { encryptField, decryptField } from '@services/core/encryptionService';
 import {
     buildMonthlySummaryData,
     renderMonthlySummaryText,
@@ -30,20 +32,26 @@ const getCurrentYearMonth = (): string => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 };
 
-const mapRow = (row: any): MonthlySummaryRow => ({
-    yearMonth: row.yearMonth,
-    isFinal: row.isFinal === 1,
-    summaryText: row.summaryText,
-    summaryJson: JSON.parse(row.summaryJson),
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt
-});
+// summaryText/summaryJson are stored encrypted (see migrateToVersion16) since they duplicate
+// fields - transaction notes, debt names - that are field-encrypted everywhere else in the app.
+const mapRow = async (row: any): Promise<MonthlySummaryRow> => {
+    const text = await decryptField(row.summaryText);
+    const json = await decryptField(row.summaryJson);
+    return {
+        yearMonth: row.yearMonth,
+        isFinal: row.isFinal === 1,
+        summaryText: text ?? '',
+        summaryJson: json ? JSON.parse(json) : ({} as MonthlySummaryData),
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt
+    };
+};
 
 export const getMonthlySummary = async (yearMonth: string): Promise<MonthlySummaryRow | null> => {
     try {
         const db = await getDatabase();
         const row = await db.getFirstAsync<any>('SELECT * FROM monthly_summary WHERE yearMonth = ?', [yearMonth]);
-        return row ? mapRow(row) : null;
+        return row ? await mapRow(row) : null;
     } catch (error) {
         console.error('[MonthlySummary] Error getting summary:', error);
         return null;
@@ -54,7 +62,7 @@ export const getAllMonthlySummaries = async (): Promise<MonthlySummaryRow[]> => 
     try {
         const db = await getDatabase();
         const rows = await db.getAllAsync<any>('SELECT * FROM monthly_summary ORDER BY yearMonth ASC');
-        return rows.map(mapRow);
+        return Promise.all(rows.map(mapRow));
     } catch (error) {
         console.error('[MonthlySummary] Error getting summaries:', error);
         return [];
@@ -74,12 +82,14 @@ export const syncMonthlySummaries = async (options?: { force?: boolean }): Promi
     const force = options?.force ?? false;
 
     try {
-        const [transactions, investments, debts, budgets] = await Promise.all([
+        const [transactions, investments, debts, budgets, profile] = await Promise.all([
             getAllTransactions(),
             getAllInvestments(),
             getAllDebts(),
-            getAllBudgets()
+            getAllBudgets(),
+            getUserProfile()
         ]);
+        const currency = profile?.currency || 'PHP';
 
         if (transactions.length === 0 && investments.length === 0) return;
 
@@ -102,10 +112,12 @@ export const syncMonthlySummaries = async (options?: { force?: boolean }): Promi
         for (let i = 0; i < monthsToGenerate.length; i++) {
             const yearMonth = monthsToGenerate[i];
             const data = buildMonthlySummaryData(yearMonth, transactions, investments, debts, budgets);
-            const text = renderMonthlySummaryText(data);
+            const text = renderMonthlySummaryText(data, currency);
             const isFinal = yearMonth < currentYearMonth;
 
-            await db.runAsync(UPSERT_MONTHLY_SUMMARY_QUERY, [yearMonth, isFinal ? 1 : 0, text, JSON.stringify(data)]);
+            const encryptedText = await encryptField(text);
+            const encryptedJson = await encryptField(JSON.stringify(data));
+            await db.runAsync(UPSERT_MONTHLY_SUMMARY_QUERY, [yearMonth, isFinal ? 1 : 0, encryptedText, encryptedJson]);
 
             // Yield to the event loop periodically so a large backfill doesn't block the UI thread
             if (i % 3 === 2) {

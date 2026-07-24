@@ -4,7 +4,7 @@ import { ASYNC_KEYS } from '@constants/config';
 import { encryptField } from '@services/core/encryptionService';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 15;
+export const DATABASE_VERSION = 16;
 
 /**
  * Create all database tables and indexes
@@ -563,6 +563,27 @@ export const migrateToVersion15 = async (db: SQLite.SQLiteDatabase): Promise<voi
         console.log('[Migration] Successfully migrated to version 15');
     } catch (error) {
         console.error('[Migration] Failed version 15 migration:', error);
+        throw error;
+    }
+};
+
+/**
+ * Migrate to Version 16: monthly_summary.summaryText/summaryJson were stored in plaintext,
+ * even though they duplicate fields (transaction notes, debt names) that are field-encrypted
+ * everywhere else - a background job that runs regardless of AI consent was writing decrypted
+ * sensitive data to disk in the clear. monthlySummaryService now encrypts both columns before
+ * writing. Re-encrypting the *existing* plaintext rows in place isn't practical (summaryJson is
+ * a JSON blob, not a single value), so this just clears the table - syncMonthlySummaries
+ * regenerates every month from source data on the next app launch, now correctly encrypted.
+ */
+export const migrateToVersion16 = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+    try {
+        console.log('[Migration] Starting migration to version 16...');
+        await db.execAsync('DELETE FROM monthly_summary');
+        await setDatabaseVersion(db, 16);
+        console.log('[Migration] Successfully migrated to version 16');
+    } catch (error) {
+        console.error('[Migration] Failed version 16 migration:', error);
         throw error;
     }
 };
