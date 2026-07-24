@@ -33,7 +33,10 @@ export const refreshAssetPrices = async (assets: AssetRequest[], duration: strin
                     if (finalHigh) finalHigh = finalHigh.multipliedBy(exchangeRate);
                     if (finalLow) finalLow = finalLow.multipliedBy(exchangeRate);
                 } else {
-                    console.warn(`[MarketDataService] Missing exchange rate for ${sourceCurrency}->${targetCurrency} on ${p.date}. Skipping conversion.`);
+                    // Can't convert to the profile currency - skip this point rather than
+                    // saving/overwriting with an unconverted price mislabeled as targetCurrency.
+                    console.warn(`[MarketDataService] Missing exchange rate for ${sourceCurrency}->${targetCurrency} on ${p.date}. Skipping this price point.`);
+                    continue;
                 }
             }
 
@@ -55,7 +58,12 @@ export const refreshAssetPrices = async (assets: AssetRequest[], duration: strin
                     savedCount++;
                 }
             } else {
+                // Deterministic id (instead of a random UUID) so concurrent refreshes for the
+                // same symbol+date collide on the primary key and INSERT OR REPLACE naturally
+                // collapses them into one row, instead of the check-then-act read above racing
+                // into two rows.
                 await addPriceHistory(p.symbol, finalPrice, {
+                    id: `AI_${p.symbol}_${p.date}`,
                     high: finalHigh,
                     low: finalLow,
                     volume: p.volume ? new BigNumber(p.volume) : undefined,

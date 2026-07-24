@@ -6,6 +6,21 @@ import { getPortfolioHoldings } from '@services/domain/investmentService';
 
 export type Priority = 'div' | 'crash' | 'balance' | 'all';
 
+/**
+ * Manual entries store exDate as a full ISO timestamp; AI-fetched entries store a bare
+ * YYYY-MM-DD string, which JS parses as UTC midnight - comparing that against a local `now`
+ * Date can miss a dividend whose ex-date is literally today. Same bug class as
+ * dividendHistoryService.ts's getExDateYearMonth(); read the calendar components directly
+ * for the bare-date case instead of letting JS reinterpret it as a UTC instant.
+ */
+const parseExDateLocal = (exDate: string): Date => {
+    const bareDateMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(exDate);
+    if (bareDateMatch) {
+        return new Date(Number(bareDateMatch[1]), Number(bareDateMatch[2]) - 1, Number(bareDateMatch[3]));
+    }
+    return new Date(exDate);
+};
+
 export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<Suggestion[]> => {
     try {
         const assets = await getAllAssets();
@@ -14,18 +29,19 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
 
         const suggestions: Suggestion[] = [];
 
-        // FILTER: Only include stocks with investments record (holdings) and type 'STOCKS'
+        // All stock-type assets (owned or not) - used by the Balance section below so it can
+        // suggest sectors the user doesn't currently hold anything in.
         const stockAssets = assets.filter(asset => {
-            const hasHolding = holdings.some(h => h.symbol === asset.symbol);
             const isStock = asset.type && (
                 asset.type.toUpperCase() === 'STOCK' ||
                 asset.type.toUpperCase() === 'STOCKS'
             );
-            return hasHolding && isStock;
+            return isStock;
         });
 
-        // Use filtered assets for analysis
-        const analysisAssets = stockAssets;
+        // Held stocks only - used by Crash/Dip/Dividend, which only make sense for positions
+        // the user actually holds.
+        const analysisAssets = stockAssets.filter(asset => holdings.some(h => h.symbol === asset.symbol));
         if (priority === 'all' || priority === 'crash') {
             for (const asset of analysisAssets) {
                 // Check recent price history (last 30 days)
@@ -41,6 +57,10 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
                 // Find 30-day high
                 let high30 = 0;
                 history.forEach(h => { if (h.price.toNumber() > high30) high30 = h.price.toNumber(); });
+
+                // No valid positive price in the window (bad data row) - can't compute a
+                // meaningful drop, so skip rather than divide by zero.
+                if (high30 <= 0) continue;
 
                 // Calculate Drop
                 const drop = (currentPrice - high30) / high30; // e.g., -0.15 for 15% drop
@@ -86,17 +106,18 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
         // 2. Analyze for "Dividends"
         if (priority === 'all' || priority === 'div') {
             const today = new Date();
-            const nextMonth = new Date();
+            today.setHours(0, 0, 0, 0);
+            const nextMonth = new Date(today);
             nextMonth.setDate(today.getDate() + 30);
 
             for (const asset of analysisAssets) {
                 const divHistory = await getDividendHistory(asset.symbol);
-                // Look for upcoming ex-dates. Since our service only gets history, we rely on projected data 
+                // Look for upcoming ex-dates. Since our service only gets history, we rely on projected data
                 // we added in dummyDataService.
                 // Filter for exDate > today and exDate < nextMonth
 
                 const upcomingDiv = divHistory.find(d => {
-                    const exDate = new Date(d.exDate);
+                    const exDate = parseExDateLocal(d.exDate);
                     return exDate >= today && exDate <= nextMonth;
                 });
 
@@ -130,35 +151,31 @@ export const getSmartSuggestions = async (priority: Priority = 'all'): Promise<S
                 totalValue += value;
             });
 
-            // Find sectors from all available assets
-            const allSectors = Array.from(new Set(analysisAssets.map(a => a.sector).filter(s => s)));
+            // Find sectors from ALL stock assets (owned or not), so a sector the user has zero
+            // exposure to can still be surfaced - not just sectors already held.
+            const allSectors = Array.from(new Set(stockAssets.map(a => a.sector).filter(s => s)));
 
             for (const sector of allSectors) {
                 const alloc = sectorAlloc[sector as string] || 0;
                 const pct = totalValue > 0 ? alloc / totalValue : 0;
 
-                // If allocation is < 10%, suggest top stock in that sector?
+                // If allocation is < 10%, suggest a stock in that sector.
                 if (pct < 0.10) {
-                    // Suggest a stock in this sector that isn't crashing? 
-                    // Or just any stock. Let's pick one we don't own, or minimal own.
-                    const candidate = analysisAssets.find(a => a.sector === sector);
+                    // Prefer a stock the user doesn't already own in this sector; fall back to
+                    // any stock in the sector if they own them all.
+                    const candidate = stockAssets.find(a => a.sector === sector && !holdings.some(h => h.symbol === a.symbol))
+                        || stockAssets.find(a => a.sector === sector);
                     if (candidate) {
                         const currentPrice = latestPricesRecord[candidate.symbol]?.price?.toNumber() || 0;
-                        const existing = suggestions.find(s => s.ticker === candidate.symbol);
-
-                        if (existing) {
-                            // If already suggested (e.g. as a dip), append the balance reason
-                            if (!existing.reason.includes('BAL')) {
-                                existing.reason = `${existing.reason} + ⚖️ BAL`;
-                            }
-                        } else {
-                            suggestions.push({
-                                ticker: candidate.symbol,
-                                reason: `⚖️ BALANCE (${sector})`,
-                                type: 'balance',
-                                price: currentPrice
-                            });
-                        }
+                        // Pushed as its own suggestion (not merged onto an existing Crash/Dip
+                        // entry for the same ticker) so a "buy - underweight" cue never reads
+                        // as bundled with a "this position is dropping" warning.
+                        suggestions.push({
+                            ticker: candidate.symbol,
+                            reason: `⚖️ BALANCE (${sector})`,
+                            type: 'balance',
+                            price: currentPrice
+                        });
                     }
                 }
             }
