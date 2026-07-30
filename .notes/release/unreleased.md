@@ -99,6 +99,7 @@ Lower cost per message, more accurate history, and a fix for a way the AI could 
 ## 📦 Auto Backup
 - **Folder picker no longer left the app locked**: choosing a backup destination folder on Android backgrounds the app to show the system folder picker, same as the manual backup/restore file pickers. Unlike those, it wasn't exempted from the security lock, so returning to WealthSnap could drop you on the PIN/biometric screen. Picking or canceling a folder now temporarily disables the lock the same way the file pickers already do.
 - **No more corrupted backups from an interrupted write**: a scheduled backup writes straight to disk in the background, where the OS can suspend or kill the app mid-write with no warning. Previously that could leave a truncated, unreadable file sitting under the real backup's filename with no indication anything was wrong. It now writes to a temporary file first and only moves it into place once the write finishes, so an interruption never corrupts the file you'd actually try to restore from later.
+- **No more redundant "back up your data" reminder**: the manual backup reminder used to pop up every 7 days regardless of Auto Backup, even though Auto Backup was already keeping things backed up on its own schedule. It no longer appears while Auto Backup is enabled. If Auto Backup is later turned off, the reminder's timing picks up from your last successful backup (auto or manual) rather than starting the 7-day count over.
 
 ---
 

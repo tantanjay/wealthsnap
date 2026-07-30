@@ -27,6 +27,7 @@ import { CONFIG } from '@constants/config';
 import BackupReminderModal from '@components/data/BackupReminderModal';
 import BackupRestoreModal from '@components/data/BackupRestoreModal';
 import { createBackup, BackupProgress } from '@services/integrations/backupService';
+import { getAutoBackupSettings } from '@services/integrations/autoBackupService';
 import * as Sharing from 'expo-sharing';
 
 // Standard JS date math is safer since I don't know dependencies.
@@ -146,6 +147,13 @@ const AppContent = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'L
 
       // 2. Check Backups (Less critical, can also wait for unlock)
       if (!isLocked) {
+        // Auto-backup already keeps things backed up on its own schedule - don't nag the user
+        // with the manual-backup reminder while it's handling this for them.
+        const autoBackupSettings = await getAutoBackupSettings();
+        if (autoBackupSettings.enabled) {
+          return;
+        }
+
         const lastBackup = await getLastBackupDate();
         if (!lastBackup) {
           await saveLastBackupDate(new Date().toISOString());
