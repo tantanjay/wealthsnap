@@ -40,6 +40,7 @@ Tab: `History`. Calendar and list views of past transactions.
 - `src/screens/HistoryScreen.tsx`
 - `src/components/history/HistoryCalendar.tsx`
 - `src/components/history/HistoryCalendarHelpModal.tsx`
+- `src/components/history/HistoryDatePickerModal.tsx`
 - `src/components/history/HistoryListItem.tsx`
 - `src/components/history/HistorySafeToSpendHelpModal.tsx`
 - `src/components/history/HistorySectionHeader.tsx`

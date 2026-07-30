@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - History: list rows no longer re-render when nothing about them changed, smoothing out search/filter/scroll on a large transaction history.
+- History: type filter and Day/Week/Month/Year period are now combined into a single Filters button instead of two always-visible rows.
+  - Default period changed from Daily to Monthly.
+  - Date label is now tappable and opens a jump-to-date picker adapted to the current period, matching Insights' month picker.
 - Recurring transactions: catching up on missed occurrences after being away for a while is now faster.
 - Help Center's Financial Insights and Math & Formulas guides updated to match the current Insights screen.
 - Chat moved from the Floating Quick Actions menu into the Record menu.
