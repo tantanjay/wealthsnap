@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { Text, View, SectionList, TouchableOpacity, StyleSheet, TextInput, ScrollView } from 'react-native';
+import { Text, View, SectionList, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 
@@ -9,6 +9,7 @@ import InvestmentOptionsModal from '@components/investments/modals/InvestmentOpt
 import { Skeleton } from '@components/common/Skeleton';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import DraggableIconButton from '@components/common/DraggableIconButton';
+import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
@@ -19,6 +20,7 @@ import { getAllDebts, deleteDebt } from '@services/domain/debtService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile } from '@services/core/storageService';
 import { HistoryCalendar } from '@components/history/HistoryCalendar';
+import { HistoryDatePickerModal } from '@components/history/HistoryDatePickerModal';
 import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
 import { HistoryCalendarHelpModal } from '@components/history/HistoryCalendarHelpModal';
 import { HistorySafeToSpendHelpModal } from '@components/history/HistorySafeToSpendHelpModal';
@@ -56,7 +58,7 @@ const HistoryScreen = ({ navigation }: any) => {
     const [allInvestments, setAllInvestments] = useState<Investment[]>([]);
     const [allDebts, setAllDebts] = useState<Debt[]>([]);
     const [recurrenceRules, setRecurrenceRules] = useState<RecurrenceRule[]>([]);
-    const [timeFrame, setTimeFrame] = useState<TimeFrame>('DAILY');
+    const [timeFrame, setTimeFrame] = useState<TimeFrame>('MONTHLY');
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
@@ -67,10 +69,16 @@ const HistoryScreen = ({ navigation }: any) => {
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(new Date());
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showSafeToSpendInfo, setShowSafeToSpendInfo] = useState(false);
+    const [showFilterSheet, setShowFilterSheet] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
 
     // Filter & Search State
     const [activeFilter, setActiveFilter] = useState<FilterType>('ALL');
     const [searchQuery, setSearchQuery] = useState('');
+    const isFilterActive = activeFilter !== 'ALL' || timeFrame !== 'MONTHLY';
+    // Calendar mode always steps month-to-month regardless of the List timeFrame - the jump
+    // picker should reflect that instead of whatever granularity List last used.
+    const datePickerTimeFrame: TimeFrame = viewMode === 'CALENDAR' ? 'MONTHLY' : timeFrame;
 
     useFocusEffect(
         useCallback(() => {
@@ -629,103 +637,40 @@ const HistoryScreen = ({ navigation }: any) => {
                             </View>
                         )}
 
-                        {/* Filter Bar */}
-                        {viewMode === 'LIST' && (
-                            <View style={{ marginBottom: 16 }}>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                                    <TouchableOpacity
-                                        onPress={() => setActiveFilter('ALL')}
-                                        style={{
-                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-                                            backgroundColor: activeFilter === 'ALL' ? colors.primary : colors.surface,
-                                        }}
-                                    >
-                                        <Text style={{ color: activeFilter === 'ALL' ? '#FFF' : colors.text, fontWeight: '600' }}>All</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={() => setActiveFilter('EXPENSE')}
-                                        style={{
-                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-                                            backgroundColor: activeFilter === 'EXPENSE' ? colors.error : colors.surface,
-                                        }}
-                                    >
-                                        <Text style={{ color: activeFilter === 'EXPENSE' ? '#FFF' : colors.text, fontWeight: '600' }}>Expenses</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={() => setActiveFilter('INCOME')}
-                                        style={{
-                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-                                            backgroundColor: activeFilter === 'INCOME' ? colors.success : colors.surface,
-                                        }}
-                                    >
-                                        <Text style={{ color: activeFilter === 'INCOME' ? '#FFF' : colors.text, fontWeight: '600' }}>Income</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={() => setActiveFilter('INVESTMENT')}
-                                        style={{
-                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-                                            backgroundColor: activeFilter === 'INVESTMENT' ? '#8E24AA' : colors.surface,
-                                        }}
-                                    >
-                                        <Text style={{ color: activeFilter === 'INVESTMENT' ? '#FFF' : colors.text, fontWeight: '600' }}>Investments</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={() => setActiveFilter('DEBT')}
-                                        style={{
-                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-                                            backgroundColor: activeFilter === 'DEBT' ? '#F57C00' : colors.surface,
-                                        }}
-                                    >
-                                        <Text style={{ color: activeFilter === 'DEBT' ? '#FFF' : colors.text, fontWeight: '600' }}>Debts</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={() => setActiveFilter('CASH_FLOW')}
-                                        style={{
-                                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-                                            backgroundColor: activeFilter === 'CASH_FLOW' ? colors.info : colors.surface,
-                                        }}
-                                    >
-                                        <Text style={{ color: activeFilter === 'CASH_FLOW' ? '#FFF' : colors.text, fontWeight: '600' }}>Cash Flow</Text>
-                                    </TouchableOpacity>
-                                </ScrollView>
-                            </View>
-                        )}
-
-                        {/* Mode Specific Controls */}
-                        {viewMode === 'LIST' ? (
-                            <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, marginBottom: 16 }}>
-                                {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as TimeFrame[]).map((tf) => (
-                                    <TouchableOpacity key={tf} onPress={() => handleSetTimeFrame(tf)} style={{
-                                        flex: 1, paddingVertical: 8, alignItems: 'center',
-                                        backgroundColor: timeFrame === tf ? colors.primary : 'transparent', borderRadius: 8
-                                    }}>
-                                        <Text style={{ color: timeFrame === tf ? '#FFF' : colors.textSecondary, fontSize: 12, fontWeight: 'bold' }}>
-                                            {tf.charAt(0) + tf.slice(1).toLowerCase()}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        ) : null}
-
-                        {/* Date Navigator */}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                        {/* Date Navigator + Filters */}
+                        <View style={{
+                            flexDirection: 'row', alignItems: 'center',
+                            backgroundColor: colors.surface, borderRadius: 12, marginBottom: 16,
+                        }}>
+                            {viewMode === 'LIST' ? (
+                                <TouchableOpacity onPress={() => setShowFilterSheet(true)} style={{ padding: 10, marginLeft: 2 }}>
+                                    <Ionicons name="filter-outline" size={20} color={colors.primary} />
+                                    {isFilterActive && (
+                                        <View style={[styles.filterDot, { backgroundColor: colors.error, borderColor: colors.surface }]} />
+                                    )}
+                                </TouchableOpacity>
+                            ) : (
+                                <View style={{ width: 40 }} />
+                            )}
                             <TouchableOpacity onPress={() => navigateDate('prev')} style={{ padding: 8 }}>
                                 <Ionicons name="chevron-back" size={24} color={colors.primary} />
                             </TouchableOpacity>
-                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
-                                {viewMode === 'CALENDAR'
-                                    ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-                                    : getDateRangeLabel(currentDate, timeFrame)
-                                }
-                            </Text>
+                            <TouchableOpacity
+                                onPress={() => setShowDatePicker(true)}
+                                style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingVertical: 8 }}
+                            >
+                                <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
+                                    {viewMode === 'CALENDAR'
+                                        ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                                        : getDateRangeLabel(currentDate, timeFrame)
+                                    }
+                                </Text>
+                                <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                            </TouchableOpacity>
                             <TouchableOpacity onPress={() => navigateDate('next')} style={{ padding: 8 }}>
                                 <Ionicons name="chevron-forward" size={24} color={colors.primary} />
                             </TouchableOpacity>
+                            <View style={{ width: 40 }} />
                         </View>
 
                         {viewMode === 'CALENDAR' && (
@@ -789,6 +734,59 @@ const HistoryScreen = ({ navigation }: any) => {
                 onClose={() => setShowSafeToSpendInfo(false)}
                 viewMode={viewMode}
                 timeFrame={timeFrame}
+            />
+
+            <BottomModal
+                visible={showFilterSheet}
+                onClose={() => setShowFilterSheet(false)}
+                title="Filters"
+            >
+                <View style={{ paddingBottom: 10 }}>
+                    <Text style={{ color: colors.textSecondary, fontWeight: '600', marginBottom: 10 }}>Type</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+                        {([
+                            { key: 'ALL', label: 'All', color: colors.primary },
+                            { key: 'EXPENSE', label: 'Expenses', color: colors.error },
+                            { key: 'INCOME', label: 'Income', color: colors.success },
+                            { key: 'INVESTMENT', label: 'Investments', color: '#8E24AA' },
+                            { key: 'DEBT', label: 'Debts', color: '#F57C00' },
+                            { key: 'CASH_FLOW', label: 'Cash Flow', color: colors.info },
+                        ] as { key: FilterType; label: string; color: string }[]).map(({ key, label, color }) => (
+                            <TouchableOpacity
+                                key={key}
+                                onPress={() => setActiveFilter(key)}
+                                style={{
+                                    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+                                    backgroundColor: activeFilter === key ? color : colors.surface,
+                                }}
+                            >
+                                <Text style={{ color: activeFilter === key ? '#FFF' : colors.text, fontWeight: '600' }}>{label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    <Text style={{ color: colors.textSecondary, fontWeight: '600', marginBottom: 10 }}>Period</Text>
+                    <View style={{ flexDirection: 'row', backgroundColor: colors.background, borderRadius: 12, padding: 4 }}>
+                        {(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as TimeFrame[]).map((tf) => (
+                            <TouchableOpacity key={tf} onPress={() => handleSetTimeFrame(tf)} style={{
+                                flex: 1, paddingVertical: 8, alignItems: 'center',
+                                backgroundColor: timeFrame === tf ? colors.primary : 'transparent', borderRadius: 8
+                            }}>
+                                <Text style={{ color: timeFrame === tf ? '#FFF' : colors.textSecondary, fontSize: 12, fontWeight: 'bold' }}>
+                                    {tf.charAt(0) + tf.slice(1).toLowerCase()}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+            </BottomModal>
+
+            <HistoryDatePickerModal
+                visible={showDatePicker}
+                onClose={() => setShowDatePicker(false)}
+                timeFrame={datePickerTimeFrame}
+                currentDate={currentDate}
+                onSelectDate={(date) => setCurrentDate(date)}
             />
 
             <InvestmentOptionsModal
@@ -871,6 +869,15 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 2,
         elevation: 2,
+    },
+    filterDot: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        borderWidth: 1,
     }
 });
 

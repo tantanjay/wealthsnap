@@ -19,15 +19,6 @@ Currently every AI call is hardcoded to Google's `@google/genai` SDK. Goal: let 
 
 ---
 
-## 🗂️ History Screen
-
-Header currently stacks a search bar, 6 filter chips, a 4-button Day/Week/Month/Year row, a List/Calendar toggle, and a date navigator — all always visible above the transaction list, before a single transaction shows. Target end state: search bar + date navigator + one "Filters" control, nothing else always-on.
-
-- [ ] Consolidate Type filter and Period (Day/Week/Month/Year) into one "Filters" control — [HistoryScreen.tsx](src/screens/HistoryScreen.tsx) currently renders both as separate always-visible rows: 6 filter chips (All/Expenses/Income/Investments/Debts/Cash Flow, [HistoryScreen.tsx:826](src/screens/HistoryScreen.tsx:826)) and a 4-button Day/Week/Month/Year toggle ([HistoryScreen.tsx:893](src/screens/HistoryScreen.tsx:893)). Both answer the same underlying question — narrow down what I'm looking at — so replace them with a single small filter-icon button next to the date navigator that opens one bottom sheet with two sections, "Type" and "Period," instead of two competing always-visible rows.
-- [ ] Default `timeFrame` to `'MONTHLY'` instead of `'DAILY'` — [HistoryScreen.tsx:67](src/screens/HistoryScreen.tsx:67) currently opens on Daily. In practice the Day/Week/Month/Year granularity is rarely touched at all, and Monthly is closer to how people actually check "how am I doing," so it should be the view you land on rather than something you have to switch to every time.
-- [ ] Match History's date navigator to Insight's — [InsightScreen.tsx](src/screens/InsightScreen.tsx:326) pairs its chevron-back/forward with a tappable "Month Year" label plus a calendar-outline icon that opens a quick jump-to-month/year picker modal ([InsightScreen.tsx:529](src/screens/InsightScreen.tsx:529)). [HistoryScreen.tsx](src/screens/HistoryScreen.tsx:908)'s date navigator only has chevron-back/forward with a plain, non-tappable label — no way to jump straight to an arbitrary month/year, so going back further than a few steps means repeatedly tapping the chevron. Reuse the same tappable-label + calendar-icon + jump-picker pattern in History so both screens' date navigation look and behave the same way.
-  - Unlike Insight (month-only), History's jump picker needs to adapt to whichever `TimeFrame` is active ([HistoryScreen.tsx:30](src/screens/HistoryScreen.tsx:30) — `DAILY | WEEKLY | MONTHLY | YEARLY`): **Daily** → a full day-level calendar grid (reuse [HistoryCalendar.tsx](src/components/history/HistoryCalendar.tsx) if it fits the modal, or a lighter variant); **Weekly** → same calendar grid but selecting a week highlights/snaps to its Sun–Sat range instead of a single day; **Monthly** → the existing month/year grid pattern from Insight's picker; **Yearly** → year-only, no month grid at all. The picker's granularity should always mirror the selected timeframe rather than always showing a full calendar.
-
 ---
 
 ## 🌱 Ideas to Reconsider
@@ -68,6 +59,13 @@ Broader brainstorm from a feature-gap pass over README/release notes. Not scoped
 ---
 
 ## ✅ Done
+
+### 🗂️ History Screen
+
+- [x] ~~**Consolidate Type filter and Period into one "Filters" control**~~ — the always-visible 6-chip Type row and 4-button Day/Week/Month/Year row are gone from [HistoryScreen.tsx](src/screens/HistoryScreen.tsx)'s header; both now live in one `BottomModal` sheet ("Type" and "Period" sections) opened from a single filter-icon button next to the date navigator, with a small dot indicator when a non-default filter or period is active
+- [x] ~~**Default `timeFrame` to `'MONTHLY'` instead of `'DAILY'`**~~ — changed the initial `useState` default in [HistoryScreen.tsx](src/screens/HistoryScreen.tsx); `getHistoryTimeFrame`/`saveHistoryTimeFrame` still take precedence once a preference has been saved, so this only changes first-run/no-saved-pref behavior
+- [x] ~~**Match History's date navigator to Insight's**~~ — the date label is now tappable (with a calendar-outline icon, mirroring [InsightScreen.tsx](src/screens/InsightScreen.tsx:326)) and opens [HistoryDatePickerModal.tsx](src/components/history/HistoryDatePickerModal.tsx) (new), which adapts per `TimeFrame`: **Daily/Weekly** share a lightweight day grid (Weekly highlights and snaps to the Sun–Sat week rather than a single day); **Monthly** reuses Insight's year-nav + 12-month grid; **Yearly** is a year-only stepper with a "Jump to {year}" confirm (no natural single-tap grid for a lone value). Calendar view mode — which always steps month-to-month regardless of List's `timeFrame` — opens the Monthly variant.
+  - **Not yet run in the actual app** — verified via `tsc`/`eslint` only (both clean); this repo isn't set up for Expo web (`react-dom`/`react-native-web` not installed) so no in-browser preview was done here. Needs a real device/emulator pass before considering it fully verified.
 
 ### 💰 Budget Management
 

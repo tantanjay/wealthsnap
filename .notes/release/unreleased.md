@@ -32,6 +32,15 @@ A new way to get your data out of WealthSnap as a plain file you can open direct
 
 ---
 
+## 🗂️ History Screen
+Consolidated the always-on filter controls into one sheet, changed the default view, and added a jump-to-date picker matching Insights'.
+
+- **Filters combined into one sheet**: the Type filter (All/Expenses/Income/Investments/Debts/Cash Flow) and the Day/Week/Month/Year period toggle used to sit as two separate rows above the transaction list, always visible before a single transaction shows. Both now live behind a single filter-icon button next to the date navigator, opening one bottom sheet with "Type" and "Period" sections — a small dot on the button shows when a non-default filter or period is active.
+- **Opens on Monthly instead of Daily**: the history list now defaults to the Monthly view, closer to how most people actually check "how am I doing" than the previous Daily default. A previously-saved period preference still takes priority.
+- **Tap the date to jump to any period**: the date label next to the chevrons is now tappable (with a calendar icon), opening a picker to jump straight to an arbitrary period instead of repeatedly tapping the chevron — matching the same pattern already used on the Financial Insights screen. The picker adapts to whichever period you're viewing: a day-level calendar for Daily, the same calendar snapping to a Sunday–Saturday week for Weekly, a month/year grid for Monthly, and a year-only stepper for Yearly.
+
+---
+
 ## 📖 Help Center
 Two new guides, plus a refresh of two that had drifted out of sync with the app.
 
