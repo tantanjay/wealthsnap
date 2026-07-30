@@ -58,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Insights: the category trend drill-down ignored month-browsing and always showed the current month's data.
 - Auto Backup: choosing a folder on Android could leave the app stuck on the lock screen after returning from the system folder picker.
 - Auto Backup: a run interrupted mid-write could leave a corrupted file under the real backup name.
+- Auto Backup: the manual "back up your data" reminder still appeared every 7 days even when Auto Backup was already enabled and handling it automatically.
 - Restore: a restore that fails partway through now rolls back to your previous data instead of leaving it lost.
 - Restore: a backup containing investment price history could fail to restore, or corrupt currency/exchange-rate data, due to a bulk-insert parameter mismatch.
 - Background tasks (recurring transactions, Monthly Summary sync, Auto Backup) could silently stop running after updating from an older version.
