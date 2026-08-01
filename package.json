@@ -1,6 +1,6 @@
 {
   "name": "wealthsnap",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -55,7 +55,7 @@
     "expo-updates": "~55.0.26",
     "jszip": "^3.10.1",
     "react": "19.2.0",
-    "react-native": "0.83.6",
+    "react-native": "0.83.10",
     "react-native-document-scanner-plugin": "^2.0.4",
     "react-native-gesture-handler": "~2.30.0",
     "react-native-get-random-values": "~1.11.0",

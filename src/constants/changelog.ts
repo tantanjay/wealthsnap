@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.16.0] — 2026-08-01
+
 ### Added
 - **Sync from Device**: merge your data directly with another device over WiFi — show a QR code on one, scan it with the other, no cloud and no typed password.
   - Edits and deletes merge in both directions; the newer change wins if the same record was edited on both devices.

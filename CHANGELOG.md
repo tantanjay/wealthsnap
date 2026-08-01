@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.16.0] — 2026-08-01
+
 ### Added
 - **Sync from Device**: merge your data directly with another device over WiFi — show a QR code on one, scan it with the other, no cloud and no typed password.
   - Edits and deletes merge in both directions; the newer change wins if the same record was edited on both devices.
@@ -696,7 +698,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - AES-256 encrypted local storage.
 - No accounts, no ads, no cloud dependency.
 
-[Unreleased]: https://github.com/tantanjay/wealthsnap/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/tantanjay/wealthsnap/compare/v1.16.0...HEAD
+[1.16.0]: https://github.com/tantanjay/wealthsnap/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/tantanjay/wealthsnap/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/tantanjay/wealthsnap/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/tantanjay/wealthsnap/compare/v1.12.0...v1.13.0
