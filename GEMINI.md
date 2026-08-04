@@ -1,5 +1,3 @@
-# GEMINI.md
-
 ## Verification before writing code
 
 Do not write code against a function, type, or API signature from memory/training data. Confirm it first:

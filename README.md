@@ -11,6 +11,7 @@ WealthSnap is built with a **zero-knowledge, offline-first philosophy**.
 
 - 🔒 **AES-256 Encryption** for sensitive data  
 - 📱 **Local Storage Only** (SQLite database)  
+- 🔄 **Multi-Device Sync** via local WiFi (no cloud required)  
 - 🚫 No forced cloud sync  
 - 🧠 AI features are strictly **opt-in**  
 - 🔑 BYOK (Bring Your Own Key) for AI services  
@@ -175,11 +176,13 @@ WealthSnap is engineered for speed and reliability:
 
 ---
 
-## 📦 Backup & Restore
+## 📦 Backup, Sync & Export
 
+- **Multi-Device Sync**: Merge data directly between devices over WiFi via QR code — no cloud required
 - Manual encrypted backup
 - **Auto Backup**: schedule automatic encrypted backups (weekly or every 2 weeks) that run in the background using a securely stored on-device password
 - Multi-MIME restore support
+- **Export to Excel**: Save transactions, investments, and debts to a multi-sheet `.xlsx` file
 - Backup reminder (every 7 days)
 - Automatic reminder rescheduling after restore
 
