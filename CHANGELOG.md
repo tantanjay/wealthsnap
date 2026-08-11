@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- UI: Replaced the "Beta Feature" warning banners in the Debt and Financial Health screens with a neutral, informational "Disclaimer" design.
+
+### Fixed
+- Financial Health: Debt Pressure delay accurately reflects true surplus instead of being artificially capped at 99 years.
+- Financial Health: fixed double-counting of debt interest and fees in Base Burn Rate computation, ensuring Debt Drag and Runway are accurate.
+- Financial Health: the Help Modal now shows the explicit mathematical calculation and effective rate for the Interest Cost metric.
+
 ## [1.16.0] — 2026-08-01
 
 ### Added

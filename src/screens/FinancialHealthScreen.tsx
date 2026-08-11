@@ -77,7 +77,8 @@ const FinancialHealthScreen = ({ navigation }: any) => {
         averageNetFlow: new BigNumber(0),
         spendingTrendPercent: 0,
         spendingTrendDirection: 'flat' as 'up' | 'down' | 'flat',
-        freedomImpactMonths: 0
+        freedomImpactMonths: 0,
+        investableSurplus: new BigNumber(0)
     });
 
     const [debtState, setDebtState] = useState({
@@ -160,9 +161,15 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             });
             totalCash = oInc.minus(oExp);
 
-            const burnRate6 = calculateBurnRate(t, 6);
-            const burnRate3 = calculateBurnRate(t, 3);
-            const baseBurnRate = burnRate6.gt(0) ? burnRate6 : (burnRate3.gt(0) ? burnRate3 : monthExpense);
+            // Filter out debt transactions from burn rate to avoid double-counting 
+            // the interest/fees, since we manually add the full minimum obligations below.
+            const nonDebtTransactions = t.filter(tx => !tx.debtId);
+            const burnRate6 = calculateBurnRate(nonDebtTransactions, 6);
+            const burnRate3 = calculateBurnRate(nonDebtTransactions, 3);
+            
+            const currentNonDebt = currentMonthTransactions.filter(tx => !tx.debtId);
+            const { expense: currentMonthNonDebtExpense } = calculateTotals(currentNonDebt);
+            const baseBurnRate = burnRate6.gt(0) ? burnRate6 : (burnRate3.gt(0) ? burnRate3 : currentMonthNonDebtExpense);
 
             const monthlyDebtObligations = calculateTotalDebtObligations(debts);
             const totalBurnRate = baseBurnRate.plus(monthlyDebtObligations);
@@ -179,7 +186,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                 }
             });
             const prevCash = prevInc.minus(prevExp);
-            const prevBurnRateBase = calculateBurnRate(t, 6, endOfLastMonth);
+            const prevBurnRateBase = calculateBurnRate(nonDebtTransactions, 6, endOfLastMonth);
             const prevMonthlyDebtObligations = calculatePrevDebtObligations(debts, endOfLastMonth, t);
             const prevTotalBurnRate = prevBurnRateBase.plus(prevMonthlyDebtObligations);
             const prevRunway = prevTotalBurnRate.gt(0) ? prevCash.dividedBy(prevTotalBurnRate).toNumber() : 999;
@@ -218,19 +225,21 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             });
 
             const freedomImpact = calculateFreedomImpact(averageNetFlow, totalBurnRate);
-            setCashFlowState({
-                netFlow,
-                averageNetFlow,
-                spendingTrendPercent: Math.abs(spendingDiff),
-                spendingTrendDirection: spendingDiff > 0 ? 'up' : spendingDiff < 0 ? 'down' : 'flat',
-                freedomImpactMonths: freedomImpact
-            });
 
             // Calculate Net Flow Cap (Max Potential Investment)
             // Fix: Use 6-month average income (excluding current month) minus current total burn rate.
             // This avoids "partial month" data inflating the surplus (e.g. 49k if income hit but bills haven't).
             const conservativeAvgIncome = calculateAverageIncome(t, 6);
             const investableSurplus = conservativeAvgIncome.minus(totalBurnRate);
+
+            setCashFlowState({
+                netFlow,
+                averageNetFlow,
+                spendingTrendPercent: Math.abs(spendingDiff),
+                spendingTrendDirection: spendingDiff > 0 ? 'up' : spendingDiff < 0 ? 'down' : 'flat',
+                freedomImpactMonths: freedomImpact,
+                investableSurplus
+            });
 
             const netFlowCap = BigNumber.maximum(0, investableSurplus);
 
@@ -286,7 +295,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                 totalLiability = totalLiability.plus(currentBalance);
             });
 
-            const annualSavings = averageNetFlow.times(12).gt(0) ? averageNetFlow.times(12) : new BigNumber(0);
+            const annualSavings = investableSurplus.gt(0) ? investableSurplus.times(12) : new BigNumber(0);
             const freedomDelay = calculateDebtFreedomDelay(totalLiability, annualSavings);
 
             setDebtState({
@@ -369,19 +378,19 @@ const FinancialHealthScreen = ({ navigation }: any) => {
 
                 {/* Disclaimer Banner */}
                 <View style={{
-                    backgroundColor: 'rgba(255, 149, 0, 0.15)', // Light orange background
+                    backgroundColor: colors.surface,
                     borderRadius: 12,
                     padding: 16,
                     marginBottom: 24,
                     borderWidth: 1,
-                    borderColor: 'rgba(255, 149, 0, 0.3)',
+                    borderColor: colors.border || '#e0e0e0',
                     flexDirection: 'row',
                     alignItems: 'flex-start'
                 }}>
-                    <Ionicons name="flash" size={24} color="#FF9500" style={{ marginRight: 12, marginTop: 2 }} />
+                    <Ionicons name="information-circle" size={24} color={colors.textSecondary} style={{ marginRight: 12, marginTop: 2 }} />
                     <View style={{ flex: 1 }}>
                         <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>
-                            <Text style={{ fontWeight: 'bold', color: '#FF9500' }}>⚡ Beta Feature: </Text>
+                            <Text style={{ fontWeight: 'bold', color: colors.textSecondary }}>Disclaimer: </Text>
                             This analysis uses strict, conservative math. It&apos;s designed to show the brutal truth about your financial runway and self-sustain date. Don&apos;t panic—use it to improve.
                         </Text>
                     </View>
@@ -455,6 +464,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     spendingTrendPercent: cashFlowState.spendingTrendPercent,
                     spendingTrendDirection: cashFlowState.spendingTrendDirection,
                     freedomImpactMonths: cashFlowState.freedomImpactMonths,
+                    investableSurplus: cashFlowState.investableSurplus,
                     totalDebt: debtState.totalLiability,
                     freedomDelayYears: debtState.freedomDelayYears,
                     monthlyPayments: debtState.monthlyPayments,

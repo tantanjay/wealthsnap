@@ -29,6 +29,7 @@ interface FinancialHealthHelpModalProps {
         spendingTrendPercent?: number;
         spendingTrendDirection?: 'up' | 'down' | 'flat';
         freedomImpactMonths?: number;
+        investableSurplus?: BigNumber;
 
         // Debt Data
         totalDebt?: BigNumber;
@@ -168,7 +169,9 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                 );
 
             case 'DEBT':
-                const annualSavings = (data.avgNetFlow?.toNumber() || 0) * 12;
+                const annualSavings = data.investableSurplus && data.investableSurplus.gt(0) 
+                    ? data.investableSurplus.times(12).toNumber() 
+                    : 0;
                 const yearsToPayoff = annualSavings > 0
                     ? (data.totalDebt?.toNumber() || 0) / annualSavings
                     : 999;
@@ -199,7 +202,7 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                         {renderMathBlock(
                             "INTEREST COST (DEAD MONEY)",
                             "Total Principal * Monthly Rate",
-                            `Approximate monthly interest paid`,
+                            `${formatMoney(data.totalDebt)} * ~${(data.totalDebt && data.totalDebt.gt(0) && data.interestCost ? data.interestCost.dividedBy(data.totalDebt).times(100).toNumber() : 0).toFixed(2)}%`,
                             formatMoney(data.interestCost),
                             colors.error
                         )}
