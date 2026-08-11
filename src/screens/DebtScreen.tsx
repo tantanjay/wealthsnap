@@ -363,19 +363,19 @@ const DebtScreen = ({ navigation }: any) => {
 
                 {/* Disclaimer Banner */}
                 <View style={{
-                    backgroundColor: 'rgba(255, 149, 0, 0.15)', // Light orange background
+                    backgroundColor: colors.surface,
                     borderRadius: 12,
                     padding: 16,
                     marginBottom: 24,
                     borderWidth: 1,
-                    borderColor: 'rgba(255, 149, 0, 0.3)',
+                    borderColor: colors.border || '#e0e0e0',
                     flexDirection: 'row',
                     alignItems: 'flex-start'
                 }}>
-                    <Ionicons name="flash" size={24} color="#FF9500" style={{ marginRight: 12, marginTop: 2 }} />
+                    <Ionicons name="information-circle" size={24} color={colors.textSecondary} style={{ marginRight: 12, marginTop: 2 }} />
                     <View style={{ flex: 1 }}>
                         <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>
-                            <Text style={{ fontWeight: 'bold', color: '#FF9500' }}>⚡ Beta Feature: </Text>
+                            <Text style={{ fontWeight: 'bold', color: colors.textSecondary }}>Disclaimer: </Text>
                             This math exposes the raw cost of your debt. It doesn&apos;t account for bank re-pricing or hidden fees. Use this to plan your attack, but verify the final numbers with your lender.
                         </Text>
                     </View>
