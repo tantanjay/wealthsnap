@@ -20,6 +20,8 @@ interface WealthGrowthCardProps {
     isDefaultReturnRate?: boolean;
     monthlyBurn: BigNumber;
     currentYearsToFreedom?: number;
+    currentMonthlyInvest?: number;
+    extraMonthlyInvest?: number;
     onInfoPress: () => void;
 }
 
@@ -36,6 +38,8 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
     isDefaultReturnRate,
     monthlyBurn,
     currentYearsToFreedom = 0,
+    currentMonthlyInvest,
+    extraMonthlyInvest,
     onInfoPress
 }) => {
     const { colors } = useTheme();
@@ -148,19 +152,25 @@ const WealthGrowthCard: React.FC<WealthGrowthCardProps> = ({
 
             <View style={styles.row}>
                 <View style={styles.column}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>
-                        {scenarioInvestAmount > 0
-                            ? `If you invest ${formatMoney(new BigNumber(scenarioInvestAmount))}/month:`
-                            : 'Need additional net flow to invest'
-                        }
-                    </Text>
-                    {scenarioInvestAmount > 0 && (
-                        <Text style={[styles.value, { color: colors.success, fontSize: 16 }]}>
-                            {currentYearsToFreedom > 100 ? (
-                                `Self-sustain becomes possible`
-                            ) : (
-                                `Self-sustain arrives ${scenarioYearsEarlier.toFixed(1)} years earlier`
-                            )}
+                    {extraMonthlyInvest !== undefined && extraMonthlyInvest > 0 ? (
+                        <>
+                            <Text style={[styles.label, { color: colors.textSecondary }]}>
+                                If you invest your {currentMonthlyInvest !== undefined && currentMonthlyInvest > 0 ? 'remaining ' : ''}{formatMoney(new BigNumber(extraMonthlyInvest))}/mo surplus:
+                            </Text>
+                            <Text style={[styles.value, { color: colors.success, fontSize: 16 }]}>
+                                {currentYearsToFreedom > 100 ? (
+                                    `Self-sustain becomes possible`
+                                ) : (
+                                    `Self-sustain arrives ${scenarioYearsEarlier < 1
+                                        ? `${(scenarioYearsEarlier * 12).toFixed(1)} months earlier`
+                                        : `${scenarioYearsEarlier.toFixed(1)} years earlier`
+                                    }`
+                                )}
+                            </Text>
+                        </>
+                    ) : (
+                        <Text style={[styles.label, { color: colors.success, fontSize: 14, fontWeight: '500' }]}>
+                            {currentMonthlyInvest !== undefined && currentMonthlyInvest > 0 ? 'You are investing your full surplus!' : 'Need additional net flow to invest'}
                         </Text>
                     )}
                 </View>

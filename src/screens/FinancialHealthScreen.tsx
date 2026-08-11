@@ -49,6 +49,7 @@ interface WealthState {
     currentYearsToFreedom: number;
     acceleratedYearsToFreedom: number;
     currentMonthlyInvest: number;
+    extraMonthlyInvest: number;
     hasInvestments: boolean;
     isDefaultReturnRate: boolean;
 }
@@ -101,7 +102,8 @@ const FinancialHealthScreen = ({ navigation }: any) => {
         acceleratedYearsToFreedom: 0,
         currentMonthlyInvest: 0,
         hasInvestments: false,
-        isDefaultReturnRate: false
+        isDefaultReturnRate: false,
+        extraMonthlyInvest: 0
     });
 
     const [modalState, setModalState] = useState<{ visible: boolean; type: HelpModalType }>({
@@ -358,7 +360,8 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                 acceleratedYearsToFreedom: accelerated,
                 hasInvestments: totalPortfolioValue.gt(0),
                 isDefaultReturnRate: useDefaultRate,
-                currentMonthlyInvest: currentMonthlyInvest.toNumber() // New prop
+                currentMonthlyInvest: currentMonthlyInvest.toNumber(), // New prop
+                extraMonthlyInvest: extraMonthlyInvest.toNumber()
             });
 
         } catch (error) { console.error(error); } finally { setIsLoading(false); }
@@ -443,6 +446,8 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     isDefaultReturnRate={wealthState.isDefaultReturnRate}
                     monthlyBurn={financialState.monthlyBurn}
                     currentYearsToFreedom={wealthState.currentYearsToFreedom}
+                    currentMonthlyInvest={wealthState.currentMonthlyInvest}
+                    extraMonthlyInvest={wealthState.extraMonthlyInvest}
                     onInfoPress={() => handleInfoPress('WEALTH')}
                 />
             </ScrollView>
@@ -476,7 +481,8 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     scenarioYearsEarlier: wealthState.scenarioYearsEarlier,
                     currentYearsToFreedom: wealthState.currentYearsToFreedom,
                     acceleratedYearsToFreedom: wealthState.acceleratedYearsToFreedom,
-                    currentMonthlyInvest: wealthState.currentMonthlyInvest
+                    currentMonthlyInvest: wealthState.currentMonthlyInvest,
+                    extraMonthlyInvest: wealthState.extraMonthlyInvest
                 }}
             />
         </ScreenWrapper>

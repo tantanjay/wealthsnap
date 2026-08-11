@@ -46,6 +46,7 @@ interface FinancialHealthHelpModalProps {
         currentYearsToFreedom?: number;
         acceleratedYearsToFreedom?: number;
         currentMonthlyInvest?: number;
+        extraMonthlyInvest?: number;
     };
 }
 
@@ -247,7 +248,11 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                             colors.success
                         )}
                         <Text style={[styles.explanation, { color: colors.textSecondary }]}>
-                            If you invest this amount, the compound growth alone will add another <Text style={{ fontWeight: 'bold' }}>{potentialImpact.toFixed(1)} months</Text> of runway every year.
+                            {(data.extraMonthlyInvest !== undefined && data.extraMonthlyInvest <= 0 && data.currentMonthlyInvest && data.currentMonthlyInvest > 0) ? (
+                                <>Because you are investing this amount, the compound growth alone is adding another <Text style={{ fontWeight: 'bold' }}>{potentialImpact.toFixed(1)} months</Text> of runway every year.</>
+                            ) : (
+                                <>If you invest this amount, the compound growth alone will add another <Text style={{ fontWeight: 'bold' }}>{potentialImpact.toFixed(1)} months</Text> of runway every year.</>
+                            )}
                         </Text>
 
                         <View style={styles.spacer} />
@@ -278,29 +283,33 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                                         }
                                     </Text>
                                 </View>
-                                <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Accelerated</Text>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                                        <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>
-                                            {formatMoney(new BigNumber(data.scenarioInvestAmount || 0))}/mo
+                                {(data.extraMonthlyInvest === undefined || data.extraMonthlyInvest > 0) && (
+                                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                                        <Text style={{ fontSize: 12, color: colors.textSecondary }}>Accelerated</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                                            <Text style={{ fontSize: 14, color: colors.text, fontWeight: '500' }}>
+                                                {formatMoney(new BigNumber(data.scenarioInvestAmount || 0))}/mo
+                                            </Text>
+                                        </View>
+                                        <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.success, marginTop: 2 }}>
+                                            {(data.acceleratedYearsToFreedom || 0).toFixed(1)} Years
                                         </Text>
                                     </View>
-                                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.success, marginTop: 2 }}>
-                                        {(data.acceleratedYearsToFreedom || 0).toFixed(1)} Years
-                                    </Text>
-                                </View>
+                                )}
                             </View>
 
                             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-                                    {(data.currentYearsToFreedom || 0) > 100 ? "" : "Time Bought:"}
+                                    {(data.currentYearsToFreedom || 0) > 100 ? "" : ((data.extraMonthlyInvest !== undefined && data.extraMonthlyInvest <= 0) ? "Verdict:" : "Time Bought:")}
                                 </Text>
                                 <Text style={[styles.result, { marginTop: 0, color: colors.success }]}>
                                     {(data.currentYearsToFreedom || 0) > 100
                                         ? "Self Sufficiency Possible"
-                                        : `${(data.scenarioYearsEarlier || 0).toFixed(1)} Years`
+                                        : ((data.extraMonthlyInvest !== undefined && data.extraMonthlyInvest <= 0) 
+                                            ? "Maxing out Surplus!" 
+                                            : `${(data.scenarioYearsEarlier || 0).toFixed(1)} Years`)
                                     }
                                 </Text>
                             </View>
@@ -311,6 +320,10 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                                 <>
                                     Currently, you are not on track to reach Financial Freedom.
                                     Investing this amount would make it possible to retire in <Text style={{ fontWeight: 'bold' }}>{(data.acceleratedYearsToFreedom || 0).toFixed(1)} years</Text>.
+                                </>
+                            ) : (data.extraMonthlyInvest !== undefined && data.extraMonthlyInvest <= 0) ? (
+                                <>
+                                    By maxing out your surplus, you are on track to stop working in <Text style={{ fontWeight: 'bold' }}>{(data.currentYearsToFreedom || 0).toFixed(1)} years</Text>. Keep it up!
                                 </>
                             ) : (
                                 <>
