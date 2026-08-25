@@ -21,6 +21,49 @@ Currently every AI call is hardcoded to Google's `@google/genai` SDK. Goal: let 
 
 ---
 
+## 🎯 Savings Goals
+
+A feature to track funds that accumulate over time for specific purposes (like a recurring budget that rolls over) and can be spent down. Examples: Travel fund, Annual Insurance, Car Maintenance.
+
+- [ ] **Database Schema Updates:**
+  - Update `transactions` table: Add `savingsGoalId TEXT` to keep linking uniform with how `investmentId` and `debtId` work.
+  - Create a new table for `savings_goals` (e.g., `id`, `name`, `target_amount`, `recurring_addition`, `period`, `is_paused`, `category`, `subCategory`).
+  - Create a child table for `savings_goal_transactions` (e.g., `id`, `goal_id`, `amount`, `type` ('contribution' or 'expense'), `date`, `note`).
+    - *Note:* The monthly contribution logs a `TRANSFER_OUT` in `transactions` and a 'contribution' here. Spending logs an `EXPENSE` in `transactions` (with `savingsGoalId`) and an 'expense' here.
+- [ ] **Core Logic (The "True Asset" Accounting Model):**
+  - **The Contribution (Transfer):** The recurring addition is logged as a *Transfer Out* in the main `transactions` table. This drops your "Total Cash" but **does not** hit your monthly Expense report.
+  - **The Net Worth Calculation:** Savings Goals are explicitly included as Assets (`Total Cash + Total Investments + Total Savings Goals Balances - Total Debt`). Since a contribution is just a transfer from Cash to a Savings Goal, your Net Worth stays perfectly flat.
+  - **The Spending (Realized Expense & Auto-Offset):** 
+    - *The Bug:* If you just log an `EXPENSE` when spending from a goal, Total Cash drops a *second* time (once during the initial `TRANSFER_OUT` contribution, and again on the expense).
+    - *The Fix (Auto-Offset):* When a user spends from a goal, the app saves *two* transactions to the main ledger under the hood:
+      1. A standard `EXPENSE` (so your Monthly Summary, Budgets, and category charts work perfectly).
+      2. An equal-value `TRANSFER_IN` tagged with the `savingsGoalId`.
+    - *Result:* The Expense drops cash by 5k, the Transfer In raises it by 5k. The net impact on Cash is ₱0. Your aggregation formulas remain completely untouched, and the money correctly flows out of the Goal and hits the expense reports.
+  - Allow funds to accumulate indefinitely until used. They can accumulate *over* the `target_amount` unless the user explicitly pauses the auto-deduction/auto-addition.
+  - **Goal Reached Notification:** When an auto-contribution pushes the balance over the target, fire a one-time notification.
+  - **Canceling a Contribution:** If a user is tight on cash, they can delete a past contribution. This deletes the `Transfer Out` in the main ledger, giving them their Total Cash back.
+  - **Withdrawing to Cash:** If a user needs emergency cash, they can "Withdraw" from a Savings Goal. This logs a deduction from the goal and adds a *Transfer In* to the main `transactions` table.
+  - Support negative balances if you overspend the accumulated fund.
+- [ ] **Goal Management & Lifecycle:**
+  - **Initial Funding (Ramp Up):** When creating a new Savings Goal, give the user an option to make an initial lump-sum contribution (e.g., "Start this goal with ₱5,000 today").
+  - **Manual Top-Ups:** Let the user manually "Add Funds" at any time if they have extra cash to ramp up the goal faster, entirely separate from the recurring auto-schedule.
+  - **Goal Deletion (Balance Sweep):** If a user deletes a goal, prompt them that the remaining balance will be swept back into their general cash pool:
+    - *If positive balance:* Creates a `Transfer In` in the main `transactions` table (releasing unspent savings back to their pocket).
+    - *If negative balance:* Creates a `Transfer Out` (or Expense) in the main `transactions` table (absorbing the overspent amount back into their general cash).
+- [ ] **Add Expense Form Updates:**
+  - Add a "Funding Source" or "Deduct From" selector when logging an Expense. It defaults to "General Funds" (or "Out of Pocket") but allows selecting from active Savings Goals.
+  - **Auto-Categorization:** If a Savings Goal is selected, the form automatically pre-fills the `category` and `subCategory` based on the Goal's settings (but allows the user to change it).
+  - If "General Funds" is selected, the app saves an `EXPENSE` to the main `transactions` table like normal.
+  - If a "Savings Goal" is selected, the app saves an `EXPENSE` to the main `transactions` table (with `savingsGoalId` attached) AND logs an expense to `savings_goal_transactions`.
+    - *Edge Case Warning:* If the user checks "Recurring" and *then* switches to a Savings Goal, the checkbox is hidden but the React state might still be `true`. Ensure the submit logic ignores the recurring state (e.g., `if (!is_savings_goal && is_recurring)`) so it doesn't accidentally create a recurring rule.
+- [ ] **UI Placement & Screens:**
+  - **Dashboard Widget:** Add a summary card on the Home dashboard that taps through to a dedicated full-page screen for managing funds.
+- [ ] **AI Chat & Monthly Summary Integrations:**
+  - **Data Formatting:** When passing `TRANSFER_IN` and `TRANSFER_OUT` transactions that have a `savingsGoalId` to the AI context (or displaying them in the Monthly Summary), dynamically append the Goal Name to the note/category (e.g., "Transfer Out to [Travel Fund]").
+  - **AI Context:** Update the AI prompt instructions to explicitly explain the Auto-Offset logic (e.g., "Note: A purchase from a savings goal logs both an EXPENSE and a matching TRANSFER_IN to avoid double-deducting cash. Treat the EXPENSE as the true spend.").
+
+---
+
 ## 🌱 Ideas to Reconsider
 
 Broader brainstorm from a feature-gap pass over README/release notes. Not scoped or committed — revisit and pull individual items up into their own section when ready to act on them.
