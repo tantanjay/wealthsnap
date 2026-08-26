@@ -19,18 +19,16 @@ Currently every AI call is hardcoded to Google's `@google/genai` SDK. Goal: let 
 
 ---
 
----
-
 ## 🎯 Savings Goals
 
 A feature to track funds that accumulate over time for specific purposes (like a recurring budget that rolls over) and can be spent down. Examples: Travel fund, Annual Insurance, Car Maintenance.
 
-- [ ] **Database Schema Updates:**
+- [ ] **Database Schema Updates:** ([databaseSchema.ts](src/services/database/databaseSchema.ts))
   - Update `transactions` table: Add `savingsGoalId TEXT` to keep linking uniform with how `investmentId` and `debtId` work.
   - Create a new table for `savings_goals` (e.g., `id`, `name`, `target_amount`, `recurring_addition`, `period`, `is_paused`, `category`, `subCategory`).
   - Create a child table for `savings_goal_transactions` (e.g., `id`, `goal_id`, `amount`, `type` ('contribution' or 'expense'), `date`, `note`).
     - *Note:* The monthly contribution logs a `TRANSFER_OUT` in `transactions` and a 'contribution' here. Spending logs an `EXPENSE` in `transactions` (with `savingsGoalId`) and an 'expense' here.
-- [ ] **Core Logic (The "True Asset" Accounting Model):**
+- [ ] **Core Logic (The "True Asset" Accounting Model):** ([transactionService.ts](src/services/domain/transactionService.ts), [financialMetrics.ts](src/utils/financialMetrics.ts))
   - **The Contribution (Transfer):** The recurring addition is logged as a *Transfer Out* in the main `transactions` table. This drops your "Total Cash" but **does not** hit your monthly Expense report.
   - **The Net Worth Calculation:** Savings Goals are explicitly included as Assets (`Total Cash + Total Investments + Total Savings Goals Balances - Total Debt`). Since a contribution is just a transfer from Cash to a Savings Goal, your Net Worth stays perfectly flat.
   - **The Spending (Realized Expense & Auto-Offset):** 
@@ -43,24 +41,40 @@ A feature to track funds that accumulate over time for specific purposes (like a
   - **Goal Reached Notification:** When an auto-contribution pushes the balance over the target, fire a one-time notification.
   - **Canceling a Contribution:** If a user is tight on cash, they can delete a past contribution. This deletes the `Transfer Out` in the main ledger, giving them their Total Cash back.
   - **Withdrawing to Cash:** If a user needs emergency cash, they can "Withdraw" from a Savings Goal. This logs a deduction from the goal and adds a *Transfer In* to the main `transactions` table.
-  - Support negative balances if you overspend the accumulated fund.
+  - **No Negative Balances (Split Funding):** A goal cannot go negative. If a user buys a ₱7,000 item but the goal only has ₱5,000, the app drains the goal to zero and covers the rest from General Cash. (e.g., Logs a ₱7,000 `EXPENSE` but only a ₱5,000 `TRANSFER_IN`).
 - [ ] **Goal Management & Lifecycle:**
   - **Initial Funding (Ramp Up):** When creating a new Savings Goal, give the user an option to make an initial lump-sum contribution (e.g., "Start this goal with ₱5,000 today").
   - **Manual Top-Ups:** Let the user manually "Add Funds" at any time if they have extra cash to ramp up the goal faster, entirely separate from the recurring auto-schedule.
-  - **Goal Deletion (Balance Sweep):** If a user deletes a goal, prompt them that the remaining balance will be swept back into their general cash pool:
-    - *If positive balance:* Creates a `Transfer In` in the main `transactions` table (releasing unspent savings back to their pocket).
-    - *If negative balance:* Creates a `Transfer Out` (or Expense) in the main `transactions` table (absorbing the overspent amount back into their general cash).
-- [ ] **Add Expense Form Updates:**
+  - **Goal Deletion (Balance Sweep):** If a user deletes a goal, prompt them that any remaining balance will be swept back into their general cash pool via a `Transfer In` (releasing unspent savings back to their pocket). Since goals cannot go negative, there is no negative balance to absorb.
+- [ ] **Add Expense Form Updates:** ([TransactionForm.tsx](src/components/transaction/TransactionForm.tsx))
   - Add a "Funding Source" or "Deduct From" selector when logging an Expense. It defaults to "General Funds" (or "Out of Pocket") but allows selecting from active Savings Goals.
   - **Auto-Categorization:** If a Savings Goal is selected, the form automatically pre-fills the `category` and `subCategory` based on the Goal's settings (but allows the user to change it).
   - If "General Funds" is selected, the app saves an `EXPENSE` to the main `transactions` table like normal.
   - If a "Savings Goal" is selected, the app saves an `EXPENSE` to the main `transactions` table (with `savingsGoalId` attached) AND logs an expense to `savings_goal_transactions`.
     - *Edge Case Warning:* If the user checks "Recurring" and *then* switches to a Savings Goal, the checkbox is hidden but the React state might still be `true`. Ensure the submit logic ignores the recurring state (e.g., `if (!is_savings_goal && is_recurring)`) so it doesn't accidentally create a recurring rule.
-- [ ] **UI Placement & Screens:**
+- [ ] **UI Placement & Screens:** ([HomeScreen.tsx](src/screens/HomeScreen.tsx))
   - **Dashboard Widget:** Add a summary card on the Home dashboard that taps through to a dedicated full-page screen for managing funds.
-- [ ] **AI Chat & Monthly Summary Integrations:**
-  - **Data Formatting:** When passing `TRANSFER_IN` and `TRANSFER_OUT` transactions that have a `savingsGoalId` to the AI context (or displaying them in the Monthly Summary), dynamically append the Goal Name to the note/category (e.g., "Transfer Out to [Travel Fund]").
-  - **AI Context:** Update the AI prompt instructions to explicitly explain the Auto-Offset logic (e.g., "Note: A purchase from a savings goal logs both an EXPENSE and a matching TRANSFER_IN to avoid double-deducting cash. Treat the EXPENSE as the true spend.").
+- [ ] **UI & AI Data Formatting (History Screen, Monthly Summary, AI Chat):**
+  - **Data Formatting:** When displaying `TRANSFER_IN` and `TRANSFER_OUT` transactions that have a `savingsGoalId` (like in the `HistoryScreen` list or `Monthly Summary`), dynamically append the Goal Name so the user/AI knows exactly what it is (e.g., "Transferred from [Travel Fund]"). (`[HistoryListItem.tsx](src/components/history/HistoryListItem.tsx)`, `[monthlySummaryBuilder.ts](src/utils/monthlySummaryBuilder.ts)`)
+  - **AI Context:** Update the AI prompt instructions to explicitly explain the Auto-Offset logic (e.g., "Note: A purchase from a savings goal logs both an EXPENSE and a matching TRANSFER_IN to avoid double-deducting cash. Treat the EXPENSE as the true spend."). (`[chatContextService.ts](src/services/domain/chatContextService.ts)`, `[geminiChatService.ts](src/services/integrations/geminiChatService.ts)`)
+- [ ] **Insights & Analytics Filtering (The "Operational Filter"):** ([insightMetrics.ts](src/utils/insightMetrics.ts))
+  - To prevent a massive lump-sum goal purchase (e.g., a ₱60k flight) from skewing comparative analytics, while still recognizing your monthly discipline of saving:
+  - **Include Transfers as Burn:** In operational metrics (Burn Rate, Runway, Safe-to-Spend, Avg Daily Spending), INCLUDE `TRANSFER_OUT` transactions that have a `savingsGoalId` as if they were expenses. This impacts:
+    - `[insightMetrics.ts](src/utils/insightMetrics.ts)` & `[financialMetrics.ts](src/utils/financialMetrics.ts)` (The math)
+    - `[HomeFinancialHealthCard.tsx](src/components/home/HomeFinancialHealthCard.tsx)` (Dashboard)
+    - `[InsightsOverviewCards.tsx](src/components/insights/InsightsOverviewCards.tsx)` (Insights Screen)
+    - `[FinancialStateCard.tsx](src/components/financialHealth/FinancialStateCard.tsx)` (Financial Health Screen)
+    - `[HistorySummary.tsx](src/components/history/HistorySummary.tsx)` (Safe-to-Spend)
+  - **Exclude Goal Spending from Trends:** You must IGNORE `EXPENSE` transactions that have a `savingsGoalId` in comparative/trend analysis to prevent massive spikes in these specific components:
+    - `[ComparisonChart.tsx](src/components/insights/ComparisonChart.tsx)`
+    - `[SavingsRateTrend.tsx](src/components/insights/SavingsRateTrend.tsx)`
+    - `[CumulativeSpendingChart.tsx](src/components/insights/CumulativeSpendingChart.tsx)`
+    - `[SmartAlerts.tsx](src/components/insights/SmartAlerts.tsx)`
+  - **Categorized Charts:** It is fine to INCLUDE the goal `EXPENSE` in the pie charts like `[ExpenseAnalysis.tsx](src/components/insights/ExpenseAnalysis.tsx)`, because that chart just shows the composition of what you bought and doesn't compare cashflow against other months.
+- [ ] **Data Management (Backup, Restore, & Clear Data):**
+  - **Clear Data:** Update the database reset routines to ensure `savings_goals` and `savings_goal_transactions` are dropped/cleared when a user wipes their app data. (`[databaseService.ts](src/services/database/databaseService.ts)`)
+  - **Backup & Restore:** Ensure the two new tables are explicitly included in the JSON backup payload, CSV exports, and the restore/import parsers so users don't lose their goal data. (`[backupEntities.ts](src/services/integrations/backupEntities.ts)`, `[exportService.ts](src/services/integrations/exportService.ts)`, `[importService.ts](src/services/integrations/importService.ts)`)
+  - **Live Sync (If applicable):** Add the tables to the sync engine and tombstone logic for multi-device sync. (`[syncEntities.ts](src/services/integrations/syncEntities.ts)`)
 
 ---
 
