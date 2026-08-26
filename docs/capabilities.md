@@ -93,6 +93,9 @@ AI features are fully optional and user-controlled.
 - No bundled AI cost
 - Only selected data is transmitted
 - Entire database is never shared
+- **Chat**: Ask questions about your own finances in plain language, grounded in a live snapshot of your data plus your Monthly Summaries. Includes streaming replies, per-message token/cost transparency, and context caching.
+- **Smart Scanning**: Extract amounts, categories, and notes from receipts.
+- **Privacy Controls**: A consent dialog itemizes exactly what is sent before any feature is used. You can explicitly exclude sensitive categories from Chat.
 
 ---
 
@@ -209,12 +212,11 @@ Supports:
 
 ---
 
-## 🤖 Dual-Agent AI Market Engine (Optional)
+## 🤖 AI-Assisted Market Research (Optional)
 
-1. **Researcher AI** – gathers market data  
-2. **Accountant AI** – cleans and formats structured entries  
-
-Ensures higher reliability and structured output.
+- Historical price research
+- Dividend date and amount fetching
+- Powered by your own Gemini API key for higher reliability and structured output
 
 ---
 
@@ -253,6 +255,17 @@ Features:
 - Multi-range filters (6M, 1Y, 3Y, ALL)
 - Pro-rated projections
 - Dynamic scaling & split-color trends
+
+---
+
+## 🗓️ Monthly Summary
+
+Your month at a glance, written in plain language instead of raw numbers.
+
+- Narrative breakdown of income, expenses, savings rate, net cash flow, investment activity, debt payments, transfers, budget alerts, and unusual spending
+- Generated automatically in the background for every month you have data for
+- Manual "Reprocess All Months" option
+- Pure local computation — no AI calls or cost involved
 
 ---
 
@@ -312,10 +325,13 @@ Alerts run immediately after saving transactions.
 # ⚡ User Experience & Workflow
 
 - Dedicated Transfers system
+- Smart Budget Suggestions (realistic amounts based on last 12 months)
 - Smart category suggestions (last 30 days)
 - Horizontal quick-select categories
 - Rapid entry mode (auto “Add More”)
 - Smart Document Scanner
+- History Screen Filters (by type, keyword, date range)
+- Floating Quick Actions (draggable menu bubble)
 - Swipeable balance cards
 - Persistent display preferences
 - Reorderable dashboard sections
@@ -325,7 +341,7 @@ Alerts run immediately after saving transactions.
 
 # 📚 Built-In Education & Transparency
 
-- Full Help Center
+- Full Help Center (Getting Started, Financial Insights, Debt Strategy, Investments)
 - Financial Insights explanations
 - Math & Formula documentation
 - Vision & Philosophy modal
@@ -353,6 +369,7 @@ No black-box calculations.
 - Secure PIN lock
 - Intelligent auto-lock logic
 - Conditional screenshot blocking
+- Reveal for Screenshot (temporarily bypass protection with confirmation)
 - Encrypted sensitive fields
 - Versioned Terms acceptance
 - Local crash telemetry only
@@ -360,14 +377,16 @@ No black-box calculations.
 
 ---
 
-# 💾 Data Portability
+# 💾 Backup, Sync & Export
 
+- **Multi-Device Sync**: Merge data directly between devices over WiFi via QR code (no cloud)
 - CSV / TSV bulk import
-- Duplicate detection
-- Strict validation engine
-- Encrypted local backup
+- Duplicate detection & strict validation engine
+- **Export to Excel**: Save transactions, investments, and debts to a multi-sheet `.xlsx` file
+- Encrypted local manual backup
+- **Auto Backup**: Scheduled automatic encrypted backups (weekly or bi-weekly)
 - Multi-format restore support
-- Smart 7-day backup reminder
+- Smart 7-day backup reminder (if Auto Backup is off)
 - Reminder auto-rescheduling after restore
 
 ---
