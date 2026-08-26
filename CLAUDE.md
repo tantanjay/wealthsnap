@@ -4,6 +4,10 @@
 
 [docs/MODULES.md](docs/MODULES.md) maps each feature module to its associated files, for scoping code reviews. When adding, removing, renaming, or moving a file under `src/`, update the corresponding entry in that file so it stays copy-paste accurate.
 
+## Feature capabilities
+
+When a new feature is introduced, you must also check and update [docs/CAPABILITIES.md](docs/CAPABILITIES.md) to ensure the app's highlighted capabilities list remains accurate and up to date.
+
 ## Release notes / changelog
 
 When asked to update release notes for unreleased work, follow [.notes/dev/versioning-and-release-process.md](.notes/dev/versioning-and-release-process.md) exactly — don't improvise the format. Key points to not forget:
