@@ -13,6 +13,9 @@
 - **Refined informational banners**: the "Beta Feature" banners in the Debt and Financial Health screens have been updated to a neutral "Disclaimer" style, removing the warning colors to ensure a calmer, more informative user experience.
 - **Smarter Wealth Growth scenarios**: the Wealth Growth card and its Help Modal now dynamically adapt their messaging if you are already investing your full available surplus. Instead of displaying a confusing "0.0 Years" acceleration, they proudly confirm that you are "Maxing out Surplus!" and hide redundant scenario comparisons.
 
+## ⚙️ Performance & Build
+- **Reduced App Size**: Enabled code minification and resource shrinking for Android release builds (\`enableMinifyInReleaseBuilds\` and \`enableShrinkResourcesInReleaseBuilds\`), resulting in a smaller download size and faster performance.
+
 ---
 
 **Previous Version:** 1.16.0

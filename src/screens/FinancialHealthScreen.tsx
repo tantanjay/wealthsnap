@@ -127,10 +127,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
 
             const now = new Date();
             const currentMonthTransactions = getTransactionsByMonth(t, now);
-
-
-
-            const { income: monthIncome, expense: monthExpense } = calculateTotals(currentMonthTransactions);
+            const { income: monthIncome } = calculateTotals(currentMonthTransactions);
             // Use calculateBalance to include Transfers in Net Flow (Income + T_In - Expense - T_Out)
             // This ensures investment contributions are deducted from "Cash Flow" to avoid double counting with Wealth Card
             const netFlow = calculateBalance(currentMonthTransactions);
@@ -168,7 +165,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             const nonDebtTransactions = t.filter(tx => !tx.debtId);
             const burnRate6 = calculateBurnRate(nonDebtTransactions, 6);
             const burnRate3 = calculateBurnRate(nonDebtTransactions, 3);
-            
+
             const currentNonDebt = currentMonthTransactions.filter(tx => !tx.debtId);
             const { expense: currentMonthNonDebtExpense } = calculateTotals(currentNonDebt);
             const baseBurnRate = burnRate6.gt(0) ? burnRate6 : (burnRate3.gt(0) ? burnRate3 : currentMonthNonDebtExpense);

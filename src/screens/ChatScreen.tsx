@@ -195,7 +195,6 @@ const ChatScreen = ({ navigation }: any) => {
             }
         })();
         return () => { cancelled = true; };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedRange]);
 
     useEffect(() => {

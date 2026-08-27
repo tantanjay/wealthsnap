@@ -48,6 +48,15 @@
     },
     "plugins": [
       [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
@@ -80,7 +89,8 @@
       "expo-document-picker",
       "expo-task-manager",
       "expo-sharing",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-build-properties"
     ],
     "extra": {
       "eas": {
