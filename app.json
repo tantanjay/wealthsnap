@@ -75,17 +75,15 @@
         }
       ],
       [
-        "expo-navigation-bar"
-      ],
-      [
         "expo-camera",
         {
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to scan receipts and QR codes for device sync."
         }
       ],
       "expo-font",
-      "expo-secure-store",
       "expo-sqlite",
+      "expo-navigation-bar",
+      "expo-secure-store",
       "expo-local-authentication",
       "expo-notifications",
       "expo-background-task",
