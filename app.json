@@ -53,6 +53,9 @@
           "android": {
             "enableMinifyInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true
+          },
+          "ios": {
+            "useFrameworks": "static"
           }
         }
       ],
@@ -89,8 +92,7 @@
       "expo-document-picker",
       "expo-task-manager",
       "expo-sharing",
-      "@react-native-community/datetimepicker",
-      "expo-build-properties"
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {
