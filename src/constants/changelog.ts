@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Changed
+- Build: Enabled \`enableMinifyInReleaseBuilds\` and \`enableShrinkResourcesInReleaseBuilds\` for Android to reduce app size.
 - UI: Replaced the "Beta Feature" warning banners in the Debt and Financial Health screens with a neutral, informational "Disclaimer" design.
 - UI: Wealth Growth card and modal now intelligently hide redundant "0.0 Years" acceleration scenarios when you are already investing your full available surplus, proudly confirming you are "Maxing out Surplus!" instead.
 

@@ -49,9 +49,11 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
         });
     }, []);
 
+    const isLockedOut = lockoutRemainingMs > 0;
+
     // Countdown ticker while locked out
     useEffect(() => {
-        if (lockoutRemainingMs <= 0) return;
+        if (!isLockedOut) return;
 
         const interval = setInterval(() => {
             setLockoutRemainingMs(prev => {
@@ -66,9 +68,7 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [lockoutRemainingMs > 0]);
-
-    const isLockedOut = lockoutRemainingMs > 0;
+    }, [isLockedOut]);
 
     const handlePress = (num: string) => {
         if (isLockedOut) return;
