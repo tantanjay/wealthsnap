@@ -6,7 +6,12 @@ bundles Meta's new "React Compiler" readiness rules — this project does not
 use the React Compiler). Checked = fixed and verified (`tsc` + `expo lint`
 clean for that file). See migration context in the SDK-57 checkpoint commit.
 
-Legend: ✅ fixed · ⏭️ bypassed (suppressed, with reason) · 🛑 not ok to bypass — needs a real fix · ⬜ not started
+Legend: ✅ fixed · ⏭️ bypassed (suppressed, with reason) · ⬜ not started
+
+**Status: project-wide lint is at zero errors.** Everything below is either
+fixed outright or a deliberately-bypassed false positive (per-line
+`eslint-disable` with a reason, not a global rule change) — nothing is
+currently in a "known broken, not yet fixed" state.
 
 ---
 
@@ -55,27 +60,9 @@ same effects — folded into the "OK to bypass" list below. One of them
 
 - [x] [ThemeContext.tsx](src/context/ThemeContext.tsx) — `theme` was a separate `useState` synced from `mode`/`systemColorScheme` via `updateTheme()` in an effect, with `setTheme` never called anywhere else. Genuinely derivable — replaced with a `useMemo` computing `theme` directly from `mode` and `systemColorScheme`, removing the extra state and effect entirely.
 
----
-
-## 🛑 NOT OK to bypass — needs a real fix
-
 ### 6. `DebtScreen.tsx` — `calculateMetrics` (`react-hooks/set-state-in-effect`)
 
-**Risk: low (verified, not async, no other writers) · Size: large · Recommendation: fix, not bypass**
-
-- [ ] [DebtScreen.tsx:347](src/screens/DebtScreen.tsx) — `calculateMetrics(debts, transactions, profile, strategy, extraPayment)`
-
-Unlike everything in the bypass list below, this one is **not async** — it's
-a pure, synchronous calculation writing to **8 separate state variables**
-(`paidDebts`, `totalDebt`, `interestLeakPerHour`, `lifeLostMonths`,
-`debtFreeDate`, `totalInterestToPay`, `unpayableDebtNames`, `payoffOrder`)
-purely as a function of its 5 inputs. Verified none of those 8 setters are
-written anywhere else in the file — no manual-override path exists, so this
-is the same category as `ThemeContext`'s `theme` (#5), just bigger: it should
-become one `useMemo` returning an object, not 8 `useState`s pushed through
-an effect. Every render call site currently reading `totalDebt`/
-`debtFreeDate`/etc. individually would need to destructure from the
-memoized object instead — real, safe, but not a quick change.
+- [x] [DebtScreen.tsx](src/screens/DebtScreen.tsx) — the 8 separate `useState`s (`paidDebts`, `totalDebt`, `interestLeakPerHour`, `lifeLostMonths`, `debtFreeDate`, `totalInterestToPay`, `unpayableDebtNames`, `payoffOrder`) synced via the `calculateMetrics` effect are now one `useMemo` keyed on `[debts, transactions, strategy, extraPayment]`, destructured under the same field names so no render call site needed to change. This also let `loadData`'s manual `calculateMetrics(...)` call and the separate "recalculate on strategy/extraPayment change" effect be deleted outright — the memo already recomputes on its own whenever those state values change. `isLoading` was dropped too: it was only ever read by that now-deleted effect, so it had gone dead. `tsc` and `expo lint` clean — **project-wide lint is now at zero errors.**
 
 ---
 

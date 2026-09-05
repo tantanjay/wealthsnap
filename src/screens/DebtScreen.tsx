@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,7 +20,6 @@ import { Button } from '@components/index';
 const DebtScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
-    const [isLoading, setIsLoading] = useState(true);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [debts, setDebts] = useState<Debt[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -47,16 +46,6 @@ const DebtScreen = ({ navigation }: any) => {
         }
     }, [strategy]);
 
-    // Calculated State
-    const [paidDebts, setPaidDebts] = useState<Debt[]>([]);
-    const [totalDebt, setTotalDebt] = useState<BigNumber>(new BigNumber(0));
-    const [debtFreeDate, setDebtFreeDate] = useState<Date | null>(null);
-    const [totalInterestToPay, setTotalInterestToPay] = useState<BigNumber>(new BigNumber(0));
-    const [interestLeakPerHour, setInterestLeakPerHour] = useState<BigNumber>(new BigNumber(0));
-    const [lifeLostMonths, setLifeLostMonths] = useState<number>(0);
-    const [payoffOrder, setPayoffOrder] = useState<Debt[]>([]);
-    const [unpayableDebtNames, setUnpayableDebtNames] = useState<string[]>([]);
-
     // Payment Modal State
     const [paymentModalVisible, setPaymentModalVisible] = useState(false);
     const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
@@ -65,16 +54,22 @@ const DebtScreen = ({ navigation }: any) => {
     const [feeAmount, setFeeAmount] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const calculateMetrics = useCallback((
-        currentDebts: Debt[],
-        currentTxns: Transaction[],
-        userProfile: UserProfile | null,
-        currentStrategy: 'SNOWBALL' | 'AVALANCHE',
-        currentExtra: number
-    ) => {
+    // Calculated metrics - a pure derivation of debts/transactions/strategy/extraPayment,
+    // no async work and nothing here has an independent manual-override path, so this is
+    // computed directly instead of synced into state via an effect (see FIXES.md #6).
+    const {
+        paidDebts,
+        totalDebt,
+        interestLeakPerHour,
+        lifeLostMonths,
+        debtFreeDate,
+        totalInterestToPay,
+        unpayableDebtNames,
+        payoffOrder,
+    } = useMemo(() => {
         // 1. Calculate Real Current Balances
-        const allDebtsWithBalances = currentDebts.map(d => {
-            const balance = DebtMetrics.calculateCurrentDebtBalance(d, currentTxns);
+        const allDebtsWithBalances = debts.map(d => {
+            const balance = DebtMetrics.calculateCurrentDebtBalance(d, transactions);
             // Patching initialAmount to current balance for display/sorting helpers below,
             // but keep the true original principal so FLAT-interest debts can still be
             // projected correctly (FLAT interest is based on the original amount, not this patched balance).
@@ -83,8 +78,6 @@ const DebtScreen = ({ navigation }: any) => {
 
         const activeDebts = allDebtsWithBalances.filter(d => d.initialAmount.gt(0) && d.status === 'ACTIVE');
         const paidDebtsList = allDebtsWithBalances.filter(d => d.initialAmount.lte(0) || d.status === 'PAID_OFF');
-
-        setPaidDebts(paidDebtsList);
 
         const debtsWithBalances = activeDebts;
 
@@ -95,7 +88,6 @@ const DebtScreen = ({ navigation }: any) => {
         const payableDebts = debtsWithBalances.filter(d => (d.direction || 'PAYABLE') === 'PAYABLE');
 
         const totalBalance = payableDebts.reduce((sum, d) => sum.plus(d.initialAmount), new BigNumber(0));
-        setTotalDebt(totalBalance);
 
         // 2. Interest Leak (Hourly)
         // Must respect interestType like every other interest calc in this screen: FLAT debts
@@ -111,36 +103,26 @@ const DebtScreen = ({ navigation }: any) => {
         });
         // Hourly = Yearly / 365 / 24
         const hourlyLeak = yearlyInterest.div(365).div(24);
-        setInterestLeakPerHour(hourlyLeak);
 
         // 3. Debt vs Life (Runway)
-        const burnRate = calculateBurnRate(currentTxns, 6);
+        const burnRate = calculateBurnRate(transactions, 6);
         // If burn rate is 0, avoid division by zero
-        if (burnRate.gt(0)) {
-            const monthsLost = totalBalance.div(burnRate).toNumber();
-            setLifeLostMonths(monthsLost);
-        } else {
-            setLifeLostMonths(0);
-        }
+        const monthsLost = burnRate.gt(0) ? totalBalance.div(burnRate).toNumber() : 0;
 
         // 4. Payoff Strategy
         const { freedomDate, totalInterest, unpayableDebtIds } = DebtMetrics.calculateDebtPayoffStrategy(
             payableDebts,
-            currentExtra,
-            currentStrategy
+            extraPayment,
+            strategy
         );
-        setDebtFreeDate(freedomDate);
-        setTotalInterestToPay(totalInterest);
-        setUnpayableDebtNames(
-            debtsWithBalances.filter(d => unpayableDebtIds.includes(d.id)).map(d => d.name)
-        );
+        const unpayableNames = debtsWithBalances.filter(d => unpayableDebtIds.includes(d.id)).map(d => d.name);
 
         // 5. Payoff Order
         let sorted = [...debtsWithBalances];
 
         // Helper to check overdue status
         const checkOverdue = (d: Debt) => {
-            const nextDue = DebtMetrics.getNextDueDate(d, currentTxns);
+            const nextDue = DebtMetrics.getNextDueDate(d, transactions);
             if (!nextDue) return false;
 
             // Strictly compare DATES (ignore time)
@@ -151,7 +133,7 @@ const DebtScreen = ({ navigation }: any) => {
         };
 
         const checkDueSoon = (d: Debt) => {
-            const nextDue = DebtMetrics.getNextDueDate(d, currentTxns);
+            const nextDue = DebtMetrics.getNextDueDate(d, transactions);
             if (!nextDue) return false;
 
             const now = new Date();
@@ -178,18 +160,27 @@ const DebtScreen = ({ navigation }: any) => {
             if (!aDueSoon && bDueSoon) return 1;
 
             // 3. Strategy
-            if (currentStrategy === 'SNOWBALL') {
+            if (strategy === 'SNOWBALL') {
                 return a.initialAmount.minus(b.initialAmount).toNumber();
             } else {
                 return b.interestRate.minus(a.interestRate).toNumber();
             }
         });
-        setPayoffOrder(sorted);
-    }, []);
+
+        return {
+            paidDebts: paidDebtsList,
+            totalDebt: totalBalance,
+            interestLeakPerHour: hourlyLeak,
+            lifeLostMonths: monthsLost,
+            debtFreeDate: freedomDate,
+            totalInterestToPay: totalInterest,
+            unpayableDebtNames: unpayableNames,
+            payoffOrder: sorted,
+        };
+    }, [debts, transactions, strategy, extraPayment]);
 
     const loadData = useCallback(async () => {
         try {
-            setIsLoading(true);
             const [p, d, t] = await Promise.all([
                 Storage.getUserProfile(),
                 getAllDebts(),
@@ -198,13 +189,10 @@ const DebtScreen = ({ navigation }: any) => {
             setProfile(p);
             setDebts(d);
             setTransactions(t);
-            calculateMetrics(d, t, p, strategy, extraPayment);
         } catch (error) {
             console.error('Failed to load debt data:', error);
-        } finally {
-            setIsLoading(false);
         }
-    }, [calculateMetrics, strategy, extraPayment]);
+    }, []);
 
     const handleOpenPayment = (debt: Debt) => {
         setSelectedDebt(debt);
@@ -340,13 +328,6 @@ const DebtScreen = ({ navigation }: any) => {
     useFocusEffect(useCallback(() => {
         loadData();
     }, [loadData]));
-
-    // Re-calculate when strategy or extra payment changes (client-side only for speed)
-    useEffect(() => {
-        if (!isLoading) {
-            calculateMetrics(debts, transactions, profile, strategy, extraPayment);
-        }
-    }, [strategy, extraPayment, calculateMetrics, debts, transactions, profile, isLoading]);
 
     const currency = profile?.currency || 'PHP';
 
