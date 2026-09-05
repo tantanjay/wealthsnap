@@ -81,7 +81,25 @@ const DebtOptionsModal: React.FC<DebtOptionsModalProps> = ({
                             />
                         </View>
                         <View style={styles.details}>
-                            <Text style={[styles.category, { color: colors.text }]}>{debt.name}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <Text style={[styles.category, { color: colors.text }]}>{debt.name}</Text>
+                                {debt.status !== 'ACTIVE' && (
+                                    <View style={{
+                                        paddingHorizontal: 6,
+                                        paddingVertical: 1,
+                                        borderRadius: 4,
+                                        backgroundColor: (debt.status === 'FORGIVEN' ? colors.textSecondary : colors.success) + '20'
+                                    }}>
+                                        <Text style={{
+                                            fontSize: 10,
+                                            fontWeight: 'bold',
+                                            color: debt.status === 'FORGIVEN' ? colors.textSecondary : colors.success
+                                        }}>
+                                            {debt.status === 'FORGIVEN' ? 'FORGIVEN' : 'PAID OFF'}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
                             <Text style={[styles.note, { color: colors.textSecondary }]}>
                                 {debt.type.replace(/_/g, ' ')} • {debt.interestRate.toString()}% {debt.interestType}
                             </Text>

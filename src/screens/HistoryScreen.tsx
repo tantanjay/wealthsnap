@@ -237,11 +237,18 @@ const HistoryScreen = ({ navigation }: any) => {
         let items = allHistoryItems;
 
         // 1. Time Frame Filter
+        // Debts are exempt from this, but ONLY while the dedicated "Debts" tab is active -
+        // they're ongoing records, not point-in-time events, so a debt whose startDate falls
+        // outside whatever period is browsed shouldn't become invisible there (History is the
+        // only way to Edit/Delete one). Left subject to the period filter in every other view
+        // (ALL, Expense, etc.) so they don't clutter an unrelated period's mixed feed.
+        const debtExemptFromDateFilter = (item: HistoryItem) => isDebt(item) && activeFilter === 'DEBT';
         if (viewMode === 'CALENDAR') {
             // In calendar mode, list shows selected date's transactions
             const start = new Date(selectedCalendarDate); start.setHours(0, 0, 0, 0);
             const end = new Date(selectedCalendarDate); end.setHours(23, 59, 59, 999);
             items = items.filter(t => {
+                if (debtExemptFromDateFilter(t)) return true;
                 const tDate = getItemDate(t);
                 return tDate >= start && tDate <= end;
             });
@@ -249,6 +256,7 @@ const HistoryScreen = ({ navigation }: any) => {
         } else {
             const { start, end } = getStartEndOfPeriod(currentDate, timeFrame);
             items = items.filter(t => {
+                if (debtExemptFromDateFilter(t)) return true;
                 const tDate = getItemDate(t);
                 return tDate >= start && tDate <= end;
             });

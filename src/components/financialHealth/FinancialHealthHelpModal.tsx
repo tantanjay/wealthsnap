@@ -170,13 +170,15 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                 );
 
             case 'DEBT':
-                const annualSavings = data.investableSurplus && data.investableSurplus.gt(0) 
-                    ? data.investableSurplus.times(12).toNumber() 
-                    : 0;
-                const yearsToPayoff = annualSavings > 0
-                    ? (data.totalDebt?.toNumber() || 0) / annualSavings
-                    : 999;
-                const isForever = yearsToPayoff > 50;
+                // Use the already-computed freedomDelayYears (calculateDebtFreedomDelay) rather
+                // than re-deriving it here - a separate local formula previously disagreed with
+                // the canonical one at the edges (e.g. claiming "you'll never pay this off" for
+                // a debt that's merely large relative to savings, not because savings are low).
+                const isForever = !data.investableSurplus || data.investableSurplus.lte(0);
+                const yearsToPayoff = data.freedomDelayYears ?? 0;
+                const annualSavings = !isForever && data.investableSurplus
+                    ? data.investableSurplus.times(12)
+                    : new BigNumber(0);
 
                 return (
                     <>
@@ -187,7 +189,7 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                         {renderMathBlock(
                             "SELF-SUSTAIN DELAY",
                             "Total Debt / Annual Savings",
-                            `${formatMoney(data.totalDebt)} / ${formatMoney(new BigNumber(annualSavings))}`,
+                            `${formatMoney(data.totalDebt)} / ${formatMoney(annualSavings)}`,
                             isForever ? "Forecast: Forever" : `${yearsToPayoff.toFixed(1)} Years`,
                             colors.error
                         )}

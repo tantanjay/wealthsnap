@@ -1,7 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 import { Transaction, Investment, Debt, Budget } from '@types';
 import { calculateTotals, calculateSavingsRate, calculateBalance, parseDate } from '@utils/financialMetrics';
-import { calculateCurrentDebtBalance } from '@utils/debtMetrics';
+import { calculateCurrentDebtBalance, buildDebtNameMap } from '@utils/debtMetrics';
 
 export interface CategoryAmount {
     category: string;
@@ -128,7 +128,12 @@ export const buildMonthlySummaryData = (
     allInvestments: Investment[],
     allDebts: Debt[],
     budgets: Budget[],
-    excludeCategories: string[] = []
+    excludeCategories: string[] = [],
+    // Same principle as excludeCategories: hides the debt *name* only, never the amounts.
+    // Only ever false for chat's own on-the-fly recompute path - the persisted monthly
+    // summary cache (shared with in-app display, e.g. MonthlySummaryModal) always uses
+    // real names, since this flag is a chat-only, per-session preference.
+    discloseDebtNames: boolean = true
 ): MonthlySummaryData => {
     // `allTransactions` must always be the FULL, unfiltered set - income/expense/
     // netCashFlow/savingsRate below are computed from it directly so those totals
@@ -206,12 +211,14 @@ export const buildMonthlySummaryData = (
     });
 
     const txUpToMonthEnd = allTransactions.filter(t => new Date(t.date) <= monthEnd);
+    const debtNameMap = discloseDebtNames ? null : buildDebtNameMap(allDebts);
 
     paymentsByDebt.forEach((amount, debtId) => {
         const debt = debtsById.get(debtId);
         if (!debt) return;
         const remainingBalance = calculateCurrentDebtBalance(debt, txUpToMonthEnd).toNumber();
-        debtPayments.push({ debtName: debt.name, amount: amount.toNumber(), remainingBalance });
+        const debtName = debtNameMap ? debtNameMap.get(debt.id)! : debt.name;
+        debtPayments.push({ debtName, amount: amount.toNumber(), remainingBalance });
         totalDebtPaid = totalDebtPaid.plus(amount);
     });
 

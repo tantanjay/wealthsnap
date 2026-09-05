@@ -1,7 +1,7 @@
 import { BigNumber } from 'bignumber.js';
-import { Transaction, Debt } from '@types';
+import { Transaction, Debt, DebtStatus } from '@types';
 import { calculateBurnRate, parseDate } from '@utils/financialMetrics';
-import { calculateTotalDebtObligations, calculateCurrentDebtBalance } from '@utils/debtMetrics';
+import { calculateTotalDebtObligations, calculateCurrentDebtBalance, buildDebtNameMap } from '@utils/debtMetrics';
 
 export interface PortfolioStatsInput {
     totalEquity: number;
@@ -43,6 +43,14 @@ export interface PrivateCategoriesTotal {
     expense: number;
 }
 
+export interface DebtSnapshotItem {
+    name: string;
+    type: string;
+    direction: 'PAYABLE' | 'RECEIVABLE';
+    status: DebtStatus;
+    currentBalance: number;
+}
+
 export interface FinancialSnapshotData {
     totalCash: number;
     totalInvestmentValue: number;
@@ -54,6 +62,10 @@ export interface FinancialSnapshotData {
     totalDebtLiability: number;
     monthlyBurnRate: number;
     runwayMonths: number | null; // null = infinite (no burn rate)
+    // Every debt regardless of status (ACTIVE/PAID_OFF/FORGIVEN) - unlike totalDebtLiability
+    // above (which only reflects what's currently owed), this gives the AI the user's full
+    // debt-handling history/behavior: what got paid off, what got forgiven, by whom.
+    debts: DebtSnapshotItem[];
     budgets: BudgetSnapshotItem[]; // current calendar month, budgeted categories only
     privateCategoriesTotal: PrivateCategoriesTotal | null; // lifetime lump sum for excluded categories, null when nothing's excluded
 }
@@ -73,7 +85,10 @@ export const buildFinancialSnapshotData = (
     portfolioStats: PortfolioStatsInput,
     holdings: HoldingInput[] = [],
     budgets: BudgetInput[] = [],
-    excludeCategories: string[] = []
+    excludeCategories: string[] = [],
+    // Same principle as excludeCategories: hides the *name* only. Amounts, balances, types,
+    // directions, and statuses are always included in full regardless of this flag.
+    discloseDebtNames: boolean = true
 ): FinancialSnapshotData => {
     // `transactions` must always be the FULL, unfiltered set - every total below
     // (cash, burn rate, debt, budgets) needs the complete picture to stay accurate.
@@ -107,7 +122,23 @@ export const buildFinancialSnapshotData = (
         new BigNumber(0)
     );
 
-    const baseBurnRate = calculateBurnRate(transactions, 6);
+    // Every debt regardless of status - PAID_OFF/FORGIVEN ones aren't a current liability
+    // (already excluded above) but are useful behavioral history for the AI.
+    const debtNameMap = discloseDebtNames ? null : buildDebtNameMap(debts);
+    const debtItems: DebtSnapshotItem[] = debts.map(d => ({
+        name: debtNameMap ? debtNameMap.get(d.id)! : d.name,
+        type: d.type,
+        direction: d.direction || 'PAYABLE',
+        status: d.status,
+        currentBalance: calculateCurrentDebtBalance(d, transactions).toNumber()
+    }));
+
+    // Exclude debt-linked transactions (interest/fee payments) from the base burn rate -
+    // monthlyDebtObligations below adds each active debt's minimum payment on top, so
+    // leaving them in here would double-count the same interest/fees. Matches the fix
+    // already applied to FinancialHealthScreen's own burn rate computation.
+    const nonDebtTransactions = transactions.filter(t => !t.debtId);
+    const baseBurnRate = calculateBurnRate(nonDebtTransactions, 6);
     const monthlyDebtObligations = calculateTotalDebtObligations(debts);
     const monthlyBurnRate = baseBurnRate.plus(monthlyDebtObligations);
 
@@ -168,6 +199,7 @@ export const buildFinancialSnapshotData = (
         totalDebtLiability: totalDebtLiability.toNumber(),
         monthlyBurnRate: monthlyBurnRate.toNumber(),
         runwayMonths,
+        debts: debtItems,
         budgets: budgetItems,
         privateCategoriesTotal
     };
@@ -207,5 +239,24 @@ export const renderFinancialSnapshotText = (data: FinancialSnapshotData, currenc
         lines.push('  These amounts are already included in every total above and in the monthly summaries below (Total Cash, Burn Rate, Income/Expense figures) - they are just not broken out by category or by month. If asked what is inside "Private," say you don\'t have visibility into it (by design) and the user would need to check the app themselves.');
     }
     lines.push('Note: "Savings Rate" in the monthly summaries below = (Income - Expenses) / Income x 100. Money moved to investments, debt payments, or transfers between your own accounts is not counted as an "Expense" here, so it still counts as savings even though it left your cash on hand.');
+    if (data.debts.length > 0) {
+        lines.push('');
+        lines.push('All Debts (full history, not just active ones - use this for questions about debt-handling behavior):');
+        data.debts.forEach(d => {
+            const directionLabel = d.direction === 'PAYABLE' ? 'Payable' : 'Receivable';
+            const typeLabel = d.type.replace(/_/g, ' ');
+            let statusLabel: string;
+            if (d.status === 'ACTIVE') {
+                statusLabel = `Active, balance ${fmt(d.currentBalance, currency)}`;
+            } else if (d.status === 'PAID_OFF') {
+                statusLabel = d.currentBalance > 0
+                    ? `Paid Off (marked manually - tracked balance never reached zero, e.g. paid by someone else)`
+                    : 'Paid Off';
+            } else {
+                statusLabel = d.direction === 'PAYABLE' ? 'Forgiven by the lender' : 'Forgiven by the user (written off, not expecting repayment)';
+            }
+            lines.push(`  ${d.name} (${typeLabel}, ${directionLabel}) - ${statusLabel}`);
+        });
+    }
     return lines.join('\n');
 };

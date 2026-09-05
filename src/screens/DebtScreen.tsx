@@ -6,14 +6,15 @@ import { BigNumber } from 'bignumber.js';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
-import { Debt, Transaction, UserProfile } from '@types';
+import { Debt, DebtStatus, Transaction, UserProfile } from '@types';
 import * as Storage from '@services/core/storageService';
-import { getAllDebts } from '@services/domain/debtService';
-import { saveTransaction, getCachedTransactions } from '@services/domain/transactionService';
+import { getAllDebts, saveDebt, deleteDebt } from '@services/domain/debtService';
+import { saveTransaction, deleteTransaction, getCachedTransactions } from '@services/domain/transactionService';
 import { calculateBurnRate } from '@utils/financialMetrics';
 import * as DebtMetrics from '@utils/debtMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import BottomModal from '@components/common/BottomModal';
+import DebtStatusModal from '@components/debts/DebtStatusModal';
 import { generateUUID } from '@utils/uuid';
 import { Button } from '@components/index';
 
@@ -54,6 +55,9 @@ const DebtScreen = ({ navigation }: any) => {
     const [feeAmount, setFeeAmount] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Debt Status Modal State (Mark as Paid Off / Forgiven / Reactivate)
+    const [statusModalDebt, setStatusModalDebt] = useState<Debt | null>(null);
+
     // Calculated metrics - a pure derivation of debts/transactions/strategy/extraPayment,
     // no async work and nothing here has an independent manual-override path, so this is
     // computed directly instead of synced into state via an effect (see FIXES.md #6).
@@ -66,6 +70,7 @@ const DebtScreen = ({ navigation }: any) => {
         totalInterestToPay,
         unpayableDebtNames,
         payoffOrder,
+        owedToYou,
     } = useMemo(() => {
         // 1. Calculate Real Current Balances
         const allDebtsWithBalances = debts.map(d => {
@@ -77,14 +82,15 @@ const DebtScreen = ({ navigation }: any) => {
         });
 
         const activeDebts = allDebtsWithBalances.filter(d => d.initialAmount.gt(0) && d.status === 'ACTIVE');
-        const paidDebtsList = allDebtsWithBalances.filter(d => d.initialAmount.lte(0) || d.status === 'PAID_OFF');
+        // FORGIVEN folds into the same "resolved" list as PAID_OFF (badge distinguishes them) -
+        // otherwise a forgiven debt with remaining balance would match neither list and vanish.
+        const paidDebtsList = allDebtsWithBalances.filter(d => d.initialAmount.lte(0) || d.status === 'PAID_OFF' || d.status === 'FORGIVEN');
 
         const debtsWithBalances = activeDebts;
 
-        // RECEIVABLE debts (money owed TO the user) are still shown/sorted below in Payoff
-        // Order so they stay visible and manageable on this screen, but they aren't a
-        // liability - exclude them from Total Debt, Interest Leak, and the payoff simulation,
-        // matching how Home and Financial Health already treat them.
+        // RECEIVABLE debts (money owed TO the user) aren't a liability - exclude them from
+        // Total Debt, Interest Leak, and the payoff simulation, matching how Home and
+        // Financial Health already treat them. They get their own "Owed to You" list below.
         const payableDebts = debtsWithBalances.filter(d => (d.direction || 'PAYABLE') === 'PAYABLE');
 
         const totalBalance = payableDebts.reduce((sum, d) => sum.plus(d.initialAmount), new BigNumber(0));
@@ -117,8 +123,11 @@ const DebtScreen = ({ navigation }: any) => {
         );
         const unpayableNames = debtsWithBalances.filter(d => unpayableDebtIds.includes(d.id)).map(d => d.name);
 
-        // 5. Payoff Order
-        let sorted = [...debtsWithBalances];
+        // 5. Payoff Order - PAYABLE only. RECEIVABLE debts (money owed TO the user) don't
+        // belong in a "priority payoff" ranking - that's about paying down what YOU owe, not
+        // collecting what's owed to you - so they get their own "Owed to You" list instead.
+        let sorted = payableDebts.slice();
+        let owedToYouSorted = debtsWithBalances.filter(d => (d.direction || 'PAYABLE') === 'RECEIVABLE');
 
         // Helper to check overdue status
         const checkOverdue = (d: Debt) => {
@@ -144,27 +153,39 @@ const DebtScreen = ({ navigation }: any) => {
             return daysUntil >= 0 && daysUntil <= 3;
         };
 
-        sorted.sort((a, b) => {
+        // Overdue/due-soon first regardless of list, then each list's own tiebreaker.
+        const byUrgency = (a: Debt, b: Debt) => {
             const aOverdue = checkOverdue(a);
             const bOverdue = checkOverdue(b);
-
-            // 1. Priority: Overdue (True comes first)
             if (aOverdue && !bOverdue) return -1;
             if (!aOverdue && bOverdue) return 1;
 
-            // 2. Priority: Due Soon (True comes first)
             const aDueSoon = checkDueSoon(a);
             const bDueSoon = checkDueSoon(b);
-
             if (aDueSoon && !bDueSoon) return -1;
             if (!aDueSoon && bDueSoon) return 1;
 
-            // 3. Strategy
+            return 0;
+        };
+
+        sorted.sort((a, b) => {
+            const urgency = byUrgency(a, b);
+            if (urgency !== 0) return urgency;
+
+            // Strategy
             if (strategy === 'SNOWBALL') {
                 return a.initialAmount.minus(b.initialAmount).toNumber();
             } else {
                 return b.interestRate.minus(a.interestRate).toNumber();
             }
+        });
+
+        // No payoff "strategy" concept for money owed to you - just surface the biggest
+        // outstanding amount after urgency, so the largest receivable isn't buried.
+        owedToYouSorted.sort((a, b) => {
+            const urgency = byUrgency(a, b);
+            if (urgency !== 0) return urgency;
+            return b.initialAmount.minus(a.initialAmount).toNumber();
         });
 
         return {
@@ -176,6 +197,7 @@ const DebtScreen = ({ navigation }: any) => {
             totalInterestToPay: totalInterest,
             unpayableDebtNames: unpayableNames,
             payoffOrder: sorted,
+            owedToYou: owedToYouSorted,
         };
     }, [debts, transactions, strategy, extraPayment]);
 
@@ -193,6 +215,42 @@ const DebtScreen = ({ navigation }: any) => {
             console.error('Failed to load debt data:', error);
         }
     }, []);
+
+    // Always looks up the ORIGINAL debt record before saving - `debt` from payoffOrder/
+    // owedToYou/paidDebts has its initialAmount patched to the current calculated balance
+    // for display/sorting, so saving that object directly would overwrite the real original
+    // principal in the DB.
+    const handleUpdateStatus = async (patchedDebt: Debt, status: DebtStatus) => {
+        const original = debts.find(d => d.id === patchedDebt.id);
+        if (!original) return;
+        await saveDebt({ ...original, status, updatedAt: new Date().toISOString() });
+        await loadData();
+    };
+
+    const handleEditDebt = (patchedDebt: Debt) => {
+        const original = debts.find(d => d.id === patchedDebt.id) || patchedDebt;
+        // Serialize BigNumbers to strings for navigation, matching History's Edit Debt flow.
+        const serializedDebt = {
+            ...original,
+            initialAmount: original.initialAmount.toString(),
+            interestRate: original.interestRate.toString(),
+            minPayment: original.minPayment.toString(),
+            fees: original.fees?.toString(),
+            termMonths: original.termMonths?.toString(),
+        };
+        navigation.navigate('Actions', { debt: serializedDebt });
+    };
+
+    const handleDeleteDebt = async (id: string, deleteLinked: boolean) => {
+        if (deleteLinked) {
+            const linkedTxs = transactions.filter(t => t.debtId === id);
+            for (const tx of linkedTxs) {
+                await deleteTransaction(tx.id);
+            }
+        }
+        await deleteDebt(id);
+        await loadData();
+    };
 
     const handleOpenPayment = (debt: Debt) => {
         setSelectedDebt(debt);
@@ -523,6 +581,12 @@ const DebtScreen = ({ navigation }: any) => {
                                 </View>
 
                                 <View style={{ alignItems: 'flex-end' }}>
+                                    <TouchableOpacity
+                                        style={[styles.iconButton, { backgroundColor: colors.background, borderColor: colors.border, marginBottom: 6 }]}
+                                        onPress={() => setStatusModalDebt(originalDebt || debt)}
+                                    >
+                                        <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
+                                    </TouchableOpacity>
                                     <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>
                                         {formatCurrencyAmount(trueCurrent, currency)}
                                     </Text>
@@ -577,7 +641,7 @@ const DebtScreen = ({ navigation }: any) => {
                                     </Text>
 
                                     <TouchableOpacity
-                                        style={[styles.payButton, { backgroundColor: colors.primary, marginTop: 6, marginRight: 0 }]}
+                                        style={[styles.payButton, { backgroundColor: colors.primary, marginRight: 0, marginTop: 6 }]}
                                         onPress={() => handleOpenPayment(debt)}
                                     >
                                         <Text style={styles.payButtonText}>PAY NOW</Text>
@@ -587,6 +651,112 @@ const DebtScreen = ({ navigation }: any) => {
                         </View>
                     );
                 })}
+
+                {/* 5b. Owed to You - RECEIVABLE debts, kept separate from Priority Payoff
+                    Order above since collecting what's owed to you isn't a "payoff" concept. */}
+                {owedToYou.length > 0 && (
+                    <>
+                        <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>Owed to You</Text>
+                        {owedToYou.map((debt) => {
+                            const originalDebt = debts.find(d => d.id === debt.id);
+                            const trueOriginal = originalDebt ? originalDebt.initialAmount : debt.initialAmount;
+                            const trueCurrent = debt.initialAmount;
+
+                            const progressPercent = DebtMetrics.calculateDebtProgress(trueOriginal, trueCurrent);
+                            const { principal, interest } = DebtMetrics.calculateNextPaymentBreakdown(originalDebt || debt, trueCurrent);
+                            const nextDue = DebtMetrics.getNextDueDate(originalDebt || debt, transactions);
+
+                            const isOverdue = nextDue && (() => {
+                                const now = new Date();
+                                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                                return nextDue < todayStart;
+                            })();
+                            const daysUntil = nextDue ? Math.ceil((nextDue.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
+                            const isDueSoon = daysUntil <= 3 && daysUntil >= 0;
+
+                            return (
+                                <View key={debt.id} style={[styles.debtItem, { backgroundColor: colors.surface, borderColor: isDueSoon || isOverdue ? (isOverdue ? colors.error : '#FF9500') : colors.border }]}>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                            <View style={[styles.rankCircle, { backgroundColor: colors.success }]}>
+                                                <Ionicons name="arrow-down" size={14} color="#FFF" />
+                                            </View>
+                                            <View>
+                                                <Text style={[styles.debtName, { color: colors.text }]}>{debt.name}</Text>
+                                                <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+                                                    {debt.interestRate.toNumber()}% APR • {debt.type.replace('_', ' ')}
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        <View style={{ alignItems: 'flex-end' }}>
+                                            <TouchableOpacity
+                                                style={[styles.iconButton, { backgroundColor: colors.background, borderColor: colors.border, marginBottom: 6 }]}
+                                                onPress={() => setStatusModalDebt(originalDebt || debt)}
+                                            >
+                                                <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
+                                            </TouchableOpacity>
+                                            <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 16 }}>
+                                                {formatCurrencyAmount(trueCurrent, currency)}
+                                            </Text>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Owed to You</Text>
+                                        </View>
+                                    </View>
+
+                                    <View style={{ height: 6, backgroundColor: colors.background, borderRadius: 3, marginBottom: 12, overflow: 'hidden' }}>
+                                        <View style={{ height: '100%', width: `${progressPercent}%`, backgroundColor: colors.success }} />
+                                    </View>
+
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <View>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 10, marginBottom: 2 }}> NEXT EXPECTED</Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                                                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 13 }}>
+                                                    {formatCurrencyAmount(debt.minPayment, currency)}
+                                                </Text>
+                                            </View>
+                                            <View style={{ flexDirection: 'row', marginTop: 4, alignItems: 'center' }}>
+                                                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.success, marginRight: 4 }} />
+                                                <Text style={{ color: colors.textSecondary, fontSize: 10, marginRight: 8 }}>
+                                                    {formatCurrencyAmount(principal, currency)}
+                                                </Text>
+                                                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.error, marginRight: 4 }} />
+                                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                                    {formatCurrencyAmount(interest, currency)}
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        <View style={{ alignItems: 'flex-end' }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                {(isOverdue || isDueSoon) && (
+                                                    <Ionicons name="alert-circle" size={14} color={isOverdue ? colors.error : '#FF9500'} style={{ marginRight: 4 }} />
+                                                )}
+                                                <Text style={{
+                                                    color: isOverdue ? colors.error : (isDueSoon ? '#FF9500' : colors.text),
+                                                    fontWeight: 'bold',
+                                                    fontSize: 12
+                                                }}>
+                                                    {nextDue ? nextDue.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A'}
+                                                </Text>
+                                            </View>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                                {isOverdue ? 'Overdue' : (isDueSoon ? 'Due Soon' : 'Expected')}
+                                            </Text>
+
+                                            <TouchableOpacity
+                                                style={[styles.payButton, { backgroundColor: colors.success, marginRight: 0, marginTop: 6 }]}
+                                                onPress={() => handleOpenPayment(debt)}
+                                            >
+                                                <Text style={styles.payButtonText}>LOG REPAYMENT</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            );
+                        })}
+                    </>
+                )}
 
                 {/* 6. Paid Debts List */}
                 {paidDebts.length > 0 && (
@@ -614,12 +784,15 @@ const DebtScreen = ({ navigation }: any) => {
                                 .filter(t => t.type === 'EXPENSE' && (t.category === 'Interest' || t.subCategory === 'INTEREST'))
                                 .reduce((sum, t) => sum.plus(t.amount), new BigNumber(0));
 
+                            const isForgiven = debt.status === 'FORGIVEN';
+                            const resolvedColor = isForgiven ? colors.textSecondary : colors.success;
+
                             return (
-                                <View key={debt.id} style={[styles.debtItem, { backgroundColor: colors.surface, borderColor: colors.success, opacity: 0.9 }]}>
+                                <View key={debt.id} style={[styles.debtItem, { backgroundColor: colors.surface, borderColor: resolvedColor, opacity: 0.9 }]}>
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                            <View style={[styles.rankCircle, { backgroundColor: colors.success }]}>
-                                                <Ionicons name="checkmark" size={16} color="#FFF" />
+                                            <View style={[styles.rankCircle, { backgroundColor: resolvedColor }]}>
+                                                <Ionicons name={isForgiven ? "hand-left" : "checkmark"} size={16} color="#FFF" />
                                             </View>
                                             <View>
                                                 <Text style={[styles.debtName, { color: colors.text, textDecorationLine: 'line-through' }]}>{debt.name}</Text>
@@ -629,17 +802,27 @@ const DebtScreen = ({ navigation }: any) => {
                                             </View>
                                         </View>
 
-                                        {/* Watermark / Badge */}
-                                        <View style={{
-                                            borderWidth: 2,
-                                            borderColor: colors.success,
-                                            paddingHorizontal: 8,
-                                            paddingVertical: 4,
-                                            borderRadius: 4,
-                                            transform: [{ rotate: '-10deg' }],
-                                            marginLeft: 8
-                                        }}>
-                                            <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 12 }}>PAID</Text>
+                                        <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                                            {/* Watermark / Badge */}
+                                            <View style={{
+                                                borderWidth: 2,
+                                                borderColor: resolvedColor,
+                                                paddingHorizontal: 8,
+                                                paddingVertical: 4,
+                                                borderRadius: 4,
+                                                transform: [{ rotate: '-10deg' }],
+                                                marginLeft: 8
+                                            }}>
+                                                <Text style={{ color: resolvedColor, fontWeight: 'bold', fontSize: 12 }}>
+                                                    {isForgiven ? 'FORGIVEN' : 'PAID'}
+                                                </Text>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={[styles.iconButton, { backgroundColor: colors.background, borderColor: colors.border }]}
+                                                onPress={() => setStatusModalDebt(originalDebt || debt)}
+                                            >
+                                                <Ionicons name="settings-outline" size={16} color={colors.textSecondary} />
+                                            </TouchableOpacity>
                                         </View>
                                     </View>
 
@@ -791,6 +974,16 @@ const DebtScreen = ({ navigation }: any) => {
                     </ScrollView>
                 </BottomModal>
 
+                <DebtStatusModal
+                    visible={!!statusModalDebt}
+                    onClose={() => setStatusModalDebt(null)}
+                    debt={statusModalDebt}
+                    onUpdateStatus={handleUpdateStatus}
+                    onEdit={handleEditDebt}
+                    onDelete={handleDeleteDebt}
+                    linkedTransaction={statusModalDebt ? transactions.find(t => t.debtId === statusModalDebt.id) || null : null}
+                />
+
             </ScrollView >
         </ScreenWrapper >
     );
@@ -910,6 +1103,14 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         borderRadius: 8,
         marginLeft: 12,
+    },
+    iconButton: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     payButtonText: {
         color: '#FFF',

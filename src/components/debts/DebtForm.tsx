@@ -87,9 +87,9 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
         if (template.notes) setNotes(template.notes);
     };
 
-    // Auto-set direction based on type (heuristic)
+    // Auto-set direction based on type (heuristic) - not user-overridable; see FIXES.md
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- smart default the user can still override via the Payable/Receivable toggle; see FIXES.md
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- smart default derived from debt type, not user-editable; see FIXES.md
         setDirection(getAutoDirection(debtType));
     }, [debtType]);
 
@@ -520,16 +520,12 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                     </ScrollView>
                 </View>
 
-                {/* Direction Toggle - Non Clickable */}
+                {/* Direction Toggle - Non Clickable, auto-set by Debt Type */}
                 <View style={{ flexDirection: 'row', marginBottom: 10, backgroundColor: colors.surface, borderRadius: 12, padding: 3 }}>
-                    <View
-                        style={{ flex: 1, padding: 8, alignItems: 'center', backgroundColor: direction === 'PAYABLE' ? colors.error : 'transparent', borderRadius: 8 }}
-                    >
+                    <View style={{ flex: 1, padding: 8, alignItems: 'center', backgroundColor: direction === 'PAYABLE' ? colors.error : 'transparent', borderRadius: 8 }}>
                         <Text style={{ color: direction === 'PAYABLE' ? '#FFF' : colors.text, fontWeight: 'bold', fontSize: 11 }}>Payable</Text>
                     </View>
-                    <View
-                        style={{ flex: 1, padding: 8, alignItems: 'center', backgroundColor: direction === 'RECEIVABLE' ? colors.success : 'transparent', borderRadius: 8 }}
-                    >
+                    <View style={{ flex: 1, padding: 8, alignItems: 'center', backgroundColor: direction === 'RECEIVABLE' ? colors.success : 'transparent', borderRadius: 8 }}>
                         <Text style={{ color: direction === 'RECEIVABLE' ? '#FFF' : colors.text, fontWeight: 'bold', fontSize: 11 }}>Receivable</Text>
                     </View>
                 </View>

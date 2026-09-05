@@ -4,7 +4,7 @@ export const CONFIG = {
     // of data it discloses - existing users get re-prompted once, same idea as
     // TERMS_VERSION above.
     AI_CONSENT_VERSION: 1,
-    ENABLE_DUMMY_DATA: true,
+    ENABLE_DUMMY_DATA: false,
     SHOW_DEVELOPER_OPTIONS: false,
     SHOW_PAYPAL_SUPPORT: false,
     CHUNK_SIZE: 100,
@@ -73,6 +73,7 @@ export const ASYNC_KEYS = {
     },
     CHAT_SCREEN: {
         EXCLUDED_CATEGORIES: '@wealthsnap_chat_excluded_categories',
+        DISCLOSE_DEBT_NAMES: '@wealthsnap_chat_disclose_debt_names',
     },
     FLOATING_GEAR: {
         DOCKED: '@wealthsnap_floating_gear_docked',

@@ -623,6 +623,27 @@ export const getChatExcludedCategories = async (): Promise<string[] | null> => {
     }
 };
 
+// Whether debt *names* are included in what's sent to the AI - amounts/status/type are
+// always included regardless, same principle as excluded categories (hides the label, not
+// the numbers). null = not yet chosen, caller defaults to true (disclose).
+export const saveChatDiscloseDebtNames = async (disclose: boolean): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.CHAT_SCREEN.DISCLOSE_DEBT_NAMES, JSON.stringify(disclose));
+    } catch (error) {
+        console.error('Failed to save chat debt disclosure preference:', error);
+    }
+};
+
+export const getChatDiscloseDebtNames = async (): Promise<boolean | null> => {
+    try {
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.CHAT_SCREEN.DISCLOSE_DEBT_NAMES);
+        return data ? JSON.parse(data) : null;
+    } catch (error) {
+        console.error('Failed to get chat debt disclosure preference:', error);
+        return null;
+    }
+};
+
 // ============= Backup Timestamp (AsyncStorage) =============
 
 export const saveLastBackupDate = async (date: string): Promise<void> => {

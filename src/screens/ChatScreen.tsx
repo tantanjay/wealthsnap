@@ -19,6 +19,7 @@ import {
     ChatHistoryRange
 } from '@services/domain/chatContextService';
 import { sendChatMessage, createChatCache, deleteChatCache, ChatTurn, ChatCache } from '@services/integrations/geminiChatService';
+import { getAllDebts } from '@services/domain/debtService';
 import * as Storage from '@services/core/storageService';
 import { BigNumber } from 'bignumber.js';
 
@@ -78,6 +79,12 @@ const pickRandomPrompts = (pool: string[], count: number): string[] => {
     return shuffled.slice(0, count);
 };
 
+// Only relevant to users who actually have debt records, so it's kept out of the random
+// pool above (which every user draws from) and appended as a guaranteed last suggestion
+// instead - see ChatContextInputs.hasDebts. Answerable in detail because the snapshot now
+// includes every debt regardless of status (active, paid off, forgiven).
+const DEBT_BEHAVIOR_PROMPT = "Looking at all my debts - paid off, forgiven, or still active - what does that say about how I handle debt?";
+
 const ChatScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
@@ -87,6 +94,8 @@ const ChatScreen = ({ navigation }: any) => {
     const [availableCategories, setAvailableCategories] = useState<string[]>([]);
     const [excludedCategories, setExcludedCategories] = useState<Set<string>>(new Set());
     const [categoriesConfirmed, setCategoriesConfirmed] = useState(false);
+    const [hasDebts, setHasDebts] = useState(false);
+    const [discloseDebtNames, setDiscloseDebtNames] = useState(true);
 
     const [loadingContext, setLoadingContext] = useState(false);
     const [contextInputs, setContextInputs] = useState<ChatContextInputs | null>(null);
@@ -108,11 +117,15 @@ const ChatScreen = ({ navigation }: any) => {
     useEffect(() => {
         (async () => {
             try {
-                const [categories, persistedExcluded] = await Promise.all([
+                const [categories, persistedExcluded, debts, persistedDisclose] = await Promise.all([
                     getAvailableCategories(),
-                    Storage.getChatExcludedCategories()
+                    Storage.getChatExcludedCategories(),
+                    getAllDebts(),
+                    Storage.getChatDiscloseDebtNames()
                 ]);
                 setAvailableCategories(categories);
+                setHasDebts(debts.length > 0);
+                setDiscloseDebtNames(persistedDisclose ?? true);
 
                 // Pre-select last time's exclusions, dropping any category that
                 // no longer exists in the data.
@@ -122,7 +135,7 @@ const ChatScreen = ({ navigation }: any) => {
                 }
 
                 // Nothing to ask about - skip straight to the range picker.
-                if (categories.length === 0) setCategoriesConfirmed(true);
+                if (categories.length === 0 && debts.length === 0) setCategoriesConfirmed(true);
             } catch (error) {
                 console.error('[ChatScreen] Failed to load categories:', error);
                 setCategoriesConfirmed(true);
@@ -137,7 +150,7 @@ const ChatScreen = ({ navigation }: any) => {
         (async () => {
             setLoadingContext(true);
             try {
-                const inputs = await fetchChatContextInputs(Array.from(excludedCategories));
+                const inputs = await fetchChatContextInputs(Array.from(excludedCategories), discloseDebtNames);
                 setContextInputs(inputs);
             } catch (error) {
                 console.error('[ChatScreen] Failed to load context:', error);
@@ -162,6 +175,7 @@ const ChatScreen = ({ navigation }: any) => {
 
     const handleConfirmCategories = () => {
         Storage.saveChatExcludedCategories(Array.from(excludedCategories));
+        if (hasDebts) Storage.saveChatDiscloseDebtNames(discloseDebtNames);
         setCategoriesConfirmed(true);
     };
 
@@ -170,9 +184,12 @@ const ChatScreen = ({ navigation }: any) => {
     }, [messages]);
 
     useEffect(() => {
+        if (!selectedRange) return;
+        const picks = pickRandomPrompts(SUGGESTED_PROMPTS, 3);
+        if (contextInputs?.hasDebts) picks.push(DEBT_BEHAVIOR_PROMPT);
         // eslint-disable-next-line react-hooks/set-state-in-effect -- re-randomizes prompts when the range changes; see FIXES.md
-        if (selectedRange) setSuggestedPrompts(pickRandomPrompts(SUGGESTED_PROMPTS, 3));
-    }, [selectedRange]);
+        setSuggestedPrompts(picks);
+    }, [selectedRange, contextInputs]);
 
     useEffect(() => {
         chatCacheRef.current = chatCache;
@@ -298,9 +315,23 @@ const ChatScreen = ({ navigation }: any) => {
                     <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 8 }}>
                         Anything you&apos;d rather keep out of this?
                     </Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 20, lineHeight: 18 }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 12, lineHeight: 18 }}>
                         Tap a category to exclude it from the data sent to the AI (e.g. Credit Payment). Everything else is included by default.
                     </Text>
+
+                    <View style={{
+                        flexDirection: 'row',
+                        backgroundColor: colors.warning + '20',
+                        borderRadius: 10,
+                        padding: 10,
+                        marginBottom: 16,
+                        gap: 8
+                    }}>
+                        <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} style={{ marginTop: 1 }} />
+                        <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17, flex: 1 }}>
+                            Excluding a category, or keeping your debt names private below, only hides the label - the amounts still count in every total sent to the AI.
+                        </Text>
+                    </View>
 
                     {loadingCategories ? (
                         <View style={{ paddingVertical: 40, alignItems: 'center' }}>
@@ -342,6 +373,31 @@ const ChatScreen = ({ navigation }: any) => {
                                 );
                             })}
                         </ScrollView>
+                    )}
+
+                    {hasDebts && (
+                        <View style={{ marginTop: 16 }}>
+                            <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600', marginBottom: 6 }}>
+                                Include your debt names?
+                            </Text>
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 10, lineHeight: 17 }}>
+                                Debt amounts, types, and status are included either way - this only decides whether the AI sees the real names (e.g. &quot;Mom&apos;s Loan&quot;) or just &quot;Debt 1&quot;, &quot;Debt 2&quot;, etc.
+                            </Text>
+                            <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 3 }}>
+                                <TouchableOpacity
+                                    onPress={() => setDiscloseDebtNames(true)}
+                                    style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8, backgroundColor: discloseDebtNames ? colors.primary : 'transparent' }}
+                                >
+                                    <Text style={{ color: discloseDebtNames ? colors.textLight : colors.text, fontWeight: 'bold', fontSize: 13 }}>Include Names</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => setDiscloseDebtNames(false)}
+                                    style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8, backgroundColor: !discloseDebtNames ? colors.primary : 'transparent' }}
+                                >
+                                    <Text style={{ color: !discloseDebtNames ? colors.textLight : colors.text, fontWeight: 'bold', fontSize: 13 }}>Keep Anonymous</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                     )}
 
                     <TouchableOpacity
