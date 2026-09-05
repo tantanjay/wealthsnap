@@ -19,18 +19,20 @@ A `useEffect`/`useFocusEffect` calls a `const fn = async () => {...}` declared
 component body finishes executing), but the rule doesn't trust source order.
 Fix: move each function's declaration above its use site.
 
-- [ ] [ThemeContext.tsx:40](src/context/ThemeContext.tsx) — `loadThemePreference` used at line 33
-- [ ] [ThemeContext.tsx:51](src/context/ThemeContext.tsx) — `updateTheme` used at line 37
-- [ ] [PrivacyContext.tsx:32](src/context/PrivacyContext.tsx) — `loadPrivacySetting` used at line 29
-- [ ] [HistoryScreen.tsx:101](src/screens/HistoryScreen.tsx) — `loadRecurrenceRules`
-- [ ] [HistoryScreen.tsx:106](src/screens/HistoryScreen.tsx) — `loadProfile`
-- [ ] [HistoryScreen.tsx:111](src/screens/HistoryScreen.tsx) — `loadTimeFramePref`
-- [ ] [HistoryScreen.tsx:123](src/screens/HistoryScreen.tsx) — `loadData`
-- [ ] [ProfileScreen.tsx:85](src/screens/ProfileScreen.tsx) — `checkDevMode` used at line 81
-- [ ] [ProfileScreen.tsx:94](src/screens/ProfileScreen.tsx) — `checkCurrency` used at line 80
-- [ ] [ExpenseAnalysis.tsx:45](src/components/insights/ExpenseAnalysis.tsx)
-- [ ] [SmartAlerts.tsx:27](src/components/insights/SmartAlerts.tsx)
-- [ ] [BudgetManagementModal.tsx:41](src/components/profile/BudgetManagementModal.tsx)
+- [x] [ThemeContext.tsx](src/context/ThemeContext.tsx) — `loadThemePreference` moved above its effect
+- [x] [PrivacyContext.tsx](src/context/PrivacyContext.tsx) — `loadPrivacySetting` moved above its effect
+- [x] [HistoryScreen.tsx](src/screens/HistoryScreen.tsx) — `loadRecurrenceRules`, `loadProfile`, `loadTimeFramePref`, `loadData` moved above the `useFocusEffect` that uses them
+- [x] [ProfileScreen.tsx](src/screens/ProfileScreen.tsx) — `checkDevMode`, `checkCurrency` moved above the `useFocusEffect` that uses them
+- [x] [ExpenseAnalysis.tsx](src/components/insights/ExpenseAnalysis.tsx) — `loadData` moved above its effect
+- [x] [SmartAlerts.tsx](src/components/insights/SmartAlerts.tsx) — `checkPermission` moved above its effect
+- [x] [BudgetManagementModal.tsx](src/components/profile/BudgetManagementModal.tsx) — `loadBudgets` moved above its effect
+
+**Side effect of this fix:** reordering let the linter's analyzer resolve
+these functions for the first time (it couldn't see through the forward
+reference before), which unmasked 5 new `set-state-in-effect` findings on the
+same effects — now folded into group 5's list below. One of them
+(`ThemeContext`'s `updateTheme`) turned out to be genuinely fixable and is
+listed under "Already done" instead.
 
 ## 2. Reanimated shared-value mutation + gesture worklet ref access (`react-hooks/refs`, `react-hooks/immutability`)
 
@@ -53,13 +55,13 @@ explaining why (Reanimated worklet convention, not a real purity violation).
 
 **Risk: trivial · Size: tiny · Recommendation: fix**
 
-- [ ] [Skeleton.tsx:20](src/components/common/Skeleton.tsx) — `const opacity = useRef(new Animated.Value(0.3)).current;` → swap to `const [opacity] = useState(() => new Animated.Value(0.3));` (reported 5×, same line)
+- [x] [Skeleton.tsx:20](src/components/common/Skeleton.tsx) — swapped `useRef(new Animated.Value(0.3)).current` for `useState(() => new Animated.Value(0.3))` (reported 5×, same line — all resolved)
 
 ## 4. `Date.now()` called during render (`react-hooks/purity`)
 
 **Risk: trivial · Size: tiny · Recommendation: fix**
 
-- [ ] [HistoryScreen.tsx:522](src/screens/HistoryScreen.tsx) — inline `new Date(Date.now() - 86400000)` while building "Yesterday" section labels; compute `now` once (e.g. `useMemo`, or a single `const now` above the loop) instead of per-item.
+- [x] [HistoryScreen.tsx:522](src/screens/HistoryScreen.tsx) — hoisted a single `const now = new Date()` / `const yesterday` above the section-building loop instead of calling `Date.now()` per item.
 
 ## 5. `set-state-in-effect` — async effects / auto-default-with-override state (`react-hooks/set-state-in-effect`)
 
@@ -74,6 +76,19 @@ this app doesn't use.
 
 Treatment: disable `react-hooks/set-state-in-effect` (and `set-state-in-render`)
 in `eslint.config.js` — pending decision, not yet applied.
+
+**Newly unmasked by the group-1 hoisting fix** (the analyzer couldn't resolve
+these forward-referenced functions before; now that they're properly ordered,
+it can see they call setState — same "legitimate async effect" category as
+the rest of this group):
+
+- [ ] [ExpenseAnalysis.tsx:51](src/components/insights/ExpenseAnalysis.tsx) — `loadData()` on mount
+- [ ] [SmartAlerts.tsx:29](src/components/insights/SmartAlerts.tsx) — `checkPermission()` on mount
+- [ ] [PrivacyContext.tsx:40](src/context/PrivacyContext.tsx) — `loadPrivacySetting()` on mount
+- [ ] [ThemeContext.tsx:48](src/context/ThemeContext.tsx) — `loadThemePreference()` on mount
+
+(`ThemeContext`'s other newly-unmasked one, `updateTheme`, turned out to be
+genuinely fixable — see "Already done" below.)
 
 - [ ] [FloatingGearBubble.tsx:80](src/components/common/FloatingGearBubble.tsx) — `setMenuVisible(false)` on dock
 - [ ] [AutoBackupCard.tsx:75](src/components/data/AutoBackupCard.tsx) — `loadSettings()` on `refreshSignal` change
@@ -95,7 +110,7 @@ in `eslint.config.js` — pending decision, not yet applied.
 - [ ] [InvestmentHistoryModal.tsx:171](src/components/investments/modals/InvestmentHistoryModal.tsx) — `loadAllHistory()`
 - [ ] [InvestmentSettingsModal.tsx:70](src/components/investments/modals/InvestmentSettingsModal.tsx) — `setView('MAIN')`
 - [ ] [PriceHistoryFormModal.tsx:39](src/components/investments/modals/PriceHistoryFormModal.tsx) — `setDate(new Date(existingItem.timestamp))`
-- [ ] [BudgetManagementModal.tsx:37](src/components/profile/BudgetManagementModal.tsx) — `setView('LIST')`
+- [ ] [BudgetManagementModal.tsx:42](src/components/profile/BudgetManagementModal.tsx) — `loadBudgets()` + `setView('LIST')` on `visible` (line shifted after group-1 reorder)
 - [ ] [SmartSuggestionsModal.tsx:123](src/components/profile/SmartSuggestionsModal.tsx) — `loadSuggestions()`
 - [ ] [AssetsListModal.tsx:41](src/components/profile/assets/AssetsListModal.tsx) — `loadAssets()`
 - [ ] [GeminiUsageModal.tsx:51](src/components/profile/settings/GeminiUsageModal.tsx) — `loadLogs()`
@@ -117,6 +132,7 @@ in `eslint.config.js` — pending decision, not yet applied.
 ## Already done
 
 - [x] `react-hooks/static-components` — [ImportDataModal.tsx](src/components/data/ImportDataModal.tsx) — `ColumnInfo` was declared inside the component body (new identity every render, forcing remount of all 5 usages); hoisted to module scope matching the existing `RuleItem` pattern.
+- [x] `react-hooks/set-state-in-effect` (real fix, not a bypass) — [ThemeContext.tsx](src/context/ThemeContext.tsx) — `theme` was a separate `useState` synced from `mode`/`systemColorScheme` via `updateTheme()` in an effect, with `setTheme` never called anywhere else. Genuinely derivable — replaced with a `useMemo` computing `theme` directly from `mode` and `systemColorScheme`, removing the extra state and effect entirely.
 
 ## SDK 55 → 57 migration (dependency + code changes, separate from the lint cleanup above)
 

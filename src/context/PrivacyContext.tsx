@@ -25,10 +25,6 @@ export const PrivacyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [isScreenshotRevealActive, setIsScreenshotRevealActive] = useState(false);
     const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    useEffect(() => {
-        loadPrivacySetting();
-    }, []);
-
     const loadPrivacySetting = async () => {
         try {
             const storedValue = await AsyncStorage.getItem(ASYNC_KEYS.SECURITY.PRIVACY_ENABLED);
@@ -39,6 +35,10 @@ export const PrivacyProvider: React.FC<{ children: React.ReactNode }> = ({ child
             console.error('Failed to load privacy setting:', error);
         }
     };
+
+    useEffect(() => {
+        loadPrivacySetting();
+    }, []);
 
     const togglePrivacy = async () => {
         try {

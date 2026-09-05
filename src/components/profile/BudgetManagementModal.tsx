@@ -31,18 +31,18 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
     const [view, setView] = useState<'LIST' | 'FORM'>('LIST');
     const [showSuggestions, setShowSuggestions] = useState(false);
 
+    const loadBudgets = async () => {
+        const data = await getAllBudgets();
+        const sortedData = data.sort((a, b) => b.amount.minus(a.amount).toNumber());
+        setBudgetsList(sortedData);
+    };
+
     useEffect(() => {
         if (visible) {
             loadBudgets();
             setView('LIST');
         }
     }, [visible]);
-
-    const loadBudgets = async () => {
-        const data = await getAllBudgets();
-        const sortedData = data.sort((a, b) => b.amount.minus(a.amount).toNumber());
-        setBudgetsList(sortedData);
-    };
 
     const handleSaveBudget = async () => {
         if (!selectedCategory || !budgetAmount) {

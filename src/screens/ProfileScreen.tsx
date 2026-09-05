@@ -75,13 +75,6 @@ const ProfileScreen = ({ navigation }: any) => {
         throw new Error('This is a simulated crash for testing purposes.');
     }
 
-    useFocusEffect(
-        useCallback(() => {
-            checkCurrency();
-            checkDevMode();
-        }, [])
-    );
-
     const checkDevMode = async () => {
         try {
             const enabled = await AsyncStorage.getItem(ASYNC_KEYS.DEVELOPER_MODE);
@@ -97,6 +90,13 @@ const ProfileScreen = ({ navigation }: any) => {
             setCurrency(profile.currency);
         }
     }
+
+    useFocusEffect(
+        useCallback(() => {
+            checkCurrency();
+            checkDevMode();
+        }, [])
+    );
 
     const handleManageRecurring = async () => {
         const rules = await getAllRecurrenceRules();

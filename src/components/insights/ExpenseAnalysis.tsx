@@ -38,10 +38,6 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
     const [showRecurringModal, setShowRecurringModal] = React.useState(false);
     const [showAllModal, setShowAllModal] = React.useState(false);
 
-    React.useEffect(() => {
-        loadData();
-    }, []);
-
     const loadData = async () => {
         const [budgetsData, recurrenceData] = await Promise.all([
             getAllBudgets(),
@@ -50,6 +46,10 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
         setBudgets(budgetsData);
         setRecurrences(recurrenceData);
     };
+
+    React.useEffect(() => {
+        loadData();
+    }, []);
 
     // Category colors
     const CHART_COLORS = [
