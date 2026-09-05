@@ -82,6 +82,7 @@
       ],
       "expo-font",
       "expo-sqlite",
+      "expo-status-bar",
       "expo-navigation-bar",
       "expo-secure-store",
       "expo-local-authentication",
