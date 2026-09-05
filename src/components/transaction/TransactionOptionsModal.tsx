@@ -114,7 +114,7 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
                             <Ionicons name="create-outline" size={24} color={canEdit ? colors.primary : colors.textSecondary} />
                         </View>
                         <View style={{ flex: 1, marginLeft: 16 }}>
-                            <Text style={[styles.actionText, { color: canEdit ? colors.primary : colors.textSecondary, marginLeft: 0 }]}>
+                            <Text style={{ fontSize: 16, fontWeight: '600', color: canEdit ? colors.primary : colors.textSecondary }}>
                                 {canEdit ? "Edit Transaction" : "Cannot Edit Transaction"}
                             </Text>
                             {!canEdit && (

@@ -113,7 +113,7 @@ Rest of the original list:
 - [ ] [AutoBackupCard.tsx:289](src/components/data/AutoBackupCard.tsx) — `setPassword('')`
 - [ ] [BackupRestoreModal.tsx:50](src/components/data/BackupRestoreModal.tsx) — `setPassword('')` on `visible`
 - [ ] [DebtForm.tsx:59](src/components/debts/DebtForm.tsx) — `setFormCurrency(currency)`
-- [ ] [DebtForm.tsx:81](src/components/debts/DebtForm.tsx) — `setDirection` auto-default from `debtType` (verified: user can still manually override via the Payable/Receivable toggle)
+- [ ] [DebtForm.tsx:81](src/components/debts/DebtForm.tsx) — `setDirection` auto-default from `debtType` (verified: not user-overridable, the toggle is a non-interactive indicator)
 - [ ] [DebtForm.tsx:135](src/components/debts/DebtForm.tsx) — `setMinPayment` auto-calculation (verified: user can still manually override, `isMinPaymentManual` flag)
 - [ ] [HistoryDatePickerModal.tsx:77](src/components/history/HistoryDatePickerModal.tsx) — `setPickerYear(currentDate.getFullYear())`
 - [ ] [ComparisonChart.tsx:39](src/components/insights/ComparisonChart.tsx) — `setSelectedYear(selectedDate.getFullYear())` (verified: prev/next buttons override independently)

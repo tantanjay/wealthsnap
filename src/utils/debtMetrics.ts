@@ -3,6 +3,20 @@
 import { Debt, Transaction } from "@types";
 import { BigNumber } from "bignumber.js";
 
+/**
+ * Stable "Debt 1", "Debt 2"... numbering keyed by debt id, ordered by creation date - used
+ * when a debt's real name is being withheld (e.g. chat context with debt disclosure off).
+ * Both the financial snapshot and monthly summary builders call this with the SAME full
+ * debt list, so a given debt gets the same number in both, instead of two independent
+ * ad-hoc numbering schemes drifting out of sync with each other.
+ */
+export const buildDebtNameMap = (debts: Debt[]): Map<string, string> => {
+    const sorted = [...debts].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    const map = new Map<string, string>();
+    sorted.forEach((d, index) => map.set(d.id, `Debt ${index + 1}`));
+    return map;
+};
+
 export const calculateDebtSchedule = (debt: Debt, balance: BigNumber) => {
     // Re-creates the amortization logic from DebtForm to project future interest
     let totalInterest = new BigNumber(0);
@@ -316,11 +330,13 @@ export const getNextDueDate = (debt: Debt, transactions: Transaction[]): Date | 
     // 1. Initial Candidate: The occurrence in the CURRENT month
     let candidateDate = new Date(now.getFullYear(), now.getMonth(), day);
 
-    // 2. Sum everything paid toward this debt in the candidate month — principal, interest,
-    // and fees, matching the transaction types `handlePaymentSubmit` actually logs for this
-    // debt's direction. A partial/extra payment shouldn't silently roll the due date forward
-    // while the rest of the minimum is still owed, so we compare the total against minPayment
-    // rather than just checking that *a* payment happened.
+    // 2. Sum principal + interest paid toward this debt in the candidate month, matching the
+    // transaction types `handlePaymentSubmit` actually logs for this debt's direction. A
+    // partial/extra payment shouldn't silently roll the due date forward while the rest of
+    // the minimum is still owed, so we compare the total against minPayment rather than just
+    // checking that *a* payment happened. Fees are deliberately excluded here - minPayment is
+    // derived from principal+interest amortization only, so a fee payment shouldn't be able to
+    // satisfy a minimum it was never counted toward.
     const isPayable = (debt.direction || 'PAYABLE') === 'PAYABLE';
     const principalType = isPayable ? 'TRANSFER_OUT' : 'TRANSFER_IN';
     const interestType = isPayable ? 'EXPENSE' : 'INCOME';
@@ -332,7 +348,7 @@ export const getNextDueDate = (debt: Debt, transactions: Transaction[]): Date | 
             return tDate.getMonth() === candidateDate.getMonth() &&
                 tDate.getFullYear() === candidateDate.getFullYear();
         })
-        .filter(t => t.type === principalType || t.type === interestType || (t.type === 'EXPENSE' && t.category === 'Fees'))
+        .filter(t => t.type === principalType || t.type === interestType)
         .reduce((sum, t) => sum.plus(t.amount), new BigNumber(0));
 
     // 3. Only advance to NEXT month once the cumulative payment meets the minimum.

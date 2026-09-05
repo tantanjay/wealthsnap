@@ -13,6 +13,7 @@ interface DebtPressureCardProps {
     freedomDelayYears: number;
     scenarioAddedPayment: number;
     scenarioMonthsSaved: number;
+    onScenarioStep: (delta: 1 | -1) => void;
     currency: string;
     isPrivacyEnabled: boolean;
     isLoading: boolean;
@@ -26,6 +27,7 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
     freedomDelayYears,
     scenarioAddedPayment,
     scenarioMonthsSaved,
+    onScenarioStep,
     currency,
     isPrivacyEnabled,
     isLoading,
@@ -111,19 +113,35 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
                 </View>
             </View>
 
-            {scenarioMonthsSaved > 0 && (
-                <>
-                    <View style={styles.divider} />
-                    <View style={styles.row}>
-                        <View style={styles.column}>
-                            <Text style={[styles.label, { color: colors.textSecondary }]}>If you add {formatMoney(new BigNumber(scenarioAddedPayment))}/month:</Text>
-                            <Text style={[styles.value, { color: colors.success, fontSize: 16 }]}>
-                                Self-sustain moves {scenarioMonthsSaved} months earlier
-                            </Text>
-                        </View>
+            <View style={styles.divider} />
+            <View style={styles.row}>
+                <View style={styles.column}>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>If you add extra per month:</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                        <TouchableOpacity
+                            onPress={() => onScenarioStep(-1)}
+                            disabled={scenarioAddedPayment <= 0}
+                            style={[styles.stepButton, { backgroundColor: colors.background, opacity: scenarioAddedPayment <= 0 ? 0.4 : 1 }]}
+                        >
+                            <Ionicons name="remove" size={18} color={colors.text} />
+                        </TouchableOpacity>
+                        <Text style={[styles.value, { color: colors.text, minWidth: 90, textAlign: 'center' }]}>
+                            {formatMoney(new BigNumber(scenarioAddedPayment))}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={() => onScenarioStep(1)}
+                            style={[styles.stepButton, { backgroundColor: colors.background }]}
+                        >
+                            <Ionicons name="add" size={18} color={colors.text} />
+                        </TouchableOpacity>
                     </View>
-                </>
-            )}
+                    <Text style={{ color: scenarioMonthsSaved > 0 ? colors.success : colors.textSecondary, fontSize: 16, fontWeight: scenarioMonthsSaved > 0 ? 'bold' : 'normal', marginTop: 8 }}>
+                        {scenarioMonthsSaved > 0
+                            ? `Debt-free ${scenarioMonthsSaved} month${scenarioMonthsSaved === 1 ? '' : 's'} sooner`
+                            : 'Add an amount to see the impact'}
+                    </Text>
+                </View>
+            </View>
         </Card>
     );
 };
@@ -156,6 +174,13 @@ const styles = StyleSheet.create({
     value: {
         fontSize: 20,
         fontWeight: 'bold',
+    },
+    stepButton: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     spacer: {
         height: 16,

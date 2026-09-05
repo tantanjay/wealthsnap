@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, ScrollView, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,7 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
-import { UserProfile } from '@types';
+import { UserProfile, Debt } from '@types';
 import * as Storage from '@services/core/storageService';
 import { getCachedTransactions } from '@services/domain/transactionService';
 import { getCachedInvestments } from '@services/domain/investmentService';
@@ -23,7 +23,7 @@ import {
     calculateAverageIncome,
     calculateBalance
 } from '@utils/financialMetrics';
-import { calculateTotalDebtObligations, calculatePrevDebtObligations, calculateCurrentDebtBalance } from '@utils/debtMetrics';
+import { calculateTotalDebtObligations, calculatePrevDebtObligations, calculateCurrentDebtBalance, calculateDebtPayoffStrategy } from '@utils/debtMetrics';
 import {
     calculateDebtDrag,
     calculateInvestmentBoost,
@@ -31,7 +31,7 @@ import {
     calculateDebtFreedomDelay,
     calculateFreedomAcceleration
 } from '@utils/insightMetrics';
-import { getSmartScenarioAmount } from '@utils/scenarioUtils';
+import { getSmartScenarioAmount, getScenarioStep } from '@utils/scenarioUtils';
 import { getAnnualDividend } from '@services/domain/dividendHistoryService';
 
 import FinancialStateCard from '@components/financialHealth/FinancialStateCard';
@@ -87,10 +87,44 @@ const FinancialHealthScreen = ({ navigation }: any) => {
         interestCost: new BigNumber(0),
         freedomDelayYears: 0,
         scenarioAddedPayment: 200,
-        scenarioMonthsSaved: 0,
         isDebtFree: true,
-        totalLiability: new BigNumber(0)
+        totalLiability: new BigNumber(0),
+        // Active PAYABLE debts with `initialAmount` patched to current balance (and the true
+        // original kept in `originalAmount`) - pre-shaped for calculateDebtPayoffStrategy,
+        // same pattern DebtScreen uses for its own payoff simulation.
+        payableDebts: [] as (Debt & { originalAmount?: BigNumber })[]
     });
+    // Tracks whether the user has tapped the scenario +/- stepper this session, so a
+    // subsequent loadData() (e.g. re-focusing the screen) doesn't reset their adjustment
+    // back to the freshly-computed smart default.
+    const isScenarioManual = useRef(false);
+
+    const handleScenarioStep = (delta: 1 | -1) => {
+        isScenarioManual.current = true;
+        setDebtState(prev => {
+            const step = getScenarioStep(prev.scenarioAddedPayment);
+            return { ...prev, scenarioAddedPayment: Math.max(0, prev.scenarioAddedPayment + delta * step) };
+        });
+    };
+
+    // Derived, not stored in debtState - recomputes instantly as the stepper is tapped,
+    // reusing payableDebts already loaded rather than needing a refetch.
+    // Model: an actual payoff simulation (same math DebtScreen's own Priority Payoff Order
+    // uses) with vs. without the extra folded in as additional debt payment - "months
+    // saved" is literally how much sooner these debts reach zero balance, not an abstract
+    // savings-rate comparison.
+    const scenarioMonthsSaved = useMemo(() => {
+        if (debtState.isDebtFree || debtState.payableDebts.length === 0 || debtState.scenarioAddedPayment <= 0) return 0;
+
+        const baseline = calculateDebtPayoffStrategy(debtState.payableDebts, 0, 'AVALANCHE');
+        const scenario = calculateDebtPayoffStrategy(debtState.payableDebts, debtState.scenarioAddedPayment, 'AVALANCHE');
+
+        const monthsBetween =
+            (baseline.freedomDate.getFullYear() - scenario.freedomDate.getFullYear()) * 12 +
+            (baseline.freedomDate.getMonth() - scenario.freedomDate.getMonth());
+
+        return Math.max(0, monthsBetween);
+    }, [debtState.isDebtFree, debtState.payableDebts, debtState.scenarioAddedPayment]);
 
     const [wealthState, setWealthState] = useState<WealthState>({
         portfolioValue: new BigNumber(0),
@@ -248,7 +282,6 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             const validInvestmentIds = new Set(t.filter(tx => tx.investmentId).map(tx => tx.investmentId));
             const verifiedBuys = inv.filter(i => i.action === 'BUY' && validInvestmentIds.has(i.id));
 
-            let smartScenarioAmount = getSmartScenarioAmount(averageMonthlyIncome, p?.currency || 'PHP');
             let currentMonthlyInvest = new BigNumber(0);
 
             if (verifiedBuys.length > 0) {
@@ -260,12 +293,14 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                 const totalInvested = verifiedBuys.reduce((sum, b) => sum.plus(b.quantity.times(b.price)), new BigNumber(0));
 
                 currentMonthlyInvest = totalInvested.dividedBy(monthsActive);
-
-                // Update smartScenarioAmount for Debt usage
-                if (currentMonthlyInvest.gt(0)) {
-                    smartScenarioAmount = BigNumber.minimum(currentMonthlyInvest, netFlowCap).toNumber();
-                }
             }
+
+            // The debt scenario's default is a modest, capped starting suggestion - deliberately
+            // NOT based on how much the user already invests. Defaulting to their full investment
+            // amount would read as "redirect all of it into debt instead", which isn't this
+            // stepper's call to make; it's capped by netFlowCap so it never suggests more than
+            // they could plausibly spare, but otherwise ignores investment activity entirely.
+            const smartScenarioAmount = getSmartScenarioAmount(averageMonthlyIncome, p?.currency || 'PHP', netFlowCap);
 
             // 3. Potential Path: Their max capacity (Net Flow - Debt)
             // Strictly cap at sustainability.
@@ -279,6 +314,10 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             let totalLiability = new BigNumber(0);
 
             // Calculate interest based on CURRENT BALANCE, not initial amount
+            // Also build the payoff-simulation input: initialAmount patched to current balance,
+            // true original kept as originalAmount (needed for FLAT interest) - same shape
+            // DebtScreen builds for calculateDebtPayoffStrategy.
+            const payableDebtsForPayoff: (Debt & { originalAmount?: BigNumber })[] = [];
             activeDebts.forEach(d => {
                 const currentBalance = calculateCurrentDebtBalance(d, t);
                 const rate = d.interestRate.dividedBy(100).dividedBy(12);
@@ -292,20 +331,23 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                 }
 
                 totalLiability = totalLiability.plus(currentBalance);
+                payableDebtsForPayoff.push({ ...d, initialAmount: currentBalance, originalAmount: d.initialAmount });
             });
 
             const annualSavings = investableSurplus.gt(0) ? investableSurplus.times(12) : new BigNumber(0);
             const freedomDelay = calculateDebtFreedomDelay(totalLiability, annualSavings);
 
-            setDebtState({
+            setDebtState(prev => ({
                 monthlyPayments: calculateTotalDebtObligations(debts),
                 interestCost: estimatedMonthlyInterest,
                 freedomDelayYears: freedomDelay,
-                scenarioAddedPayment: smartScenarioAmount,
-                scenarioMonthsSaved: 0,
+                // Don't stomp on a stepper adjustment the user already made this session -
+                // only apply the freshly-computed smart default until they've touched it.
+                scenarioAddedPayment: isScenarioManual.current ? prev.scenarioAddedPayment : smartScenarioAmount,
                 isDebtFree: activeDebts.length === 0,
-                totalLiability
-            });
+                totalLiability,
+                payableDebts: payableDebtsForPayoff
+            }));
 
 
             let totalAnnualDividendIncome = new BigNumber(0);
@@ -422,7 +464,8 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     interestCost={debtState.interestCost}
                     freedomDelayYears={debtState.freedomDelayYears}
                     scenarioAddedPayment={debtState.scenarioAddedPayment}
-                    scenarioMonthsSaved={debtState.scenarioMonthsSaved}
+                    scenarioMonthsSaved={scenarioMonthsSaved}
+                    onScenarioStep={handleScenarioStep}
                     currency={profile?.currency || 'PHP'}
                     isPrivacyEnabled={isPrivacyEnabled}
                     isLoading={isLoading}

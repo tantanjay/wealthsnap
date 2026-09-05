@@ -40,6 +40,10 @@ export interface ChatContext {
 export interface ChatContextInputs {
     snapshotText: string;
     summaries: MonthlySummaryRow[];
+    // Whether the user has any debt records at all (any status) - used to conditionally
+    // surface a debt-behavior suggested prompt, since the snapshot's debt list is empty
+    // for the majority of users who don't use this feature.
+    hasDebts: boolean;
 }
 
 const yearMonthCutoff = (years: number): string => {
@@ -72,7 +76,8 @@ const buildFilteredMonthlySummaries = (
     debts: Debt[],
     budgets: Budget[],
     excludeCategories: string[],
-    currency: string
+    currency: string,
+    discloseDebtNames: boolean = true
 ): MonthlySummaryRow[] => {
     const earliest = getEarliestYearMonth(transactions, investments);
     if (!earliest) return [];
@@ -82,7 +87,7 @@ const buildFilteredMonthlySummaries = (
     const months = getMonthsBetween(earliest, currentYearMonth);
 
     return months.map(yearMonth => {
-        const data = buildMonthlySummaryData(yearMonth, transactions, investments, debts, budgets, excludeCategories);
+        const data = buildMonthlySummaryData(yearMonth, transactions, investments, debts, budgets, excludeCategories, discloseDebtNames);
         return {
             yearMonth,
             isFinal: yearMonth < currentYearMonth,
@@ -106,17 +111,23 @@ const buildFilteredMonthlySummaries = (
  * in the snapshot instead. It never removes those transactions from the
  * underlying totals - Total Cash, burn rate, and every income/expense figure
  * are always computed from the complete data, so excluding a category can't
- * throw off the real numbers. When empty, monthly summaries are read from the
- * DB cache (fast); when non-empty, they're recomputed on the fly so the
- * per-month breakdown can honor the exclusion.
+ * throw off the real numbers. `discloseDebtNames: false` behaves the same way
+ * for debts specifically - each one is renamed "Debt N" (stable per debt, see
+ * buildDebtNameMap) but its amounts/status/type are always included in full.
+ * When neither applies, monthly summaries are read from the DB cache (fast,
+ * and always has real debt names - that cache is shared with in-app display
+ * like MonthlySummaryModal, so it can't itself be built with names hidden);
+ * otherwise they're recomputed on the fly so the exclusion/anonymization can
+ * be honored.
  */
-export const fetchChatContextInputs = async (excludeCategories: string[] = []): Promise<ChatContextInputs> => {
+export const fetchChatContextInputs = async (excludeCategories: string[] = [], discloseDebtNames: boolean = true): Promise<ChatContextInputs> => {
     // The DB-cached monthly_summary table is normally kept fresh by a fire-and-forget
     // sync on app launch, but that can still be mid-flight if chat is opened shortly
     // after a cold start - reading it before that finishes would silently truncate
     // the context (only the snapshot, no monthly history). Awaiting here guarantees
     // freshness; it's cheap on repeat calls since already-finalized months are skipped.
-    if (excludeCategories.length === 0) {
+    const needsFreshSummaries = excludeCategories.length > 0 || !discloseDebtNames;
+    if (!needsFreshSummaries) {
         await syncMonthlySummaries();
     }
 
@@ -125,7 +136,7 @@ export const fetchChatContextInputs = async (excludeCategories: string[] = []): 
         getAllInvestments(),
         getAllDebts(),
         getUserProfile(),
-        excludeCategories.length === 0 ? getAllMonthlySummaries() : Promise.resolve<MonthlySummaryRow[]>([]),
+        needsFreshSummaries ? Promise.resolve<MonthlySummaryRow[]>([]) : getAllMonthlySummaries(),
         getPortfolioStats(),
         getPortfolioHoldings(),
         getAllBudgets()
@@ -133,14 +144,14 @@ export const fetchChatContextInputs = async (excludeCategories: string[] = []): 
 
     const currency = profile?.currency || 'PHP';
 
-    const snapshot = buildFinancialSnapshotData(transactions, debts, portfolioStats, holdings, budgets, excludeCategories);
+    const snapshot = buildFinancialSnapshotData(transactions, debts, portfolioStats, holdings, budgets, excludeCategories, discloseDebtNames);
     const snapshotText = renderFinancialSnapshotText(snapshot, currency);
 
-    const summaries = excludeCategories.length > 0
-        ? buildFilteredMonthlySummaries(transactions, allInvestments, debts, budgets, excludeCategories, currency)
+    const summaries = needsFreshSummaries
+        ? buildFilteredMonthlySummaries(transactions, allInvestments, debts, budgets, excludeCategories, currency, discloseDebtNames)
         : cachedSummaries;
 
-    return { snapshotText, summaries };
+    return { snapshotText, summaries, hasDebts: debts.length > 0 };
 };
 
 export const assembleContextForRange = (inputs: ChatContextInputs, range: ChatHistoryRange): ChatContext => {
@@ -155,7 +166,7 @@ export const assembleContextForRange = (inputs: ChatContextInputs, range: ChatHi
     return { contextText, estimatedTokens: estimateTokens(contextText) };
 };
 
-export const buildChatContext = async (range: ChatHistoryRange, excludeCategories: string[] = []): Promise<ChatContext> => {
-    const inputs = await fetchChatContextInputs(excludeCategories);
+export const buildChatContext = async (range: ChatHistoryRange, excludeCategories: string[] = [], discloseDebtNames: boolean = true): Promise<ChatContext> => {
+    const inputs = await fetchChatContextInputs(excludeCategories, discloseDebtNames);
     return assembleContextForRange(inputs, range);
 };

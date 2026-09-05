@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Debt status tracking**: mark a debt as Paid Off or Forgiven from its gear icon on the Debt screen, with a Reactivate option to undo either.
+  - Applies in both directions — a debt forgiven by your lender, or one you forgave someone else.
+  - That same gear icon — now at the top of the card, next to the amount — also has Edit and Delete, so every debt-management action lives in one place.
+- **Owed to You**: debts where someone owes you money now get their own section on the Debt screen, separate from Priority Payoff Order.
+- Financial Health: Debt Pressure's "if you add extra per month" scenario is now an interactive +/- stepper that runs a real payoff simulation, showing how many months sooner your debts would actually be paid off.
+  - Its default amount is always a clean, currency-appropriate number.
+- Chat: financial context now includes your full debt history (paid off, forgiven, and active), not just current liabilities.
+  - Choose whether to include real debt names or keep them anonymized before starting a conversation.
+
 ### Changed
 - Build: Enabled \`enableMinifyInReleaseBuilds\` and \`enableShrinkResourcesInReleaseBuilds\` for Android to reduce app size.
 - UI: Replaced the "Beta Feature" warning banners in the Debt and Financial Health screens with a neutral, informational "Disclaimer" design.
@@ -20,7 +30,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Financial Health: Debt Pressure delay accurately reflects true surplus instead of being artificially capped at 99 years.
 - Financial Health: fixed double-counting of debt interest and fees in Base Burn Rate computation, ensuring Debt Drag and Runway are accurate.
 - Financial Health: the Help Modal now shows the explicit mathematical calculation and effective rate for the Interest Cost metric.
+- Financial Health: the Debt Pressure info modal could contradict its own card about how long a debt would take to pay off.
 - Import Data guide's required-format list no longer remounts unnecessarily on re-render.
+- Debt Strategy: choosing a debt type from Quick Actions (e.g. Credit Card, I Owe You) wasn't actually applied — the form always defaulted to Loan.
+- Debt Strategy: the "Syncing Your Cash Flow" prompt asked about money entering your account even for debts owed to you.
+- Debt Strategy: a fee payment could roll a debt's due date forward early even when the real minimum wasn't met.
+- Home: Total Debt, Borrowed, Repaid, and Net Worth incorrectly counted debts owed to you as a liability.
+- Chat and Monthly Summary: Monthly Burn Rate could double-count debt interest and fees.
+- Debts could become invisible in History (and unreachable for editing) outside the month they were created in.
 
 ### Security
 - Patched a known vulnerability in the Excel export dependency (xlsx).

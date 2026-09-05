@@ -347,6 +347,11 @@ const HomeScreen = ({ navigation }: any) => {
             const getRepaymentTxType = (debt: Debt) => (debt.direction || 'PAYABLE') === 'PAYABLE' ? 'TRANSFER_OUT' : 'TRANSFER_IN';
 
             allDebts.forEach(debt => {
+                // RECEIVABLE debts (money owed TO the user) aren't a liability - exclude
+                // them from Total Debt/Borrowed/Repaid, matching DebtScreen and
+                // FinancialHealthScreen's treatment of the same concept.
+                if ((debt.direction || 'PAYABLE') !== 'PAYABLE') return;
+
                 // 1. Borrowed
                 totalBorrowed = totalBorrowed.plus(debt.initialAmount);
 
@@ -400,6 +405,9 @@ const HomeScreen = ({ navigation }: any) => {
             let totalProjectedLiability = new BigNumber(0);
 
             allDebts.forEach(debt => {
+                // Same RECEIVABLE exclusion as above - money owed TO the user isn't a liability.
+                if ((debt.direction || 'PAYABLE') !== 'PAYABLE') return;
+
                 if (debt.status === 'ACTIVE') {
                     // 1. Calculate current principal balance
                     const payments = getDebtTransactions(debt.id);
@@ -423,6 +431,9 @@ const HomeScreen = ({ navigation }: any) => {
             const totalDebtObligationsValue = calculateTotalDebtObligations(allDebts);
 
             allDebts.forEach(debt => {
+                // Same RECEIVABLE exclusion as above - only PAYABLE debts count as "obligations".
+                if ((debt.direction || 'PAYABLE') !== 'PAYABLE') return;
+
                 if (debt.status === 'ACTIVE') {
                     // Get all payments for this debt in current month
                     const monthPayments = getDebtTransactions(debt.id, true);
