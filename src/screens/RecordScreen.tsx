@@ -354,6 +354,7 @@ const RecordScreen = ({ navigation, route }: any) => {
                     onSave={handleTransactionSave}
                     onCancel={handleTransactionCancel}
                     initialDebt={editingDebt || undefined}
+                    defaultType={selectedDebtType}
                 />
             )}
 

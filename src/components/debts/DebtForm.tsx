@@ -21,16 +21,26 @@ interface DebtFormProps {
     onSave: () => void;
     onCancel: () => void;
     initialDebt?: Debt;
+    // Type pre-selected from the Quick Actions menu (e.g. "I Owe You", "Credit Card") for a new debt.
+    // Ignored when editing an existing debt (initialDebt.type wins).
+    defaultType?: DebtType;
 }
 
-export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, initialDebt }) => {
+// Shared with the auto-set-direction effect below so the initial render and
+// any later debtType change compute the same default, instead of the first
+// render flashing 'PAYABLE' before the effect corrects it.
+const getAutoDirection = (type: DebtType): DebtDirection => {
+    return type === 'YOU_OWE_ME' ? 'RECEIVABLE' : 'PAYABLE';
+};
+
+export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, initialDebt, defaultType }) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
 
     // Form State
     const [name, setName] = useState(initialDebt?.name || '');
-    const [debtType, setDebtType] = useState<DebtType>(initialDebt?.type || 'LOAN');
-    const [direction, setDirection] = useState<DebtDirection>(initialDebt?.direction || 'PAYABLE');
+    const [debtType, setDebtType] = useState<DebtType>(initialDebt?.type || defaultType || 'LOAN');
+    const [direction, setDirection] = useState<DebtDirection>(initialDebt?.direction || getAutoDirection(initialDebt?.type || defaultType || 'LOAN'));
     const [amount, setAmount] = useState(initialDebt?.initialAmount.toString() || '');
     const [formCurrency, setFormCurrency] = useState(initialDebt?.currency || currency);
     const [interestRate, setInterestRate] = useState(initialDebt?.interestRate.toString() || '');
@@ -80,9 +90,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
     // Auto-set direction based on type (heuristic)
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- smart default the user can still override via the Payable/Receivable toggle; see FIXES.md
-        if (debtType === 'I_OWE_YOU') setDirection('PAYABLE');
-        else if (debtType === 'YOU_OWE_ME') setDirection('RECEIVABLE');
-        else if (debtType === 'CREDIT_CARD' || debtType === 'MORTGAGE' || debtType === 'LOAN') setDirection('PAYABLE');
+        setDirection(getAutoDirection(debtType));
     }, [debtType]);
 
     const handleMinPaymentChange = (text: string) => {
@@ -682,7 +690,9 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                     {/* The Core Question */}
                     <View style={{ backgroundColor: colors.primary + '10', padding: 20, borderRadius: 16, marginBottom: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.primary + '30' }}>
                         <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.primary, textAlign: 'center', marginBottom: 8 }}>
-                            &quot;Did this money actually enter my bank account or wallet?&quot;
+                            {direction === 'PAYABLE'
+                                ? '"Did this money actually enter my bank account or wallet?"'
+                                : '"Did this money actually leave your bank account or wallet?"'}
                         </Text>
                     </View>
 
@@ -697,7 +707,9 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                             </View>
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>YES, I received the cash.</Text>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>
+                                {direction === 'PAYABLE' ? 'YES, I received the cash.' : 'YES, I sent the cash.'}
+                            </Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
                                 Result: Debt Created + Cash Balance Updated {direction === 'PAYABLE' ? '(Income)' : '(Expense)'}
                             </Text>
@@ -721,7 +733,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                                 Result: Debt Created. Fees recorded as Expense.
                             </Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>
-                                e.g. Car Loan / Renovation paid to vendor.
+                                {direction === 'PAYABLE' ? 'e.g. Car Loan / Renovation paid to vendor.' : 'e.g. paid a vendor directly on their behalf.'}
                             </Text>
                             <View style={{ marginTop: 6, backgroundColor: colors.surface, padding: 6, borderRadius: 6, borderWidth: 1, borderColor: colors.border }}>
                                 <Text style={{ fontSize: 11, color: colors.text, fontStyle: 'italic' }}>
