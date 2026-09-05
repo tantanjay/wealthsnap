@@ -80,15 +80,6 @@ const HistoryScreen = ({ navigation }: any) => {
     // picker should reflect that instead of whatever granularity List last used.
     const datePickerTimeFrame: TimeFrame = viewMode === 'CALENDAR' ? 'MONTHLY' : timeFrame;
 
-    useFocusEffect(
-        useCallback(() => {
-            loadData();
-            loadTimeFramePref();
-            loadProfile();
-            loadRecurrenceRules();
-        }, [])
-    );
-
     useEffect(() => {
         registerSecondAction(routeName, {
             label: viewMode === 'LIST' ? 'Switch to Calendar View' : 'Switch to List View',
@@ -137,6 +128,15 @@ const HistoryScreen = ({ navigation }: any) => {
             setIsLoading(false);
         }
     };
+
+    useFocusEffect(
+        useCallback(() => {
+            loadData();
+            loadTimeFramePref();
+            loadProfile();
+            loadRecurrenceRules();
+        }, [])
+    );
 
     // Memoized so HistoryListItem/HistorySectionHeader (both React.memo-wrapped) receive a
     // stable function reference and can actually skip re-rendering when unrelated state
@@ -502,6 +502,9 @@ const HistoryScreen = ({ navigation }: any) => {
             grouped[dateKey].push(item);
         });
 
+        const now = new Date();
+        const yesterday = new Date(now.getTime() - 86400000);
+
         const newSections: TransactionSection[] = Object.keys(grouped).map(dateKey => {
             const items = grouped[dateKey];
             const totalAmount = items.reduce((sum, item) => {
@@ -518,8 +521,8 @@ const HistoryScreen = ({ navigation }: any) => {
             }, new BigNumber(0));
 
             const d = new Date(dateKey);
-            const title = d.toDateString() === new Date().toDateString() ? 'Today' :
-                d.toDateString() === new Date(Date.now() - 86400000).toDateString() ? 'Yesterday' :
+            const title = d.toDateString() === now.toDateString() ? 'Today' :
+                d.toDateString() === yesterday.toDateString() ? 'Yesterday' :
                     d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
             return {

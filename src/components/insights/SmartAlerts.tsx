@@ -20,14 +20,14 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
     const [showInfo, setShowInfo] = useState(false);
     const [hasPermission, setHasPermission] = useState(true);
 
-    useEffect(() => {
-        checkPermission();
-    }, []);
-
     const checkPermission = async () => {
         const status = await getPermissionStatus();
         setHasPermission(status === 'granted');
     };
+
+    useEffect(() => {
+        checkPermission();
+    }, []);
 
     const handlePermissionPress = async () => {
         showAlert(
