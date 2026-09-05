@@ -168,6 +168,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
     useEffect(() => {
         if (visible && symbol) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async data load on open; see FIXES.md
             loadAllHistory();
             setActiveTab('POSITIONS'); // Reset tab on open
         }

@@ -64,6 +64,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const subscription = AppState.addEventListener('change', handleAppStateChange);
 
         // Initial check
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async security/onboarding check on mount; see FIXES.md
         checkLockState();
 
         return () => {

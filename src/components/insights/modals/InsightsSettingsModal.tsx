@@ -28,6 +28,7 @@ const InsightsSettingsModal: React.FC<InsightsSettingsModalProps> = ({
     // Reset view when modal closes
     React.useEffect(() => {
         if (!visible) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- resets view state on close; see FIXES.md
             setView('MAIN');
         }
     }, [visible]);

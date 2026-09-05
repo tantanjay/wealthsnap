@@ -26,6 +26,7 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async permission check on mount; see FIXES.md
         checkPermission();
     }, []);
 

@@ -9,12 +9,17 @@
 - **Financial Health's Debt Pressure no longer falsely capped at 99 years**: the Debt Pressure metric on the Financial Health screen shows how many years your debt is delaying your self-sustainability, based on your current cash flow surplus. Previously, this calculation inadvertently deducted any money you transferred out to investments or savings accounts, causing your available "surplus" to look like $0 if you aggressively saved. It now correctly uses your true investable surplus (Income minus living expenses and debt minimums), giving a much more accurate timeline.
 - **Accurate Burn Rate and Debt Drag computations**: fixed an issue where the interest and fee portions of your debt payments were being accidentally double-counted. These amounts were previously being included in both your "Living Expenses" and your "Debt Obligations." The app now strictly filters them out of your living expenses so your total cash burn rate and Debt Drag numbers are fully accurate.
 - **Help Modal transparency**: the Financial Health Help Modal now displays the actual numbers and the calculated effective monthly interest rate used in the "Interest Cost (Dead Money)" formula, rather than generic placeholder text.
+- **Import Data guide stability**: the required-format reference list in the Import Data guide was being recreated on every render instead of staying stable, causing it to unnecessarily unmount and remount each time. It now renders as a stable component like the rest of the guide.
 ## ✨ Polish & UI
 - **Refined informational banners**: the "Beta Feature" banners in the Debt and Financial Health screens have been updated to a neutral "Disclaimer" style, removing the warning colors to ensure a calmer, more informative user experience.
 - **Smarter Wealth Growth scenarios**: the Wealth Growth card and its Help Modal now dynamically adapt their messaging if you are already investing your full available surplus. Instead of displaying a confusing "0.0 Years" acceleration, they proudly confirm that you are "Maxing out Surplus!" and hide redundant scenario comparisons.
 
 ## ⚙️ Performance & Build
 - **Reduced App Size**: Enabled code minification and resource shrinking for Android release builds (\`enableMinifyInReleaseBuilds\` and \`enableShrinkResourcesInReleaseBuilds\`), resulting in a smaller download size and faster performance.
+- **Upgraded to Expo SDK 57**: migrated the app's core platform to Expo SDK 57, bringing React Native 0.86, React 19.2, and TypeScript 6.0, along with updates to other dependencies to their latest compatible versions for continued stability and performance.
+
+## 🔒 Security
+- **Patched a known Excel export vulnerability**: updated the \`xlsx\` dependency used for the Export to Excel feature to a patched version, closing a known vulnerability in the library.
 
 ---
 

@@ -72,6 +72,7 @@ const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
     );
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async storage read; see FIXES.md
         if (refreshSignal !== undefined) loadSettings();
     }, [refreshSignal, loadSettings]);
 
@@ -286,6 +287,7 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ visible, mode, onClose, o
 
     React.useEffect(() => {
         if (visible) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- resets form fields on open; see FIXES.md
             setPassword('');
             setConfirmPassword('');
         }

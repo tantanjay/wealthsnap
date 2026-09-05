@@ -48,6 +48,7 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
     };
 
     React.useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async data load on mount; see FIXES.md
         loadData();
     }, []);
 

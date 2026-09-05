@@ -74,6 +74,7 @@ export const HistoryDatePickerModal: React.FC<HistoryDatePickerModalProps> = ({
     // browsed inside the picker instead of where currentDate actually points.
     useEffect(() => {
         if (visible) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- resyncs picker default on open; see FIXES.md
             setPickerYear(currentDate.getFullYear());
             setPickerMonthDate(currentDate);
         }

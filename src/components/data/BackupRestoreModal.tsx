@@ -47,6 +47,7 @@ const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
     const copy = COPY[mode];
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- resets form field on open; see FIXES.md
         if (visible) setPassword('');
     }, [visible]);
 

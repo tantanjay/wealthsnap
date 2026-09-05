@@ -164,6 +164,7 @@ const InvestmentScreen = ({ navigation }: any) => {
     }, [activePriority]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async data load; see FIXES.md
         fetchSuggestions();
     }, [fetchSuggestions]);
 

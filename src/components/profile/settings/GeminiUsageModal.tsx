@@ -48,6 +48,7 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
 
     useEffect(() => {
         if (visible) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async data load on open; see FIXES.md
             loadLogs();
         }
     }, [visible]);

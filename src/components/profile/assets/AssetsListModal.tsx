@@ -38,6 +38,7 @@ export const AssetsListModal: React.FC<AssetsListModalProps> = ({ visible, onClo
 
     useEffect(() => {
         if (visible) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async data load + view reset on open; see FIXES.md
             loadAssets();
             setView('LIST');
             setSearchQuery('');

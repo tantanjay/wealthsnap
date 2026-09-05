@@ -56,6 +56,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
 
     useEffect(() => {
         if (!initialDebt) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- resyncs default currency when app currency changes; see FIXES.md
             setFormCurrency(currency);
         }
     }, [currency, initialDebt]);
@@ -78,6 +79,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
 
     // Auto-set direction based on type (heuristic)
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- smart default the user can still override via the Payable/Receivable toggle; see FIXES.md
         if (debtType === 'I_OWE_YOU') setDirection('PAYABLE');
         else if (debtType === 'YOU_OWE_ME') setDirection('RECEIVABLE');
         else if (debtType === 'CREDIT_CARD' || debtType === 'MORTGAGE' || debtType === 'LOAN') setDirection('PAYABLE');
@@ -132,6 +134,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
         }
 
         // Round to 2 decimals
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- auto-calc the user can still override manually (isMinPaymentManual); see FIXES.md
         setMinPayment(calculatedPayment.toFixed(2));
     }, [amount, interestRate, termMonths, interestType, isMinPaymentManual]);
 

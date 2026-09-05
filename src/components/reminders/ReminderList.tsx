@@ -64,6 +64,7 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
     }, [refreshScheduledIds, sortReminders]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async data load; see FIXES.md
         loadReminders();
     }, [loadReminders]);
 

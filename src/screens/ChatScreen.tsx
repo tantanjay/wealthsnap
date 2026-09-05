@@ -170,6 +170,7 @@ const ChatScreen = ({ navigation }: any) => {
     }, [messages]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- re-randomizes prompts when the range changes; see FIXES.md
         if (selectedRange) setSuggestedPrompts(pickRandomPrompts(SUGGESTED_PROMPTS, 3));
     }, [selectedRange]);
 

@@ -36,6 +36,7 @@ const PriceHistoryFormModal: React.FC<PriceHistoryFormModalProps> = ({
     useEffect(() => {
         if (visible) {
             if (existingItem) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect -- initializes form fields from the item being edited on open; see FIXES.md
                 setDate(new Date(existingItem.timestamp));
                 setPrice(existingItem.price.toString());
             } else {

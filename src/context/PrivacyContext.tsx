@@ -37,6 +37,7 @@ export const PrivacyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async storage read on mount; see FIXES.md
         loadPrivacySetting();
     }, []);
 

@@ -75,6 +75,7 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
         if (step === 'create' && pin.length === PIN_LENGTH) {
             setTimeout(() => setStep('confirm'), 500);
         } else if (step === 'confirm' && confirmPin.length === PIN_LENGTH) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async secure-storage write (setPin); see FIXES.md
             validatePin();
         }
     }, [step, pin, confirmPin, validatePin]);
