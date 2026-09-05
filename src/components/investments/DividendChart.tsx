@@ -40,6 +40,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
 
     useEffect(() => {
         if (availableYears.length > 0 && !availableYears.includes(selectedYear)) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- default the user can still override via prev/next; see FIXES.md
             setSelectedYear(availableYears[availableYears.length - 1]);
         }
     }, [actualDividends, availableYears, selectedYear]);

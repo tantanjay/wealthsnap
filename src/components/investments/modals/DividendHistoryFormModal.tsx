@@ -44,6 +44,7 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
     useEffect(() => {
         if (visible) {
             if (existingItem) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect -- initializes form fields from the item being edited on open; see FIXES.md
                 setExDate(new Date(existingItem.exDate));
                 setPaymentDate(existingItem.paymentDate ? new Date(existingItem.paymentDate) : undefined);
                 setAmount(existingItem.amount.toString());

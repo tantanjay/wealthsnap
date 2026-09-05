@@ -63,6 +63,7 @@ const InsightScreen = ({ navigation }: any) => {
     const selectedYear = selectedDate.getFullYear();
     // Update picker year when selected date changes (for external sync)
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- resyncs picker default; see FIXES.md
         setPickerYear(selectedYear);
     }, [selectedYear]);
 
@@ -279,6 +280,7 @@ const InsightScreen = ({ navigation }: any) => {
     // Only re-calculate breakdown if grouping or date changes specifically
     useEffect(() => {
         if (transactions.length > 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- calculateMetrics does a real await getAllBudgets() call, not a pure computation; see FIXES.md
             calculateMetrics(transactions, debts, expenseGrouping, selectedDate);
         }
     }, [expenseGrouping, calculateMetrics, transactions, debts, selectedDate]);

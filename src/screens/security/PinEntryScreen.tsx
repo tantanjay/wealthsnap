@@ -39,6 +39,7 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
     }, [triggerBiometricAuth]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async biometric hardware check on mount; see FIXES.md
         checkBiometrics();
     }, [checkBiometrics]);
 
@@ -112,6 +113,7 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
 
     useEffect(() => {
         if (pin.length === PIN_LENGTH && !isLockedOut) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async verifyPin() security-service call; see FIXES.md
             checkPin(pin);
         }
     }, [pin, checkPin, isLockedOut]);

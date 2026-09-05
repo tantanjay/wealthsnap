@@ -78,6 +78,7 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
 
     // Reset page and scroll to start when suggestions or priority change
     React.useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- resets pagination when the underlying list changes; see FIXES.md
         setCurrentPage(0);
         if (flatListRef.current && suggestions && suggestions.length > 0) {
             flatListRef.current.scrollToOffset({ offset: 0, animated: true });

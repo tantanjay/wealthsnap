@@ -36,6 +36,7 @@ export const CalculatorModal: React.FC<CalculatorModalProps> = ({
 
     useEffect(() => {
         if (visible) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- resets calculator state on open; see FIXES.md
             setCalcDisplay(initialValue || '0');
             setCalcPrevValue(null);
             setCalcOperator(null);

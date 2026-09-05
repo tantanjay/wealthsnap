@@ -98,6 +98,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     // Reset checkbox when symbol changes (if not editing or if symbol changed from initial)
     useEffect(() => {
         if (!initialInvestment || initialInvestment.symbol !== symbol) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- resets form default when symbol changes; see FIXES.md
             setUseNativeCurrency(false);
             setExchangeRate('1');
         }
@@ -196,6 +197,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     // Auto-calculate Realized P/L when inputs change (only if not manually overridden?) 
     useEffect(() => {
         if (action !== 'SELL' || !quantity || !price) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- clears a now-invalid derived field; see FIXES.md
             if (realizedPL !== '') setRealizedPL(''); // clear if invalid
             return;
         }

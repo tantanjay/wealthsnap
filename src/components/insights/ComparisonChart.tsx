@@ -36,6 +36,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
 
     // Keep the in-chart year selector aligned with the month picker at the top of Insights
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- default the user can still override via prev/next; see FIXES.md
         setSelectedYear(selectedDate.getFullYear());
     }, [selectedDate]);
 

@@ -120,6 +120,7 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
 
     useEffect(() => {
         if (visible) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async data load on open; see FIXES.md
             loadSuggestions();
         }
     }, [visible, loadSuggestions]);

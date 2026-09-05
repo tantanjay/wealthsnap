@@ -33,6 +33,7 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
     ];
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- seeds a local editable copy of the prop; see FIXES.md
         setReminders(initialReminders);
     }, [initialReminders]);
 

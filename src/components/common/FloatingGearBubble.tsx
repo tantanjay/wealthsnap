@@ -77,6 +77,7 @@ export default function FloatingGearBubble() {
                 clearTimeout(revertTimerRef.current);
                 revertTimerRef.current = null;
             }
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- resets menu UI state when the bubble docks; see FIXES.md
             setMenuVisible(false);
             setIsActiveColor(false);
         }
@@ -105,6 +106,13 @@ export default function FloatingGearBubble() {
             setIsActiveColor(false);
         }, COLOR_REVERT_DELAY_MS);
     };
+
+    /* eslint-disable react-hooks/refs, react-hooks/immutability --
+       Gesture worklets: reading/writing a Reanimated shared value's `.value`
+       (and touching a ref via a runOnJS-called handler) is the standard,
+       required way to drive these gestures - there's no alternative API.
+       The analyzer can't tell a worklet callback from render code. See
+       FIXES.md's "OK to bypass" section. */
 
     // A plain Gesture.Pan() never reaches its "active" state (and so never
     // fires onEnd) for a quick tap with little movement, so taps need a
@@ -142,6 +150,7 @@ export default function FloatingGearBubble() {
             // the landing effect below) recomputes from here, not the original detach point.
             runOnJS(updatePosition)(snapX, clampedY);
         });
+    /* eslint-enable react-hooks/refs, react-hooks/immutability */
 
     const composed = Gesture.Race(pan, tap);
 

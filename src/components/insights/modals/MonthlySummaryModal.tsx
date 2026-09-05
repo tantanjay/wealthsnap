@@ -37,6 +37,7 @@ const MonthlySummaryModal: React.FC<MonthlySummaryModalProps> = ({ visible, onCl
     }, []);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async data load on open; see FIXES.md
         if (visible) loadSummaries();
     }, [visible, loadSummaries]);
 

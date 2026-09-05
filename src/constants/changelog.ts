@@ -14,11 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Build: Enabled \`enableMinifyInReleaseBuilds\` and \`enableShrinkResourcesInReleaseBuilds\` for Android to reduce app size.
 - UI: Replaced the "Beta Feature" warning banners in the Debt and Financial Health screens with a neutral, informational "Disclaimer" design.
 - UI: Wealth Growth card and modal now intelligently hide redundant "0.0 Years" acceleration scenarios when you are already investing your full available surplus, proudly confirming you are "Maxing out Surplus!" instead.
+- Migrated to Expo SDK 57 (React Native 0.86, React 19.2, TypeScript 6.0) and updated other dependencies to their latest compatible versions.
 
 ### Fixed
 - Financial Health: Debt Pressure delay accurately reflects true surplus instead of being artificially capped at 99 years.
 - Financial Health: fixed double-counting of debt interest and fees in Base Burn Rate computation, ensuring Debt Drag and Runway are accurate.
 - Financial Health: the Help Modal now shows the explicit mathematical calculation and effective rate for the Interest Cost metric.
+- Import Data guide's required-format list no longer remounts unnecessarily on re-render.
+
+### Security
+- Patched a known vulnerability in the Excel export dependency (xlsx).
 
 ## [1.16.0] — 2026-08-01
 
