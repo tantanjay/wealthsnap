@@ -194,7 +194,7 @@ export default function FloatingGearBubble() {
 
     return (
         <>
-            <View pointerEvents="box-none" style={StyleSheet.absoluteFillObject}>
+            <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
                 <GestureDetector gesture={composed}>
                     <Animated.View
                         style={[

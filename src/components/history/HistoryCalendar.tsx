@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     cellTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     indicatorGroup: { flexDirection: 'row', alignItems: 'center', gap: 1 },
     dateText: { fontSize: 11, fontWeight: '600' },
-    selectionOverlay: { ...StyleSheet.absoluteFillObject, borderWidth: 2, borderRadius: 8, zIndex: 1 },
+    selectionOverlay: { ...StyleSheet.absoluteFill, borderWidth: 2, borderRadius: 8, zIndex: 1 },
     centerContent: { flex: 1, justifyContent: 'center' },
     ghostStack: { alignItems: 'center' },
     ghostText: { fontSize: 7, fontWeight: 'bold', lineHeight: 8 },

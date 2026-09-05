@@ -138,7 +138,7 @@ const ThankYouScreen = ({ navigation }: any) => {
             </View>
 
             {/* Floating Background */}
-            <View style={[StyleSheet.absoluteFillObject, { zIndex: 0, overflow: 'hidden' }]} pointerEvents="none">
+            <View style={[StyleSheet.absoluteFill, { zIndex: 0, overflow: 'hidden' }]} pointerEvents="none">
                 {activeDonors.map((donor, index) => (
                     <FloatingName
                         key={index}

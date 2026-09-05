@@ -178,7 +178,7 @@ const LiveSyncScreen = ({ navigation }: any) => {
     const renderScanning = () => (
         <View style={styles.cameraContainer}>
             <CameraView
-                style={StyleSheet.absoluteFillObject}
+                style={StyleSheet.absoluteFill}
                 facing="back"
                 barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                 onBarcodeScanned={hasScanned ? undefined : handleBarcodeScanned}
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scanOverlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...StyleSheet.absoluteFill,
         justifyContent: 'center',
         alignItems: 'center',
     },

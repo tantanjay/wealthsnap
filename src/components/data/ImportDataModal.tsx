@@ -24,13 +24,6 @@ const ImportDataModal: React.FC<ImportDataModalProps> = ({
     const { colors } = useTheme();
     const { showAlert } = useAlert();
 
-    const ColumnInfo = ({ name, description }: { name: string; description: string }) => (
-        <View style={styles.columnRow}>
-            <Text style={[styles.columnName, { color: colors.primary }]}>{name}</Text>
-            <Text style={[styles.columnDesc, { color: colors.textSecondary }]}>{description}</Text>
-        </View>
-    );
-
     return (
         <BottomModal
             visible={visible}
@@ -52,11 +45,11 @@ const ImportDataModal: React.FC<ImportDataModalProps> = ({
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>Required Format</Text>
 
                 <View style={[styles.formatBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                    <ColumnInfo name="1. Date" description="yyyy-MM-dd format (e.g., 2026-01-15)" />
-                    <ColumnInfo name="2. Category" description="Must match existing category names" />
-                    <ColumnInfo name="3. Income" description="Decimal amount or - for empty" />
-                    <ColumnInfo name="4. Expense" description="Decimal amount or - for empty" />
-                    <ColumnInfo name="5. Notes" description="Optional, max 50 characters" />
+                    <ColumnInfo name="1. Date" description="yyyy-MM-dd format (e.g., 2026-01-15)" colors={colors} />
+                    <ColumnInfo name="2. Category" description="Must match existing category names" colors={colors} />
+                    <ColumnInfo name="3. Income" description="Decimal amount or - for empty" colors={colors} />
+                    <ColumnInfo name="4. Expense" description="Decimal amount or - for empty" colors={colors} />
+                    <ColumnInfo name="5. Notes" description="Optional, max 50 characters" colors={colors} />
                 </View>
 
                 {/* Rules */}
@@ -142,6 +135,13 @@ const RuleItem = ({ icon, text, colors }: { icon: string; text: string; colors: 
     <View style={styles.ruleItem}>
         <Ionicons name={icon as any} size={16} color={colors.textSecondary} />
         <Text style={[styles.ruleText, { color: colors.textSecondary }]}>{text}</Text>
+    </View>
+);
+
+const ColumnInfo = ({ name, description, colors }: { name: string; description: string; colors: any }) => (
+    <View style={styles.columnRow}>
+        <Text style={[styles.columnName, { color: colors.primary }]}>{name}</Text>
+        <Text style={[styles.columnDesc, { color: colors.textSecondary }]}>{description}</Text>
     </View>
 );
 
