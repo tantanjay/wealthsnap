@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.17.0] — 2026-09-06
+
 ### Added
 - **Debt status tracking**: mark a debt as Paid Off or Forgiven from its gear icon on the Debt screen, with a Reactivate option to undo either.
   - Applies in both directions — a debt forgiven by your lender, or one you forgave someone else.
@@ -41,6 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Security
 - Patched a known vulnerability in the Excel export dependency (xlsx).
+
+---
 
 ## [1.16.0] — 2026-08-01
 

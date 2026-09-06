@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.17.0] — 2026-09-06
+
 ### Added
 - **Debt status tracking**: mark a debt as Paid Off or Forgiven from its gear icon on the Debt screen, with a Reactivate option to undo either.
   - Applies in both directions — a debt forgiven by your lender, or one you forgave someone else.
@@ -40,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Security
 - Patched a known vulnerability in the Excel export dependency (xlsx).
+
+---
 
 ## [1.16.0] — 2026-08-01
 
@@ -730,7 +734,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - AES-256 encrypted local storage.
 - No accounts, no ads, no cloud dependency.
 
-[Unreleased]: https://github.com/tantanjay/wealthsnap/compare/v1.16.0...HEAD
+[Unreleased]: https://github.com/tantanjay/wealthsnap/compare/v1.17.0...HEAD
+[1.17.0]: https://github.com/tantanjay/wealthsnap/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/tantanjay/wealthsnap/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/tantanjay/wealthsnap/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/tantanjay/wealthsnap/compare/v1.13.0...v1.14.0

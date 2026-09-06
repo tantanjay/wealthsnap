@@ -17,8 +17,8 @@ export const getGeminiClient = async () => {
     // 1. Try Storage
     const config = await getAIConfig();
     let apiKey = config?.apiKey;
-    // Default to gemini-3.5-flash
-    let modelId = config?.modelId || 'gemini-3.5-flash';
+    // Default to gemini-3.8-flash
+    let modelId = config?.modelId || 'gemini-3.8-flash';
 
     if (!apiKey) {
         throw new Error("Gemini API Key is not configured. Please add it in Profile Settings.");
@@ -43,9 +43,13 @@ export const isGeminiConfigured = async (): Promise<boolean> => {
 };
 
 /**
- * Pricing per 1,000,000 tokens as of Jul 2026.
+ * Pricing per 1,000,000 tokens as of Sep 2026.
  * Note: gemini-3.1-pro-preview has tiered pricing above 200k-token prompts
  * ($4.00 in / $18.00 out); the rate below covers the common <=200k case.
+ *
+ * gemini-3.8-flash is on promotional pricing through Dec 31, 2026
+ * (input $0.75 / output $3.75 / cached $0.075); it doubles to $1.50 / $7.50 / $0.15
+ * on Jan 1, 2027 - bump the rate below when that date hits.
  *
  * cachedInput is the rate for tokens served from an explicit context cache
  * (genAI.caches.create) - Gemini has consistently priced these at ~25% of
@@ -54,6 +58,7 @@ export const isGeminiConfigured = async (): Promise<boolean> => {
  */
 const MODEL_PRICING: { [key: string]: { input: number; output: number; cachedInput: number } } = {
     // Latest Frontier Models
+    'gemini-3.8-flash': { input: 0.75, output: 3.75, cachedInput: 0.075 },
     'gemini-3.5-flash': { input: 1.50, output: 9.00, cachedInput: 0.375 },
     'gemini-3.1-pro-preview': { input: 2.00, output: 12.00, cachedInput: 0.50 },
     'gemini-3-flash': { input: 0.50, output: 3.00, cachedInput: 0.125 },
