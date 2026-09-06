@@ -1,7 +1,8 @@
 import { BigNumber } from 'bignumber.js';
-import { Transaction, Debt, DebtStatus } from '@types';
+import { Transaction, Debt, DebtStatus, SavingsGoal } from '@types';
 import { calculateBurnRate, parseDate } from '@utils/financialMetrics';
 import { calculateTotalDebtObligations, calculateCurrentDebtBalance, buildDebtNameMap } from '@utils/debtMetrics';
+import { calculateTotalGoalContributions } from '@utils/savingsGoalMetrics';
 
 export interface PortfolioStatsInput {
     totalEquity: number;
@@ -88,7 +89,8 @@ export const buildFinancialSnapshotData = (
     excludeCategories: string[] = [],
     // Same principle as excludeCategories: hides the *name* only. Amounts, balances, types,
     // directions, and statuses are always included in full regardless of this flag.
-    discloseDebtNames: boolean = true
+    discloseDebtNames: boolean = true,
+    goals: SavingsGoal[] = []
 ): FinancialSnapshotData => {
     // `transactions` must always be the FULL, unfiltered set - every total below
     // (cash, burn rate, debt, budgets) needs the complete picture to stay accurate.
@@ -133,14 +135,18 @@ export const buildFinancialSnapshotData = (
         currentBalance: calculateCurrentDebtBalance(d, transactions).toNumber()
     }));
 
-    // Exclude debt-linked transactions (interest/fee payments) from the base burn rate -
-    // monthlyDebtObligations below adds each active debt's minimum payment on top, so
-    // leaving them in here would double-count the same interest/fees. Matches the fix
-    // already applied to FinancialHealthScreen's own burn rate computation.
-    const nonDebtTransactions = transactions.filter(t => !t.debtId);
+    // Exclude debt-linked transactions (interest/fee payments) AND savingsGoalId-tagged
+    // EXPENSE from the base burn rate - monthlyDebtObligations/monthlyGoalContributions
+    // below add each active debt's minimum payment and each active goal's monthly-equivalent
+    // contribution on top, so leaving either in here would double-count: a goal-funded
+    // purchase's cash already left when it was contributed to the goal, not when it was
+    // later spent (that spend nets to ₱0 cash impact via the Auto-Offset pair). Matches the
+    // fix already applied to FinancialHealthScreen's own burn rate computation.
+    const nonDebtTransactions = transactions.filter(t => !t.debtId && !t.savingsGoalId);
     const baseBurnRate = calculateBurnRate(nonDebtTransactions, 6);
     const monthlyDebtObligations = calculateTotalDebtObligations(debts);
-    const monthlyBurnRate = baseBurnRate.plus(monthlyDebtObligations);
+    const monthlyGoalContributions = calculateTotalGoalContributions(goals);
+    const monthlyBurnRate = baseBurnRate.plus(monthlyDebtObligations).plus(monthlyGoalContributions);
 
     const runwayMonths = monthlyBurnRate.isGreaterThan(0)
         ? totalCash.dividedBy(monthlyBurnRate).dp(1).toNumber()
@@ -224,7 +230,7 @@ export const renderFinancialSnapshotText = (data: FinancialSnapshotData, currenc
         });
     }
     lines.push(`Total Debt Liability: ${fmt(data.totalDebtLiability, currency)}`);
-    lines.push(`Monthly Burn Rate (incl. debt payments): ${fmt(data.monthlyBurnRate, currency)}`);
+    lines.push(`Monthly Burn Rate (incl. debt payments and savings goal contributions): ${fmt(data.monthlyBurnRate, currency)}`);
     lines.push(`Financial Runway: ${data.runwayMonths === null ? 'Infinite (no recurring burn)' : `${data.runwayMonths} months`}`);
     if (data.budgets.length > 0) {
         lines.push('Current Month Budgets:');

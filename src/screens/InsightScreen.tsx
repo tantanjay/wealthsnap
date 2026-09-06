@@ -22,6 +22,8 @@ import { useFloatingGear } from '@context/FloatingGearContext';
 import { Transaction } from '@types';
 import { getAllBudgets } from '@services/domain/budgetService';
 import { getAllDebts } from '@services/domain/debtService';
+import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
+import { calculateTotalGoalContributions } from '@utils/savingsGoalMetrics';
 import * as Metrics from '@utils/financialMetrics';
 import { calculateTotalDebtObligations } from '@utils/debtMetrics';
 import * as Storage from '@services/core/storageService';
@@ -59,6 +61,7 @@ const InsightScreen = ({ navigation }: any) => {
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [debts, setDebts] = useState<import('@types').Debt[]>([]);
+    const [goals, setGoals] = useState<import('@types').SavingsGoal[]>([]);
 
     const selectedYear = selectedDate.getFullYear();
     // Update picker year when selected date changes (for external sync)
@@ -126,7 +129,7 @@ const InsightScreen = ({ navigation }: any) => {
         dailyAverage: new BigNumber(0)
     });
 
-    const calculateMetrics = useCallback(async (currentTransactions: Transaction[], currentDebts: import('@types').Debt[], grouping: 'GROUP' | 'ITEM', referenceDate: Date = new Date()) => {
+    const calculateMetrics = useCallback(async (currentTransactions: Transaction[], currentDebts: import('@types').Debt[], currentGoals: import('@types').SavingsGoal[], grouping: 'GROUP' | 'ITEM', referenceDate: Date = new Date()) => {
         if (!currentTransactions || currentTransactions.length === 0) {
             setIsLoading(false);
             return;
@@ -139,33 +142,58 @@ const InsightScreen = ({ navigation }: any) => {
 
         // Core Totals
         const totals = Metrics.calculateTotals(currentMonthTrans);
-        const lastMonthTotals = Metrics.calculateTotals(lastMonthTrans);
+
+        // A separate goal-excluded view of this/last month's expense, used only for the
+        // Spending Comparison chart and Avg Daily Spending below - NOT for `totals.expense`
+        // itself, which stays the true full spend (a goal-funded purchase really was spent
+        // this month from the user's perspective) and still feeds the plain Expense KPI.
+        const nonGoalCurrentMonthExpense = Metrics.calculateTotals(
+            currentMonthTrans.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId))
+        ).expense;
+        const nonGoalLastMonthExpense = Metrics.calculateTotals(
+            lastMonthTrans.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId))
+        ).expense;
 
         // Breakdowns & Trends
         const incomeBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'INCOME', 'ITEM'); // Income always by Item (specific source)
         const expenseBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', grouping);
         const monthlyTrends = Metrics.getMonthlyTrends(currentTransactions, 6, today);
 
+        // Excludes savingsGoalId-tagged EXPENSE from the burn-rate base - a goal-funded
+        // purchase's cash already left when it was contributed to the goal, not when it was
+        // later spent (that spend nets to ₱0 cash impact via the Auto-Offset pair), so
+        // leaving it in here would double-count alongside totalGoalContributions below.
+        const nonGoalTransactions = currentTransactions.filter(t => !t.savingsGoalId);
+
         // Averages for Runway/Burn Rate cards - always "as of today", since Runway is framed
         // as "if your income stopped today", regardless of which month is being browsed.
-        const runwayAverage6Month = Metrics.calculateBurnRate(currentTransactions, 6);
-        const runwayAverage3Month = Metrics.calculateBurnRate(currentTransactions, 3);
+        const runwayAverage6Month = Metrics.calculateBurnRate(nonGoalTransactions, 6);
+        const runwayAverage3Month = Metrics.calculateBurnRate(nonGoalTransactions, 3);
 
         // Burn Rate logic: Fallback hierarchy to ensure Runway doesn't show NaN
         let burnRate = runwayAverage6Month;
         if (burnRate.isLessThanOrEqualTo(0)) {
-            burnRate = runwayAverage3Month.isGreaterThan(0) ? runwayAverage3Month : totals.expense;
+            burnRate = runwayAverage3Month.isGreaterThan(0) ? runwayAverage3Month : nonGoalCurrentMonthExpense;
         }
 
-        // --- INJECT DEBT OBLIGATIONS ---
+        // --- INJECT DEBT OBLIGATIONS & SAVINGS GOAL CONTRIBUTIONS ---
+        // Goal contributions are real recurring transfers (unlike debt's fixed minPayment
+        // model), but still derived from the goal's own settings rather than scanned from
+        // transaction history, so a brand-new goal counts immediately and the figure stays a
+        // true monthly rate regardless of frequency (weekly/quarterly/etc. normalized to
+        // monthly-equivalent - see calculateTotalGoalContributions).
         const totalDebtObligations = calculateTotalDebtObligations(currentDebts);
-        burnRate = burnRate.plus(totalDebtObligations);
+        const totalGoalContributions = calculateTotalGoalContributions(currentGoals);
+        burnRate = burnRate.plus(totalDebtObligations).plus(totalGoalContributions);
 
         // Averages for the Spending Comparison chart - relative to the browsed month, so
-        // "This Month" and "Avg 3M/6M/1Y" are comparing the same point in time.
-        const average6Month = Metrics.calculateBurnRate(currentTransactions, 6, today);
-        const average1Year = Metrics.calculateBurnRate(currentTransactions, 12, today);
-        const average3Month = Metrics.calculateBurnRate(currentTransactions, 3, today);
+        // "This Month" and "Avg 3M/6M/1Y" are comparing the same point in time. Uses
+        // nonGoalTransactions so a lump-sum goal purchase can't inflate these averages
+        // either, consistent with currentMonthExpense/lastMonthExpense below excluding it
+        // from the "This Month"/"Last Month" bars they're compared against.
+        const average6Month = Metrics.calculateBurnRate(nonGoalTransactions, 6, today);
+        const average1Year = Metrics.calculateBurnRate(nonGoalTransactions, 12, today);
+        const average3Month = Metrics.calculateBurnRate(nonGoalTransactions, 3, today);
 
         const allTimeTotals = Metrics.calculateTotals(currentTransactions);
 
@@ -211,8 +239,8 @@ const InsightScreen = ({ navigation }: any) => {
             incomeTrends: monthlyTrends,
             incomeBreakdown,
             expenseBreakdown,
-            currentMonthExpense: totals.expense,
-            lastMonthExpense: lastMonthTotals.expense,
+            currentMonthExpense: nonGoalCurrentMonthExpense,
+            lastMonthExpense: nonGoalLastMonthExpense,
             averageExpense: average3Month,
             average6Month,
             average1Year,
@@ -221,19 +249,21 @@ const InsightScreen = ({ navigation }: any) => {
             budgetPerformance,
             topExpenseCategory: specificBreakdown[0] || { name: 'None', amount: new BigNumber(0), percentage: new BigNumber(0) },
             daysInMonth: new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate(),
-            dailyAverage: totals.expense.dividedBy(Math.max(1, (today.getMonth() === new Date().getMonth() && today.getFullYear() === new Date().getFullYear()) ? today.getDate() : new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()))
+            // Avg Daily Spending - goal-excluded, same reasoning as currentMonthExpense above.
+            dailyAverage: nonGoalCurrentMonthExpense.dividedBy(Math.max(1, (today.getMonth() === new Date().getMonth() && today.getFullYear() === new Date().getFullYear()) ? today.getDate() : new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()))
         });
     }, []);
 
     const fetchAllData = useCallback(async (isManualRefresh = false) => {
         if (!isManualRefresh) setIsLoading(true);
         try {
-            const [profile, savedCardOrder, savedSectionOrder, allTransactions, allDebts] = await Promise.all([
+            const [profile, savedCardOrder, savedSectionOrder, allTransactions, allDebts, allGoals] = await Promise.all([
                 Storage.getUserProfile(),
                 Storage.getInsightsCardOrder(),
                 Storage.getInsightsSectionOrder(),
                 getCachedTransactions(),
                 getAllDebts(),
+                getAllSavingsGoals(),
             ]);
 
             if (profile?.currency) setCurrency(profile.currency);
@@ -253,8 +283,9 @@ const InsightScreen = ({ navigation }: any) => {
 
             setTransactions(safeTransactions);
             setDebts(allDebts);
+            setGoals(allGoals);
             // We pass variables directly here to bypass the React state update delay
-            await calculateMetrics(safeTransactions, allDebts, expenseGrouping, selectedDate);
+            await calculateMetrics(safeTransactions, allDebts, allGoals, expenseGrouping, selectedDate);
         } catch (error) {
             console.error("Error loading insights:", error);
         } finally {
@@ -281,9 +312,9 @@ const InsightScreen = ({ navigation }: any) => {
     useEffect(() => {
         if (transactions.length > 0) {
             // eslint-disable-next-line react-hooks/set-state-in-effect -- calculateMetrics does a real await getAllBudgets() call, not a pure computation; see FIXES.md
-            calculateMetrics(transactions, debts, expenseGrouping, selectedDate);
+            calculateMetrics(transactions, debts, goals, expenseGrouping, selectedDate);
         }
-    }, [expenseGrouping, calculateMetrics, transactions, debts, selectedDate]);
+    }, [expenseGrouping, calculateMetrics, transactions, debts, goals, selectedDate]);
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);

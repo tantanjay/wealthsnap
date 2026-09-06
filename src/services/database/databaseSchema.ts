@@ -4,7 +4,7 @@ import { ASYNC_KEYS } from '@constants/config';
 import { encryptField } from '@services/core/encryptionService';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 16;
+export const DATABASE_VERSION = 17;
 
 /**
  * Create all database tables and indexes
@@ -29,10 +29,11 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             creationMethod TEXT,
             isRecurring INTEGER DEFAULT 0,
             recurrenceId TEXT,
-            transferAccount TEXT CHECK(transferAccount IN ('OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT', 'CASH_ATM', 'DIGITAL_WALLET', 'CRYPTO', 'RECEIVABLE', 'TIME_DEPOSIT', 'LOAN', 'CREDIT_CARD', 'MORTGAGE', 'STUDENT_LOAN', 'I_OWE_YOU', 'YOU_OWE_ME')),
+            transferAccount TEXT CHECK(transferAccount IN ('OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT', 'CASH_ATM', 'DIGITAL_WALLET', 'CRYPTO', 'RECEIVABLE', 'TIME_DEPOSIT', 'LOAN', 'CREDIT_CARD', 'MORTGAGE', 'STUDENT_LOAN', 'I_OWE_YOU', 'YOU_OWE_ME', 'SAVINGS_GOAL')),
             linkedTransactionId TEXT,
             investmentId TEXT,
             debtId TEXT,
+            savingsGoalId TEXT,
             createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
             updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
         );
@@ -239,6 +240,29 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
         CREATE INDEX IF NOT EXISTS idx_debts_status ON debts(status);
         CREATE INDEX IF NOT EXISTS idx_debts_type ON debts(type);
         CREATE INDEX IF NOT EXISTS idx_debts_direction ON debts(direction);
+
+        -- Savings Goals table. No separate ledger table: contributions/spends/withdrawals/
+        -- sweeps are just rows in the transactions table tagged with savingsGoalId +
+        -- subCategory, same as how debts has no child payments table. Balance is always
+        -- derived from that ledger (calculateGoalBalance), never stored here.
+        CREATE TABLE IF NOT EXISTS savings_goals (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            targetAmount TEXT NOT NULL,
+            recurringAmount TEXT,
+            frequency TEXT,
+            category TEXT,
+            subCategory TEXT,
+            isPaused INTEGER DEFAULT 0,
+            recurrenceId TEXT,
+            currency TEXT DEFAULT 'PHP',
+            notes TEXT,
+            goalReachedNotifiedAt TEXT,
+            createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_savings_goals_paused ON savings_goals(isPaused);
 
         -- Monthly Summary table (precomputed narrative + structured data, one row per calendar month)
         CREATE TABLE IF NOT EXISTS monthly_summary (
@@ -584,6 +608,70 @@ export const migrateToVersion16 = async (db: SQLite.SQLiteDatabase): Promise<voi
         console.log('[Migration] Successfully migrated to version 16');
     } catch (error) {
         console.error('[Migration] Failed version 16 migration:', error);
+        throw error;
+    }
+};
+
+/**
+ * Migrate to Version 17: Savings Goals. Adds `savingsGoalId` to `transactions` and widens
+ * its `transferAccount` CHECK constraint with 'SAVINGS_GOAL' - same rebuild recipe as
+ * migrateToVersion11, since SQLite can't ALTER a CHECK constraint in place. The
+ * `savings_goals` table itself needs no migration - it's brand new, so createTables()'s
+ * unconditional CREATE TABLE IF NOT EXISTS already covers it on every existing install.
+ */
+export const migrateToVersion17 = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+    try {
+        console.log('[Migration] Starting migration to version 17...');
+
+        // 1. Rename existing table
+        await db.execAsync('ALTER TABLE transactions RENAME TO transactions_old');
+
+        // 2. Create new table with updated CHECK constraint + savingsGoalId column
+        await db.execAsync(`
+            CREATE TABLE IF NOT EXISTS transactions (
+                id TEXT PRIMARY KEY,
+                date TEXT NOT NULL,
+                amount TEXT NOT NULL,
+                type TEXT NOT NULL CHECK(type IN ('INCOME', 'EXPENSE', 'TRANSFER_IN', 'TRANSFER_OUT', 'CAPITAL_LOSS', 'CAPITAL_GAIN')),
+                category TEXT,
+                subCategory TEXT,
+                note TEXT,
+                creationMethod TEXT,
+                isRecurring INTEGER DEFAULT 0,
+                recurrenceId TEXT,
+                transferAccount TEXT CHECK(transferAccount IN ('OTHER_ACCOUNT', 'INVESTMENTS', 'DEBT', 'CASH_ATM', 'DIGITAL_WALLET', 'CRYPTO', 'RECEIVABLE', 'TIME_DEPOSIT', 'LOAN', 'CREDIT_CARD', 'MORTGAGE', 'STUDENT_LOAN', 'I_OWE_YOU', 'YOU_OWE_ME', 'SAVINGS_GOAL')),
+                linkedTransactionId TEXT,
+                investmentId TEXT,
+                debtId TEXT,
+                savingsGoalId TEXT,
+                createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+                updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // 3. Copy data (savingsGoalId has no source column yet - stays NULL for existing rows)
+        await db.execAsync(`
+            INSERT INTO transactions (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId, createdAt, updatedAt)
+            SELECT id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId, createdAt, updatedAt
+            FROM transactions_old
+        `);
+
+        // 4. Drop old table
+        await db.execAsync('DROP TABLE transactions_old');
+
+        // 5. Recreate indexes
+        await db.execAsync(`
+            CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date DESC);
+            CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+            CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category);
+            CREATE INDEX IF NOT EXISTS idx_transactions_recurring ON transactions(isRecurring);
+        `);
+
+        // 6. Update version
+        await setDatabaseVersion(db, 17);
+        console.log('[Migration] Successfully migrated to version 17');
+    } catch (error) {
+        console.error('[Migration] Failed version 17 migration:', error);
         throw error;
     }
 };

@@ -1,6 +1,7 @@
 import { getCachedTransactions } from '@services/domain/transactionService';
 import { getPortfolioStats, getPortfolioHoldings, getAllInvestments } from '@services/domain/investmentService';
 import { getAllDebts } from '@services/domain/debtService';
+import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
 import { getAllBudgets } from '@services/domain/budgetService';
 import { getAllMonthlySummaries, syncMonthlySummaries, MonthlySummaryRow } from '@services/domain/monthlySummaryService';
 import { getUserProfile } from '@services/core/storageService';
@@ -131,10 +132,11 @@ export const fetchChatContextInputs = async (excludeCategories: string[] = [], d
         await syncMonthlySummaries();
     }
 
-    const [transactions, allInvestments, debts, profile, cachedSummaries, portfolioStats, holdings, budgets] = await Promise.all([
+    const [transactions, allInvestments, debts, goals, profile, cachedSummaries, portfolioStats, holdings, budgets] = await Promise.all([
         getCachedTransactions(),
         getAllInvestments(),
         getAllDebts(),
+        getAllSavingsGoals(),
         getUserProfile(),
         needsFreshSummaries ? Promise.resolve<MonthlySummaryRow[]>([]) : getAllMonthlySummaries(),
         getPortfolioStats(),
@@ -144,7 +146,7 @@ export const fetchChatContextInputs = async (excludeCategories: string[] = [], d
 
     const currency = profile?.currency || 'PHP';
 
-    const snapshot = buildFinancialSnapshotData(transactions, debts, portfolioStats, holdings, budgets, excludeCategories, discloseDebtNames);
+    const snapshot = buildFinancialSnapshotData(transactions, debts, portfolioStats, holdings, budgets, excludeCategories, discloseDebtNames, goals);
     const snapshotText = renderFinancialSnapshotText(snapshot, currency);
 
     const summaries = needsFreshSummaries
