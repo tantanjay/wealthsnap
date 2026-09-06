@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
-import { useAlert } from '@context/AlertContext';
 import { Debt, DebtStatus, Transaction } from '@types';
+import { useConfirmDeleteDebt } from '@hooks/useConfirmDeleteDebt';
 
 interface DebtStatusModalProps {
     visible: boolean;
@@ -23,7 +23,7 @@ interface DebtStatusModalProps {
 // want to do to a debt record, behind the one gear icon on its card.
 const DebtStatusModal: React.FC<DebtStatusModalProps> = ({ visible, onClose, debt, onUpdateStatus, onEdit, onDelete, linkedTransaction }) => {
     const { colors } = useTheme();
-    const { showAlert } = useAlert();
+    const confirmDeleteDebt = useConfirmDeleteDebt(onDelete, onClose);
 
     if (!debt) return null;
 
@@ -39,25 +39,7 @@ const DebtStatusModal: React.FC<DebtStatusModalProps> = ({ visible, onClose, deb
         onClose();
     };
 
-    const handleDeletePress = () => {
-        showAlert(
-            "Delete Debt",
-            linkedTransaction
-                ? "This debt has a linked transaction. Deleting this will also delete the associated transaction record."
-                : "Are you sure you want to delete this debt record?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: () => {
-                        onDelete(debt.id, !!linkedTransaction);
-                        onClose();
-                    }
-                }
-            ]
-        );
-    };
+    const handleDeletePress = () => confirmDeleteDebt(debt.id, linkedTransaction);
 
     return (
         <BottomModal

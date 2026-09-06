@@ -377,7 +377,16 @@ const HomeScreen = ({ navigation }: any) => {
                     return sum;
                 }, new BigNumber(0));
 
-                totalRepaid = totalRepaid.plus(debtPrincipalRepaid);
+                // A debt resolved via manual status (Paid Off/Forgiven, e.g. settled outside the
+                // app with no matching transaction) would otherwise leave a permanent, confusing
+                // gap between Borrowed and Repaid. Once resolved, count it as fully repaid here -
+                // it's already excluded from currentTotalDebt below, so this only affects the
+                // lifetime Borrowed/Repaid totals, not the actual outstanding balance shown.
+                const lifetimeRepaid = debt.status !== 'ACTIVE'
+                    ? BigNumber.maximum(debtPrincipalRepaid, debt.initialAmount)
+                    : debtPrincipalRepaid;
+
+                totalRepaid = totalRepaid.plus(lifetimeRepaid);
 
                 // Month Repaid
                 const monthPayments = getDebtTransactions(debt.id, true);

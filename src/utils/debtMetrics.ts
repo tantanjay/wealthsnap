@@ -4,6 +4,32 @@ import { Debt, Transaction } from "@types";
 import { BigNumber } from "bignumber.js";
 
 /**
+ * Single source of truth for how a resolved debt is labeled, shared by every screen that
+ * shows one - DebtScreen's resolved list and DebtOptionsModal's badge previously each hardcoded
+ * their own version of this and disagreed ("PAID" vs "PAID OFF" for the same debt). Three
+ * distinct outcomes, not two:
+ * - PAID: balance reached zero through real transactions logged in the app.
+ * - PAID_OFF: manually marked resolved - settled outside the app (e.g. someone paid it off
+ *   on your behalf), so the ledger never actually saw a payment.
+ * - FORGIVEN: written off, by either side - never expected to be repaid.
+ * Returns null for a debt that isn't resolved at all (still ACTIVE with a real balance owed).
+ */
+export type DebtResolution = 'PAID' | 'PAID_OFF' | 'FORGIVEN';
+
+export const DEBT_RESOLUTION_LABELS: Record<DebtResolution, string> = {
+    PAID: 'PAID',
+    PAID_OFF: 'PAID OFF',
+    FORGIVEN: 'FORGIVEN',
+};
+
+export const getDebtResolution = (debt: Debt, currentBalance?: BigNumber): DebtResolution | null => {
+    if (debt.status === 'FORGIVEN') return 'FORGIVEN';
+    if (debt.status === 'PAID_OFF') return 'PAID_OFF';
+    if (currentBalance !== undefined && currentBalance.lte(0)) return 'PAID';
+    return null;
+};
+
+/**
  * Stable "Debt 1", "Debt 2"... numbering keyed by debt id, ordered by creation date - used
  * when a debt's real name is being withheld (e.g. chat context with debt disclosure off).
  * Both the financial snapshot and monthly summary builders call this with the SAME full
@@ -110,6 +136,12 @@ export const calculatePrevDebtObligations = (debts: Debt[], date: Date, transact
 
     return debts.reduce((sum, debt) => {
         if ((debt.direction || 'PAYABLE') !== 'PAYABLE') return sum;
+
+        // A debt manually marked PAID_OFF/FORGIVEN (e.g. settled outside the app, no matching
+        // ledger transaction) should stop counting here too, same as calculateTotalDebtObligations -
+        // otherwise its minPayment would count toward "prior obligations" forever, permanently
+        // skewing the runway-change trend the month it's resolved.
+        if (debt.status !== 'ACTIVE') return sum;
 
         // Only include if debt existed at that date
         // Use startDate or createdAt
@@ -348,7 +380,9 @@ export const getNextDueDate = (debt: Debt, transactions: Transaction[]): Date | 
             return tDate.getMonth() === candidateDate.getMonth() &&
                 tDate.getFullYear() === candidateDate.getFullYear();
         })
-        .filter(t => t.type === principalType || t.type === interestType)
+        // Fees share the same transaction `type` as interest for PAYABLE debts (both 'EXPENSE'),
+        // so excluding them requires checking category directly rather than relying on type alone.
+        .filter(t => (t.type === principalType || t.type === interestType) && t.category !== 'Fees')
         .reduce((sum, t) => sum.plus(t.amount), new BigNumber(0));
 
     // 3. Only advance to NEXT month once the cumulative payment meets the minimum.
@@ -359,4 +393,33 @@ export const getNextDueDate = (debt: Debt, transactions: Transaction[]): Date | 
     }
 
     return candidateDate;
+};
+
+export interface DebtUrgency {
+    nextDue: Date | null;
+    daysUntil: number;
+    isOverdue: boolean;
+    isDueSoon: boolean;
+}
+
+/**
+ * Single source of truth for "is this debt overdue / due soon" - DebtScreen previously had
+ * this same date-diff logic hand-copied in three places (a sort helper plus two render
+ * blocks) that could drift out of sync with each other.
+ */
+export const getDebtUrgency = (debt: Debt, transactions: Transaction[]): DebtUrgency => {
+    const nextDue = getNextDueDate(debt, transactions);
+    if (!nextDue) {
+        return { nextDue: null, daysUntil: 0, isOverdue: false, isDueSoon: false };
+    }
+
+    const now = new Date();
+    // Strictly compare DATES (ignore time) - nextDue strictly before today means overdue.
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const isOverdue = nextDue < todayStart;
+
+    const daysUntil = Math.ceil((nextDue.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const isDueSoon = daysUntil >= 0 && daysUntil <= 3;
+
+    return { nextDue, daysUntil, isOverdue, isDueSoon };
 };
