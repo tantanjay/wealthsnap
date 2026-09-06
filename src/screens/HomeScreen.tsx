@@ -11,6 +11,7 @@ import HomeSettingsModal from '@components/home/HomeSettingsModal';
 import HomeCashFlowCard from '@components/home/HomeCashFlowCard';
 import HomeInvestmentCard from '@components/home/HomeInvestmentCard';
 import HomeDebtCard from '@components/home/HomeDebtCard';
+import HomeSavingsGoalsCard from '@components/home/HomeSavingsGoalsCard';
 import HomeFinancialHealthCard from '@components/home/HomeFinancialHealthCard';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { Skeleton } from '@components/common/Skeleton';
@@ -36,6 +37,8 @@ import { getCachedTransactions } from '@services/domain/transactionService';
 import { getCachedInvestments } from '@services/domain/investmentService';
 import { getAllBudgets } from '@services/domain/budgetService';
 import { getAllDebts } from '@services/domain/debtService';
+import { getAllSavingsGoals, checkGoalReachedNotifications } from '@services/domain/savingsGoalService';
+import { calculateGoalBalance, calculateTotalGoalContributions } from '@utils/savingsGoalMetrics';
 import * as Storage from '@services/core/storageService';
 import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
 import { getLatestPrices } from '@services/domain/priceHistoryService';
@@ -80,6 +83,9 @@ const HomeScreen = ({ navigation }: any) => {
     const [monthDebtRepaid, setMonthDebtRepaid] = useState(new BigNumber(0));
     const [monthlyObligations, setMonthlyObligations] = useState(new BigNumber(0));
     const [monthlyObligationsPaid, setMonthlyObligationsPaid] = useState(new BigNumber(0));
+
+    const [savingsGoalsTotal, setSavingsGoalsTotal] = useState(new BigNumber(0));
+    const [savingsGoalsCount, setSavingsGoalsCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
     const [financialHealth, setFinancialHealth] = useState({
@@ -105,7 +111,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [debtDisplayMode, setDebtDisplayMode] = useState<Storage.DebtDisplayMode>('Total');
     const [financialHealthDisplayMode, setFinancialHealthDisplayMode] = useState<Storage.HomeFinancialHealthDisplayMode>('Health');
 
-    const [cardOrder, setCardOrder] = useState<string[]>(['financial-health', 'cash-flow', 'portfolio', 'debt', 'transactions']);
+    const [cardOrder, setCardOrder] = useState<string[]>(['financial-health', 'cash-flow', 'portfolio', 'debt', 'savings-goals', 'transactions']);
 
     // Info Modal State
     const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
@@ -171,6 +177,12 @@ const HomeScreen = ({ navigation }: any) => {
             const t = await getCachedTransactions();
             const inv = await getCachedInvestments();
             const allDebts = await getAllDebts();
+            const allGoals = await getAllSavingsGoals();
+
+            // Catches a goal that just crossed its target via a recurring auto-contribution
+            // the processRecurrenceRules() call above may have just generated - that engine
+            // has no per-transaction hook of its own to fire this from.
+            checkGoalReachedNotifications(t).catch(err => console.error('Failed to check goal-reached notifications:', err));
 
             setProfile(p);
             setTransactions(t);
@@ -472,7 +484,20 @@ const HomeScreen = ({ navigation }: any) => {
 
             // 8. Calculate Financial Health Metrics
             const currentCashBalance = oInc.plus(oTransIn).minus(oExp.plus(oTransOut));
-            const assetsTotal = currentCashBalance.plus(totalMarketValue);
+
+            // A goal contribution already reduced currentCashBalance above (it's a
+            // TRANSFER_OUT, summed into oTransOut like any other transfer) - so the goal's
+            // balance has to be added back as its own asset bucket here, exactly like
+            // totalMarketValue already is for investment purchases, or Net Worth would
+            // incorrectly drop on every contribution instead of staying flat.
+            const totalSavingsGoalsBalance = allGoals.reduce(
+                (sum, goal) => sum.plus(calculateGoalBalance(goal, t)),
+                new BigNumber(0)
+            );
+            setSavingsGoalsTotal(totalSavingsGoalsBalance);
+            setSavingsGoalsCount(allGoals.length);
+
+            const assetsTotal = currentCashBalance.plus(totalMarketValue).plus(totalSavingsGoalsBalance);
 
             // Calculate Runway & Budget
             // Get date of first transaction to determine "months active"
@@ -484,18 +509,28 @@ const HomeScreen = ({ navigation }: any) => {
                 monthsActive = Math.max(1, diffMonths);
             }
 
-            const average6MonthBurn = calculateBurnRate(t, 6);
-            const average3MonthBurn = calculateBurnRate(t, 3);
+            // Excludes savingsGoalId-tagged EXPENSE - a goal-funded purchase's cash already
+            // left when it was contributed to the goal (added back via
+            // totalGoalContributionsValue below), not when it was later spent (that spend
+            // nets to ₱0 cash impact via the Auto-Offset pair), so leaving it in here would
+            // double-count. Debt-tagged transactions are deliberately left as-is here,
+            // matching this screen's existing (pre-Savings-Goals) treatment of debt.
+            const nonGoalTransactions = t.filter(tx => !tx.savingsGoalId);
+            const average6MonthBurn = calculateBurnRate(nonGoalTransactions, 6);
+            const average3MonthBurn = calculateBurnRate(nonGoalTransactions, 3);
 
             let burnRate = average6MonthBurn;
             if (burnRate.isLessThanOrEqualTo(0)) {
                 burnRate = average3MonthBurn.isGreaterThan(0) ? average3MonthBurn : mExp;
             }
 
-            // --- INJECT DEBT OBLIGATIONS ---
-            // Runway = Cash / (Living Expenses + Debt Obligations)
-            // Already calculated totalDebtObligationsValue above
-            const totalBurnRate = burnRate.plus(totalDebtObligationsValue);
+            // --- INJECT DEBT OBLIGATIONS & SAVINGS GOAL CONTRIBUTIONS ---
+            // Runway = Cash / (Living Expenses + Debt Obligations + Goal Contributions)
+            // totalDebtObligationsValue already calculated above; goal contributions mirror
+            // it (a fixed monthly-equivalent derived from each active, unpaused goal's own
+            // settings - see calculateTotalGoalContributions).
+            const totalGoalContributionsValue = calculateTotalGoalContributions(allGoals);
+            const totalBurnRate = burnRate.plus(totalDebtObligationsValue).plus(totalGoalContributionsValue);
 
             const runway = totalBurnRate.isGreaterThan(0)
                 ? currentCashBalance.dividedBy(totalBurnRate) // Use CashBalance (Liquid) not TotalAssets
@@ -514,7 +549,7 @@ const HomeScreen = ({ navigation }: any) => {
                 // For strict alignment, we'd need to recalc burn rate as of last month.
                 // Using current burn rate as proxy for stability, or recalculating:
                 const prevDate = new Date(now.getFullYear(), now.getMonth(), 0); // End of last month
-                const prevBurnRate6 = calculateBurnRate(t, 6, prevDate);
+                const prevBurnRate6 = calculateBurnRate(nonGoalTransactions, 6, prevDate);
                 let prevBurnRate = prevBurnRate6;
                 if (prevBurnRate.isLessThanOrEqualTo(0)) {
                     // Fallback proxies
@@ -522,7 +557,12 @@ const HomeScreen = ({ navigation }: any) => {
                 }
 
                 const prevDebtObligations = calculatePrevDebtObligations(allDebts, prevDate, t);
-                const prevTotalBurnRate = prevBurnRate.plus(prevDebtObligations);
+                // No calculatePrevGoalContributions equivalent - goals have no historical
+                // isPaused/frequency audit trail to reconstruct "as of last month" from. Reusing
+                // today's totalGoalContributionsValue only affects this runway *trend* figure,
+                // not the primary Runway/Burn Rate above - see the same note in
+                // FinancialHealthScreen.tsx.
+                const prevTotalBurnRate = prevBurnRate.plus(prevDebtObligations).plus(totalGoalContributionsValue);
 
                 const prevRunway = prevTotalBurnRate.isGreaterThan(0)
                     ? prevCashBalance.dividedBy(prevTotalBurnRate)
@@ -933,6 +973,19 @@ const HomeScreen = ({ navigation }: any) => {
                                     }}
                                     displayMode={debtDisplayMode}
                                     onDisplayModeChange={handleDebtModeSwipe}
+                                />
+                            );
+
+                        case 'savings-goals':
+                            return (
+                                <HomeSavingsGoalsCard
+                                    key="savings-goals"
+                                    total={savingsGoalsTotal}
+                                    goalCount={savingsGoalsCount}
+                                    isLoading={isLoading}
+                                    isPrivacyEnabled={isPrivacyEnabled}
+                                    currency={profile?.currency || 'PHP'}
+                                    onPress={() => navigation.navigate('SavingsGoals')}
                                 />
                             );
 

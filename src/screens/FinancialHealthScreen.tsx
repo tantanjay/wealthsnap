@@ -11,6 +11,8 @@ import * as Storage from '@services/core/storageService';
 import { getCachedTransactions } from '@services/domain/transactionService';
 import { getCachedInvestments } from '@services/domain/investmentService';
 import { getAllDebts } from '@services/domain/debtService';
+import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
+import { calculateTotalGoalContributions } from '@utils/savingsGoalMetrics';
 import { getLatestPrices } from '@services/domain/priceHistoryService';
 import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
 import {
@@ -163,6 +165,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             const t = await getCachedTransactions();
             const inv = await getCachedInvestments();
             const debts = await getAllDebts();
+            const goals = await getAllSavingsGoals();
 
             const savedStrategy = await Storage.getDebtStrategy();
             if (savedStrategy === 'SNOWBALL' || savedStrategy === 'AVALANCHE') {
@@ -204,18 +207,22 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             });
             totalCash = oInc.minus(oExp);
 
-            // Filter out debt transactions from burn rate to avoid double-counting 
-            // the interest/fees, since we manually add the full minimum obligations below.
-            const nonDebtTransactions = t.filter(tx => !tx.debtId);
+            // Filter out debt transactions AND savingsGoalId-tagged EXPENSE from burn rate to
+            // avoid double-counting - interest/fees are added back via monthlyDebtObligations
+            // below, and a goal-funded purchase's cash already left when it was contributed
+            // to the goal (added back via monthlyGoalContributions), not when it was later
+            // spent (that spend nets to ₱0 cash impact via the Auto-Offset pair).
+            const nonDebtTransactions = t.filter(tx => !tx.debtId && !tx.savingsGoalId);
             const burnRate6 = calculateBurnRate(nonDebtTransactions, 6);
             const burnRate3 = calculateBurnRate(nonDebtTransactions, 3);
 
-            const currentNonDebt = currentMonthTransactions.filter(tx => !tx.debtId);
+            const currentNonDebt = currentMonthTransactions.filter(tx => !tx.debtId && !tx.savingsGoalId);
             const { expense: currentMonthNonDebtExpense } = calculateTotals(currentNonDebt);
             const baseBurnRate = burnRate6.gt(0) ? burnRate6 : (burnRate3.gt(0) ? burnRate3 : currentMonthNonDebtExpense);
 
             const monthlyDebtObligations = calculateTotalDebtObligations(debts);
-            const totalBurnRate = baseBurnRate.plus(monthlyDebtObligations);
+            const monthlyGoalContributions = calculateTotalGoalContributions(goals);
+            const totalBurnRate = baseBurnRate.plus(monthlyDebtObligations).plus(monthlyGoalContributions);
 
             const runway = totalBurnRate.gt(0) ? totalCash.dividedBy(totalBurnRate).toNumber() : 999;
 
@@ -231,7 +238,13 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             const prevCash = prevInc.minus(prevExp);
             const prevBurnRateBase = calculateBurnRate(nonDebtTransactions, 6, endOfLastMonth);
             const prevMonthlyDebtObligations = calculatePrevDebtObligations(debts, endOfLastMonth, t);
-            const prevTotalBurnRate = prevBurnRateBase.plus(prevMonthlyDebtObligations);
+            // No calculatePrevGoalContributions equivalent - goals have no historical
+            // isPaused/frequency audit trail to reconstruct "as of last month" from (unlike
+            // debt, which can derive past status from the transaction ledger). Reusing
+            // today's monthlyGoalContributions is a reasonable approximation since goal
+            // schedules rarely change month-to-month; only affects the runway *trend*
+            // (runwayChange below), not the primary Runway/Burn Rate figures above.
+            const prevTotalBurnRate = prevBurnRateBase.plus(prevMonthlyDebtObligations).plus(monthlyGoalContributions);
             const prevRunway = prevTotalBurnRate.gt(0) ? prevCash.dividedBy(prevTotalBurnRate).toNumber() : 999;
             const hasHistory = t.some(tx => new Date(tx.date) < new Date(now.getFullYear(), now.getMonth(), 1));
             const runwayChange = hasHistory ? (runway - prevRunway) : 0;

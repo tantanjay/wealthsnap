@@ -10,11 +10,13 @@ import { CategorySelectModal } from '@components/record/CategorySelectModal';
 import { RecurringOptions } from '@components/transaction/RecurringOptions';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
-import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency } from '@types';
+import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency, SavingsGoal } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS } from '@constants/categories';
-import { getRecentCategories, saveTransaction } from '@services/domain/transactionService';
+import { getRecentCategories, saveTransaction, getCachedTransactions } from '@services/domain/transactionService';
 import { saveRecurrenceRule } from '@services/domain/recurrenceService';
+import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
+import { calculateGoalBalance } from '@utils/savingsGoalMetrics';
 
 interface TransactionFormProps {
     transactionType: TransactionType;
@@ -59,6 +61,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     const [recentCategories, setRecentCategories] = useState<string[]>([]);
     const categoryScrollRef = useRef<ScrollView>(null);
 
+    // Funding Source (Savings Goals). Only offered when creating a new EXPENSE - editing an
+    // existing transaction doesn't re-run the Auto-Offset/Split-Funding creation logic below
+    // (mirrors how the recurring-rule block above only builds a *new* rule on create too).
+    const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
+    const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+    const [fundingGoalId, setFundingGoalId] = useState<string | undefined>(undefined);
+    const canPickFundingSource = type === 'EXPENSE' && !initialTransaction;
+
     const ITEM_WIDTH = 90;
     const ITEM_GAP = 8;
 
@@ -71,6 +81,38 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         };
         fetchRecent();
     }, [type]);
+
+    useEffect(() => {
+        if (!canPickFundingSource) return;
+        (async () => {
+            const [goals, txns] = await Promise.all([getAllSavingsGoals(), getCachedTransactions()]);
+            setSavingsGoals(goals);
+            setAllTransactions(txns);
+        })();
+        // canPickFundingSource only flips true/false based on `type`/`initialTransaction`,
+        // neither of which changes mid-session for this form instance - fine to load once.
+    }, [canPickFundingSource]);
+
+    // Forcing isRecurring off the moment a goal is picked (and clearing the goal the moment
+    // Recurring is turned on) is the only thing stopping both from being true at once -
+    // nothing else in this form or in RecurrenceRule.transactionTemplate prevents it, and a
+    // rule left with a stale savingsGoalId would silently keep re-spawning goal-tagged
+    // transactions forever.
+    const handleSelectFundingGoal = (goal: SavingsGoal | null) => {
+        if (goal) {
+            setFundingGoalId(goal.id);
+            setCategory(goal.category);
+            setSubCategory(goal.subCategory || '');
+            setIsRecurring(false);
+        } else {
+            setFundingGoalId(undefined);
+        }
+    };
+
+    const handleSetIsRecurring = (value: boolean) => {
+        if (value) setFundingGoalId(undefined);
+        setIsRecurring(value);
+    };
 
     const scrollToCategory = (cat: string) => {
         if (categoryScrollRef.current) {
@@ -88,9 +130,101 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         }
     };
 
+    const resetForm = () => {
+        setAmount('');
+        setCategory('');
+        setSubCategory('');
+        setNote('');
+        setIsRecurring(false);
+        setRecurringLabel('');
+        setFrequency('MONTHLY');
+        setStartDate(new Date());
+        setEndsNever(true);
+        setEndDate(new Date());
+        setFundingGoalId(undefined);
+    };
+
+    /**
+     * Auto-Offset + Split-Funding: saves the EXPENSE(s) + linked TRANSFER_IN(s) for a
+     * goal-funded expense, then resets form state. Bypasses the normal single-saveTransaction
+     * path below entirely - a goal-funded expense is never also a recurring transaction
+     * (enforced by handleSelectFundingGoal/handleSetIsRecurring above).
+     */
+    const saveGoalFundedExpense = async (goal: SavingsGoal, enteredAmount: BigNumber) => {
+        const now = new Date().toISOString();
+        const goalBalance = calculateGoalBalance(goal, allTransactions);
+        const goalPortion = BigNumber.minimum(enteredAmount, goalBalance);
+        const remainder = enteredAmount.minus(goalPortion);
+
+        if (goalPortion.isGreaterThan(0)) {
+            const expenseId = generateUUID();
+            const expense: Transaction = {
+                id: expenseId,
+                type: 'EXPENSE',
+                amount: goalPortion,
+                category,
+                subCategory: subCategory || undefined,
+                note: note || undefined,
+                date: transactionDate.toISOString(),
+                isRecurring: false,
+                savingsGoalId: goal.id,
+                creationMethod: 'MANUAL',
+                createdAt: now,
+                updatedAt: now,
+            };
+            // Save the EXPENSE first so the offsetting TRANSFER_IN can link to its real id -
+            // same order DebtScreen's handlePaymentSubmit saves its principal leg before the
+            // interest/fee legs that link back to it.
+            await saveTransaction(expense);
+
+            const offset: Transaction = {
+                id: generateUUID(),
+                type: 'TRANSFER_IN',
+                amount: goalPortion,
+                category,
+                subCategory: 'GOAL_SPEND',
+                date: transactionDate.toISOString(),
+                isRecurring: false,
+                transferAccount: 'SAVINGS_GOAL',
+                savingsGoalId: goal.id,
+                linkedTransactionId: expenseId,
+                createdAt: now,
+                updatedAt: now,
+            };
+            await saveTransaction(offset);
+        }
+
+        // Split Funding: whatever the goal's balance couldn't cover comes out of general
+        // cash as a fully separate, untagged expense - never merged into the row above.
+        if (remainder.isGreaterThan(0)) {
+            const plainExpense: Transaction = {
+                id: generateUUID(),
+                type: 'EXPENSE',
+                amount: remainder,
+                category,
+                subCategory: subCategory || undefined,
+                note: note || undefined,
+                date: transactionDate.toISOString(),
+                isRecurring: false,
+                creationMethod: 'MANUAL',
+                createdAt: now,
+                updatedAt: now,
+            };
+            await saveTransaction(plainExpense);
+        }
+    };
+
     const handleSave = async () => {
         if (!amount || !category) {
             showAlert('Missing Info', 'Please enter amount and category.');
+            return;
+        }
+
+        const selectedGoal = fundingGoalId ? savingsGoals.find(g => g.id === fundingGoalId) : undefined;
+        if (selectedGoal) {
+            await saveGoalFundedExpense(selectedGoal, new BigNumber(amount));
+            resetForm();
+            if (initialTransaction) onSave();
             return;
         }
 
@@ -164,22 +298,19 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             isRecurring,
             recurrenceId: recurrenceRuleId,
             creationMethod: initialTransaction?.creationMethod || 'MANUAL',
+            // Editing an existing tagged transaction here (reachable today for a debt
+            // principal repayment, per HistoryListItem's isDebtRepayment tap-gating) must
+            // not silently drop its entity tag - this form has no UI for these, so just
+            // carry whatever was already there straight through.
+            investmentId: initialTransaction?.investmentId,
+            debtId: initialTransaction?.debtId,
+            savingsGoalId: initialTransaction?.savingsGoalId,
             createdAt: initialTransaction?.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
 
         await saveTransaction(newTransaction);
-
-        setAmount('');
-        setCategory('');
-        setSubCategory('');
-        setNote('');
-        setIsRecurring(false);
-        setRecurringLabel('');
-        setFrequency('MONTHLY');
-        setStartDate(new Date());
-        setEndsNever(true);
-        setEndDate(new Date());
+        resetForm();
 
         if (initialTransaction) {
             onSave();
@@ -390,6 +521,61 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     </ScrollView>
                 </View>
 
+                {/* Funding Source (Savings Goals) */}
+                {canPickFundingSource && savingsGoals.length > 0 && (
+                    <View style={{ marginBottom: 10 }}>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 8, marginLeft: 4 }}>Funding Source</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: ITEM_GAP }}>
+                            <TouchableOpacity
+                                onPress={() => handleSelectFundingGoal(null)}
+                                style={{
+                                    paddingVertical: 12,
+                                    paddingHorizontal: 14,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    borderRadius: 12,
+                                    borderWidth: 1.5,
+                                    borderColor: !fundingGoalId ? colors.primary : 'transparent',
+                                    backgroundColor: !fundingGoalId ? colors.primary + '15' : colors.surface || '#f5f5f5',
+                                }}
+                            >
+                                <Text style={{ color: !fundingGoalId ? colors.primary : colors.text, fontSize: 12, fontWeight: !fundingGoalId ? '700' : '500' }}>
+                                    General Funds
+                                </Text>
+                            </TouchableOpacity>
+
+                            {savingsGoals.map((goal) => {
+                                const isActive = fundingGoalId === goal.id;
+                                return (
+                                    <TouchableOpacity
+                                        key={goal.id}
+                                        onPress={() => handleSelectFundingGoal(goal)}
+                                        style={{
+                                            paddingVertical: 12,
+                                            paddingHorizontal: 14,
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            borderRadius: 12,
+                                            borderWidth: 1.5,
+                                            borderColor: isActive ? colors.primary : 'transparent',
+                                            backgroundColor: isActive ? colors.primary + '15' : colors.surface || '#f5f5f5',
+                                        }}
+                                    >
+                                        <Text style={{ color: isActive ? colors.primary : colors.text, fontSize: 12, fontWeight: isActive ? '700' : '500' }} numberOfLines={1}>
+                                            {goal.name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                        {fundingGoalId && (
+                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 6, marginLeft: 4 }}>
+                                This still logs as a normal expense - it just draws from the goal instead of general cash.
+                            </Text>
+                        )}
+                    </View>
+                )}
+
                 {/* Note */}
                 <Card>
                     <Text style={{ color: colors.textSecondary }}>Note (Optional)</Text>
@@ -402,21 +588,24 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     />
                 </Card>
 
-                {/* Recurring */}
-                <RecurringOptions
-                    isRecurring={isRecurring}
-                    setIsRecurring={setIsRecurring}
-                    recurringLabel={recurringLabel}
-                    setRecurringLabel={setRecurringLabel}
-                    frequency={frequency}
-                    setFrequency={setFrequency}
-                    startDate={startDate}
-                    setStartDate={setStartDate}
-                    endsNever={endsNever}
-                    setEndsNever={setEndsNever}
-                    endDate={endDate}
-                    setEndDate={setEndDate}
-                />
+                {/* Recurring - hidden while a goal is selected as funding source, since a
+                    goal-funded expense is never also a recurring transaction */}
+                {!fundingGoalId && (
+                    <RecurringOptions
+                        isRecurring={isRecurring}
+                        setIsRecurring={handleSetIsRecurring}
+                        recurringLabel={recurringLabel}
+                        setRecurringLabel={setRecurringLabel}
+                        frequency={frequency}
+                        setFrequency={setFrequency}
+                        startDate={startDate}
+                        setStartDate={setStartDate}
+                        endsNever={endsNever}
+                        setEndsNever={setEndsNever}
+                        endDate={endDate}
+                        setEndDate={setEndDate}
+                    />
+                )}
 
                 {/* Modals */}
                 <CalculatorModal

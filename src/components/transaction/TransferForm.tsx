@@ -21,7 +21,10 @@ interface TransferFormProps {
 
 type TransferDirection = 'IN' | 'OUT';
 
-const DEST_CONFIG: Record<TransferAccount, { icon: string; label: string }> = {
+// Excludes 'SAVINGS_GOAL': that transferAccount value is only ever stamped programmatically
+// by savingsGoalService (contribution/withdrawal/sweep), always paired with a specific
+// savingsGoalId - it's not a generic manual-transfer destination a user picks here.
+const DEST_CONFIG: Record<Exclude<TransferAccount, 'SAVINGS_GOAL'>, { icon: string; label: string }> = {
     OTHER_ACCOUNT: { icon: 'swap-horizontal', label: 'Account' },
     INVESTMENTS: { icon: 'trending-up', label: 'Invest' },
     DEBT: { icon: 'card-outline', label: 'Debt' },
@@ -229,7 +232,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({
                         flexWrap: 'wrap',
                         justifyContent: 'space-between'
                     }}>
-                        {(Object.keys(DEST_CONFIG) as TransferAccount[]).map((opt) => {
+                        {(Object.keys(DEST_CONFIG) as Exclude<TransferAccount, 'SAVINGS_GOAL'>[]).map((opt) => {
                             const isActive = selectedDestOption === opt;
                             const config = DEST_CONFIG[opt];
 

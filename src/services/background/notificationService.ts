@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
-import { Transaction, Budget } from '@types';
+import { BigNumber } from 'bignumber.js';
+import { Transaction, Budget, SavingsGoal } from '@types';
 import { detectAnomalies } from '@utils/financialMetrics';
 import { ASYNC_KEYS } from '@constants/config';
 import { REMINDER_BACKGROUND_TASK } from '@services/background/backgroundTasks';
@@ -120,6 +121,46 @@ export const checkAndNotifyAnomalies = async (
 
     } catch (error) {
         console.error('Error in checkAndNotifyAnomalies:', error);
+    }
+};
+
+/**
+ * Fires a one-time "goal reached" notification once a goal's current balance is at or over
+ * its target. Dedup is once-ever (not once-per-month like checkAndNotifyAnomalies) via the
+ * goal's own goalReachedNotifiedAt field rather than the month-keyed AsyncStorage map that
+ * pattern uses - "reached" only ever needs to fire once, so no before/after transition check
+ * is needed either: whatever got the balance to/past target (initial funding, a manual
+ * top-up, or a recurring auto-contribution - including a multi-occurrence catch-up run)
+ * fires it exactly the same way, checked at the same single call site.
+ * Returns the ISO timestamp to persist as goalReachedNotifiedAt if it fired, else null - the
+ * caller (savingsGoalService, which already holds the goal) is responsible for saving it, to
+ * avoid a circular import between this file and savingsGoalService.
+ */
+export const checkAndNotifyGoalReached = async (
+    goal: SavingsGoal,
+    currentBalance: BigNumber
+): Promise<string | null> => {
+    try {
+        if (goal.goalReachedNotifiedAt) return null; // already notified once, ever
+        if (!goal.targetAmount || goal.targetAmount.isLessThanOrEqualTo(0)) return null;
+        if (currentBalance.isLessThan(goal.targetAmount)) return null; // not there yet
+
+        const status = await getPermissionStatus();
+        if (status !== 'granted') return null;
+
+        await Notifications.scheduleNotificationAsync({
+            content: {
+                title: 'Savings Goal Reached! 🎉',
+                body: `You've hit your "${goal.name}" goal.`,
+                data: { type: 'SAVINGS_GOAL_REACHED', goalId: goal.id },
+            },
+            trigger: null, // Send immediately
+        });
+
+        return new Date().toISOString();
+    } catch (error) {
+        console.error('Error in checkAndNotifyGoalReached:', error);
+        return null;
     }
 };
 
