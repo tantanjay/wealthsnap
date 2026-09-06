@@ -9,6 +9,8 @@ import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface HomeSavingsGoalsCardProps {
     total: BigNumber;
+    target: BigNumber;
+    spent: BigNumber;
     goalCount: number;
     isLoading: boolean;
     isPrivacyEnabled: boolean;
@@ -18,6 +20,8 @@ interface HomeSavingsGoalsCardProps {
 
 const HomeSavingsGoalsCard: React.FC<HomeSavingsGoalsCardProps> = ({
     total,
+    target,
+    spent,
     goalCount,
     isLoading,
     isPrivacyEnabled,
@@ -36,18 +40,44 @@ const HomeSavingsGoalsCard: React.FC<HomeSavingsGoalsCardProps> = ({
                     <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Total Saved</Text>
                     <Ionicons name="wallet" size={24} color={colors.white} />
                 </View>
-                <Text style={{ color: colors.white, fontSize: 32, fontWeight: 'bold' }}>
-                    {isLoading ? (
-                        <Skeleton width={120} height={36} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
-                    ) : (
-                        isPrivacyEnabled ? '****' : formatCurrencyAmount(total, currency)
-                    )}
-                </Text>
-
-                {!isLoading && (
-                    <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12, marginTop: 6 }}>
-                        {goalCount === 0 ? 'No goals yet' : `${goalCount} goal${goalCount === 1 ? '' : 's'}`}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <Text style={{ color: colors.white, fontSize: 32, fontWeight: 'bold' }}>
+                        {isLoading ? (
+                            <Skeleton width={120} height={36} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                        ) : (
+                            isPrivacyEnabled ? '****' : formatCurrencyAmount(total, currency)
+                        )}
                     </Text>
+                    {!isLoading && (
+                        <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>
+                            {goalCount === 0 ? 'No goals yet' : `${goalCount} goal${goalCount === 1 ? '' : 's'}`}
+                        </Text>
+                    )}
+                </View>
+
+                {!isLoading && goalCount > 0 && (
+                    <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <View>
+                            <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Total Target</Text>
+                            <Text style={{
+                                color: colors.white,
+                                fontWeight: 'bold',
+                                opacity: isPrivacyEnabled ? 0.5 : 1
+                            }}>
+                                {isPrivacyEnabled ? '****' : formatCurrencyAmount(target, currency)}
+                            </Text>
+                        </View>
+                        <View>
+                            <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Total Spent</Text>
+                            <Text style={{
+                                color: colors.white,
+                                fontWeight: 'bold',
+                                opacity: isPrivacyEnabled ? 0.5 : 1
+                            }}>
+                                {isPrivacyEnabled ? '****' : formatCurrencyAmount(spent, currency)}
+                            </Text>
+                        </View>
+                    </View>
                 )}
 
                 {isLoading ? (

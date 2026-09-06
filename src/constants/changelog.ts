@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Savings Goals**: set aside cash for a specific purpose (travel fund, annual insurance, car maintenance) and spend it down over time from a new dashboard widget and dedicated screen.
+  - Contributions count toward Burn Rate, Runway, Safe-to-Spend, and Avg Daily Spending; spending from a goal doesn't double-count them or spike your trend charts — an in-app guide explains how.
+  - A purchase bigger than the goal's balance splits automatically between the goal and your general funds, with a confirmation explaining the split before it saves.
+  - Recurring auto-contributions, a one-time notification when a goal hits its target, and pause/resume, manual top-up, and withdraw-to-cash actions.
+  - Included in History, Monthly Summary, Chat, backup/restore, Excel export, and multi-device sync.
+
+### Changed
+- History: Yearly filter now shows a tap-to-jump list of years with data instead of stepping through with arrows; Monthly's year header got the same shortcut.
+
+### Fixed
+- History: a row with no note showed its raw internal type or subtype code (e.g. \`TRANSFER_IN\`, \`INITIAL_FUNDING\`) instead of a clean label.
+
 ## [1.17.0] — 2026-09-06
 
 ### Added
