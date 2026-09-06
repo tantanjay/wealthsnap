@@ -15,24 +15,33 @@ const currencyFloors: Record<string, number> = {
     'INR': 1000,
 };
 
+// Single source of truth for the "clean number" magnitude tiers - roundToCleanAmount,
+// roundDownToCleanAmount, and getScenarioStep all derive from this instead of each
+// hand-copying the same thresholds (which drifted out of sync with each other before).
+const SCALE_TIERS: readonly { threshold: number; unit: number }[] = [
+    { threshold: 50000, unit: 5000 },
+    { threshold: 10000, unit: 1000 },
+    { threshold: 1000, unit: 500 },
+];
+const DEFAULT_UNIT = 100;
+
+const getCleanUnit = (amount: number): number =>
+    SCALE_TIERS.find(tier => amount > tier.threshold)?.unit ?? DEFAULT_UNIT;
+
 // Clean-number rounding, scaled to the amount's own magnitude - shared by every path that
 // produces a scenario default, not just the income-based one, so a raw derived value
 // (e.g. a historical average) never bypasses this and shows up with cents attached.
 const roundToCleanAmount = (amount: number): number => {
-    if (amount > 50000) return Math.round(amount / 5000) * 5000;
-    if (amount > 10000) return Math.round(amount / 1000) * 1000;
-    if (amount > 1000) return Math.round(amount / 500) * 500; // e.g., 3400 -> 3500
-    return Math.round(amount / 100) * 100;
+    const unit = getCleanUnit(amount);
+    return Math.round(amount / unit) * unit;
 };
 
 // Same tiers as roundToCleanAmount but always rounds DOWN - for when a suggestion must never
 // exceed a hard cap (e.g. available surplus), where rounding to the nearest clean number could
 // round back up past it.
 const roundDownToCleanAmount = (amount: number): number => {
-    if (amount > 50000) return Math.floor(amount / 5000) * 5000;
-    if (amount > 10000) return Math.floor(amount / 1000) * 1000;
-    if (amount > 1000) return Math.floor(amount / 500) * 500;
-    return Math.floor(amount / 100) * 100;
+    const unit = getCleanUnit(amount);
+    return Math.floor(amount / unit) * unit;
 };
 
 /**
@@ -70,12 +79,7 @@ export const getSmartScenarioAmount = (monthlyIncome: BigNumber, currency: strin
 
 /**
  * Step size for a +/- stepper adjusting a scenario amount, scaled to the amount's own
- * magnitude so it stays a "clean" round number at whatever scale it's currently at -
- * mirrors getSmartScenarioAmount's own rounding tiers rather than assuming one currency's scale.
+ * magnitude so it stays a "clean" round number at whatever scale it's currently at - shares
+ * SCALE_TIERS with getSmartScenarioAmount's own rounding rather than assuming one currency's scale.
  */
-export const getScenarioStep = (amount: number): number => {
-    if (amount > 50000) return 5000;
-    if (amount > 10000) return 1000;
-    if (amount > 1000) return 500;
-    return 100;
-};
+export const getScenarioStep = (amount: number): number => getCleanUnit(amount);

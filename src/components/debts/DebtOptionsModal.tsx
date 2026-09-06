@@ -4,9 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
-import { useAlert } from '@context/AlertContext';
 import { Debt, Transaction } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { getDebtResolution, DEBT_RESOLUTION_LABELS } from '@utils/debtMetrics';
+import { useConfirmDeleteDebt } from '@hooks/useConfirmDeleteDebt';
 
 interface DebtOptionsModalProps {
     visible: boolean;
@@ -28,30 +29,15 @@ const DebtOptionsModal: React.FC<DebtOptionsModalProps> = ({
     currency = 'PHP'
 }) => {
     const { colors } = useTheme();
-    const { showAlert } = useAlert();
+    const confirmDeleteDebt = useConfirmDeleteDebt(onDelete, onClose);
 
     if (!debt) return null;
 
-    const handleDeletePress = () => {
-        showAlert(
-            "Delete Debt",
-            linkedTransaction
-                ? "This debt has a linked transaction. Deleting this will also delete the associated transaction record."
-                : "Are you sure you want to delete this debt record?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: () => {
-                        onDelete(debt.id, !!linkedTransaction);
-                        onClose();
-                    }
-                }
-            ]
-        );
-    };
+    const handleDeletePress = () => confirmDeleteDebt(debt.id, linkedTransaction);
 
+    // This badge only ever shows for a non-ACTIVE debt (gated below), so no currentBalance
+    // is needed here - PAID (real-payment) never applies to a still-ACTIVE record.
+    const resolution = getDebtResolution(debt);
     const isPayable = debt.direction === 'PAYABLE';
     const iconColor = isPayable ? colors.error : colors.success;
     const iconName = isPayable ? "arrow-down-circle-outline" : "arrow-up-circle-outline";
@@ -83,19 +69,19 @@ const DebtOptionsModal: React.FC<DebtOptionsModalProps> = ({
                         <View style={styles.details}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                                 <Text style={[styles.category, { color: colors.text }]}>{debt.name}</Text>
-                                {debt.status !== 'ACTIVE' && (
+                                {resolution && (
                                     <View style={{
                                         paddingHorizontal: 6,
                                         paddingVertical: 1,
                                         borderRadius: 4,
-                                        backgroundColor: (debt.status === 'FORGIVEN' ? colors.textSecondary : colors.success) + '20'
+                                        backgroundColor: (resolution === 'FORGIVEN' ? colors.textSecondary : colors.success) + '20'
                                     }}>
                                         <Text style={{
                                             fontSize: 10,
                                             fontWeight: 'bold',
-                                            color: debt.status === 'FORGIVEN' ? colors.textSecondary : colors.success
+                                            color: resolution === 'FORGIVEN' ? colors.textSecondary : colors.success
                                         }}>
-                                            {debt.status === 'FORGIVEN' ? 'FORGIVEN' : 'PAID OFF'}
+                                            {DEBT_RESOLUTION_LABELS[resolution]}
                                         </Text>
                                     </View>
                                 )}

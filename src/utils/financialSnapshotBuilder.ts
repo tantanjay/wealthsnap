@@ -252,8 +252,13 @@ export const renderFinancialSnapshotText = (data: FinancialSnapshotData, currenc
                 statusLabel = d.currentBalance > 0
                     ? `Paid Off (marked manually - tracked balance never reached zero, e.g. paid by someone else)`
                     : 'Paid Off';
-            } else {
+            } else if (d.status === 'FORGIVEN') {
                 statusLabel = d.direction === 'PAYABLE' ? 'Forgiven by the lender' : 'Forgiven by the user (written off, not expecting repayment)';
+            } else {
+                // Defensive fallback for malformed/missing status (e.g. a record restored from a
+                // pre-status-field backup) - report it plainly instead of asserting "Forgiven",
+                // which would misinform the AI (and the user, via chat) about this debt.
+                statusLabel = `Unknown status, balance ${fmt(d.currentBalance, currency)}`;
             }
             lines.push(`  ${d.name} (${typeLabel}, ${directionLabel}) - ${statusLabel}`);
         });

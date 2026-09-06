@@ -174,8 +174,11 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                 // than re-deriving it here - a separate local formula previously disagreed with
                 // the canonical one at the edges (e.g. claiming "you'll never pay this off" for
                 // a debt that's merely large relative to savings, not because savings are low).
-                const isForever = !data.investableSurplus || data.investableSurplus.lte(0);
                 const yearsToPayoff = data.freedomDelayYears ?? 0;
+                // Still "Forever" if savings can't cover it at all, or if the payoff is so far out
+                // (e.g. a huge debt against a tiny-but-positive surplus) that a literal year count
+                // reads as a broken number rather than a useful one.
+                const isForever = !data.investableSurplus || data.investableSurplus.lte(0) || yearsToPayoff > 50;
                 const annualSavings = !isForever && data.investableSurplus
                     ? data.investableSurplus.times(12)
                     : new BigNumber(0);

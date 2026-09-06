@@ -105,7 +105,12 @@ const DebtPressureCard: React.FC<DebtPressureCardProps> = ({
                 <View style={styles.column}>
                     <Text style={[styles.label, { color: colors.textSecondary }]}>Self-sustain Impact:</Text>
                     <Text style={[styles.value, { color: colors.error, fontSize: 16, fontWeight: '500' }]}>
-                        Debt delays self-sustain by {freedomDelayYears.toFixed(1)} years
+                        {/* Same >50yr "Forever" framing as the Help Modal (both derive it from this
+                            same freedomDelayYears value) - otherwise the card could show a literal
+                            "4166.7 years" while its own info modal calls it "Forever". */}
+                        {freedomDelayYears > 50
+                            ? 'Debt delays self-sustain indefinitely'
+                            : `Debt delays self-sustain by ${freedomDelayYears.toFixed(1)} years`}
                     </Text>
                     <Text style={{ color: colors.textSecondary, fontSize: 12, fontStyle: 'italic', marginTop: 4 }}>
                         This shrinks as you pay down principal.

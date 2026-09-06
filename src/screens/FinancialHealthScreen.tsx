@@ -99,6 +99,11 @@ const FinancialHealthScreen = ({ navigation }: any) => {
     // back to the freshly-computed smart default.
     const isScenarioManual = useRef(false);
 
+    // The user's actual payoff strategy (set on DebtScreen) - loaded fresh in loadData() below
+    // so this stays in sync with whatever DebtScreen last saved, and the scenario simulation
+    // agrees with DebtScreen's own Priority Payoff Order instead of assuming AVALANCHE.
+    const [payoffStrategy, setPayoffStrategy] = useState<'SNOWBALL' | 'AVALANCHE'>('AVALANCHE');
+
     const handleScenarioStep = (delta: 1 | -1) => {
         isScenarioManual.current = true;
         setDebtState(prev => {
@@ -116,15 +121,15 @@ const FinancialHealthScreen = ({ navigation }: any) => {
     const scenarioMonthsSaved = useMemo(() => {
         if (debtState.isDebtFree || debtState.payableDebts.length === 0 || debtState.scenarioAddedPayment <= 0) return 0;
 
-        const baseline = calculateDebtPayoffStrategy(debtState.payableDebts, 0, 'AVALANCHE');
-        const scenario = calculateDebtPayoffStrategy(debtState.payableDebts, debtState.scenarioAddedPayment, 'AVALANCHE');
+        const baseline = calculateDebtPayoffStrategy(debtState.payableDebts, 0, payoffStrategy);
+        const scenario = calculateDebtPayoffStrategy(debtState.payableDebts, debtState.scenarioAddedPayment, payoffStrategy);
 
         const monthsBetween =
             (baseline.freedomDate.getFullYear() - scenario.freedomDate.getFullYear()) * 12 +
             (baseline.freedomDate.getMonth() - scenario.freedomDate.getMonth());
 
         return Math.max(0, monthsBetween);
-    }, [debtState.isDebtFree, debtState.payableDebts, debtState.scenarioAddedPayment]);
+    }, [debtState.isDebtFree, debtState.payableDebts, debtState.scenarioAddedPayment, payoffStrategy]);
 
     const [wealthState, setWealthState] = useState<WealthState>({
         portfolioValue: new BigNumber(0),
@@ -158,6 +163,11 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             const t = await getCachedTransactions();
             const inv = await getCachedInvestments();
             const debts = await getAllDebts();
+
+            const savedStrategy = await Storage.getDebtStrategy();
+            if (savedStrategy === 'SNOWBALL' || savedStrategy === 'AVALANCHE') {
+                setPayoffStrategy(savedStrategy);
+            }
 
             const now = new Date();
             const currentMonthTransactions = getTransactionsByMonth(t, now);
