@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - History: Yearly filter now shows a tap-to-jump list of years with data instead of stepping through with arrows; Monthly's year header got the same shortcut.
+- Build: Removed the forced-portrait lock Google's ML Kit scanner activities (barcode/document scanning) impose on Android, so large-screen and foldable devices aren't restricted to portrait.
 
 ### Fixed
 - History: a row with no note showed its raw internal type or subtype code (e.g. `TRANSFER_IN`, `INITIAL_FUNDING`) instead of a clean label.
