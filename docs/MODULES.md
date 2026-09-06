@@ -14,6 +14,7 @@ Tab: `Home`. Aggregated summary cards linking out to other modules.
 - `src/components/home/HomeDebtCard.tsx`
 - `src/components/home/HomeFinancialHealthCard.tsx`
 - `src/components/home/HomeInvestmentCard.tsx`
+- `src/components/home/HomeSavingsGoalsCard.tsx`
 - `src/components/home/HomeSettingsModal.tsx`
 - `src/components/home/HomeTransactionsCard.tsx`
 - `src/components/home/TopTransactions.tsx`
@@ -100,6 +101,18 @@ Reached from Home. Debt tracking and payoff templates.
 - `src/services/domain/debtService.ts`
 - `src/utils/debtMetrics.ts`
 - `src/constants/debtTemplates.ts`
+
+## Savings Goals
+Reached from Home. Set aside cash for a purpose (Travel Fund, Annual Insurance, etc.) and spend it down over time.
+
+- `src/screens/SavingsGoalsScreen.tsx`
+- `src/components/savingsGoals/SavingsGoalForm.tsx`
+- `src/components/savingsGoals/SavingsGoalOptionsModal.tsx`
+- `src/components/savingsGoals/SavingsGoalAmountModal.tsx`
+- `src/components/savingsGoals/SavingsGoalsInfoModal.tsx`
+- `src/hooks/useConfirmDeleteSavingsGoal.ts`
+- `src/services/domain/savingsGoalService.ts`
+- `src/utils/savingsGoalMetrics.ts`
 
 ## Financial Health
 Reached from Home. Composite score, cash flow, wealth growth, debt pressure.
