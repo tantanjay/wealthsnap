@@ -109,7 +109,13 @@ export const deleteSavingsGoal = async (id: string): Promise<void> => {
         const db = await getDatabase();
         await db.withTransactionAsync(async () => {
             await db.runAsync('DELETE FROM savings_goals WHERE id = ?', [id]);
-            await upsertTombstone('savings_goals', id);
+            // Tombstone type must match the SYNC_ENTITY_REGISTRY/ENTITY_REGISTRY key
+            // ('savingsGoals', camelCase) - NOT the SQL table name. Every other entity
+            // follows this same convention (e.g. 'recurrenceRules', not 'recurrence_rules');
+            // getTombstonesForTypes(SYNC_ENTITY_KEYS) in syncService.ts looks up by registry
+            // key, so a mismatched type here would silently stop this deletion from ever
+            // propagating to another device during merge sync.
+            await upsertTombstone('savingsGoals', id);
         });
     } catch (error) {
         console.error('Error deleting savings goal:', error);

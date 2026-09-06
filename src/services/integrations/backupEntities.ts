@@ -8,6 +8,7 @@ import { bulkSaveAssets, getAllAssets } from '@services/domain/assetService';
 import { bulkSavePriceHistories, getAllPriceHistories } from '@services/domain/priceHistoryService';
 import { bulkSaveDividendHistories, getAllDividendHistories } from '@services/domain/dividendHistoryService';
 import { bulkSaveDebts, getAllDebts } from '@services/domain/debtService';
+import { bulkSaveSavingsGoals, getAllSavingsGoals } from '@services/domain/savingsGoalService';
 
 export interface EntityFkField<T> {
     field: keyof T & string;   // top-level field on this entity holding a foreign id
@@ -26,6 +27,7 @@ export interface EntityDescriptor<T = any> {
 export const ENTITY_REGISTRY: EntityDescriptor[] = [
     { key: 'categories', label: 'Categories', getAll: getAllCategories, bulkSave: bulkSaveCategories, hasId: true },
     { key: 'debts', label: 'Debts', getAll: getAllDebts, bulkSave: bulkSaveDebts, hasId: true },
+    { key: 'savingsGoals', label: 'Savings Goals', getAll: getAllSavingsGoals, bulkSave: bulkSaveSavingsGoals, hasId: true },
     { key: 'recurrenceRules', label: 'Recurring Rules', getAll: getAllRecurrenceRules, bulkSave: bulkSaveRecurrenceRules, hasId: true },
     {
         key: 'investments', label: 'Investments', getAll: getAllInvestments, bulkSave: bulkSaveInvestments, hasId: true,
@@ -37,6 +39,7 @@ export const ENTITY_REGISTRY: EntityDescriptor[] = [
             { field: 'recurrenceId', refEntity: 'recurrenceRules' },
             { field: 'investmentId', refEntity: 'investments' },
             { field: 'debtId', refEntity: 'debts' },
+            { field: 'savingsGoalId', refEntity: 'savingsGoals' },
         ],
     },
     {
