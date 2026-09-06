@@ -17,6 +17,7 @@ import { getRecentCategories, saveTransaction, getCachedTransactions } from '@se
 import { saveRecurrenceRule } from '@services/domain/recurrenceService';
 import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
 import { calculateGoalBalance } from '@utils/savingsGoalMetrics';
+import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface TransactionFormProps {
     transactionType: TransactionType;
@@ -222,9 +223,32 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
         const selectedGoal = fundingGoalId ? savingsGoals.find(g => g.id === fundingGoalId) : undefined;
         if (selectedGoal) {
-            await saveGoalFundedExpense(selectedGoal, new BigNumber(amount));
-            resetForm();
-            if (initialTransaction) onSave();
+            const enteredAmount = new BigNumber(amount);
+            const goalBalance = calculateGoalBalance(selectedGoal, allTransactions);
+            const finish = async () => {
+                await saveGoalFundedExpense(selectedGoal, enteredAmount);
+                resetForm();
+                if (initialTransaction) onSave();
+            };
+
+            // Split Funding: the goal can't cover the whole amount, so this would otherwise
+            // drive its balance negative. Explain the split before committing, since it's
+            // not obvious from the amount field alone that part of this will land as a
+            // separate, untagged expense against general cash.
+            if (enteredAmount.isGreaterThan(goalBalance)) {
+                const remainder = enteredAmount.minus(goalBalance);
+                showAlert(
+                    'Not Enough in This Goal',
+                    `"${selectedGoal.name}" only has ${formatCurrencyAmount(goalBalance)} left. This expense will drain the goal to ${formatCurrencyAmount(new BigNumber(0))} and charge the remaining ${formatCurrencyAmount(remainder)} to your general funds as a separate expense.`,
+                    [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Continue', onPress: finish },
+                    ]
+                );
+                return;
+            }
+
+            await finish();
             return;
         }
 

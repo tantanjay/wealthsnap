@@ -18,6 +18,15 @@ export const isDebt = (item: HistoryItem): item is Debt => {
     return (item as Debt).minPayment !== undefined && (item as Debt).initialAmount !== undefined;
 };
 
+// Cosmetic only - enum-like values (transferAccount, subCategory tags like INITIAL_FUNDING/
+// GOAL_SPEND, TransactionType) are stored SCREAMING_SNAKE_CASE, but should never show that
+// way in the UI. Never run this on free text (note) - only on values we control the shape of.
+const toTitleCase = (value?: string) =>
+    value
+        ?.toLowerCase()
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+
 interface HistoryListItemProps {
     item: HistoryItem;
     formatCurrency: (amount: BigNumber, currency?: string) => string;
@@ -188,12 +197,6 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
 
     const getDisplayName = () => {
         if (isTransfer) {
-            const toTitleCase = (value?: string) =>
-                value
-                    ?.toLowerCase()
-                    .replace(/_/g, ' ')
-                    .replace(/\b\w/g, c => c.toUpperCase());
-
             const base = isTransferIn ? `From ${toTitleCase(t.transferAccount)}` : `To ${toTitleCase(t.transferAccount)}`;
             // Debt transfers only ever show the debt's generic type (e.g. "To Credit Card") -
             // there's no existing instance-name-append precedent to copy for that. Savings
@@ -262,7 +265,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
                                 {getDisplayName()}
                             </Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                                {t.note || t.subCategory || t.type}
+                                {t.note || toTitleCase(t.subCategory) || toTitleCase(t.type)}
                             </Text>
                         </View>
                     </View>

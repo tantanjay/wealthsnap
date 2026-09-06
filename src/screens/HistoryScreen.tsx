@@ -218,6 +218,16 @@ const HistoryScreen = ({ navigation }: any) => {
         });
     }, [allTransactions, allInvestments, allDebts, getItemDate]);
 
+    // Years that actually have data, newest first - lets the date picker offer a direct
+    // tap-to-jump list instead of making the user step through every year one at a time
+    // with the prev/next arrows. Always includes the current year even with no data yet,
+    // so jumping "back to today" never disappears from the list.
+    const availableYears = useMemo(() => {
+        const years = new Set<number>([new Date().getFullYear()]);
+        allHistoryItems.forEach(item => years.add(getItemDate(item).getFullYear()));
+        return Array.from(years).sort((a, b) => b - a);
+    }, [allHistoryItems, getItemDate]);
+
     const investmentMap = useMemo(() => {
         return allInvestments.reduce((acc, inv) => {
             acc[inv.id] = inv;
@@ -826,6 +836,7 @@ const HistoryScreen = ({ navigation }: any) => {
                 timeFrame={datePickerTimeFrame}
                 currentDate={currentDate}
                 onSelectDate={(date) => setCurrentDate(date)}
+                availableYears={availableYears}
             />
 
             <InvestmentOptionsModal

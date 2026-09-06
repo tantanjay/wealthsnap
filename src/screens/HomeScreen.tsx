@@ -86,6 +86,8 @@ const HomeScreen = ({ navigation }: any) => {
 
     const [savingsGoalsTotal, setSavingsGoalsTotal] = useState(new BigNumber(0));
     const [savingsGoalsCount, setSavingsGoalsCount] = useState(0);
+    const [savingsGoalsTarget, setSavingsGoalsTarget] = useState(new BigNumber(0));
+    const [savingsGoalsSpent, setSavingsGoalsSpent] = useState(new BigNumber(0));
     const [isLoading, setIsLoading] = useState(true);
 
     const [financialHealth, setFinancialHealth] = useState({
@@ -496,6 +498,16 @@ const HomeScreen = ({ navigation }: any) => {
             );
             setSavingsGoalsTotal(totalSavingsGoalsBalance);
             setSavingsGoalsCount(allGoals.length);
+
+            // Lifetime totals across every goal, for the "Total Target" / "Total Spent"
+            // sub-figures on the Home card (mirrors HomeDebtCard's Borrowed/Repaid pair).
+            // "Spent" is real purchases (GOAL_SPEND) only - a WITHDRAWAL/SWEEP moves money
+            // back to general cash rather than being spent, so isn't "spending" here.
+            setSavingsGoalsTarget(allGoals.reduce((sum, goal) => sum.plus(goal.targetAmount), new BigNumber(0)));
+            setSavingsGoalsSpent(
+                t.filter(tx => tx.type === 'TRANSFER_IN' && tx.savingsGoalId && tx.subCategory === 'GOAL_SPEND')
+                    .reduce((sum, tx) => sum.plus(tx.amount.abs()), new BigNumber(0))
+            );
 
             const assetsTotal = currentCashBalance.plus(totalMarketValue).plus(totalSavingsGoalsBalance);
 
@@ -981,6 +993,8 @@ const HomeScreen = ({ navigation }: any) => {
                                 <HomeSavingsGoalsCard
                                     key="savings-goals"
                                     total={savingsGoalsTotal}
+                                    target={savingsGoalsTarget}
+                                    spent={savingsGoalsSpent}
                                     goalCount={savingsGoalsCount}
                                     isLoading={isLoading}
                                     isPrivacyEnabled={isPrivacyEnabled}

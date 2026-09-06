@@ -25,6 +25,7 @@ import { EXPENSE_CATEGORY_GROUPS } from '@constants/categories';
 import { SavingsGoalForm } from '@components/savingsGoals/SavingsGoalForm';
 import SavingsGoalOptionsModal from '@components/savingsGoals/SavingsGoalOptionsModal';
 import SavingsGoalAmountModal from '@components/savingsGoals/SavingsGoalAmountModal';
+import { SavingsGoalsInfoModal } from '@components/savingsGoals/SavingsGoalsInfoModal';
 
 const SavingsGoalsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -38,6 +39,7 @@ const SavingsGoalsScreen = ({ navigation }: any) => {
 
     const [optionsGoal, setOptionsGoal] = useState<SavingsGoal | null>(null);
     const [amountModal, setAmountModal] = useState<{ mode: 'CONTRIBUTE' | 'WITHDRAW'; goal: SavingsGoal } | null>(null);
+    const [infoModalVisible, setInfoModalVisible] = useState(false);
 
     const loadData = useCallback(async () => {
         const [p, t, gls, rules] = await Promise.all([
@@ -180,17 +182,38 @@ const SavingsGoalsScreen = ({ navigation }: any) => {
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={[styles.title, { color: colors.text }]}>Savings Goals</Text>
-                <TouchableOpacity onPress={handleAddNew} style={{ padding: 4 }}>
-                    <Ionicons name="add-circle" size={28} color={colors.primary} />
-                </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 <Card style={{ backgroundColor: colors.primary }}>
-                    <Text style={{ color: colors.white, opacity: 0.9 }}>Total Saved</Text>
-                    <Text style={{ color: colors.white, fontSize: 28, fontWeight: 'bold', marginTop: 4 }}>
-                        {formatCurrencyAmount(totalBalance, currency)}
-                    </Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <View style={{ flex: 1 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <Text style={{ color: colors.white, opacity: 0.9 }}>Total Saved</Text>
+                                <TouchableOpacity onPress={() => setInfoModalVisible(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                    <Ionicons name="information-circle-outline" size={16} color={colors.white} style={{ opacity: 0.9 }} />
+                                </TouchableOpacity>
+                            </View>
+                            <Text style={{ color: colors.white, fontSize: 28, fontWeight: 'bold', marginTop: 4 }}>
+                                {formatCurrencyAmount(totalBalance, currency)}
+                            </Text>
+                        </View>
+                        <TouchableOpacity
+                            onPress={handleAddNew}
+                            style={{
+                                backgroundColor: 'rgba(255,255,255,0.25)',
+                                paddingVertical: 8,
+                                paddingHorizontal: 12,
+                                borderRadius: 10,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 6,
+                            }}
+                        >
+                            <Ionicons name="add-circle" size={20} color={colors.white} />
+                            <Text style={{ color: colors.white, fontWeight: '700', fontSize: 13 }}>New Goal</Text>
+                        </TouchableOpacity>
+                    </View>
                 </Card>
 
                 {goals.length === 0 && (
@@ -257,6 +280,8 @@ const SavingsGoalsScreen = ({ navigation }: any) => {
                     onSubmit={handleAmountSubmit}
                 />
             )}
+
+            <SavingsGoalsInfoModal visible={infoModalVisible} onClose={() => setInfoModalVisible(false)} />
         </ScreenWrapper>
     );
 };
