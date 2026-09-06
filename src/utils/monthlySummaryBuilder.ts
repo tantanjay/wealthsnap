@@ -1,7 +1,8 @@
 import { BigNumber } from 'bignumber.js';
-import { Transaction, Investment, Debt, Budget } from '@types';
+import { Transaction, Investment, Debt, Budget, SavingsGoal } from '@types';
 import { calculateTotals, calculateSavingsRate, calculateBalance, parseDate } from '@utils/financialMetrics';
 import { calculateCurrentDebtBalance, buildDebtNameMap } from '@utils/debtMetrics';
+import { calculateGoalBalance } from '@utils/savingsGoalMetrics';
 
 export interface CategoryAmount {
     category: string;
@@ -17,6 +18,13 @@ export interface DebtPaymentItem {
     debtName: string;
     amount: number;
     remainingBalance: number;
+}
+
+export interface GoalActivityItem {
+    goalName: string;
+    contributed: number; // CONTRIBUTION + INITIAL_FUNDING this month
+    spent: number; // GOAL_SPEND + WITHDRAWAL + SWEEP this month
+    balance: number; // as of month end
 }
 
 export interface TopTransactionItem {
@@ -59,6 +67,9 @@ export interface MonthlySummaryData {
     debts: {
         payments: DebtPaymentItem[];
         totalPaid: number;
+    };
+    savingsGoals: {
+        activity: GoalActivityItem[];
     };
     transfers: CategoryAmount[]; // category = transferAccount label
     budgetAlerts: BudgetAlert[];
@@ -133,7 +144,8 @@ export const buildMonthlySummaryData = (
     // Only ever false for chat's own on-the-fly recompute path - the persisted monthly
     // summary cache (shared with in-app display, e.g. MonthlySummaryModal) always uses
     // real names, since this flag is a chat-only, per-session preference.
-    discloseDebtNames: boolean = true
+    discloseDebtNames: boolean = true,
+    allGoals: SavingsGoal[] = []
 ): MonthlySummaryData => {
     // `allTransactions` must always be the FULL, unfiltered set - income/expense/
     // netCashFlow/savingsRate below are computed from it directly so those totals
@@ -222,9 +234,52 @@ export const buildMonthlySummaryData = (
         totalDebtPaid = totalDebtPaid.plus(amount);
     });
 
-    // --- Transfers (excluding ones already covered by Investments/Debts above) ---
+    // --- Savings Goals (contributions/spends/withdrawals/sweeps this month) ---
+    const goalTx = monthTx.filter(t =>
+        t.savingsGoalId && (t.type === 'TRANSFER_OUT' || t.type === 'TRANSFER_IN')
+    );
+
+    const goalsById = new Map(allGoals.map(g => [g.id, g]));
+    const contributedByGoal = new Map<string, BigNumber>();
+    const spentByGoal = new Map<string, BigNumber>();
+    goalTx.forEach(t => {
+        const key = t.savingsGoalId as string;
+        if (t.type === 'TRANSFER_OUT') {
+            contributedByGoal.set(key, (contributedByGoal.get(key) || new BigNumber(0)).plus(t.amount.abs()));
+        } else {
+            spentByGoal.set(key, (spentByGoal.get(key) || new BigNumber(0)).plus(t.amount.abs()));
+        }
+    });
+
+    const goalActivity: GoalActivityItem[] = [];
+    new Set([...contributedByGoal.keys(), ...spentByGoal.keys()]).forEach(goalId => {
+        const goal = goalsById.get(goalId);
+        const contributed = (contributedByGoal.get(goalId) || new BigNumber(0)).toNumber();
+        const spent = (spentByGoal.get(goalId) || new BigNumber(0)).toNumber();
+
+        if (goal) {
+            goalActivity.push({
+                goalName: goal.name,
+                contributed,
+                spent,
+                balance: calculateGoalBalance(goal, txUpToMonthEnd).toNumber()
+            });
+        } else {
+            // The goal has since been deleted (deleteGoalWithSweep removes the savings_goals
+            // row but its ledger transactions keep their savingsGoalId tag forever, same as
+            // debt/investment tags survive a deleted debt/investment). Don't silently drop
+            // this month's activity just because the name can't be looked up anymore - that
+            // reads as the money having vanished. The real name isn't preserved anywhere once
+            // the goal row is gone, so label it generically. Balance is always 0 here: a
+            // goal can only be deleted via deleteGoalWithSweep, which sweeps any remaining
+            // balance to cash first, so nothing is left in it by definition.
+            goalActivity.push({ goalName: 'Deleted Savings Goal', contributed, spent, balance: 0 });
+        }
+    });
+
+    // --- Transfers (excluding ones already covered by Investments/Debts/Savings Goals above) ---
     const transferTx = monthTx.filter(t =>
-        (t.type === 'TRANSFER_OUT' || t.type === 'TRANSFER_IN') && !t.debtId && !t.investmentId
+        (t.type === 'TRANSFER_OUT' || t.type === 'TRANSFER_IN') && !t.debtId && !t.investmentId && !t.savingsGoalId
     );
     const transfers = sumByCategory(
         transferTx.map(t => ({ category: t.transferAccount || 'Other', amount: t.amount }))
@@ -312,6 +367,7 @@ export const buildMonthlySummaryData = (
         momExpenseChangePercent,
         investments: { buys, sells, dividends, totalFees: totalFees.toNumber(), realizedPL },
         debts: { payments: debtPayments, totalPaid: totalDebtPaid.toNumber() },
+        savingsGoals: { activity: goalActivity },
         transfers,
         budgetAlerts,
         topExpenses,
@@ -362,6 +418,16 @@ export const renderMonthlySummaryText = (data: MonthlySummaryData, currency: str
         data.debts.payments.forEach(p =>
             lines.push(`  ${p.debtName}: paid ${currency} ${fmt(p.amount)}, balance now ${currency} ${fmt(p.remainingBalance)}`)
         );
+    }
+
+    if (data.savingsGoals.activity.length) {
+        lines.push('Savings Goals:');
+        data.savingsGoals.activity.forEach(g => {
+            const parts: string[] = [];
+            if (g.contributed > 0) parts.push(`contributed ${currency} ${fmt(g.contributed)}`);
+            if (g.spent > 0) parts.push(`spent ${currency} ${fmt(g.spent)}`);
+            lines.push(`  ${g.goalName}: ${parts.join(', ')}, balance now ${currency} ${fmt(g.balance)}`);
+        });
     }
 
     if (data.transfers.length) {

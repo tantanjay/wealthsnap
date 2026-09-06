@@ -23,6 +23,7 @@ interface HistoryListItemProps {
     formatCurrency: (amount: BigNumber, currency?: string) => string;
     investmentMap: Record<string, Investment>;
     linkedPLByInvestmentId: Record<string, Transaction | undefined>;
+    savingsGoalNameMap: Record<string, string>;
     profileCurrency?: string;
     onSelectTransaction: (t: Transaction) => void;
     onSelectInvestment: (inv: Investment) => void;
@@ -42,6 +43,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
     formatCurrency,
     investmentMap,
     linkedPLByInvestmentId,
+    savingsGoalNameMap,
     profileCurrency,
     onSelectTransaction,
     onSelectInvestment,
@@ -192,7 +194,18 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
                     .replace(/_/g, ' ')
                     .replace(/\b\w/g, c => c.toUpperCase());
 
-            return isTransferIn ? `From ${toTitleCase(t.transferAccount)}` : `To ${toTitleCase(t.transferAccount)}`;
+            const base = isTransferIn ? `From ${toTitleCase(t.transferAccount)}` : `To ${toTitleCase(t.transferAccount)}`;
+            // Debt transfers only ever show the debt's generic type (e.g. "To Credit Card") -
+            // there's no existing instance-name-append precedent to copy for that. Savings
+            // Goals is new: append the specific goal's name so "To Savings Goal" reads as
+            // "To Savings Goal (Travel Fund)".
+            // Falls back to a generic label if the goal was since deleted (its ledger rows
+            // keep their savingsGoalId tag forever, but the name isn't preserved anywhere
+            // once the goal row itself is gone) - same reasoning as monthlySummaryBuilder.ts.
+            const goalName = t.savingsGoalId
+                ? (savingsGoalNameMap[t.savingsGoalId] || 'Deleted Goal')
+                : undefined;
+            return goalName ? `${base} (${goalName})` : base;
         }
         return t.category;
     };
@@ -210,17 +223,28 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
         }
     }
 
+    // Prevent opening options for auto-generated transactions.
+    // Exception: Allow Debt Repayments (TRANSFER_OUT + PRINCIPAL) so they can be deleted.
+    // Savings Goals: the CONTRIBUTION/INITIAL_FUNDING leg stays tappable (so a past
+    // contribution can be canceled/deleted) and the real-spend EXPENSE leg stays
+    // tappable (it's the user-meaningful transaction, same as debt's PRINCIPAL leg) -
+    // but the auto-generated GOAL_SPEND/WITHDRAWAL/SWEEP TRANSFER_IN legs are locked,
+    // same as debt's interest/fee legs. Undoing those happens via deleting the paired
+    // EXPENSE (cascades automatically) or the goal's own Options modal, not from here.
+    const isDebtRepayment = t.type === 'TRANSFER_OUT' && t.subCategory === 'PRINCIPAL';
+    const isTappableGoalLeg = !!t.savingsGoalId && (
+        t.type === 'EXPENSE' ||
+        (t.type === 'TRANSFER_OUT' && (t.subCategory === 'CONTRIBUTION' || t.subCategory === 'INITIAL_FUNDING'))
+    );
+    const isLocked = ((t.investmentId || t.debtId) && !isDebtRepayment) || (!!t.savingsGoalId && !isTappableGoalLeg);
+
     return (
         <TouchableOpacity
             onPress={() => {
-                // Prevent opening options for auto-generated transactions
-                // Exception: Allow Debt Repayments (TRANSFER_OUT + PRINCIPAL) so they can be deleted
-                const isDebtRepayment = t.type === 'TRANSFER_OUT' && t.subCategory === 'PRINCIPAL';
-
-                if ((t.investmentId || t.debtId) && !isDebtRepayment) return;
+                if (isLocked) return;
                 onSelectTransaction(t);
             }}
-            activeOpacity={(t.investmentId || t.debtId) && !(t.type === 'TRANSFER_OUT' && t.subCategory === 'PRINCIPAL') ? 1 : 0.7}
+            activeOpacity={isLocked ? 1 : 0.7}
             style={{ marginBottom: 8 }}
         >
             <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0 }}>

@@ -225,6 +225,13 @@ const HistoryScreen = ({ navigation }: any) => {
         }, {} as Record<string, Investment>);
     }, [allInvestments]);
 
+    const savingsGoalNameMap = useMemo(() => {
+        return allGoals.reduce((acc, goal) => {
+            acc[goal.id] = goal.name;
+            return acc;
+        }, {} as Record<string, string>);
+    }, [allGoals]);
+
     // Precomputed once here instead of the old approach of running allTransactions.find(...)
     // inside renderItem for every single SELL row - that was O(rows x transactions) on every
     // render; this is O(transactions) once, whenever allTransactions actually changes.
@@ -576,12 +583,13 @@ const HistoryScreen = ({ navigation }: any) => {
             formatCurrency={formatCurrency}
             investmentMap={investmentMap}
             linkedPLByInvestmentId={linkedPLByInvestmentId}
+            savingsGoalNameMap={savingsGoalNameMap}
             profileCurrency={profile?.currency}
             onSelectTransaction={setSelectedTransaction}
             onSelectInvestment={setSelectedInvestment}
             onSelectDebt={setSelectedDebt}
         />
-    ), [formatCurrency, investmentMap, linkedPLByInvestmentId, profile?.currency]);
+    ), [formatCurrency, investmentMap, linkedPLByInvestmentId, savingsGoalNameMap, profile?.currency]);
 
     const renderSectionHeader = useCallback(({ section: { title, count, totalAmount } }: { section: TransactionSection }) => (
         <HistorySectionHeader title={title} count={count} totalAmount={totalAmount} formatCurrency={formatCurrency} />
