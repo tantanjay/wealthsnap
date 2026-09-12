@@ -4,7 +4,7 @@ Guidance for Claude Code when working in this repository.
 
 **A note on how this file itself is written:** this CLAUDE.md gets copied across many projects/repos, so keep every rule below general. Avoid repository-specific filenames, paths, or implementation details — describe patterns and concepts instead so the guidance stays applicable regardless of which project it lands in. Project-specific facts (design system, backend, architecture, etc.) belong in this repo's `PROJECT.md`, not here.
 
-**Check the repo root for a `PROJECT.md`.** If one exists, read it before making implementation decisions — it contains the project's specific context and conventions.
+**Check the repo root for a `PROJECT.md`.** If one exists, read it before making implementation decisions — it contains the project's specific context and conventions. It follows the same draft-and-confirm flow as this file: propose additions or changes, show them, and wait for a yes before writing — don't add to it silently mid-task.
 
 **How this file grows:** this file is built reactively, not from external best practices. A rule only belongs here once it has actually cost time — a correction, a clarification, a repeated question. When that happens, don't interrupt the task to propose it — hold onto it and suggest it only at a natural stopping point: the user signals they're satisfied ("perfect", "all good", etc.), or they commit or open a PR. At that point, draft it into a concise, general rule and show it to the user first — never write it into this file until they say yes. Don't propose rules for things that haven't actually gone wrong yet.
 
@@ -24,15 +24,21 @@ Guidance for Claude Code when working in this repository.
 
 ## Code comment style
 
-- Keep comments short and concise — 1-3 lines, stating the fact/rationale directly. No multi-paragraph explanatory blocks.
+- Keep comments short and concise — 2 lines max, stating the fact/rationale directly. No multi-paragraph explanatory blocks.
 - Delete a comment that just restates what the code/types already say (e.g. a prop list duplicating the interface right below it).
 - For comments carrying real non-obvious rationale (a business rule, why a check is skipped somewhere, a subtle return-value contract), keep the fact and cut the prose — tight, not padded.
+- Never point a comment at context outside the repo ("see the brainstorm history on X", "as discussed") — a future reader wasn't in that conversation, so the comment has to stand on its own.
 
 ## Mock/dummy data pages & panels
 
 - Dummy data must never render by default. Gate it behind a flag (e.g. local component state) that starts off, and only flips on an explicit user click — never on mount, timeout, or route change.
 - Before the flag flips, show an empty-state in its place, not the raw content or a placeholder shape: an icon, a short heading naming what's missing, one sentence of context on when real data will actually appear there, and a button (styled as the app's primary/accent action) labeled something like "Load mock data" that flips the flag.
 - Scope the empty-state to what's actually mocked. If an entire page is dummy data, replace the whole page — header included — with one empty-state. If only one chart/card within an otherwise-real page is mocked, scope the empty-state to just that card, and hide anything else derived from the same mock data (e.g. a summary badge fed by the same numbers) until that same flag flips. Don't gate real, already-wired-up content just because it sits next to mocked content.
+
+## Component extraction
+
+- **Building a page/panel "like X"? Don't copy X wholesale.** Treat each block on it separately — if a block already exists as a shared component elsewhere (a loading state, a badge, etc.), reuse it even if X itself has it inlined. Reusing an existing component needs no permission — just do it.
+- **Flag new extraction candidates, but let the user decide.** Noticing a block that could become a shared component is good — say so. What needs a yes first is creating the file: name the block, which existing places would actually use it, and why now, then wait for confirmation.
 
 ## UI design principles
 
@@ -45,4 +51,8 @@ Structural rules for frontend work, independent of whatever specific visual styl
 - **One icon, one meaning.** Never let two different concepts share the same icon; a user scanning a row should be able to tell them apart without reading the label.
 - **A component must survive every page and width it's used on.** Don't anchor a popup/dropdown to "wherever the trigger happens to render" unless its position is verified stable everywhere it's used. When unsure, prefer a positioning strategy that can't overflow (e.g. a centered overlay) over one that assumes the trigger behaves predictably.
 - **A hover-feedback tone shouldn't also be a resting default.** If a neutral fill means "you're hovering this" in one place, giving that same fill to a container's resting state elsewhere makes interactive and static surfaces indistinguishable — pick a quieter resting state (often just a border, no fill) so the feedback tone still reads as feedback.
-- **Sibling pages must match computed position, not just similar markup.** Pages in the same nav group can look identically structured and still make navigation between them feel like a jump if one has a stray one-off margin/padding value the others don't. When unifying a group of pages, diff the actual rendered height/position, not just the className strings.
+- **When creating a new page or component, match existing siblings' actual computed values from the start.** Check the nearest comparable existing page/component for table padding, chart axis styling, header badges, page-shell height/position, font treatments — before writing new markup, not after someone flags the drift.
+- **When the user flags a visual inconsistency, treat it as a search query, not a two-element fix.** Grep for every other instance of that element kind across the app, diff them against the same property — including rendered height/position, not just className strings — and report what's actually inconsistent before changing anything.
+- **Never use browser-native dialogs.** `alert()`, `confirm()`, `prompt()`, or anything similar can't be styled and look broken next to the rest of the UI — use an in-app modal with its own buttons instead, even for a single yes/no confirmation.
+- **Every modal/dialog state needs a matching icon and color, not bare text.** An error, warning, success, or plain info message shown in a dialog should pair its severity with an icon and a matching color — never just colored text with nothing else. Put the icon next to the message in the body, not next to the title — the body is what a reader's eye actually goes to, so that's where severity needs to be unmissable. Give each severity level its own icon rather than sharing one across levels (e.g. error and warning are different severities and need different icons, not the same triangle recolored). Reuse one icon+color mapping for every such state across the app so severity reads the same way everywhere, rather than each dialog inventing its own.
+- **A modal's action-button footer is a distinct region, not a continuation of the body.** Give it a subtly different background than the body (not just a border) plus the separator border, so the eye reads "content" and "actions" as two zones — and keep any button inside it visually against that footer's own background, not the body's.
