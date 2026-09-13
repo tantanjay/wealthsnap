@@ -21,7 +21,20 @@ However, **8 critical bugs** were discovered. In addition to data integrity risk
 
 ---
 
-## 2. Alignment Matrix (Phase by Phase)
+## 2. Core Accounting Principles: Savings Rate vs. Cash Flow vs. Burn Rate
+
+To prevent severe regression during remediation, the following invariant distinctions between **Wealth Retained** and **Liquid Cash Movement** must be enforced across all analytics engines:
+
+| Metric | Mathematical / Accounting Definition | Goal Contribution (`TRANSFER_OUT`) | Goal Spend (`EXPENSE` + `TRANSFER_IN`) |
+|---|---|---|---|
+| **Savings Rate** | $\frac{\text{Income} - \text{Living Expenses}}{\text{Income}}$ (Wealth Retained) | **DO NOT REDUCE:** Contributing to a savings goal is **saving**, not consuming. If `TRANSFER_OUT` were treated as an expense, saving more surplus into goals would paradoxically lower the user's savings rate (e.g. saving 70% into an emergency fund would report a 0% savings rate). | **DO NOT REDUCE:** The spend is pre-funded from accumulated goal savings. It must not penalize the savings rate in the month the purchase occurs. |
+| **Net Cash Flow** | $(\text{Income} + \text{TransIn}) - (\text{Expense} + \text{TransOut})$ (Liquid Cash Movement) | **REDUCED:** Real liquid cash physically leaves the operating checking account (`-amount`). | **NET ₱0:** The linked `TRANSFER_IN` cancels out the `EXPENSE` in `calculateBalance()`. |
+| **Burn Rate & Runway** | Operating cash required to sustain monthly life & financial commitments | **COUNTED AS BURN:** Monthly goal contributions represent committed cash outflows that must be funded from cash/income. | **DO NOT COUNT:** The purchase cash was already funded during contributions; counting it here would double-count the burn. |
+| **Safe-to-Spend** | Surplus uncommitted funds available for daily/weekly/monthly discretionary spend | **DEDUCTED AS OBLIGATION:** Reserves unmade goal contributions for the period so money is set aside for the goal. | **DO NOT DEDUCT:** Goal spend is paid from the goal reserve, not from daily/weekly discretionary allowance. |
+
+---
+
+## 3. Alignment Matrix (Phase by Phase)
 
 | Phase | Planned Scope ([PLAN_SAVING_GOALS.md](file:///d:/Projects/TOOLS/wealthsnap/docs/PLAN_SAVING_GOALS.md)) | Implementation Status | Alignment Notes |
 |---|---|---|---|
@@ -34,7 +47,7 @@ However, **8 critical bugs** were discovered. In addition to data integrity risk
 
 ---
 
-## 3. Critical Severity Findings
+## 4. Critical Severity Findings
 
 ### 🔴 Bug 1: Editing Goal-Linked Transactions Breaks Accounting & Strips Tags
 - **Affected Files:**
@@ -200,7 +213,7 @@ However, **8 critical bugs** were discovered. In addition to data integrity risk
 
 ---
 
-## 4. Edge Cases & UX Gaps
+## 5. Edge Cases & UX Gaps
 
 ### 🟡 Edge Case 1: Non-Atomic Database Writes in Auto-Offset Execution
 - **Location:** [src/components/transaction/TransactionForm.tsx#L179-L214](file:///d:/Projects/TOOLS/wealthsnap/src/components/transaction/TransactionForm.tsx#L179-L214)
@@ -234,7 +247,7 @@ However, **8 critical bugs** were discovered. In addition to data integrity risk
 
 ---
 
-## 5. Remediation Plan & Implementation Checklist
+## 6. Remediation Plan & Implementation Checklist
 
 Prioritized checklist for implementing the required fixes once approved:
 
