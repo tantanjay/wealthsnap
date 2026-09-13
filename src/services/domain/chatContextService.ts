@@ -1,6 +1,7 @@
 import { getCachedTransactions } from '@services/domain/transactionService';
 import { getPortfolioStats, getPortfolioHoldings, getAllInvestments } from '@services/domain/investmentService';
 import { getAllDebts } from '@services/domain/debtService';
+import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
 import { getAllBudgets } from '@services/domain/budgetService';
 import { getAllMonthlySummaries, syncMonthlySummaries, MonthlySummaryRow } from '@services/domain/monthlySummaryService';
 import { getUserProfile } from '@services/core/storageService';
@@ -77,7 +78,8 @@ const buildFilteredMonthlySummaries = (
     budgets: Budget[],
     excludeCategories: string[],
     currency: string,
-    discloseDebtNames: boolean = true
+    discloseDebtNames: boolean = true,
+    goals: import('@types').SavingsGoal[] = []
 ): MonthlySummaryRow[] => {
     const earliest = getEarliestYearMonth(transactions, investments);
     if (!earliest) return [];
@@ -87,7 +89,7 @@ const buildFilteredMonthlySummaries = (
     const months = getMonthsBetween(earliest, currentYearMonth);
 
     return months.map(yearMonth => {
-        const data = buildMonthlySummaryData(yearMonth, transactions, investments, debts, budgets, excludeCategories, discloseDebtNames);
+        const data = buildMonthlySummaryData(yearMonth, transactions, investments, debts, budgets, excludeCategories, discloseDebtNames, goals);
         return {
             yearMonth,
             isFinal: yearMonth < currentYearMonth,
@@ -131,10 +133,11 @@ export const fetchChatContextInputs = async (excludeCategories: string[] = [], d
         await syncMonthlySummaries();
     }
 
-    const [transactions, allInvestments, debts, profile, cachedSummaries, portfolioStats, holdings, budgets] = await Promise.all([
+    const [transactions, allInvestments, debts, goals, profile, cachedSummaries, portfolioStats, holdings, budgets] = await Promise.all([
         getCachedTransactions(),
         getAllInvestments(),
         getAllDebts(),
+        getAllSavingsGoals(),
         getUserProfile(),
         needsFreshSummaries ? Promise.resolve<MonthlySummaryRow[]>([]) : getAllMonthlySummaries(),
         getPortfolioStats(),
@@ -144,11 +147,11 @@ export const fetchChatContextInputs = async (excludeCategories: string[] = [], d
 
     const currency = profile?.currency || 'PHP';
 
-    const snapshot = buildFinancialSnapshotData(transactions, debts, portfolioStats, holdings, budgets, excludeCategories, discloseDebtNames);
+    const snapshot = buildFinancialSnapshotData(transactions, debts, portfolioStats, holdings, budgets, excludeCategories, discloseDebtNames, goals);
     const snapshotText = renderFinancialSnapshotText(snapshot, currency);
 
     const summaries = needsFreshSummaries
-        ? buildFilteredMonthlySummaries(transactions, allInvestments, debts, budgets, excludeCategories, currency, discloseDebtNames)
+        ? buildFilteredMonthlySummaries(transactions, allInvestments, debts, budgets, excludeCategories, currency, discloseDebtNames, goals)
         : cachedSummaries;
 
     return { snapshotText, summaries, hasDebts: debts.length > 0 };

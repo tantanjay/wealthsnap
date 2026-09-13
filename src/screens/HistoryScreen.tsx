@@ -13,10 +13,11 @@ import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
-import { Transaction, UserProfile, Investment, RecurrenceRule, Debt } from '@types';
+import { Transaction, UserProfile, Investment, RecurrenceRule, Debt, SavingsGoal } from '@types';
 import { deleteTransaction, getCachedTransactions } from '@services/domain/transactionService';
 import { deleteInvestment, getCachedInvestments } from '@services/domain/investmentService';
 import { getAllDebts, deleteDebt } from '@services/domain/debtService';
+import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile } from '@services/core/storageService';
 import { HistoryCalendar } from '@components/history/HistoryCalendar';
@@ -27,6 +28,7 @@ import { HistorySafeToSpendHelpModal } from '@components/history/HistorySafeToSp
 import { HistorySummary } from '@components/history/HistorySummary';
 import DebtOptionsModal from '@components/debts/DebtOptionsModal';
 import { calculateTotalDebtObligations } from '@utils/debtMetrics';
+import { calculateTotalGoalContributions } from '@utils/savingsGoalMetrics';
 import HistoryListItem, { HistoryItem, isInvestment, isDebt } from '@components/history/HistoryListItem';
 import HistorySectionHeader from '@components/history/HistorySectionHeader';
 
@@ -57,6 +59,7 @@ const HistoryScreen = ({ navigation }: any) => {
     const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
     const [allInvestments, setAllInvestments] = useState<Investment[]>([]);
     const [allDebts, setAllDebts] = useState<Debt[]>([]);
+    const [allGoals, setAllGoals] = useState<SavingsGoal[]>([]);
     const [recurrenceRules, setRecurrenceRules] = useState<RecurrenceRule[]>([]);
     const [timeFrame, setTimeFrame] = useState<TimeFrame>('MONTHLY');
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -114,14 +117,16 @@ const HistoryScreen = ({ navigation }: any) => {
     const loadData = async () => {
         try {
             setIsLoading(true);
-            const [transactions, investments, debts] = await Promise.all([
+            const [transactions, investments, debts, goals] = await Promise.all([
                 getCachedTransactions(),
                 getCachedInvestments(),
-                getAllDebts()
+                getAllDebts(),
+                getAllSavingsGoals()
             ]);
             setAllTransactions(transactions);
             setAllInvestments(investments);
             setAllDebts(debts);
+            setAllGoals(goals);
         } catch (error) {
             console.error('Error loading HistoryScreen data:', error);
         } finally {
@@ -213,12 +218,29 @@ const HistoryScreen = ({ navigation }: any) => {
         });
     }, [allTransactions, allInvestments, allDebts, getItemDate]);
 
+    // Years that actually have data, newest first - lets the date picker offer a direct
+    // tap-to-jump list instead of making the user step through every year one at a time
+    // with the prev/next arrows. Always includes the current year even with no data yet,
+    // so jumping "back to today" never disappears from the list.
+    const availableYears = useMemo(() => {
+        const years = new Set<number>([new Date().getFullYear()]);
+        allHistoryItems.forEach(item => years.add(getItemDate(item).getFullYear()));
+        return Array.from(years).sort((a, b) => b - a);
+    }, [allHistoryItems, getItemDate]);
+
     const investmentMap = useMemo(() => {
         return allInvestments.reduce((acc, inv) => {
             acc[inv.id] = inv;
             return acc;
         }, {} as Record<string, Investment>);
     }, [allInvestments]);
+
+    const savingsGoalNameMap = useMemo(() => {
+        return allGoals.reduce((acc, goal) => {
+            acc[goal.id] = goal.name;
+            return acc;
+        }, {} as Record<string, string>);
+    }, [allGoals]);
 
     // Precomputed once here instead of the old approach of running allTransactions.find(...)
     // inside renderItem for every single SELL row - that was O(rows x transactions) on every
@@ -378,6 +400,7 @@ const HistoryScreen = ({ navigation }: any) => {
             const tDate = new Date(t.date);
             return t.type === 'EXPENSE' &&
                 !t.isRecurring &&
+                !t.savingsGoalId && // that cash already left when it was contributed to the goal
                 tDate >= thirtyDaysAgo &&
                 tDate <= new Date();
         });
@@ -386,36 +409,47 @@ const HistoryScreen = ({ navigation }: any) => {
         const dailyBurnRate = totalRecentSpend.dividedBy(burnRatePeriod);
 
         const totalMonthlyDebtObligations = calculateTotalDebtObligations(allDebts);
+        // Mirrors debt obligations exactly: a fixed monthly-equivalent figure derived from
+        // each active, unpaused goal's own recurringAmount/frequency (already normalized to
+        // monthly inside calculateTotalGoalContributions), not scanned from history.
+        const totalMonthlyGoalContributions = calculateTotalGoalContributions(allGoals);
 
         // Adjust for Period (Yearly View requires 12x)
         let totalPeriodDebtObligations = totalMonthlyDebtObligations;
+        let totalPeriodGoalContributions = totalMonthlyGoalContributions;
         if (viewMode === 'LIST' && timeFrame === 'YEARLY') {
             totalPeriodDebtObligations = totalMonthlyDebtObligations.multipliedBy(12);
+            totalPeriodGoalContributions = totalMonthlyGoalContributions.multipliedBy(12);
         }
 
-        // Calculate how much debt was ALREADY paid this period (to avoid double deduction)
-        // We look at TRANSFER_OUT transactions with a debtId in the current view's transactions
-        // Note: dashboardTransactions is already filtered by the current view's period (Day/Week/Month/Year)
+        // Calculate how much debt/goal-contribution was ALREADY paid this period (to avoid
+        // double deduction) - dashboardTransactions is already filtered by the current view's
+        // period (Day/Week/Month/Year).
         const debtPaymentsMade = dashboardTransactions
             .filter(t => t.type === 'TRANSFER_OUT' && t.debtId)
             .reduce((acc, t) => acc.plus(t.amount.abs()), new BigNumber(0));
+        const goalContributionsMade = dashboardTransactions
+            .filter(t => t.type === 'TRANSFER_OUT' && t.savingsGoalId)
+            .reduce((acc, t) => acc.plus(t.amount.abs()), new BigNumber(0));
 
         // Remaining Obligation = Total - Paid (Floor at 0, don't credit extra payments)
-        // For Daily/Weekly views, we still subtract the *full* remaining monthly obligation in the 
+        // For Daily/Weekly views, we still subtract the *full* remaining monthly obligation in the
         // subsequent steps (divided by 30 or 7), so we calculate the remaining *monthly* obligation here.
         // However, for Yearly view, we need the remaining *yearly* obligation.
         const remainingDebtObligations = BigNumber.max(0, totalPeriodDebtObligations.minus(debtPaymentsMade));
+        const remainingGoalObligations = BigNumber.max(0, totalPeriodGoalContributions.minus(goalContributionsMade));
 
         let amount = new BigNumber(0);
         let projectedVariableSpend = new BigNumber(0);
 
         if (viewMode === 'LIST' && timeFrame === 'DAILY') {
-            // Daily View: (Daily Allow - Daily Spend) - (Daily Portion of Remaining Debt)
-            // Even in daily view, we reserve the daily portion of the *remaining* debt
-            // If debt is fully paid, remaining is 0, so no deduction.
+            // Daily View: (Daily Allow - Daily Spend) - (Daily Portion of Remaining Debt/Goal)
+            // Even in daily view, we reserve the daily portion of the *remaining* debt/goal
+            // contribution. If fully paid/contributed already, remaining is 0, no deduction.
             const dailyRemainingDebt = remainingDebtObligations.dividedBy(30);
+            const dailyRemainingGoal = remainingGoalObligations.dividedBy(30);
 
-            amount = dailyBurnRate.minus(summary.totalExpense).minus(dailyRemainingDebt);
+            amount = dailyBurnRate.minus(summary.totalExpense).minus(dailyRemainingDebt).minus(dailyRemainingGoal);
             projectedVariableSpend = dailyBurnRate;
         } else if (viewMode === 'LIST' && timeFrame === 'WEEKLY') {
             const now = new Date();
@@ -434,10 +468,11 @@ const HistoryScreen = ({ navigation }: any) => {
 
             const weeklyAllowance = dailyBurnRate.multipliedBy(multiplier);
 
-            // Weekly Portion of Remaining Debt
+            // Weekly Portion of Remaining Debt/Goal
             const weeklyRemainingDebt = remainingDebtObligations.dividedBy(4);
+            const weeklyRemainingGoal = remainingGoalObligations.dividedBy(4);
 
-            amount = weeklyAllowance.minus(summary.totalExpense).minus(weeklyRemainingDebt);
+            amount = weeklyAllowance.minus(summary.totalExpense).minus(weeklyRemainingDebt).minus(weeklyRemainingGoal);
             projectedVariableSpend = isCurrentWeek ? dailyBurnRate.multipliedBy(multiplier) : dailyBurnRate.multipliedBy(7);
         } else {
             // MONTHLY / YEARLY / CALENDAR (Existing Logic)
@@ -489,17 +524,19 @@ const HistoryScreen = ({ navigation }: any) => {
             // In Monthly mode, this is "Projected Future Variable Spend"
             projectedVariableSpend = dailyBurnRate.multipliedBy(daysRemaining);
 
-            // Deduct Remaining Debt Obligations (treated as a "Bill" that hasn't been paid yet)
-            amount = periodNet.minus(upcomingBills).minus(projectedVariableSpend).minus(remainingDebtObligations);
+            // Deduct Remaining Debt Obligations and Goal Contributions (each treated as a
+            // "Bill" that hasn't been paid/contributed yet this period)
+            amount = periodNet.minus(upcomingBills).minus(projectedVariableSpend).minus(remainingDebtObligations).minus(remainingGoalObligations);
         }
 
         return {
             amount,
             dailyBurnRate,
             projectedVariableSpend,
-            remainingDebtObligations
+            remainingDebtObligations,
+            remainingGoalObligations
         };
-    }, [summary, recurrenceRules, currentDate, timeFrame, viewMode, allTransactions, allDebts, dashboardTransactions]);
+    }, [summary, recurrenceRules, currentDate, timeFrame, viewMode, allTransactions, allDebts, allGoals, dashboardTransactions]);
 
     const sections = useMemo((): TransactionSection[] => {
         const grouped: { [key: string]: HistoryItem[] } = {};
@@ -556,12 +593,13 @@ const HistoryScreen = ({ navigation }: any) => {
             formatCurrency={formatCurrency}
             investmentMap={investmentMap}
             linkedPLByInvestmentId={linkedPLByInvestmentId}
+            savingsGoalNameMap={savingsGoalNameMap}
             profileCurrency={profile?.currency}
             onSelectTransaction={setSelectedTransaction}
             onSelectInvestment={setSelectedInvestment}
             onSelectDebt={setSelectedDebt}
         />
-    ), [formatCurrency, investmentMap, linkedPLByInvestmentId, profile?.currency]);
+    ), [formatCurrency, investmentMap, linkedPLByInvestmentId, savingsGoalNameMap, profile?.currency]);
 
     const renderSectionHeader = useCallback(({ section: { title, count, totalAmount } }: { section: TransactionSection }) => (
         <HistorySectionHeader title={title} count={count} totalAmount={totalAmount} formatCurrency={formatCurrency} />
@@ -798,6 +836,7 @@ const HistoryScreen = ({ navigation }: any) => {
                 timeFrame={datePickerTimeFrame}
                 currentDate={currentDate}
                 onSelectDate={(date) => setCurrentDate(date)}
+                availableYears={availableYears}
             />
 
             <InvestmentOptionsModal

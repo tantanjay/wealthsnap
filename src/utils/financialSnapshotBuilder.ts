@@ -1,7 +1,8 @@
 import { BigNumber } from 'bignumber.js';
-import { Transaction, Debt, DebtStatus } from '@types';
+import { Transaction, Debt, DebtStatus, SavingsGoal } from '@types';
 import { calculateBurnRate, parseDate } from '@utils/financialMetrics';
 import { calculateTotalDebtObligations, calculateCurrentDebtBalance, buildDebtNameMap } from '@utils/debtMetrics';
+import { calculateTotalGoalContributions, calculateGoalBalance, calculateGoalProgress } from '@utils/savingsGoalMetrics';
 
 export interface PortfolioStatsInput {
     totalEquity: number;
@@ -51,6 +52,14 @@ export interface DebtSnapshotItem {
     currentBalance: number;
 }
 
+export interface SavingsGoalSnapshotItem {
+    name: string;
+    targetAmount: number;
+    currentBalance: number;
+    progressPercent: number; // can exceed 100 - goals are allowed to accumulate past target
+    isPaused: boolean;
+}
+
 export interface FinancialSnapshotData {
     totalCash: number;
     totalInvestmentValue: number;
@@ -66,6 +75,7 @@ export interface FinancialSnapshotData {
     // above (which only reflects what's currently owed), this gives the AI the user's full
     // debt-handling history/behavior: what got paid off, what got forgiven, by whom.
     debts: DebtSnapshotItem[];
+    savingsGoals: SavingsGoalSnapshotItem[];
     budgets: BudgetSnapshotItem[]; // current calendar month, budgeted categories only
     privateCategoriesTotal: PrivateCategoriesTotal | null; // lifetime lump sum for excluded categories, null when nothing's excluded
 }
@@ -88,7 +98,8 @@ export const buildFinancialSnapshotData = (
     excludeCategories: string[] = [],
     // Same principle as excludeCategories: hides the *name* only. Amounts, balances, types,
     // directions, and statuses are always included in full regardless of this flag.
-    discloseDebtNames: boolean = true
+    discloseDebtNames: boolean = true,
+    goals: SavingsGoal[] = []
 ): FinancialSnapshotData => {
     // `transactions` must always be the FULL, unfiltered set - every total below
     // (cash, burn rate, debt, budgets) needs the complete picture to stay accurate.
@@ -133,14 +144,31 @@ export const buildFinancialSnapshotData = (
         currentBalance: calculateCurrentDebtBalance(d, transactions).toNumber()
     }));
 
-    // Exclude debt-linked transactions (interest/fee payments) from the base burn rate -
-    // monthlyDebtObligations below adds each active debt's minimum payment on top, so
-    // leaving them in here would double-count the same interest/fees. Matches the fix
-    // already applied to FinancialHealthScreen's own burn rate computation.
-    const nonDebtTransactions = transactions.filter(t => !t.debtId);
+    // Every goal, active or paused - lets the AI answer direct balance/progress questions
+    // ("how much is in my Travel Fund") without needing to reconstruct it from transactions.
+    const savingsGoalItems: SavingsGoalSnapshotItem[] = goals.map(g => {
+        const balance = calculateGoalBalance(g, transactions);
+        return {
+            name: g.name,
+            targetAmount: g.targetAmount.toNumber(),
+            currentBalance: balance.toNumber(),
+            progressPercent: calculateGoalProgress(g.targetAmount, balance),
+            isPaused: g.isPaused
+        };
+    });
+
+    // Exclude debt-linked transactions (interest/fee payments) AND savingsGoalId-tagged
+    // EXPENSE from the base burn rate - monthlyDebtObligations/monthlyGoalContributions
+    // below add each active debt's minimum payment and each active goal's monthly-equivalent
+    // contribution on top, so leaving either in here would double-count: a goal-funded
+    // purchase's cash already left when it was contributed to the goal, not when it was
+    // later spent (that spend nets to ₱0 cash impact via the Auto-Offset pair). Matches the
+    // fix already applied to FinancialHealthScreen's own burn rate computation.
+    const nonDebtTransactions = transactions.filter(t => !t.debtId && !t.savingsGoalId);
     const baseBurnRate = calculateBurnRate(nonDebtTransactions, 6);
     const monthlyDebtObligations = calculateTotalDebtObligations(debts);
-    const monthlyBurnRate = baseBurnRate.plus(monthlyDebtObligations);
+    const monthlyGoalContributions = calculateTotalGoalContributions(goals);
+    const monthlyBurnRate = baseBurnRate.plus(monthlyDebtObligations).plus(monthlyGoalContributions);
 
     const runwayMonths = monthlyBurnRate.isGreaterThan(0)
         ? totalCash.dividedBy(monthlyBurnRate).dp(1).toNumber()
@@ -200,6 +228,7 @@ export const buildFinancialSnapshotData = (
         monthlyBurnRate: monthlyBurnRate.toNumber(),
         runwayMonths,
         debts: debtItems,
+        savingsGoals: savingsGoalItems,
         budgets: budgetItems,
         privateCategoriesTotal
     };
@@ -224,7 +253,7 @@ export const renderFinancialSnapshotText = (data: FinancialSnapshotData, currenc
         });
     }
     lines.push(`Total Debt Liability: ${fmt(data.totalDebtLiability, currency)}`);
-    lines.push(`Monthly Burn Rate (incl. debt payments): ${fmt(data.monthlyBurnRate, currency)}`);
+    lines.push(`Monthly Burn Rate (incl. debt payments and savings goal contributions): ${fmt(data.monthlyBurnRate, currency)}`);
     lines.push(`Financial Runway: ${data.runwayMonths === null ? 'Infinite (no recurring burn)' : `${data.runwayMonths} months`}`);
     if (data.budgets.length > 0) {
         lines.push('Current Month Budgets:');
@@ -239,6 +268,14 @@ export const renderFinancialSnapshotText = (data: FinancialSnapshotData, currenc
         lines.push('  These amounts are already included in every total above and in the monthly summaries below (Total Cash, Burn Rate, Income/Expense figures) - they are just not broken out by category or by month. If asked what is inside "Private," say you don\'t have visibility into it (by design) and the user would need to check the app themselves.');
     }
     lines.push('Note: "Savings Rate" in the monthly summaries below = (Income - Expenses) / Income x 100. Money moved to investments, debt payments, or transfers between your own accounts is not counted as an "Expense" here, so it still counts as savings even though it left your cash on hand.');
+    if (data.savingsGoals.length > 0) {
+        lines.push('Note on Savings Goals: contributing to a goal is a transfer, not an expense - it lowers cash on hand but does not appear as spending. Buying something FROM a goal logs two things at once: a normal EXPENSE (the true spend - use this to answer "how much did they spend") and an equal TRANSFER_IN that just moves the money back to cover it, so cash is not double-deducted. Never treat that TRANSFER_IN as separate spending or as income; it is purely an internal accounting offset, and the monthly summaries below already reflect it correctly under "Savings Goals" and never double-count it under "Transfers" or "Expenses" a second time.');
+        lines.push('Current Savings Goals:');
+        data.savingsGoals.forEach(g => {
+            const pausedLabel = g.isPaused ? ' (auto-contribution paused)' : '';
+            lines.push(`  ${g.name}: ${fmt(g.currentBalance, currency)} of ${fmt(g.targetAmount, currency)} target (${g.progressPercent.toFixed(0)}%)${pausedLabel}`);
+        });
+    }
     if (data.debts.length > 0) {
         lines.push('');
         lines.push('All Debts (full history, not just active ones - use this for questions about debt-handling behavior):');

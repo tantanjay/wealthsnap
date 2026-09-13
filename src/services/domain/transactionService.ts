@@ -13,8 +13,8 @@ import { upsertTombstone } from '@services/domain/tombstoneService';
 
 const UPSERT_TRANSACTION_QUERY = `
   INSERT OR REPLACE INTO transactions
-  (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId, savingsGoalId)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 // Used only by merge-sync: unlike UPSERT_TRANSACTION_QUERY, this binds createdAt/updatedAt
@@ -22,8 +22,8 @@ const UPSERT_TRANSACTION_QUERY = `
 // re-stamped to "now" by SQLite's DEFAULT CURRENT_TIMESTAMP.
 const UPSERT_TRANSACTION_FOR_MERGE_QUERY = `
   INSERT OR REPLACE INTO transactions
-  (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId, createdAt, updatedAt)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId, savingsGoalId, createdAt, updatedAt)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 const UPSERT_RECEIPT_QUERY = `
@@ -51,7 +51,8 @@ const prepareTransactionValues = async (txn: Transaction) => {
         txn.transferAccount || null,
         txn.linkedTransactionId || null,
         txn.investmentId || null,
-        txn.debtId || null
+        txn.debtId || null,
+        txn.savingsGoalId || null
     ];
 };
 
@@ -225,6 +226,7 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
             linkedTransactionId: row.linkedTransactionId,
             investmentId: row.investmentId,
             debtId: row.debtId,
+            savingsGoalId: row.savingsGoalId,
             createdAt: row.createdAt,
             updatedAt: row.updatedAt
         }));
