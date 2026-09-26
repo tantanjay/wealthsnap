@@ -16,10 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - A purchase bigger than the goal's balance splits automatically between the goal and your general funds, with a confirmation explaining the split before it saves — a normal goal-funded purchase saves quietly, with no extra popup to dismiss.
   - Recurring auto-contributions, a one-time notification when a goal hits its target, and pause/resume, manual top-up, and withdraw-to-cash actions.
   - Included in History, Monthly Summary, Chat, backup/restore, Excel export, and multi-device sync.
+  - History merges a goal-funded purchase into a single card with a dedicated color accent.
 
 ### Changed
 - History: Yearly filter now shows a tap-to-jump list of years with data instead of stepping through with arrows; Monthly's year header got the same shortcut.
 - History: list rows use a thin border instead of a drop shadow, fixing scroll stutter on long lists.
+- History: an investment's Buy/Sell/Dividend now shows as one card instead of two or three.
+- History: a debt payment's Principal, Interest, and Fees now merge into one card with a combined total.
+- History: investment and debt card badges show their actual type/direction instead of just "Investment"/"Debt".
+- History: rows no longer show generic filler text (e.g. "Expense", "To Other Account") when a more specific note exists.
 - Build: Removed the forced-portrait lock Google's ML Kit scanner activities (barcode/document scanning) impose on Android, so large-screen and foldable devices aren't restricted to portrait.
 - Build: Bumped Expo SDK 57 dependencies to their latest patch versions for stability and security fixes.
 
