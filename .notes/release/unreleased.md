@@ -17,6 +17,9 @@
 - **A one-time notification** fires the moment a contribution pushes a goal's balance to or past its target.
 - **Everywhere else in the app knows about it too**: History shows which goal a transfer belongs to, Monthly Summary gets its own Savings Goals section (contributed/spent/balance per goal), Chat can answer questions about your goals and correctly explains the accounting to itself so it doesn't misread a purchase as double spending, and goals are fully covered by Backup & Restore, Excel export, and multi-device Sync.
 
+## ⚙️ Performance & Build
+- **Dependency updates**: bumped Expo SDK 57 dependencies (`expo`, `expo-updates`, `expo-sqlite`, and other `expo-*` modules) to their latest patch versions for stability and security fixes.
+
 ---
 
 **Previous Version:** 1.17.0
