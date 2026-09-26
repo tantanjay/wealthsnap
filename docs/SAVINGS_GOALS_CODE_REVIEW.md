@@ -251,22 +251,22 @@ To prevent severe regression during remediation, the following invariant distinc
 
 Prioritized checklist for implementing the required fixes once approved:
 
-- [ ] **Phase 1: Critical Accounting, Data Integrity & Burn Rate Fixes**
-  - [ ] Disable edit action for `transaction.savingsGoalId != null` in [TransactionOptionsModal.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/components/transaction/TransactionOptionsModal.tsx#L34).
-  - [ ] Add `fkFields: [{ field: 'recurrenceId', refEntity: 'recurrenceRules' }]` in [backupEntities.ts](file:///d:/Projects/TOOLS/wealthsnap/src/services/integrations/backupEntities.ts#L30).
-  - [ ] Add `'savings-goals'` to `defaultOrder` and add migration merge in [HomeScreen.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/screens/HomeScreen.tsx#L156).
-  - [ ] Fix `calculateBurnRate()` in [financialMetrics.ts](file:///d:/Projects/TOOLS/wealthsnap/src/utils/financialMetrics.ts#L216) to exclude goal `EXPENSE` and include goal `TRANSFER_OUT`.
-  - [ ] Exclude goal recurrence rules from `upcomingBills` in [HistoryScreen.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/screens/HistoryScreen.tsx#L485).
-  - [ ] Exclude goal `EXPENSE` from `summary.totalExpense` in [HistoryScreen.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/screens/HistoryScreen.tsx#L378) to preserve daily/weekly Safe-to-Spend.
-  - [ ] Fix `InsightScreen.tsx` overview cards: compute true `netCashFlow` via `calculateBalance`, and use non-goal expense for Expense and Savings Rate KPIs.
-  - [ ] Guard `calculateTotalGoalContributions()` in [savingsGoalMetrics.ts](file:///d:/Projects/TOOLS/wealthsnap/src/utils/savingsGoalMetrics.ts#L73) to ignore completed goals (`balance >= targetAmount`).
-  - [ ] Exclude goal `EXPENSE` from `spentByCategory` in [financialSnapshotBuilder.ts](file:///d:/Projects/TOOLS/wealthsnap/src/utils/financialSnapshotBuilder.ts#L188) and `calculateTotals()` in [monthlySummaryBuilder.ts](file:///d:/Projects/TOOLS/wealthsnap/src/utils/monthlySummaryBuilder.ts#L162).
-- [ ] **Phase 2: Edge Cases & Transaction Reliability**
-  - [ ] Create atomic `saveGoalFundedExpense` in [savingsGoalService.ts](file:///d:/Projects/TOOLS/wealthsnap/src/services/database/savingsGoalService.ts) using `db.withTransactionAsync`.
-  - [ ] Refactor [TransactionForm.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/components/transaction/TransactionForm.tsx) to call the atomic service method and provide user feedback.
-  - [ ] Add positive amount validation for `recurringAmount` in [SavingsGoalForm.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/components/savingsGoals/SavingsGoalForm.tsx).
-  - [ ] Conditionally render Pause/Resume in [SavingsGoalOptionsModal.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/components/savingsGoals/SavingsGoalOptionsModal.tsx).
-  - [ ] Filter `!t.savingsGoalId` in `getMonthEndProjection` in [financialMetrics.ts](file:///d:/Projects/TOOLS/wealthsnap/src/utils/financialMetrics.ts).
+- [x] **Phase 1: Critical Accounting, Data Integrity & Burn Rate Fixes**
+  - [x] Disable edit action for `transaction.savingsGoalId != null` in [TransactionOptionsModal.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/components/transaction/TransactionOptionsModal.tsx#L34).
+  - [x] Add `fkFields: [{ field: 'recurrenceId', refEntity: 'recurrenceRules' }]` in [backupEntities.ts](file:///d:/Projects/TOOLS/wealthsnap/src/services/integrations/backupEntities.ts#L30).
+  - [x] Add `'savings-goals'` to `defaultOrder` in [HomeScreen.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/screens/HomeScreen.tsx#L156) — the existing `missingCards`/`otherMissing` reconciliation already merges anything newly added to `defaultOrder` into an existing saved layout, so no separate migration code was needed.
+  - [x] Fix `calculateBurnRate()` in [financialMetrics.ts](file:///d:/Projects/TOOLS/wealthsnap/src/utils/financialMetrics.ts#L216) to exclude goal `EXPENSE` and include goal `TRANSFER_OUT`. This is a no-op for callers that already pre-filter goal transactions out before calling it (InsightScreen/FinancialHealthScreen/financialSnapshotBuilder), so it only changes behavior for `detectAnomalies()`, which was passing raw unfiltered transactions.
+  - [x] Exclude goal recurrence rules from `upcomingBills` in [HistoryScreen.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/screens/HistoryScreen.tsx#L485).
+  - [x] Exclude goal `EXPENSE` from `summary.totalExpense` in [HistoryScreen.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/screens/HistoryScreen.tsx#L378) to preserve daily/weekly Safe-to-Spend.
+  - [x] Fix `InsightScreen.tsx` overview cards: compute true `netCashFlow` via `calculateBalance`, and use non-goal expense for Expense and Savings Rate KPIs.
+  - [x] Guard `calculateTotalGoalContributions()` in [savingsGoalMetrics.ts](file:///d:/Projects/TOOLS/wealthsnap/src/utils/savingsGoalMetrics.ts#L73) to ignore completed goals (`balance >= targetAmount`). Signature now takes `transactions` to derive each goal's balance; all 5 call sites (HomeScreen, FinancialHealthScreen, InsightScreen, HistoryScreen, financialSnapshotBuilder) updated. **Scope decision:** manual/ad-hoc lump-sum contributions remain excluded from this settings-based forward projection by design — folding historical `TRANSFER_OUT` scans into it would double-count goals that already have an active recurring schedule (confirmed with the user rather than guessed).
+  - [x] Exclude goal `EXPENSE` from `spentByCategory` in [financialSnapshotBuilder.ts](file:///d:/Projects/TOOLS/wealthsnap/src/utils/financialSnapshotBuilder.ts#L188) and from `expense`/`expenseTx`/`momExpenseChangePercent` in [monthlySummaryBuilder.ts](file:///d:/Projects/TOOLS/wealthsnap/src/utils/monthlySummaryBuilder.ts#L162) (extended to `expenseTx` too, since it otherwise feeds `topExpenses`/`budgetAlerts`/`spendingSpikes` with the same inconsistency).
+- [x] **Phase 2: Edge Cases & Transaction Reliability**
+  - [x] Added `saveTransactionsAtomically()` to [transactionService.ts](file:///d:/Projects/TOOLS/wealthsnap/src/services/domain/transactionService.ts) (not `savingsGoalService.ts` — this file already owns `UPSERT_TRANSACTION_QUERY`/`prepareTransactionValues`/`DataCache`, so the atomic write lives next to `saveTransactionWithReceipt`, its closest existing precedent) wrapping the writes in `db.withTransactionAsync`.
+  - [x] Refactored [TransactionForm.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/components/transaction/TransactionForm.tsx) to call the atomic method, refresh `allTransactions` from the DB right after saving (fixes Edge Case 2's stale-balance risk on rapid sequential goal spends), and show a breakdown confirmation alert (Edge Case 3).
+  - [x] Add positive amount validation for `recurringAmount` in [SavingsGoalForm.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/components/savingsGoals/SavingsGoalForm.tsx).
+  - [x] Conditionally render Pause/Resume in [SavingsGoalOptionsModal.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/components/savingsGoals/SavingsGoalOptionsModal.tsx).
+  - [x] Filter goal-funded `EXPENSE` out of `getMonthEndProjection` in [financialMetrics.ts](file:///d:/Projects/TOOLS/wealthsnap/src/utils/financialMetrics.ts) (both the linear projection's `currentMonthTrans` and the Smart Pacing historical loop).
 - [ ] **Phase 3: Verification**
-  - [ ] Run `npx tsc --noEmit` to guarantee clean type checks.
-  - [ ] Verify runway, safe-to-spend, cash flow, and spending comparison charts with simulated contribution and goal spend transactions.
+  - [x] Run `npx tsc --noEmit` to guarantee clean type checks — passes with zero errors.
+  - [ ] Verify runway, safe-to-spend, cash flow, and spending comparison charts with simulated contribution and goal spend transactions in the running app.
