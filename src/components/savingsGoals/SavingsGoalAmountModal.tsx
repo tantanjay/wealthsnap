@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
 import BottomModal from '@components/common/BottomModal';
 import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
+import { SEVERITY_ICON } from '@utils/severity';
 
 interface SavingsGoalAmountModalProps {
     visible: boolean;
@@ -57,6 +59,9 @@ const SavingsGoalAmountModal: React.FC<SavingsGoalAmountModalProps> = ({
             title={isWithdraw ? 'Withdraw to Cash' : 'Add Funds'}
             subtitle={goalName}
             maxHeight="60%"
+            footer={
+                <Button title={isWithdraw ? 'Withdraw' : 'Add Funds'} onPress={handleSubmit} />
+            }
         >
             <View style={{ gap: 12, paddingBottom: 20 }}>
                 <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
@@ -80,8 +85,12 @@ const SavingsGoalAmountModal: React.FC<SavingsGoalAmountModalProps> = ({
                     placeholderTextColor={colors.gray300}
                     autoFocus
                 />
-                {!!error && <Text style={{ color: colors.error, fontSize: 13 }}>{error}</Text>}
-                <Button title={isWithdraw ? 'Withdraw' : 'Add Funds'} onPress={handleSubmit} />
+                {!!error && (
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                        <Ionicons name={SEVERITY_ICON.error} size={16} color={colors.error} style={{ marginTop: 1 }} />
+                        <Text style={{ color: colors.error, fontSize: 13, flexShrink: 1 }}>{error}</Text>
+                    </View>
+                )}
             </View>
         </BottomModal>
     );

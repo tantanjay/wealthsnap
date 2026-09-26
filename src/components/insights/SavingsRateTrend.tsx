@@ -175,7 +175,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                     height: 10,
                     width: 10,
                     borderRadius: 5,
-                    backgroundColor: item.originalValue >= 0 ? '#4CAF50' : '#F44336',
+                    backgroundColor: item.originalValue >= 0 ? colors.success : colors.error,
                     borderWidth: 2,
                     borderColor: colors.surface
                 }} />
@@ -238,7 +238,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 10 }}>{activeMeta.metricLabel}</Text>
                             <Text style={{
-                                color: item.originalValue >= 0 ? '#4CAF50' : '#F44336',
+                                color: item.originalValue >= 0 ? colors.success : colors.error,
                                 fontSize: 12,
                                 fontWeight: '600'
                             }}>
@@ -382,13 +382,13 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                         {/* Current Example */}
                         <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Current</Text>
-                            <Text style={{ color: '#4CAF50', fontSize: 18, fontWeight: 'bold' }}>{exampleValue}</Text>
+                            <Text style={{ color: colors.success, fontSize: 18, fontWeight: 'bold' }}>{exampleValue}</Text>
                         </View>
 
                         {/* Streak Example */}
                         <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Streak</Text>
-                            <Text style={{ color: '#4CAF50', fontSize: 18, fontWeight: 'bold' }}>5📈</Text>
+                            <Text style={{ color: colors.success, fontSize: 18, fontWeight: 'bold' }}>5📈</Text>
                         </View>
                     </View>
 
@@ -396,13 +396,13 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                         {/* Positive Example */}
                         <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Positive</Text>
-                            <Text style={{ color: '#4CAF50', fontSize: 16, fontWeight: 'bold' }}>8 / 5</Text>
+                            <Text style={{ color: colors.success, fontSize: 16, fontWeight: 'bold' }}>8 / 5</Text>
                         </View>
 
                         {/* Negative Example */}
                         <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Negative</Text>
-                            <Text style={{ color: '#F44336', fontSize: 16, fontWeight: 'bold' }}>3 / 2</Text>
+                            <Text style={{ color: colors.error, fontSize: 16, fontWeight: 'bold' }}>3 / 2</Text>
                         </View>
                     </View>
                 </View>
@@ -445,15 +445,15 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
 
                         {/* Stacked bar: Expenses / Invested / Cash Left */}
                         <View style={{ flexDirection: 'row', height: 28, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>
-                            <View style={{ flex: 5, backgroundColor: '#F44336' }} />
+                            <View style={{ flex: 5, backgroundColor: colors.error }} />
                             <View style={{ flex: 2, backgroundColor: '#2196F3' }} />
-                            <View style={{ flex: 3, backgroundColor: '#4CAF50' }} />
+                            <View style={{ flex: 3, backgroundColor: colors.success }} />
                         </View>
 
                         {/* Legend */}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F44336' }} />
+                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error }} />
                                 <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Expenses</Text>
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -461,7 +461,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                                 <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Invested</Text>
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50' }} />
+                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
                                 <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Cash Left</Text>
                             </View>
                         </View>
@@ -490,11 +490,11 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                             <View style={{
                                 flex: 3,
                                 borderTopWidth: 2,
-                                borderColor: activeTab === 'CASH' ? '#4CAF50' : colors.border,
+                                borderColor: activeTab === 'CASH' ? colors.success : colors.border,
                                 paddingTop: 3
                             }}>
                                 <Text style={{
-                                    color: activeTab === 'CASH' ? '#4CAF50' : colors.textSecondary,
+                                    color: activeTab === 'CASH' ? colors.success : colors.textSecondary,
                                     fontSize: 10,
                                     fontWeight: '700',
                                     textAlign: 'center'
@@ -524,12 +524,12 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                                     {/* Zero line */}
                                     <View style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: colors.border }} />
                                     {/* Upward trend line */}
-                                    <View style={{ position: 'absolute', bottom: 10, left: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50' }} />
-                                    <View style={{ position: 'absolute', bottom: 18, left: '40%', width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50' }} />
-                                    <View style={{ position: 'absolute', bottom: 25, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50' }} />
+                                    <View style={{ position: 'absolute', bottom: 10, left: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
+                                    <View style={{ position: 'absolute', bottom: 18, left: '40%', width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
+                                    <View style={{ position: 'absolute', bottom: 25, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
                                 </View>
                             </View>
-                            <Text style={{ color: '#4CAF50', fontWeight: 'bold', fontSize: 13, marginBottom: 2, textAlign: 'center' }}>Saving Money</Text>
+                            <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 13, marginBottom: 2, textAlign: 'center' }}>Saving Money</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, textAlign: 'center' }}>Line above zero (green)</Text>
                         </View>
 
@@ -540,12 +540,12 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                                     {/* Zero line */}
                                     <View style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: colors.border }} />
                                     {/* Downward trend line */}
-                                    <View style={{ position: 'absolute', top: 35, left: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: '#F44336' }} />
-                                    <View style={{ position: 'absolute', top: 40, left: '40%', width: 8, height: 8, borderRadius: 4, backgroundColor: '#F44336' }} />
-                                    <View style={{ position: 'absolute', top: 43, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: '#F44336' }} />
+                                    <View style={{ position: 'absolute', top: 35, left: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error }} />
+                                    <View style={{ position: 'absolute', top: 40, left: '40%', width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error }} />
+                                    <View style={{ position: 'absolute', top: 43, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error }} />
                                 </View>
                             </View>
-                            <Text style={{ color: '#F44336', fontWeight: 'bold', fontSize: 13, marginBottom: 2, textAlign: 'center' }}>Overspending</Text>
+                            <Text style={{ color: colors.error, fontWeight: 'bold', fontSize: 13, marginBottom: 2, textAlign: 'center' }}>Overspending</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, textAlign: 'center' }}>Line below zero (red)</Text>
                         </View>
                     </View>
@@ -554,8 +554,8 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                     <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
                             • <Text style={{ fontWeight: 'bold' }}>Zero Line:</Text> The horizontal line in the middle{"\n"}
-                            • <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>Green Line:</Text> Above zero = You&apos;re saving{"\n"}
-                            • <Text style={{ color: '#F44336', fontWeight: 'bold' }}>Red Line:</Text> Below zero = Spending more than earning{"\n"}
+                            • <Text style={{ color: colors.success, fontWeight: 'bold' }}>Green Line:</Text> Above zero = You&apos;re saving{"\n"}
+                            • <Text style={{ color: colors.error, fontWeight: 'bold' }}>Red Line:</Text> Below zero = Spending more than earning{"\n"}
                             • <Text style={{ fontWeight: 'bold' }}>Dots:</Text> Each represents one month{"\n"}
                             • <Text style={{ fontWeight: 'bold' }}>Higher is Better:</Text> More savings = further above zero
                         </Text>
@@ -570,8 +570,8 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                     </Text>
                     <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                            • <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>{isPercent ? 'Positive %' : 'Positive amount'}</Text>: You saved money 💰{"\n"}
-                            • <Text style={{ color: '#F44336', fontWeight: 'bold' }}>{isPercent ? 'Negative %' : 'Negative amount'}</Text>: You overspent 📉
+                            • <Text style={{ color: colors.success, fontWeight: 'bold' }}>{isPercent ? 'Positive %' : 'Positive amount'}</Text>: You saved money 💰{"\n"}
+                            • <Text style={{ color: colors.error, fontWeight: 'bold' }}>{isPercent ? 'Negative %' : 'Negative amount'}</Text>: You overspent 📉
                         </Text>
                     </View>
                 </View>
@@ -584,11 +584,11 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                     </Text>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                         <View style={{ flex: 1, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
-                            <Text style={{ color: '#4CAF50', fontWeight: 'bold', fontSize: 13, marginBottom: 4 }}>5📈</Text>
+                            <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 13, marginBottom: 4 }}>5📈</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 12 }}>5 months of saving</Text>
                         </View>
                         <View style={{ flex: 1, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
-                            <Text style={{ color: '#F44336', fontWeight: 'bold', fontSize: 13, marginBottom: 4 }}>2📉</Text>
+                            <Text style={{ color: colors.error, fontWeight: 'bold', fontSize: 13, marginBottom: 4 }}>2📉</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 12 }}>2 months overspending</Text>
                         </View>
                     </View>
@@ -602,27 +602,27 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                     </Text>
 
                     {/* Positive Visual Example */}
-                    <View style={{ backgroundColor: '#4CAF5020', padding: 12, borderRadius: 8, marginBottom: 8, borderLeftWidth: 4, borderLeftColor: '#4CAF50' }}>
+                    <View style={{ backgroundColor: colors.success + '20', padding: 12, borderRadius: 8, marginBottom: 8, borderLeftWidth: 4, borderLeftColor: colors.success }}>
                         <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 6 }}>Positive: 8 / 5</Text>
                         <View style={{ marginLeft: 8 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 3 }}>
-                                <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>8</Text> = Total positive months
+                                <Text style={{ color: colors.success, fontWeight: 'bold' }}>8</Text> = Total positive months
                             </Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                                <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>5</Text> = Best consecutive streak
+                                <Text style={{ color: colors.success, fontWeight: 'bold' }}>5</Text> = Best consecutive streak
                             </Text>
                         </View>
                     </View>
 
                     {/* Negative Visual Example */}
-                    <View style={{ backgroundColor: '#F4433620', padding: 12, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: '#F44336' }}>
+                    <View style={{ backgroundColor: colors.error + '20', padding: 12, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: colors.error }}>
                         <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 6 }}>Negative: 3 / 2</Text>
                         <View style={{ marginLeft: 8 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 3 }}>
-                                <Text style={{ color: '#F44336', fontWeight: 'bold' }}>3</Text> = Total negative months
+                                <Text style={{ color: colors.error, fontWeight: 'bold' }}>3</Text> = Total negative months
                             </Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                                <Text style={{ color: '#F44336', fontWeight: 'bold' }}>2</Text> = Worst consecutive streak
+                                <Text style={{ color: colors.error, fontWeight: 'bold' }}>2</Text> = Worst consecutive streak
                             </Text>
                         </View>
                     </View>
@@ -686,7 +686,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
     const shiftedChartData = activeValues.map((val) => ({
         value: val + yOffset, // shift
         originalValue: val,   // keep real value for labels/colors
-        dataPointColor: val < 0 ? '#F44336' : colors.primary,
+        dataPointColor: val < 0 ? colors.error : colors.success,
     }));
 
     if (!isLoading && savingsData.rawData.length === 0) {
@@ -744,7 +744,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                                 <Skeleton width={40} height={20} />
                             ) : (
                                 <Text style={{
-                                    color: streak.type === 'positive' ? '#4CAF50' : '#F44336',
+                                    color: streak.type === 'positive' ? colors.success : colors.error,
                                     fontSize: 18,
                                     fontWeight: 'bold'
                                 }}>
@@ -760,7 +760,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                                 <Skeleton width={50} height={20} />
                             ) : (
                                 <Text style={{
-                                    color: '#4CAF50',
+                                    color: colors.success,
                                     fontSize: 16,
                                     fontWeight: 'bold'
                                 }}>
@@ -776,7 +776,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                                 <Skeleton width={50} height={20} />
                             ) : (
                                 <Text style={{
-                                    color: '#F44336',
+                                    color: colors.error,
                                     fontSize: 16,
                                     fontWeight: 'bold'
                                 }}>
@@ -793,7 +793,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                             <Skeleton width={60} height={20} />
                         ) : (
                             <Text style={{
-                                color: latestValue >= 0 ? '#4CAF50' : '#F44336',
+                                color: latestValue >= 0 ? colors.success : colors.error,
                                 fontSize: 18,
                                 fontWeight: 'bold'
                             }}>
@@ -873,10 +873,10 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                             lineGradientId="g_savings"
                             lineGradientComponent={() => (
                                 <LinearGradient id="g_savings" x1="0" y1="0" x2="0" y2="1">
-                                    <Stop offset="0%" stopColor={colors.primary} stopOpacity="1" />
-                                    <Stop offset="50%" stopColor={colors.primary} stopOpacity="1" />
-                                    <Stop offset="50%" stopColor="#F44336" stopOpacity="1" />
-                                    <Stop offset="100%" stopColor="#F44336" stopOpacity="1" />
+                                    <Stop offset="0%" stopColor={colors.success} stopOpacity="1" />
+                                    <Stop offset="50%" stopColor={colors.success} stopOpacity="1" />
+                                    <Stop offset="50%" stopColor={colors.error} stopOpacity="1" />
+                                    <Stop offset="100%" stopColor={colors.error} stopOpacity="1" />
                                 </LinearGradient>
                             )}
 
@@ -908,19 +908,19 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                     <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
                         <View style={{ alignItems: 'center' }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Average</Text>
-                            <Text style={{ color: avgValue >= 0 ? '#4CAF50' : '#F44336', fontSize: 14, fontWeight: '600' }}>
+                            <Text style={{ color: avgValue >= 0 ? colors.success : colors.error, fontSize: 14, fontWeight: '600' }}>
                                 {privacyMode ? '••••' : formatValue(avgValue)}
                             </Text>
                         </View>
                         <View style={{ alignItems: 'center' }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Best Month</Text>
-                            <Text style={{ color: '#4CAF50', fontSize: 14, fontWeight: '600' }}>
+                            <Text style={{ color: colors.success, fontSize: 14, fontWeight: '600' }}>
                                 {privacyMode ? '••••' : formatValue(Math.max(...activeValues))}
                             </Text>
                         </View>
                         <View style={{ alignItems: 'center' }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Worst Month</Text>
-                            <Text style={{ color: '#F44336', fontSize: 14, fontWeight: '600' }}>
+                            <Text style={{ color: colors.error, fontSize: 14, fontWeight: '600' }}>
                                 {privacyMode ? '••••' : formatValue(Math.min(...activeValues))}
                             </Text>
                         </View>

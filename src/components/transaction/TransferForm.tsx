@@ -252,7 +252,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({
                                         borderRadius: 12,
                                         borderWidth: 1.5,
                                         borderColor: isActive ? colors.primary : 'transparent',
-                                        backgroundColor: isActive ? colors.primary + '15' : colors.surface || '#f5f5f5',
+                                        backgroundColor: isActive ? colors.primary + '15' : colors.surface,
                                     }}
                                 >
                                     <Ionicons

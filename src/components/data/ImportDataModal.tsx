@@ -31,6 +31,22 @@ const ImportDataModal: React.FC<ImportDataModalProps> = ({
             title="Import Transactions"
             subtitle="Import from CSV or TSV file"
             maxHeight="85%"
+            footer={
+                <View style={styles.actions}>
+                    <Button
+                        title={isLoading ? "Loading..." : "Select File"}
+                        onPress={onSelectFile}
+                        disabled={isLoading}
+                    />
+                    <Button
+                        variant="outline"
+                        title="Cancel"
+                        onPress={onClose}
+                        style={{ marginTop: 10 }}
+                        disabled={isLoading}
+                    />
+                </View>
+            }
         >
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Important Notice */}
@@ -108,22 +124,6 @@ const ImportDataModal: React.FC<ImportDataModalProps> = ({
                             showAlert('Success', 'AI Prompt copied to clipboard!');
                         }}
                         style={{ marginTop: 12 }}
-                    />
-                </View>
-
-                {/* Actions */}
-                <View style={styles.actions}>
-                    <Button
-                        title={isLoading ? "Loading..." : "Select File"}
-                        onPress={onSelectFile}
-                        disabled={isLoading}
-                    />
-                    <Button
-                        variant="outline"
-                        title="Cancel"
-                        onPress={onClose}
-                        style={{ marginTop: 10 }}
-                        disabled={isLoading}
                     />
                 </View>
             </ScrollView>

@@ -62,7 +62,7 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
 
     const handleSave = async () => {
         if (!amount || isNaN(parseFloat(amount))) {
-            showAlert("Invalid Input", "Please enter a valid amount.");
+            showAlert("Invalid Input", "Please enter a valid amount.", undefined, { severity: 'error' });
             return;
         }
 
@@ -111,6 +111,19 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
             onClose={onClose}
             title={existingItem ? "Edit Dividend" : "Add Dividend"}
             maxHeight="85%"
+            footer={
+                <TouchableOpacity
+                    style={[styles.saveButton, { backgroundColor: colors.primary }]}
+                    onPress={handleSave}
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator color="#FFF" />
+                    ) : (
+                        <Text style={styles.saveButtonText}>Save</Text>
+                    )}
+                </TouchableOpacity>
+            }
         >
             <View style={styles.content}>
 
@@ -200,19 +213,6 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
                         </View>
                     </View>
                 </View>
-
-                {/* Save Button */}
-                <TouchableOpacity
-                    style={[styles.saveButton, { backgroundColor: colors.primary }]}
-                    onPress={handleSave}
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <ActivityIndicator color="#FFF" />
-                    ) : (
-                        <Text style={styles.saveButtonText}>Save</Text>
-                    )}
-                </TouchableOpacity>
             </View>
         </BottomModal>
     );

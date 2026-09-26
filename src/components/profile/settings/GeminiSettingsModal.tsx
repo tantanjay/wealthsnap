@@ -42,7 +42,32 @@ const GeminiSettingsModal: React.FC<GeminiSettingsModalProps> = ({
 
     return (
         <>
-            <BottomModal visible={visible} onClose={onClose}>
+            <BottomModal
+                visible={visible}
+                onClose={onClose}
+                footer={
+                    <>
+                        <Button
+                            title="Save API Key"
+                            onPress={handleSaveKey}
+                            style={{ marginBottom: 10 }}
+                        />
+
+                        <Button
+                            variant="outline"
+                            title="How to Get API Key 🔑"
+                            onPress={() => setShowApiKeyHelp(true)}
+                            style={{ marginBottom: 10 }}
+                        />
+
+                        <Button
+                            variant="outline"
+                            title="Cancel"
+                            onPress={onClose}
+                        />
+                    </>
+                }
+            >
                 <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>
                     🤖 Gemini AI Settings
                 </Text>
@@ -84,25 +109,6 @@ const GeminiSettingsModal: React.FC<GeminiSettingsModalProps> = ({
                         <Ionicons name={showApiKey ? "eye" : "eye-off"} size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                 </View>
-
-                <Button
-                    title="Save API Key"
-                    onPress={handleSaveKey}
-                    style={{ marginBottom: 10 }}
-                />
-
-                <Button
-                    variant="outline"
-                    title="How to Get API Key 🔑"
-                    onPress={() => setShowApiKeyHelp(true)}
-                    style={{ marginBottom: 10 }}
-                />
-
-                <Button
-                    variant="outline"
-                    title="Cancel"
-                    onPress={onClose}
-                />
             </BottomModal>
 
             {/* API Key Help Modal */}

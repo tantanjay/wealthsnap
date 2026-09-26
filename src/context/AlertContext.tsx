@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { AlertButton } from 'react-native';
 
+import { Severity, inferSeverity } from '@utils/severity';
+
 interface AlertState {
     visible: boolean;
     title: string;
     message?: string;
     details?: string; // Scrollable details for long error lists
     buttons?: AlertButton[];
+    severity: Severity;
     options?: {
         cancelable?: boolean;
         onDismiss?: () => void;
@@ -18,7 +21,7 @@ interface AlertContextType {
         title: string,
         message?: string,
         buttons?: AlertButton[],
-        options?: { cancelable?: boolean; onDismiss?: () => void; details?: string }
+        options?: { cancelable?: boolean; onDismiss?: () => void; details?: string; severity?: Severity }
     ) => void;
     hideAlert: () => void;
     alertState: AlertState;
@@ -44,6 +47,7 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
         title: '',
         message: '',
         buttons: [],
+        severity: 'info',
         options: { cancelable: true }
     });
 
@@ -55,14 +59,16 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
         title: string,
         message?: string,
         buttons?: AlertButton[],
-        options?: { cancelable?: boolean; onDismiss?: () => void; details?: string }
+        options?: { cancelable?: boolean; onDismiss?: () => void; details?: string; severity?: Severity }
     ) => {
+        const resolvedButtons = buttons || [{ text: 'OK', onPress: () => hideAlert() }];
         setAlertState({
             visible: true,
             title,
             message,
             details: options?.details,
-            buttons: buttons || [{ text: 'OK', onPress: () => hideAlert() }],
+            buttons: resolvedButtons,
+            severity: options?.severity ?? inferSeverity(title, resolvedButtons.some(b => b.style === 'destructive')),
             options: options || { cancelable: true }
         });
     }, [hideAlert]);

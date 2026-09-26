@@ -7,6 +7,7 @@ import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { useDataStatus } from '@context/DataStatusContext';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { EmptyState } from '@components/common/EmptyState';
 import { Debt, DebtStatus, Transaction, UserProfile } from '@types';
 import * as Storage from '@services/core/storageService';
 import { getAllDebts, saveDebt, deleteDebt } from '@services/domain/debtService';
@@ -407,15 +408,12 @@ const DebtScreen = ({ navigation }: any) => {
                     <ActivityIndicator size="large" color={colors.primary} />
                 </View>
             ) : !hasDebts ? (
-                <View style={styles.emptyState}>
-                    <View style={[styles.emptyIconCircle, { backgroundColor: colors.success + '15' }]}>
-                        <Ionicons name="checkmark-circle" size={34} color={colors.success} />
-                    </View>
-                    <Text style={[styles.emptyTitle, { color: colors.text }]}>Congrats, you have no debts!</Text>
-                    <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                        You're debt-free. Keep it that way and put that money to work for you instead.
-                    </Text>
-                </View>
+                <EmptyState
+                    icon="checkmark-circle"
+                    iconColor={colors.success}
+                    title="Congrats, you have no debts!"
+                    subtitle="You're debt-free. Keep it that way and put that money to work for you instead."
+                />
             ) : (
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
@@ -965,31 +963,6 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    emptyState: {
-        alignItems: 'center',
-        paddingTop: 40,
-        paddingHorizontal: 24,
-    },
-    emptyIconCircle: {
-        width: 76,
-        height: 76,
-        borderRadius: 38,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    emptyTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        marginBottom: 8,
-    },
-    emptySubtitle: {
-        fontSize: 14,
-        lineHeight: 20,
-        textAlign: 'center',
-        maxWidth: 280,
-        marginBottom: 24,
     },
     emptyCta: {
         paddingVertical: 13,

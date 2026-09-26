@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl, Platform, ToastAndroid, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, RefreshControl, Platform, ToastAndroid, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import DraggableIconButton from '@components/common/DraggableIconButton';
@@ -13,6 +13,7 @@ import { usePrivacy } from '@context/PrivacyContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
 import { useDataStatus } from '@context/DataStatusContext';
 import { Skeleton } from '@components/common/Skeleton';
+import { EmptyState } from '@components/common/EmptyState';
 import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding, getActualDividendsGrouped } from '@services/domain/investmentService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
 import { getProjectedDividends, getDividendCalendar, CalendarEvent } from '@services/domain/dividendHistoryService';
@@ -430,21 +431,14 @@ const InvestmentScreen = ({ navigation }: any) => {
                    state) so it sits still instead of rubber-banding with the refresh gesture. */
                 <View style={{ flex: 1 }}>
                     {headerContent}
-                    <View style={styles.emptyState}>
-                        <View style={[styles.emptyIconCircle, { backgroundColor: colors.secondary + '15' }]}>
-                            <Ionicons name="trending-up" size={34} color={colors.secondary} />
-                        </View>
-                        <Text style={[styles.emptyTitle, { color: colors.text }]}>Start growing your wealth</Text>
-                        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                            Every great portfolio starts with a single investment. Add yours and start putting your money to work.
-                        </Text>
-                        <TouchableOpacity
-                            style={[styles.emptyCta, { backgroundColor: colors.primary }]}
-                            onPress={() => navigation.navigate('Actions')}
-                        >
-                            <Text style={styles.emptyCtaText}>Add Your First Investment</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <EmptyState
+                        icon="trending-up"
+                        iconColor={colors.secondary}
+                        title="Start growing your wealth"
+                        subtitle="Every great portfolio starts with a single investment. Add yours and start putting your money to work."
+                        ctaLabel="Add Your First Investment"
+                        onCtaPress={() => navigation.navigate('Actions')}
+                    />
                 </View>
             ) : (
                 <ScrollView
@@ -512,41 +506,6 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    emptyState: {
-        alignItems: 'center',
-        paddingTop: 40,
-        paddingHorizontal: 24,
-    },
-    emptyIconCircle: {
-        width: 76,
-        height: 76,
-        borderRadius: 38,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    emptyTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        marginBottom: 8,
-    },
-    emptySubtitle: {
-        fontSize: 14,
-        lineHeight: 20,
-        textAlign: 'center',
-        maxWidth: 280,
-        marginBottom: 24,
-    },
-    emptyCta: {
-        paddingVertical: 13,
-        paddingHorizontal: 28,
-        borderRadius: 12,
-    },
-    emptyCtaText: {
-        color: '#FFFFFF',
-        fontSize: 15,
-        fontWeight: '700',
     },
 });
 

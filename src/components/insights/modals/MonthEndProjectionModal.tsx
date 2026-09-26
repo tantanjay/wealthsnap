@@ -8,6 +8,7 @@ import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { getMonthEndProjection } from '@utils/financialMetrics';
+import { SEVERITY_ICON } from '@utils/severity';
 
 interface MonthEndProjectionProps {
     visible: boolean;
@@ -64,13 +65,13 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
 
                 {/* Income Projection */}
                 <View style={{
-                    backgroundColor: '#4CAF5010',
+                    backgroundColor: colors.success + '10',
                     padding: 15,
                     borderRadius: 12,
                     marginBottom: 12
                 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                        <Ionicons name="trending-up" size={20} color="#4CAF50" style={{ marginRight: 8 }} />
+                        <Ionicons name="trending-up" size={20} color={colors.success} style={{ marginRight: 8 }} />
                         <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Income</Text>
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -81,7 +82,7 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Projected</Text>
-                        <Text style={{ color: '#4CAF50', fontSize: 18, fontWeight: 'bold' }}>
+                        <Text style={{ color: colors.success, fontSize: 18, fontWeight: 'bold' }}>
                             {formatCurrencyAmount(projection.projectedIncome, currency)}
                         </Text>
                     </View>
@@ -89,13 +90,13 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
 
                 {/* Expense Projection */}
                 <View style={{
-                    backgroundColor: '#F4433610',
+                    backgroundColor: colors.error + '10',
                     padding: 15,
                     borderRadius: 12,
                     marginBottom: 12
                 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                        <Ionicons name="trending-down" size={20} color="#F44336" style={{ marginRight: 8 }} />
+                        <Ionicons name="trending-down" size={20} color={colors.error} style={{ marginRight: 8 }} />
                         <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Expenses</Text>
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -106,7 +107,7 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Projected</Text>
-                        <Text style={{ color: '#F44336', fontSize: 18, fontWeight: 'bold' }}>
+                        <Text style={{ color: colors.error, fontSize: 18, fontWeight: 'bold' }}>
                             {formatCurrencyAmount(projection.projectedExpense, currency)}
                         </Text>
                     </View>
@@ -125,7 +126,7 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
                                 Projected Savings
                             </Text>
                             <Text style={{
-                                color: projection.projectedSavings.isGreaterThanOrEqualTo(0) ? '#4CAF50' : '#F44336',
+                                color: projection.projectedSavings.isGreaterThanOrEqualTo(0) ? colors.success : colors.error,
                                 fontSize: 24,
                                 fontWeight: 'bold'
                             }}>
@@ -137,7 +138,7 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
                                 Savings Rate
                             </Text>
                             <Text style={{
-                                color: savingsRate.isGreaterThanOrEqualTo(0) ? '#4CAF50' : '#F44336',
+                                color: savingsRate.isGreaterThanOrEqualTo(0) ? colors.success : colors.error,
                                 fontSize: 20,
                                 fontWeight: 'bold'
                             }}>
@@ -156,7 +157,7 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
                     marginTop: 5,
                     alignItems: 'center'
                 }}>
-                    <Ionicons name="information-circle" size={20} color={colors.primary} style={{ marginRight: 10 }} />
+                    <Ionicons name={SEVERITY_ICON.info} size={20} color={colors.info} style={{ marginRight: 10 }} />
                     <Text style={{ color: colors.text, flex: 1, fontSize: 13, lineHeight: 18 }}>
                         <Text style={{ fontWeight: 'bold' }}>New Account?</Text> If you have less than 1 month of history, this uses a simple daily average. Once you track more months, it switches to Smart Projection based on your historical patterns!
                     </Text>

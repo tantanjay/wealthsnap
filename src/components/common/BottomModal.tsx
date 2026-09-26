@@ -18,6 +18,7 @@ interface BottomModalProps {
     dismissable?: boolean;
     closeOnLock?: boolean;
     headerRight?: React.ReactNode;
+    footer?: React.ReactNode;
 }
 
 const BottomModal: React.FC<BottomModalProps> = ({
@@ -31,7 +32,8 @@ const BottomModal: React.FC<BottomModalProps> = ({
     contentStyle,
     dismissable = true,
     closeOnLock = true,
-    headerRight
+    headerRight,
+    footer
 }) => {
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
@@ -84,7 +86,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
                         {
                             backgroundColor: colors.background,
                             maxHeight: maxHeight,
-                            paddingBottom: Math.max(insets.bottom, 20)
+                            paddingBottom: footer ? 0 : Math.max(insets.bottom, 20)
                         },
                         style
                     ]}
@@ -119,6 +121,22 @@ const BottomModal: React.FC<BottomModalProps> = ({
                     <View style={[styles.content, contentStyle]}>
                         {children}
                     </View>
+
+                    {/* Footer - distinct region for action buttons, never a continuation of the body */}
+                    {footer && (
+                        <View
+                            style={[
+                                styles.footer,
+                                {
+                                    backgroundColor: colors.surface,
+                                    borderTopColor: colors.border,
+                                    paddingBottom: Math.max(insets.bottom, 20)
+                                }
+                            ]}
+                        >
+                            {footer}
+                        </View>
+                    )}
                 </View>
             </KeyboardAvoidingView>
         </Modal>
@@ -172,6 +190,15 @@ const styles = StyleSheet.create({
     },
     content: {
         flexShrink: 1,
+    },
+    footer: {
+        marginHorizontal: -20,
+        marginTop: 16,
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderBottomLeftRadius: 20,
+        borderBottomRightRadius: 20,
     }
 });
 

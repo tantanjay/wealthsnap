@@ -11,6 +11,7 @@ import { Transaction } from '@types';
 import { getCategoryGroup } from '@constants/categories';
 import { getCategoryTrend } from '@utils/financialMetrics';
 import { formatCurrencyAmount, formatCompactCurrency } from '@utils/currencyUtils';
+import { SEVERITY_ICON } from '@utils/severity';
 
 interface CategoryTrendModalProps {
     visible: boolean;
@@ -229,7 +230,7 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
                         flexDirection: 'row',
                         alignItems: 'center',
                     }}>
-                        <Ionicons name="information-circle" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                        <Ionicons name={SEVERITY_ICON.info} size={20} color={colors.info} style={{ marginRight: 8 }} />
                         <Text style={{ color: colors.text, fontSize: 12, flex: 1 }}>
                             {trendData.data[trendData.data.length - 1].isGreaterThan(average)
                                 ? `Your ${category} spending this month is above average.`

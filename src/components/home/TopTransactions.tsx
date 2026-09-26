@@ -94,7 +94,7 @@ const TopTransactions: React.FC<TopTransactionsProps> = ({ transactions, currenc
                             width: 40,
                             height: 40,
                             borderRadius: 20,
-                            backgroundColor: item.type === 'EXPENSE' ? '#F4433620' : '#4CAF5020',
+                            backgroundColor: (item.type === 'EXPENSE' ? colors.error : colors.success) + '20',
                             alignItems: 'center',
                             justifyContent: 'center',
                             marginRight: 12
@@ -102,7 +102,7 @@ const TopTransactions: React.FC<TopTransactionsProps> = ({ transactions, currenc
                             <Ionicons
                                 name={getCategoryIcon(item.category) as any}
                                 size={20}
-                                color={item.type === 'EXPENSE' ? '#F44336' : '#4CAF50'}
+                                color={item.type === 'EXPENSE' ? colors.error : colors.success}
                             />
                         </View>
 
@@ -118,7 +118,7 @@ const TopTransactions: React.FC<TopTransactionsProps> = ({ transactions, currenc
 
                         {/* Amount */}
                         <Text style={{
-                            color: item.type === 'EXPENSE' ? '#F44336' : '#4CAF50',
+                            color: item.type === 'EXPENSE' ? colors.error : colors.success,
                             fontSize: 16,
                             fontWeight: 'bold'
                         }}>

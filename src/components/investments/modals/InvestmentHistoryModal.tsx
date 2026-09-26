@@ -13,6 +13,8 @@ import { getPriceHistory, deleteAllPriceHistory, addPriceHistory, deletePriceHis
 import { getDividendHistory, deleteAutoDividendHistory, deleteDividendHistory } from '@services/domain/dividendHistoryService';
 import { getAllAssets } from '@services/domain/assetService';
 import { AssetRequest } from '@services/integrations/geminiService';
+import { SEVERITY_ICON } from '@utils/severity';
+import { EmptyState } from '@components/common/EmptyState';
 import { refreshAssetPrices, refreshAssetDividends } from '@services/domain/marketDataService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { DividendHistory, PriceHistory, Investment, Transaction, Asset } from '@types';
@@ -787,9 +789,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                     keyExtractor={item => item.id}
                                     contentContainerStyle={styles.listContent}
                                     ListEmptyComponent={
-                                        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                                            No position history found.
-                                        </Text>
+                                        <EmptyState size="compact" icon="swap-vertical-outline" title="No position history found." />
                                     }
                                 />
                             )}
@@ -839,9 +839,11 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                         keyExtractor={item => item.id}
                                         contentContainerStyle={styles.listContent}
                                         ListEmptyComponent={
-                                            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                                                {showManualOnly ? 'No manual price history found.' : 'No price history found.'}
-                                            </Text>
+                                            <EmptyState
+                                                size="compact"
+                                                icon="pricetag-outline"
+                                                title={showManualOnly ? 'No manual price history found.' : 'No price history found.'}
+                                            />
                                         }
                                     />
                                 </View>
@@ -892,9 +894,11 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                         keyExtractor={item => item.id}
                                         contentContainerStyle={styles.listContent}
                                         ListEmptyComponent={
-                                            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                                                {showManualOnly ? 'No manual dividend history found.' : 'No dividend history found.'}
-                                            </Text>
+                                            <EmptyState
+                                                size="compact"
+                                                icon="cash-outline"
+                                                title={showManualOnly ? 'No manual dividend history found.' : 'No dividend history found.'}
+                                            />
                                         }
                                     />
                                 </View>
@@ -933,8 +937,8 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                 title={`Fetch ${activeFetchMode === 'price' ? 'Prices' : 'Dividends'}`}
             >
                 <View>
-                    <View style={{ backgroundColor: 'rgba(255, 152, 0, 0.1)', padding: 12, borderRadius: 8, marginBottom: 15, flexDirection: 'row' }}>
-                        <Ionicons name="warning-outline" size={20} color="#FF9800" style={{ marginRight: 8, marginTop: 2 }} />
+                    <View style={{ backgroundColor: colors.warning + '15', padding: 12, borderRadius: 8, marginBottom: 15, flexDirection: 'row' }}>
+                        <Ionicons name={SEVERITY_ICON.warning} size={20} color={colors.warning} style={{ marginRight: 8, marginTop: 2 }} />
                         <Text style={{ color: colors.text, fontSize: 13, flex: 1, lineHeight: 18 }}>
                             AI-fetched {activeFetchMode === 'price' ? 'prices' : 'dividends'} are estimates and may vary from real-time official records.
                         </Text>

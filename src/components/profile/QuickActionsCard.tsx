@@ -24,7 +24,7 @@ const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
         <Card style={{ marginBottom: 16 }}>
             <View style={styles.cardHeader}>
                 <View style={[styles.headerIcon, { backgroundColor: colors.accent + '20' }]}>
-                    <Ionicons name="wallet" size={22} color={colors.accent} />
+                    <Ionicons name="briefcase-outline" size={22} color={colors.accent} />
                 </View>
                 <Text style={[styles.cardTitle, { color: colors.text }]}>Financial Planning</Text>
             </View>

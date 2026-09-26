@@ -5,7 +5,7 @@ export const PALETTE = {
     secondary: '#FFA000',    // Amber 700 (Complementary, Wealth/Gold)
     secondaryDark: '#FF6F00',// Amber 900
     secondaryLight: '#FFCA28',// Amber 200
-    accent: '#00BFA5',       // Teal A700 (Growth/Positive)
+    accent: '#00BFA5',       // Teal A700 - decorative/interactive only; positive values use `success`, not this
     white: '#FFFFFF',
     black: '#000000',
     gray100: '#F5F5F5',

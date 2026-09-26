@@ -14,6 +14,7 @@ import { usePrivacy } from '@context/PrivacyContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
 import { useDataStatus } from '@context/DataStatusContext';
 import { Skeleton } from '@components/common/Skeleton';
+import { EmptyState } from '@components/common/EmptyState';
 import { Transaction, UserProfile, Investment, RecurrenceRule, Debt, SavingsGoal } from '@types';
 import { deleteTransaction, getCachedTransactions } from '@services/domain/transactionService';
 import { deleteInvestment, getCachedInvestments } from '@services/domain/investmentService';
@@ -693,21 +694,13 @@ const HistoryScreen = ({ navigation }: any) => {
                         )}
                     </View>
 
-                    <View style={styles.emptyState}>
-                        <View style={[styles.emptyIconCircle, { backgroundColor: colors.primary + '15' }]}>
-                            <Ionicons name="receipt-outline" size={34} color={colors.primary} />
-                        </View>
-                        <Text style={[styles.emptyTitle, { color: colors.text }]}>No transactions yet</Text>
-                        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                            Every transaction, investment, and debt you log will show up here, organized by date.
-                        </Text>
-                        <TouchableOpacity
-                            style={[styles.emptyCta, { backgroundColor: colors.primary }]}
-                            onPress={() => navigation.navigate('Actions')}
-                        >
-                            <Text style={styles.emptyCtaText}>Add Your First Transaction</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <EmptyState
+                        icon="receipt-outline"
+                        title="No transactions yet"
+                        subtitle="Every transaction, investment, and debt you log will show up here, organized by date."
+                        ctaLabel="Add Your First Transaction"
+                        onCtaPress={() => navigation.navigate('Actions')}
+                    />
                 </View>
             ) : (
             <SectionList
@@ -1037,41 +1030,6 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    emptyState: {
-        alignItems: 'center',
-        paddingTop: 40,
-        paddingHorizontal: 24,
-    },
-    emptyIconCircle: {
-        width: 76,
-        height: 76,
-        borderRadius: 38,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    emptyTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        marginBottom: 8,
-    },
-    emptySubtitle: {
-        fontSize: 14,
-        lineHeight: 20,
-        textAlign: 'center',
-        maxWidth: 280,
-        marginBottom: 24,
-    },
-    emptyCta: {
-        paddingVertical: 13,
-        paddingHorizontal: 28,
-        borderRadius: 12,
-    },
-    emptyCtaText: {
-        color: '#FFFFFF',
-        fontSize: 15,
-        fontWeight: '700',
     },
 });
 

@@ -627,7 +627,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                                 </View>
 
                                 {useNativeCurrency && (
-                                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                                    <Ionicons name="radio-button-on" size={24} color={colors.primary} />
                                 )}
                             </View>
                         </TouchableOpacity>
@@ -857,7 +857,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <View style={{ alignItems: 'center', flex: 1 }}>
                                 <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                                    <Ionicons name="wallet" size={24} color={colors.primary} />
+                                    <Ionicons name="cash-outline" size={24} color={colors.primary} />
                                 </View>
                                 <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>Cash / Bank</Text>
                             </View>
