@@ -153,7 +153,7 @@ const HomeScreen = ({ navigation }: any) => {
             // Load persisted card order
             const savedOrder = await Storage.getHomeCardOrder();
             if (savedOrder && savedOrder.length > 0) {
-                const defaultOrder = ['financial-health', 'cash-flow', 'portfolio', 'debt', 'transactions'];
+                const defaultOrder = ['financial-health', 'cash-flow', 'portfolio', 'debt', 'savings-goals', 'transactions'];
 
                 // Check for missing cards
                 const missingCards = defaultOrder.filter(id => !savedOrder.includes(id));
@@ -541,7 +541,7 @@ const HomeScreen = ({ navigation }: any) => {
             // totalDebtObligationsValue already calculated above; goal contributions mirror
             // it (a fixed monthly-equivalent derived from each active, unpaused goal's own
             // settings - see calculateTotalGoalContributions).
-            const totalGoalContributionsValue = calculateTotalGoalContributions(allGoals);
+            const totalGoalContributionsValue = calculateTotalGoalContributions(allGoals, t);
             const totalBurnRate = burnRate.plus(totalDebtObligationsValue).plus(totalGoalContributionsValue);
 
             const runway = totalBurnRate.isGreaterThan(0)

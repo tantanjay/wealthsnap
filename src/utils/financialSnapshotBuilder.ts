@@ -167,7 +167,7 @@ export const buildFinancialSnapshotData = (
     const nonDebtTransactions = transactions.filter(t => !t.debtId && !t.savingsGoalId);
     const baseBurnRate = calculateBurnRate(nonDebtTransactions, 6);
     const monthlyDebtObligations = calculateTotalDebtObligations(debts);
-    const monthlyGoalContributions = calculateTotalGoalContributions(goals);
+    const monthlyGoalContributions = calculateTotalGoalContributions(goals, transactions);
     const monthlyBurnRate = baseBurnRate.plus(monthlyDebtObligations).plus(monthlyGoalContributions);
 
     const runwayMonths = monthlyBurnRate.isGreaterThan(0)
@@ -185,7 +185,10 @@ export const buildFinancialSnapshotData = (
     };
     const spentByCategory = new Map<string, BigNumber>();
     transactions
-        .filter(t => t.type === 'EXPENSE' && isCurrentLocalMonth(t.date))
+        // Goal-funded purchases are pre-funded from accumulated goal savings, not this
+        // month's budget - counting them here would falsely flag a category as wildly over
+        // budget off a single goal-funded purchase and misinform the AI assistant.
+        .filter(t => t.type === 'EXPENSE' && !t.savingsGoalId && isCurrentLocalMonth(t.date))
         .forEach(t => {
             spentByCategory.set(t.category, (spentByCategory.get(t.category) || new BigNumber(0)).plus(t.amount.abs()));
         });

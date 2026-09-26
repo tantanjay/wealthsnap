@@ -68,10 +68,14 @@ export const calculateMonthlyContributionEquivalent = (amount: BigNumber, freque
  * mirrors calculateTotalDebtObligations(debts) exactly (same "derived from the entity's own
  * settings, not from scanning transaction history" shape), so it can be added into Burn
  * Rate/Runway the same way debt obligations already are. A paused goal contributes 0 (its
- * auto-contribution isn't firing), matching isPaused's actual effect on cash flow.
+ * auto-contribution isn't firing), matching isPaused's actual effect on cash flow. A goal
+ * that's already reached its target is excluded too - its recurring rule may still be
+ * technically active until the user manually pauses it, but the obligation it represents has
+ * already been met, so counting it here would overstate ongoing burn indefinitely.
  */
-export const calculateTotalGoalContributions = (goals: SavingsGoal[]): BigNumber => {
+export const calculateTotalGoalContributions = (goals: SavingsGoal[], transactions: Transaction[]): BigNumber => {
     return goals
         .filter(g => !g.isPaused && g.recurringAmount && g.frequency)
+        .filter(g => calculateGoalBalance(g, transactions).isLessThan(g.targetAmount))
         .reduce((sum, g) => sum.plus(calculateMonthlyContributionEquivalent(g.recurringAmount!, g.frequency!)), new BigNumber(0));
 };

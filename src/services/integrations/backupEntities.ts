@@ -27,7 +27,10 @@ export interface EntityDescriptor<T = any> {
 export const ENTITY_REGISTRY: EntityDescriptor[] = [
     { key: 'categories', label: 'Categories', getAll: getAllCategories, bulkSave: bulkSaveCategories, hasId: true },
     { key: 'debts', label: 'Debts', getAll: getAllDebts, bulkSave: bulkSaveDebts, hasId: true },
-    { key: 'savingsGoals', label: 'Savings Goals', getAll: getAllSavingsGoals, bulkSave: bulkSaveSavingsGoals, hasId: true },
+    {
+        key: 'savingsGoals', label: 'Savings Goals', getAll: getAllSavingsGoals, bulkSave: bulkSaveSavingsGoals, hasId: true,
+        fkFields: [{ field: 'recurrenceId', refEntity: 'recurrenceRules' }],
+    },
     { key: 'recurrenceRules', label: 'Recurring Rules', getAll: getAllRecurrenceRules, bulkSave: bulkSaveRecurrenceRules, hasId: true },
     {
         key: 'investments', label: 'Investments', getAll: getAllInvestments, bulkSave: bulkSaveInvestments, hasId: true,

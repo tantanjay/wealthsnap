@@ -165,7 +165,10 @@ export const getMonthEndProjection = (transactions: Transaction[]) => {
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const daysRemaining = daysInMonth - currentDay;
 
-    const currentMonthTrans = getTransactionsByMonth(transactions, today);
+    // Excludes goal-funded EXPENSE - that cash already left when it was contributed to the
+    // goal, not when it was later spent, so leaving it in would inflate the daily run rate
+    // and produce a falsely alarming month-end forecast off one lump-sum goal purchase.
+    const currentMonthTrans = getTransactionsByMonth(transactions, today).filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId));
     const { income, expense } = calculateTotals(currentMonthTrans);
 
     // 1. Linear Fallback
@@ -182,7 +185,7 @@ export const getMonthEndProjection = (transactions: Transaction[]) => {
 
     for (let i = 1; i <= 6; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const histTrans = getTransactionsByMonth(transactions, d).filter(isExpense);
+        const histTrans = getTransactionsByMonth(transactions, d).filter(t => isExpense(t) && !t.savingsGoalId);
         if (histTrans.length === 0) continue;
 
         const histTotals = calculateTotals(histTrans);
@@ -247,8 +250,17 @@ export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: nu
 
         // Only count months where we actually had activity if we want to be strict,
         // but for burn rate, "0 spend" is valid if the account existed.
-        const { expense } = calculateTotals(monthlyTransactions);
-        totalExpense = totalExpense.plus(expense);
+        // A goal-funded EXPENSE's cash already left when it was contributed to the goal (the
+        // TRANSFER_OUT below), not when it was later spent - counting both would double the
+        // burn, so the EXPENSE leg is excluded and the actual historical contribution counted
+        // instead. Callers that pass in transactions already stripped of savingsGoalId (and
+        // add a settings-based projected obligation on top instead) are unaffected, since
+        // there's nothing left here to exclude or include.
+        const { expense } = calculateTotals(monthlyTransactions.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId)));
+        const goalContributions = monthlyTransactions
+            .filter(t => t.type === 'TRANSFER_OUT' && t.savingsGoalId)
+            .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
+        totalExpense = totalExpense.plus(expense).plus(goalContributions);
         monthsWithData++;
     }
 

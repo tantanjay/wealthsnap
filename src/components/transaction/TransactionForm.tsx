@@ -13,7 +13,7 @@ import { useAlert } from '@context/AlertContext';
 import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency, SavingsGoal } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS } from '@constants/categories';
-import { getRecentCategories, saveTransaction, getCachedTransactions } from '@services/domain/transactionService';
+import { getRecentCategories, saveTransaction, saveTransactionsAtomically, getCachedTransactions } from '@services/domain/transactionService';
 import { saveRecurrenceRule } from '@services/domain/recurrenceService';
 import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
 import { calculateGoalBalance } from '@utils/savingsGoalMetrics';
@@ -146,16 +146,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     };
 
     /**
-     * Auto-Offset + Split-Funding: saves the EXPENSE(s) + linked TRANSFER_IN(s) for a
-     * goal-funded expense, then resets form state. Bypasses the normal single-saveTransaction
-     * path below entirely - a goal-funded expense is never also a recurring transaction
-     * (enforced by handleSelectFundingGoal/handleSetIsRecurring above).
+     * Auto-Offset + Split-Funding: saves the EXPENSE(s) + linked TRANSFER_IN for a
+     * goal-funded expense as one atomic write, then resets form state and refreshes the
+     * in-memory transaction list. Bypasses the normal single-saveTransaction path below
+     * entirely - a goal-funded expense is never also a recurring transaction (enforced by
+     * handleSelectFundingGoal/handleSetIsRecurring above).
      */
-    const saveGoalFundedExpense = async (goal: SavingsGoal, enteredAmount: BigNumber) => {
+    const saveGoalFundedExpense = async (goal: SavingsGoal, enteredAmount: BigNumber): Promise<{ goalPortion: BigNumber; remainder: BigNumber }> => {
         const now = new Date().toISOString();
         const goalBalance = calculateGoalBalance(goal, allTransactions);
         const goalPortion = BigNumber.minimum(enteredAmount, goalBalance);
         const remainder = enteredAmount.minus(goalPortion);
+        const toSave: Transaction[] = [];
 
         if (goalPortion.isGreaterThan(0)) {
             const expenseId = generateUUID();
@@ -173,11 +175,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 createdAt: now,
                 updatedAt: now,
             };
-            // Save the EXPENSE first so the offsetting TRANSFER_IN can link to its real id -
-            // same order DebtScreen's handlePaymentSubmit saves its principal leg before the
-            // interest/fee legs that link back to it.
-            await saveTransaction(expense);
-
             const offset: Transaction = {
                 id: generateUUID(),
                 type: 'TRANSFER_IN',
@@ -192,7 +189,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 createdAt: now,
                 updatedAt: now,
             };
-            await saveTransaction(offset);
+            toSave.push(expense, offset);
         }
 
         // Split Funding: whatever the goal's balance couldn't cover comes out of general
@@ -211,8 +208,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 createdAt: now,
                 updatedAt: now,
             };
-            await saveTransaction(plainExpense);
+            toSave.push(plainExpense);
         }
+
+        await saveTransactionsAtomically(toSave);
+
+        // Refresh the in-memory ledger so a second goal-funded expense logged without closing
+        // this modal sees the spend that was just saved, instead of computing its split off a
+        // stale pre-save balance.
+        const refreshed = await getCachedTransactions();
+        setAllTransactions(refreshed);
+
+        return { goalPortion, remainder };
     };
 
     const handleSave = async () => {
@@ -226,9 +233,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             const enteredAmount = new BigNumber(amount);
             const goalBalance = calculateGoalBalance(selectedGoal, allTransactions);
             const finish = async () => {
-                await saveGoalFundedExpense(selectedGoal, enteredAmount);
+                const { goalPortion, remainder } = await saveGoalFundedExpense(selectedGoal, enteredAmount);
                 resetForm();
                 if (initialTransaction) onSave();
+
+                // Confirms the breakdown after the fact - not obvious from the amount field
+                // alone whether (and how much of) this landed against the goal vs. general cash.
+                const breakdown = remainder.isGreaterThan(0)
+                    ? `${formatCurrencyAmount(goalPortion)} from "${selectedGoal.name}" and ${formatCurrencyAmount(remainder)} from your general funds.`
+                    : `${formatCurrencyAmount(goalPortion)} from "${selectedGoal.name}".`;
+                showAlert('Goal Spend Recorded', breakdown);
             };
 
             // Split Funding: the goal can't cover the whole amount, so this would otherwise
