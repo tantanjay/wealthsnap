@@ -10,6 +10,7 @@
 - **Contributing is a transfer, not an expense**: putting money into a goal (recurring or a one-time manual top-up) lowers your cash on hand immediately, but it never shows up as spending on your Monthly Summary or category charts — it's money moved, not money gone.
 - **Spending from a goal doesn't double-count**: buy something using goal money and the app logs it as a real expense (so your category breakdown and budgets still work normally) while automatically crediting the goal back by the same amount, so your cash balance is never deducted twice for the same purchase.
 - **Split Funding for when a goal falls short**: if what you're buying costs more than what's left in the goal, the app automatically covers the shortfall from your general funds as a separate expense — before it saves, you get a clear confirmation explaining exactly how much comes from the goal and how much comes from general cash.
+- **No interruption for a normal goal-funded purchase**: spending from a goal used to show a "Goal Spend Recorded" popup after every save — since the amount and goal are already visible on the form before you save, that added friction without new information. It's gone now; you'll still get an explicit confirmation for the Split Funding case above, where part of the purchase draws from general cash.
 - **An in-app guide explains the numbers**: an info button on the Savings Goals screen walks through, in plain language, why a contribution counts toward your Burn Rate/Runway/Safe-to-Spend/Avg Daily Spending while a goal-funded purchase doesn't add anything extra there or spike your month-over-month spending trends — with a worked example.
 - **Net Worth stays accurate**: money sitting in a goal still counts as an asset, so moving cash into a goal never makes your Net Worth look lower than it really is.
 - **New Home dashboard widget**: shows your total saved across all goals, how many goals you have, and your combined Target and Spent totals at a glance, tapping through to a dedicated Savings Goals screen.
@@ -18,6 +19,7 @@
 - **Everywhere else in the app knows about it too**: History shows which goal a transfer belongs to, Monthly Summary gets its own Savings Goals section (contributed/spent/balance per goal), Chat can answer questions about your goals and correctly explains the accounting to itself so it doesn't misread a purchase as double spending, and goals are fully covered by Backup & Restore, Excel export, and multi-device Sync.
 
 ## ⚙️ Performance & Build
+- **Smoother scrolling on the History list**: rows previously each rendered a drop shadow, which is expensive to draw repeatedly on Android and could make a long transaction history feel sluggish while scrolling. Rows now use a thin border instead, keeping the same visual separation without the per-row rendering cost.
 - **Dependency updates**: bumped Expo SDK 57 dependencies (`expo`, `expo-updates`, `expo-sqlite`, and other `expo-*` modules) to their latest patch versions for stability and security fixes.
 
 ---
