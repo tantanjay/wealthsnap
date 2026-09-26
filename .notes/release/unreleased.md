@@ -25,6 +25,13 @@
 - **Clearer badges**: an investment card's badge now shows its actual type (Stocks, Crypto, Funds, etc.) instead of just repeating the word "Investment"; a debt card's badge now reads "I Owe" or "Owed to Me" instead of just "Debt", and its amount is colored to match.
 - **No more filler labels**: a row used to fall back to showing its raw category word (e.g. "Expense", "Income") or a generic "To Other Account" title when there was nothing more specific to say. Rows now prefer their own note as the title when one exists, and simply skip a line that would have added no real information.
 
+## 🚀 Onboarding & Welcome Screen
+- **A shorter, more focused first-run tour**: the walkthrough you see on first launch is now four slides instead of six, each built around a reason to actually use the app — your data staying private and local, everything (spending, debts, investments, goals, budgets) tracked in one place, adding a transaction in seconds, and a quick recap before you start. The step-by-step mechanics it used to cover (backups, recurring rules, budget limits) are gone from the tour; you'll see those explained right when you first open those screens instead.
+- **Swipe through it**: slides now respond to a swipe left/right, with a sliding animation, in addition to the existing Back/Next buttons.
+- **The welcome screen finally says "WealthSnap"**: the very first screen you see now shows the app's name, and leads with the same three points as the onboarding tour instead of a different, more generic pitch.
+- **Fits small phones properly**: icons, spacing, and text on both the welcome screen and the onboarding tour now scale down on shorter or narrower phones, and the Next/Get Started button no longer ends up partly hidden behind the phone's status or navigation bar.
+- **Replay from Help Center now matches**: the "Getting Started" guide in the Help Center now replays the actual onboarding tour instead of a separate copy that had fallen out of date.
+
 ## ⚙️ Performance & Build
 - **Smoother scrolling on the History list**: rows previously each rendered a drop shadow, which is expensive to draw repeatedly on Android and could make a long transaction history feel sluggish while scrolling. Rows now use a thin border instead, keeping the same visual separation without the per-row rendering cost.
 - **Dependency updates**: bumped Expo SDK 57 dependencies (`expo`, `expo-updates`, `expo-sqlite`, and other `expo-*` modules) to their latest patch versions for stability and security fixes.
