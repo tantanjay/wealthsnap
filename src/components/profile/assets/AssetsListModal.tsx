@@ -8,6 +8,7 @@ import { useAlert } from '@context/AlertContext';
 import { Asset } from '@types';
 import { getAllAssets, deleteAsset } from '@services/domain/assetService';
 import { AssetForm } from '@components/profile/assets/AssetForm';
+import { EmptyState } from '@components/common/EmptyState';
 
 interface AssetsListModalProps {
     visible: boolean;
@@ -139,7 +140,7 @@ export const AssetsListModal: React.FC<AssetsListModalProps> = ({ visible, onClo
                                 renderItem={renderItem}
                                 ListEmptyComponent={
                                     <View style={styles.emptyContainer}>
-                                        <Text style={{ color: colors.textSecondary }}>No assets found.</Text>
+                                        <EmptyState size="compact" icon="list-outline" title="No assets found." />
                                     </View>
                                 }
                                 contentContainerStyle={{ paddingBottom: 80 }}

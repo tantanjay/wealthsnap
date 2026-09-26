@@ -7,6 +7,7 @@ import { Card } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { RecurrenceRule } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { EmptyState } from '@components/common/EmptyState';
 
 interface RecurringRulesListModalProps {
     visible: boolean;
@@ -44,9 +45,7 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
                 </Text>
 
                 {sortedRules.length === 0 ? (
-                    <View style={{ padding: 20, alignItems: 'center' }}>
-                        <Text style={{ color: colors.textSecondary }}>No recurring rules found.</Text>
-                    </View>
+                    <EmptyState size="compact" icon="repeat-outline" title="No recurring rules found." />
                 ) : (
                     <FlatList
                         scrollEnabled={false}

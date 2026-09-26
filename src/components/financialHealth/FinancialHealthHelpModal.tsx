@@ -5,6 +5,7 @@ import { BigNumber } from 'bignumber.js';
 import { useTheme } from '@context/ThemeContext';
 import BottomModal from '@components/common/BottomModal';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { SEVERITY_ICON } from '@utils/severity';
 
 export type HelpModalType = 'RUNWAY' | 'CASH_FLOW' | 'DEBT' | 'WEALTH' | null;
 
@@ -368,7 +369,7 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
 
                     <View style={{ marginTop: 24, padding: 12, backgroundColor: colors.background, borderRadius: 8 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                            <Ionicons name="information-circle" size={20} color={colors.textSecondary} />
+                            <Ionicons name={SEVERITY_ICON.info} size={20} color={colors.info} />
                             <Text style={{ marginLeft: 8, color: colors.text, fontWeight: 'bold' }}>Note on data</Text>
                         </View>
                         <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>

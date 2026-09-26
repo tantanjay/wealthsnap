@@ -26,18 +26,7 @@ const BackupReminderModal: React.FC<BackupReminderModalProps> = ({
             visible={visible}
             onClose={onClose}
             title=""
-        >
-            <View style={styles.container}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.warning + '20' }]}>
-                    <Ionicons name="cloud-offline" size={32} color={colors.warning} />
-                </View>
-
-                <Text style={[styles.title, { color: colors.text }]}>Backup Reminder</Text>
-
-                <Text style={[styles.message, { color: colors.textSecondary }]}>
-                    You haven&apos;t backed up your data yet. Do it now?
-                </Text>
-
+            footer={
                 <View style={styles.buttonContainer}>
                     <Button
                         title="Create Backup"
@@ -51,6 +40,18 @@ const BackupReminderModal: React.FC<BackupReminderModalProps> = ({
                         style={styles.secondaryButton}
                     />
                 </View>
+            }
+        >
+            <View style={styles.container}>
+                <View style={[styles.iconContainer, { backgroundColor: colors.warning + '20' }]}>
+                    <Ionicons name="cloud-offline" size={32} color={colors.warning} />
+                </View>
+
+                <Text style={[styles.title, { color: colors.text }]}>Backup Reminder</Text>
+
+                <Text style={[styles.message, { color: colors.textSecondary }]}>
+                    You haven&apos;t backed up your data yet. Do it now?
+                </Text>
             </View>
         </BottomModal>
     );

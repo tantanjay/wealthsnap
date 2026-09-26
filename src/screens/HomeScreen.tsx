@@ -15,6 +15,7 @@ import HomeSavingsGoalsCard from '@components/home/HomeSavingsGoalsCard';
 import HomeFinancialHealthCard from '@components/home/HomeFinancialHealthCard';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { Skeleton } from '@components/common/Skeleton';
+import { EmptyState } from '@components/common/EmptyState';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
@@ -946,20 +947,14 @@ const HomeScreen = ({ navigation }: any) => {
                         <ActivityIndicator size="large" color={colors.primary} />
                     </View>
                 ) : isNewUser ? (
-                    <View style={styles.emptyState}>
-                        <View style={[styles.emptyIconCircle, { backgroundColor: colors.primary + '15' }]}>
-                            <Ionicons name="cash-outline" size={34} color={colors.primary} />
-                        </View>
-                        <Text style={[styles.emptyTitle, { color: colors.text }]}>No financial data yet</Text>
-                        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                            Your cash flow, net worth, and runway will show up here once you start logging money in and out.
-                        </Text>
-                        <TouchableOpacity
-                            style={[styles.emptyCta, { backgroundColor: colors.primary }]}
-                            onPress={() => navigation.navigate('Actions')}
-                        >
-                            <Text style={styles.emptyCtaText}>Add Your First Transaction</Text>
-                        </TouchableOpacity>
+                    <View style={styles.newUserWrapper}>
+                        <EmptyState
+                            icon="cash-outline"
+                            title="No financial data yet"
+                            subtitle="Your cash flow, net worth, and runway will show up here once you start logging money in and out."
+                            ctaLabel="Add Your First Transaction"
+                            onCtaPress={() => navigation.navigate('Actions')}
+                        />
 
                         <View style={[styles.checklist, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                             <TouchableOpacity
@@ -1170,45 +1165,14 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 80,
     },
-    emptyState: {
+    newUserWrapper: {
         alignItems: 'center',
-        paddingTop: 40,
         paddingBottom: 20,
         paddingHorizontal: 12,
     },
-    emptyIconCircle: {
-        width: 76,
-        height: 76,
-        borderRadius: 38,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    emptyTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        marginBottom: 8,
-    },
-    emptySubtitle: {
-        fontSize: 14,
-        lineHeight: 20,
-        textAlign: 'center',
-        maxWidth: 280,
-        marginBottom: 24,
-    },
-    emptyCta: {
-        paddingVertical: 13,
-        paddingHorizontal: 28,
-        borderRadius: 12,
-        marginBottom: 28,
-    },
-    emptyCtaText: {
-        color: '#FFFFFF',
-        fontSize: 15,
-        fontWeight: '700',
-    },
     checklist: {
         width: '100%',
+        marginTop: 8,
         borderRadius: 14,
         borderWidth: 1,
         overflow: 'hidden',

@@ -1,16 +1,20 @@
 import React, { useEffect } from 'react';
 import { View, Text, Modal, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
 import { useSecurity } from '@context/SecurityContext';
 import { useAlert } from '@context/AlertContext';
+import { SEVERITY_ICON, getSeverityColor } from '@utils/severity';
 
 const { width, height } = Dimensions.get('window');
 
 export const CustomAlert: React.FC = () => {
     const { colors } = useTheme();
     const { alertState, hideAlert } = useAlert();
-    const { visible, title, message, details, buttons, options } = alertState;
+    const { visible, title, message, details, buttons, options, severity } = alertState;
+    const severityColor = getSeverityColor(colors, severity);
+    const severityIcon = SEVERITY_ICON[severity];
 
     // Safety check for SecurityContext
     let isLocked = false;
@@ -67,11 +71,14 @@ export const CustomAlert: React.FC = () => {
                 >
                     <View style={styles.contentContainer}>
                         <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-                        {message && (
-                            <Text style={[styles.message, { color: colors.textSecondary }]}>
-                                {message}
-                            </Text>
-                        )}
+                        <View style={styles.messageRow}>
+                            <Ionicons name={severityIcon} size={24} color={severityColor} style={styles.severityIcon} />
+                            {message ? (
+                                <Text style={[styles.message, styles.messageText, { color: colors.textSecondary }]}>
+                                    {message}
+                                </Text>
+                            ) : null}
+                        </View>
                         {details && (
                             <View style={[styles.detailsContainer, { borderColor: colors.border }]}>
                                 <ScrollView
@@ -87,7 +94,7 @@ export const CustomAlert: React.FC = () => {
                         )}
                     </View>
 
-                    <View style={[styles.buttonContainer, { borderTopColor: colors.border }]}>
+                    <View style={[styles.buttonContainer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
                         {buttons?.map((button, index) => {
                             const isLast = index === (buttons.length || 0) - 1;
                             const isCancel = button.style === 'cancel';
@@ -157,10 +164,22 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 8,
     },
+    messageRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    severityIcon: {
+        flexShrink: 0,
+    },
     message: {
         fontSize: 13,
-        textAlign: 'center',
         lineHeight: 18,
+    },
+    messageText: {
+        flexShrink: 1,
+        textAlign: 'left',
     },
     detailsContainer: {
         marginTop: 12,

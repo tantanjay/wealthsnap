@@ -19,6 +19,30 @@ export const ReviewAppModal: FC<ReviewAppModalProps> = ({ isVisible, onRate, onL
             onClose={onLater} // Default close behavior is "Later"
             title="Enjoying WealthSnap?"
             maxHeight="60%"
+            footer={
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                        style={[styles.button, styles.rateButton]}
+                        onPress={onRate}
+                    >
+                        <Text style={styles.rateButtonText}>Rate WealthSnap</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.button, styles.laterButton]}
+                        onPress={onLater}
+                    >
+                        <Text style={styles.laterButtonText}>Remind Me Later</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.button, styles.declineButton]}
+                        onPress={onDecline}
+                    >
+                        <Text style={styles.declineButtonText}>Do Not Show Again</Text>
+                    </TouchableOpacity>
+                </View>
+            }
         >
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.container}>
@@ -31,28 +55,6 @@ export const ReviewAppModal: FC<ReviewAppModalProps> = ({ isVisible, onRate, onL
                         It won&apos;t take more than a minute. Thanks for your support!
                     </Text>
 
-                    <View style={styles.buttonContainer}>
-                        <TouchableOpacity
-                            style={[styles.button, styles.rateButton]}
-                            onPress={onRate}
-                        >
-                            <Text style={styles.rateButtonText}>Rate WealthSnap</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.button, styles.laterButton]}
-                            onPress={onLater}
-                        >
-                            <Text style={styles.laterButtonText}>Remind Me Later</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.button, styles.declineButton]}
-                            onPress={onDecline}
-                        >
-                            <Text style={styles.declineButtonText}>Do Not Show Again</Text>
-                        </TouchableOpacity>
-                    </View>
                     <Text style={{ fontSize: 12, color: '#8E8E93', textAlign: 'center' }}>Thank you for using WealthSnap!</Text>
                 </View>
             </ScrollView>

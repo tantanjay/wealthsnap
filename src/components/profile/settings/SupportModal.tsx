@@ -24,7 +24,17 @@ const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
     };
 
     return (
-        <BottomModal visible={visible} onClose={onClose}>
+        <BottomModal
+            visible={visible}
+            onClose={onClose}
+            footer={
+                <Button
+                    variant="outline"
+                    title="Close"
+                    onPress={onClose}
+                />
+            }
+        >
             <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 15 }}>
                 🧠 Back the Human Layer
             </Text>
@@ -85,15 +95,6 @@ const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
                     <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
             )}
-
-
-
-            <Button
-                variant="outline"
-                title="Close"
-                onPress={onClose}
-                style={{ marginTop: 10 }}
-            />
         </BottomModal>
     );
 };

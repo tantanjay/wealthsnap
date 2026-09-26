@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Skeleton } from '@components/common/Skeleton';
+import { EmptyState } from '@components/common/EmptyState';
 import BottomModal from '@components/common/BottomModal';
 import { InvestmentHistoryModal } from '@components/investments/modals/InvestmentHistoryModal';
 import { useTheme } from '@context/ThemeContext';
@@ -277,7 +278,7 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({ holdings, currency =
     if (!holdings || holdings.length === 0) {
         return (
             <View style={[styles.emptyContainer, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No active holdings.</Text>
+                <EmptyState size="compact" icon="bar-chart-outline" title="No active holdings." />
             </View>
         );
     }

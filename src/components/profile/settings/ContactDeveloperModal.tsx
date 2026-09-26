@@ -23,7 +23,17 @@ const ContactDeveloperModal: React.FC<ContactDeveloperModalProps> = ({ visible, 
     };
 
     return (
-        <BottomModal visible={visible} onClose={onClose}>
+        <BottomModal
+            visible={visible}
+            onClose={onClose}
+            footer={
+                <Button
+                    variant="outline"
+                    title="Close"
+                    onPress={onClose}
+                />
+            }
+        >
             <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 15 }}>
                 📡 Contact Developer
             </Text>
@@ -55,13 +65,6 @@ const ContactDeveloperModal: React.FC<ContactDeveloperModalProps> = ({ visible, 
                 </View>
                 <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
-
-            <Button
-                variant="outline"
-                title="Close"
-                onPress={onClose}
-                style={{ marginTop: 10 }}
-            />
         </BottomModal>
     );
 };

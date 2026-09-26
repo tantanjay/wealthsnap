@@ -11,6 +11,7 @@ import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
 import { getCategoryAverages } from '@utils/financialMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { EXPENSE_CATEGORY_GROUPS } from '@constants/categories';
+import { SEVERITY_ICON } from '@utils/severity';
 
 // Below this, a gap isn't worth surfacing - keeps the list to the categories that matter
 const SYNC_THRESHOLD_PCT = 15;
@@ -187,6 +188,27 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
             maxHeight="85%"
             style={{ height: '85%' }}
             contentStyle={{ flex: 1 }}
+            footer={rows.length > 0 ? (
+                <TouchableOpacity
+                    onPress={handleApply}
+                    disabled={applying}
+                    style={{
+                        backgroundColor: colors.primary,
+                        borderRadius: 8,
+                        paddingVertical: 14,
+                        alignItems: 'center',
+                        opacity: applying ? 0.7 : 1
+                    }}
+                >
+                    {applying ? (
+                        <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                        <Text style={{ color: '#fff', fontSize: 15, fontWeight: 'bold' }}>
+                            Update {rows.length} Budget{rows.length === 1 ? '' : 's'}
+                        </Text>
+                    )}
+                </TouchableOpacity>
+            ) : undefined}
         >
             {loading ? (
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 40 }}>
@@ -205,7 +227,7 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
                             padding: 10,
                             marginBottom: 10
                         }}>
-                            <Ionicons name="information-circle-outline" size={18} color={colors.info} />
+                            <Ionicons name={SEVERITY_ICON.info} size={18} color={colors.info} />
                             <Text style={{ flex: 1, color: colors.text, fontSize: 12, lineHeight: 16, marginLeft: 8 }}>
                                 Removing a suggestion just skips it — your saved budget won&apos;t change until you tap Update.
                             </Text>
@@ -292,29 +314,6 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
                             );
                         }}
                     />
-
-                    {rows.length > 0 && (
-                        <TouchableOpacity
-                            onPress={handleApply}
-                            disabled={applying}
-                            style={{
-                                backgroundColor: colors.primary,
-                                borderRadius: 8,
-                                paddingVertical: 14,
-                                alignItems: 'center',
-                                marginTop: 10,
-                                opacity: applying ? 0.7 : 1
-                            }}
-                        >
-                            {applying ? (
-                                <ActivityIndicator color="#fff" size="small" />
-                            ) : (
-                                <Text style={{ color: '#fff', fontSize: 15, fontWeight: 'bold' }}>
-                                    Update {rows.length} Budget{rows.length === 1 ? '' : 's'}
-                                </Text>
-                            )}
-                        </TouchableOpacity>
-                    )}
                 </View>
             )}
         </BottomModal>

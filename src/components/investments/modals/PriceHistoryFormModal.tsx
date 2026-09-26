@@ -48,7 +48,7 @@ const PriceHistoryFormModal: React.FC<PriceHistoryFormModalProps> = ({
 
     const handleSave = async () => {
         if (!price || isNaN(parseFloat(price))) {
-            showAlert("Invalid Input", "Please enter a valid price.");
+            showAlert("Invalid Input", "Please enter a valid price.", undefined, { severity: 'error' });
             return;
         }
 
@@ -87,6 +87,19 @@ const PriceHistoryFormModal: React.FC<PriceHistoryFormModalProps> = ({
             onClose={onClose}
             title={existingItem ? "Edit Price" : "Add Price"}
             maxHeight="60%"
+            footer={
+                <TouchableOpacity
+                    style={[styles.saveButton, { backgroundColor: colors.primary }]}
+                    onPress={handleSave}
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator color="#FFF" />
+                    ) : (
+                        <Text style={styles.saveButtonText}>Save</Text>
+                    )}
+                </TouchableOpacity>
+            }
         >
             <View style={styles.content}>
                 {/* Date Input */}
@@ -121,19 +134,6 @@ const PriceHistoryFormModal: React.FC<PriceHistoryFormModalProps> = ({
                         keyboardType="numeric"
                     />
                 </View>
-
-                {/* Save Button */}
-                <TouchableOpacity
-                    style={[styles.saveButton, { backgroundColor: colors.primary }]}
-                    onPress={handleSave}
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <ActivityIndicator color="#FFF" />
-                    ) : (
-                        <Text style={styles.saveButtonText}>Save</Text>
-                    )}
-                </TouchableOpacity>
             </View>
         </BottomModal>
     );

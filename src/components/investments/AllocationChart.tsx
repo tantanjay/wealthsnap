@@ -5,6 +5,13 @@ import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { saveInvestmentAllocationTab, getInvestmentAllocationTab } from '@services/core/storageService';
 
+// Applies a variable opacity to a theme hex color (e.g. colors.success), so gain/loss
+// intensity can still scale with magnitude without falling back to a hardcoded rgba().
+const withAlpha = (hex: string, opacity: number): string => {
+    const alphaHex = Math.round(Math.min(Math.max(opacity, 0), 1) * 255).toString(16).padStart(2, '0');
+    return `${hex}${alphaHex}`;
+};
+
 // --- Interfaces ---
 interface Holding {
     symbol: string;
@@ -145,8 +152,8 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                 // treat it as strong intensity for the color since we know it's non-trivial.
                 const glMagnitude = h.gainLossPercent ?? 100;
                 const color = isGain
-                    ? `rgba(16, 185, 129, ${0.5 + (Math.min(glMagnitude, 15) / 40)})`
-                    : `rgba(239, 68, 68, ${0.5 + (Math.min(Math.abs(glMagnitude), 15) / 40)})`;
+                    ? withAlpha(colors.success, 0.5 + (Math.min(glMagnitude, 15) / 40))
+                    : withAlpha(colors.error, 0.5 + (Math.min(Math.abs(glMagnitude), 15) / 40));
 
                 return {
                     id: h.symbol,
@@ -179,8 +186,8 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                 const isGain = data.gainLoss >= 0;
                 const glSign = isGain ? '+' : '';
                 const color = isGain
-                    ? `rgba(16, 185, 129, ${0.5 + (Math.min(sectorPerf, 15) / 40)})`
-                    : `rgba(239, 68, 68, ${0.5 + (Math.min(Math.abs(sectorPerf), 15) / 40)})`;
+                    ? withAlpha(colors.success, 0.5 + (Math.min(sectorPerf, 15) / 40))
+                    : withAlpha(colors.error, 0.5 + (Math.min(Math.abs(sectorPerf), 15) / 40));
 
                 return {
                     id: s,
@@ -212,8 +219,8 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                 const isGain = data.gainLoss >= 0;
                 const glSign = isGain ? '+' : '';
                 const color = isGain
-                    ? `rgba(16, 185, 129, ${0.5 + (Math.min(typePerf, 15) / 40)})`
-                    : `rgba(239, 68, 68, ${0.5 + (Math.min(Math.abs(typePerf), 15) / 40)})`;
+                    ? withAlpha(colors.success, 0.5 + (Math.min(typePerf, 15) / 40))
+                    : withAlpha(colors.error, 0.5 + (Math.min(Math.abs(typePerf), 15) / 40));
 
                 return {
                     id: t,
@@ -225,7 +232,7 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                 };
             });
         }
-    }, [holdingsData, selectedTab]);
+    }, [holdingsData, selectedTab, colors]);
 
     const layout = useMemo(() => {
         if (containerWidth <= 0) return [];

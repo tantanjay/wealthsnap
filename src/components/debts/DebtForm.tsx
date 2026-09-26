@@ -720,7 +720,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                     >
                         <View style={{ alignItems: 'center', marginRight: 16, width: 40, paddingTop: 4 }}>
                             <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.error + '20', alignItems: 'center', justifyContent: 'center' }}>
-                                <Ionicons name="close" size={20} color={colors.error} />
+                                <Ionicons name="close-circle" size={20} color={colors.error} />
                             </View>
                         </View>
                         <View style={{ flex: 1 }}>
@@ -747,7 +747,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                     >
                         <View style={{ alignItems: 'center', marginRight: 16, width: 40, paddingTop: 4 }}>
                             <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.error + '20', alignItems: 'center', justifyContent: 'center' }}>
-                                <Ionicons name="close" size={20} color={colors.error} />
+                                <Ionicons name="close-circle" size={20} color={colors.error} />
                             </View>
                         </View>
                         <View style={{ flex: 1 }}>
@@ -798,7 +798,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                                 </Text>
                             </View>
                             {interestType === details.type && (
-                                <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                                <Ionicons name="radio-button-on" size={24} color={colors.primary} />
                             )}
                         </TouchableOpacity>
                     ))}

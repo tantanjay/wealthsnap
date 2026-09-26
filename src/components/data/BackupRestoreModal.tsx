@@ -58,6 +58,29 @@ const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
             title={copy.title}
             subtitle={copy.subtitle}
             dismissable={false}
+            footer={
+                <>
+                    {isProcessing && progress?.label ? (
+                        <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center', marginBottom: 12 }}>
+                            {progress.label}
+                        </Text>
+                    ) : null}
+
+                    <View style={{ gap: 10 }}>
+                        <Button
+                            title={isProcessing ? copy.processingLabel : copy.idleLabel}
+                            onPress={() => onSubmit(password)}
+                            disabled={isProcessing}
+                        />
+                        <Button
+                            variant="outline"
+                            title="Cancel"
+                            onPress={onClose}
+                            disabled={isProcessing}
+                        />
+                    </View>
+                </>
+            }
         >
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={{
@@ -88,26 +111,6 @@ const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
                     >
                         <Ionicons name={showPassword ? "eye" : "eye-off"} size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
-                </View>
-
-                {isProcessing && progress?.label ? (
-                    <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center', marginBottom: 12 }}>
-                        {progress.label}
-                    </Text>
-                ) : null}
-
-                <View style={{ gap: 10 }}>
-                    <Button
-                        title={isProcessing ? copy.processingLabel : copy.idleLabel}
-                        onPress={() => onSubmit(password)}
-                        disabled={isProcessing}
-                    />
-                    <Button
-                        variant="outline"
-                        title="Cancel"
-                        onPress={onClose}
-                        disabled={isProcessing}
-                    />
                 </View>
             </ScrollView>
         </BottomModal>

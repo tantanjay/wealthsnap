@@ -8,6 +8,7 @@ import { useTheme } from '@context/ThemeContext';
 import { AIUsageLog } from '@types';
 import { getAIUsageLogs } from '@services/domain/logService';
 import { SPACING, FONT_SIZES } from '@styles/theme';
+import { SEVERITY_ICON } from '@utils/severity';
 
 interface GeminiUsageModalProps {
     visible: boolean;
@@ -76,7 +77,7 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
             </View>
 
             <View style={{ flexDirection: 'row', backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8, marginTop: -10, marginBottom: 10, alignItems: 'center' }}>
-                <Ionicons name="information-circle" size={20} color={colors.primary} style={{ marginRight: 10 }} />
+                <Ionicons name={SEVERITY_ICON.info} size={20} color={colors.info} style={{ marginRight: 10 }} />
                 <Text style={{ color: colors.text, flex: 1, fontSize: 13 }}>
                     <Text style={{ fontWeight: 'bold' }}>Note:</Text> Costs shown are internal estimates for tracking purposes. Actual billing is subject to your dashboard.
                 </Text>

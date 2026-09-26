@@ -8,6 +8,7 @@ import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Reminder } from '@types';
 import * as ReminderService from '@services/domain/reminderService';
+import { EmptyState } from '@components/common/EmptyState';
 
 interface ReminderListProps {
     onEdit: (reminder: Reminder) => void;
@@ -191,8 +192,7 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
                     contentContainerStyle={styles.listContent}
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="notifications-off-outline" size={48} color={colors.gray300} />
-                            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No reminders set yet</Text>
+                            <EmptyState size="compact" icon="notifications-off-outline" title="No reminders set yet" />
                         </View>
                     }
                 />

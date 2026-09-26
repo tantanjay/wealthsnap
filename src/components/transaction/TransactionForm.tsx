@@ -494,7 +494,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                             <Ionicons name="search" size={22} color={colors.textSecondary} />
                             <Text style={{
                                 color: colors.text,
-                                fontSize: 10,
+                                fontSize: 12,
                                 fontWeight: '700',
                                 marginTop: 6,
                                 textAlign: 'center'
@@ -528,7 +528,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                             borderRadius: 12,
                                             borderWidth: 1.5,
                                             borderColor: isActive ? colors.primary : 'transparent',
-                                            backgroundColor: isActive ? colors.primary + '15' : colors.surface || '#f5f5f5',
+                                            backgroundColor: isActive ? colors.primary + '15' : colors.surface,
                                         }}
                                     >
                                         <Ionicons
@@ -538,7 +538,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                         />
                                         <Text style={{
                                             color: isActive ? colors.primary : colors.text,
-                                            fontSize: 10,
+                                            fontSize: 12,
                                             fontWeight: isActive ? '700' : '500',
                                             marginTop: 6,
                                             textAlign: 'center'
@@ -567,7 +567,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                     borderRadius: 12,
                                     borderWidth: 1.5,
                                     borderColor: !fundingGoalId ? colors.primary : 'transparent',
-                                    backgroundColor: !fundingGoalId ? colors.primary + '15' : colors.surface || '#f5f5f5',
+                                    backgroundColor: !fundingGoalId ? colors.primary + '15' : colors.surface,
                                 }}
                             >
                                 <Text style={{ color: !fundingGoalId ? colors.primary : colors.text, fontSize: 12, fontWeight: !fundingGoalId ? '700' : '500' }}>
@@ -589,7 +589,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                             borderRadius: 12,
                                             borderWidth: 1.5,
                                             borderColor: isActive ? colors.primary : 'transparent',
-                                            backgroundColor: isActive ? colors.primary + '15' : colors.surface || '#f5f5f5',
+                                            backgroundColor: isActive ? colors.primary + '15' : colors.surface,
                                         }}
                                     >
                                         <Text style={{ color: isActive ? colors.primary : colors.text, fontSize: 12, fontWeight: isActive ? '700' : '500' }} numberOfLines={1}>

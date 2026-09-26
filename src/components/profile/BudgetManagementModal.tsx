@@ -9,6 +9,7 @@ import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { BigNumber } from 'bignumber.js';
 
+import { EmptyState } from '@components/common/EmptyState';
 import { Budget } from '@types';
 import { getAllBudgets, setBudget, deleteBudget } from '@services/domain/budgetService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
@@ -159,15 +160,12 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
                             keyExtractor={item => item.category}
                             contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 80 }}
                             ListEmptyComponent={
-                                <View style={{ alignItems: 'center', marginTop: 40 }}>
-                                    <Ionicons name="wallet-outline" size={48} color={colors.textSecondary} />
-                                    <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 10 }}>
-                                        No budgets set yet
-                                    </Text>
-                                    <Text style={{ color: colors.textSecondary, textAlign: 'center', fontSize: 12, marginTop: 4 }}>
-                                        Tap the + button to add your first budget
-                                    </Text>
-                                </View>
+                                <EmptyState
+                                    size="compact"
+                                    icon="wallet-outline"
+                                    title="No budgets set yet"
+                                    subtitle="Tap the + button to add your first budget"
+                                />
                             }
                             renderItem={({ item }) => (
                                 <TouchableOpacity
