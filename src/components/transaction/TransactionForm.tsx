@@ -233,16 +233,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             const enteredAmount = new BigNumber(amount);
             const goalBalance = calculateGoalBalance(selectedGoal, allTransactions);
             const finish = async () => {
-                const { goalPortion, remainder } = await saveGoalFundedExpense(selectedGoal, enteredAmount);
+                await saveGoalFundedExpense(selectedGoal, enteredAmount);
                 resetForm();
                 if (initialTransaction) onSave();
-
-                // Confirms the breakdown after the fact - not obvious from the amount field
-                // alone whether (and how much of) this landed against the goal vs. general cash.
-                const breakdown = remainder.isGreaterThan(0)
-                    ? `${formatCurrencyAmount(goalPortion)} from "${selectedGoal.name}" and ${formatCurrencyAmount(remainder)} from your general funds.`
-                    : `${formatCurrencyAmount(goalPortion)} from "${selectedGoal.name}".`;
-                showAlert('Goal Spend Recorded', breakdown);
             };
 
             // Split Funding: the goal can't cover the whole amount, so this would otherwise
