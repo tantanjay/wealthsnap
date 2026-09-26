@@ -255,6 +255,20 @@ const HistoryScreen = ({ navigation }: any) => {
         return map;
     }, [allTransactions]);
 
+    // A debt payment's Interest/Fees legs are folded into their Principal leg's card (see
+    // isMergedIntoSibling below) - precomputed the same way as linkedPLByInvestmentId so the
+    // merged card can still show what it's rolling up.
+    const debtLegsByPrincipalId = useMemo(() => {
+        const map: Record<string, Transaction[]> = {};
+        allTransactions.forEach(t => {
+            if (t.debtId && t.linkedTransactionId && (t.subCategory === 'INTEREST' || t.subCategory === 'FEES')) {
+                if (!map[t.linkedTransactionId]) map[t.linkedTransactionId] = [];
+                map[t.linkedTransactionId].push(t);
+            }
+        });
+        return map;
+    }, [allTransactions]);
+
     const filteredData = useMemo(() => {
         let items = allHistoryItems;
 
@@ -547,6 +561,28 @@ const HistoryScreen = ({ navigation }: any) => {
         };
     }, [summary, recurrenceRules, currentDate, timeFrame, viewMode, allTransactions, allDebts, allGoals, dashboardTransactions]);
 
+    // An investment's auto-generated cash-movement/realized-P&L transactions, a goal-funded
+    // expense's auto-generated "money left the goal" transfer, and a debt payment's Interest/
+    // Fees legs each fully double up a card the primary item (the Investment, the paired
+    // expense, or the Principal leg) already shows - fold them away rather than rendering both.
+    // `linkedTransactionId` has exactly one meaning across the app: "byproduct of transaction X"
+    // (set by the goal-spend offset and by Debt's Interest/Fees legs), so it's a general merge
+    // signal, not tied to any one feature's subCategory. Only folds away when the primary is
+    // actually a sibling in the same day group (so a leg whose primary got excluded by the
+    // active type/search filter, or deleted without cascading, still shows up rather than
+    // silently vanishing).
+    const isMergedIntoSibling = (item: HistoryItem, siblings: HistoryItem[]): boolean => {
+        if (isInvestment(item) || isDebt(item)) return false;
+        const t = item as Transaction;
+        if (t.investmentId) {
+            return siblings.some(s => isInvestment(s) && s.id === t.investmentId);
+        }
+        if (t.linkedTransactionId) {
+            return siblings.some(s => !isInvestment(s) && !isDebt(s) && (s as Transaction).id === t.linkedTransactionId);
+        }
+        return false;
+    };
+
     const sections = useMemo((): TransactionSection[] => {
         const grouped: { [key: string]: HistoryItem[] } = {};
 
@@ -561,6 +597,9 @@ const HistoryScreen = ({ navigation }: any) => {
 
         const newSections: TransactionSection[] = Object.keys(grouped).map(dateKey => {
             const items = grouped[dateKey];
+            // Computed from the full, unmerged group - a merged-away leg still moved real cash
+            // (or, for a goal spend, cancels out the expense it's paired with), so it must stay
+            // counted here even though it won't get its own row below.
             const totalAmount = items.reduce((sum, item) => {
                 if (isInvestment(item) || isDebt(item)) return sum;
 
@@ -574,6 +613,8 @@ const HistoryScreen = ({ navigation }: any) => {
                 return sum;
             }, new BigNumber(0));
 
+            const visibleItems = items.filter(item => !isMergedIntoSibling(item, items));
+
             const d = new Date(dateKey);
             const title = d.toDateString() === now.toDateString() ? 'Today' :
                 d.toDateString() === yesterday.toDateString() ? 'Yesterday' :
@@ -581,9 +622,9 @@ const HistoryScreen = ({ navigation }: any) => {
 
             return {
                 title,
-                data: items,
+                data: visibleItems,
                 totalAmount,
-                count: items.length,
+                count: visibleItems.length,
                 originalDate: getItemDate(items[0])
             };
         });
@@ -602,13 +643,14 @@ const HistoryScreen = ({ navigation }: any) => {
             formatCurrency={formatCurrency}
             investmentMap={investmentMap}
             linkedPLByInvestmentId={linkedPLByInvestmentId}
+            debtLegsByPrincipalId={debtLegsByPrincipalId}
             savingsGoalNameMap={savingsGoalNameMap}
             profileCurrency={profile?.currency}
             onSelectTransaction={setSelectedTransaction}
             onSelectInvestment={setSelectedInvestment}
             onSelectDebt={setSelectedDebt}
         />
-    ), [formatCurrency, investmentMap, linkedPLByInvestmentId, savingsGoalNameMap, profile?.currency]);
+    ), [formatCurrency, investmentMap, linkedPLByInvestmentId, debtLegsByPrincipalId, savingsGoalNameMap, profile?.currency]);
 
     const renderSectionHeader = useCallback(({ section: { title, count, totalAmount } }: { section: TransactionSection }) => (
         <HistorySectionHeader title={title} count={count} totalAmount={totalAmount} formatCurrency={formatCurrency} />

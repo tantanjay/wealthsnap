@@ -18,6 +18,12 @@ export const isDebt = (item: HistoryItem): item is Debt => {
     return (item as Debt).minPayment !== undefined && (item as Debt).initialAmount !== undefined;
 };
 
+// Category-identity color for anything tied to a Savings Goal, same role as Investment's
+// dedicated purple below - a fixed accent independent of theme/dark-mode and unrelated to the
+// income/expense semantic colors, so a goal-funded expense's left border doesn't get confused
+// with its (still red) amount text.
+const GOAL_COLOR = '#00897B';
+
 // Cosmetic only - enum-like values (transferAccount, subCategory tags like INITIAL_FUNDING/
 // GOAL_SPEND, TransactionType) are stored SCREAMING_SNAKE_CASE, but should never show that
 // way in the UI. Never run this on free text (note) - only on values we control the shape of.
@@ -32,6 +38,7 @@ interface HistoryListItemProps {
     formatCurrency: (amount: BigNumber, currency?: string) => string;
     investmentMap: Record<string, Investment>;
     linkedPLByInvestmentId: Record<string, Transaction | undefined>;
+    debtLegsByPrincipalId: Record<string, Transaction[] | undefined>;
     savingsGoalNameMap: Record<string, string>;
     profileCurrency?: string;
     onSelectTransaction: (t: Transaction) => void;
@@ -52,6 +59,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
     formatCurrency,
     investmentMap,
     linkedPLByInvestmentId,
+    debtLegsByPrincipalId,
     savingsGoalNameMap,
     profileCurrency,
     onSelectTransaction,
@@ -122,7 +130,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
                                 {formatCurrency(nativeTotal, inv.currency)}
                             </Text>
                             <View style={{ backgroundColor: iconColor + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
-                                <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>INVESTMENT</Text>
+                                <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>{inv.type}</Text>
                             </View>
                         </View>
                     </View>
@@ -161,12 +169,12 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
                         <View style={{ alignItems: 'flex-end' }}>
                             <Text style={{
                                 fontSize: 16, fontWeight: 'bold',
-                                color: colors.text
+                                color: iconColor
                             }}>
                                 {formatCurrencyAmount(debt.initialAmount, debt.currency)}
                             </Text>
                             <View style={{ backgroundColor: iconColor + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
-                                <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>DEBT</Text>
+                                <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>{isPayable ? 'I OWE' : 'OWED TO ME'}</Text>
                             </View>
                         </View>
                     </View>
@@ -197,6 +205,10 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
 
     const getDisplayName = () => {
         if (isTransfer) {
+            // A transfer's own note (e.g. a debt payment's "Debt Payment: <name>", or
+            // something the user typed themselves) is always more specific than the generic
+            // "To Loan"/"To Other Account" account-type wording - prefer it as the title.
+            if (t.note) return t.note;
             const base = isTransferIn ? `From ${toTitleCase(t.transferAccount)}` : `To ${toTitleCase(t.transferAccount)}`;
             // Debt transfers only ever show the debt's generic type (e.g. "To Credit Card") -
             // there's no existing instance-name-append precedent to copy for that. Savings
@@ -241,6 +253,42 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
     );
     const isLocked = ((t.investmentId || t.debtId) && !isDebtRepayment) || (!!t.savingsGoalId && !isTappableGoalLeg);
 
+    // A transfer whose title above (getDisplayName) already used its own note drops the
+    // generic account-type subtitle entirely (not just swaps it in) to avoid repeating the
+    // same info twice and to keep a merged debt payment card slim.
+    const isNotedTransferRow = isTransfer && !!t.note;
+    // No "Expense"/"Income"/"Transfer In" fallback here on purpose - that's just the same
+    // information the icon color and +/- sign already carry, not a real label.
+    const subtitleText = t.note || toTitleCase(t.subCategory);
+
+    // The "money left the goal" transfer this expense is paired with no longer gets its own
+    // card (folded away in HistoryScreen's sections builder) - name the goal here instead so
+    // that funding source isn't lost.
+    const goalFundedName = t.type === 'EXPENSE' && t.savingsGoalId
+        ? (savingsGoalNameMap[t.savingsGoalId] || 'Deleted Goal')
+        : undefined;
+
+    // A debt payment's Interest/Fees legs are folded into this Principal leg's card the same
+    // way - surface what they were instead of just dropping them.
+    const debtLegs = (t.debtId && t.subCategory === 'PRINCIPAL') ? (debtLegsByPrincipalId[t.id] || []) : [];
+    const debtInterestLeg = debtLegs.find(l => l.subCategory === 'INTEREST');
+    const debtFeeLeg = debtLegs.find(l => l.subCategory === 'FEES');
+    const hasDebtBreakdown = !!(debtInterestLeg || debtFeeLeg);
+
+    // Net total actually paid/received this payment - principal, interest, and fees each
+    // carry their own sign (a fee is always a cost, even on a receivable's interest income),
+    // so the headline amount below has to sum them rather than just showing principal alone.
+    let debtNetAmount = t.type === 'TRANSFER_OUT' ? t.amount.negated() : t.amount;
+    if (debtInterestLeg) {
+        debtNetAmount = debtInterestLeg.type === 'EXPENSE'
+            ? debtNetAmount.minus(debtInterestLeg.amount)
+            : debtNetAmount.plus(debtInterestLeg.amount);
+    }
+    if (debtFeeLeg) {
+        debtNetAmount = debtNetAmount.minus(debtFeeLeg.amount);
+    }
+    const isDebtNetNegative = debtNetAmount.isNegative();
+
     return (
         <TouchableOpacity
             onPress={() => {
@@ -250,7 +298,11 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
             activeOpacity={isLocked ? 1 : 0.7}
             style={{ marginBottom: 8 }}
         >
-            <Card flat style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0 }}>
+            <Card flat style={{
+                paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0,
+                ...(t.savingsGoalId ? { borderLeftWidth: 4, borderLeftColor: GOAL_COLOR } : null),
+                ...(t.debtId ? { borderLeftWidth: 4, borderLeftColor: statusColor } : null)
+            }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                         <View style={{
@@ -264,16 +316,42 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
                             <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
                                 {getDisplayName()}
                             </Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                                {t.note || toTitleCase(t.subCategory) || toTitleCase(t.type)}
-                            </Text>
+                            {!isNotedTransferRow && (subtitleText || goalFundedName) && (
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
+                                    {subtitleText}
+                                    {goalFundedName && (
+                                        <Text style={{ color: colors.textSecondary }}>
+                                            {subtitleText ? " • " : ""}{goalFundedName}
+                                        </Text>
+                                    )}
+                                </Text>
+                            )}
+                            {hasDebtBreakdown && (
+                                <Text style={{ fontSize: 12 }} numberOfLines={1}>
+                                    <Text style={{ color: t.type === 'TRANSFER_OUT' ? colors.error : colors.success, fontWeight: 'bold' }}>
+                                        {t.type === 'TRANSFER_OUT' ? '-' : '+'}{formatCurrency(t.amount)} principal
+                                    </Text>
+                                    {debtInterestLeg && (
+                                        <Text style={{ color: debtInterestLeg.type === 'INCOME' ? colors.success : colors.error, fontWeight: 'bold' }}>
+                                            {" • "}{debtInterestLeg.type === 'INCOME' ? '+' : '-'}{formatCurrency(debtInterestLeg.amount)} interest
+                                        </Text>
+                                    )}
+                                    {debtFeeLeg && (
+                                        <Text style={{ color: colors.error, fontWeight: 'bold' }}>
+                                            {" • -"}{formatCurrency(debtFeeLeg.amount)} fees
+                                        </Text>
+                                    )}
+                                </Text>
+                            )}
                         </View>
                     </View>
                     <Text style={{
-                        color: isNegativeFlow ? colors.error : colors.success,
+                        color: hasDebtBreakdown ? (isDebtNetNegative ? colors.error : colors.success) : (isNegativeFlow ? colors.error : colors.success),
                         fontSize: 16, fontWeight: 'bold'
                     }}>
-                        {isNegativeFlow ? '-' : '+'}{formatCurrency(displayAmount, displayCurrency)}
+                        {hasDebtBreakdown
+                            ? `${isDebtNetNegative ? '-' : '+'}${formatCurrency(debtNetAmount.abs())}`
+                            : `${isNegativeFlow ? '-' : '+'}${formatCurrency(displayAmount, displayCurrency)}`}
                     </Text>
                 </View>
             </Card>
