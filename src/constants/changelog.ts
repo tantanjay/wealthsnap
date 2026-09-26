@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - History: a debt payment's Principal, Interest, and Fees now merge into one card with a combined total.
 - History: investment and debt card badges show their actual type/direction instead of just "Investment"/"Debt".
 - History: rows no longer show generic filler text (e.g. "Expense", "To Other Account") when a more specific note exists.
+- UI: Overhauled dialog icons, modal footers, color usage, and number formatting for visual consistency across the app.
 - Build: Removed the forced-portrait lock Google's ML Kit scanner activities (barcode/document scanning) impose on Android, so large-screen and foldable devices aren't restricted to portrait.
 - Build: Bumped Expo SDK 57 dependencies to their latest patch versions for stability and security fixes.
 

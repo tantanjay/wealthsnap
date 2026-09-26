@@ -41,6 +41,9 @@
 - **Financial Health calibrates instead of dead-ending**: when there's not yet enough history to compute Runway, Spending pace, Investment Boost, and Debt Drag all at once, the card now shows a single "Calibrating your Financial Health" message instead of four separate stats that all say "nothing here." Runway alone showing a bare "∞" is also gone — it now reads "No expenses tracked" — and the Spending row no longer claims you have a "(0% budget)" when you simply haven't set one; it says "(no budget set)" instead.
 - **Smoother first load**: Home, History, Investment, and Debt Strategy no longer briefly flash their full skeleton layout every time you switch back to them — that loading flash now only happens once, the very first time you open the app, since all four screens now share a single check for whether you have any data yet instead of each re-checking on its own.
 
+## 🎨 UI Overhaul for Consistency
+- **A design pass across the whole app**: alert and dialog icons, modal action buttons, category/status colors, number formatting, and a handful of reused icons all got tightened up so the same kind of thing looks and behaves the same way everywhere, instead of each screen having quietly drifted its own way over time.
+
 ## ⚙️ Performance & Build
 - **Smoother scrolling on the History list**: rows previously each rendered a drop shadow, which is expensive to draw repeatedly on Android and could make a long transaction history feel sluggish while scrolling. Rows now use a thin border instead, keeping the same visual separation without the per-row rendering cost.
 - **Dependency updates**: bumped Expo SDK 57 dependencies (`expo`, `expo-updates`, `expo-sqlite`, and other `expo-*` modules) to their latest patch versions for stability and security fixes.
