@@ -94,7 +94,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
 
         return (
             <TouchableOpacity onPress={() => onSelectInvestment(inv)} style={{ marginBottom: 8 }} activeOpacity={0.9}>
-                <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0, borderLeftWidth: 4, borderLeftColor: iconColor }}>
+                <Card flat style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0, borderLeftWidth: 4, borderLeftColor: iconColor }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                             <View style={{
@@ -139,7 +139,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
 
         return (
             <TouchableOpacity onPress={() => onSelectDebt(debt)} style={{ marginBottom: 8 }} activeOpacity={0.9}>
-                <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0, borderLeftWidth: 4, borderLeftColor: iconColor }}>
+                <Card flat style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0, borderLeftWidth: 4, borderLeftColor: iconColor }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                             <View style={{
@@ -250,7 +250,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
             activeOpacity={isLocked ? 1 : 0.7}
             style={{ marginBottom: 8 }}
         >
-            <Card style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0 }}>
+            <Card flat style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                         <View style={{

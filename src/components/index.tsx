@@ -78,9 +78,13 @@ interface CardProps {
     children: React.ReactNode;
     style?: StyleProp<ViewStyle>;
     onLayout?: (event: LayoutChangeEvent) => void;
+    // Skips the shadow/elevation in favor of a thin border. Elevation forces its own
+    // offscreen composited layer per view on Android - fine for a handful of section
+    // cards on screen, but costly when repeated across every row of a scrolling list.
+    flat?: boolean;
 }
 
-export const Card: React.FC<CardProps> = ({ children, style, onLayout }) => {
+export const Card: React.FC<CardProps> = ({ children, style, onLayout, flat }) => {
     const { colors } = useTheme();
     return (
         <View
@@ -91,6 +95,11 @@ export const Card: React.FC<CardProps> = ({ children, style, onLayout }) => {
                     borderRadius: 16,
                     padding: 16,
                     marginBottom: 16,
+                },
+                flat ? {
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                } : {
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.1,
