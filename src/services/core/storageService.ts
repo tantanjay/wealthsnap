@@ -677,6 +677,7 @@ export const clearAllData = async (): Promise<void> => {
             DELETE FROM transactions;
             DELETE FROM investments;
             DELETE FROM debts;
+            DELETE FROM savings_goals;
             DELETE FROM categories;
             DELETE FROM recurrence_rules;
             DELETE FROM budgets;

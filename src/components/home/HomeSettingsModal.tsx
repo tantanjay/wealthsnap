@@ -22,6 +22,7 @@ const HomeSettingsModal: React.FC<HomeSettingsModalProps> = ({
             'cash-flow': 'Cash Flow',
             'portfolio': 'Investments',
             'debt': 'Debts & Liabilities',
+            'savings-goals': 'Savings Goals',
             'transactions': 'Recent Transactions'
         };
         // Combine saved order with all valid keys to ensure nothing is missing

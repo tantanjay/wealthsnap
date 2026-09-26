@@ -2,6 +2,7 @@ import { getDatabase } from '@services/database/databaseService';
 import { getAllTransactions } from '@services/domain/transactionService';
 import { getAllInvestments } from '@services/domain/investmentService';
 import { getAllDebts } from '@services/domain/debtService';
+import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
 import { getAllBudgets } from '@services/domain/budgetService';
 import { getUserProfile } from '@services/core/storageService';
 import { encryptField, decryptField } from '@services/core/encryptionService';
@@ -82,10 +83,11 @@ export const syncMonthlySummaries = async (options?: { force?: boolean }): Promi
     const force = options?.force ?? false;
 
     try {
-        const [transactions, investments, debts, budgets, profile] = await Promise.all([
+        const [transactions, investments, debts, goals, budgets, profile] = await Promise.all([
             getAllTransactions(),
             getAllInvestments(),
             getAllDebts(),
+            getAllSavingsGoals(),
             getAllBudgets(),
             getUserProfile()
         ]);
@@ -111,7 +113,7 @@ export const syncMonthlySummaries = async (options?: { force?: boolean }): Promi
 
         for (let i = 0; i < monthsToGenerate.length; i++) {
             const yearMonth = monthsToGenerate[i];
-            const data = buildMonthlySummaryData(yearMonth, transactions, investments, debts, budgets);
+            const data = buildMonthlySummaryData(yearMonth, transactions, investments, debts, budgets, [], true, goals);
             const text = renderMonthlySummaryText(data, currency);
             const isFinal = yearMonth < currentYearMonth;
 

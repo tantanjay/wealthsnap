@@ -89,6 +89,18 @@ Comprehensive liability tracking:
 
 ---
 
+### 🎯 Savings Goals
+Set aside cash for a specific purpose — a Travel Fund, Annual Insurance, Car Maintenance — and spend it down over time.
+
+- Contributions are transfers, not expenses — they lower your cash on hand but never count as spending
+- **Auto-Offset accounting**: spending from a goal logs a normal expense plus an equal offsetting transfer, so cash is never double-deducted
+- **Split Funding**: a purchase bigger than the goal's balance automatically splits between the goal and your general funds, with a confirmation before it saves
+- Optional recurring auto-contributions (any frequency), manual top-ups, pause/resume, and withdraw-to-cash
+- Goal balances count toward Net Worth; contributions count toward Burn Rate/Runway/Safe-to-Spend, while goal-funded purchases are excluded from spending trend charts to avoid false spikes
+- Fully integrated into History, Monthly Summary, Chat, Backup/Restore, Excel export, and Multi-Device Sync
+
+---
+
 ### 🤖 AI-Powered Tools (Optional)
 
 WealthSnap integrates optional AI tools, powered by your own Gemini API key.
@@ -140,7 +152,7 @@ Features include:
 ### 🗓️ Monthly Summary
 Your month at a glance, written in plain language instead of raw numbers.
 
-- Narrative breakdown of income, expenses, savings rate, net cash flow, investment activity, debt payments, transfers, budget alerts, and unusual spending
+- Narrative breakdown of income, expenses, savings rate, net cash flow, investment activity, debt payments, savings goal activity, transfers, budget alerts, and unusual spending
 - Generated automatically in the background for every month you have data for, with a one-time catch-up of past months
 - Current month stays up to date; the previous month finalizes automatically once it closes
 - Manual "Reprocess All Months" option for regenerating summaries after editing older data
@@ -182,7 +194,7 @@ WealthSnap is engineered for speed and reliability:
 - Manual encrypted backup
 - **Auto Backup**: schedule automatic encrypted backups (weekly or every 2 weeks) that run in the background using a securely stored on-device password
 - Multi-MIME restore support
-- **Export to Excel**: Save transactions, investments, and debts to a multi-sheet `.xlsx` file
+- **Export to Excel**: Save transactions, investments, debts, and savings goals to a multi-sheet `.xlsx` file
 - Backup reminder (every 7 days)
 - Automatic reminder rescheduling after restore
 

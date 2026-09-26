@@ -15,6 +15,7 @@ interface SafeToSpendData {
     dailyBurnRate: BigNumber;
     projectedVariableSpend: BigNumber;
     remainingDebtObligations: BigNumber;
+    remainingGoalObligations: BigNumber;
 }
 
 interface HistorySummaryProps {
@@ -59,6 +60,11 @@ export const HistorySummary: React.FC<HistorySummaryProps> = ({
                         {safeToSpendData.remainingDebtObligations.isGreaterThan(0) && (
                             <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
                                 🏦 Debt: {formatCurrency(safeToSpendData.remainingDebtObligations)}
+                            </Text>
+                        )}
+                        {safeToSpendData.remainingGoalObligations.isGreaterThan(0) && (
+                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                🎯 Savings Goals: {formatCurrency(safeToSpendData.remainingGoalObligations)}
                             </Text>
                         )}
                         <Text style={{ color: colors.textSecondary, fontSize: 10 }}>

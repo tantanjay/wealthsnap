@@ -178,6 +178,41 @@ These payments are treated as **mandatory obligations** across:
 
 ---
 
+# 🎯 Savings Goals
+
+Set aside cash toward a specific purpose — a Travel Fund, Annual Insurance, Car Maintenance — and spend it down over time, without it ever getting lost in your general balance.
+
+## 💰 True Asset Accounting Model
+
+- Contributing to a goal is a transfer, not an expense — it lowers cash on hand right away but never shows up as spending
+- Spending from a goal auto-offsets: a normal expense is logged (so category charts and budgets stay accurate) alongside an equal transfer back to cash, so nothing is ever double-deducted
+- **Split Funding**: a purchase bigger than the goal's balance automatically splits between the goal and your general funds, with a confirmation showing exactly how much comes from each before it saves
+- Goal balances count as an asset in Net Worth, so moving cash into a goal never makes you look poorer
+
+## 🔁 Contributions & Lifecycle
+
+- Optional recurring auto-contribution at any frequency (daily through yearly), plus manual top-ups anytime
+- Pause/resume the auto-contribution at will — the goal's balance and history are untouched
+- Withdraw to cash for emergencies
+- Deleting a goal automatically sweeps any remaining balance back to your cash first
+- A one-time notification fires the moment a contribution pushes a goal to or past its target
+
+## 📊 Operational Filter (Insights Integration)
+
+- Contributions count toward Burn Rate, Runway, Safe-to-Spend, and Avg Daily Spending
+- Spending from a goal is excluded from month-over-month trend charts (Comparison, Cumulative Spending, Savings Rate) so a big purchase never reads as a false spike
+- Still fully visible in category breakdown charts, so you can see exactly what you bought
+- An in-app guide explains how each number is affected, with a worked example
+
+## 🗂️ Full Integration
+
+- Dedicated dashboard widget (Total Saved, Total Target, Total Spent) and a full-page screen with per-goal progress bars and next-contribution date
+- History shows which goal each transfer belongs to; Monthly Summary gets its own per-goal contribution/spend/balance breakdown
+- Chat can answer questions about your goals and knows not to double-count a goal-funded purchase
+- Fully covered by Backup & Restore, Excel export, and multi-device Sync
+
+---
+
 # 📈 Investments & Asset Management
 
 ## 📊 Investment Tracking
@@ -262,7 +297,7 @@ Features:
 
 Your month at a glance, written in plain language instead of raw numbers.
 
-- Narrative breakdown of income, expenses, savings rate, net cash flow, investment activity, debt payments, transfers, budget alerts, and unusual spending
+- Narrative breakdown of income, expenses, savings rate, net cash flow, investment activity, debt payments, savings goal activity, transfers, budget alerts, and unusual spending
 - Generated automatically in the background for every month you have data for
 - Manual "Reprocess All Months" option
 - Pure local computation — no AI calls or cost involved
@@ -382,7 +417,7 @@ No black-box calculations.
 - **Multi-Device Sync**: Merge data directly between devices over WiFi via QR code (no cloud)
 - CSV / TSV bulk import
 - Duplicate detection & strict validation engine
-- **Export to Excel**: Save transactions, investments, and debts to a multi-sheet `.xlsx` file
+- **Export to Excel**: Save transactions, investments, debts, and savings goals to a multi-sheet `.xlsx` file
 - Encrypted local manual backup
 - **Auto Backup**: Scheduled automatic encrypted backups (weekly or bi-weekly)
 - Multi-format restore support

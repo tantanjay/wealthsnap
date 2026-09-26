@@ -98,8 +98,17 @@ const ProfileScreen = ({ navigation }: any) => {
         }, [])
     );
 
-    const handleManageRecurring = async () => {
+    // Excludes any rule whose transactionTemplate carries a savingsGoalId - a goal's
+    // auto-contribution rule is managed exclusively through the goal's own pause toggle
+    // (SavingsGoalOptionsModal), so isPaused and the rule's isActive can never drift apart.
+    // Surfacing it here too would let a user flip isActive directly and desync the two.
+    const getManagedRecurrenceRules = async (): Promise<RecurrenceRule[]> => {
         const rules = await getAllRecurrenceRules();
+        return rules.filter(r => !r.transactionTemplate?.savingsGoalId);
+    };
+
+    const handleManageRecurring = async () => {
+        const rules = await getManagedRecurrenceRules();
         setRecurrenceRules(rules);
         setShowRecurringModal(true);
     };
@@ -110,7 +119,7 @@ const ProfileScreen = ({ navigation }: any) => {
             await saveRecurrenceRule(updatedRule);
 
             // Refresh list
-            const rules = await getAllRecurrenceRules();
+            const rules = await getManagedRecurrenceRules();
             setRecurrenceRules(rules);
         } catch {
             showAlert('Error', 'Failed to update rule');
@@ -128,7 +137,7 @@ const ProfileScreen = ({ navigation }: any) => {
                     style: "destructive",
                     onPress: async () => {
                         await deleteRecurrenceRule(id);
-                        const rules = await getAllRecurrenceRules();
+                        const rules = await getManagedRecurrenceRules();
                         setRecurrenceRules(rules);
                     }
                 }
