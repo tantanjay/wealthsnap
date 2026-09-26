@@ -1,18 +1,19 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { Text, View, SectionList, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import { Text, View, SectionList, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 import TransactionOptionsModal from '@components/transaction/TransactionOptionsModal';
 import InvestmentOptionsModal from '@components/investments/modals/InvestmentOptionsModal';
-import { Skeleton } from '@components/common/Skeleton';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import DraggableIconButton from '@components/common/DraggableIconButton';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
+import { useDataStatus } from '@context/DataStatusContext';
+import { Skeleton } from '@components/common/Skeleton';
 import { Transaction, UserProfile, Investment, RecurrenceRule, Debt, SavingsGoal } from '@types';
 import { deleteTransaction, getCachedTransactions } from '@services/domain/transactionService';
 import { deleteInvestment, getCachedInvestments } from '@services/domain/investmentService';
@@ -55,6 +56,7 @@ const HistoryScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const { isDocked, registerSecondAction } = useFloatingGear();
+    const { isChecking: isStatusChecking, isNewUser, refresh: refreshDataStatus } = useDataStatus();
     const routeName = useRoute().name;
     const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
     const [allInvestments, setAllInvestments] = useState<Investment[]>([]);
@@ -68,6 +70,7 @@ const HistoryScreen = ({ navigation }: any) => {
     const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
     const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const isInitialLoad = useRef(true);
     const [viewMode, setViewMode] = useState<'LIST' | 'CALENDAR'>('LIST');
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(new Date());
     const [showInfoModal, setShowInfoModal] = useState(false);
@@ -116,7 +119,12 @@ const HistoryScreen = ({ navigation }: any) => {
 
     const loadData = async () => {
         try {
-            setIsLoading(true);
+            // Only reset to the loading skeleton on the very first load - a
+            // background refresh (e.g. returning to this tab) shouldn't wipe
+            // an already-rendered screen back to skeletons/empty-state.
+            if (isInitialLoad.current) {
+                setIsLoading(true);
+            }
             const [transactions, investments, debts, goals] = await Promise.all([
                 getCachedTransactions(),
                 getCachedInvestments(),
@@ -131,6 +139,8 @@ const HistoryScreen = ({ navigation }: any) => {
             console.error('Error loading HistoryScreen data:', error);
         } finally {
             setIsLoading(false);
+            isInitialLoad.current = false;
+            refreshDataStatus();
         }
     };
 
@@ -658,6 +668,48 @@ const HistoryScreen = ({ navigation }: any) => {
 
     return (
         <ScreenWrapper scrollable={false}>
+            {isStatusChecking ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            ) : isNewUser ? (
+                <View style={{ flex: 1 }}>
+                    <View style={{ marginBottom: 20, marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <View>
+                            <Text style={{ color: colors.textSecondary }}>Transaction Log</Text>
+                            <Text style={{ color: colors.text, fontSize: 28, fontWeight: 'bold' }}>History</Text>
+                        </View>
+                        {isDocked && (
+                            <DraggableIconButton
+                                onPress={togglePrivacy}
+                                style={[styles.iconButton, { backgroundColor: colors.surface }]}
+                            >
+                                <Ionicons
+                                    name={isPrivacyEnabled ? 'eye-off' : 'eye'}
+                                    size={20}
+                                    color={colors.text}
+                                />
+                            </DraggableIconButton>
+                        )}
+                    </View>
+
+                    <View style={styles.emptyState}>
+                        <View style={[styles.emptyIconCircle, { backgroundColor: colors.primary + '15' }]}>
+                            <Ionicons name="receipt-outline" size={34} color={colors.primary} />
+                        </View>
+                        <Text style={[styles.emptyTitle, { color: colors.text }]}>No transactions yet</Text>
+                        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                            Every transaction, investment, and debt you log will show up here, organized by date.
+                        </Text>
+                        <TouchableOpacity
+                            style={[styles.emptyCta, { backgroundColor: colors.primary }]}
+                            onPress={() => navigation.navigate('Actions')}
+                        >
+                            <Text style={styles.emptyCtaText}>Add Your First Transaction</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            ) : (
             <SectionList
                 keyboardDismissMode="on-drag"
                 sections={isLoading ? [] : sections}
@@ -815,6 +867,7 @@ const HistoryScreen = ({ navigation }: any) => {
                     )
                 }
             />
+            )}
 
             <TransactionOptionsModal
                 visible={!!selectedTransaction}
@@ -979,7 +1032,47 @@ const styles = StyleSheet.create({
         height: 8,
         borderRadius: 4,
         borderWidth: 1,
-    }
+    },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyState: {
+        alignItems: 'center',
+        paddingTop: 40,
+        paddingHorizontal: 24,
+    },
+    emptyIconCircle: {
+        width: 76,
+        height: 76,
+        borderRadius: 38,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    emptyTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        marginBottom: 8,
+    },
+    emptySubtitle: {
+        fontSize: 14,
+        lineHeight: 20,
+        textAlign: 'center',
+        maxWidth: 280,
+        marginBottom: 24,
+    },
+    emptyCta: {
+        paddingVertical: 13,
+        paddingHorizontal: 28,
+        borderRadius: 12,
+    },
+    emptyCtaText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '700',
+    },
 });
 
 export default HistoryScreen;

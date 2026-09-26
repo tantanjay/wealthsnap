@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl, Platform, ToastAndroid } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, RefreshControl, Platform, ToastAndroid, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
-import { Skeleton } from '@components/common/Skeleton';
 import DraggableIconButton from '@components/common/DraggableIconButton';
 import { InvestmentStats } from '@components/investments/InvestmentStats';
 import { HoldingsList } from '@components/investments/HoldingsList';
@@ -12,6 +11,8 @@ import { DividendChart } from '@components/investments/DividendChart';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
+import { useDataStatus } from '@context/DataStatusContext';
+import { Skeleton } from '@components/common/Skeleton';
 import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding, getActualDividendsGrouped } from '@services/domain/investmentService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
 import { getProjectedDividends, getDividendCalendar, CalendarEvent } from '@services/domain/dividendHistoryService';
@@ -31,6 +32,7 @@ const InvestmentScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const { isDocked, registerSecondAction } = useFloatingGear();
+    const { isChecking: isStatusChecking, hasInvestments, refresh: refreshDataStatus } = useDataStatus();
     const routeName = useRoute().name;
     const { checkConsent } = useAIConsent();
     const [refreshing, setRefreshing] = useState(false);
@@ -151,8 +153,9 @@ const InvestmentScreen = ({ navigation }: any) => {
             console.error("Failed to load investment stats", error);
         } finally {
             setIsLoading(false);
+            refreshDataStatus();
         }
-    }, []); // Remove activePriority dependency
+    }, [refreshDataStatus]); // Remove activePriority dependency
 
     // Kept separate from loadStats (a lighter, targeted fetch instead of a redundant full-stats
     // load), but hoisted into a stable callback so it can also run on focus below - otherwise
@@ -366,58 +369,95 @@ const InvestmentScreen = ({ navigation }: any) => {
     const defaultSectionOrder = ['stats_carousel', 'smart_advisor', 'allocation_chart', 'dividend_chart', 'holdings_list'];
     const activeSectionOrder = sectionOrder.length > 0 ? sectionOrder : defaultSectionOrder;
 
+    const headerContent = (
+        <View style={styles.header}>
+            <View>
+                {isLoading ? (
+                    <View style={{ marginBottom: 4, width: 120 }}>
+                        <Skeleton width={120} height={16} />
+                    </View>
+                ) : (
+                    <Text style={[styles.date, { color: colors.textSecondary }]}>
+                        As of {valuationDate
+                            ? new Date(valuationDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                            : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        }
+                    </Text>
+                )}
+                <Text style={[styles.title, { color: colors.text }]}>Portfolio</Text>
+            </View>
+            {isDocked && (
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <DraggableIconButton
+                        onPress={togglePrivacy}
+                        style={[
+                            styles.iconButton,
+                            { backgroundColor: colors.surface }
+                        ]}
+                    >
+                        <Ionicons
+                            name={isPrivacyEnabled ? 'eye-off' : 'eye'}
+                            size={20}
+                            color={colors.text}
+                        />
+                    </DraggableIconButton>
+                    <DraggableIconButton
+                        style={[styles.iconButton, { backgroundColor: colors.surface }]}
+                        onPress={() => setShowSettings(true)}
+                    >
+                        <Ionicons name="options-outline" size={20} color={colors.text} />
+                    </DraggableIconButton>
+                </View>
+            )}
+        </View>
+    );
+
     return (
         <ScreenWrapper style={{ paddingHorizontal: 0 }} scrollable={false}>
-            <ScrollView
-                contentContainerStyle={{ paddingBottom: 80 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-            >
-                {/* Header Title with Menu */}
-                <View style={styles.header}>
-                    <View>
-                        {isLoading ? (
-                            <View style={{ marginBottom: 4, width: 120 }}>
-                                <Skeleton width={120} height={16} />
-                            </View>
-                        ) : (
-                            <Text style={[styles.date, { color: colors.textSecondary }]}>
-                                As of {valuationDate
-                                    ? new Date(valuationDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                                    : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                                }
-                            </Text>
-                        )}
-                        <Text style={[styles.title, { color: colors.text }]}>Portfolio</Text>
+            {/* headerContent is rendered inside all three branches below (matching
+                HomeScreen/HistoryScreen/DebtScreen) so it never disappears during the
+                brief isStatusChecking window - only the body beneath it swaps. */}
+            {isStatusChecking ? (
+                <View style={{ flex: 1 }}>
+                    {headerContent}
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color={colors.primary} />
                     </View>
-                    {isDocked && (
-                        <View style={{ flexDirection: 'row', gap: 12 }}>
-                            <DraggableIconButton
-                                onPress={togglePrivacy}
-                                style={[
-                                    styles.iconButton,
-                                    { backgroundColor: colors.surface }
-                                ]}
-                            >
-                                <Ionicons
-                                    name={isPrivacyEnabled ? 'eye-off' : 'eye'}
-                                    size={20}
-                                    color={colors.text}
-                                />
-                            </DraggableIconButton>
-                            <DraggableIconButton
-                                style={[styles.iconButton, { backgroundColor: colors.surface }]}
-                                onPress={() => setShowSettings(true)}
-                            >
-                                <Ionicons name="options-outline" size={20} color={colors.text} />
-                            </DraggableIconButton>
-                        </View>
-                    )}
                 </View>
+            ) : !hasInvestments ? (
+                /* New-user Empty State - kept out of the pull-to-refresh ScrollView below
+                   (matching HomeScreen/HistoryScreen, neither of which scroll their empty
+                   state) so it sits still instead of rubber-banding with the refresh gesture. */
+                <View style={{ flex: 1 }}>
+                    {headerContent}
+                    <View style={styles.emptyState}>
+                        <View style={[styles.emptyIconCircle, { backgroundColor: colors.secondary + '15' }]}>
+                            <Ionicons name="trending-up" size={34} color={colors.secondary} />
+                        </View>
+                        <Text style={[styles.emptyTitle, { color: colors.text }]}>Start growing your wealth</Text>
+                        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                            Every great portfolio starts with a single investment. Add yours and start putting your money to work.
+                        </Text>
+                        <TouchableOpacity
+                            style={[styles.emptyCta, { backgroundColor: colors.primary }]}
+                            onPress={() => navigation.navigate('Actions')}
+                        >
+                            <Text style={styles.emptyCtaText}>Add Your First Investment</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            ) : (
+                <ScrollView
+                    contentContainerStyle={{ paddingBottom: 80 }}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                >
+                    {headerContent}
 
-                {/* Dynamic Sections */}
-                {activeSectionOrder.map(sectionId => renderSection(sectionId))}
+                    {/* Dynamic Sections */}
+                    {activeSectionOrder.map(sectionId => renderSection(sectionId))}
 
-            </ScrollView>
+                </ScrollView>
+            )}
 
             <InvestmentSettingsModal
                 visible={showSettings}
@@ -467,7 +507,47 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 2,
         elevation: 2,
-    }
+    },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyState: {
+        alignItems: 'center',
+        paddingTop: 40,
+        paddingHorizontal: 24,
+    },
+    emptyIconCircle: {
+        width: 76,
+        height: 76,
+        borderRadius: 38,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    emptyTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        marginBottom: 8,
+    },
+    emptySubtitle: {
+        fontSize: 14,
+        lineHeight: 20,
+        textAlign: 'center',
+        maxWidth: 280,
+        marginBottom: 24,
+    },
+    emptyCta: {
+        paddingVertical: 13,
+        paddingHorizontal: 28,
+        borderRadius: 12,
+    },
+    emptyCtaText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '700',
+    },
 });
 
 export default InvestmentScreen;

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Financial Health Card — Score Ring redesign</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F8F9FA; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- status bar -->
+  <div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; box-sizing: border-box; font-size: 13px; font-weight: 600; color: #212121;">
+    <span>9:41</span>
+    <span>●●●</span>
+  </div>
+
+  <div style="flex-grow: 1; overflow: hidden; padding: 10px 20px 0; display: flex; flex-direction: column;">
+
+    <!-- Card header row -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <div style="color: #212121; font-size: 18px; font-weight: 700;">Financial Health</div>
+      <div style="display: flex; gap: 4px;">
+        <div style="width: 6px; height: 6px; border-radius: 3px; background: #1976D2;"></div>
+        <div style="width: 6px; height: 6px; border-radius: 3px; background: #E0E0E0;"></div>
+        <div style="width: 6px; height: 6px; border-radius: 3px; background: #E0E0E0;"></div>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div style="background: #FFFFFF; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column;">
+
+      <!-- Score ring -->
+      <div style="display: flex; flex-direction: column; align-items: center; padding: 4px 0 16px;">
+        <div style="position: relative; width: 148px; height: 148px;">
+          <svg width="148" height="148" viewBox="0 0 148 148">
+            <circle cx="74" cy="74" r="62" fill="none" stroke="#F0F0F0" stroke-width="12" />
+            <circle cx="74" cy="74" r="62" fill="none" stroke="#388E3C" stroke-width="12"
+              stroke-linecap="round"
+              stroke-dasharray="389.6"
+              stroke-dashoffset="85.7"
+              transform="rotate(-90 74 74)" />
+          </svg>
+          <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div style="font-size: 34px; font-weight: 800; color: #212121; line-height: 1;">78</div>
+            <div style="font-size: 11px; color: #9E9E9E; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 2px;">out of 100</div>
+          </div>
+        </div>
+        <div style="margin-top: 10px; display: flex; align-items: center; gap: 6px; background: #388E3C15; padding: 5px 14px; border-radius: 20px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#388E3C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span style="color: #388E3C; font-size: 13px; font-weight: 700;">Good</span>
+        </div>
+      </div>
+
+      <!-- 2x2 icon tile grid -->
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 4px;">
+
+        <!-- Runway -->
+        <div style="background: #F8F9FA; border-radius: 12px; padding: 12px;">
+          <div style="width: 30px; height: 30px; border-radius: 10px; background: #388E3C1F; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#388E3C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"></path><path d="M5 2h14"></path><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"></path><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"></path></svg>
+          </div>
+          <div style="color: #757575; font-size: 11px; margin-bottom: 2px;">Runway</div>
+          <div style="color: #212121; font-size: 15px; font-weight: 700;">8.4 mo</div>
+        </div>
+
+        <!-- Spending -->
+        <div style="background: #F8F9FA; border-radius: 12px; padding: 12px;">
+          <div style="width: 30px; height: 30px; border-radius: 10px; background: #F57C001F; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F57C00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1"></path><path d="M21 12h-5a2 2 0 0 0 0 4h5v-4z"></path></svg>
+          </div>
+          <div style="color: #757575; font-size: 11px; margin-bottom: 2px;">Spending</div>
+          <div style="color: #212121; font-size: 15px; font-weight: 700;">12% lower</div>
+        </div>
+
+        <!-- Investment Boost -->
+        <div style="background: #F8F9FA; border-radius: 12px; padding: 12px;">
+          <div style="width: 30px; height: 30px; border-radius: 10px; background: #1976D21F; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1976D2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+          </div>
+          <div style="color: #757575; font-size: 11px; margin-bottom: 2px;">Investment Boost</div>
+          <div style="color: #212121; font-size: 15px; font-weight: 700;">+3.2 mo</div>
+        </div>
+
+        <!-- Debt Drag -->
+        <div style="background: #F8F9FA; border-radius: 12px; padding: 12px;">
+          <div style="width: 30px; height: 30px; border-radius: 10px; background: #D32F2F1F; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D32F2F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+          </div>
+          <div style="color: #757575; font-size: 11px; margin-bottom: 2px;">Debt Drag</div>
+          <div style="color: #212121; font-size: 15px; font-weight: 700;">-1.5 mo</div>
+        </div>
+
+      </div>
+
+      <!-- CTA -->
+      <button style="margin-top: 16px; border: 1px solid #E0E0E0; background: transparent; border-radius: 8px; padding: 11px 0; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#212121" stroke="none"><path d="M12.1 21.35l-1.1-1.02C5.14 15.24 2 12.39 2 8.9 2 6.09 4.19 4 7 4c1.62 0 3.17.77 4.13 1.97a5.4 5.4 0 0 1 1.87-1.52 5 5 0 0 1 2-.45C17.81 4 20 6.09 20 8.9c0 3.49-3.14 6.34-8.99 11.44l-1.09.99z"/></svg>
+        <span style="color: #212121; font-weight: 600; font-size: 14px;">View Financial Health</span>
+      </button>
+
+    </div>
+
+    <!-- annotation -->
+    <div style="margin-top: 14px; padding: 12px 14px; background: #1976D20D; border-radius: 10px;">
+      <div style="color: #1976D2; font-size: 12px; font-weight: 700; margin-bottom: 4px;">MOCKUP NOTES</div>
+      <div style="color: #212121; font-size: 12px; line-height: 17px;">
+        Score ring color follows the same tier as the 4 tiles (green=good/success, would go amber/red at lower scores). Tiles keep the existing icon+color meanings (Runway/Investment=success or primary, Spending=warning, Debt=error). Page-dot swiper, Net Worth &amp; Assets pages stay as-is.
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

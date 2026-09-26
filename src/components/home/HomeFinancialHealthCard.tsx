@@ -100,6 +100,11 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
         return 'Normal';
     };
 
+    // All four metrics below are simultaneously in their "nothing to show" state -
+    // no expense history to compute a runway, no investing, no debt - which reads
+    // as a wall of dead-end lines rather than one coherent message.
+    const isCalibrating = !isLoading && runwayInMonths === Infinity && investmentBoost <= 0 && debtDrag <= 0;
+
     const getRunwayChangeContent = () => {
         if (runwayChange === 0) return null;
         const isUp = runwayChange > 0;
@@ -164,6 +169,20 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                             onLayout={handleCardLayout}
                         >
                             <View style={{ flex: 1 }}>
+                              {isCalibrating ? (
+                                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12 }}>
+                                    <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary + '15', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                                        <Ionicons name="analytics-outline" size={26} color={colors.primary} />
+                                    </View>
+                                    <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700', marginBottom: 6, textAlign: 'center' }}>
+                                        Calibrating your Financial Health
+                                    </Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center', lineHeight: 18, maxWidth: 240 }}>
+                                        Keep logging your income and expenses — your runway and spending pace will show up here once there's enough to go on.
+                                    </Text>
+                                </View>
+                              ) : (
+                              <>
                                 {/* Runway */}
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -174,9 +193,15 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                             <Text style={{ color: colors.textSecondary, fontSize: 13, marginRight: 6 }}>Runway:</Text>
                                             {isLoading ? <Skeleton width={60} height={20} /> : (
                                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
-                                                        {runwayInMonths === Infinity ? '∞' : runwayInMonths.toFixed(1)} months
-                                                    </Text>
+                                                    {runwayInMonths === Infinity ? (
+                                                        <Text style={{ color: colors.success, fontSize: 14, fontWeight: '600' }}>
+                                                            No expenses tracked
+                                                        </Text>
+                                                    ) : (
+                                                        <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                                                            {runwayInMonths.toFixed(1)} months
+                                                        </Text>
+                                                    )}
                                                     {!isLoading && getRunwayChangeContent()}
                                                 </View>
                                             )}
@@ -199,7 +224,7 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                             )}
                                             {!isLoading && (
                                                 <Text style={{ color: colors.textSecondary, fontSize: 12, fontStyle: 'italic' }}>
-                                                    ({monthBudgetPercent.toFixed(0)}% budget)
+                                                    {monthBudgetPercent > 0 ? `(${monthBudgetPercent.toFixed(0)}% budget)` : '(no budget set)'}
                                                 </Text>
                                             )}
                                         </View>
@@ -239,25 +264,28 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                         </View>
                                     </View>
                                 </View>
-
+                              </>
+                              )}
                             </View>
 
-                            <TouchableOpacity
-                                onPress={onSeeDetails}
-                                style={{
-                                    marginTop: 'auto',
-                                    borderColor: colors.border,
-                                    borderWidth: 1,
-                                    paddingVertical: 10,
-                                    borderRadius: 8,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}
-                            >
-                                <Ionicons name="heart-circle-sharp" size={24} color={colors.text} style={{ marginRight: 8 }} />
-                                <Text style={{ color: colors.text, fontWeight: '600' }}>View Financial Health</Text>
-                            </TouchableOpacity>
+                            {!isCalibrating && (
+                                <TouchableOpacity
+                                    onPress={onSeeDetails}
+                                    style={{
+                                        marginTop: 'auto',
+                                        borderColor: colors.border,
+                                        borderWidth: 1,
+                                        paddingVertical: 10,
+                                        borderRadius: 8,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    <Ionicons name="heart-circle-sharp" size={24} color={colors.text} style={{ marginRight: 8 }} />
+                                    <Text style={{ color: colors.text, fontWeight: '600' }}>View Financial Health</Text>
+                                </TouchableOpacity>
+                            )}
 
                         </Card>
                     </View>

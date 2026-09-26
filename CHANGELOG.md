@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Recurring auto-contributions, a one-time notification when a goal hits its target, and pause/resume, manual top-up, and withdraw-to-cash actions.
   - Included in History, Monthly Summary, Chat, backup/restore, Excel export, and multi-device sync.
   - History merges a goal-funded purchase into a single card with a dedicated color accent.
+- New-user empty states on Home, History, Investment, and Debt Strategy: instead of a full layout of zero-value cards, each shows a short explanation and a way to add your first record; Debt Strategy congratulates you for having no debts instead, with no button needed.
+  - Same treatment on Home's Investment, Debts, and Savings Goals dashboard widgets, plus a single "Calibrating" message on the Financial Health widget instead of four separate blank stats.
 
 ### Changed
 - Onboarding: redesigned tour to four focused slides (privacy, all-in-one tracking, quick add, recap) instead of six generic ones; slides now support swipe with a sliding animation.
@@ -34,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Onboarding & Welcome screen: Next/Get Started button could be hidden behind the phone's status/navigation bar on small screens.
 - Onboarding: Next button could end up off-screen on the final setup step.
 - History: a row with no note showed its raw internal type or subtype code (e.g. `TRANSFER_IN`, `INITIAL_FUNDING`) instead of a clean label.
+- Home: the Financial Health card's Runway showed a bare "∞" when there's no expense history yet; now reads "No expenses tracked". Its Spending row showed "(0% budget)" when no budget was actually set; now reads "(no budget set)".
 
 ## [1.17.0] — 2026-09-06
 

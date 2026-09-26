@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { Text, View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 
@@ -18,6 +18,7 @@ import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
+import { useDataStatus } from '@context/DataStatusContext';
 import { UserProfile, Transaction, Investment, Debt } from '@types';
 import {
     getTransactionsByMonth,
@@ -50,6 +51,7 @@ const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
     const { isDocked, registerSecondAction } = useFloatingGear();
+    const { isChecking: isStatusChecking, isNewUser, hasInvestments, hasDebts, refresh: refreshDataStatus } = useDataStatus();
     const routeName = useRoute().name;
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -89,6 +91,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [savingsGoalsTarget, setSavingsGoalsTarget] = useState(new BigNumber(0));
     const [savingsGoalsSpent, setSavingsGoalsSpent] = useState(new BigNumber(0));
     const [isLoading, setIsLoading] = useState(true);
+    const isInitialLoad = useRef(true);
 
     const [financialHealth, setFinancialHealth] = useState({
         totalAssets: new BigNumber(0),
@@ -127,7 +130,12 @@ const HomeScreen = ({ navigation }: any) => {
     const loadData = async () => {
         try {
             setDebtTotal(new BigNumber(0)); // to remove lint
-            setIsLoading(true);
+            // Only reset to the loading skeleton on the very first load - a
+            // background refresh (e.g. returning to this tab) shouldn't wipe
+            // an already-rendered screen back to skeletons/empty-state.
+            if (isInitialLoad.current) {
+                setIsLoading(true);
+            }
 
             // Load persisted display mode
             const savedMode = await Storage.getHomeDisplayMode();
@@ -188,6 +196,14 @@ const HomeScreen = ({ navigation }: any) => {
 
             setProfile(p);
             setTransactions(t);
+
+            // Nothing to compute yet - every metric below is derived from
+            // transactions/investments/debts/goals, which are all empty.
+            // (The shared DataStatusContext is what the render below actually
+            // branches on - this is just a perf shortcut for this fetch.)
+            if (t.length === 0 && inv.length === 0 && allDebts.length === 0 && allGoals.length === 0) {
+                return;
+            }
 
             // Calculate metrics
             let oInc = new BigNumber(0), oExp = new BigNumber(0), mInc = new BigNumber(0), mExp = new BigNumber(0);
@@ -687,6 +703,8 @@ const HomeScreen = ({ navigation }: any) => {
             console.error('Error loading HomeScreen data:', error);
         } finally {
             setIsLoading(false);
+            isInitialLoad.current = false;
+            refreshDataStatus();
         }
     };
 
@@ -918,8 +936,65 @@ const HomeScreen = ({ navigation }: any) => {
                     )}
                 </View>
 
-                {/* Dynamic Card Rendering */}
-                {cardOrder.map((cardId) => {
+                {/* isStatusChecking (DataStatusContext, checked once app-wide on
+                    launch) decides empty-state vs. real cards up front, so this
+                    screen's own isLoading is free to go back to what the cards
+                    use it for - their own per-card skeletons - instead of also
+                    gating which layout shows at all. */}
+                {isStatusChecking ? (
+                    <View style={styles.loadingBlock}>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                    </View>
+                ) : isNewUser ? (
+                    <View style={styles.emptyState}>
+                        <View style={[styles.emptyIconCircle, { backgroundColor: colors.primary + '15' }]}>
+                            <Ionicons name="cash-outline" size={34} color={colors.primary} />
+                        </View>
+                        <Text style={[styles.emptyTitle, { color: colors.text }]}>No financial data yet</Text>
+                        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                            Your cash flow, net worth, and runway will show up here once you start logging money in and out.
+                        </Text>
+                        <TouchableOpacity
+                            style={[styles.emptyCta, { backgroundColor: colors.primary }]}
+                            onPress={() => navigation.navigate('Actions')}
+                        >
+                            <Text style={styles.emptyCtaText}>Add Your First Transaction</Text>
+                        </TouchableOpacity>
+
+                        <View style={[styles.checklist, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                            <TouchableOpacity
+                                style={[styles.checklistRow, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
+                                onPress={() => navigation.navigate('Actions')}
+                            >
+                                <View style={[styles.checklistIconCircle, { backgroundColor: colors.primary + '15' }]}>
+                                    <Ionicons name="receipt-outline" size={15} color={colors.primary} />
+                                </View>
+                                <Text style={[styles.checklistLabel, { color: colors.text }]}>Add a transaction</Text>
+                                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.checklistRow, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
+                                onPress={() => navigation.navigate('Actions')}
+                            >
+                                <View style={[styles.checklistIconCircle, { backgroundColor: colors.secondary + '15' }]}>
+                                    <Ionicons name="trending-up" size={15} color={colors.secondary} />
+                                </View>
+                                <Text style={[styles.checklistLabel, { color: colors.text }]}>Add an investment</Text>
+                                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.checklistRow}
+                                onPress={() => navigation.navigate('SavingsGoals')}
+                            >
+                                <View style={[styles.checklistIconCircle, { backgroundColor: colors.accent + '15' }]}>
+                                    <Ionicons name="wallet" size={15} color={colors.accent} />
+                                </View>
+                                <Text style={[styles.checklistLabel, { color: colors.text }]}>Set a savings goal</Text>
+                                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                ) : cardOrder.map((cardId) => {
                     switch (cardId) {
                         case 'cash-flow':
                             return (
@@ -947,6 +1022,7 @@ const HomeScreen = ({ navigation }: any) => {
                             return (
                                 <HomeInvestmentCard
                                     key="portfolio"
+                                    hasInvestments={hasInvestments}
                                     total={investmentTotal}
                                     realizedPL={realizedPL}
                                     unrealizedPL={unrealizedPL}
@@ -970,6 +1046,7 @@ const HomeScreen = ({ navigation }: any) => {
                             return (
                                 <HomeDebtCard
                                     key="debt"
+                                    hasDebts={hasDebts}
                                     total={debtTotal}
                                     borrowed={debtBorrowed}
                                     repaid={debtRepaid}
@@ -1087,7 +1164,74 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 2,
         elevation: 2,
-    }
+    },
+    loadingBlock: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 80,
+    },
+    emptyState: {
+        alignItems: 'center',
+        paddingTop: 40,
+        paddingBottom: 20,
+        paddingHorizontal: 12,
+    },
+    emptyIconCircle: {
+        width: 76,
+        height: 76,
+        borderRadius: 38,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    emptyTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        marginBottom: 8,
+    },
+    emptySubtitle: {
+        fontSize: 14,
+        lineHeight: 20,
+        textAlign: 'center',
+        maxWidth: 280,
+        marginBottom: 24,
+    },
+    emptyCta: {
+        paddingVertical: 13,
+        paddingHorizontal: 28,
+        borderRadius: 12,
+        marginBottom: 28,
+    },
+    emptyCtaText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '700',
+    },
+    checklist: {
+        width: '100%',
+        borderRadius: 14,
+        borderWidth: 1,
+        overflow: 'hidden',
+    },
+    checklistRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+    },
+    checklistIconCircle: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    checklistLabel: {
+        flex: 1,
+        fontSize: 14,
+        fontWeight: '600',
+    },
 });
 
 export default HomeScreen;
