@@ -36,24 +36,41 @@ const HomeSavingsGoalsCard: React.FC<HomeSavingsGoalsCardProps> = ({
                 Savings Goals
             </Text>
             <Card style={{ backgroundColor: colors.success, padding: 20, width: '100%' }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Total Saved</Text>
-                    <Ionicons name="wallet" size={24} color={colors.white} />
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <Text style={{ color: colors.white, fontSize: 32, fontWeight: 'bold' }}>
-                        {isLoading ? (
-                            <Skeleton width={120} height={36} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
-                        ) : (
-                            isPrivacyEnabled ? '****' : formatCurrencyAmount(total, currency)
-                        )}
-                    </Text>
-                    {!isLoading && (
-                        <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>
-                            {goalCount === 0 ? 'No goals yet' : `${goalCount} goal${goalCount === 1 ? '' : 's'}`}
+                {!isLoading && goalCount === 0 ? (
+                    <>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Savings Goals</Text>
+                            <Ionicons name="wallet" size={24} color={colors.white} />
+                        </View>
+                        <Text style={{ color: colors.white, fontSize: 20, fontWeight: '700' }}>
+                            No Goals Yet
                         </Text>
-                    )}
-                </View>
+                        <Text style={{ color: colors.white, opacity: 0.85, fontSize: 13, marginTop: 6, lineHeight: 18 }}>
+                            Set aside money for something specific - a trip, insurance, a big purchase - and track it separately from your everyday spending.
+                        </Text>
+                    </>
+                ) : (
+                    <>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Total Saved</Text>
+                            <Ionicons name="wallet" size={24} color={colors.white} />
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                            <Text style={{ color: colors.white, fontSize: 32, fontWeight: 'bold' }}>
+                                {isLoading ? (
+                                    <Skeleton width={120} height={36} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                                ) : (
+                                    isPrivacyEnabled ? '****' : formatCurrencyAmount(total, currency)
+                                )}
+                            </Text>
+                            {!isLoading && (
+                                <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>
+                                    {`${goalCount} goal${goalCount === 1 ? '' : 's'}`}
+                                </Text>
+                            )}
+                        </View>
+                    </>
+                )}
 
                 {!isLoading && goalCount > 0 && (
                     <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between' }}>

@@ -9,6 +9,7 @@ import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { DebtDisplayMode } from '@services/core/storageService';
 
 interface HomeDebtCardProps {
+    hasDebts: boolean;
     total: BigNumber;
     borrowed: BigNumber;
     repaid: BigNumber;
@@ -31,6 +32,7 @@ interface HomeDebtCardProps {
 }
 
 const HomeDebtCard: React.FC<HomeDebtCardProps> = ({
+    hasDebts,
     total,
     borrowed,
     repaid,
@@ -48,6 +50,11 @@ const HomeDebtCard: React.FC<HomeDebtCardProps> = ({
     const { colors } = useTheme();
     const scrollRef = useRef<ScrollView>(null);
     const [cardWidth, setCardWidth] = useState(0);
+
+    // No debts means all three pages (Total/Month/Obligations) would just
+    // show ₱0.00 - a slider between three identical blanks isn't useful, so
+    // this renders one static "you're debt-free" card instead.
+    const showEmpty = !isLoading && !hasDebts;
 
     // Sync ScrollView with displayMode change
     useEffect(() => {
@@ -79,12 +86,28 @@ const HomeDebtCard: React.FC<HomeDebtCardProps> = ({
                     Debts & Liabilities
                 </Text>
                 {/* Page Indicator */}
-                <View style={{ flexDirection: 'row', gap: 4 }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Total' ? colors.primary : colors.border }} />
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Month' ? colors.primary : colors.border }} />
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Obligations' ? colors.primary : colors.border }} />
-                </View>
+                {!showEmpty && (
+                    <View style={{ flexDirection: 'row', gap: 4 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Total' ? colors.primary : colors.border }} />
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Month' ? colors.primary : colors.border }} />
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Obligations' ? colors.primary : colors.border }} />
+                    </View>
+                )}
             </View>
+            {showEmpty ? (
+                <Card style={{ backgroundColor: colors.success, padding: 20, marginBottom: 10, width: '100%' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                        <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Debts & Liabilities</Text>
+                        <Ionicons name="checkmark-circle" size={24} color={colors.white} />
+                    </View>
+                    <Text style={{ color: colors.white, fontSize: 18, fontWeight: '700' }}>
+                        Congrats, you have no debts!
+                    </Text>
+                    <Text style={{ color: colors.white, opacity: 0.85, fontSize: 13, marginTop: 6, lineHeight: 18 }}>
+                        You're debt-free. Keep it that way and put that money to work for you instead.
+                    </Text>
+                </Card>
+            ) : (
             <View>
                 <ScrollView
                     ref={scrollRef}
@@ -298,6 +321,7 @@ const HomeDebtCard: React.FC<HomeDebtCardProps> = ({
                     </View>
                 </ScrollView>
             </View>
+            )}
         </View>
     );
 };

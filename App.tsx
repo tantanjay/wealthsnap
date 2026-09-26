@@ -11,6 +11,7 @@ import { PrivacyProvider } from '@context/PrivacyContext';
 import { AlertProvider } from '@context/AlertContext';
 import { ThemeProvider } from '@context/ThemeContext';
 import { FloatingGearProvider } from '@context/FloatingGearContext';
+import { DataStatusProvider } from '@context/DataStatusContext';
 import { GlobalErrorBoundary } from '@components/common/GlobalErrorBoundary';
 import { PrivacyGuard } from '@components/common/PrivacyGuard';
 import { CustomAlert } from '@components/common/CustomAlert';
@@ -85,36 +86,38 @@ export default function App() {
     checkOnboarding();
   }, []);
 
-  // Then show loading while checking onboarding
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
-  // Finally show the app
+  // DataStatusProvider wraps both branches below (not just the "app ready" one)
+  // so its own "does this user have any data yet" check starts immediately on
+  // mount, in parallel with the onboarding/DB check above, instead of only
+  // starting once the first screen that needs it mounts.
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <GlobalErrorBoundary>
-          <SecurityProvider>
-            <PrivacyProvider>
-              <AlertProvider>
-                <PrivacyGuard />
-                <SafeAreaProvider>
-                  <StatusBar style="auto" />
-                  <FloatingGearProvider>
-                    <AppContent initialRoute={initialRoute} />
-                  </FloatingGearProvider>
-                </SafeAreaProvider>
-              </AlertProvider>
-            </PrivacyProvider>
-          </SecurityProvider>
-        </GlobalErrorBoundary>
-      </ThemeProvider>
-    </GestureHandlerRootView>
+    <DataStatusProvider>
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" />
+        </View>
+      ) : (
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <ThemeProvider>
+            <GlobalErrorBoundary>
+              <SecurityProvider>
+                <PrivacyProvider>
+                  <AlertProvider>
+                    <PrivacyGuard />
+                    <SafeAreaProvider>
+                      <StatusBar style="auto" />
+                      <FloatingGearProvider>
+                        <AppContent initialRoute={initialRoute} />
+                      </FloatingGearProvider>
+                    </SafeAreaProvider>
+                  </AlertProvider>
+                </PrivacyProvider>
+              </SecurityProvider>
+            </GlobalErrorBoundary>
+          </ThemeProvider>
+        </GestureHandlerRootView>
+      )}
+    </DataStatusProvider>
   );
 }
 

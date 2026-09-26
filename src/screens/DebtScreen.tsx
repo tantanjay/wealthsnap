@@ -1,10 +1,11 @@
 import React, { useCallback, useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { useDataStatus } from '@context/DataStatusContext';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { Debt, DebtStatus, Transaction, UserProfile } from '@types';
 import * as Storage from '@services/core/storageService';
@@ -22,6 +23,7 @@ import { Button } from '@components/index';
 const DebtScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { showAlert } = useAlert();
+    const { isChecking: isStatusChecking, hasDebts, refresh: refreshDataStatus } = useDataStatus();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [debts, setDebts] = useState<Debt[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -192,8 +194,10 @@ const DebtScreen = ({ navigation }: any) => {
             setTransactions(t);
         } catch (error) {
             console.error('Failed to load debt data:', error);
+        } finally {
+            refreshDataStatus();
         }
-    }, []);
+    }, [refreshDataStatus]);
 
     // Always looks up the ORIGINAL debt record before saving - `debt` from payoffOrder/
     // owedToYou/paidDebts has its initialAmount patched to the current calculated balance
@@ -392,9 +396,27 @@ const DebtScreen = ({ navigation }: any) => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={[styles.title, { color: colors.text }]}>Debt Strategy</Text>
+                <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.textSecondary }}>Payoff Overview</Text>
+                    <Text style={[styles.title, { color: colors.text }]}>Debt Strategy</Text>
+                </View>
             </View>
 
+            {isStatusChecking ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            ) : !hasDebts ? (
+                <View style={styles.emptyState}>
+                    <View style={[styles.emptyIconCircle, { backgroundColor: colors.success + '15' }]}>
+                        <Ionicons name="checkmark-circle" size={34} color={colors.success} />
+                    </View>
+                    <Text style={[styles.emptyTitle, { color: colors.text }]}>Congrats, you have no debts!</Text>
+                    <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                        You're debt-free. Keep it that way and put that money to work for you instead.
+                    </Text>
+                </View>
+            ) : (
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
                 {/* Disclaimer Banner */}
@@ -801,6 +823,7 @@ const DebtScreen = ({ navigation }: any) => {
                 />
 
             </ScrollView >
+            )}
         </ScreenWrapper >
     );
 };
@@ -816,9 +839,8 @@ const styles = StyleSheet.create({
         marginRight: 15,
     },
     title: {
-        fontSize: 24,
+        fontSize: 28,
         fontWeight: 'bold',
-        flex: 1,
     },
     content: {
         paddingBottom: 100,
@@ -938,6 +960,46 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 12,
         fontSize: 16,
+    },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyState: {
+        alignItems: 'center',
+        paddingTop: 40,
+        paddingHorizontal: 24,
+    },
+    emptyIconCircle: {
+        width: 76,
+        height: 76,
+        borderRadius: 38,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    emptyTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        marginBottom: 8,
+    },
+    emptySubtitle: {
+        fontSize: 14,
+        lineHeight: 20,
+        textAlign: 'center',
+        maxWidth: 280,
+        marginBottom: 24,
+    },
+    emptyCta: {
+        paddingVertical: 13,
+        paddingHorizontal: 28,
+        borderRadius: 12,
+    },
+    emptyCtaText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '700',
     },
 });
 

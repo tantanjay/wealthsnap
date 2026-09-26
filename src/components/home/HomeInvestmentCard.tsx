@@ -9,6 +9,7 @@ import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { InvestmentDisplayMode } from '@services/core/storageService';
 
 interface HomeInvestmentCardProps {
+    hasInvestments: boolean;
     total: BigNumber;
     realizedPL: BigNumber;
     unrealizedPL: BigNumber;
@@ -25,6 +26,7 @@ interface HomeInvestmentCardProps {
 }
 
 const HomeInvestmentCard: React.FC<HomeInvestmentCardProps> = ({
+    hasInvestments,
     total,
     realizedPL,
     unrealizedPL,
@@ -41,6 +43,11 @@ const HomeInvestmentCard: React.FC<HomeInvestmentCardProps> = ({
     const { colors } = useTheme();
     const scrollRef = useRef<ScrollView>(null);
     const [cardWidth, setCardWidth] = useState(0);
+
+    // No holdings means the "Total" and "Month" pages would both just show
+    // ₱0.00 - a slider between two identical blanks isn't useful, so this
+    // renders one static encouraging card instead.
+    const showEmpty = !isLoading && !hasInvestments;
 
     // Sync ScrollView with displayMode change
     useEffect(() => {
@@ -69,11 +76,42 @@ const HomeInvestmentCard: React.FC<HomeInvestmentCardProps> = ({
                     Investments
                 </Text>
                 {/* Page Indicator */}
-                <View style={{ flexDirection: 'row', gap: 4 }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Total' ? colors.primary : colors.border }} />
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Month' ? colors.primary : colors.border }} />
-                </View>
+                {!showEmpty && (
+                    <View style={{ flexDirection: 'row', gap: 4 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Total' ? colors.primary : colors.border }} />
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: displayMode === 'Month' ? colors.primary : colors.border }} />
+                    </View>
+                )}
             </View>
+            {showEmpty ? (
+                <Card style={{ backgroundColor: colors.secondary, padding: 20, marginBottom: 10, width: '100%' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                        <Text style={{ color: colors.white, fontSize: 16, opacity: 0.9 }}>Investments</Text>
+                        <Ionicons name="trending-up" size={24} color={colors.white} />
+                    </View>
+                    <Text style={{ color: colors.white, fontSize: 18, fontWeight: '700' }}>
+                        Start growing your wealth
+                    </Text>
+                    <Text style={{ color: colors.white, opacity: 0.85, fontSize: 13, marginTop: 6, lineHeight: 18 }}>
+                        Every great portfolio starts with a single investment.
+                    </Text>
+                    <TouchableOpacity
+                        style={{
+                            marginTop: 15,
+                            backgroundColor: 'rgba(255,255,255,0.2)',
+                            paddingVertical: 8,
+                            alignItems: 'center',
+                            borderRadius: 8,
+                            flexDirection: 'row',
+                            justifyContent: 'center'
+                        }}
+                        onPress={onPress}
+                    >
+                        <Ionicons name="briefcase" size={24} color={colors.white} style={{ marginRight: 8 }} />
+                        <Text style={{ color: colors.white, fontWeight: '600' }}>Add Your First Investment</Text>
+                    </TouchableOpacity>
+                </Card>
+            ) : (
             <View>
                 <ScrollView
                     ref={scrollRef}
@@ -227,6 +265,7 @@ const HomeInvestmentCard: React.FC<HomeInvestmentCardProps> = ({
                     </View>
                 </ScrollView>
             </View>
+            )}
         </View>
     );
 };
