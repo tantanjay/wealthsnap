@@ -6,8 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { SPACING } from '@styles/theme';
-import { HELP_TOPICS, HelpTopic, HelpSlide } from '@constants/helpContent';
+import { HELP_TOPICS, HelpTopic } from '@constants/helpContent';
 import { splitBoldSegments } from '@utils/markdownParser';
+import OnboardingGuide from '@screens/onboarding/OnboardingGuideScreen';
 
 interface HelpCenterProps {
     onFinish: () => void;
@@ -18,13 +19,11 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
     const [selectedTopic, setSelectedTopic] = useState<HelpTopic | null>(null);
-    const [currentSlide, setCurrentSlide] = useState(0);
 
     useEffect(() => {
         const backAction = () => {
             if (selectedTopic) {
                 setSelectedTopic(null);
-                setCurrentSlide(0);
                 return true;
             }
             if (mode === 'onboarding') {
@@ -86,89 +85,6 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
             </View>
         </ScrollView>
     );
-
-    const renderSlides = (slides: HelpSlide[]) => {
-        const slide = slides[currentSlide];
-
-        const handleNext = () => {
-            if (currentSlide < slides.length - 1) {
-                setCurrentSlide(currentSlide + 1);
-            } else {
-                setSelectedTopic(null);
-                setCurrentSlide(0);
-            }
-        };
-
-        const handlePrev = () => {
-            if (currentSlide > 0) {
-                setCurrentSlide(currentSlide - 1);
-            }
-        };
-
-        return (
-            <View style={styles.slidesWrapper}>
-                <TouchableOpacity
-                    style={styles.viewerBack}
-                    onPress={() => {
-                        setSelectedTopic(null);
-                        setCurrentSlide(0);
-                    }}
-                >
-                    <Ionicons name="arrow-back" size={24} color={colors.text} />
-                    <Text style={[styles.backText, { color: colors.text }]}>Back to Menu</Text>
-                </TouchableOpacity>
-
-                <View style={styles.slideContent}>
-                    <View style={[styles.slideIconContainer, { backgroundColor: slide.color + '20' }]}>
-                        <Ionicons name={slide.icon as any} size={80} color={slide.color} />
-                    </View>
-
-                    <Text style={[styles.slideTitle, { color: colors.text }]}>{slide.title}</Text>
-
-                    {slide.isNotice && (
-                        <View style={styles.noticeBox}>
-                            <Text style={styles.noticeText}>IMPORTANT NOTICE</Text>
-                        </View>
-                    )}
-
-                    <Text style={[styles.slideDescription, { color: colors.textSecondary }]}>
-                        {slide.description}
-                    </Text>
-
-                    <View style={styles.pagination}>
-                        {slides.map((_, index) => (
-                            <View
-                                key={index}
-                                style={[
-                                    styles.dot,
-                                    {
-                                        backgroundColor: index === currentSlide ? colors.primary : colors.border,
-                                        width: index === currentSlide ? 24 : 8
-                                    }
-                                ]}
-                            />
-                        ))}
-                    </View>
-                </View>
-
-                <View style={[styles.slideFooter, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-                    <TouchableOpacity
-                        onPress={handlePrev}
-                        disabled={currentSlide === 0}
-                        style={{ opacity: currentSlide === 0 ? 0 : 1, padding: 10 }}
-                    >
-                        <Ionicons name="arrow-back" size={24} color={colors.text} />
-                    </TouchableOpacity>
-
-                    <Button
-                        title={currentSlide === slides.length - 1 ? "Finish" : "Next"}
-                        onPress={handleNext}
-                        style={{ width: 140 }}
-                    />
-                </View>
-            </View>
-        );
-    };
 
     const renderFormattedText = (text: string, baseStyle: any) => {
         return (
@@ -311,77 +227,10 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
             height: 56,
             borderRadius: 16,
         },
-        // Slides Styles
-        slidesWrapper: {
-            flex: 1,
-            padding: SPACING.lg,
-            justifyContent: 'space-between',
-        },
         viewerBack: {
             flexDirection: 'row',
             alignItems: 'center',
             marginTop: 20,
-        },
-        backText: {
-            fontSize: 16,
-            fontWeight: '600',
-            marginLeft: 8,
-        },
-        slideContent: {
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingHorizontal: SPACING.md,
-        },
-        slideIconContainer: {
-            width: 140,
-            height: 140,
-            borderRadius: 70,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 30,
-        },
-        slideTitle: {
-            fontSize: 26,
-            fontWeight: 'bold',
-            textAlign: 'center',
-            marginBottom: 16,
-        },
-        slideDescription: {
-            fontSize: 16,
-            textAlign: 'center',
-            lineHeight: 24,
-            paddingHorizontal: 10,
-        },
-        noticeBox: {
-            borderWidth: 1,
-            borderColor: '#FFC107',
-            backgroundColor: '#FFC10710',
-            paddingHorizontal: 12,
-            paddingVertical: 4,
-            borderRadius: 4,
-            marginBottom: 16,
-        },
-        noticeText: {
-            fontSize: 12,
-            fontWeight: 'bold',
-            color: '#FFC107',
-            letterSpacing: 1,
-        },
-        pagination: {
-            flexDirection: 'row',
-            marginTop: 30,
-        },
-        dot: {
-            height: 8,
-            borderRadius: 4,
-            marginHorizontal: 4,
-        },
-        slideFooter: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingBottom: 20,
         },
         // Document Styles
         documentWrapper: {
@@ -486,8 +335,8 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
         <View style={styles.container}>
             {!selectedTopic ? (
                 renderMenu()
-            ) : selectedTopic.type === 'slides' ? (
-                renderSlides(selectedTopic.slides || [])
+            ) : selectedTopic.type === 'onboarding' ? (
+                <OnboardingGuide onFinish={() => setSelectedTopic(null)} mode="view" />
             ) : (
                 renderDocument(selectedTopic)
             )}

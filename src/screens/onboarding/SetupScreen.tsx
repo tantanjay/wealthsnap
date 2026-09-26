@@ -345,6 +345,12 @@ const SetupScreen = ({ navigation }: any) => {
 
     return (
         <ScreenWrapper scrollable={false}>
+            {step === 4 ? (
+                // Rendered outside the ScrollView below: it manages its own full-screen
+                // layout/safe-area insets, and nesting it in a ScrollView let its footer
+                // button drift below the fold on short screens, needing a manual scroll.
+                <OnboardingGuide onFinish={handleFinalizeOnboarding} mode="onboarding" />
+            ) : (
             <ScrollView
                 style={styles.content}
                 showsVerticalScrollIndicator={false}
@@ -519,11 +525,6 @@ const SetupScreen = ({ navigation }: any) => {
                     </View>
                 )}
 
-                {/* Step 4: Onboarding Guide */}
-                {step === 4 && (
-                    <OnboardingGuide onFinish={handleFinalizeOnboarding} mode="onboarding" />
-                )}
-
                 {/* Step 2: Profile Setup (Existing Logic) */}
                 {step === 2 && (
                     <View style={styles.stepContainer}>
@@ -622,6 +623,7 @@ const SetupScreen = ({ navigation }: any) => {
                     </View>
                 )}
             </ScrollView>
+            )}
 
             {/* Restore Modal */}
             <BackupRestoreModal

@@ -1,22 +1,40 @@
 import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { Text, View, StyleSheet, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 
-const FeatureItem = ({ icon, text, color }: { icon: string; text: string; color: string }) => (
-    <View style={styles.featureItem}>
-        <View style={[styles.iconContainer, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-            <MaterialCommunityIcons name={icon as any} size={24} color={color} />
+const FeatureItem = ({ icon, text, color, scale }: { icon: string; text: string; color: string; scale: number }) => (
+    <View style={[styles.featureItem, { padding: 16 * scale, borderRadius: 16 * scale }]}>
+        <View
+            style={[
+                styles.iconContainer,
+                {
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    width: 40 * scale,
+                    height: 40 * scale,
+                    borderRadius: 20 * scale,
+                    marginRight: 16 * scale,
+                },
+            ]}
+        >
+            <MaterialCommunityIcons name={icon as any} size={22 * scale} color={color} />
         </View>
-        <Text style={styles.featureText}>{text}</Text>
+        <Text style={[styles.featureText, { fontSize: Math.max(14, 18 * scale) }]}>{text}</Text>
     </View>
 );
 
 const WelcomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
+    const insets = useSafeAreaInsets();
+    const { height: screenHeight } = useWindowDimensions();
+
+    // Compress spacing/icon sizes on short screens so "Get Started" never
+    // crowds the bottom system bar and content never overflows.
+    const scale = Math.min(1, Math.max(0.65, screenHeight / 750));
 
     return (
         <LinearGradient
@@ -25,23 +43,38 @@ const WelcomeScreen = ({ navigation }: any) => {
             end={{ x: 1, y: 1 }}
             style={styles.container}
         >
-            <View style={styles.content}>
-                <View style={[styles.heroIconContainer, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-                    <MaterialCommunityIcons name="wallet-giftcard" size={64} color={colors.white} />
+            <View style={[styles.content, { paddingTop: insets.top + 24 * scale }]}>
+                <View
+                    style={[
+                        styles.heroIconContainer,
+                        {
+                            backgroundColor: 'rgba(255,255,255,0.15)',
+                            width: 96 * scale,
+                            height: 96 * scale,
+                            borderRadius: 48 * scale,
+                            marginBottom: 16 * scale,
+                        },
+                    ]}
+                >
+                    <MaterialCommunityIcons name="wallet-outline" size={44 * scale} color={colors.white} />
                 </View>
 
-                <Text style={styles.subtitle}>
+                <Text style={[styles.title, { fontSize: Math.max(24, 30 * scale), marginBottom: 6 * scale }]}>
+                    WealthSnap
+                </Text>
+
+                <Text style={[styles.subtitle, { marginBottom: 28 * scale }]}>
                     Master your finances with smart insights and secure tracking.
                 </Text>
 
-                <View style={styles.featuresContainer}>
-                    <FeatureItem icon="chart-timeline-variant" text="Track Expenses" color={colors.white} />
-                    <FeatureItem icon="chart-pie" text="In App Insights" color={colors.white} />
-                    <FeatureItem icon="shield-check" text="Secure & Private" color={colors.white} />
+                <View style={[styles.featuresContainer, { gap: 12 * scale }]}>
+                    <FeatureItem icon="shield-check" text="Private by design" color={colors.white} scale={scale} />
+                    <FeatureItem icon="speedometer" text="Your whole financial life, one app" color={colors.white} scale={scale} />
+                    <FeatureItem icon="lightning-bolt" text="Log a transaction in seconds" color={colors.white} scale={scale} />
                 </View>
             </View>
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: insets.bottom + 16 * scale }]}>
                 <Button
                     title="Get Started"
                     onPress={() => navigation.navigate('Setup')}
@@ -109,6 +142,7 @@ const styles = StyleSheet.create({
         marginRight: 16,
     },
     featureText: {
+        flex: 1,
         fontSize: 18,
         color: '#FFFFFF',
         fontWeight: '600',

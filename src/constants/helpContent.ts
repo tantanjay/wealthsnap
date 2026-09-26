@@ -1,16 +1,6 @@
 import { CHANGELOG_MARKDOWN } from '@constants/changelog';
 import { parseMarkdownToContentItems } from '@utils/markdownParser';
 
-export interface HelpSlide {
-    id: string;
-    icon: string;
-    title: string;
-    description: string;
-    color: string;
-    isNotice?: boolean;
-    isLast?: boolean;
-}
-
 export type ContentItem =
     | { type: 'heading1'; text: string }
     | { type: 'heading2'; text: string }
@@ -29,8 +19,7 @@ export interface HelpTopic {
     subtitle: string;
     icon: string;
     color: string;
-    type: 'slides' | 'document';
-    slides?: HelpSlide[];
+    type: 'onboarding' | 'document';
     content?: ContentItem[];
 }
 
@@ -41,53 +30,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         subtitle: 'The basic guide to WealthSnap',
         icon: 'rocket-outline',
         color: '#4CAF50',
-        type: 'slides',
-        slides: [
-            {
-                id: 'security',
-                icon: 'shield-checkmark',
-                title: 'Your Data is Secure 🔒',
-                description: 'This app is built "Local-First". Your data is encrypted and stored ONLY on your phone.\n\nWE DO NOT HAVE ACCESS TO YOUR DATA.',
-                color: '#4CAF50',
-                isNotice: true
-            },
-            {
-                id: 'backup',
-                icon: 'cloud-download-outline',
-                title: 'Backup & Restore',
-                description: 'Since data is local, YOU are responsible for safe keeping.\n\nGo to Profile > Backup Data regularly to save a copy of your financial life.',
-                color: '#2196F3'
-            },
-            {
-                id: 'transaction',
-                icon: 'add-circle-outline',
-                title: 'Add Income & Expenses',
-                description: 'Tap the big "+" button at the bottom to log transactions.\n\nUse the camera to scan receipts using AI!',
-                color: '#FF9800'
-            },
-            {
-                id: 'recurring',
-                icon: 'repeat-outline',
-                title: 'Recurring Transactions',
-                description: 'Set up automated salary or bill entries so you never forget to log them.',
-                color: '#9C27B0'
-            },
-            {
-                id: 'budget',
-                icon: 'pie-chart-outline',
-                title: 'Manage Budget',
-                description: 'Set monthly limits for different categories to keep your spending on track.',
-                color: '#E91E63'
-            },
-            {
-                id: 'ready',
-                icon: 'checkmark-circle-outline',
-                title: 'You are Ready!',
-                description: 'Take control of your wealth today.',
-                color: '#4CAF50',
-                isLast: true
-            }
-        ]
+        type: 'onboarding'
     },
     {
         id: 'insights',
