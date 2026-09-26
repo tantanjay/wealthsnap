@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - History merges a goal-funded purchase into a single card with a dedicated color accent.
 
 ### Changed
+- Onboarding: redesigned tour to four focused slides (privacy, all-in-one tracking, quick add, recap) instead of six generic ones; slides now support swipe with a sliding animation.
+- Welcome screen now shows the "WealthSnap" name and leads with the same three points as the onboarding tour.
+- Help Center's "Getting Started" guide now replays the actual onboarding tour instead of a separate, outdated copy.
 - History: Yearly filter now shows a tap-to-jump list of years with data instead of stepping through with arrows; Monthly's year header got the same shortcut.
 - History: list rows use a thin border instead of a drop shadow, fixing scroll stutter on long lists.
 - History: an investment's Buy/Sell/Dividend now shows as one card instead of two or three.
@@ -28,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Build: Bumped Expo SDK 57 dependencies to their latest patch versions for stability and security fixes.
 
 ### Fixed
+- Onboarding & Welcome screen: Next/Get Started button could be hidden behind the phone's status/navigation bar on small screens.
+- Onboarding: Next button could end up off-screen on the final setup step.
 - History: a row with no note showed its raw internal type or subtype code (e.g. `TRANSFER_IN`, `INITIAL_FUNDING`) instead of a clean label.
 
 ## [1.17.0] — 2026-09-06
