@@ -1,5 +1,6 @@
 import { getAllCategories, bulkUpsertCategoriesForMerge } from '@services/domain/categoryService';
 import { getAllDebts, bulkSaveDebts, deleteDebt } from '@services/domain/debtService';
+import { getAllSavingsGoals, bulkSaveSavingsGoals, deleteSavingsGoal } from '@services/domain/savingsGoalService';
 import { getAllRecurrenceRules, bulkUpsertRecurrenceRulesForMerge, deleteRecurrenceRule } from '@services/domain/recurrenceService';
 import { getAllInvestments, bulkUpsertInvestmentsForMerge, deleteInvestment } from '@services/domain/investmentService';
 import { getAllTransactions, bulkUpsertTransactionsForMerge, deleteTransactionForMerge } from '@services/domain/transactionService';
@@ -26,6 +27,11 @@ export interface SyncEntityDescriptor<T = any> {
 export const SYNC_ENTITY_REGISTRY: SyncEntityDescriptor[] = [
     { key: 'categories', label: 'Categories', getAll: getAllCategories, bulkUpsertForMerge: bulkUpsertCategoriesForMerge, deleteOne: null, idField: 'id' },
     { key: 'debts', label: 'Debts', getAll: getAllDebts, bulkUpsertForMerge: bulkSaveDebts, deleteOne: deleteDebt, idField: 'id' },
+    // bulkSaveSavingsGoals doubles as the merge-safe upsert here, same shortcut as debts
+    // above - prepareSavingsGoalValues already preserves incoming createdAt/updatedAt
+    // when present (only falls back to "now" for a malformed/legacy record), so a second
+    // dedicated merge function would be pure duplication.
+    { key: 'savingsGoals', label: 'Savings Goals', getAll: getAllSavingsGoals, bulkUpsertForMerge: bulkSaveSavingsGoals, deleteOne: deleteSavingsGoal, idField: 'id' },
     { key: 'recurrenceRules', label: 'Recurring Rules', getAll: getAllRecurrenceRules, bulkUpsertForMerge: bulkUpsertRecurrenceRulesForMerge, deleteOne: deleteRecurrenceRule, idField: 'id' },
     { key: 'investments', label: 'Investments', getAll: getAllInvestments, bulkUpsertForMerge: bulkUpsertInvestmentsForMerge, deleteOne: deleteInvestment, idField: 'id' },
     // deleteTransactionForMerge (not deleteTransaction) - a merge-driven delete must not

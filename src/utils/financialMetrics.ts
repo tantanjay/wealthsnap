@@ -165,7 +165,10 @@ export const getMonthEndProjection = (transactions: Transaction[]) => {
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const daysRemaining = daysInMonth - currentDay;
 
-    const currentMonthTrans = getTransactionsByMonth(transactions, today);
+    // Excludes goal-funded EXPENSE - that cash already left when it was contributed to the
+    // goal, not when it was later spent, so leaving it in would inflate the daily run rate
+    // and produce a falsely alarming month-end forecast off one lump-sum goal purchase.
+    const currentMonthTrans = getTransactionsByMonth(transactions, today).filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId));
     const { income, expense } = calculateTotals(currentMonthTrans);
 
     // 1. Linear Fallback
@@ -182,7 +185,7 @@ export const getMonthEndProjection = (transactions: Transaction[]) => {
 
     for (let i = 1; i <= 6; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        const histTrans = getTransactionsByMonth(transactions, d).filter(isExpense);
+        const histTrans = getTransactionsByMonth(transactions, d).filter(t => isExpense(t) && !t.savingsGoalId);
         if (histTrans.length === 0) continue;
 
         const histTotals = calculateTotals(histTrans);
@@ -247,8 +250,17 @@ export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: nu
 
         // Only count months where we actually had activity if we want to be strict,
         // but for burn rate, "0 spend" is valid if the account existed.
-        const { expense } = calculateTotals(monthlyTransactions);
-        totalExpense = totalExpense.plus(expense);
+        // A goal-funded EXPENSE's cash already left when it was contributed to the goal (the
+        // TRANSFER_OUT below), not when it was later spent - counting both would double the
+        // burn, so the EXPENSE leg is excluded and the actual historical contribution counted
+        // instead. Callers that pass in transactions already stripped of savingsGoalId (and
+        // add a settings-based projected obligation on top instead) are unaffected, since
+        // there's nothing left here to exclude or include.
+        const { expense } = calculateTotals(monthlyTransactions.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId)));
+        const goalContributions = monthlyTransactions
+            .filter(t => t.type === 'TRANSFER_OUT' && t.savingsGoalId)
+            .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
+        totalExpense = totalExpense.plus(expense).plus(goalContributions);
         monthsWithData++;
     }
 
@@ -345,7 +357,12 @@ export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: num
         result.fullLabels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
 
         const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
-        const { income, expense } = calculateTotals(monthlyTransactions);
+        // Excludes savingsGoalId-tagged EXPENSE from the expense figure only - feeds
+        // ComparisonChart, getSavingsRateTrend, and FinancialHealthScreen's own trend usage,
+        // all of which need a lump-sum goal purchase not to read as a false monthly spike.
+        // netCashFlow below deliberately stays on the full unfiltered set - the Auto-Offset
+        // pair already nets that leg to ₱0, so it needs no adjustment.
+        const { income, expense } = calculateTotals(monthlyTransactions.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId)));
 
         // Use calculateBalance to get Net Flow including Transfers (Income + TransferIn - Expense - TransferOut)
         // We pass a future date as endDate to ensure we capture all transactions in this historical month
@@ -374,7 +391,8 @@ export const getMonthlyTrendsForYear = (allTransactions: Transaction[], year: nu
         result.fullLabels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
 
         const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
-        const { income, expense } = calculateTotals(monthlyTransactions);
+        // Same savingsGoalId exclusion as getMonthlyTrends above.
+        const { income, expense } = calculateTotals(monthlyTransactions.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId)));
 
         const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
         const netCashFlow = calculateBalance(monthlyTransactions, monthEnd);
@@ -403,7 +421,11 @@ export const getCumulativeSpendingCurve = (allTransactions: Transaction[], month
 
         // Pre-index days for performance
         const dayMap = monthlyTrans.reduce((acc, t) => {
-            if (isExpense(t)) {
+            // Excludes savingsGoalId-tagged EXPENSE: a lump-sum goal purchase (e.g. a ₱60k
+            // flight from a Travel Fund) would otherwise create a false spike in this
+            // month-over-month trend curve, even though that cash actually left in smaller
+            // pieces back when it was contributed to the goal.
+            if (isExpense(t) && !t.savingsGoalId) {
                 const day = parseDate(t.date).getDate();
                 acc[day] = (acc[day] || new BigNumber(0)).plus(t.amount.abs());
             }
@@ -430,8 +452,9 @@ export const getCurrentMonthCumulative = (currentMonthTransactions: Transaction[
     let runningTotal = new BigNumber(0);
 
     // Optimization: Group transactions by day first so we don't .filter() in a loop
+    // Excludes savingsGoalId-tagged EXPENSE - same reasoning as getCumulativeSpendingCurve.
     const dailyExpenses = currentMonthTransactions
-        .filter(isExpense)
+        .filter(t => isExpense(t) && !t.savingsGoalId)
         .reduce((acc, t) => {
             const d = parseDate(t.date);
             const dayNum = d.getDate();
@@ -505,9 +528,13 @@ export const detectAnomalies = (currentMonthTransactions: Transaction[], allTran
     const historyTransactions = allTransactions.filter(t => !currentIds.has(t.id));
 
     // 1. Group Current Month by Category Item (e.g., "Water", "Rent")
+    // Excludes savingsGoalId-tagged EXPENSE from both the budget-exceeded and spike checks
+    // below - a lump-sum goal purchase shouldn't flag a false "over budget"/"spike" alert
+    // for the category it happens to be tagged with (same reasoning as the trend curves
+    // above; SmartAlerts is one of the components this must specifically exclude from).
     const currentBreakdown: { [key: string]: BigNumber } = {};
 
-    currentMonthTransactions.filter(isExpense).forEach(t => {
+    currentMonthTransactions.filter(t => isExpense(t) && !t.savingsGoalId).forEach(t => {
         // Use the raw category name (e.g., "Water") directly
         currentBreakdown[t.category] = (currentBreakdown[t.category] || new BigNumber(0)).plus(t.amount.abs());
     });
@@ -528,7 +555,7 @@ export const detectAnomalies = (currentMonthTransactions: Transaction[], allTran
         // --- 2. SPIKE CHECK (HISTORY) ---
         // Filter History for this specific Category Item
         const catHistory = historyTransactions.filter(t =>
-            t.category === categoryName && isExpense(t)
+            t.category === categoryName && isExpense(t) && !t.savingsGoalId
         );
 
         // We need enough historical data points for this specific item to be meaningful

@@ -239,13 +239,16 @@ const updateForeignKeys = <T>(
 };
 
 /**
- * RecurrenceRule.transactionTemplate embeds investmentId/debtId in a nested object,
- * which the generic top-level fkFields pass in ENTITY_REGISTRY can't reach.
+ * RecurrenceRule.transactionTemplate embeds investmentId/debtId/savingsGoalId in a nested
+ * object, which the generic top-level fkFields pass in ENTITY_REGISTRY can't reach. A
+ * goal's recurring auto-contribution rule carries savingsGoalId here - without this remap,
+ * a restored rule would keep firing against the pre-restore goal id forever.
  */
 function remapRecurrenceTemplateFks(
     rules: RecurrenceRule[],
     investmentIdMap: IdMap,
-    debtIdMap: IdMap
+    debtIdMap: IdMap,
+    savingsGoalIdMap: IdMap
 ): RecurrenceRule[] {
     return rules.map(rule => {
         if (!rule.transactionTemplate) return rule;
@@ -255,6 +258,9 @@ function remapRecurrenceTemplateFks(
         }
         if (template.debtId && debtIdMap[template.debtId]) {
             template.debtId = debtIdMap[template.debtId];
+        }
+        if (template.savingsGoalId && savingsGoalIdMap[template.savingsGoalId]) {
+            template.savingsGoalId = savingsGoalIdMap[template.savingsGoalId];
         }
         return { ...rule, transactionTemplate: template };
     });
@@ -452,7 +458,8 @@ async function restoreV2(zip: JSZip, password: string | undefined, onProgress?: 
         sanitized.recurrenceRules = remapRecurrenceTemplateFks(
             sanitized.recurrenceRules,
             idMaps.investments ?? {},
-            idMaps.debts ?? {}
+            idMaps.debts ?? {},
+            idMaps.savingsGoals ?? {}
         );
     }
 

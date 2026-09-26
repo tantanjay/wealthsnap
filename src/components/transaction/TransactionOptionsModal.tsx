@@ -32,10 +32,16 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
 
     // Check for specific conditions to disable edit
     const isDebtRepayment = transaction.type === 'TRANSFER_OUT' && transaction.subCategory === 'PRINCIPAL';
-    const canEdit = !isDebtRepayment;
+    // A goal-tagged transaction (contribution or goal-funded expense) has a paired leg
+    // elsewhere in the ledger (offsetting TRANSFER_IN, or the contribution itself) that this
+    // generic form has no way to keep in sync - editing here would desync goal/cash balances.
+    const isSavingsGoalTx = transaction.savingsGoalId != null;
+    const canEdit = !isDebtRepayment && !isSavingsGoalTx;
     const editDisabledReason = isDebtRepayment
         ? "Debt repayments cannot be edited. Delete and recreate if needed."
-        : "";
+        : isSavingsGoalTx
+            ? "Savings goal transactions cannot be edited. Delete and recreate if needed."
+            : "";
 
     const handleDeletePress = () => {
         showAlert(

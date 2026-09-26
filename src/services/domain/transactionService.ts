@@ -13,8 +13,8 @@ import { upsertTombstone } from '@services/domain/tombstoneService';
 
 const UPSERT_TRANSACTION_QUERY = `
   INSERT OR REPLACE INTO transactions
-  (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId, savingsGoalId)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 // Used only by merge-sync: unlike UPSERT_TRANSACTION_QUERY, this binds createdAt/updatedAt
@@ -22,8 +22,8 @@ const UPSERT_TRANSACTION_QUERY = `
 // re-stamped to "now" by SQLite's DEFAULT CURRENT_TIMESTAMP.
 const UPSERT_TRANSACTION_FOR_MERGE_QUERY = `
   INSERT OR REPLACE INTO transactions
-  (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId, createdAt, updatedAt)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (id, date, amount, type, category, subCategory, note, creationMethod, isRecurring, recurrenceId, transferAccount, linkedTransactionId, investmentId, debtId, savingsGoalId, createdAt, updatedAt)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 const UPSERT_RECEIPT_QUERY = `
@@ -51,7 +51,8 @@ const prepareTransactionValues = async (txn: Transaction) => {
         txn.transferAccount || null,
         txn.linkedTransactionId || null,
         txn.investmentId || null,
-        txn.debtId || null
+        txn.debtId || null,
+        txn.savingsGoalId || null
     ];
 };
 
@@ -165,6 +166,41 @@ export const saveTransaction = async (transaction: Transaction): Promise<void> =
     }
 };
 
+/**
+ * Saves several transactions as a single DB transaction - use this instead of multiple
+ * sequential saveTransaction() calls whenever the rows are only meaningful together (e.g. an
+ * Auto-Offset EXPENSE + its linked TRANSFER_IN). Without this, an exception or app kill
+ * mid-sequence can leave a half-written pair: an un-reimbursed expense, or a split-funding
+ * transaction applied on one side only.
+ */
+export const saveTransactionsAtomically = async (transactions: Transaction[]): Promise<void> => {
+    if (transactions.length === 0) return;
+    try {
+        const db = await getDatabase();
+        const preparedRows = await Promise.all(transactions.map(prepareTransactionValues));
+
+        await db.withTransactionAsync(async () => {
+            for (const values of preparedRows) {
+                await db.runAsync(UPSERT_TRANSACTION_QUERY, values);
+            }
+        });
+
+        transactions.forEach(txn => DataCache.upsertTransaction(txn));
+
+        // Check for anomalies (Fire and forget)
+        const cached = DataCache.getTransactionCache();
+        if (cached?.data) {
+            getAllBudgets().then(budgets => {
+                checkAndNotifyAnomalies(getTransactionsByMonth(cached.data), cached.data, budgets)
+                    .catch((err: any) => console.error('Failed to check anomalies:', err));
+            }).catch((err: any) => console.error('Failed to get budgets for anomaly check:', err));
+        }
+    } catch (error) {
+        console.error('Error saving transactions atomically:', error);
+        throw new Error('Failed to save transactions');
+    }
+};
+
 export const saveTransactionWithReceipt = async (transaction: Transaction, receiptData: any): Promise<void> => {
     try {
         const db = await getDatabase();
@@ -225,6 +261,7 @@ export const getAllTransactions = async (): Promise<Transaction[]> => {
             linkedTransactionId: row.linkedTransactionId,
             investmentId: row.investmentId,
             debtId: row.debtId,
+            savingsGoalId: row.savingsGoalId,
             createdAt: row.createdAt,
             updatedAt: row.updatedAt
         }));

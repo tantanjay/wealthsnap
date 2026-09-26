@@ -10,7 +10,12 @@ import { upsertTombstone } from '@services/domain/tombstoneService';
 // DOMAIN LOGIC
 // =============================================================================
 
-const calculateNextDueDate = (currentDate: Date, frequency: RecurrenceFrequency): Date => {
+// Exported so callers building a RecurrenceRule outside this file (e.g. savingsGoalService/
+// SavingsGoalForm) compute the first due date the same way TransactionForm's inline copy of
+// this same switch does - one full period after the start date, not on the start date
+// itself, so a newly-created recurring rule doesn't fire immediately on the next
+// processRecurrenceRules() pass.
+export const calculateNextDueDate = (currentDate: Date, frequency: RecurrenceFrequency): Date => {
     const nextDate = new Date(currentDate);
     switch (frequency) {
         case 'DAILY':

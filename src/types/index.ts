@@ -18,7 +18,11 @@ export type AssetType = 'STOCKS' | 'FUNDS' | 'CRYPTO' | 'FOREX' | 'REAL_ESTATE' 
 export type InvestmentAction = 'BUY' | 'SELL' | 'DIVIDEND' | 'INTEREST';
 export type DebtType = 'LOAN' | 'CREDIT_CARD' | 'MORTGAGE' | 'I_OWE_YOU' | 'YOU_OWE_ME';
 export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'SEMI_MONTHLY' | 'MONTHLY' | 'QUARTERLY' | 'BI_ANNUAL' | 'YEARLY';
-export type TransferAccount = 'OTHER_ACCOUNT' | 'INVESTMENTS' | 'DEBT' | 'CASH_ATM' | 'DIGITAL_WALLET' | 'CRYPTO' | 'RECEIVABLE' | 'TIME_DEPOSIT';
+export type TransferAccount = 'OTHER_ACCOUNT' | 'INVESTMENTS' | 'DEBT' | 'CASH_ATM' | 'DIGITAL_WALLET' | 'CRYPTO' | 'RECEIVABLE' | 'TIME_DEPOSIT' | 'SAVINGS_GOAL';
+// Tags a transaction's role in the Savings Goals ledger (all transactions carrying a
+// savingsGoalId use one of these) - see calculateGoalBalance in savingsGoalMetrics.ts,
+// which is the single place this vocabulary's meaning is authoritative.
+export type SavingsGoalSubCategory = 'CONTRIBUTION' | 'INITIAL_FUNDING' | 'GOAL_SPEND' | 'WITHDRAWAL' | 'SWEEP';
 
 export interface Transaction {
     id: string;
@@ -35,6 +39,7 @@ export interface Transaction {
     linkedTransactionId?: string;
     investmentId?: string;
     debtId?: string;
+    savingsGoalId?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -219,6 +224,26 @@ export interface Debt {
     status: DebtStatus;
     notes?: string;
     contactId?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// A goal has no stored balance/status - balance is always derived from ledger transactions
+// tagged with this goal's id (see calculateGoalBalance), and "Completed" is a computed
+// display bucket (balance >= targetAmount), never a stored state, so it can't drift.
+export interface SavingsGoal {
+    id: string;
+    name: string;
+    targetAmount: BigNumber;
+    recurringAmount?: BigNumber;
+    frequency?: RecurrenceFrequency;
+    category: string; // prefilled onto goal-tagged expenses (still user-editable)
+    subCategory?: string;
+    isPaused: boolean; // gates only the recurring auto-contribution; manual top-ups always allowed
+    recurrenceId?: string; // link to the recurring auto-contribution rule, if any
+    currency?: string;
+    notes?: string;
+    goalReachedNotifiedAt?: string; // set once, first time balance crosses targetAmount
     createdAt: string;
     updatedAt: string;
 }

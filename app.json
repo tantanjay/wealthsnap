@@ -91,7 +91,8 @@
       "expo-document-picker",
       "expo-task-manager",
       "expo-sharing",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "./plugins/withScannerOrientationFix"
     ],
     "extra": {
       "eas": {
