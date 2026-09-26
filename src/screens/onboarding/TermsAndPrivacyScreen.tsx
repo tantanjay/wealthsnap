@@ -16,7 +16,8 @@ const TermsAndPrivacyScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     const styles = StyleSheet.create({
         content: {
             flex: 1,
-            padding: 20,
+            paddingHorizontal: 16,
+            paddingVertical: 20,
         },
         heroHeader: {
             alignItems: 'center',
@@ -57,7 +58,8 @@ const TermsAndPrivacyScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             marginBottom: 20,
         },
         footer: {
-            padding: 20,
+            paddingHorizontal: 16,
+            paddingTop: 20,
             paddingBottom: Math.max(insets.bottom, 20),
             borderTopWidth: 1,
             borderTopColor: colors.border,
@@ -70,7 +72,7 @@ const TermsAndPrivacyScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     });
 
     return (
-        <ScreenWrapper scrollable={false}>
+        <ScreenWrapper scrollable={false} noPadding>
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 <View style={styles.heroHeader}>
                     <View style={styles.iconContainer}>

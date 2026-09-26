@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
-import { SPACING } from '@styles/theme';
 import { HELP_TOPICS, HelpTopic } from '@constants/helpContent';
 import { splitBoldSegments } from '@utils/markdownParser';
 import OnboardingGuide from '@screens/onboarding/OnboardingGuideScreen';
@@ -176,7 +175,7 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
         },
         menuContainer: {
             flex: 1,
-            padding: SPACING.lg,
+            padding: 20,
         },
         header: {
             marginTop: 10,

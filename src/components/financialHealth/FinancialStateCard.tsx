@@ -126,8 +126,8 @@ const styles = StyleSheet.create({
     },
     header: {
         fontSize: 12,
-        fontWeight: 'bold',
-        letterSpacing: 1,
+        fontWeight: '600',
+        letterSpacing: 0.5,
         marginBottom: 16,
         textTransform: 'uppercase',
     },
