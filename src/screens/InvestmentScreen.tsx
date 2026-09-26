@@ -414,7 +414,7 @@ const InvestmentScreen = ({ navigation }: any) => {
     );
 
     return (
-        <ScreenWrapper style={{ paddingHorizontal: 0 }} scrollable={false}>
+        <ScreenWrapper noPadding scrollable={false}>
             {/* headerContent is rendered inside all three branches below (matching
                 HomeScreen/HistoryScreen/DebtScreen) so it never disappears during the
                 brief isStatusChecking window - only the body beneath it swaps. */}

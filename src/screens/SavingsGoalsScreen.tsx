@@ -181,7 +181,10 @@ const SavingsGoalsScreen = ({ navigation }: any) => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={[styles.title, { color: colors.text }]}>Savings Goals</Text>
+                <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.textSecondary }}>Goal Progress</Text>
+                    <Text style={[styles.title, { color: colors.text }]}>Savings Goals</Text>
+                </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -299,7 +302,6 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        flex: 1,
     },
     content: {
         paddingBottom: 100,

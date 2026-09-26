@@ -3,6 +3,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Reminder, ReminderFrequency } from '@types';
 import { generateUUID } from '@utils/uuid';
@@ -29,6 +30,7 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
     onSave,
     onCancel
 }) => {
+    const { colors } = useTheme();
     const { showAlert } = useAlert();
     const [title, setTitle] = useState(initialReminder?.title || '');
     const [frequency, setFrequency] = useState<ReminderFrequency>(initialReminder?.frequency || 'DAILY');
@@ -92,41 +94,43 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <View style={[styles.header, { borderBottomColor: colors.border }]}>
                 <TouchableOpacity onPress={onCancel}>
-                    <Text style={styles.cancelText}>Cancel</Text>
+                    <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
                 </TouchableOpacity>
-                <Text style={styles.title}>{initialReminder ? 'Edit Reminder' : 'New Reminder'}</Text>
+                <Text style={[styles.title, { color: colors.text }]}>{initialReminder ? 'Edit Reminder' : 'New Reminder'}</Text>
                 <TouchableOpacity onPress={handleSave}>
-                    <Text style={styles.saveText}>Save</Text>
+                    <Text style={[styles.saveText, { color: colors.primary }]}>Save</Text>
                 </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.form}>
-                <Text style={styles.label}>Title</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Title</Text>
                 <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: colors.text, borderBottomColor: colors.border }]}
                     placeholder="e.g., Pay Rent, Utility Bill"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={colors.gray500}
                     value={title}
                     onChangeText={setTitle}
                 />
 
-                <Text style={styles.label}>Frequency</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Frequency</Text>
                 <View style={styles.frequencyGrid}>
                     {FREQUENCIES.map((freq) => (
                         <TouchableOpacity
                             key={freq.value}
                             style={[
                                 styles.frequencyChip,
-                                frequency === freq.value && styles.frequencyChipActive
+                                { backgroundColor: colors.surface },
+                                frequency === freq.value && { backgroundColor: colors.primary }
                             ]}
                             onPress={() => setFrequency(freq.value)}
                         >
                             <Text style={[
                                 styles.frequencyText,
-                                frequency === freq.value && styles.frequencyTextActive
+                                { color: colors.textSecondary },
+                                frequency === freq.value && { color: colors.white }
                             ]}>
                                 {freq.label}
                             </Text>
@@ -134,37 +138,37 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
                     ))}
                 </View>
 
-                <Text style={styles.label}>Start Date</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Start Date</Text>
                 <TouchableOpacity
-                    style={styles.datePickerButton}
+                    style={[styles.datePickerButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => setShowDatePicker(true)}
                 >
-                    <Ionicons name="calendar-outline" size={20} color="#333" />
-                    <Text style={styles.dateText}>{startDate.toLocaleDateString()}</Text>
+                    <Ionicons name="calendar-outline" size={20} color={colors.text} />
+                    <Text style={[styles.dateText, { color: colors.text }]}>{startDate.toLocaleDateString()}</Text>
                 </TouchableOpacity>
 
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.label}>Times</Text>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>Times</Text>
                     <TouchableOpacity onPress={addTime}>
-                        <Ionicons name="add-circle" size={24} color="#007AFF" />
+                        <Ionicons name="add-circle" size={24} color={colors.primary} />
                     </TouchableOpacity>
                 </View>
 
                 {times.map((time, index) => (
                     <View key={index} style={styles.timeRow}>
                         <TouchableOpacity
-                            style={styles.timePickerButton}
+                            style={[styles.timePickerButton, { backgroundColor: colors.surface }]}
                             onPress={() => {
                                 setSelectedTimeIndex(index);
                                 setShowTimePicker(true);
                             }}
                         >
-                            <Ionicons name="time-outline" size={20} color="#333" />
-                            <Text style={styles.timeText}>{formatTime(time)}</Text>
+                            <Ionicons name="time-outline" size={20} color={colors.text} />
+                            <Text style={[styles.timeText, { color: colors.text }]}>{formatTime(time)}</Text>
                         </TouchableOpacity>
                         {times.length > 1 && (
                             <TouchableOpacity onPress={() => removeTime(index)}>
-                                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                                <Ionicons name="trash-outline" size={20} color={colors.error} />
                             </TouchableOpacity>
                         )}
                     </View>
@@ -213,7 +217,6 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
     },
     header: {
         flexDirection: 'row',
@@ -221,19 +224,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
     },
     title: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
     },
     cancelText: {
-        color: '#FF3B30',
         fontSize: 16,
     },
     saveText: {
-        color: '#007AFF',
         fontSize: 16,
         fontWeight: 'bold',
     },
@@ -243,16 +242,13 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#666',
         marginTop: 16,
         marginBottom: 8,
     },
     input: {
         fontSize: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#ccc',
         paddingVertical: 8,
-        color: '#333',
     },
     frequencyGrid: {
         flexDirection: 'row',
@@ -263,33 +259,22 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderRadius: 20,
-        backgroundColor: '#f0f0f0',
         margin: 4,
-    },
-    frequencyChipActive: {
-        backgroundColor: '#007AFF',
     },
     frequencyText: {
         fontSize: 14,
-        color: '#666',
-    },
-    frequencyTextActive: {
-        color: '#fff',
     },
     datePickerButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f9f9f9',
         padding: 12,
         borderRadius: 8,
         borderWidth: 1,
         borderStyle: 'dashed',
-        borderColor: '#ddd',
     },
     dateText: {
         marginLeft: 8,
         fontSize: 16,
-        color: '#333',
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -306,7 +291,6 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f9f9f9',
         padding: 12,
         borderRadius: 8,
         marginRight: 8,

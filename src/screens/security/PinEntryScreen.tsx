@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Vibration } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@context/ThemeContext';
 import { authenticateBiometrics, getBiometricType, getPinLockoutRemainingMs, hasBiometrics, verifyPin } from '@services/core/securityService';
@@ -13,6 +14,7 @@ const PIN_LENGTH = 6;
 
 const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
     const { colors } = useTheme();
+    const insets = useSafeAreaInsets();
     const [pin, setPinState] = useState('');
     const [error, setError] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
@@ -180,6 +182,8 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
             alignItems: 'center',
             justifyContent: 'center',
             padding: 20,
+            paddingTop: Math.max(insets.top, 20),
+            paddingBottom: Math.max(insets.bottom, 20),
         },
         title: {
             fontSize: 24,

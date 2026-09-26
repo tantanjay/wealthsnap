@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
         paddingVertical: 15,
         borderBottomWidth: StyleSheet.hairlineWidth,
     },

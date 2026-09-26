@@ -311,7 +311,7 @@ const ChatScreen = ({ navigation }: any) => {
         return (
             <View style={{ flex: 1, backgroundColor: colors.background }}>
                 {renderHeader('Chat')}
-                <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                <View style={{ flex: 1, paddingHorizontal: 16 }}>
                     <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 8 }}>
                         Anything you&apos;d rather keep out of this?
                     </Text>
@@ -426,7 +426,7 @@ const ChatScreen = ({ navigation }: any) => {
         return (
             <View style={{ flex: 1, backgroundColor: colors.background }}>
                 {renderHeader('Chat')}
-                <View style={{ flex: 1, paddingHorizontal: 20 }}>
+                <View style={{ flex: 1, paddingHorizontal: 16 }}>
                     <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 8 }}>
                         How much history do you want to use?
                     </Text>

@@ -220,8 +220,9 @@ export const TransferForm: React.FC<TransferFormProps> = ({
                     <Text style={{
                         color: colors.textSecondary,
                         fontSize: 12,
+                        fontWeight: '600',
                         textTransform: 'uppercase',
-                        letterSpacing: 1,
+                        letterSpacing: 0.5,
                         marginBottom: 16
                     }}>
                         Transfer Destination

@@ -344,7 +344,7 @@ const SetupScreen = ({ navigation }: any) => {
     });
 
     return (
-        <ScreenWrapper scrollable={false}>
+        <ScreenWrapper scrollable={false} noPadding={step === 4}>
             {step === 4 ? (
                 // Rendered outside the ScrollView below: it manages its own full-screen
                 // layout/safe-area insets, and nesting it in a ScrollView let its footer

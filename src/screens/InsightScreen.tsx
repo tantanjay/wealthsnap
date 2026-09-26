@@ -335,6 +335,7 @@ const InsightScreen = ({ navigation }: any) => {
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.textSecondary }}>Spending Overview</Text>
                     <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>Financial Insights</Text>
                 </View>
                 {isDocked && (

@@ -438,7 +438,10 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 15 }}>
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
-                    <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', flex: 1 }}>Financial Health</Text>
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ color: colors.textSecondary }}>Deep-Dive Analytics</Text>
+                        <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>Financial Health</Text>
+                    </View>
                 </View>
 
                 {/* Disclaimer Banner */}
