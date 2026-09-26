@@ -221,7 +221,7 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             const baseBurnRate = burnRate6.gt(0) ? burnRate6 : (burnRate3.gt(0) ? burnRate3 : currentMonthNonDebtExpense);
 
             const monthlyDebtObligations = calculateTotalDebtObligations(debts);
-            const monthlyGoalContributions = calculateTotalGoalContributions(goals);
+            const monthlyGoalContributions = calculateTotalGoalContributions(goals, t);
             const totalBurnRate = baseBurnRate.plus(monthlyDebtObligations).plus(monthlyGoalContributions);
 
             const runway = totalBurnRate.gt(0) ? totalCash.dividedBy(totalBurnRate).toNumber() : 999;

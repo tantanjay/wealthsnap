@@ -139,6 +139,7 @@ const InsightScreen = ({ navigation }: any) => {
         const currentMonthTrans = Metrics.getTransactionsByMonth(currentTransactions, today);
         const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         const lastMonthTrans = Metrics.getTransactionsByMonth(currentTransactions, lastMonthDate);
+        const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
 
         // Core Totals
         const totals = Metrics.calculateTotals(currentMonthTrans);
@@ -183,7 +184,7 @@ const InsightScreen = ({ navigation }: any) => {
         // true monthly rate regardless of frequency (weekly/quarterly/etc. normalized to
         // monthly-equivalent - see calculateTotalGoalContributions).
         const totalDebtObligations = calculateTotalDebtObligations(currentDebts);
-        const totalGoalContributions = calculateTotalGoalContributions(currentGoals);
+        const totalGoalContributions = calculateTotalGoalContributions(currentGoals, currentTransactions);
         burnRate = burnRate.plus(totalDebtObligations).plus(totalGoalContributions);
 
         // Averages for the Spending Comparison chart - relative to the browsed month, so
@@ -231,10 +232,15 @@ const InsightScreen = ({ navigation }: any) => {
         const specificBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'ITEM');
 
         setData({
-            netCashFlow: totals.net,
+            // totals.net (income - expense) ignores TRANSFER_IN/OUT entirely, so a goal
+            // contribution or spend would swing it even though real liquid cash didn't move
+            // (the Auto-Offset pair nets to ₱0). calculateBalance nets transfers correctly.
+            netCashFlow: Metrics.calculateBalance(currentMonthTrans, currentMonthEnd),
             income: totals.income,
-            expense: totals.expense,
-            savingsRate: Metrics.calculateSavingsRate(totals.income, totals.expense),
+            // Non-goal expense keeps this KPI consistent with the Spending Comparison chart
+            // and Savings Rate Trend below it, which already exclude goal-funded purchases.
+            expense: nonGoalCurrentMonthExpense,
+            savingsRate: Metrics.calculateSavingsRate(totals.income, nonGoalCurrentMonthExpense),
             burnRate,
             incomeTrends: monthlyTrends,
             incomeBreakdown,

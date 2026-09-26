@@ -375,7 +375,12 @@ const HistoryScreen = ({ navigation }: any) => {
             if (t.type === 'INCOME') {
                 totalIncome = totalIncome.plus(t.amount.abs());
             } else if (t.type === 'EXPENSE') {
-                totalExpense = totalExpense.plus(t.amount.abs());
+                // A goal-funded purchase's cash already left when it was contributed to the
+                // goal, not when it was later spent - counting it here too would wipe out
+                // today's/this week's Safe-to-Spend allowance off one goal-funded purchase.
+                if (!t.savingsGoalId) {
+                    totalExpense = totalExpense.plus(t.amount.abs());
+                }
             } else if (t.type === 'TRANSFER_OUT') {
                 totalTransferOut = totalTransferOut.plus(t.amount.abs());
             }
@@ -412,7 +417,7 @@ const HistoryScreen = ({ navigation }: any) => {
         // Mirrors debt obligations exactly: a fixed monthly-equivalent figure derived from
         // each active, unpaused goal's own recurringAmount/frequency (already normalized to
         // monthly inside calculateTotalGoalContributions), not scanned from history.
-        const totalMonthlyGoalContributions = calculateTotalGoalContributions(allGoals);
+        const totalMonthlyGoalContributions = calculateTotalGoalContributions(allGoals, allTransactions);
 
         // Adjust for Period (Yearly View requires 12x)
         let totalPeriodDebtObligations = totalMonthlyDebtObligations;
@@ -484,6 +489,10 @@ const HistoryScreen = ({ navigation }: any) => {
             if (end > now && recurrenceRules.length > 0) {
                 recurrenceRules.forEach(rule => {
                     if (!rule.isActive) return;
+                    // Goal auto-contributions are already reserved via remainingGoalObligations
+                    // below - counting them here too would deduct the same upcoming
+                    // contribution from Safe-to-Spend twice.
+                    if (rule.transactionTemplate?.savingsGoalId) return;
                     let pointer = new Date(rule.nextDueDate);
 
                     // Only count bills due between NOW and END OF PERIOD

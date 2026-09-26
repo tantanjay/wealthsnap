@@ -157,9 +157,14 @@ export const buildMonthlySummaryData = (
     const monthInv = allInvestments.filter(i => isInMonth(i.date, yearMonth));
 
     const incomeTx = monthTx.filter(t => t.type === 'INCOME');
-    const expenseTx = monthTx.filter(t => t.type === 'EXPENSE');
+    // A goal-funded purchase's cash already left when it was contributed to the goal, not
+    // when it was later spent - counting it here would report an alarming month-over-month
+    // expense spike, a deflated savings rate, and false budget-overage alerts below off one
+    // goal-funded purchase.
+    const expenseTx = monthTx.filter(t => t.type === 'EXPENSE' && !t.savingsGoalId);
 
-    const { income, expense } = calculateTotals(monthTx);
+    const income = incomeTx.reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
+    const expense = expenseTx.reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
     const savingsRate = calculateSavingsRate(income, expense).dp(1).toNumber();
 
     const recurringIncome = incomeTx
@@ -174,7 +179,7 @@ export const buildMonthlySummaryData = (
     const prevDate = new Date(y, m - 2, 1);
     const prevYearMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
     const prevMonthTx = allTransactions.filter(t => isInMonth(t.date, prevYearMonth));
-    const prevTotals = calculateTotals(prevMonthTx);
+    const prevTotals = calculateTotals(prevMonthTx.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId)));
 
     const momIncomeChangePercent = pctChange(income, prevTotals.income);
     const momExpenseChangePercent = pctChange(expense, prevTotals.expense);

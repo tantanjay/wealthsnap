@@ -166,6 +166,41 @@ export const saveTransaction = async (transaction: Transaction): Promise<void> =
     }
 };
 
+/**
+ * Saves several transactions as a single DB transaction - use this instead of multiple
+ * sequential saveTransaction() calls whenever the rows are only meaningful together (e.g. an
+ * Auto-Offset EXPENSE + its linked TRANSFER_IN). Without this, an exception or app kill
+ * mid-sequence can leave a half-written pair: an un-reimbursed expense, or a split-funding
+ * transaction applied on one side only.
+ */
+export const saveTransactionsAtomically = async (transactions: Transaction[]): Promise<void> => {
+    if (transactions.length === 0) return;
+    try {
+        const db = await getDatabase();
+        const preparedRows = await Promise.all(transactions.map(prepareTransactionValues));
+
+        await db.withTransactionAsync(async () => {
+            for (const values of preparedRows) {
+                await db.runAsync(UPSERT_TRANSACTION_QUERY, values);
+            }
+        });
+
+        transactions.forEach(txn => DataCache.upsertTransaction(txn));
+
+        // Check for anomalies (Fire and forget)
+        const cached = DataCache.getTransactionCache();
+        if (cached?.data) {
+            getAllBudgets().then(budgets => {
+                checkAndNotifyAnomalies(getTransactionsByMonth(cached.data), cached.data, budgets)
+                    .catch((err: any) => console.error('Failed to check anomalies:', err));
+            }).catch((err: any) => console.error('Failed to get budgets for anomaly check:', err));
+        }
+    } catch (error) {
+        console.error('Error saving transactions atomically:', error);
+        throw new Error('Failed to save transactions');
+    }
+};
+
 export const saveTransactionWithReceipt = async (transaction: Transaction, receiptData: any): Promise<void> => {
     try {
         const db = await getDatabase();

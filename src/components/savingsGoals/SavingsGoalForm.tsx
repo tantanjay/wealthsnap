@@ -63,6 +63,14 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
             return;
         }
 
+        if (frequency !== 'NONE') {
+            const parsedRecurringCheck = new BigNumber(recurringAmount || 0);
+            if (parsedRecurringCheck.isNaN() || parsedRecurringCheck.isLessThanOrEqualTo(0)) {
+                showAlert('Invalid Amount', 'Recurring contribution amount must be greater than zero.');
+                return;
+            }
+        }
+
         setIsSaving(true);
         try {
             const now = new Date().toISOString();

@@ -82,19 +82,21 @@ const SavingsGoalOptionsModal: React.FC<SavingsGoalOptionsModalProps> = ({
                     </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.optionCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={handleTogglePausePress}>
-                    <View style={styles.optionHeader}>
-                        <Ionicons name={goal.isPaused ? 'play-circle-outline' : 'pause-circle-outline'} size={22} color={colors.primary} />
-                        <Text style={[styles.optionTitle, { color: colors.text }]}>
-                            {goal.isPaused ? 'Resume Auto-Contribution' : 'Pause Auto-Contribution'}
+                {goal.recurrenceId != null && (
+                    <TouchableOpacity style={[styles.optionCard, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={handleTogglePausePress}>
+                        <View style={styles.optionHeader}>
+                            <Ionicons name={goal.isPaused ? 'play-circle-outline' : 'pause-circle-outline'} size={22} color={colors.primary} />
+                            <Text style={[styles.optionTitle, { color: colors.text }]}>
+                                {goal.isPaused ? 'Resume Auto-Contribution' : 'Pause Auto-Contribution'}
+                            </Text>
+                        </View>
+                        <Text style={[styles.optionBody, { color: colors.textSecondary }]}>
+                            {goal.isPaused
+                                ? "Resumes the recurring contribution on its normal schedule."
+                                : "Only stops the recurring auto-contribution - the goal keeps its balance, and you can still Add Funds manually."}
                         </Text>
-                    </View>
-                    <Text style={[styles.optionBody, { color: colors.textSecondary }]}>
-                        {goal.isPaused
-                            ? "Resumes the recurring contribution on its normal schedule."
-                            : "Only stops the recurring auto-contribution - the goal keeps its balance, and you can still Add Funds manually."}
-                    </Text>
-                </TouchableOpacity>
+                    </TouchableOpacity>
+                )}
             </View>
         </BottomModal>
     );
