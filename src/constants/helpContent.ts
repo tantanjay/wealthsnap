@@ -107,7 +107,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'blockquote', text: 'Shows: How many months your current balance can support your lifestyle.' },
             { type: 'bullet', text: 'Measures financial safety' },
             { type: 'bullet', text: '"Current balance" here is your entire transaction history, not just the browsed month — everything you\'ve ever earned and transferred in, minus everything you\'ve ever spent and transferred out' },
-            { type: 'bullet', text: 'Includes your mandatory minimum debt payments, not just everyday spending' },
+            { type: 'bullet', text: 'Includes your mandatory minimum debt payments and your active savings goal contributions, not just everyday spending' },
             { type: 'bullet', text: 'Always reflects today, even while you\'re browsing a past month' },
             { type: 'bullet', text: 'Highlights risk early' },
             { type: 'paragraph', text: 'User insight: "I can sustain my current spending for X months."' },
@@ -119,15 +119,16 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'paragraph', text: 'User insight: "My spending is healthy / getting risky."' },
 
             { type: 'heading3', text: '3. Net Cash Flow' },
-            { type: 'blockquote', text: 'Shows: Income minus expenses for the selected month.' },
+            { type: 'blockquote', text: 'Shows: The true net movement of liquid cash for the selected month — income plus transfers in, minus expenses and transfers out.' },
             { type: 'bullet', text: 'Indicates progress or regression' },
-            { type: 'bullet', text: 'Simple profitability signal' },
+            { type: 'bullet', text: 'Contributing to or spending from a savings goal is a transfer, not an expense, so it nets to ₱0 here instead of looking like a cash drop' },
             { type: 'paragraph', text: 'User insight: "I’m moving forward / falling behind this month."' },
 
             { type: 'heading3', text: '4. Savings Rate' },
             { type: 'blockquote', text: 'Shows: Percentage of income saved this month.' },
             { type: 'bullet', text: 'Standard wealth metric' },
             { type: 'bullet', text: 'Scales across any income level' },
+            { type: 'bullet', text: 'Purchases funded from a savings goal don\'t count as an expense here — that money was already set aside as savings when you contributed it' },
             { type: 'paragraph', text: 'User insight: "How efficiently am I saving what I earn?"' },
 
             { type: 'heading3', text: '5. Total Income' },
@@ -139,19 +140,22 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'blockquote', text: 'Shows: All spending recorded in the selected month.' },
             { type: 'bullet', text: 'Clear cost awareness' },
             { type: 'bullet', text: 'No category noise' },
+            { type: 'bullet', text: 'Excludes purchases funded from a savings goal — that cash already left when you contributed it, not when you later spent it' },
 
             { type: 'heading3', text: '7. Burn Rate' },
             { type: 'blockquote', text: 'Shows: Average monthly spending based on recent history, as of today.' },
             { type: 'bullet', text: 'More realistic than a single month' },
-            { type: 'bullet', text: 'Includes your mandatory minimum debt payments' },
+            { type: 'bullet', text: 'Includes your mandatory minimum debt payments and your active savings goal contributions' },
+            { type: 'bullet', text: 'Excludes purchases funded from a savings goal, so a big goal-funded purchase doesn\'t look like a spending surge' },
             { type: 'bullet', text: 'Always reflects today, even while you\'re browsing a past month' },
             { type: 'bullet', text: 'Powers the Runway card' },
-            { type: 'paragraph', text: 'User insight: "This is what my lifestyle actually costs, debts included."' },
+            { type: 'paragraph', text: 'User insight: "This is what my lifestyle actually costs, debts and goals included."' },
 
             { type: 'heading3', text: '8. Daily Average' },
             { type: 'blockquote', text: 'Shows: Average amount spent per day so far in the selected month.' },
             { type: 'bullet', text: 'Helps pace spending mid-month' },
             { type: 'bullet', text: 'Easy mental model' },
+            { type: 'bullet', text: 'Excludes purchases funded from a savings goal' },
 
             { type: 'heading3', text: '9. Annualized Expense' },
             { type: 'blockquote', text: 'Shows: Burn Rate projected across a full year.' },
@@ -221,8 +225,8 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading2', text: 'Financial Runway' },
             { type: 'formula', text: 'Runway = Net Liquid Balance ÷ Adjusted Burn Rate' },
-            { type: 'bullet', text: 'Net Liquid Balance = (Lifetime Income + Lifetime Transfer In) − (Lifetime Total Expenses + Lifetime Transfer Out) — summed across your entire transaction history, not just the browsed month' },
-            { type: 'bullet', text: 'Adjusted Burn Rate = Burn Rate + Total Minimum Payments on your active, payable debts' },
+            { type: 'bullet', text: 'Net Liquid Balance = (Lifetime Income + Lifetime Transfer In) − (Lifetime Total Expenses + Lifetime Transfer Out) — summed across your entire transaction history, not just the browsed month. Savings goal contributions/spends are transfers, so they shift money between this balance and your goal balances without changing the total' },
+            { type: 'bullet', text: 'Adjusted Burn Rate = Burn Rate + Total Minimum Payments on your active, payable debts + Total Monthly Contributions on your active, not-yet-completed savings goals' },
             { type: 'paragraph', text: 'Both this and Burn Rate are computed as of today, regardless of which month you\'re browsing, and both draw on your full history rather than a single month.' },
             { type: 'paragraph', text: 'Color Coding:' },
             { type: 'bullet', text: 'Green: ≥6 months' },
@@ -241,27 +245,30 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Red: >90% (danger/over)' },
 
             { type: 'heading2', text: 'Net Cash Flow' },
-            { type: 'formula', text: 'Net Cash Flow = Total Income - Total Expenses' },
-            { type: 'paragraph', text: 'For the selected month only.' },
+            { type: 'formula', text: 'Net Cash Flow = (Income + Transfer In) − (Expenses + Transfer Out)' },
+            { type: 'paragraph', text: 'For the selected month only. Nets out transfers (rather than plain Income − Expenses) so a savings goal contribution or a goal-funded purchase — both transfers — don\'t swing this figure even though no real liquid cash left your overall balance.' },
             { type: 'bullet', text: 'Green: ≥0 (positive)' },
             { type: 'bullet', text: 'Red: <0 (negative)' },
 
             { type: 'heading2', text: 'Savings Rate' },
             { type: 'formula', text: 'Rate = ((Income - Expenses) ÷ Income) × 100' },
+            { type: 'paragraph', text: 'Expenses here excludes purchases funded from a savings goal — that money was already counted as saved the month you contributed it, so spending it later shouldn\'t look like it un-saves it.' },
             { type: 'paragraph', text: 'Edge Cases:' },
             { type: 'bullet', text: 'Income ≤ 0 → 0%' },
             { type: 'bullet', text: 'Negative rate shown if expenses > income' },
 
             { type: 'heading2', text: 'Burn Rate' },
             { type: 'formula', text: 'Burn Rate = Total Expenses (prior months) ÷ Effective Months' },
+            { type: 'paragraph', text: '"Total Expenses" here excludes purchases funded from a savings goal (that cash already left when contributed) and instead includes the actual goal contributions made that month — a goal-funded purchase would otherwise look like a spending spike, and its contribution would otherwise go uncounted.' },
             { type: 'paragraph', text: 'Effective Months Logic:' },
             { type: 'blockquote', text: 'Prevents inflated burn rates for new accounts by only averaging over months with actual data, and excludes the current, in-progress month.' },
             { type: 'formula', text: 'effectiveMonths = min(monthsBack, accountAgeMonths)' },
-            { type: 'paragraph', text: 'The Burn Rate and Runway cards then add your total minimum debt payments on top of this (see Financial Runway above). The Comparison Chart\'s Avg 3M/6M/1Y bars use plain Burn Rate without that debt adjustment.' },
+            { type: 'paragraph', text: 'The Burn Rate and Runway cards then strip out all savings-goal transactions before this calculation and add back your total minimum debt payments plus your active goals\' current monthly-equivalent contribution on top (see Financial Runway above) — a goal already at its target stops counting. The Comparison Chart\'s Avg 3M/6M/1Y bars use plain Burn Rate without that debt/goal adjustment.' },
 
             { type: 'heading2', text: 'Daily Average' },
             { type: 'formula', text: 'Daily Average = Expenses So Far This Month ÷ Days Elapsed' },
             { type: 'bullet', text: 'Uses days actually elapsed in the current month, not the full calendar length.' },
+            { type: 'bullet', text: 'Excludes purchases funded from a savings goal, same as Total Expense and Burn Rate.' },
 
             { type: 'heading2', text: 'Annualized Expense' },
             { type: 'formula', text: 'Annualized Expense = Burn Rate × 12' },
@@ -378,7 +385,8 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Empty Datasets: Shows "No data"' },
             { type: 'bullet', text: 'Account Age: Burn rate respects actual history' },
             { type: 'bullet', text: 'Negative Values: Handled for Savings, Cash Flow, and Runway' },
-            { type: 'bullet', text: 'Debts: Only active, payable debts count toward Burn Rate / Runway — receivables and settled debts are excluded' }
+            { type: 'bullet', text: 'Debts: Only active, payable debts count toward Burn Rate / Runway — receivables and settled debts are excluded' },
+            { type: 'bullet', text: 'Savings Goals: A goal-funded purchase is excluded from Expense/Burn Rate totals (the cash already left at contribution time); a goal already at its target amount stops counting its contribution toward Burn Rate / Runway' }
         ]
     },
     {
