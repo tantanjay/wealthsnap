@@ -85,7 +85,7 @@ See [docs/PLAN_SAVING_GOALS.md](docs/PLAN_SAVING_GOALS.md) for the full phased i
 
 ## 🐛 Follow-up Fixes
 
-- [ ] **Debts Drag ignores savings-goal contributions, so its help modal's math doesn't add up** — `calculateDebtDrag` ([insightMetrics.ts:53](src/utils/insightMetrics.ts:53)) is passed only the base living burn as `livingExpenses` (from [FinancialHealthScreen.tsx](src/screens/FinancialHealthScreen.tsx) and [HomeScreen.tsx](src/screens/HomeScreen.tsx)), so it drops goal contributions from *both* runways it compares. The Runway shown to the user (`cash ÷ (living + debt + goals)`) is unchanged by this — only Debts Drag is off.
+- [x] ~~**Debts Drag ignores savings-goal contributions, so its help modal's math doesn't add up**~~ — fixed for 1.18.1: both call sites now pass base burn + goal contributions as `livingExpenses`. — `calculateDebtDrag` ([insightMetrics.ts:53](src/utils/insightMetrics.ts:53)) is passed only the base living burn as `livingExpenses` (from [FinancialHealthScreen.tsx](src/screens/FinancialHealthScreen.tsx) and [HomeScreen.tsx](src/screens/HomeScreen.tsx)), so it drops goal contributions from *both* runways it compares. The Runway shown to the user (`cash ÷ (living + debt + goals)`) is unchanged by this — only Debts Drag is off.
   - Worked example — ₱100k cash, ₱20k living, ₱5k debt minimums, ₱5k goal contributions:
 
     | | Runway without debt | Runway with debt | Debts Drag |
@@ -95,7 +95,7 @@ See [docs/PLAN_SAVING_GOALS.md](docs/PLAN_SAVING_GOALS.md) for the full phased i
 
   - **The modal is already correct** — [FinancialHealthHelpModal.tsx](src/components/financialHealth/FinancialHealthHelpModal.tsx)'s DEBT DRAG block derives "Runway Without Debt" from `monthlyBurn − monthlyDebtObligations` (goals kept, only debt removed). It just prints the wrong `debtDragMonths` passed in from the code, so its own subtraction (4.0 − 3.3) disagrees with the result it shows (1.0). No modal text change needed.
   - **Decided fix (code):** pass base burn + `calculateTotalGoalContributions(...)` as `livingExpenses` at both call sites, so drag = runway without debt − the real Runway. Rejected alternative: rewriting the modal to mirror the code — keeps the number unchanged but leaves Debts Drag measured against a runway the user never sees.
-  - Changes the displayed Debts Drag number (smaller) on Home and Financial Health for users with an active goal. Savings Goals shipped in 1.18.0, so this goes out as a `### Fixed` entry in the next version.
+  - Changes the displayed Debts Drag number (smaller) on Home and Financial Health for users with an active goal. **Target: 1.18.1** (1.18.0 hit an error in internal testing and won't be promoted as-is) — ships as a `### Fixed` entry under `## [1.18.1]`, since Savings Goals is already tagged in 1.18.0.
 
 ---
 

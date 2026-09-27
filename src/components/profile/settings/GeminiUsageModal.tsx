@@ -4,11 +4,11 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl, useColorScheme } fr
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import { Disclaimer } from '@components/common/Disclaimer';
 import { useTheme } from '@context/ThemeContext';
 import { AIUsageLog } from '@types';
 import { getAIUsageLogs } from '@services/domain/logService';
 import { SPACING, FONT_SIZES } from '@styles/theme';
-import { SEVERITY_ICON } from '@utils/severity';
 
 interface GeminiUsageModalProps {
     visible: boolean;
@@ -76,12 +76,9 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
                 </View>
             </View>
 
-            <View style={{ flexDirection: 'row', backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8, marginTop: -10, marginBottom: 10, alignItems: 'center' }}>
-                <Ionicons name={SEVERITY_ICON.info} size={20} color={colors.info} style={{ marginRight: 10 }} />
-                <Text style={{ color: colors.text, flex: 1, fontSize: 13 }}>
-                    <Text style={{ fontWeight: 'bold' }}>Note:</Text> Costs shown are internal estimates for tracking purposes. Actual billing is subject to your dashboard.
-                </Text>
-            </View>
+            <Disclaimer style={styles.disclaimer}>
+                Costs shown are internal estimates for tracking purposes. Actual billing is subject to your dashboard.
+            </Disclaimer>
 
             <ScrollView
                 style={styles.scrollView}
@@ -163,9 +160,8 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     disclaimer: {
-        fontSize: 11,
-        marginTop: 6,
-        fontStyle: 'italic',
+        marginTop: 0,
+        marginBottom: SPACING.md,
     },
     scrollView: {
         flex: 1,

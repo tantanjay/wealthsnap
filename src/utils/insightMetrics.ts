@@ -46,7 +46,7 @@ export const calculateSpendingTrend = (currentSpending: BigNumber, baselineSpend
  * Calculates the "Debt Drag": How many months of runway are lost purely due to debt payments?
  * Debt Drag = Runway(Without Debt Payments) - Runway(With Debt Payments)
  * @param totalCash Liquid cash available
- * @param livingExpenses Monthly expenses excluding debt
+ * @param livingExpenses Monthly outflows excluding debt (base burn + savings goal contributions)
  * @param debtPayments Monthly debt obligations
  * @returns Months of runway lost
  */

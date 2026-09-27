@@ -8,6 +8,7 @@ import { useAlert } from '@context/AlertContext';
 import { useDataStatus } from '@context/DataStatusContext';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { EmptyState } from '@components/common/EmptyState';
+import { Disclaimer } from '@components/common/Disclaimer';
 import { Debt, DebtStatus, Transaction, UserProfile } from '@types';
 import * as Storage from '@services/core/storageService';
 import { getAllDebts, saveDebt, deleteDebt } from '@services/domain/debtService';
@@ -418,26 +419,6 @@ const DebtScreen = ({ navigation }: any) => {
             ) : (
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-                {/* Disclaimer Banner */}
-                <View style={{
-                    backgroundColor: colors.surface,
-                    borderRadius: 12,
-                    padding: 16,
-                    marginBottom: 24,
-                    borderWidth: 1,
-                    borderColor: colors.border || '#e0e0e0',
-                    flexDirection: 'row',
-                    alignItems: 'flex-start'
-                }}>
-                    <Ionicons name="information-circle" size={24} color={colors.textSecondary} style={{ marginRight: 12, marginTop: 2 }} />
-                    <View style={{ flex: 1 }}>
-                        <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>
-                            <Text style={{ fontWeight: 'bold', color: colors.textSecondary }}>Disclaimer: </Text>
-                            This math exposes the raw cost of your debt. It doesn&apos;t account for bank re-pricing or hidden fees. Use this to plan your attack, but verify the final numbers with your lender.
-                        </Text>
-                    </View>
-                </View>
-
                 {/* Unpayable-at-Minimum Warning */}
                 {unpayableDebtNames.length > 0 && (
                     <View style={{
@@ -691,6 +672,10 @@ const DebtScreen = ({ navigation }: any) => {
                     </>
                 )}
 
+                <Disclaimer>
+                    This math exposes the raw cost of your debt. It doesn&apos;t account for bank re-pricing or hidden fees. Use this to plan your attack, but verify the final numbers with your lender.
+                </Disclaimer>
+
                 {/* Payment Modal */}
                 <BottomModal
                     visible={paymentModalVisible}
@@ -880,17 +865,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         borderRadius: 8,
         padding: 4,
-    },
-    disclaimerContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 16,
-        paddingHorizontal: 16,
-    },
-    disclaimerText: {
-        fontSize: 11,
-        fontStyle: 'italic',
     },
     toggleButton: {
         flex: 1,
