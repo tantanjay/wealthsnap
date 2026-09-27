@@ -592,7 +592,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
             >
                 <View>
                     <Text style={{ color: colors.text, fontSize: 16, marginBottom: 10, lineHeight: 22 }}>
-                        This smart insight compares your <Text style={{ fontWeight: 'bold' }}>current month&apos;s income</Text> (including projections) against the <Text style={{ fontWeight: 'bold' }}>previous month</Text>.
+                        This smart insight compares the <Text style={{ fontWeight: 'bold' }}>income actually recorded</Text> in the latest month shown (not the projected part of its bar) against the <Text style={{ fontWeight: 'bold' }}>month before it</Text>.
                     </Text>
                     <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
@@ -602,7 +602,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                             • <Text style={{ color: '#FF5252', fontWeight: 'bold' }}>Decline:</Text> Income is lower than last month.
                         </Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4 }}>
-                            • <Text style={{ color: colors.text, fontWeight: 'bold' }}>Stable:</Text> Income is roughly the same.
+                            • <Text style={{ color: colors.text, fontWeight: 'bold' }}>Stable:</Text> Income is exactly the same as last month.
                         </Text>
                     </View>
                     <View style={{ height: 20 }} />

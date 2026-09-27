@@ -178,7 +178,7 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                         Calibrating your Financial Health
                                     </Text>
                                     <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center', lineHeight: 18, maxWidth: 240 }}>
-                                        Keep logging your income and expenses — your runway and spending pace will show up here once there's enough to go on.
+                                        Keep logging your income and expenses — your runway and spending pace will show up here once there&apos;s enough to go on.
                                     </Text>
                                 </View>
                               ) : (

@@ -118,8 +118,9 @@ const DebtScreen = ({ navigation }: any) => {
         // Hourly = Yearly / 365 / 24
         const hourlyLeak = yearlyInterest.div(365).div(24);
 
-        // 3. Debt vs Life (Runway)
-        const burnRate = calculateBurnRate(transactions, 6);
+        // 3. Debt vs Life (Runway) - base living burn, excluding debt interest/fees and goal
+        // transactions, the same base FinancialHealthScreen uses.
+        const burnRate = calculateBurnRate(transactions.filter(t => !t.debtId && !t.savingsGoalId), 6);
         // If burn rate is 0, avoid division by zero
         const monthsLost = burnRate.gt(0) ? totalBalance.div(burnRate).toNumber() : 0;
 

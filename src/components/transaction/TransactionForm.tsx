@@ -14,7 +14,7 @@ import { Transaction, TransactionType, RecurrenceRule, RecurrenceFrequency, Savi
 import { generateUUID } from '@utils/uuid';
 import { INCOME_CATEGORY_GROUPS, EXPENSE_CATEGORY_GROUPS } from '@constants/categories';
 import { getRecentCategories, saveTransaction, saveTransactionsAtomically, getCachedTransactions } from '@services/domain/transactionService';
-import { saveRecurrenceRule } from '@services/domain/recurrenceService';
+import { saveRecurrenceRule, calculateNextDueDate } from '@services/domain/recurrenceService';
 import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
 import { calculateGoalBalance } from '@utils/savingsGoalMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
@@ -266,31 +266,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             const ruleId = initialTransaction?.recurrenceId || generateUUID();
             const start = startDate;
 
-            // Calculate the next due date
-            const nextDue = new Date(start);
-            switch (frequency) {
-                case 'DAILY':
-                    nextDue.setDate(nextDue.getDate() + 1);
-                    break;
-                case 'WEEKLY':
-                    nextDue.setDate(nextDue.getDate() + 7);
-                    break;
-                case 'SEMI_MONTHLY':
-                    nextDue.setDate(nextDue.getDate() + 15);
-                    break;
-                case 'MONTHLY':
-                    nextDue.setMonth(nextDue.getMonth() + 1);
-                    break;
-                case 'QUARTERLY':
-                    nextDue.setMonth(nextDue.getMonth() + 3);
-                    break;
-                case 'BI_ANNUAL':
-                    nextDue.setMonth(nextDue.getMonth() + 6);
-                    break;
-                case 'YEARLY':
-                    nextDue.setFullYear(nextDue.getFullYear() + 1);
-                    break;
-            }
+            const nextDue = calculateNextDueDate(start, frequency as RecurrenceFrequency);
 
             const rule: RecurrenceRule = {
                 id: ruleId,

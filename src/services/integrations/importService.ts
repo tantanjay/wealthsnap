@@ -1,6 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 import { Transaction, TransactionType } from '@types';
 import { generateUUID } from '@utils/uuid';
+import { getLocalDateStamp } from '@utils/financialMetrics';
 import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORY_GROUPS } from '@constants/categories';
 
 // Expected headers in exact order (case-insensitive)
@@ -111,6 +112,13 @@ export const validateHeaders = (headers: string[]): string | null => {
     return null;
 };
 
+// new Date('yyyy-MM-dd') parses as UTC midnight, which is the previous local day west of UTC -
+// build it from components so the row lands on the calendar day it names.
+const parseLocalDate = (dateStr: string): Date => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
+
 /**
  * Check if a date is in yyyy-MM-dd format
  */
@@ -126,7 +134,7 @@ const isValidDateFormat = (dateStr: string): boolean => {
  * Check if a date is in the future
  */
 const isFutureDate = (dateStr: string): boolean => {
-    const date = new Date(dateStr);
+    const date = parseLocalDate(dateStr);
     const today = new Date();
     today.setHours(23, 59, 59, 999); // End of today
     return date > today;
@@ -177,7 +185,7 @@ export const validateImportData = (
     const existingKeys = new Set<string>();
     existingTransactions.forEach(txn => {
         const key = createTransactionKey(
-            txn.date.split('T')[0], // Just the date part
+            getLocalDateStamp(new Date(txn.date)), // local day, matching how rows are exported/parsed
             txn.amount,
             txn.category,
             txn.note || '',
@@ -292,7 +300,7 @@ export const prepareTransactions = (rows: ParsedRow[]): Transaction[] => {
             type,
             amount,
             category,
-            date: new Date(row.date).toISOString(),
+            date: parseLocalDate(row.date).toISOString(),
             note: row.notes || undefined,
             isRecurring: false,
             creationMethod: 'MANUAL' as const,

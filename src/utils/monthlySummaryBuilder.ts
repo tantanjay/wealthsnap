@@ -16,6 +16,7 @@ export interface InvestmentActivityItem {
 
 export interface DebtPaymentItem {
     debtName: string;
+    direction: 'PAYABLE' | 'RECEIVABLE';
     amount: number;
     remainingBalance: number;
 }
@@ -66,7 +67,7 @@ export interface MonthlySummaryData {
     };
     debts: {
         payments: DebtPaymentItem[];
-        totalPaid: number;
+        totalPaid: number; // PAYABLE only - money repaid TO the user isn't a payment made
     };
     savingsGoals: {
         activity: GoalActivityItem[];
@@ -235,8 +236,9 @@ export const buildMonthlySummaryData = (
         if (!debt) return;
         const remainingBalance = calculateCurrentDebtBalance(debt, txUpToMonthEnd).toNumber();
         const debtName = debtNameMap ? debtNameMap.get(debt.id)! : debt.name;
-        debtPayments.push({ debtName, amount: amount.toNumber(), remainingBalance });
-        totalDebtPaid = totalDebtPaid.plus(amount);
+        const direction = debt.direction || 'PAYABLE';
+        debtPayments.push({ debtName, direction, amount: amount.toNumber(), remainingBalance });
+        if (direction === 'PAYABLE') totalDebtPaid = totalDebtPaid.plus(amount);
     });
 
     // --- Savings Goals (contributions/spends/withdrawals/sweeps this month) ---
@@ -421,7 +423,9 @@ export const renderMonthlySummaryText = (data: MonthlySummaryData, currency: str
     if (data.debts.payments.length) {
         lines.push('Debts:');
         data.debts.payments.forEach(p =>
-            lines.push(`  ${p.debtName}: paid ${currency} ${fmt(p.amount)}, balance now ${currency} ${fmt(p.remainingBalance)}`)
+            lines.push(p.direction === 'RECEIVABLE'
+                ? `  ${p.debtName} (owed to user): collected ${currency} ${fmt(p.amount)}, still owed to user ${currency} ${fmt(p.remainingBalance)}`
+                : `  ${p.debtName}: paid ${currency} ${fmt(p.amount)}, balance now ${currency} ${fmt(p.remainingBalance)}`)
         );
     }
 

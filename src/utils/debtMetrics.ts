@@ -358,9 +358,12 @@ export const getNextDueDate = (debt: Debt, transactions: Transaction[]): Date | 
     const start = new Date(debt.startDate);
     const day = start.getDate();
     const now = new Date();
+    // Clamp to the month's last day - new Date(y, 1, 31) would overflow into March.
+    const dueDateIn = (year: number, month: number) =>
+        new Date(year, month, Math.min(day, new Date(year, month + 1, 0).getDate()));
 
     // 1. Initial Candidate: The occurrence in the CURRENT month
-    let candidateDate = new Date(now.getFullYear(), now.getMonth(), day);
+    let candidateDate = dueDateIn(now.getFullYear(), now.getMonth());
 
     // 2. Sum principal + interest paid toward this debt in the candidate month, matching the
     // transaction types `handlePaymentSubmit` actually logs for this debt's direction. A
@@ -389,7 +392,7 @@ export const getNextDueDate = (debt: Debt, transactions: Transaction[]): Date | 
     // A $0 minimum has nothing to "meet" - guard against it so a debt with no minimum
     // payment doesn't skip straight to next month on day one of the current month.
     if (debt.minPayment.isGreaterThan(0) && paidThisMonth.gte(debt.minPayment)) {
-        candidateDate = new Date(now.getFullYear(), now.getMonth() + 1, day);
+        candidateDate = dueDateIn(now.getFullYear(), now.getMonth() + 1);
     }
 
     return candidateDate;

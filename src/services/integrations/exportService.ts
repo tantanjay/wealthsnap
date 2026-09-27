@@ -30,7 +30,9 @@ function buildSheet(headers: string[], rows: Record<string, unknown>[], currency
     return ws;
 }
 
-const isoDate = (iso?: string) => (iso ? iso.split('T')[0] : '');
+// Local calendar day - splitting the ISO string gives the UTC day, which is the previous day
+// for anything logged before 08:00 in UTC+8.
+const isoDate = (iso?: string) => (iso ? getLocalDateStamp(new Date(iso)) : '');
 
 /**
  * Exports transactions, investments, debts, debt payments, savings goals, and goal

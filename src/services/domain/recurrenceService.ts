@@ -10,12 +10,14 @@ import { upsertTombstone } from '@services/domain/tombstoneService';
 // DOMAIN LOGIC
 // =============================================================================
 
-// Exported so callers building a RecurrenceRule outside this file (e.g. savingsGoalService/
-// SavingsGoalForm) compute the first due date the same way TransactionForm's inline copy of
-// this same switch does - one full period after the start date, not on the start date
-// itself, so a newly-created recurring rule doesn't fire immediately on the next
-// processRecurrenceRules() pass.
-export const calculateNextDueDate = (currentDate: Date, frequency: RecurrenceFrequency): Date => {
+// Exported so callers building a RecurrenceRule outside this file (TransactionForm,
+// SavingsGoalForm) compute the first due date one full period after the start date, so a
+// newly-created rule doesn't fire immediately on the next processRecurrenceRules() pass.
+export const calculateNextDueDate = (
+    currentDate: Date,
+    frequency: RecurrenceFrequency,
+    anchorDay: number = currentDate.getDate()
+): Date => {
     const nextDate = new Date(currentDate);
     switch (frequency) {
         case 'DAILY':
@@ -28,20 +30,30 @@ export const calculateNextDueDate = (currentDate: Date, frequency: RecurrenceFre
             nextDate.setDate(nextDate.getDate() + 15);
             break;
         case 'MONTHLY':
-            nextDate.setMonth(nextDate.getMonth() + 1);
-            break;
+            return addMonthsAnchored(currentDate, 1, anchorDay);
         case 'QUARTERLY':
-            nextDate.setMonth(nextDate.getMonth() + 3);
-            break;
+            return addMonthsAnchored(currentDate, 3, anchorDay);
         case 'BI_ANNUAL':
-            nextDate.setMonth(nextDate.getMonth() + 6);
-            break;
+            return addMonthsAnchored(currentDate, 6, anchorDay);
         case 'YEARLY':
-            nextDate.setFullYear(nextDate.getFullYear() + 1);
-            break;
+            return addMonthsAnchored(currentDate, 12, anchorDay);
     }
     return nextDate;
 };
+
+// setMonth() overflows short months (Jan 31 + 1 month = Mar 3) and the drift sticks. Clamp to
+// the target month's last day instead, returning to anchorDay once a month is long enough.
+export const addMonthsAnchored = (date: Date, months: number, anchorDay: number = date.getDate()): Date => {
+    const result = new Date(date.getFullYear(), date.getMonth() + months, 1,
+        date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds());
+    const daysInMonth = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
+    result.setDate(Math.min(anchorDay, daysInMonth));
+    return result;
+};
+
+// The day-of-month a rule was originally set for, so a clamped Feb 28 goes back to the 31st.
+export const getRecurrenceAnchorDay = (rule: RecurrenceRule): number =>
+    new Date(rule.startDate || rule.nextDueDate).getDate();
 
 export const processRecurrenceRules = async (): Promise<number> => {
     try {
@@ -58,6 +70,7 @@ export const processRecurrenceRules = async (): Promise<number> => {
             if (!rule.isActive) continue;
 
             let nextDueDate = new Date(rule.nextDueDate);
+            const anchorDay = getRecurrenceAnchorDay(rule);
             const endDate = rule.endDate ? new Date(rule.endDate) : null;
             let ruleUpdated = false;
 
@@ -84,7 +97,7 @@ export const processRecurrenceRules = async (): Promise<number> => {
                 newTransactions.push(newTransaction);
 
                 // Calculate next date
-                nextDueDate = calculateNextDueDate(nextDueDate, rule.frequency);
+                nextDueDate = calculateNextDueDate(nextDueDate, rule.frequency, anchorDay);
                 ruleUpdated = true;
                 safetyCounter++;
                 processedCount++;

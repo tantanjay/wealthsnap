@@ -52,6 +52,9 @@ export const DataStatusProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }, []);
 
     useEffect(() => {
+        // refresh() is async - its setState calls run after the awaited DB reads, not synchronously
+        // in this effect body, so there's no cascading render. Standard fetch-on-mount.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         refresh();
     }, [refresh]);
 

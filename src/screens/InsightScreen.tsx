@@ -168,13 +168,19 @@ const InsightScreen = ({ navigation }: any) => {
 
         // Averages for Runway/Burn Rate cards - always "as of today", since Runway is framed
         // as "if your income stopped today", regardless of which month is being browsed.
-        const runwayAverage6Month = Metrics.calculateBurnRate(nonGoalTransactions, 6);
-        const runwayAverage3Month = Metrics.calculateBurnRate(nonGoalTransactions, 3);
+        // Debt-linked interest/fees are excluded too - totalDebtObligations below adds each
+        // debt's minPayment (which already includes interest), matching FinancialHealthScreen.
+        const nonDebtTransactions = nonGoalTransactions.filter(t => !t.debtId);
+        const runwayAverage6Month = Metrics.calculateBurnRate(nonDebtTransactions, 6);
+        const runwayAverage3Month = Metrics.calculateBurnRate(nonDebtTransactions, 3);
+        const nonDebtCurrentMonthExpense = Metrics.calculateTotals(
+            currentMonthTrans.filter(t => !t.debtId && !t.savingsGoalId)
+        ).expense;
 
         // Burn Rate logic: Fallback hierarchy to ensure Runway doesn't show NaN
         let burnRate = runwayAverage6Month;
         if (burnRate.isLessThanOrEqualTo(0)) {
-            burnRate = runwayAverage3Month.isGreaterThan(0) ? runwayAverage3Month : nonGoalCurrentMonthExpense;
+            burnRate = runwayAverage3Month.isGreaterThan(0) ? runwayAverage3Month : nonDebtCurrentMonthExpense;
         }
 
         // --- INJECT DEBT OBLIGATIONS & SAVINGS GOAL CONTRIBUTIONS ---

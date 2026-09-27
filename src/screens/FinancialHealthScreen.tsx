@@ -226,7 +226,8 @@ const FinancialHealthScreen = ({ navigation }: any) => {
 
             const runway = totalBurnRate.gt(0) ? totalCash.dividedBy(totalBurnRate).toNumber() : 999;
 
-            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+            // 23:59:59.999, not midnight - otherwise last month's final day drops out of prevCash
+            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
             let prevInc = new BigNumber(0), prevExp = new BigNumber(0);
             t.forEach(tx => {
                 const d = new Date(tx.date);
