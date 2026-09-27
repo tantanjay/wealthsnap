@@ -306,7 +306,7 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                         <TouchableOpacity onPress={() => onInfoPress('NetWorth')} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <Text style={{ color: colors.textSecondary, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Net Worth</Text>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 16, opacity: 0.9, marginRight: 6 }}>Projected Net Worth</Text>
                                             <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
                                         </TouchableOpacity>
                                     </View>
@@ -331,7 +331,7 @@ const HomeFinancialHealthCard: React.FC<HomeFinancialHealthCardProps> = ({
                                     </Text>
                                 </View>
                                 <View>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Liabilities</Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Debt + Interest</Text>
                                     <Text style={{ color: colors.error, fontWeight: '600' }}>
                                         {isLoading ? '...' : `-${formatCurrency(totalAssets.minus(netWorth))}`}
                                     </Text>

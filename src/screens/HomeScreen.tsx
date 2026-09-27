@@ -836,7 +836,7 @@ const HomeScreen = ({ navigation }: any) => {
                         <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 12 }} />
 
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>Net Worth</Text>
+                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>Projected Net Worth</Text>
                             <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>
                                 {formatCurrencyAmount(financialHealth.netWorth, profile?.currency || 'PHP')}
                             </Text>

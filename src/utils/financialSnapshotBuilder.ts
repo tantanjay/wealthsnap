@@ -1,6 +1,6 @@
 import { BigNumber } from 'bignumber.js';
 import { Transaction, Debt, DebtStatus, SavingsGoal } from '@types';
-import { calculateBurnRate, parseDate } from '@utils/financialMetrics';
+import { calculateBurnRate, calculateTotals, getTransactionsByMonth, parseDate } from '@utils/financialMetrics';
 import { calculateTotalDebtObligations, calculateCurrentDebtBalance, buildDebtNameMap } from '@utils/debtMetrics';
 import { calculateTotalGoalContributions, calculateGoalBalance, calculateGoalProgress } from '@utils/savingsGoalMetrics';
 
@@ -165,7 +165,13 @@ export const buildFinancialSnapshotData = (
     // later spent (that spend nets to ₱0 cash impact via the Auto-Offset pair). Matches the
     // fix already applied to FinancialHealthScreen's own burn rate computation.
     const nonDebtTransactions = transactions.filter(t => !t.debtId && !t.savingsGoalId);
-    const baseBurnRate = calculateBurnRate(nonDebtTransactions, 6);
+    // Same 6M -> 3M -> current-month fallback as Home/Insights/FinancialHealthScreen, so a
+    // new user's AI-reported runway matches the one on screen.
+    const burnRate6 = calculateBurnRate(nonDebtTransactions, 6);
+    const burnRate3 = calculateBurnRate(nonDebtTransactions, 3);
+    const baseBurnRate = burnRate6.gt(0)
+        ? burnRate6
+        : (burnRate3.gt(0) ? burnRate3 : calculateTotals(getTransactionsByMonth(nonDebtTransactions)).expense);
     const monthlyDebtObligations = calculateTotalDebtObligations(debts);
     const monthlyGoalContributions = calculateTotalGoalContributions(goals, transactions);
     const monthlyBurnRate = baseBurnRate.plus(monthlyDebtObligations).plus(monthlyGoalContributions);

@@ -65,13 +65,12 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
     const iconColor = isBuy ? colors.success : (isSell ? colors.error : colors.primary);
     const iconName = isBuy ? "arrow-up-circle-outline" : (isSell ? "arrow-down-circle-outline" : "gift-outline");
 
-    const rate = investment.exchangeRate && new BigNumber(investment.exchangeRate).isGreaterThan(1)
-        ? new BigNumber(investment.exchangeRate)
-        : new BigNumber(1);
+    const rate = new BigNumber(investment.exchangeRate || 1);
 
-    // Check if we effectively have a different currency
+    // Any rate other than 1 means price was converted on save - including rates below 1
+    // (e.g. JPY into PHP), which a "> 1" check would leave shown in profile currency.
     const displayCurrency = investment.currency || currency;
-    const isNative = rate.isGreaterThan(1);
+    const isNative = rate.isGreaterThan(0) && !rate.isEqualTo(1);
 
     const displayPrice = isNative ? investment.price.dividedBy(rate) : investment.price;
     const totalValue = displayPrice.multipliedBy(investment.quantity);

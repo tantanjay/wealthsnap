@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
 
@@ -45,7 +45,7 @@ const SavingsGoalOptionsModal: React.FC<SavingsGoalOptionsModalProps> = ({
             subtitle="Manage Goal"
             maxHeight="85%"
         >
-            <View style={styles.container}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
                 <View style={styles.quickActions}>
                     <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.surface }]} onPress={handleEditPress}>
                         <Ionicons name="create-outline" size={22} color={colors.primary} />
@@ -97,7 +97,7 @@ const SavingsGoalOptionsModal: React.FC<SavingsGoalOptionsModalProps> = ({
                         </Text>
                     </TouchableOpacity>
                 )}
-            </View>
+            </ScrollView>
         </BottomModal>
     );
 };

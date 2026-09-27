@@ -12,10 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - Debt Strategy and Financial Health: the disclaimer now sits at the bottom of the screen instead of above your numbers; the PIN setup warning and the Gemini API Usage cost note use the same design.
+- Home: the Net Worth card is now labeled "Projected Net Worth", and its Liabilities figure "Debt + Interest", since both include the interest you're projected to pay on your debts.
 
 ### Fixed
 - Home and Financial Health: Debts Drag overstated how much runway your debts cost when you had an active savings goal.
 - Gemini AI Settings: on small phones, the API key field was hidden behind the modal's buttons while typing; "How to get an API key?" is now a link under the field instead of a footer button.
+- Chat: for new users without a full month of history, the AI's Runway could differ from the one shown on Home and Financial Health.
+- Investments: for an asset in a currency worth less than yours (e.g. JPY for a PHP profile), the investment options and history screens showed amounts in your currency but labeled with the asset's.
 
 ## [1.18.0] — 2026-09-27
 
