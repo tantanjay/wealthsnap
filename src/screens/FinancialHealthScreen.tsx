@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { Disclaimer } from '@components/common/Disclaimer';
 import { UserProfile, Debt } from '@types';
 import * as Storage from '@services/core/storageService';
 import { getCachedTransactions } from '@services/domain/transactionService';
@@ -250,7 +251,8 @@ const FinancialHealthScreen = ({ navigation }: any) => {
             const hasHistory = t.some(tx => new Date(tx.date) < new Date(now.getFullYear(), now.getMonth(), 1));
             const runwayChange = hasHistory ? (runway - prevRunway) : 0;
 
-            const debtDrag = calculateDebtDrag(totalCash, baseBurnRate, monthlyDebtObligations);
+            // Goal contributions count as living costs so drag is measured against the real Runway above.
+            const debtDrag = calculateDebtDrag(totalCash, baseBurnRate.plus(monthlyGoalContributions), monthlyDebtObligations);
             const uniqueSymbols = [...new Set(inv.map(i => i.symbol))];
             const prices = await getLatestPrices(uniqueSymbols);
             const priceMap: Record<string, BigNumber> = {};
@@ -445,26 +447,6 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     </View>
                 </View>
 
-                {/* Disclaimer Banner */}
-                <View style={{
-                    backgroundColor: colors.surface,
-                    borderRadius: 12,
-                    padding: 16,
-                    marginBottom: 24,
-                    borderWidth: 1,
-                    borderColor: colors.border || '#e0e0e0',
-                    flexDirection: 'row',
-                    alignItems: 'flex-start'
-                }}>
-                    <Ionicons name="information-circle" size={24} color={colors.textSecondary} style={{ marginRight: 12, marginTop: 2 }} />
-                    <View style={{ flex: 1 }}>
-                        <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>
-                            <Text style={{ fontWeight: 'bold', color: colors.textSecondary }}>Disclaimer: </Text>
-                            This analysis uses strict, conservative math. It&apos;s designed to show the brutal truth about your financial runway and self-sustain date. Don&apos;t panic—use it to improve.
-                        </Text>
-                    </View>
-                </View>
-
                 <FinancialStateCard
                     runwayMonths={financialState.runwayMonths}
                     runwayChange={financialState.runwayChange}
@@ -517,6 +499,10 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                     extraMonthlyInvest={wealthState.extraMonthlyInvest}
                     onInfoPress={() => handleInfoPress('WEALTH')}
                 />
+
+                <Disclaimer>
+                    This analysis uses strict, conservative math. It&apos;s designed to show the brutal truth about your financial runway and self-sustain date. Don&apos;t panic—use it to improve.
+                </Disclaimer>
             </ScrollView>
 
             <FinancialHealthHelpModal

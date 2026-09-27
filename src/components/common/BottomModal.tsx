@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet, ViewStyle, DimensionValue, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, ViewStyle, DimensionValue, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -37,6 +37,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
 }) => {
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
 
     // Safety check for SecurityContext
     let isLocked = false;
@@ -53,6 +54,18 @@ const BottomModal: React.FC<BottomModalProps> = ({
             onClose();
         }
     }, [visible, closeOnLock, isLocked, onClose]);
+
+    // maxHeight is measured against the space above the keyboard, so relax it while typing
+    useEffect(() => {
+        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+        const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+        const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
 
     const handleClose = () => {
         if (dismissable) {
@@ -85,7 +98,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
                         styles.container,
                         {
                             backgroundColor: colors.background,
-                            maxHeight: maxHeight,
+                            maxHeight: keyboardVisible ? '95%' : maxHeight,
                             paddingBottom: footer ? 0 : Math.max(insets.bottom, 20)
                         },
                         style

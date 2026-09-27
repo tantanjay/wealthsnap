@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { Disclaimer } from '@components/common/Disclaimer';
 import { setPin } from '@services/core/securityService';
 
 interface PinCreationScreenProps {
@@ -176,16 +177,7 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
         },
         disclaimer: {
             marginTop: 30,
-            padding: 15,
-            backgroundColor: 'rgba(255, 100, 100, 0.1)',
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: 'rgba(255, 100, 100, 0.3)',
-        },
-        disclaimerText: {
-            fontSize: 12,
-            color: colors.text,
-            textAlign: 'center',
+            alignSelf: 'stretch',
         }
     });
 
@@ -204,12 +196,9 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
             {renderKeypad()}
 
             {step === 'create' && (
-                <View style={styles.disclaimer}>
-                    <Text style={styles.disclaimerText}>
-                        ⚠️ DISCLAIMER: If you forget this PIN, you may lose access to your data.
-                        There is no password recovery option for local data.
-                    </Text>
-                </View>
+                <Disclaimer severity="warning" style={styles.disclaimer}>
+                    If you forget this PIN, you may lose access to your data. There is no password recovery option for local data.
+                </Disclaimer>
             )}
             {onCancel && step === 'create' && (
                 <TouchableOpacity onPress={onCancel} style={{ marginTop: 20 }}>

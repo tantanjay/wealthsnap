@@ -687,7 +687,8 @@ const HomeScreen = ({ navigation }: any) => {
 
             // Calculate Investment Boost & Debt Drag
             const investmentBoost = calculateInvestmentBoost(totalMarketValue, totalBurnRate);
-            const debtDrag = calculateDebtDrag(currentCashBalance, burnRate, totalDebtObligationsValue);
+            // Goal contributions count as living costs so drag is measured against the real Runway above.
+            const debtDrag = calculateDebtDrag(currentCashBalance, burnRate.plus(totalGoalContributionsValue), totalDebtObligationsValue);
 
             setFinancialHealth({
                 totalAssets: assetsTotal,

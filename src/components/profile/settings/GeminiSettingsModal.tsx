@@ -55,60 +55,65 @@ const GeminiSettingsModal: React.FC<GeminiSettingsModalProps> = ({
 
                         <Button
                             variant="outline"
-                            title="How to Get API Key 🔑"
-                            onPress={() => setShowApiKeyHelp(true)}
-                            style={{ marginBottom: 10 }}
-                        />
-
-                        <Button
-                            variant="outline"
                             title="Cancel"
                             onPress={onClose}
                         />
                     </>
                 }
             >
-                <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>
-                    🤖 Gemini AI Settings
-                </Text>
-                <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
-                    {hasApiKey
-                        ? "✅ Custom API Key is configured. Enter a new key to update it."
-                        : "Configure your own Google Gemini API key for AI-powered features."}
-                </Text>
+                <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                    <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>
+                        🤖 Gemini AI Settings
+                    </Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
+                        {hasApiKey
+                            ? "✅ Custom API Key is configured. Enter a new key to update it."
+                            : "Configure your own Google Gemini API key for AI-powered features."}
+                    </Text>
 
-                <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: 12,
-                    marginBottom: 15,
-                    backgroundColor: colors.surface
-                }}>
-                    <TextInput
-                        style={{
-                            flex: 1,
-                            padding: 12,
-                            color: colors.text,
-                            fontSize: 14
-                        }}
-                        placeholder="Enter Gemini API Key"
-                        placeholderTextColor={colors.gray500}
-                        value={apiKey}
-                        onChangeText={setApiKey}
-                        secureTextEntry={!showApiKey}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                    />
+                    <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        borderRadius: 12,
+                        marginBottom: 15,
+                        backgroundColor: colors.surface
+                    }}>
+                        <TextInput
+                            style={{
+                                flex: 1,
+                                padding: 12,
+                                color: colors.text,
+                                fontSize: 14
+                            }}
+                            placeholder="Enter Gemini API Key"
+                            placeholderTextColor={colors.gray500}
+                            value={apiKey}
+                            onChangeText={setApiKey}
+                            secureTextEntry={!showApiKey}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                        />
+                        <TouchableOpacity
+                            onPressIn={() => setShowApiKey(true)}
+                            onPressOut={() => setShowApiKey(false)}
+                            style={{ padding: 10 }}
+                        >
+                            <Ionicons name={showApiKey ? "eye" : "eye-off"} size={20} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                    </View>
+
                     <TouchableOpacity
-                        onPressIn={() => setShowApiKey(true)}
-                        onPressOut={() => setShowApiKey(false)}
-                        style={{ padding: 10 }}
+                        onPress={() => setShowApiKeyHelp(true)}
+                        style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingVertical: 4 }}
                     >
-                        <Ionicons name={showApiKey ? "eye" : "eye-off"} size={20} color={colors.textSecondary} />
+                        <Ionicons name="help-circle-outline" size={18} color={colors.primary} />
+                        <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '600', marginLeft: 6 }}>
+                            How to get an API key?
+                        </Text>
                     </TouchableOpacity>
-                </View>
+                </ScrollView>
             </BottomModal>
 
             {/* API Key Help Modal */}

@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Debt Strategy and Financial Health: the disclaimer now sits at the bottom of the screen instead of above your numbers; the PIN setup warning and the Gemini API Usage cost note use the same design.
+
+### Fixed
+- Home and Financial Health: Debts Drag overstated how much runway your debts cost when you had an active savings goal.
+- Gemini AI Settings: on small phones, the API key field was hidden behind the modal's buttons while typing; "How to get an API key?" is now a link under the field instead of a footer button.
+
 ## [1.18.0] — 2026-09-27
 
 ### Added
