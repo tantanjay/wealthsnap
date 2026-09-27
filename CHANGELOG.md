@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - History: a debt payment's Principal, Interest, and Fees now merge into one card with a combined total.
 - History: investment and debt card badges show their actual type/direction instead of just "Investment"/"Debt".
 - History: rows no longer show generic filler text (e.g. "Expense", "To Other Account") when a more specific note exists.
+- Help Center's Math & Formulas and Debt Strategy guides, and the "How is this calculated?" explanations on Home, History, Insights, and Financial Health, updated to match the current calculations.
 - UI: Overhauled dialog icons, modal footers, color usage, and number formatting for visual consistency across the app.
 - Build: Removed the forced-portrait lock Google's ML Kit scanner activities (barcode/document scanning) impose on Android, so large-screen and foldable devices aren't restricted to portrait.
 - Build: Bumped Expo SDK 57 dependencies to their latest patch versions for stability and security fixes.
@@ -38,6 +39,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Onboarding: Next button could end up off-screen on the final setup step.
 - History: a row with no note showed its raw internal type or subtype code (e.g. `TRANSFER_IN`, `INITIAL_FUNDING`) instead of a clean label.
 - Home: the Financial Health card's Runway showed a bare "∞" when there's no expense history yet; now reads "No expenses tracked". Its Spending row showed "(0% budget)" when no budget was actually set; now reads "(no budget set)".
+- Home: Obligations Paid counted fee payments toward your minimum debt payments.
+- History: Safe-to-Spend treated money you lent out as a debt payment, and counted debt interest twice.
+- History: month navigation could skip a month when browsing from the 29th-31st.
+- Home and Insights: Runway, Burn Rate, and Debts Drag could double-count debt interest and fees.
+- Insights: Savings Rate Trend could pick up the wrong month's debt repayments on the 29th-31st.
+- Debt Strategy: Debt vs Life counted debt interest and fees as living costs.
+- Debt Strategy: a debt due on the 29th-31st showed a due date in the following month during shorter months.
+- Recurring transactions set for the 29th-31st drifted to a later day after a shorter month.
+- Net Cash Flow, Runway Change, the runway-drop alert, and Smart Suggestions left out transactions from the last day of a month.
+- Monthly Summary and Chat: money repaid to you was listed as a debt payment you made.
+- Excel export and CSV import: dates could shift by a day depending on your timezone.
 
 ## [1.17.0] — 2026-09-06
 
