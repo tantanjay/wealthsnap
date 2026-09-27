@@ -15,6 +15,7 @@ interface AllExpensesModalProps {
     categoryBreakdown: {
         name: string;
         amount: BigNumber;
+        goalFundedAmount?: BigNumber;
         percentage: number;
     }[];
     budgets: Budget[];
@@ -50,14 +51,21 @@ const AllExpensesModal: React.FC<AllExpensesModalProps> = ({
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                 {categoryBreakdown.map((item, index) => {
                     const budget = budgets.find(b => b.category === item.name);
-                    const budgetStatus = budget ? checkBudgetStatus(item.amount, budget.amount) : null;
+                    const budgetStatus = budget ? checkBudgetStatus(item.amount.minus(item.goalFundedAmount ?? 0), budget.amount) : null;
 
                     return (
                         <View key={index} style={{ marginBottom: 16 }}>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                     <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: CHART_COLORS[index % CHART_COLORS.length], marginRight: 10 }} />
-                                    <Text style={{ color: colors.text, fontSize: 14 }}>{item.name}</Text>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ color: colors.text, fontSize: 14 }}>{item.name}</Text>
+                                        {item.goalFundedAmount?.isGreaterThan(0) && (
+                                            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+                                                {isPrivacyEnabled ? '***' : formatCompactCurrency(item.goalFundedAmount, currency)} from goals
+                                            </Text>
+                                        )}
+                                    </View>
                                 </View>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                                     <View style={{ alignItems: 'flex-end' }}>

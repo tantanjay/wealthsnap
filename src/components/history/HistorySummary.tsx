@@ -8,6 +8,7 @@ import { useTheme } from '@context/ThemeContext';
 interface FinancialSummary {
     totalIncome: BigNumber;
     totalExpense: BigNumber;
+    goalFundedExpense: BigNumber;
 }
 
 interface SafeToSpendData {
@@ -85,6 +86,11 @@ export const HistorySummary: React.FC<HistorySummaryProps> = ({
                     <Text style={{ color: colors.error, fontSize: 16, fontWeight: '600' }}>
                         {formatCurrency(summary.totalExpense)}
                     </Text>
+                    {summary.goalFundedExpense.isGreaterThan(0) && (
+                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>
+                            + {formatCurrency(summary.goalFundedExpense)} from goals
+                        </Text>
+                    )}
                 </View>
             </View>
         </View>

@@ -69,7 +69,7 @@ export const SavingsGoalsInfoModal: React.FC<SavingsGoalsInfoModalProps> = ({ vi
                     title="What you actually bought"
                     tag="STILL VISIBLE"
                     tagColor={colors.success}
-                    body="The purchase still shows up in your category breakdown (the pie chart), so you can always see what the money was actually spent on - it's just excluded from charts that compare spending across months."
+                    body="The purchase still shows up in your category breakdown (the pie chart) and Top Category, and as '+ from goals' under Total Expense, so you can always see what the money was actually spent on. It's just excluded from charts that compare spending across months, and never counts against a category budget or Smart Suggestions - the goal was its budget."
                 />
 
                 <InfoRow

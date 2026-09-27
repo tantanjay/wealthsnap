@@ -5,7 +5,7 @@ import { BigNumber } from 'bignumber.js';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
-import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { formatCurrencyAmount, formatCompactCurrency } from '@utils/currencyUtils';
 import { HomeDisplayMode } from '@services/core/storageService';
 
 interface HomeCashFlowCardProps {
@@ -15,6 +15,7 @@ interface HomeCashFlowCardProps {
     overallTransferOut: BigNumber;
     monthIncome: BigNumber;
     monthExpense: BigNumber;
+    monthGoalExpense: BigNumber;
     monthTransferIn: BigNumber;
     monthTransferOut: BigNumber;
     isLoading: boolean;
@@ -33,6 +34,7 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
     overallTransferOut,
     monthIncome,
     monthExpense,
+    monthGoalExpense,
     monthTransferIn,
     monthTransferOut,
     isLoading,
@@ -72,6 +74,10 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
         if (isPrivacyEnabled) return '****';
         return formatCurrencyAmount(amount, currency);
     };
+
+    // Monthly Net leaves goal-funded purchases out of Expense (their cash left when contributed)
+    // and lists them underneath; Monthly Balance keeps them, since their offset nets to ₱0 there.
+    const monthLivingExpense = monthExpense.minus(monthGoalExpense);
 
     return (
         <View style={{ marginBottom: 20 }}>
@@ -230,7 +236,7 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
                                 {isLoading ? (
                                     <Skeleton width={150} height={40} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
                                 ) : (
-                                    formatCurrency(monthIncome.minus(monthExpense))
+                                    formatCurrency(monthIncome.minus(monthLivingExpense))
                                 )}
                             </Text>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
@@ -240,7 +246,12 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
                                 </View>
                                 <View>
                                     <Text style={{ color: colors.white, opacity: 0.8, fontSize: 12 }}>Expense</Text>
-                                    <Text style={{ color: colors.white, fontWeight: 'bold' }}>{isLoading ? '...' : `-${formatCurrency(monthExpense)}`}</Text>
+                                    <Text style={{ color: colors.white, fontWeight: 'bold' }}>{isLoading ? '...' : `-${formatCurrency(monthLivingExpense)}`}</Text>
+                                    {!isLoading && monthGoalExpense.isGreaterThan(0) && (
+                                        <Text style={{ color: colors.white, opacity: 0.8, fontSize: 11, marginTop: 2 }}>
+                                            + {isPrivacyEnabled ? '****' : formatCompactCurrency(monthGoalExpense, currency, 1)} from goals
+                                        </Text>
+                                    )}
                                 </View>
                             </View>
                             {isLoading ? (

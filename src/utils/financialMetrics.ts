@@ -67,30 +67,23 @@ export const calculateSavingsRate = (income: BigNumber, expense: BigNumber): Big
     return savings.dividedBy(income).times(100);
 };
 
+// Principal repaid on debts you owe. subCategory 'PRINCIPAL' excludes a RECEIVABLE debt's
+// 'INITIAL_TRANSACTION' (also TRANSFER_OUT + debtId) - that's lending money out, not a repayment.
+export const calculateDebtPrincipalRepaid = (transactions: Transaction[]): BigNumber =>
+    transactions
+        .filter(t => t.type === 'TRANSFER_OUT' && t.debtId && t.subCategory === 'PRINCIPAL')
+        .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
+
+// Savings Rate counts debt principal repaid as spent, so every Savings Rate surface
+// (Insights KPI, trend chart, monthly summary) reports cash actually kept.
 export const getSavingsRateTrend = (transactions: Transaction[], months: number = 6, referenceDate: Date = new Date()) => {
     const trends = getMonthlyTrends(transactions, months, referenceDate);
 
     return trends.labels.map((month, index) => {
         const income = trends.incomeData[index];
-        let expense = trends.expenseData[index];
-
-        // --- INJECT DEBT REPAYMENTS INTO EXPENSE FOR SAVINGS RATE ---
-        // We want Savings Rate = (Income - (Expenses + Debt Payments)) / Income
-        // But we kept 'calculateTotals' pure (Expenses only) for other metrics.
-        // So we calculate debt payments for this specific month here.
-
         // Day pinned to 1 - setMonth() from the 29th-31st overflows into the wrong month.
         const d = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - (months - 1 - index), 1);
-        const monthlyTransactions = getTransactionsByMonth(transactions, d);
-
-        // subCategory === 'PRINCIPAL' excludes the one-time "lent this money out" transaction
-        // created when a RECEIVABLE debt is first added (also TRANSFER_OUT with debtId set,
-        // but subCategory 'INITIAL_TRANSACTION') - that's a new loan, not a repayment.
-        const debtRepayments = monthlyTransactions
-            .filter(t => t.type === 'TRANSFER_OUT' && t.debtId && t.subCategory === 'PRINCIPAL')
-            .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
-
-        expense = expense.plus(debtRepayments);
+        const expense = trends.expenseData[index].plus(calculateDebtPrincipalRepaid(getTransactionsByMonth(transactions, d)));
 
         const savingsRate = calculateSavingsRate(income, expense);
 
@@ -308,8 +301,11 @@ export const calculateAverageIncome = (allTransactions: Transaction[], monthsBac
     return effectiveMonths > 0 ? totalIncome.dividedBy(effectiveMonths) : new BigNumber(0);
 };
 
+// goalFundedAmount is the share of `amount` paid from a savings goal - shown in the breakdown,
+// but subtract it before comparing a category against its budget.
 export const getCategoryBreakdown = (transactions: Transaction[], type: BreakdownType, groupBy: 'GROUP' | 'ITEM' = 'GROUP') => {
     const breakdown: { [key: string]: BigNumber } = {};
+    const goalFunded: { [key: string]: BigNumber } = {};
     let total = new BigNumber(0);
 
     const filteredTransactions = transactions.filter(t => t.type === type);
@@ -326,6 +322,7 @@ export const getCategoryBreakdown = (transactions: Transaction[], type: Breakdow
         // Use absolute value for the total and breakdown if you want positive bars/charts
         const absAmount = t.amount.abs();
         breakdown[key] = (breakdown[key] || new BigNumber(0)).plus(absAmount);
+        if (t.savingsGoalId) goalFunded[key] = (goalFunded[key] || new BigNumber(0)).plus(absAmount);
         total = total.plus(absAmount);
     });
 
@@ -333,6 +330,7 @@ export const getCategoryBreakdown = (transactions: Transaction[], type: Breakdow
         .map(([name, amount]) => ({
             name,
             amount,
+            goalFundedAmount: goalFunded[name] || new BigNumber(0),
             percentage: total.isGreaterThan(0)
                 ? amount.dividedBy(total).times(100)
                 : new BigNumber(0)
@@ -627,7 +625,9 @@ export const getCategoryAverages = (allTransactions: Transaction[], monthsBack: 
 
     const historyTransactions = allTransactions.filter(t => {
         const d = parseDate(t.date);
-        const isMatch = d >= startHistory && d <= endHistory && isExpense(t);
+        // Goal-funded purchases are budgeted by their goal, so a ₱50k trip from a Travel
+        // Fund mustn't inflate the suggested monthly Travel budget.
+        const isMatch = d >= startHistory && d <= endHistory && isExpense(t) && !t.savingsGoalId;
 
         if (isMatch) {
             uniqueMonths.add(`${d.getFullYear()}-${d.getMonth()}`);

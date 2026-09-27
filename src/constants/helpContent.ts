@@ -58,6 +58,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'heading3', text: '2. Budget Health' },
             { type: 'blockquote', text: 'Shows: How much of your monthly budgets you’ve used (percentage).' },
             { type: 'bullet', text: 'Only counts categories that actually have a budget set' },
+            { type: 'bullet', text: 'Purchases funded from a savings goal don\'t count against a budget — the goal was the budget for them' },
             { type: 'bullet', text: 'Early warning before overspending' },
             { type: 'paragraph', text: 'User insight: "My spending is healthy / getting risky."' },
 
@@ -72,6 +73,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Standard wealth metric' },
             { type: 'bullet', text: 'Scales across any income level' },
             { type: 'bullet', text: 'Purchases funded from a savings goal don\'t count as an expense here — that money was already set aside as savings when you contributed it' },
+            { type: 'bullet', text: 'Debt principal you repay counts as spent, not saved — the rate reflects cash you actually kept' },
             { type: 'paragraph', text: 'User insight: "How efficiently am I saving what I earn?"' },
 
             { type: 'heading3', text: '5. Total Income' },
@@ -83,7 +85,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'blockquote', text: 'Shows: All spending recorded in the selected month.' },
             { type: 'bullet', text: 'Clear cost awareness' },
             { type: 'bullet', text: 'No category noise' },
-            { type: 'bullet', text: 'Excludes purchases funded from a savings goal — that cash already left when you contributed it, not when you later spent it' },
+            { type: 'bullet', text: 'Excludes purchases funded from a savings goal — that cash already left when you contributed it, not when you later spent it. They\'re shown underneath instead, as "+ ₱X from goals"' },
 
             { type: 'heading3', text: '7. Burn Rate' },
             { type: 'blockquote', text: 'Shows: Average monthly spending based on recent history, as of today.' },
@@ -108,6 +110,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'heading3', text: '10. Top Category' },
             { type: 'blockquote', text: 'Shows: Highest spending category in the selected month.' },
             { type: 'bullet', text: 'Identifies biggest money drain' },
+            { type: 'bullet', text: 'Includes purchases funded from a savings goal, so a big goal-funded trip can top the list — the spending breakdown marks how much of each category came from goals' },
             { type: 'bullet', text: 'Highlights optimization opportunities' },
 
             { type: 'divider' },
@@ -117,7 +120,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'heading3', text: 'Savings Rate Trend' },
             { type: 'blockquote', text: 'Shows: Your monthly performance over time, across three switchable views.' },
             { type: 'bullet', text: 'Rate — the percentage of income you kept each month' },
-            { type: 'bullet', text: 'Saved — the raw amount you kept each month (income minus expenses), including money moved into investments' },
+            { type: 'bullet', text: 'Saved — the raw amount you kept each month (income minus expenses and debt principal repaid), including money moved into investments' },
             { type: 'bullet', text: 'Cash Flow — the true net movement of cash in and out, transfers included' },
             { type: 'paragraph', text: 'Each view is color-split at zero (green above, red below) so a bad month is obvious at a glance. Average and streak stats update to match whichever view is active.' },
 
@@ -180,7 +183,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'formula', text: 'Health = (Total Spent in Budgeted Categories ÷ Total Budget Amounts) × 100' },
             { type: 'paragraph', text: 'Process:' },
             { type: 'bullet', text: '1. Get all budgets for the selected month' },
-            { type: 'bullet', text: '2. Sum total spent in those specific categories' },
+            { type: 'bullet', text: '2. Sum total spent in those specific categories, leaving out purchases funded from a savings goal' },
             { type: 'bullet', text: '3. Divide by total budget limit' },
             { type: 'paragraph', text: 'Color Coding:' },
             { type: 'bullet', text: 'Green: <70% (healthy)' },
@@ -194,7 +197,8 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Red: <0 (negative)' },
 
             { type: 'heading2', text: 'Savings Rate' },
-            { type: 'formula', text: 'Rate = ((Income - Expenses) ÷ Income) × 100' },
+            { type: 'formula', text: 'Rate = ((Income − Expenses − Debt Principal Repaid) ÷ Income) × 100' },
+            { type: 'paragraph', text: 'Debt Principal Repaid is the principal part of payments on debts you owe (interest is already an expense). It counts as spent, so the rate shows the share of income you actually kept in cash.' },
             { type: 'paragraph', text: 'Expenses here excludes purchases funded from a savings goal — that money was already counted as saved the month you contributed it, so spending it later shouldn\'t look like it un-saves it.' },
             { type: 'paragraph', text: 'Edge Cases:' },
             { type: 'bullet', text: 'Income ≤ 0 → 0%' },
@@ -223,8 +227,8 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'divider' },
             { type: 'heading1', text: '2. Savings Rate Trend' },
             { type: 'paragraph', text: 'Three switchable views, each its own monthly time series:' },
-            { type: 'formula', text: 'Rate(month) = ((Income − Expense) ÷ Income) × 100' },
-            { type: 'formula', text: 'Saved(month) = Income − Expense' },
+            { type: 'formula', text: 'Rate(month) = ((Income − Expense − Debt Principal Repaid) ÷ Income) × 100' },
+            { type: 'formula', text: 'Saved(month) = Income − Expense − Debt Principal Repaid' },
             { type: 'formula', text: 'Cash Flow(month) = (Income + Transfer In) − (Expense + Transfer Out)' },
 
             { type: 'heading2', text: 'Chart Scaling Algorithm' },

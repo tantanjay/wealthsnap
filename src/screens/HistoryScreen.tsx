@@ -48,6 +48,7 @@ interface TransactionSection {
 interface FinancialSummary {
     totalIncome: BigNumber;
     totalExpense: BigNumber;
+    goalFundedExpense: BigNumber;
     totalTransferOut: BigNumber;
     balance: BigNumber;
     safeToSpend?: BigNumber;
@@ -398,6 +399,7 @@ const HistoryScreen = ({ navigation }: any) => {
     const summary = useMemo((): FinancialSummary => {
         let totalIncome = new BigNumber(0);
         let totalExpense = new BigNumber(0);
+        let goalFundedExpense = new BigNumber(0);
         let totalTransferOut = new BigNumber(0);
 
         dashboardTransactions.forEach(t => {
@@ -407,8 +409,11 @@ const HistoryScreen = ({ navigation }: any) => {
                 // A goal-funded purchase's cash already left when it was contributed to the
                 // goal, not when it was later spent - counting it here too would wipe out
                 // today's/this week's Safe-to-Spend allowance off one goal-funded purchase.
+                // Shown separately as "+ from goals" under Expenses instead.
                 if (!t.savingsGoalId) {
                     totalExpense = totalExpense.plus(t.amount.abs());
+                } else {
+                    goalFundedExpense = goalFundedExpense.plus(t.amount.abs());
                 }
             } else if (t.type === 'TRANSFER_OUT') {
                 totalTransferOut = totalTransferOut.plus(t.amount.abs());
@@ -418,6 +423,7 @@ const HistoryScreen = ({ navigation }: any) => {
         return {
             totalIncome,
             totalExpense,
+            goalFundedExpense,
             totalTransferOut,
             balance: globalBalance, // Use Global Balance for 'Actual Balance'
             safeToSpend: globalBalance // Initialize

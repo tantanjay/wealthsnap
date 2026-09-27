@@ -7,12 +7,13 @@ import BottomModal from '@components/common/BottomModal';
 import { Card } from '@components/index';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
-import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { formatCurrencyAmount, formatCompactCurrency } from '@utils/currencyUtils';
 
 interface InsightsOverviewCardsProps {
     netCashFlow: BigNumber;
     income: BigNumber;
     expense: BigNumber;
+    goalFundedExpense?: BigNumber;
     savingsRate: BigNumber;
     burnRate: BigNumber;
     currency: string;
@@ -31,6 +32,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
     netCashFlow,
     income,
     expense,
+    goalFundedExpense = new BigNumber(0),
     savingsRate,
     burnRate,
     currency,
@@ -103,7 +105,10 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                 id: 'total-expense',
                 title: "Total Expense",
                 value: formatCurrencyAmount(expense, currency),
-                subValue: monthLabel,
+                // Goal-funded purchases sit outside the headline (their cash left when contributed).
+                subValue: goalFundedExpense.isGreaterThan(0)
+                    ? `+ ${isPrivacyEnabled ? '****' : formatCompactCurrency(goalFundedExpense, currency, 1)} from goals`
+                    : monthLabel,
                 color: '#F44336'
             },
             {
@@ -137,7 +142,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                 color: undefined
             }
         ];
-    }, [netCashFlow, income, expense, savingsRate, burnRate, currency, currentBalance, budgetPerformance, topExpenseCategory, dailyAverage, selectedDate]);
+    }, [netCashFlow, income, expense, goalFundedExpense, isPrivacyEnabled, savingsRate, burnRate, currency, currentBalance, budgetPerformance, topExpenseCategory, dailyAverage, selectedDate]);
 
     // Apply custom order if available
     const orderedData = useMemo(() => {
@@ -295,6 +300,9 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                         </View>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
                             Calculation: (Total Spent in Budgeted Categories ÷ Total Budget Amounts) × 100
+                        </Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 8 }}>
+                            Purchases funded from a savings goal don&apos;t count as spent here — the goal was their budget.
                         </Text>
                     </View>
                 </ScrollView>

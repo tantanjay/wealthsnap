@@ -1,6 +1,6 @@
 import { BigNumber } from 'bignumber.js';
 import { Transaction, Investment, Debt, Budget, SavingsGoal } from '@types';
-import { calculateTotals, calculateSavingsRate, calculateBalance, parseDate } from '@utils/financialMetrics';
+import { calculateTotals, calculateSavingsRate, calculateBalance, calculateDebtPrincipalRepaid, parseDate } from '@utils/financialMetrics';
 import { calculateCurrentDebtBalance, buildDebtNameMap } from '@utils/debtMetrics';
 import { calculateGoalBalance } from '@utils/savingsGoalMetrics';
 
@@ -166,7 +166,8 @@ export const buildMonthlySummaryData = (
 
     const income = incomeTx.reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
     const expense = expenseTx.reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
-    const savingsRate = calculateSavingsRate(income, expense).dp(1).toNumber();
+    // Debt principal repaid counts as spent, matching the Insights Savings Rate card and chart.
+    const savingsRate = calculateSavingsRate(income, expense.plus(calculateDebtPrincipalRepaid(monthTx))).dp(1).toNumber();
 
     const recurringIncome = incomeTx
         .filter(t => t.isRecurring)
@@ -192,9 +193,9 @@ export const buildMonthlySummaryData = (
     let totalFees = new BigNumber(0);
 
     monthInv.forEach(inv => {
-        const rate = inv.exchangeRate && inv.exchangeRate.gt(0) ? inv.exchangeRate : new BigNumber(1);
-        const grossAmount = inv.quantity.times(inv.price).times(rate);
-        totalFees = totalFees.plus((inv.fees || new BigNumber(0)).times(rate));
+        // price/fees are already stored in profile currency (InvestmentForm converts on save).
+        const grossAmount = inv.quantity.times(inv.price);
+        totalFees = totalFees.plus(inv.fees || new BigNumber(0));
 
         if (inv.action === 'BUY') {
             buys.push({ symbol: inv.symbol, amount: grossAmount.toNumber() });
