@@ -83,6 +83,15 @@ See [docs/PLAN_SAVING_GOALS.md](docs/PLAN_SAVING_GOALS.md) for the full phased i
 
 ---
 
+## 🐛 Follow-up Fixes
+
+- [ ] **Debts Drag ignores savings-goal contributions, so its help modal's math doesn't add up** — `calculateDebtDrag` ([insightMetrics.ts:53](src/utils/insightMetrics.ts:53)) is passed only the base living burn as `livingExpenses` (from [FinancialHealthScreen.tsx](src/screens/FinancialHealthScreen.tsx) and [HomeScreen.tsx](src/screens/HomeScreen.tsx)), while the Runway it's compared against also includes goal contributions. [FinancialHealthHelpModal.tsx](src/components/financialHealth/FinancialHealthHelpModal.tsx)'s DEBT DRAG block derives "Runway Without Debt" from `monthlyBurn − monthlyDebtObligations` (which *does* include goals), so for anyone with an active goal the shown subtraction won't equal the Debts Drag result next to it.
+  - Fix: pass base burn + `calculateTotalGoalContributions(...)` as `livingExpenses` at both call sites, so drag = runway without debt − runway with debt, both measured with goals included.
+  - Changes the displayed Debts Drag number for users with active goals. Savings Goals shipped in 1.18.0, so this goes out as a `### Fixed` entry in the next version.
+  - Per PROJECT.md's "Calculation explanations" rule, re-check the Debts Drag wording in the Home and Financial Health help modals when making the change.
+
+---
+
 ## 🌱 Ideas to Reconsider
 
 Broader brainstorm from a feature-gap pass over README/release notes. Not scoped or committed — revisit and pull individual items up into their own section when ready to act on them.
