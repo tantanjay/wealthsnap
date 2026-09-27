@@ -502,13 +502,16 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         let displayAmountValue = new BigNumber(item.amount);
         let displayCurrency = currency; // Default to profile currency
 
+        // Any rate other than 1 means values were converted on save - rates below 1 too.
+        const rate = new BigNumber(item.originalInvestment?.exchangeRate || 1);
+        const isConverted = rate.isGreaterThan(0) && !rate.isEqualTo(1);
 
         if (item.originalInvestment) {
             const inv = item.originalInvestment;
             displayCurrency = inv.currency || currency; // Use investment currency (e.g. USD)
 
-            if (inv.exchangeRate && new BigNumber(inv.exchangeRate).isGreaterThan(1)) {
-                displayAmountValue = displayAmountValue.dividedBy(inv.exchangeRate);
+            if (isConverted) {
+                displayAmountValue = displayAmountValue.dividedBy(rate);
             }
         }
 
@@ -535,9 +538,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                         {(item.shares !== undefined) && item.originalInvestment && (
                             <Text> • {item.shares} @ {formatCurrencyAmount(
                                 item.price
-                                    ? (item.originalInvestment.exchangeRate && new BigNumber(item.originalInvestment.exchangeRate).isGreaterThan(1)
-                                        ? new BigNumber(item.price).dividedBy(item.originalInvestment.exchangeRate)
-                                        : item.price)
+                                    ? (isConverted ? new BigNumber(item.price).dividedBy(rate) : item.price)
                                     : 0,
                                 displayCurrency
                             )}</Text>
