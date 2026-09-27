@@ -19,6 +19,7 @@ interface ExpenseAnalysisProps {
     categoryBreakdown: {
         name: string;
         amount: BigNumber;
+        goalFundedAmount?: BigNumber;
         percentage: number;
     }[];
     currency: string;
@@ -77,8 +78,9 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
             const targetBudgetAmount = budgetMap.get(b.name);
 
             // Both 'amount' and 'budgetAmount' are BigNumber objects
-            const isOverA = budgetAmount ? a.amount.isGreaterThan(budgetAmount) : false;
-            const isOverB = targetBudgetAmount ? b.amount.isGreaterThan(targetBudgetAmount) : false;
+            // Goal-funded purchases were budgeted by their goal, not this category.
+            const isOverA = budgetAmount ? a.amount.minus(a.goalFundedAmount ?? 0).isGreaterThan(budgetAmount) : false;
+            const isOverB = targetBudgetAmount ? b.amount.minus(b.goalFundedAmount ?? 0).isGreaterThan(targetBudgetAmount) : false;
 
             // 1. Priority: Over Budget
             if (isOverA && !isOverB) return -1;
@@ -243,14 +245,21 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                 ) : (
                     sortedCategories.slice(0, 3).map((item, index) => {
                         const budget = budgets.find(b => b.category === item.name);
-                        const budgetStatus = budget ? checkBudgetStatus(item.amount, budget.amount) : null;
+                        const budgetStatus = budget ? checkBudgetStatus(item.amount.minus(item.goalFundedAmount ?? 0), budget.amount) : null;
 
                         return (
                             <View key={index} style={{ marginBottom: 12 }}>
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                                         <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: CHART_COLORS[index % CHART_COLORS.length], marginRight: 10 }} />
-                                        <Text style={{ color: colors.text, fontSize: 14 }}>{item.name}</Text>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={{ color: colors.text, fontSize: 14 }}>{item.name}</Text>
+                                            {item.goalFundedAmount?.isGreaterThan(0) && (
+                                                <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
+                                                    {isPrivacyEnabled ? '***' : formatCompactCurrency(item.goalFundedAmount, currency)} from goals
+                                                </Text>
+                                            )}
+                                        </View>
                                     </View>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                                         <View style={{ alignItems: 'flex-end' }}>

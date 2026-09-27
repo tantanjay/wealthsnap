@@ -111,6 +111,7 @@ const InsightScreen = ({ navigation }: any) => {
         netCashFlow: new BigNumber(0),
         income: new BigNumber(0),
         expense: new BigNumber(0),
+        goalFundedExpense: new BigNumber(0),
         savingsRate: new BigNumber(0),
         burnRate: new BigNumber(0),
         incomeTrends: { labels: [], fullLabels: [], incomeData: [], expenseData: [] } as { labels: string[], fullLabels: string[], incomeData: BigNumber[], expenseData: BigNumber[] },
@@ -144,13 +145,11 @@ const InsightScreen = ({ navigation }: any) => {
         // Core Totals
         const totals = Metrics.calculateTotals(currentMonthTrans);
 
-        // A separate goal-excluded view of this/last month's expense, used only for the
-        // Spending Comparison chart and Avg Daily Spending below - NOT for `totals.expense`
-        // itself, which stays the true full spend (a goal-funded purchase really was spent
-        // this month from the user's perspective) and still feeds the plain Expense KPI.
-        const nonGoalCurrentMonthExpense = Metrics.calculateTotals(
-            currentMonthTrans.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId))
-        ).expense;
+        // Goal-excluded expense feeds every expense KPI, rate, and budget figure below; goal-funded
+        // purchases are shown separately (Total Expense's "+ from goals" line, category breakdown).
+        const nonGoalCurrentMonthTrans = currentMonthTrans.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId));
+        const nonGoalCurrentMonthExpense = Metrics.calculateTotals(nonGoalCurrentMonthTrans).expense;
+        const goalFundedExpense = totals.expense.minus(nonGoalCurrentMonthExpense);
         const nonGoalLastMonthExpense = Metrics.calculateTotals(
             lastMonthTrans.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId))
         ).expense;
@@ -224,7 +223,8 @@ const InsightScreen = ({ navigation }: any) => {
         const budgets = await getAllBudgets();
         let budgetPerformance = new BigNumber(0);
         if (budgets.length > 0) {
-            const specificCategoryBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', 'ITEM');
+            // A goal was the budget for its own purchases - they never count against a category budget.
+            const specificCategoryBreakdown = Metrics.getCategoryBreakdown(nonGoalCurrentMonthTrans, 'EXPENSE', 'ITEM');
             const budgetedCategorySpent = specificCategoryBreakdown
                 .filter(cat => budgets.some(b => b.category === cat.name))
                 .reduce((sum, cat) => sum.plus(cat.amount), new BigNumber(0));
@@ -243,10 +243,10 @@ const InsightScreen = ({ navigation }: any) => {
             // (the Auto-Offset pair nets to ₱0). calculateBalance nets transfers correctly.
             netCashFlow: Metrics.calculateBalance(currentMonthTrans, currentMonthEnd),
             income: totals.income,
-            // Non-goal expense keeps this KPI consistent with the Spending Comparison chart
-            // and Savings Rate Trend below it, which already exclude goal-funded purchases.
             expense: nonGoalCurrentMonthExpense,
-            savingsRate: Metrics.calculateSavingsRate(totals.income, nonGoalCurrentMonthExpense),
+            goalFundedExpense,
+            // Debt principal repaid counts as spent - same formula as the Savings Rate Trend chart.
+            savingsRate: Metrics.calculateSavingsRate(totals.income, nonGoalCurrentMonthExpense.plus(Metrics.calculateDebtPrincipalRepaid(currentMonthTrans))),
             burnRate,
             incomeTrends: monthlyTrends,
             incomeBreakdown,
@@ -446,6 +446,7 @@ const InsightScreen = ({ navigation }: any) => {
                                 netCashFlow={data.netCashFlow}
                                 income={data.income}
                                 expense={data.expense}
+                                goalFundedExpense={data.goalFundedExpense}
                                 savingsRate={data.savingsRate}
                                 burnRate={data.burnRate}
                                 currency={currency}

@@ -63,6 +63,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [overallExpense, setOverallExpense] = useState(new BigNumber(0));
     const [monthIncome, setMonthIncome] = useState(new BigNumber(0));
     const [monthExpense, setMonthExpense] = useState(new BigNumber(0));
+    const [monthGoalExpense, setMonthGoalExpense] = useState(new BigNumber(0));
 
     // Transfer States
     const [overallTransferIn, setOverallTransferIn] = useState(new BigNumber(0));
@@ -210,6 +211,7 @@ const HomeScreen = ({ navigation }: any) => {
             // Calculate metrics
             let oInc = new BigNumber(0), oExp = new BigNumber(0), mInc = new BigNumber(0), mExp = new BigNumber(0);
             let oTransIn = new BigNumber(0), oTransOut = new BigNumber(0), mTransIn = new BigNumber(0), mTransOut = new BigNumber(0);
+            let mGoalExp = new BigNumber(0);
 
             const now = new Date();
             const currentMonth = now.getMonth();
@@ -225,6 +227,7 @@ const HomeScreen = ({ navigation }: any) => {
                 } else if (tx.type === 'EXPENSE') {
                     oExp = oExp.plus(val.abs());
                     if (isMonth) mExp = mExp.plus(val.abs());
+                    if (isMonth && tx.savingsGoalId) mGoalExp = mGoalExp.plus(val);
                 } else if (tx.type === 'TRANSFER_IN') {
                     oTransIn = oTransIn.plus(val.abs());
                     if (isMonth) mTransIn = mTransIn.plus(val.abs());
@@ -238,6 +241,7 @@ const HomeScreen = ({ navigation }: any) => {
             setOverallExpense(oExp);
             setMonthIncome(mInc);
             setMonthExpense(mExp);
+            setMonthGoalExpense(mGoalExp);
             setOverallTransferIn(oTransIn);
             setOverallTransferOut(oTransOut);
             setMonthTransferIn(mTransIn);
@@ -621,7 +625,8 @@ const HomeScreen = ({ navigation }: any) => {
 
                 const budgetedCategorySpent = specificCategoryBreakdown
                     .filter(cat => budgets.some(b => b.category === cat.name))
-                    .reduce((sum, cat) => sum.plus(cat.amount), new BigNumber(0));
+                    // A goal was the budget for its own purchases - they never count against a category budget.
+                    .reduce((sum, cat) => sum.plus(cat.amount.minus(cat.goalFundedAmount)), new BigNumber(0));
 
                 const totalBudget = budgets.reduce((sum, b) => sum.plus(b.amount), new BigNumber(0));
 
@@ -915,6 +920,12 @@ const HomeScreen = ({ navigation }: any) => {
                             <Text style={{ fontWeight: 'bold', color: colors.warning }}>Excludes Transfers.</Text> This gives you a clearer picture of your actual earnings versus spending, ignoring money moved between your own accounts.
                         </Text>
                     </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
+                        <Ionicons name="wallet-outline" size={20} color={colors.primary} style={{ marginTop: 2, marginRight: 8 }} />
+                        <Text style={{ color: colors.textSecondary, flex: 1, fontSize: 14 }}>
+                            <Text style={{ fontWeight: 'bold', color: colors.primary }}>Goal purchases shown separately.</Text> Spending from a savings goal is listed under Expense as &quot;+ from goals&quot; but not subtracted — that money was set aside in earlier months.
+                        </Text>
+                    </View>
                 </View>
             );
         }
@@ -1025,6 +1036,7 @@ const HomeScreen = ({ navigation }: any) => {
                                     overallTransferOut={overallTransferOut}
                                     monthIncome={monthIncome}
                                     monthExpense={monthExpense}
+                                    monthGoalExpense={monthGoalExpense}
                                     monthTransferIn={monthTransferIn}
                                     monthTransferOut={monthTransferOut}
                                     isLoading={isLoading}
