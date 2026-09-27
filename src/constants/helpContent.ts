@@ -206,7 +206,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'paragraph', text: 'Effective Months Logic:' },
             { type: 'blockquote', text: 'Prevents inflated burn rates for new accounts by only averaging over months with actual data, and excludes the current, in-progress month.' },
             { type: 'formula', text: 'effectiveMonths = min(monthsBack, accountAgeMonths)' },
-            { type: 'paragraph', text: 'The Burn Rate and Runway cards then strip out all savings-goal transactions before this calculation and add back your total minimum debt payments plus your active goals\' current monthly-equivalent contribution on top (see Financial Runway above) — a goal already at its target stops counting. The Comparison Chart\'s Avg 3M/6M/1Y bars use plain Burn Rate without that debt/goal adjustment.' },
+            { type: 'paragraph', text: 'The Burn Rate and Runway cards then strip out all savings-goal transactions and debt-linked interest/fee payments before this calculation (a debt\'s interest is already inside its minimum payment) and add back your total minimum debt payments plus your active goals\' current monthly-equivalent contribution on top (see Financial Runway above) — a goal already at its target stops counting. The Comparison Chart\'s Avg 3M/6M/1Y bars use plain Burn Rate without that debt/goal adjustment.' },
 
             { type: 'heading2', text: 'Daily Average' },
             { type: 'formula', text: 'Daily Average = Expenses So Far This Month ÷ Days Elapsed' },
@@ -363,7 +363,7 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading3', text: 'Total Debt & Time Cost' },
             { type: 'blockquote', text: 'Shows: Your combined outstanding balance, and how many months of your normal spending that balance represents.' },
-            { type: 'bullet', text: 'Time Cost uses your 6-month Burn Rate from Insights as the yardstick' },
+            { type: 'bullet', text: 'Time Cost uses your 6-month Burn Rate as the yardstick — your everyday living costs, without debt interest/fees or savings-goal transactions' },
 
             { type: 'divider' },
             { type: 'heading2', text: 'Payoff Strategy' },
@@ -411,7 +411,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'formula', text: 'Principal = Minimum Payment − Interest, capped at the remaining balance' },
 
             { type: 'heading3', text: 'Next Due Date' },
-            { type: 'paragraph', text: 'Based on the day-of-month you started the debt. The due date only rolls to next month once what you\'ve paid toward this debt so far this month (principal + interest + fees) adds up to at least your minimum payment — a partial or extra payment alone won\'t hide the remaining balance still due.' },
+            { type: 'paragraph', text: 'Based on the day-of-month you started the debt — a 29th-31st due day falls on the last day of shorter months. The due date only rolls to next month once what you\'ve paid toward this debt so far this month (principal + interest) adds up to at least your minimum payment — fees don\'t count toward it, and a partial or extra payment alone won\'t hide the remaining balance still due.' },
 
             { type: 'divider' },
             { type: 'heading2', text: 'Edge Cases Handled' },

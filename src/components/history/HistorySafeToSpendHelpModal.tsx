@@ -31,11 +31,11 @@ export const HistorySafeToSpendHelpModal: React.FC<HistorySafeToSpendHelpModalPr
             <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ color: colors.text }}>2. Minus Debt Portion</Text>
+                <Text style={{ color: colors.text }}>2. Minus Debt &amp; Goals</Text>
                 <Text style={{ color: colors.error, fontWeight: 'bold' }}>Daily Share</Text>
             </View>
             <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
-                Daily portion of your unpaid monthly debt obligations.
+                Daily portion of your unpaid monthly debt minimum payments and savings goal contributions.
             </Text>
 
             <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
@@ -75,6 +75,16 @@ export const HistorySafeToSpendHelpModal: React.FC<HistorySafeToSpendHelpModalPr
             </View>
             <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
                 Total amount you have spent this week.
+            </Text>
+
+            <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: colors.text }}>3. Minus Debt &amp; Goals</Text>
+                <Text style={{ color: colors.error, fontWeight: 'bold' }}>Weekly Share</Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
+                A quarter of your unpaid monthly debt minimum payments and savings goal contributions.
             </Text>
 
             <View style={{ height: 2, backgroundColor: colors.text + '30', marginVertical: 4 }} />
@@ -119,11 +129,11 @@ export const HistorySafeToSpendHelpModal: React.FC<HistorySafeToSpendHelpModalPr
             <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
 
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ color: colors.text }}>4. Minus Debt Obligations</Text>
-                <Text style={{ color: colors.error, fontWeight: 'bold' }}>Unpaid Min Payments</Text>
+                <Text style={{ color: colors.text }}>4. Minus Debt &amp; Goals</Text>
+                <Text style={{ color: colors.error, fontWeight: 'bold' }}>Unpaid Commitments</Text>
             </View>
             <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
-                Remaining minimum payments for your active debts.
+                Debt minimum payments and savings goal contributions you haven&apos;t made yet this period.
             </Text>
 
             <View style={{ height: 1, backgroundColor: colors.text + '10' }} />
@@ -133,7 +143,7 @@ export const HistorySafeToSpendHelpModal: React.FC<HistorySafeToSpendHelpModalPr
                 <Text style={{ color: '#FF9800', fontWeight: 'bold' }}>Life Burnrate</Text>
             </View>
             <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: -8 }}>
-                Estimated daily cost for food/transport based on your last 90 days. Does not include recurring bills.
+                Estimated daily cost for food/transport based on your last 90 days, times the days left in the period. Does not include recurring bills or debt payments.
             </Text>
             <View style={{ marginTop: 6, backgroundColor: '#FFF3E0', padding: 8, borderRadius: 8 }}>
                 <Text style={{ color: '#E65100', fontSize: 11, fontStyle: 'italic' }}>

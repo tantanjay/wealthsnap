@@ -27,6 +27,7 @@ import {
     getCurrentMonthCumulative,
     getTopExpenses,
     calculateBurnRate,
+    calculateTotals,
     getCategoryBreakdown,
 } from '@utils/financialMetrics';
 import {
@@ -478,12 +479,12 @@ const HomeScreen = ({ navigation }: any) => {
                     // Get all payments for this debt in current month
                     const monthPayments = getDebtTransactions(debt.id, true);
 
-                    // Sum of Principal (repayment type) + Interest (EXPENSE)
-                    // Note: We exclude INITIAL_TRANSACTION fees if present, though typically they are one-off.
-                    // We want to capture regular monthly payments.
+                    // Sum of Principal (repayment type) + Interest (EXPENSE). Fees are excluded -
+                    // minPayment never includes them, same rule as getNextDueDate.
                     const repaymentTxType = getRepaymentTxType(debt);
                     const totalPaid = monthPayments.reduce((sum, tx) => {
-                        if (tx.type === repaymentTxType || (tx.type === 'EXPENSE' && tx.subCategory !== 'INITIAL_TRANSACTION')) {
+                        const isPrincipalOrInterest = tx.type === repaymentTxType || tx.type === 'EXPENSE';
+                        if (isPrincipalOrInterest && tx.category !== 'Fees' && tx.subCategory !== 'INITIAL_TRANSACTION') {
                             return sum.plus(tx.amount.abs());
                         }
                         return sum;
@@ -542,15 +543,16 @@ const HomeScreen = ({ navigation }: any) => {
             // left when it was contributed to the goal (added back via
             // totalGoalContributionsValue below), not when it was later spent (that spend
             // nets to ₱0 cash impact via the Auto-Offset pair), so leaving it in here would
-            // double-count. Debt-tagged transactions are deliberately left as-is here,
-            // matching this screen's existing (pre-Savings-Goals) treatment of debt.
-            const nonGoalTransactions = t.filter(tx => !tx.savingsGoalId);
-            const average6MonthBurn = calculateBurnRate(nonGoalTransactions, 6);
-            const average3MonthBurn = calculateBurnRate(nonGoalTransactions, 3);
+            // double-count. Debt-linked interest/fees are excluded too - totalDebtObligationsValue
+            // below adds each debt's minPayment (which includes interest), matching FinancialHealthScreen.
+            const baseBurnTransactions = t.filter(tx => !tx.savingsGoalId && !tx.debtId);
+            const average6MonthBurn = calculateBurnRate(baseBurnTransactions, 6);
+            const average3MonthBurn = calculateBurnRate(baseBurnTransactions, 3);
+            const { expense: currentMonthBaseExpense } = calculateTotals(getTransactionsByMonth(baseBurnTransactions, now));
 
             let burnRate = average6MonthBurn;
             if (burnRate.isLessThanOrEqualTo(0)) {
-                burnRate = average3MonthBurn.isGreaterThan(0) ? average3MonthBurn : mExp;
+                burnRate = average3MonthBurn.isGreaterThan(0) ? average3MonthBurn : currentMonthBaseExpense;
             }
 
             // --- INJECT DEBT OBLIGATIONS & SAVINGS GOAL CONTRIBUTIONS ---
@@ -577,8 +579,9 @@ const HomeScreen = ({ navigation }: any) => {
                 // Previous Burn Rate (Approximate by using same rate or strict calculation)
                 // For strict alignment, we'd need to recalc burn rate as of last month.
                 // Using current burn rate as proxy for stability, or recalculating:
-                const prevDate = new Date(now.getFullYear(), now.getMonth(), 0); // End of last month
-                const prevBurnRate6 = calculateBurnRate(nonGoalTransactions, 6, prevDate);
+                // 23:59:59.999, not midnight - otherwise last month's final day drops out
+                const prevDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+                const prevBurnRate6 = calculateBurnRate(baseBurnTransactions, 6, prevDate);
                 let prevBurnRate = prevBurnRate6;
                 if (prevBurnRate.isLessThanOrEqualTo(0)) {
                     // Fallback proxies
@@ -715,6 +718,9 @@ const HomeScreen = ({ navigation }: any) => {
         useCallback(() => {
             loadData();
             checkReviewEligibility();
+        // loadData is recreated every render; listing it would re-run this (and reload all
+        // data) on every render instead of once per screen focus.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [checkReviewEligibility])
     );
 
@@ -808,9 +814,13 @@ const HomeScreen = ({ navigation }: any) => {
                                 <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Cash</Text>
                                 <Text style={{ color: colors.text, fontSize: 12 }}>{formatCurrencyAmount(financialHealth.cashBalance, profile?.currency || 'PHP')}</Text>
                             </View>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
                                 <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Investments</Text>
-                                <Text style={{ color: colors.text, fontSize: 12 }}>{formatCurrencyAmount(financialHealth.totalAssets.minus(financialHealth.cashBalance), profile?.currency || 'PHP')}</Text>
+                                <Text style={{ color: colors.text, fontSize: 12 }}>{formatCurrencyAmount(investmentTotal, profile?.currency || 'PHP')}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Savings Goals</Text>
+                                <Text style={{ color: colors.text, fontSize: 12 }}>{formatCurrencyAmount(savingsGoalsTotal, profile?.currency || 'PHP')}</Text>
                             </View>
                         </View>
 
@@ -819,7 +829,7 @@ const HomeScreen = ({ navigation }: any) => {
                             <Text style={{ color: colors.error, fontWeight: 'bold' }}>- {formatCurrencyAmount(financialHealth.totalProjectedLiability, profile?.currency || 'PHP')}</Text>
                         </View>
                         <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 16, marginLeft: 8 }}>
-                            Current Debt Principal + Future Projected Interest (Fees)
+                            Remaining Principal + Projected Future Interest, on debts you owe (money owed to you isn&apos;t a liability)
                         </Text>
 
                         <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 12 }} />
@@ -835,7 +845,7 @@ const HomeScreen = ({ navigation }: any) => {
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8 }}>
                         <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginRight: 8, marginTop: 2 }} />
                         <Text style={{ color: colors.primary, fontSize: 12, flex: 1, lineHeight: 18 }}>
-                            <Text style={{ fontWeight: 'bold' }}>Note:</Text> We include &quot;Possible Fees&quot; (Projected Future Interest) in your liabilities to show the true cost of your debts if paid over time.
+                            <Text style={{ fontWeight: 'bold' }}>Note:</Text> We include the interest you&apos;re projected to pay over the rest of each loan in your liabilities, to show the true cost of your debts if paid over time.
                         </Text>
                     </View>
                 </View>
@@ -844,11 +854,12 @@ const HomeScreen = ({ navigation }: any) => {
             return (
                 <View>
                     <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
+                        &quot;Total Assets&quot; is <Text style={{ fontWeight: 'bold' }}>everything you own</Text>, before subtracting any debts.
                     </Text>
                     <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
                         <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
                         <Text style={{ color: colors.text, fontFamily: 'monospace', fontSize: 14 }}>
-                            Investments Value + Cash Balance
+                            Cash Balance + Investments Value + Savings Goals
                         </Text>
                     </View>
                 </View>
@@ -862,13 +873,25 @@ const HomeScreen = ({ navigation }: any) => {
                     <View style={{ marginBottom: 15 }}>
                         <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Runway</Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            How long your money will last based on your average monthly expenses <Text style={{ fontWeight: 'bold' }}>+ debt obligations</Text>.
+                            How long your cash will last based on your average monthly living costs <Text style={{ fontWeight: 'bold' }}>+ debt minimum payments + savings goal contributions</Text>.
                         </Text>
                     </View>
                     <View style={{ marginBottom: 15 }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Budget</Text>
+                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Spending</Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            Percentage of your monthly budget used so far.
+                            Your spending so far this month compared with your 3-month average at the same day, plus the percentage of your monthly budget used so far.
+                        </Text>
+                    </View>
+                    <View style={{ marginBottom: 15 }}>
+                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Investment Boost</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                            Extra months of runway your investments would add if you sold them.
+                        </Text>
+                    </View>
+                    <View style={{ marginBottom: 15 }}>
+                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Debts Drag</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                            Months of runway your debt minimum payments cost you.
                         </Text>
                     </View>
                 </View>

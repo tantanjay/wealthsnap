@@ -526,18 +526,24 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                 visible={showInsightInfo}
                 onClose={() => setShowInsightInfo(false)}
                 title="How is this calculated?"
-                maxHeight="40%"
+                maxHeight="55%"
             >
                 <View>
                     <Text style={{ color: colors.text, fontSize: 16, marginBottom: 10, lineHeight: 22 }}>
                         This smart insight compares your <Text style={{ fontWeight: 'bold' }}>projected spending</Text> for this month against your <Text style={{ fontWeight: 'bold' }}>3-month average</Text>.
                     </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5 }}>
+                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5, marginBottom: 10 }}>
+                        <Text style={{ color: colors.textSecondary, marginBottom: 6, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
+                        <Text style={{ color: colors.text, fontFamily: 'monospace', fontSize: 13 }}>
+                            Projected = (Spent So Far ÷ Days Elapsed) × Days in Month
+                        </Text>
+                    </View>
+                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            • <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>On Track:</Text> You are projected to spend less or equal to average.
+                            • <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>Less than average:</Text> You&apos;re on track to spend less than your 3-month average.
                         </Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4 }}>
-                            • <Text style={{ color: '#FF5252', fontWeight: 'bold' }}>Spending More:</Text> Projected spending is higher than average.
+                            • <Text style={{ color: '#FF5252', fontWeight: 'bold' }}>More than average:</Text> You&apos;re on track to spend more than your 3-month average.
                         </Text>
                     </View>
                     <View style={{ height: 20 }} />

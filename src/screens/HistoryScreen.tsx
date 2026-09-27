@@ -24,7 +24,7 @@ import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile } from '@services/core/storageService';
 import { HistoryCalendar } from '@components/history/HistoryCalendar';
 import { HistoryDatePickerModal } from '@components/history/HistoryDatePickerModal';
-import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
+import { getAllRecurrenceRules, addMonthsAnchored, getRecurrenceAnchorDay } from '@services/domain/recurrenceService';
 import { HistoryCalendarHelpModal } from '@components/history/HistoryCalendarHelpModal';
 import { HistorySafeToSpendHelpModal } from '@components/history/HistorySafeToSpendHelpModal';
 import { HistorySummary } from '@components/history/HistorySummary';
@@ -151,6 +151,9 @@ const HistoryScreen = ({ navigation }: any) => {
             loadTimeFramePref();
             loadProfile();
             loadRecurrenceRules();
+        // loadData is recreated every render; listing it would re-run this (and reload all
+        // data) on every render instead of once per screen focus.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [])
     );
 
@@ -207,15 +210,16 @@ const HistoryScreen = ({ navigation }: any) => {
     };
 
     const navigateDate = (direction: 'prev' | 'next') => {
-        const newDate = new Date(currentDate);
+        let newDate = new Date(currentDate);
         const adder = direction === 'next' ? 1 : -1;
 
+        // addMonthsAnchored, not setMonth: from the 29th-31st, setMonth skips a month (Jan 31 -> Mar 3).
         if (viewMode === 'CALENDAR') {
-            newDate.setMonth(newDate.getMonth() + adder);
+            newDate = addMonthsAnchored(currentDate, adder);
         } else {
             if (timeFrame === 'DAILY') newDate.setDate(newDate.getDate() + adder);
             else if (timeFrame === 'WEEKLY') newDate.setDate(newDate.getDate() + (adder * 7));
-            else if (timeFrame === 'MONTHLY') newDate.setMonth(newDate.getMonth() + adder);
+            else if (timeFrame === 'MONTHLY') newDate = addMonthsAnchored(currentDate, adder);
             else if (timeFrame === 'YEARLY') newDate.setFullYear(newDate.getFullYear() + adder);
         }
         setCurrentDate(newDate);
@@ -431,6 +435,7 @@ const HistoryScreen = ({ navigation }: any) => {
             return t.type === 'EXPENSE' &&
                 !t.isRecurring &&
                 !t.savingsGoalId && // that cash already left when it was contributed to the goal
+                !t.debtId && // debt interest is already reserved via remainingDebtObligations below
                 tDate >= thirtyDaysAgo &&
                 tDate <= new Date();
         });
@@ -455,8 +460,13 @@ const HistoryScreen = ({ navigation }: any) => {
         // Calculate how much debt/goal-contribution was ALREADY paid this period (to avoid
         // double deduction) - dashboardTransactions is already filtered by the current view's
         // period (Day/Week/Month/Year).
+        // Only payments toward PAYABLE debts, counting principal + interest (what minPayment
+        // covers) - lending money out (RECEIVABLE's TRANSFER_OUT) and fees aren't obligation payments.
+        const payableDebtIds = new Set(allDebts.filter(d => (d.direction || 'PAYABLE') === 'PAYABLE').map(d => d.id));
         const debtPaymentsMade = dashboardTransactions
-            .filter(t => t.type === 'TRANSFER_OUT' && t.debtId)
+            .filter(t => t.debtId && payableDebtIds.has(t.debtId) &&
+                (t.type === 'TRANSFER_OUT' || t.type === 'EXPENSE') &&
+                t.category !== 'Fees' && t.subCategory !== 'INITIAL_TRANSACTION')
             .reduce((acc, t) => acc.plus(t.amount.abs()), new BigNumber(0));
         const goalContributionsMade = dashboardTransactions
             .filter(t => t.type === 'TRANSFER_OUT' && t.savingsGoalId)
@@ -519,6 +529,7 @@ const HistoryScreen = ({ navigation }: any) => {
                     // contribution from Safe-to-Spend twice.
                     if (rule.transactionTemplate?.savingsGoalId) return;
                     let pointer = new Date(rule.nextDueDate);
+                    const anchorDay = getRecurrenceAnchorDay(rule);
 
                     // Only count bills due between NOW and END OF PERIOD
                     while (pointer <= end) {
@@ -532,13 +543,13 @@ const HistoryScreen = ({ navigation }: any) => {
                         }
 
                         // Advance
-                        const next = new Date(pointer);
+                        let next = new Date(pointer);
                         if (rule.frequency === 'DAILY') next.setDate(next.getDate() + 1);
                         else if (rule.frequency === 'WEEKLY') next.setDate(next.getDate() + 7);
                         else if (rule.frequency === 'SEMI_MONTHLY') next.setDate(next.getDate() + 15);
-                        else if (rule.frequency === 'MONTHLY') next.setMonth(next.getMonth() + 1);
-                        else if (rule.frequency === 'QUARTERLY') next.setMonth(next.getMonth() + 3);
-                        else if (rule.frequency === 'YEARLY') next.setFullYear(next.getFullYear() + 1);
+                        else if (rule.frequency === 'MONTHLY') next = addMonthsAnchored(pointer, 1, anchorDay);
+                        else if (rule.frequency === 'QUARTERLY') next = addMonthsAnchored(pointer, 3, anchorDay);
+                        else if (rule.frequency === 'YEARLY') next = addMonthsAnchored(pointer, 12, anchorDay);
                         else break;
                         pointer = next;
                     }

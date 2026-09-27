@@ -95,6 +95,9 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                             `${(data.runwayMonths || 0).toFixed(1)} Months`,
                             (data.runwayMonths || 0) < 3 ? colors.error : colors.success
                         )}
+                        <Text style={[styles.explanation, { color: colors.textSecondary }]}>
+                            Monthly Burn Rate = your average monthly living costs + debt minimum payments + savings goal contributions. Debt interest and fees are covered by the minimum payments, so they aren&apos;t counted twice.
+                        </Text>
 
                         <View style={styles.spacer} />
 
@@ -373,7 +376,7 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                             <Text style={{ marginLeft: 8, color: colors.text, fontWeight: 'bold' }}>Note on data</Text>
                         </View>
                         <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>
-                            Calculations use your 3-month averages to provide stable, realistic projections rather than fluctuating based on a single expensive month.
+                            Living costs use your 6-month average (3-month if you&apos;re newer) and Net Flow your 3-month average, so projections stay stable rather than swinging on a single expensive month.
                         </Text>
                     </View>
                 </View>

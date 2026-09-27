@@ -104,7 +104,7 @@ const HomeDebtCard: React.FC<HomeDebtCardProps> = ({
                         Congrats, you have no debts!
                     </Text>
                     <Text style={{ color: colors.white, opacity: 0.85, fontSize: 13, marginTop: 6, lineHeight: 18 }}>
-                        You're debt-free. Keep it that way and put that money to work for you instead.
+                        You&apos;re debt-free. Keep it that way and put that money to work for you instead.
                     </Text>
                 </Card>
             ) : (

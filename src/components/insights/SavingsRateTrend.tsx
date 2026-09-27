@@ -414,7 +414,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                         <View>
                             <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Rate</Text>
                             <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                The % of your income you kept each month.
+                                The % of your income you kept each month. Debt principal payments count as spending here; money moved into a savings goal counts as kept.
                             </Text>
                         </View>
                         <View style={{ height: 1, backgroundColor: colors.border }} />

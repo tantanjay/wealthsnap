@@ -79,8 +79,8 @@ export const getSavingsRateTrend = (transactions: Transaction[], months: number 
         // But we kept 'calculateTotals' pure (Expenses only) for other metrics.
         // So we calculate debt payments for this specific month here.
 
-        const d = new Date(referenceDate);
-        d.setMonth(d.getMonth() - (months - 1 - index)); // Re-calculate date for this index
+        // Day pinned to 1 - setMonth() from the 29th-31st overflows into the wrong month.
+        const d = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - (months - 1 - index), 1);
         const monthlyTransactions = getTransactionsByMonth(transactions, d);
 
         // subCategory === 'PRINCIPAL' excludes the one-time "lent this money out" transaction
@@ -365,8 +365,8 @@ export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: num
         const { income, expense } = calculateTotals(monthlyTransactions.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId)));
 
         // Use calculateBalance to get Net Flow including Transfers (Income + TransferIn - Expense - TransferOut)
-        // We pass a future date as endDate to ensure we capture all transactions in this historical month
-        const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        // End of the last day, not its midnight start - otherwise that day's transactions drop out.
+        const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
         const netCashFlow = calculateBalance(monthlyTransactions, monthEnd);
 
         result.incomeData.push(income);
@@ -394,7 +394,7 @@ export const getMonthlyTrendsForYear = (allTransactions: Transaction[], year: nu
         // Same savingsGoalId exclusion as getMonthlyTrends above.
         const { income, expense } = calculateTotals(monthlyTransactions.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId)));
 
-        const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
         const netCashFlow = calculateBalance(monthlyTransactions, monthEnd);
 
         result.incomeData.push(income);
@@ -497,8 +497,8 @@ export const detectAnomalies = (currentMonthTransactions: Transaction[], allTran
         const currentRunway = currentBalance.dividedBy(currentBurnRate);
 
         // Previous Month Data
-        // Go 1 day back from start of this month to get end of last month
-        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+        // End (23:59:59.999) of last month's final day, so that day's transactions still count
+        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
         const prevBalance = calculateBalance(allTransactions, lastMonthEnd);
         const prevBurnRate = calculateBurnRate(allTransactions, 6, lastMonthEnd);
 
@@ -620,7 +620,7 @@ export const getCategoryAverages = (allTransactions: Transaction[], monthsBack: 
 
     // 1. Define date boundaries
     const startHistory = new Date(today.getFullYear(), today.getMonth() - monthsBack, 1);
-    const endHistory = new Date(today.getFullYear(), today.getMonth(), 0);
+    const endHistory = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
 
     // 2. Filter history and track which months actually had transactions
     const uniqueMonths = new Set<string>();

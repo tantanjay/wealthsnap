@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@context/ThemeContext';
 import { Transaction, RecurrenceRule, Investment } from '@types';
 import { formatCompactCurrency } from '@utils/currencyUtils';
+import { addMonthsAnchored, getRecurrenceAnchorDay } from '@services/domain/recurrenceService';
 
 interface HistoryCalendarProps {
     currentDate: Date;
@@ -115,6 +116,7 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
             recurrenceRules.forEach(rule => {
                 if (!rule.isActive) return;
                 let pointer = new Date(rule.nextDueDate);
+                const anchorDay = getRecurrenceAnchorDay(rule);
                 let iterations = 0;
                 while (pointer <= monthEnd && iterations < 50) {
                     iterations++;
@@ -127,10 +129,10 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     } else {
                         stat.recurringCount += 1;
                     }
-                    const next = new Date(pointer);
+                    let next = new Date(pointer);
                     if (rule.frequency === 'DAILY') next.setDate(next.getDate() + 1);
                     else if (rule.frequency === 'WEEKLY') next.setDate(next.getDate() + 7);
-                    else if (rule.frequency === 'MONTHLY') next.setMonth(next.getMonth() + 1);
+                    else if (rule.frequency === 'MONTHLY') next = addMonthsAnchored(pointer, 1, anchorDay);
                     else break;
                     pointer = next;
                 }
