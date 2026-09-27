@@ -12,6 +12,12 @@ Add new top-level sections as project-specific needs come up. Keep this file inl
 
 When a new feature is introduced, you must also check and update [docs/CAPABILITIES.md](docs/CAPABILITIES.md) to ensure the app's highlighted capabilities list remains accurate and up to date.
 
+## Calculation explanations
+
+When a calculation changes, update its explanations in the same change. Search for every user-facing description of that number (help guides, info/"how is this calculated" modals, tooltips) and bring its wording and formula in line before calling the change done — don't wait for the user to ask about each one.
+
+In this repo these live in `src/constants/helpContent.ts` (Help Center guides, including Math & Formulas), the `*HelpModal.tsx` / `*InfoModal.tsx` components, and inline "How is this calculated?" / "Understanding Your Chart" `BottomModal`s inside screens and chart components (e.g. `HomeScreen`'s `renderInfoModalContent`).
+
 ## Release notes / changelog
 
 When asked to update release notes for unreleased work, follow [.notes/dev/versioning-and-release-process.md](.notes/dev/versioning-and-release-process.md) exactly — don't improvise the format. Key points to not forget:
