@@ -12,6 +12,10 @@ Add new top-level sections as project-specific needs come up. Keep this file inl
 
 When a new feature is introduced, you must also check and update [docs/CAPABILITIES.md](docs/CAPABILITIES.md) to ensure the app's highlighted capabilities list remains accurate and up to date.
 
+## Metric definitions
+
+[docs/METRICS.md](docs/METRICS.md) is the single source of truth for what each metric includes and excludes, and where it's shown. Before changing how a metric is calculated, check its row there. Afterwards, update the row, noting the decision and date, and update every place it lists (code first, then explanations, per the section below). If a change would break a shared rule for just one screen, raise it with the user instead of quietly making an exception.
+
 ## Calculation explanations
 
 When a calculation changes, update its explanations in the same change. Search for every user-facing description of that number (help guides, info/"how is this calculated" modals, tooltips) and bring its wording and formula in line before calling the change done — don't wait for the user to ask about each one.
