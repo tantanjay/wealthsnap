@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.18.0] — 2026-09-27
+
 ### Added
 - **Savings Goals**: set aside cash for a specific purpose (travel fund, annual insurance, car maintenance) and spend it down over time from a new dashboard widget and dedicated screen.
   - Contributions count toward Burn Rate, Runway, Safe-to-Spend, and Avg Daily Spending; spending from a goal doesn't double-count them or spike your trend charts — an in-app guide explains how.
@@ -50,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Net Cash Flow, Runway Change, the runway-drop alert, and Smart Suggestions left out transactions from the last day of a month.
 - Monthly Summary and Chat: money repaid to you was listed as a debt payment you made.
 - Excel export and CSV import: dates could shift by a day depending on your timezone.
+
+---
 
 ## [1.17.0] — 2026-09-06
 
@@ -776,7 +780,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - AES-256 encrypted local storage.
 - No accounts, no ads, no cloud dependency.
 
-[Unreleased]: https://github.com/tantanjay/wealthsnap/compare/v1.17.0...HEAD
+[Unreleased]: https://github.com/tantanjay/wealthsnap/compare/v1.18.0...HEAD
+[1.18.0]: https://github.com/tantanjay/wealthsnap/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/tantanjay/wealthsnap/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/tantanjay/wealthsnap/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/tantanjay/wealthsnap/compare/v1.14.0...v1.15.0
