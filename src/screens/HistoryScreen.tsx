@@ -30,6 +30,7 @@ import { HistorySafeToSpendHelpModal } from '@components/history/HistorySafeToSp
 import { HistorySummary } from '@components/history/HistorySummary';
 import DebtOptionsModal from '@components/debts/DebtOptionsModal';
 import { calculateTotalDebtObligations } from '@utils/debtMetrics';
+import { calculateBalance, isBurnRateBase } from '@utils/financialMetrics';
 import { calculateTotalGoalContributions } from '@utils/savingsGoalMetrics';
 import HistoryListItem, { HistoryItem, isInvestment, isDebt } from '@components/history/HistoryListItem';
 import HistorySectionHeader from '@components/history/HistorySectionHeader';
@@ -369,17 +370,7 @@ const HistoryScreen = ({ navigation }: any) => {
         });
     }, [allInvestments, currentDate]);
 
-    const globalBalance = useMemo(() => {
-        return allTransactions.reduce((acc, t) => {
-            if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') {
-                return acc.plus(t.amount);
-            }
-            if (t.type === 'EXPENSE' || t.type === 'TRANSFER_OUT') {
-                return acc.minus(t.amount);
-            }
-            return acc;
-        }, new BigNumber(0));
-    }, [allTransactions]);
+    const globalBalance = useMemo(() => calculateBalance(allTransactions), [allTransactions]);
 
     const dashboardTransactions = useMemo(() => {
         // In Calendar Mode, Dashboard shows MONTHLY stats, while List shows DAILY
@@ -438,10 +429,10 @@ const HistoryScreen = ({ navigation }: any) => {
 
         const recentNonRecurringExpenses = allTransactions.filter(t => {
             const tDate = new Date(t.date);
+            // Same base as Burn Rate: debt principal/interest are reserved via remainingDebtObligations below.
             return t.type === 'EXPENSE' &&
                 !t.isRecurring &&
-                !t.savingsGoalId && // that cash already left when it was contributed to the goal
-                !t.debtId && // debt interest is already reserved via remainingDebtObligations below
+                isBurnRateBase(t) &&
                 tDate >= thirtyDaysAgo &&
                 tDate <= new Date();
         });

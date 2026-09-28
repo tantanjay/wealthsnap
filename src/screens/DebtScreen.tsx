@@ -13,7 +13,7 @@ import { Debt, DebtStatus, Transaction, UserProfile } from '@types';
 import * as Storage from '@services/core/storageService';
 import { getAllDebts, saveDebt, deleteDebt } from '@services/domain/debtService';
 import { saveTransaction, deleteTransaction, getCachedTransactions } from '@services/domain/transactionService';
-import { calculateBurnRate } from '@utils/financialMetrics';
+import { calculateBurnRate, getBurnRateBase } from '@utils/financialMetrics';
 import * as DebtMetrics from '@utils/debtMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import BottomModal from '@components/common/BottomModal';
@@ -119,9 +119,8 @@ const DebtScreen = ({ navigation }: any) => {
         // Hourly = Yearly / 365 / 24
         const hourlyLeak = yearlyInterest.div(365).div(24);
 
-        // 3. Debt vs Life (Runway) - base living burn, excluding debt interest/fees and goal
-        // transactions, the same base FinancialHealthScreen uses.
-        const burnRate = calculateBurnRate(transactions.filter(t => !t.debtId && !t.savingsGoalId), 6);
+        // 3. Debt vs Life (Runway) - base living burn, the same base FinancialHealthScreen uses.
+        const burnRate = calculateBurnRate(getBurnRateBase(transactions), 6);
         // If burn rate is 0, avoid division by zero
         const monthsLost = burnRate.gt(0) ? totalBalance.div(burnRate).toNumber() : 0;
 

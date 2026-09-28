@@ -28,11 +28,13 @@ export const getTransactionsByMonth = (transactions: Transaction[], date: Date =
     });
 };
 
-export const calculateBalance = (transactions: Transaction[], endDate: Date = new Date()): BigNumber => {
+// Cash Balance counts every recorded transaction, future-dated included. Pass endDate only
+// to bucket by period (month-end cash flow, balance as of last month).
+export const calculateBalance = (transactions: Transaction[], endDate?: Date): BigNumber => {
     let balance = new BigNumber(0);
 
     transactions.forEach(t => {
-        if (parseDate(t.date) > endDate) return;
+        if (endDate && parseDate(t.date) > endDate) return;
 
         if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') {
             balance = balance.plus(t.amount);
@@ -66,6 +68,16 @@ export const calculateSavingsRate = (income: BigNumber, expense: BigNumber): Big
     const savings = income.minus(expense);
     return savings.dividedBy(income).times(100);
 };
+
+// Fees paid on a debt (EXPENSE, category 'Fees'). minPayment never covers them, so unlike
+// interest they stay in the burn-rate base as ordinary spending.
+export const isDebtFee = (t: Transaction): boolean => t.type === 'EXPENSE' && !!t.debtId && t.category === 'Fees';
+
+// Base for Burn Rate and the Safe-to-Spend allowance: drops goal-tagged transactions and debt
+// principal/interest, which callers add back via goal contributions and debt minPayment.
+export const isBurnRateBase = (t: Transaction): boolean => !t.savingsGoalId && (!t.debtId || isDebtFee(t));
+
+export const getBurnRateBase = (transactions: Transaction[]): Transaction[] => transactions.filter(isBurnRateBase);
 
 // Principal repaid on debts you owe. subCategory 'PRINCIPAL' excludes a RECEIVABLE debt's
 // 'INITIAL_TRANSACTION' (also TRANSFER_OUT + debtId) - that's lending money out, not a repayment.
@@ -161,8 +173,11 @@ export const getMonthEndProjection = (transactions: Transaction[]) => {
     // Excludes goal-funded EXPENSE - that cash already left when it was contributed to the
     // goal, not when it was later spent, so leaving it in would inflate the daily run rate
     // and produce a falsely alarming month-end forecast off one lump-sum goal purchase.
-    const currentMonthTrans = getTransactionsByMonth(transactions, today).filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId));
+    const allCurrentMonthTrans = getTransactionsByMonth(transactions, today);
+    const currentMonthTrans = allCurrentMonthTrans.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId));
     const { income, expense } = calculateTotals(currentMonthTrans);
+    // Actual principal repaid so far, not projected - reads high until this month's payment lands.
+    const debtPrincipalRepaid = calculateDebtPrincipalRepaid(allCurrentMonthTrans);
 
     // 1. Linear Fallback
     const dailyIncome = income.dividedBy(currentDay || 1);
@@ -203,7 +218,9 @@ export const getMonthEndProjection = (transactions: Transaction[]) => {
         currentExpense: expense,
         projectedIncome: linearProjectedIncome,
         projectedExpense: smartProjectedExpense,
-        projectedSavings: linearProjectedIncome.minus(smartProjectedExpense),
+        debtPrincipalRepaid,
+        // Principal counts as spent, same as every other Savings Rate surface.
+        projectedSavings: linearProjectedIncome.minus(smartProjectedExpense).minus(debtPrincipalRepaid),
         daysRemaining,
         progress: new BigNumber(currentDay).dividedBy(daysInMonth).times(100).dp(1).toNumber()
     };
@@ -487,7 +504,7 @@ export const detectAnomalies = (currentMonthTransactions: Transaction[], allTran
     // --- 0. RUNWAY DROP CHECK ---
     // Check if Financial Runway has dropped significantly (>25%) since last month
     const today = new Date();
-    const currentBalance = calculateBalance(allTransactions, today);
+    const currentBalance = calculateBalance(allTransactions);
     const currentBurnRate = calculateBurnRate(allTransactions, 6, today);
 
     // To avoid division by zero or huge numbers with 0 burn rate

@@ -16,6 +16,8 @@ When a new feature is introduced, you must also check and update [docs/CAPABILIT
 
 [docs/METRICS.md](docs/METRICS.md) is the single source of truth for what each metric includes and excludes, and where it's shown. Before changing how a metric is calculated, check its row there. Afterwards, update the row, noting the decision and date, and update every place it lists (code first, then explanations, per the section below). If a change would break a shared rule for just one screen, raise it with the user instead of quietly making an exception.
 
+**New transaction kinds.** When a feature adds a new kind of transaction (a new type/tag/subCategory combination), add its row to the "What each transaction counts toward" table in `docs/METRICS.md` and fill every column before writing code. Screens and components never filter transactions for a metric themselves; they call the shared function in `financialMetrics.ts` (e.g. `getBurnRateBase`, `calculateBalance`), so a rule change is a one-place edit.
+
 ## Calculation explanations
 
 When a calculation changes, update its explanations in the same change. Search for every user-facing description of that number (help guides, info/"how is this calculated" modals, tooltips) and bring its wording and formula in line before calling the change done — don't wait for the user to ask about each one.

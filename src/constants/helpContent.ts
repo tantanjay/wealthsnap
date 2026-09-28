@@ -171,7 +171,7 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading2', text: 'Financial Runway' },
             { type: 'formula', text: 'Runway = Net Liquid Balance ÷ Adjusted Burn Rate' },
-            { type: 'bullet', text: 'Net Liquid Balance = (Lifetime Income + Lifetime Transfer In) − (Lifetime Total Expenses + Lifetime Transfer Out) — summed across your entire transaction history, not just the browsed month. Savings goal contributions/spends are transfers, so they shift money between this balance and your goal balances without changing the total' },
+            { type: 'bullet', text: 'Net Liquid Balance = (Lifetime Income + Lifetime Transfer In) − (Lifetime Total Expenses + Lifetime Transfer Out) — summed across every transaction you\'ve recorded, including ones dated in the future, not just the browsed month. Savings goal contributions/spends are transfers, so they shift money between this balance and your goal balances without changing the total' },
             { type: 'bullet', text: 'Adjusted Burn Rate = Burn Rate + Total Minimum Payments on your active, payable debts + Total Monthly Contributions on your active, not-yet-completed savings goals' },
             { type: 'paragraph', text: 'Both this and Burn Rate are computed as of today, regardless of which month you\'re browsing, and both draw on your full history rather than a single month.' },
             { type: 'paragraph', text: 'Color Coding:' },
@@ -210,7 +210,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'paragraph', text: 'Effective Months Logic:' },
             { type: 'blockquote', text: 'Prevents inflated burn rates for new accounts by only averaging over months with actual data, and excludes the current, in-progress month.' },
             { type: 'formula', text: 'effectiveMonths = min(monthsBack, accountAgeMonths)' },
-            { type: 'paragraph', text: 'The Burn Rate and Runway cards then strip out all savings-goal transactions and debt-linked interest/fee payments before this calculation (a debt\'s interest is already inside its minimum payment) and add back your total minimum debt payments plus your active goals\' current monthly-equivalent contribution on top (see Financial Runway above) — a goal already at its target stops counting. The Comparison Chart\'s Avg 3M/6M/1Y bars use plain Burn Rate without that debt/goal adjustment.' },
+            { type: 'paragraph', text: 'The Burn Rate and Runway cards then strip out all savings-goal transactions and debt principal/interest payments before this calculation (both are already inside a debt\'s minimum payment; debt fees stay in as normal spending, since minimum payments don\'t cover them) and add back your total minimum debt payments plus your active goals\' current monthly-equivalent contribution on top (see Financial Runway above) — a goal already at its target stops counting. The Comparison Chart\'s Avg 3M/6M/1Y bars use plain Burn Rate without that debt/goal adjustment.' },
 
             { type: 'heading2', text: 'Daily Average' },
             { type: 'formula', text: 'Daily Average = Expenses So Far This Month ÷ Days Elapsed' },
@@ -367,7 +367,7 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading3', text: 'Total Debt & Time Cost' },
             { type: 'blockquote', text: 'Shows: Your combined outstanding balance, and how many months of your normal spending that balance represents.' },
-            { type: 'bullet', text: 'Time Cost uses your 6-month Burn Rate as the yardstick — your everyday living costs, without debt interest/fees or savings-goal transactions' },
+            { type: 'bullet', text: 'Time Cost uses your 6-month Burn Rate as the yardstick — your everyday living costs, without debt principal/interest or savings-goal transactions (debt fees count as normal spending)' },
 
             { type: 'divider' },
             { type: 'heading2', text: 'Payoff Strategy' },
