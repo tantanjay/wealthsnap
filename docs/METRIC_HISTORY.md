@@ -4,7 +4,7 @@ How each metric's rule changed over time, one timeline per metric. [METRICS.md](
 
 **Before changing a metric, read its timeline.** If the change undoes part of an earlier one, mark it **↩** and name that version, both here and in the release notes.
 
-Versions up to 1.14.0 come from the release notes only (git history before 1.15.0 was rewritten), so those entries are less detailed.
+`master`'s git history was rewritten before 1.15.0, so `git log` on `master` stops there. The older code is still in the tags `v1.0.0`–`v1.14.0`: run `git fetch --tags`, then `git show v1.X.0:<path>`.
 
 ---
 
@@ -26,7 +26,7 @@ Versions up to 1.14.0 come from the release notes only (git history before 1.15.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| 1.3.0 | Income − Expense for the month | Chart on Insights |
+| 1.1.0 | Income − Expense for the month | Overview card on Insights |
 | 1.10.1 | (Income + Transfer In) − (Expense + Transfer Out) | Financial Health's Net Flow counts transfers, so investing isn't counted twice |
 | 1.14.0 | Same | Savings Trend gets a "Cash Flow" view using this formula |
 | 1.18.0 | Same, for Insights too | Insights switched to the transfer-inclusive formula so goal contributions and goal purchases net out |
@@ -36,7 +36,8 @@ Versions up to 1.14.0 come from the release notes only (git history before 1.15.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| 1.3.1 | All expenses | Total Expense and Daily Average cards |
+| 1.1.0 | All expenses | Total Expense card on Insights |
+| 1.3.1 | Same | Daily Average card added |
 | 1.7.0 | Monthly Net = Income − Expense, no transfers | Monthly Net card on Home |
 | 1.18.0 | Insights Total Expense and Daily Average leave out goal-funded purchases | Savings Goals added |
 | Unreleased | Goal-funded purchases left out everywhere, shown as "+ from goals" | Home Monthly Net stopped subtracting them; History Expenses matches |
@@ -45,7 +46,7 @@ Versions up to 1.14.0 come from the release notes only (git history before 1.15.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| 1.3.1 | (Income − Expense) ÷ Income | Card on Insights |
+| 1.1.0 | (Income − Expense) ÷ Income | Card on Insights |
 | 1.10.0 | Trend chart: (Income − Expense − Debt Principal Repaid) ÷ Income | Chart counts principal as spent; **the card doesn't** |
 | 1.13.0 | Same | Lending money out no longer counted as a repayment |
 | 1.14.0 | Same | Chart gets Rate / Saved / Cash Flow views |
@@ -57,7 +58,9 @@ Versions up to 1.14.0 come from the release notes only (git history before 1.15.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| 1.3.1 | Average of prior months' expenses | Card on Insights; averages only months with history |
+| 1.1.0 | Average monthly expense over the last 6 months, this month included | Card on Insights; skips empty past months |
+| 1.3.1 | Same | Averages over no more months than the account is old |
+| 1.7.0 | Average of prior months' expenses | Leaves out the current, in-progress month |
 | 1.10.0 | Average + debt minimum payments (Runway) | Debt obligations added. **Interest now counted twice**: as spending and inside the minimum payment |
 | 1.13.0 | Same | Money owed to you no longer counted as your obligation |
 | 1.17.0 | Leaves out every debt-tagged transaction + minimum payments | Financial Health, Chat, Monthly Summary: fixed the interest double-count. **Also dropped fees**, which the minimum payment doesn't cover |
