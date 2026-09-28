@@ -1,6 +1,6 @@
 import { BigNumber } from 'bignumber.js';
 import { Transaction, Debt, DebtStatus, SavingsGoal } from '@types';
-import { calculateBurnRate, calculateTotals, getTransactionsByMonth, parseDate } from '@utils/financialMetrics';
+import { calculateBalance, calculateBurnRate, calculateTotals, getBurnRateBase, getTransactionsByMonth, parseDate } from '@utils/financialMetrics';
 import { calculateTotalDebtObligations, calculateCurrentDebtBalance, buildDebtNameMap } from '@utils/debtMetrics';
 import { calculateTotalGoalContributions, calculateGoalBalance, calculateGoalProgress } from '@utils/savingsGoalMetrics';
 
@@ -121,11 +121,7 @@ export const buildFinancialSnapshotData = (
         }))
         .sort((a, b) => b.totalValue - a.totalValue);
 
-    let totalCash = new BigNumber(0);
-    transactions.forEach(t => {
-        if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') totalCash = totalCash.plus(t.amount.abs());
-        if (t.type === 'EXPENSE' || t.type === 'TRANSFER_OUT') totalCash = totalCash.minus(t.amount.abs());
-    });
+    const totalCash = calculateBalance(transactions);
 
     const activeDebts = debts.filter(d => d.status === 'ACTIVE' && (d.direction || 'PAYABLE') === 'PAYABLE');
     const totalDebtLiability = activeDebts.reduce(
@@ -157,21 +153,15 @@ export const buildFinancialSnapshotData = (
         };
     });
 
-    // Exclude debt-linked transactions (interest/fee payments) AND savingsGoalId-tagged
-    // EXPENSE from the base burn rate - monthlyDebtObligations/monthlyGoalContributions
-    // below add each active debt's minimum payment and each active goal's monthly-equivalent
-    // contribution on top, so leaving either in here would double-count: a goal-funded
-    // purchase's cash already left when it was contributed to the goal, not when it was
-    // later spent (that spend nets to ₱0 cash impact via the Auto-Offset pair). Matches the
-    // fix already applied to FinancialHealthScreen's own burn rate computation.
-    const nonDebtTransactions = transactions.filter(t => !t.debtId && !t.savingsGoalId);
+    // Goal and debt principal/interest are added back below via goal contributions and minPayment.
+    const burnRateBase = getBurnRateBase(transactions);
     // Same 6M -> 3M -> current-month fallback as Home/Insights/FinancialHealthScreen, so a
     // new user's AI-reported runway matches the one on screen.
-    const burnRate6 = calculateBurnRate(nonDebtTransactions, 6);
-    const burnRate3 = calculateBurnRate(nonDebtTransactions, 3);
+    const burnRate6 = calculateBurnRate(burnRateBase, 6);
+    const burnRate3 = calculateBurnRate(burnRateBase, 3);
     const baseBurnRate = burnRate6.gt(0)
         ? burnRate6
-        : (burnRate3.gt(0) ? burnRate3 : calculateTotals(getTransactionsByMonth(nonDebtTransactions)).expense);
+        : (burnRate3.gt(0) ? burnRate3 : calculateTotals(getTransactionsByMonth(burnRateBase)).expense);
     const monthlyDebtObligations = calculateTotalDebtObligations(debts);
     const monthlyGoalContributions = calculateTotalGoalContributions(goals, transactions);
     const monthlyBurnRate = baseBurnRate.plus(monthlyDebtObligations).plus(monthlyGoalContributions);

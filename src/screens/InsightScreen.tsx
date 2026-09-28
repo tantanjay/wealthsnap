@@ -167,19 +167,16 @@ const InsightScreen = ({ navigation }: any) => {
 
         // Averages for Runway/Burn Rate cards - always "as of today", since Runway is framed
         // as "if your income stopped today", regardless of which month is being browsed.
-        // Debt-linked interest/fees are excluded too - totalDebtObligations below adds each
-        // debt's minPayment (which already includes interest), matching FinancialHealthScreen.
-        const nonDebtTransactions = nonGoalTransactions.filter(t => !t.debtId);
-        const runwayAverage6Month = Metrics.calculateBurnRate(nonDebtTransactions, 6);
-        const runwayAverage3Month = Metrics.calculateBurnRate(nonDebtTransactions, 3);
-        const nonDebtCurrentMonthExpense = Metrics.calculateTotals(
-            currentMonthTrans.filter(t => !t.debtId && !t.savingsGoalId)
-        ).expense;
+        // Debt principal/interest are added back below via each debt's minPayment.
+        const burnRateBase = Metrics.getBurnRateBase(currentTransactions);
+        const runwayAverage6Month = Metrics.calculateBurnRate(burnRateBase, 6);
+        const runwayAverage3Month = Metrics.calculateBurnRate(burnRateBase, 3);
+        const currentMonthBaseExpense = Metrics.calculateTotals(Metrics.getBurnRateBase(currentMonthTrans)).expense;
 
         // Burn Rate logic: Fallback hierarchy to ensure Runway doesn't show NaN
         let burnRate = runwayAverage6Month;
         if (burnRate.isLessThanOrEqualTo(0)) {
-            burnRate = runwayAverage3Month.isGreaterThan(0) ? runwayAverage3Month : nonDebtCurrentMonthExpense;
+            burnRate = runwayAverage3Month.isGreaterThan(0) ? runwayAverage3Month : currentMonthBaseExpense;
         }
 
         // --- INJECT DEBT OBLIGATIONS & SAVINGS GOAL CONTRIBUTIONS ---
@@ -201,23 +198,7 @@ const InsightScreen = ({ navigation }: any) => {
         const average1Year = Metrics.calculateBurnRate(nonGoalTransactions, 12, today);
         const average3Month = Metrics.calculateBurnRate(nonGoalTransactions, 3, today);
 
-        const allTimeTotals = Metrics.calculateTotals(currentTransactions);
-
-        // Calculate Transfers for Liquid Balance
-        let totalTransferIn = new BigNumber(0);
-        let totalTransferOut = new BigNumber(0);
-
-        currentTransactions.forEach(t => {
-            if (t.type === 'TRANSFER_IN') {
-                totalTransferIn = totalTransferIn.plus(t.amount.abs());
-            } else if (t.type === 'TRANSFER_OUT') {
-                totalTransferOut = totalTransferOut.plus(t.amount.abs());
-            }
-        });
-
-        // Current Balance = (Income + Transfer In) - (Expense + Transfer Out)
-        const currentBalance = allTimeTotals.income.plus(totalTransferIn)
-            .minus(allTimeTotals.expense.plus(totalTransferOut));
+        const currentBalance = Metrics.calculateBalance(currentTransactions);
 
         // Budget Performance
         const budgets = await getAllBudgets();
