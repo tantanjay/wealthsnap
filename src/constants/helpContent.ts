@@ -321,7 +321,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'formula', text: 'Triggered when: Category Spent > Category Budget' },
 
             { type: 'heading2', text: 'Runway Drop Detection' },
-            { type: 'formula', text: 'Triggered when: Runway has dropped 25% or more vs. last month' },
+            { type: 'formula', text: 'Triggered when: Runway (same as the Runway card) has dropped 25% or more vs. the end of last month' },
 
             { type: 'divider' },
             { type: 'heading1', text: 'Edge Cases Handled' },

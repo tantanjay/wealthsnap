@@ -3,7 +3,7 @@ import { Platform, Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 import { BigNumber } from 'bignumber.js';
-import { Transaction, Budget, SavingsGoal } from '@types';
+import { Transaction, Budget, Debt, SavingsGoal } from '@types';
 import { detectAnomalies } from '@utils/financialMetrics';
 import { ASYNC_KEYS } from '@constants/config';
 import { REMINDER_BACKGROUND_TASK } from '@services/background/backgroundTasks';
@@ -60,19 +60,20 @@ export const openSettings = () => {
 
 /**
  * Checks for anomalies and notifies user if needed.
- * BUDGETS ARE INJECTED TO PREVENT CIRCULAR DEPENDENCY.
+ * Budgets, debts and goals are injected to prevent circular dependencies.
  */
 export const checkAndNotifyAnomalies = async (
     currentMonthTransactions: Transaction[],
     allTransactions: Transaction[],
-    budgets: Budget[]
+    budgets: Budget[],
+    debts: Debt[],
+    goals: SavingsGoal[]
 ) => {
     try {
         const status = await getPermissionStatus();
         if (status !== 'granted') return;
 
-        // Detect anomalies using injected budgets
-        const anomalies = detectAnomalies(currentMonthTransactions, allTransactions, budgets);
+        const anomalies = detectAnomalies(currentMonthTransactions, allTransactions, budgets, debts, goals);
         if (anomalies.length === 0) return;
 
         // Get already notified alerts

@@ -22,8 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Investments: for an asset in a currency worth less than yours (e.g. JPY for a PHP profile), the investment options and history screens showed amounts in your currency but labeled with the asset's.
 - Budgets: purchases funded from a savings goal counted against category budgets in Budget Health, Home's budget %, the spending breakdown's budget bars, and Smart Suggestions.
 - Monthly Summary and Chat: foreign-currency investments were converted twice, inflating buy, sell, dividend, and fee amounts.
-- Burn Rate, Runway, Debts Drag, Debt vs Life, Safe-to-Spend, and Chat stopped counting fees paid on debts since 1.17.0.
-- Runway-drop alert: transactions dated in the future were left out of your balance.
+- Burn Rate, Runway, Debts Drag, Debt vs Life, Safe-to-Spend, and Chat stopped counting fees paid on debts (since 1.17.0 on Financial Health and Chat, 1.18.0 elsewhere).
+- Runway-drop alert and Financial Health's Net Flow: transactions dated in the future were left out.
+- Savings Goals guide: no longer says contributions count toward Avg Daily Spending.
+- Runway-drop alert ignored your debt payments and savings goal contributions, so it could judge a different Runway than the one on screen.
+- Home and Financial Health: Runway Change could show different numbers on each screen.
 
 ## [1.18.0] — 2026-09-27
 

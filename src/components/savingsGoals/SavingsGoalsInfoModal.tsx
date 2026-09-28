@@ -55,7 +55,7 @@ export const SavingsGoalsInfoModal: React.FC<SavingsGoalsInfoModalProps> = ({ vi
                     title="Putting money into a goal"
                     tag="COUNTS AS BURN"
                     tagColor={colors.error}
-                    body="A contribution (recurring or manual) lowers your cash on hand right away, so it's included in Burn Rate, Runway, Safe-to-Spend, and Avg Daily Spending - the same as if you'd spent it, because that cash really did leave your pocket."
+                    body="A contribution (recurring or manual) lowers your cash on hand right away, so it's included in Burn Rate, Runway, and Safe-to-Spend - the same as if you'd spent it, because that cash really did leave your pocket."
                 />
 
                 <InfoRow

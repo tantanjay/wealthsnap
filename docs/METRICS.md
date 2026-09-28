@@ -20,19 +20,20 @@ These apply to every metric unless its row says otherwise.
 | Metric | Formula | Shown on | Notes |
 |---|---|---|---|
 | Cash Balance | (Income + Transfer In) − (Expense + Transfer Out), every recorded transaction | Home Cash Balance, Insights, Financial Health, History, AI snapshot | `calculateBalance`. Goal purchases cancel out to ₱0 through their matching transfer |
-| Monthly Balance / Net Cash Flow | Same formula, one month | Home Monthly Balance, Insights Net Cash Flow, Savings Rate Trend "Cash Flow" view, Monthly Summary | Goal purchases included; they cancel out |
+| Monthly Balance / Net Cash Flow | Same formula, one month | Home Monthly Balance, Insights Net Cash Flow, Savings Rate Trend "Cash Flow" view, Financial Health Net Flow, Monthly Summary | Goal purchases included; they cancel out |
 | Total Expense (monthly) | Expenses excluding goal purchases; goal purchases shown as "+ ₱X from goals" | Insights Total Expense, History Expenses, Home Monthly Net, Monthly Summary (no separate line) | |
 | Monthly Net | Income − Total Expense | Home | |
 | Savings Rate | (Income − Total Expense − Debt Principal Repaid) ÷ Income × 100 | Insights card, Savings Rate Trend ("Rate" and "Saved" views), Monthly Summary, Month-End Projection popup, AI | Month-End Projection uses principal actually repaid so far this month, not a projection *(2026-09-28)* |
 | Category breakdown / Top Category | All expenses, including goal purchases; each row also carries `goalFundedAmount` | Insights pie, Top Spending list, All Categories, Top Category tile | |
 | Budget spent | Category spending excluding goal purchases | Budget Health, Home budget %, budget bars in the spending breakdown, Smart Suggestions, Monthly Summary budget alerts, AI budgets, over-budget alerts | The goal was the budget for its own purchases |
-| Burn Rate | Average of prior months' spending, excluding goal-tagged transactions and debt principal/interest (6-month → 3-month → this-month fallback) + debt minimum payments + goal monthly contributions | Home, Insights Burn Rate and Annualized Expense, Financial Health, Debts Time Cost, AI snapshot | Base is `getBurnRateBase`; debt fees stay in *(2026-09-28)*. The Comparison Chart's 3M/6M/1Y averages leave out goal purchases and skip the debt/goal add-on, since they're compared against plain monthly spending |
-| Runway | Cash Balance ÷ Burn Rate | Same places as Burn Rate | |
-| Daily Average | Total Expense this month ÷ days elapsed | Insights | |
+| Burn Rate | Average of prior months' spending, excluding goal-tagged transactions and debt principal/interest (6-month → 3-month → this-month fallback) + debt minimum payments + goal monthly contributions | Home, Insights Burn Rate and Annualized Expense, Financial Health, Debts Time Cost, AI snapshot | `calculateMonthlyBurnRate`, built on `getBurnRateBase`; debt fees stay in *(2026-09-28)*. The Comparison Chart's 3M/6M/1Y averages leave out goal purchases and skip the debt/goal add-on, since they're compared against plain monthly spending |
+| Runway | Cash Balance ÷ Burn Rate | Same places as Burn Rate, and the runway-drop alert (fires on a ≥25% drop vs Runway Change's last-month figure) | Alert uses the same Runway since 2026-09-29 |
+| Runway Change | Runway now − Runway at the end of last month: Cash Balance as of then ÷ (Burn Rate base as of then, same fallback + minimum payments of debts you owe that are active today and had a balance then + today's goal contributions) | Home, Financial Health, runway-drop alert | `calculateRunwayTrend`. 0 until you have a transaction before this month, or when either runway is infinite *(2026-09-29)* |
+| Daily Average | Total Expense this month ÷ days elapsed; a past month ÷ its length | Insights | |
 | Safe-to-Spend (Daily / Weekly) | Allowance from your 90-day non-recurring spending (same base as Burn Rate, so debt fees count) − spending so far this period − the day's or week's share of remaining debt and goal obligations | History | |
 | Safe-to-Spend (Monthly / Yearly / Calendar) | Income + upcoming recurring income − spending so far − **all** transfers out − upcoming recurring bills − projected living costs (90-day allowance × days left) − remaining debt and goal obligations | History | Investment buys, plain transfers and money lent out lower this view but not Daily/Weekly *(documented 2026-09-28)* |
 | Net Worth (Projected) | Cash + investment market value + goal balances − (principal + projected future interest on active debts you owe) | Home "Projected Net Worth" card and its info popup | Includes future interest on purpose, and is labeled "Projected" *(relabeled 2026-09-27)*. Money owed to you isn't an asset until repaid |
-| Total Debt | Current principal on active debts you owe | Home Debts card, Financial Health, AI snapshot | No future interest |
+| Total Debt | Current principal on active debts you owe | Home Debts card, Financial Health, Debt Strategy, AI snapshot | No future interest |
 | Debts Drag | Runway without debt payments − runway with them (living costs include goal contributions) | Home, Financial Health | |
 
 ## What each transaction counts toward
