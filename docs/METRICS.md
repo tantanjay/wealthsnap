@@ -1,6 +1,6 @@
 # Metric Definitions
 
-This is the single source of truth for what each number in the app includes and excludes, and where it's shown. To change how a metric works, change its rule here first, then update every place listed in its row. Also update its user-facing explanations (see `PROJECT.md` → Calculation explanations).
+This is the single source of truth for what each number in the app includes and excludes, and where it's shown. To change how a metric works, change its rule here first, then update every place listed in its row. Also update its user-facing explanations (see `PROJECT.md` → Calculation explanations). How each rule got to where it is: [METRIC_HISTORY.md](METRIC_HISTORY.md).
 
 ## Shared rules
 
