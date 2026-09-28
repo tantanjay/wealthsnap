@@ -23,9 +23,7 @@ import { Transaction } from '@types';
 import { getAllBudgets } from '@services/domain/budgetService';
 import { getAllDebts } from '@services/domain/debtService';
 import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
-import { calculateTotalGoalContributions } from '@utils/savingsGoalMetrics';
 import * as Metrics from '@utils/financialMetrics';
-import { calculateTotalDebtObligations } from '@utils/debtMetrics';
 import * as Storage from '@services/core/storageService';
 import { getCachedTransactions } from '@services/domain/transactionService';
 
@@ -159,35 +157,11 @@ const InsightScreen = ({ navigation }: any) => {
         const expenseBreakdown = Metrics.getCategoryBreakdown(currentMonthTrans, 'EXPENSE', grouping);
         const monthlyTrends = Metrics.getMonthlyTrends(currentTransactions, 6, today);
 
-        // Excludes savingsGoalId-tagged EXPENSE from the burn-rate base - a goal-funded
-        // purchase's cash already left when it was contributed to the goal, not when it was
-        // later spent (that spend nets to ₱0 cash impact via the Auto-Offset pair), so
-        // leaving it in here would double-count alongside totalGoalContributions below.
+        // Runway/Burn Rate cards are always "as of today", since Runway is framed as "if your
+        // income stopped today", regardless of which month is being browsed.
+        const burnRate = Metrics.calculateMonthlyBurnRate(currentTransactions, currentDebts, currentGoals).total;
+
         const nonGoalTransactions = currentTransactions.filter(t => !t.savingsGoalId);
-
-        // Averages for Runway/Burn Rate cards - always "as of today", since Runway is framed
-        // as "if your income stopped today", regardless of which month is being browsed.
-        // Debt principal/interest are added back below via each debt's minPayment.
-        const burnRateBase = Metrics.getBurnRateBase(currentTransactions);
-        const runwayAverage6Month = Metrics.calculateBurnRate(burnRateBase, 6);
-        const runwayAverage3Month = Metrics.calculateBurnRate(burnRateBase, 3);
-        const currentMonthBaseExpense = Metrics.calculateTotals(Metrics.getBurnRateBase(currentMonthTrans)).expense;
-
-        // Burn Rate logic: Fallback hierarchy to ensure Runway doesn't show NaN
-        let burnRate = runwayAverage6Month;
-        if (burnRate.isLessThanOrEqualTo(0)) {
-            burnRate = runwayAverage3Month.isGreaterThan(0) ? runwayAverage3Month : currentMonthBaseExpense;
-        }
-
-        // --- INJECT DEBT OBLIGATIONS & SAVINGS GOAL CONTRIBUTIONS ---
-        // Goal contributions are real recurring transfers (unlike debt's fixed minPayment
-        // model), but still derived from the goal's own settings rather than scanned from
-        // transaction history, so a brand-new goal counts immediately and the figure stays a
-        // true monthly rate regardless of frequency (weekly/quarterly/etc. normalized to
-        // monthly-equivalent - see calculateTotalGoalContributions).
-        const totalDebtObligations = calculateTotalDebtObligations(currentDebts);
-        const totalGoalContributions = calculateTotalGoalContributions(currentGoals, currentTransactions);
-        burnRate = burnRate.plus(totalDebtObligations).plus(totalGoalContributions);
 
         // Averages for the Spending Comparison chart - relative to the browsed month, so
         // "This Month" and "Avg 3M/6M/1Y" are comparing the same point in time. Uses
@@ -237,7 +211,7 @@ const InsightScreen = ({ navigation }: any) => {
             averageExpense: average3Month,
             average6Month,
             average1Year,
-            anomalies: Metrics.detectAnomalies(currentMonthTrans, currentTransactions, budgets),
+            anomalies: Metrics.detectAnomalies(currentMonthTrans, currentTransactions, budgets, currentDebts, currentGoals),
             currentBalance,
             budgetPerformance,
             topExpenseCategory: specificBreakdown[0] || { name: 'None', amount: new BigNumber(0), percentage: new BigNumber(0) },

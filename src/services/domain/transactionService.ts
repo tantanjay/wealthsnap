@@ -7,6 +7,7 @@ import * as DataCache from '@services/core/dataCache';
 import { checkAndNotifyAnomalies } from '@services/background/notificationService';
 import { getTransactionsByMonth } from '@utils/financialMetrics';
 import { getAllBudgets } from '@services/domain/budgetService';
+import { getAllDebts } from '@services/domain/debtService';
 import { upsertTombstone } from '@services/domain/tombstoneService';
 
 // --- Constants & Helpers ---
@@ -145,21 +146,30 @@ export const bulkUpsertTransactionsForMerge = async (transactions: Transaction[]
     }
 };
 
+// Fire-and-forget Smart Alerts check after a save. Goals load lazily because
+// savingsGoalService imports this file.
+const checkAnomaliesAfterSave = () => {
+    const cached = DataCache.getTransactionCache();
+    if (!cached?.data) return;
+
+    const transactions = cached.data;
+    Promise.all([
+        getAllBudgets(),
+        getAllDebts(),
+        import('@services/domain/savingsGoalService').then(m => m.getAllSavingsGoals())
+    ])
+        .then(([budgets, debts, goals]) =>
+            checkAndNotifyAnomalies(getTransactionsByMonth(transactions), transactions, budgets, debts, goals))
+        .catch((err: any) => console.error('Failed to check anomalies:', err));
+};
+
 export const saveTransaction = async (transaction: Transaction): Promise<void> => {
     try {
         const db = await getDatabase();
         const values = await prepareTransactionValues(transaction);
         await db.runAsync(UPSERT_TRANSACTION_QUERY, values);
         DataCache.upsertTransaction(transaction);
-
-        // Check for anomalies (Fire and forget)
-        const cached = DataCache.getTransactionCache();
-        if (cached?.data) {
-            getAllBudgets().then(budgets => {
-                checkAndNotifyAnomalies(getTransactionsByMonth(cached.data), cached.data, budgets)
-                    .catch((err: any) => console.error('Failed to check anomalies:', err));
-            }).catch((err: any) => console.error('Failed to get budgets for anomaly check:', err));
-        }
+        checkAnomaliesAfterSave();
     } catch (error) {
         console.error('Error saving transaction:', error);
         throw new Error('Failed to save transaction');
@@ -186,15 +196,7 @@ export const saveTransactionsAtomically = async (transactions: Transaction[]): P
         });
 
         transactions.forEach(txn => DataCache.upsertTransaction(txn));
-
-        // Check for anomalies (Fire and forget)
-        const cached = DataCache.getTransactionCache();
-        if (cached?.data) {
-            getAllBudgets().then(budgets => {
-                checkAndNotifyAnomalies(getTransactionsByMonth(cached.data), cached.data, budgets)
-                    .catch((err: any) => console.error('Failed to check anomalies:', err));
-            }).catch((err: any) => console.error('Failed to get budgets for anomaly check:', err));
-        }
+        checkAnomaliesAfterSave();
     } catch (error) {
         console.error('Error saving transactions atomically:', error);
         throw new Error('Failed to save transactions');
@@ -215,15 +217,7 @@ export const saveTransactionWithReceipt = async (transaction: Transaction, recei
         });
 
         DataCache.upsertTransaction(transaction);
-
-        // Check for anomalies (Fire and forget)
-        const cached = DataCache.getTransactionCache();
-        if (cached?.data) {
-            getAllBudgets().then(budgets => {
-                checkAndNotifyAnomalies(getTransactionsByMonth(cached.data), cached.data, budgets)
-                    .catch((err: any) => console.error('Failed to check anomalies:', err));
-            }).catch((err: any) => console.error('Failed to get budgets for anomaly check:', err));
-        }
+        checkAnomaliesAfterSave();
     } catch (error) {
         console.error('Error saving transaction with receipt:', error);
         throw new Error('Failed to save transaction with receipt');

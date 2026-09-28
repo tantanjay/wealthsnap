@@ -26,10 +26,7 @@ import {
     getCumulativeSpendingCurve,
     getCurrentMonthCumulative,
     getTopExpenses,
-    calculateBurnRate,
-    calculateTotals,
-    calculateBalance,
-    getBurnRateBase,
+    calculateRunwayTrend,
     getCategoryBreakdown,
 } from '@utils/financialMetrics';
 import {
@@ -43,13 +40,13 @@ import { getCachedInvestments } from '@services/domain/investmentService';
 import { getAllBudgets } from '@services/domain/budgetService';
 import { getAllDebts } from '@services/domain/debtService';
 import { getAllSavingsGoals, checkGoalReachedNotifications } from '@services/domain/savingsGoalService';
-import { calculateGoalBalance, calculateTotalGoalContributions } from '@utils/savingsGoalMetrics';
+import { calculateGoalBalance } from '@utils/savingsGoalMetrics';
 import * as Storage from '@services/core/storageService';
 import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
 import { getLatestPrices } from '@services/domain/priceHistoryService';
 import { ReviewAppModal } from '@components/common/ReviewAppModal';
 import { useReviewPrompt } from '@hooks/useReviewPrompt';
-import { calculateProjectedDebtLiability, calculateTotalDebtObligations, calculatePrevDebtObligations } from '@utils/debtMetrics';
+import { calculateProjectedDebtLiability, calculateTotalDebtObligations } from '@utils/debtMetrics';
 
 const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
@@ -509,7 +506,8 @@ const HomeScreen = ({ navigation }: any) => {
             setMonthlyObligationsPaid(obligationsPaid);
 
             // 8. Calculate Financial Health Metrics
-            const currentCashBalance = calculateBalance(t);
+            const runwayTrend = calculateRunwayTrend(t, allDebts, allGoals, now);
+            const currentCashBalance = runwayTrend.cash;
 
             // A goal contribution already reduced currentCashBalance above (it's a
             // TRANSFER_OUT, summed into oTransOut like any other transfer) - so the goal's
@@ -535,80 +533,9 @@ const HomeScreen = ({ navigation }: any) => {
 
             const assetsTotal = currentCashBalance.plus(totalMarketValue).plus(totalSavingsGoalsBalance);
 
-            // Calculate Runway & Budget
-            // Get date of first transaction to determine "months active"
-            let monthsActive = 1;
-            if (t.length > 0) {
-                const firstTxDate = new Date(t[t.length - 1].date);
-                const diffTime = Math.abs(now.getTime() - firstTxDate.getTime());
-                const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30));
-                monthsActive = Math.max(1, diffMonths);
-            }
-
-            // Goal and debt principal/interest are added back below via goal contributions and minPayment.
-            const baseBurnTransactions = getBurnRateBase(t);
-            const average6MonthBurn = calculateBurnRate(baseBurnTransactions, 6);
-            const average3MonthBurn = calculateBurnRate(baseBurnTransactions, 3);
-            const { expense: currentMonthBaseExpense } = calculateTotals(getTransactionsByMonth(baseBurnTransactions, now));
-
-            let burnRate = average6MonthBurn;
-            if (burnRate.isLessThanOrEqualTo(0)) {
-                burnRate = average3MonthBurn.isGreaterThan(0) ? average3MonthBurn : currentMonthBaseExpense;
-            }
-
-            // --- INJECT DEBT OBLIGATIONS & SAVINGS GOAL CONTRIBUTIONS ---
             // Runway = Cash / (Living Expenses + Debt Obligations + Goal Contributions)
-            // totalDebtObligationsValue already calculated above; goal contributions mirror
-            // it (a fixed monthly-equivalent derived from each active, unpaused goal's own
-            // settings - see calculateTotalGoalContributions).
-            const totalGoalContributionsValue = calculateTotalGoalContributions(allGoals, t);
-            const totalBurnRate = burnRate.plus(totalDebtObligationsValue).plus(totalGoalContributionsValue);
-
-            const runway = totalBurnRate.isGreaterThan(0)
-                ? currentCashBalance.dividedBy(totalBurnRate) // Use CashBalance (Liquid) not TotalAssets
-                : (currentCashBalance.isGreaterThan(0) ? new BigNumber(Infinity) : new BigNumber(0));
-
-            // Previous Month Runway Calculation (for Trend)
-            let runwayChange = 0;
-            if (monthsActive > 1) {
-                // Previous Liquid Balance
-                // Previous Liquid Balance
-                // Net Flow = (Income + TransIn) - (Expense + TransOut)
-                const monthNetFlow = mInc.plus(mTransIn).minus(mExp.plus(mTransOut));
-                const prevCashBalance = currentCashBalance.minus(monthNetFlow);
-
-                // Previous Burn Rate (Approximate by using same rate or strict calculation)
-                // For strict alignment, we'd need to recalc burn rate as of last month.
-                // Using current burn rate as proxy for stability, or recalculating:
-                // 23:59:59.999, not midnight - otherwise last month's final day drops out
-                const prevDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-                const prevBurnRate6 = calculateBurnRate(baseBurnTransactions, 6, prevDate);
-                let prevBurnRate = prevBurnRate6;
-                if (prevBurnRate.isLessThanOrEqualTo(0)) {
-                    // Fallback proxies
-                    prevBurnRate = burnRate;
-                }
-
-                const prevDebtObligations = calculatePrevDebtObligations(allDebts, prevDate, t);
-                // No calculatePrevGoalContributions equivalent - goals have no historical
-                // isPaused/frequency audit trail to reconstruct "as of last month" from. Reusing
-                // today's totalGoalContributionsValue only affects this runway *trend* figure,
-                // not the primary Runway/Burn Rate above - see the same note in
-                // FinancialHealthScreen.tsx.
-                const prevTotalBurnRate = prevBurnRate.plus(prevDebtObligations).plus(totalGoalContributionsValue);
-
-                const prevRunway = prevTotalBurnRate.isGreaterThan(0)
-                    ? prevCashBalance.dividedBy(prevTotalBurnRate)
-                    : (prevCashBalance.isGreaterThan(0) ? new BigNumber(Infinity) : new BigNumber(0));
-
-                if (prevRunway.isFinite() && runway.isFinite()) {
-                    runwayChange = runway.minus(prevRunway).toNumber();
-                }
-            }
-
-            // Previous Month Runway Calculation
-            // Estimation: Previous Assets = Current Assets - (Month Income - Month Expense)
-            // Previous Avg Expense = (Total Expense - Month Expense) / (monthsActive - 1)
+            const { runway, change: runwayChange } = runwayTrend;
+            const { base: burnRate, goalContributions: totalGoalContributionsValue, total: totalBurnRate } = runwayTrend.burnRate;
 
             // Month Budget % (Actual Budget Health)
             // Fetch real budgets to match InsightScreen logic

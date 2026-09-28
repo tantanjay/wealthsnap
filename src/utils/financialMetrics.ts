@@ -1,6 +1,8 @@
 import { BigNumber } from 'bignumber.js';
-import { Transaction, TransactionType } from '@types';
+import { Budget, Debt, SavingsGoal, Transaction, TransactionType } from '@types';
 import { getCategoryGroup } from '@constants/categories';
+import { calculateTotalDebtObligations, calculatePrevDebtObligations } from '@utils/debtMetrics';
+import { calculateTotalGoalContributions } from '@utils/savingsGoalMetrics';
 
 type BreakdownType = Exclude<TransactionType, 'TRANSFER'>;
 
@@ -277,6 +279,69 @@ export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: nu
     return monthsWithData > 0 ? totalExpense.dividedBy(monthsWithData) : new BigNumber(0);
 };
 
+// Burn Rate's spending part as of referenceDate: 6-month average of prior months, falling back
+// to 3 months, then referenceDate's own month for a new user.
+export const calculateBaseBurnRate = (transactions: Transaction[], referenceDate: Date = new Date()): BigNumber => {
+    const base = getBurnRateBase(transactions);
+    const average6Month = calculateBurnRate(base, 6, referenceDate);
+    if (average6Month.gt(0)) return average6Month;
+    const average3Month = calculateBurnRate(base, 3, referenceDate);
+    if (average3Month.gt(0)) return average3Month;
+    return calculateTotals(getTransactionsByMonth(base, referenceDate)).expense;
+};
+
+export interface MonthlyBurnRate {
+    base: BigNumber;
+    debtObligations: BigNumber;
+    goalContributions: BigNumber;
+    total: BigNumber;
+}
+
+// Burn Rate = spending base + debt minimum payments + goal contributions.
+export const calculateMonthlyBurnRate = (
+    transactions: Transaction[], debts: Debt[], goals: SavingsGoal[], referenceDate: Date = new Date()
+): MonthlyBurnRate => {
+    const base = calculateBaseBurnRate(transactions, referenceDate);
+    const debtObligations = calculateTotalDebtObligations(debts);
+    const goalContributions = calculateTotalGoalContributions(goals, transactions);
+    return { base, debtObligations, goalContributions, total: base.plus(debtObligations).plus(goalContributions) };
+};
+
+// Months of cash left; Infinity when nothing is being spent.
+const toRunway = (cash: BigNumber, burnRate: BigNumber): BigNumber =>
+    burnRate.gt(0) ? cash.dividedBy(burnRate) : new BigNumber(cash.gt(0) ? Infinity : 0);
+
+export interface RunwayTrend {
+    cash: BigNumber;
+    burnRate: MonthlyBurnRate;
+    runway: BigNumber;
+    prevRunway: BigNumber | null; // null until there's a transaction before this month
+    change: number; // 0 when either runway is infinite
+}
+
+// Runway now vs at the end of last month - shared by Home, Financial Health and the runway-drop
+// alert. Goals keep no history, so last month reuses today's goal contributions.
+export const calculateRunwayTrend = (
+    transactions: Transaction[], debts: Debt[], goals: SavingsGoal[], now: Date = new Date()
+): RunwayTrend => {
+    const burnRate = calculateMonthlyBurnRate(transactions, debts, goals, now);
+    const cash = calculateBalance(transactions);
+    const runway = toRunway(cash, burnRate.total);
+
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    if (!transactions.some(t => parseDate(t.date) <= endOfLastMonth)) {
+        return { cash, burnRate, runway, prevRunway: null, change: 0 };
+    }
+
+    const prevBurnRate = calculateBaseBurnRate(transactions, endOfLastMonth)
+        .plus(calculatePrevDebtObligations(debts, endOfLastMonth, transactions))
+        .plus(burnRate.goalContributions);
+    const prevRunway = toRunway(calculateBalance(transactions, endOfLastMonth), prevBurnRate);
+    const change = runway.isFinite() && prevRunway.isFinite() ? runway.minus(prevRunway).toNumber() : 0;
+
+    return { cash, burnRate, runway, prevRunway, change };
+};
+
 export const calculateAverageIncome = (allTransactions: Transaction[], monthsBack: number = 6, referenceDate: Date = new Date()): BigNumber => {
     if (allTransactions.length === 0) return new BigNumber(0);
 
@@ -496,45 +561,27 @@ export interface Anomaly {
     severity: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
-export const detectAnomalies = (currentMonthTransactions: Transaction[], allTransactions: Transaction[], budgets: import('@types').Budget[] = []): Anomaly[] => {
+export const detectAnomalies = (
+    currentMonthTransactions: Transaction[], allTransactions: Transaction[], budgets: Budget[], debts: Debt[], goals: SavingsGoal[]
+): Anomaly[] => {
     const anomalies: Anomaly[] = [];
 
     if (allTransactions.length < 10) return anomalies;
 
     // --- 0. RUNWAY DROP CHECK ---
-    // Check if Financial Runway has dropped significantly (>25%) since last month
-    const today = new Date();
-    const currentBalance = calculateBalance(allTransactions);
-    const currentBurnRate = calculateBurnRate(allTransactions, 6, today);
+    // Same Runway and Runway Change as Home and Financial Health; alerts on a >=25% drop since last month.
+    const { runway: currentRunway, prevRunway } = calculateRunwayTrend(allTransactions, debts, goals);
 
-    // To avoid division by zero or huge numbers with 0 burn rate
-    if (currentBurnRate.isGreaterThan(0) && currentBalance.isGreaterThan(0)) {
-        const currentRunway = currentBalance.dividedBy(currentBurnRate);
+    if (prevRunway && prevRunway.isFinite() && prevRunway.gt(0) && currentRunway.isFinite() && currentRunway.gt(0)) {
+        const dropPercent = prevRunway.minus(currentRunway).dividedBy(prevRunway); // e.g. (10 - 7) / 10 = 0.3
 
-        // Previous Month Data
-        // End (23:59:59.999) of last month's final day, so that day's transactions still count
-        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
-        const prevBalance = calculateBalance(allTransactions, lastMonthEnd);
-        const prevBurnRate = calculateBurnRate(allTransactions, 6, lastMonthEnd);
-
-        if (prevBurnRate.isGreaterThan(0) && prevBalance.isGreaterThan(0)) {
-            const prevRunway = prevBalance.dividedBy(prevBurnRate);
-
-            // Avoid triggering for very small runway changes (e.g. 0.5 to 0.4) if it's not meaningful
-            // Or very high runways (e.g. 50 months -> 35 months is 30% drop but maybe not "alert" worthy? User said 25% drop.)
-            // We'll stick to the % drop request.
-
-            const dropAmount = prevRunway.minus(currentRunway);
-            const dropPercent = dropAmount.dividedBy(prevRunway); // e.g. (10 - 7) / 10 = 0.3
-
-            if (dropPercent.isGreaterThanOrEqualTo(0.25)) {
-                anomalies.push({
-                    type: 'RUNWAY_DROP' as any, // Cast to any to avoid TS error until type def is updated (or just update type def above)
-                    category: 'Financial Health',
-                    message: `Runway dropped from ${prevRunway.toFixed(1)} to ${currentRunway.toFixed(1)} months`,
-                    severity: 'HIGH'
-                });
-            }
+        if (dropPercent.isGreaterThanOrEqualTo(0.25)) {
+            anomalies.push({
+                type: 'RUNWAY_DROP' as any, // Cast to any to avoid TS error until type def is updated (or just update type def above)
+                category: 'Financial Health',
+                message: `Runway dropped from ${prevRunway.toFixed(1)} to ${currentRunway.toFixed(1)} months`,
+                severity: 'HIGH'
+            });
         }
     }
 

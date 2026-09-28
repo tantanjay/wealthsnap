@@ -13,11 +13,9 @@ import { getCachedTransactions } from '@services/domain/transactionService';
 import { getCachedInvestments } from '@services/domain/investmentService';
 import { getAllDebts } from '@services/domain/debtService';
 import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
-import { calculateTotalGoalContributions } from '@utils/savingsGoalMetrics';
 import { getLatestPrices } from '@services/domain/priceHistoryService';
 import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
 import {
-    calculateBurnRate,
     getCumulativeSpendingCurve,
     getCurrentMonthCumulative,
     getTransactionsByMonth,
@@ -25,9 +23,9 @@ import {
     getMonthlyTrends,
     calculateAverageIncome,
     calculateBalance,
-    getBurnRateBase
+    calculateRunwayTrend
 } from '@utils/financialMetrics';
-import { calculateTotalDebtObligations, calculatePrevDebtObligations, calculateCurrentDebtBalance, calculateDebtPayoffStrategy } from '@utils/debtMetrics';
+import { calculateTotalDebtObligations, calculateCurrentDebtBalance, calculateDebtPayoffStrategy } from '@utils/debtMetrics';
 import {
     calculateDebtDrag,
     calculateInvestmentBoost,
@@ -201,37 +199,11 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                 ? totalAvgIncome.dividedBy(monthsCount)
                 : monthIncome;
 
-            const totalCash = calculateBalance(t);
-
-            // Goal and debt principal/interest are added back below via goal contributions and minPayment.
-            const burnRateBase = getBurnRateBase(t);
-            const burnRate6 = calculateBurnRate(burnRateBase, 6);
-            const burnRate3 = calculateBurnRate(burnRateBase, 3);
-
-            const { expense: currentMonthBaseExpense } = calculateTotals(getBurnRateBase(currentMonthTransactions));
-            const baseBurnRate = burnRate6.gt(0) ? burnRate6 : (burnRate3.gt(0) ? burnRate3 : currentMonthBaseExpense);
-
-            const monthlyDebtObligations = calculateTotalDebtObligations(debts);
-            const monthlyGoalContributions = calculateTotalGoalContributions(goals, t);
-            const totalBurnRate = baseBurnRate.plus(monthlyDebtObligations).plus(monthlyGoalContributions);
-
-            const runway = totalBurnRate.gt(0) ? totalCash.dividedBy(totalBurnRate).toNumber() : 999;
-
-            // 23:59:59.999, not midnight - otherwise last month's final day drops out of prevCash
-            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-            const prevCash = calculateBalance(t, endOfLastMonth);
-            const prevBurnRateBase = calculateBurnRate(burnRateBase, 6, endOfLastMonth);
-            const prevMonthlyDebtObligations = calculatePrevDebtObligations(debts, endOfLastMonth, t);
-            // No calculatePrevGoalContributions equivalent - goals have no historical
-            // isPaused/frequency audit trail to reconstruct "as of last month" from (unlike
-            // debt, which can derive past status from the transaction ledger). Reusing
-            // today's monthlyGoalContributions is a reasonable approximation since goal
-            // schedules rarely change month-to-month; only affects the runway *trend*
-            // (runwayChange below), not the primary Runway/Burn Rate figures above.
-            const prevTotalBurnRate = prevBurnRateBase.plus(prevMonthlyDebtObligations).plus(monthlyGoalContributions);
-            const prevRunway = prevTotalBurnRate.gt(0) ? prevCash.dividedBy(prevTotalBurnRate).toNumber() : 999;
-            const hasHistory = t.some(tx => new Date(tx.date) < new Date(now.getFullYear(), now.getMonth(), 1));
-            const runwayChange = hasHistory ? (runway - prevRunway) : 0;
+            const runwayTrend = calculateRunwayTrend(t, debts, goals, now);
+            const totalCash = runwayTrend.cash;
+            const { base: baseBurnRate, debtObligations: monthlyDebtObligations, goalContributions: monthlyGoalContributions, total: totalBurnRate } = runwayTrend.burnRate;
+            const runway = runwayTrend.runway.isFinite() ? runwayTrend.runway.toNumber() : 999;
+            const runwayChange = runwayTrend.change;
 
             // Goal contributions count as living costs so drag is measured against the real Runway above.
             const debtDrag = calculateDebtDrag(totalCash, baseBurnRate.plus(monthlyGoalContributions), monthlyDebtObligations);

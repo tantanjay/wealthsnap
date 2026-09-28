@@ -1,8 +1,8 @@
 import { BigNumber } from 'bignumber.js';
 import { Transaction, Debt, DebtStatus, SavingsGoal } from '@types';
-import { calculateBalance, calculateBurnRate, calculateTotals, getBurnRateBase, getTransactionsByMonth, parseDate } from '@utils/financialMetrics';
-import { calculateTotalDebtObligations, calculateCurrentDebtBalance, buildDebtNameMap } from '@utils/debtMetrics';
-import { calculateTotalGoalContributions, calculateGoalBalance, calculateGoalProgress } from '@utils/savingsGoalMetrics';
+import { calculateBalance, calculateMonthlyBurnRate, parseDate } from '@utils/financialMetrics';
+import { calculateCurrentDebtBalance, buildDebtNameMap } from '@utils/debtMetrics';
+import { calculateGoalBalance, calculateGoalProgress } from '@utils/savingsGoalMetrics';
 
 export interface PortfolioStatsInput {
     totalEquity: number;
@@ -153,18 +153,8 @@ export const buildFinancialSnapshotData = (
         };
     });
 
-    // Goal and debt principal/interest are added back below via goal contributions and minPayment.
-    const burnRateBase = getBurnRateBase(transactions);
-    // Same 6M -> 3M -> current-month fallback as Home/Insights/FinancialHealthScreen, so a
-    // new user's AI-reported runway matches the one on screen.
-    const burnRate6 = calculateBurnRate(burnRateBase, 6);
-    const burnRate3 = calculateBurnRate(burnRateBase, 3);
-    const baseBurnRate = burnRate6.gt(0)
-        ? burnRate6
-        : (burnRate3.gt(0) ? burnRate3 : calculateTotals(getTransactionsByMonth(burnRateBase)).expense);
-    const monthlyDebtObligations = calculateTotalDebtObligations(debts);
-    const monthlyGoalContributions = calculateTotalGoalContributions(goals, transactions);
-    const monthlyBurnRate = baseBurnRate.plus(monthlyDebtObligations).plus(monthlyGoalContributions);
+    // Same Burn Rate as Home/Insights/Financial Health, so the AI-reported runway matches the screens.
+    const monthlyBurnRate = calculateMonthlyBurnRate(transactions, debts, goals).total;
 
     const runwayMonths = monthlyBurnRate.isGreaterThan(0)
         ? totalCash.dividedBy(monthlyBurnRate).dp(1).toNumber()
