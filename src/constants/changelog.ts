@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Debt Strategy and Financial Health: the disclaimer now sits at the bottom of the screen instead of above your numbers; the PIN setup warning and the Gemini API Usage cost note use the same design.
 - Home: the Net Worth card is now labeled "Projected Net Worth", and its Liabilities figure "Debt + Interest", since both include the interest you're projected to pay on your debts.
-- Savings Rate: debt principal you repay now counts as spent on the Insights card and in Monthly Summary, matching the Savings Rate Trend chart.
+- Savings Rate: debt principal you repay now counts as spent on the Insights card, Month-End Projection, and in Monthly Summary, matching the Savings Rate Trend chart.
 - Purchases funded from a savings goal now appear as a separate "+ from goals" line under Total Expense (Insights), Expenses (History), and Expense on Home's Monthly Net, which no longer subtracts them; the spending breakdown marks each category's goal-funded share.
 
 ### Fixed
@@ -23,8 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Investments: for an asset in a currency worth less than yours (e.g. JPY for a PHP profile), the investment options and history screens showed amounts in your currency but labeled with the asset's.
 - Budgets: purchases funded from a savings goal counted against category budgets in Budget Health, Home's budget %, the spending breakdown's budget bars, and Smart Suggestions.
 - Monthly Summary and Chat: foreign-currency investments were converted twice, inflating buy, sell, dividend, and fee amounts.
-- Burn Rate, Runway, Debts Drag, Debt vs Life, Safe-to-Spend, and Chat left out fees paid on debts.
-- Insights: Month-End Projection's Projected Savings and Savings Rate didn't count debt principal repaid.
+- Burn Rate, Runway, Debts Drag, Debt vs Life, Safe-to-Spend, and Chat stopped counting fees paid on debts since 1.17.0.
 - Runway-drop alert: transactions dated in the future were left out of your balance.
 
 ## [1.18.0] — 2026-09-27
