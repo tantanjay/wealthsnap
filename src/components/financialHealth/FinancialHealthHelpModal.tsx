@@ -96,7 +96,7 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                             (data.runwayMonths || 0) < 3 ? colors.error : colors.success
                         )}
                         <Text style={[styles.explanation, { color: colors.textSecondary }]}>
-                            Monthly Burn Rate = your average monthly living costs + debt minimum payments + savings goal contributions. Debt interest and fees are covered by the minimum payments, so they aren&apos;t counted twice.
+                            Monthly Burn Rate = your average monthly living costs + debt minimum payments + savings goal contributions. Debt interest is covered by the minimum payments, so it isn&apos;t counted twice. Debt fees aren&apos;t, so they count as living costs.
                         </Text>
 
                         <View style={styles.spacer} />

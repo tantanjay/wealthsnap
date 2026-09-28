@@ -28,6 +28,8 @@ import {
     getTopExpenses,
     calculateBurnRate,
     calculateTotals,
+    calculateBalance,
+    getBurnRateBase,
     getCategoryBreakdown,
 } from '@utils/financialMetrics';
 import {
@@ -507,7 +509,7 @@ const HomeScreen = ({ navigation }: any) => {
             setMonthlyObligationsPaid(obligationsPaid);
 
             // 8. Calculate Financial Health Metrics
-            const currentCashBalance = oInc.plus(oTransIn).minus(oExp.plus(oTransOut));
+            const currentCashBalance = calculateBalance(t);
 
             // A goal contribution already reduced currentCashBalance above (it's a
             // TRANSFER_OUT, summed into oTransOut like any other transfer) - so the goal's
@@ -543,13 +545,8 @@ const HomeScreen = ({ navigation }: any) => {
                 monthsActive = Math.max(1, diffMonths);
             }
 
-            // Excludes savingsGoalId-tagged EXPENSE - a goal-funded purchase's cash already
-            // left when it was contributed to the goal (added back via
-            // totalGoalContributionsValue below), not when it was later spent (that spend
-            // nets to ₱0 cash impact via the Auto-Offset pair), so leaving it in here would
-            // double-count. Debt-linked interest/fees are excluded too - totalDebtObligationsValue
-            // below adds each debt's minPayment (which includes interest), matching FinancialHealthScreen.
-            const baseBurnTransactions = t.filter(tx => !tx.savingsGoalId && !tx.debtId);
+            // Goal and debt principal/interest are added back below via goal contributions and minPayment.
+            const baseBurnTransactions = getBurnRateBase(t);
             const average6MonthBurn = calculateBurnRate(baseBurnTransactions, 6);
             const average3MonthBurn = calculateBurnRate(baseBurnTransactions, 3);
             const { expense: currentMonthBaseExpense } = calculateTotals(getTransactionsByMonth(baseBurnTransactions, now));

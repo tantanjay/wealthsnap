@@ -132,6 +132,11 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
                             }}>
                                 {formatCurrencyAmount(projection.projectedSavings, currency)}
                             </Text>
+                            {projection.debtPrincipalRepaid.isGreaterThan(0) && (
+                                <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4 }}>
+                                    After {formatCurrencyAmount(projection.debtPrincipalRepaid, currency)} debt principal repaid
+                                </Text>
+                            )}
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>
