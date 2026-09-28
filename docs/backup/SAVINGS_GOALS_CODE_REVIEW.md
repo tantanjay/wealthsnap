@@ -1,7 +1,7 @@
 # Savings Goals — Code Review & Verification Report
 
 **Branch:** `feat/savings-goals`  
-**Reference Specifications:** [TODO.md](file:///d:/Projects/TOOLS/wealthsnap/TODO.md) (`## 🎯 Savings Goals`), [docs/PLAN_SAVING_GOALS.md](file:///d:/Projects/TOOLS/wealthsnap/docs/PLAN_SAVING_GOALS.md)  
+**Reference Specifications:** [TODO.md](../../TODO.md) (`## 🎯 Savings Goals`), [PLAN_SAVING_GOALS.md](PLAN_SAVING_GOALS.md)  
 **Date:** September 13, 2026  
 **Status:** Verification Complete — **8 Critical Accounting/Data-Integrity/Analytics Bugs** & **6 Edge Cases** Identified  
 
@@ -36,7 +36,7 @@ To prevent severe regression during remediation, the following invariant distinc
 
 ## 3. Alignment Matrix (Phase by Phase)
 
-| Phase | Planned Scope ([PLAN_SAVING_GOALS.md](file:///d:/Projects/TOOLS/wealthsnap/docs/PLAN_SAVING_GOALS.md)) | Implementation Status | Alignment Notes |
+| Phase | Planned Scope ([PLAN_SAVING_GOALS.md](PLAN_SAVING_GOALS.md)) | Implementation Status | Alignment Notes |
 |---|---|---|---|
 | **Phase 0** | Locked vocabulary (`subCategory`), `SavingsGoal` interface, derived balance model | ✅ **Aligned** | Defined in [types/index.ts](file:///d:/Projects/TOOLS/wealthsnap/src/types/index.ts) & [constants/savingsGoals.ts](file:///d:/Projects/TOOLS/wealthsnap/src/constants/savingsGoals.ts). |
 | **Phase 1** | DB schema (v19), CRUD services, UI screens, forms, detail screens, top-ups, sweeps | ✅ **Aligned** | Complete in [savingsGoalService.ts](file:///d:/Projects/TOOLS/wealthsnap/src/services/database/savingsGoalService.ts), [SavingsGoalsScreen.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/screens/SavingsGoalsScreen.tsx), [SavingsGoalDetailScreen.tsx](file:///d:/Projects/TOOLS/wealthsnap/src/screens/SavingsGoalDetailScreen.tsx). |
