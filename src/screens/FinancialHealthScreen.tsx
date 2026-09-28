@@ -24,7 +24,8 @@ import {
     calculateTotals,
     getMonthlyTrends,
     calculateAverageIncome,
-    calculateBalance
+    calculateBalance,
+    getBurnRateBase
 } from '@utils/financialMetrics';
 import { calculateTotalDebtObligations, calculatePrevDebtObligations, calculateCurrentDebtBalance, calculateDebtPayoffStrategy } from '@utils/debtMetrics';
 import {
@@ -200,26 +201,15 @@ const FinancialHealthScreen = ({ navigation }: any) => {
                 ? totalAvgIncome.dividedBy(monthsCount)
                 : monthIncome;
 
-            let totalCash = new BigNumber(0);
-            let oInc = new BigNumber(0), oExp = new BigNumber(0);
-            t.forEach(tx => {
-                if (tx.type === 'INCOME' || tx.type === 'TRANSFER_IN') oInc = oInc.plus(tx.amount.abs());
-                if (tx.type === 'EXPENSE' || tx.type === 'TRANSFER_OUT') oExp = oExp.plus(tx.amount.abs());
-            });
-            totalCash = oInc.minus(oExp);
+            const totalCash = calculateBalance(t);
 
-            // Filter out debt transactions AND savingsGoalId-tagged EXPENSE from burn rate to
-            // avoid double-counting - interest/fees are added back via monthlyDebtObligations
-            // below, and a goal-funded purchase's cash already left when it was contributed
-            // to the goal (added back via monthlyGoalContributions), not when it was later
-            // spent (that spend nets to ₱0 cash impact via the Auto-Offset pair).
-            const nonDebtTransactions = t.filter(tx => !tx.debtId && !tx.savingsGoalId);
-            const burnRate6 = calculateBurnRate(nonDebtTransactions, 6);
-            const burnRate3 = calculateBurnRate(nonDebtTransactions, 3);
+            // Goal and debt principal/interest are added back below via goal contributions and minPayment.
+            const burnRateBase = getBurnRateBase(t);
+            const burnRate6 = calculateBurnRate(burnRateBase, 6);
+            const burnRate3 = calculateBurnRate(burnRateBase, 3);
 
-            const currentNonDebt = currentMonthTransactions.filter(tx => !tx.debtId && !tx.savingsGoalId);
-            const { expense: currentMonthNonDebtExpense } = calculateTotals(currentNonDebt);
-            const baseBurnRate = burnRate6.gt(0) ? burnRate6 : (burnRate3.gt(0) ? burnRate3 : currentMonthNonDebtExpense);
+            const { expense: currentMonthBaseExpense } = calculateTotals(getBurnRateBase(currentMonthTransactions));
+            const baseBurnRate = burnRate6.gt(0) ? burnRate6 : (burnRate3.gt(0) ? burnRate3 : currentMonthBaseExpense);
 
             const monthlyDebtObligations = calculateTotalDebtObligations(debts);
             const monthlyGoalContributions = calculateTotalGoalContributions(goals, t);
@@ -229,16 +219,8 @@ const FinancialHealthScreen = ({ navigation }: any) => {
 
             // 23:59:59.999, not midnight - otherwise last month's final day drops out of prevCash
             const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-            let prevInc = new BigNumber(0), prevExp = new BigNumber(0);
-            t.forEach(tx => {
-                const d = new Date(tx.date);
-                if (d <= endOfLastMonth) {
-                    if (tx.type === 'INCOME' || tx.type === 'TRANSFER_IN') prevInc = prevInc.plus(tx.amount.abs());
-                    if (tx.type === 'EXPENSE' || tx.type === 'TRANSFER_OUT') prevExp = prevExp.plus(tx.amount.abs());
-                }
-            });
-            const prevCash = prevInc.minus(prevExp);
-            const prevBurnRateBase = calculateBurnRate(nonDebtTransactions, 6, endOfLastMonth);
+            const prevCash = calculateBalance(t, endOfLastMonth);
+            const prevBurnRateBase = calculateBurnRate(burnRateBase, 6, endOfLastMonth);
             const prevMonthlyDebtObligations = calculatePrevDebtObligations(debts, endOfLastMonth, t);
             // No calculatePrevGoalContributions equivalent - goals have no historical
             // isPaused/frequency audit trail to reconstruct "as of last month" from (unlike
