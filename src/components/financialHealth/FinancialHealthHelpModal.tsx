@@ -376,7 +376,7 @@ const FinancialHealthHelpModal: React.FC<FinancialHealthHelpModalProps> = ({
                             <Text style={{ marginLeft: 8, color: colors.text, fontWeight: 'bold' }}>Note on data</Text>
                         </View>
                         <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>
-                            Living costs use your 6-month average (3-month if you&apos;re newer) and Net Flow your 3-month average, so projections stay stable rather than swinging on a single expensive month.
+                            Living costs use your average over up to 6 full months (your daily spending so far, scaled to a month, if you don&apos;t have a full month yet) and Net Flow your 3-month average, so projections stay stable rather than swinging on a single expensive month.
                         </Text>
                     </View>
                 </View>

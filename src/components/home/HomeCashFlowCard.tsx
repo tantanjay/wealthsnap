@@ -18,6 +18,8 @@ interface HomeCashFlowCardProps {
     monthGoalExpense: BigNumber;
     monthTransferIn: BigNumber;
     monthTransferOut: BigNumber;
+    overallBalance: BigNumber;
+    monthBalance: BigNumber;
     isLoading: boolean;
     isPrivacyEnabled: boolean;
     currency: string;
@@ -37,6 +39,8 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
     monthGoalExpense,
     monthTransferIn,
     monthTransferOut,
+    overallBalance,
+    monthBalance,
     isLoading,
     isPrivacyEnabled,
     currency,
@@ -128,10 +132,7 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
                                 {isLoading ? (
                                     <Skeleton width={150} height={40} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
                                 ) : (
-                                    formatCurrency(
-                                        overallIncome.plus(overallTransferIn)
-                                            .minus(overallExpense.plus(overallTransferOut))
-                                    )
+                                    formatCurrency(overallBalance)
                                 )}
                             </Text>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
@@ -182,10 +183,7 @@ const HomeCashFlowCard: React.FC<HomeCashFlowCardProps> = ({
                                 {isLoading ? (
                                     <Skeleton width={150} height={40} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
                                 ) : (
-                                    formatCurrency(
-                                        monthIncome.plus(monthTransferIn)
-                                            .minus(monthExpense.plus(monthTransferOut))
-                                    )
+                                    formatCurrency(monthBalance)
                                 )}
                             </Text>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
