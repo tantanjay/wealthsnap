@@ -100,19 +100,20 @@ export default function App() {
         <GestureHandlerRootView style={{ flex: 1 }}>
           <ThemeProvider>
             <GlobalErrorBoundary>
-              <SecurityProvider>
-                <PrivacyProvider>
-                  <AlertProvider>
-                    <PrivacyGuard />
-                    <SafeAreaProvider>
+              {/* Must wrap SecurityProvider: its lock overlay renders PinEntryScreen, which reads insets. */}
+              <SafeAreaProvider>
+                <SecurityProvider>
+                  <PrivacyProvider>
+                    <AlertProvider>
+                      <PrivacyGuard />
                       <StatusBar style="auto" />
                       <FloatingGearProvider>
                         <AppContent initialRoute={initialRoute} />
                       </FloatingGearProvider>
-                    </SafeAreaProvider>
-                  </AlertProvider>
-                </PrivacyProvider>
-              </SecurityProvider>
+                    </AlertProvider>
+                  </PrivacyProvider>
+                </SecurityProvider>
+              </SafeAreaProvider>
             </GlobalErrorBoundary>
           </ThemeProvider>
         </GestureHandlerRootView>
