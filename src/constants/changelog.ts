@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - Smart Alerts: a new Out of Cash alert reminds you every month your tracked cash is at or below zero.
+- Crash screen: a new "Back up data" button saves an encrypted backup before you reload, and screenshots are always allowed there so you can capture the error.
 
 ### Changed
 - Debt Strategy and Financial Health: the disclaimer now sits at the bottom of the screen instead of above your numbers; the PIN setup warning and the Gemini API Usage cost note use the same design.
@@ -34,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Burn Rate, Runway, and the Comparison chart's averages treated a partly tracked month as a full one, understating spending for newer accounts.
 - Insights: the Runway explanation left out savings goal contributions.
 - Help Center: the Burn Rate formula misdescribed goal contributions and how new accounts are averaged.
+- PIN lock: the lock screen could crash the app with a "No safe area value available" error.
 
 ## [1.18.0] — 2026-09-27
 
