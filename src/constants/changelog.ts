@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.19.0] — 2026-09-29
+
 ### Added
 - Smart Alerts: a new Out of Cash alert reminds you every month your tracked cash is at or below zero.
 - Crash screen: a new "Back up data" button saves an encrypted backup before you reload, and screenshots are always allowed there so you can capture the error.
@@ -36,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Insights: the Runway explanation left out savings goal contributions.
 - Help Center: the Burn Rate formula misdescribed goal contributions and how new accounts are averaged.
 - PIN lock: the lock screen could crash the app with a "No safe area value available" error.
+
+---
 
 ## [1.18.0] — 2026-09-27
 
