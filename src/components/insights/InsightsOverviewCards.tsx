@@ -249,7 +249,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                 <ScrollView showsVerticalScrollIndicator={false}>
                     <View style={{ paddingBottom: 40 }}>
                         <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24, marginBottom: 15 }}>
-                            Financial Runway shows how many months you can sustain your current lifestyle based on your net liquid balance and average monthly expenses (burn rate) <Text style={{ fontWeight: 'bold' }}>+ debt obligations</Text>.
+                            Financial Runway shows how many months you can sustain your current lifestyle based on your net liquid balance and your Burn Rate: average monthly spending <Text style={{ fontWeight: 'bold' }}>+ debt minimum payments + savings goal contributions</Text>.
                         </Text>
                         <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: colors.primary, marginBottom: 15 }}>
                             <Text style={{ color: colors.textSecondary, fontSize: 14, fontStyle: 'italic', lineHeight: 20 }}>
@@ -264,7 +264,7 @@ const InsightsOverviewCards: React.FC<InsightsOverviewCardsProps> = ({
                             </Text>
                         </View>
                         <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            Calculation: Net Liquid Balance ÷ Average Monthly Expense
+                            Calculation: Net Liquid Balance ÷ Burn Rate
                         </Text>
                     </View>
                 </ScrollView>

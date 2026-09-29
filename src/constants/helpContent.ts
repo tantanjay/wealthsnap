@@ -206,9 +206,9 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading2', text: 'Burn Rate' },
             { type: 'formula', text: 'Burn Rate = Total Expenses (prior months) ÷ Effective Months' },
-            { type: 'paragraph', text: '"Total Expenses" here excludes purchases funded from a savings goal (that cash already left when contributed) and instead includes the actual goal contributions made that month — a goal-funded purchase would otherwise look like a spending spike, and its contribution would otherwise go uncounted.' },
+            { type: 'paragraph', text: '"Total Expenses" here excludes purchases funded from a savings goal (that cash already left when contributed), so a goal-funded purchase doesn\'t look like a spending spike.' },
             { type: 'paragraph', text: 'Effective Months Logic:' },
-            { type: 'blockquote', text: 'Prevents inflated burn rates for new accounts by only averaging over months with actual data, and excludes the current, in-progress month.' },
+            { type: 'blockquote', text: 'Averages only over the months since your first transaction, so a new account\'s burn rate isn\'t understated, and excludes the current, in-progress month. A month with no spending in that range still counts, as 0.' },
             { type: 'formula', text: 'effectiveMonths = min(monthsBack, accountAgeMonths)' },
             { type: 'paragraph', text: 'The Burn Rate and Runway cards then strip out all savings-goal transactions and debt principal/interest payments before this calculation (both are already inside a debt\'s minimum payment; debt fees stay in as normal spending, since minimum payments don\'t cover them) and add back your total minimum debt payments plus your active goals\' current monthly-equivalent contribution on top (see Financial Runway above) — a goal already at its target stops counting. The Comparison Chart\'s Avg 3M/6M/1Y bars use plain Burn Rate without that debt/goal adjustment.' },
 
