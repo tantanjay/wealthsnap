@@ -53,9 +53,9 @@ export const SavingsGoalsInfoModal: React.FC<SavingsGoalsInfoModalProps> = ({ vi
 
                 <InfoRow
                     title="Putting money into a goal"
-                    tag="COUNTS AS BURN"
+                    tag="LOWERS CASH"
                     tagColor={colors.error}
-                    body="A contribution (recurring or manual) lowers your cash on hand right away, so it's included in Burn Rate, Runway, and Safe-to-Spend - the same as if you'd spent it, because that cash really did leave your pocket."
+                    body="Any contribution lowers your cash on hand right away, so your Runway and Safe-to-Spend go down - that cash really did leave your pocket. A recurring contribution also counts in Burn Rate as a monthly cost, like a bill; a one-off contribution doesn't, since it won't repeat."
                 />
 
                 <InfoRow
@@ -82,7 +82,7 @@ export const SavingsGoalsInfoModal: React.FC<SavingsGoalsInfoModalProps> = ({ vi
                 <View style={{ marginTop: 6, backgroundColor: colors.primary + '15', padding: 12, borderRadius: 10 }}>
                     <Text style={{ color: colors.text, fontSize: 12, lineHeight: 18 }}>
                         <Text style={{ fontWeight: 'bold' }}>Example: </Text>
-                        You contribute ₱10,000 to &quot;Travel Fund&quot; this month, then buy a ₱1,500 souvenir with it. Burn Rate/Runway this month go up by ₱10,000 (the contribution) &mdash; the ₱1,500 purchase doesn&apos;t add anything extra, and next month&apos;s spending chart won&apos;t show a spike either.
+                        You contribute ₱10,000 to &quot;Travel Fund&quot; this month, then buy a ₱1,500 souvenir with it. Your cash drops by ₱10,000 when you contribute, so your Runway gets shorter &mdash; and if that ₱10,000 is a monthly recurring contribution, Burn Rate goes up by ₱10,000 too. The ₱1,500 purchase doesn&apos;t take anything extra, and next month&apos;s spending chart won&apos;t show a spike either.
                     </Text>
                 </View>
             </ScrollView>

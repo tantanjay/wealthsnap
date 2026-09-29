@@ -150,11 +150,11 @@ These apply to every metric unless its section says otherwise.
 
 **Formula:** the month's expenses summed per item (`category`) or per category group, each with its share of the total. Goal-funded purchases are included, and each row carries its `goalFundedAmount`. Top Category = the largest item
 
-**Shown on:** Insights (spending pie, Top Spending list, All Categories, Top Category tile)
+**Shown on:** Insights (spending pie, Top Spending list, All Categories, Top Category tile, category trend popup) · Home (Top Transactions)
 
 **Computed from:** `transactions` (the month's expenses by `category`; groups come from the built-in category list)
 
-**Notes:** `getCategoryBreakdown`. The Group/Item toggle changes the pie and lists; Top Category always uses items.
+**Notes:** `getCategoryBreakdown`. The Group/Item toggle changes the pie and lists; Top Category always uses items. The category trend popup (`getCategoryTrend`) applies the same rule to each of the past months. Home's Top Transactions (`getTopExpenses`) lists the month's five largest single expenses. Both include goal-funded purchases.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
@@ -195,7 +195,7 @@ These apply to every metric unless its section says otherwise.
 
 **Computed from:** `transactions` (spending per category) · `budgets`
 
-**Notes:** The goal was the budget for its own purchases.
+**Notes:** The goal was the budget for its own purchases. The colors apply only to the Budget Health total. Per-category statuses in Monthly Summary and Chat use their own thresholds: a warning at ≥80% of that category's budget, over budget above 100%.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
@@ -208,7 +208,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula:** average of prior months' spending, excluding goal-tagged transactions and debt principal/interest (6-month → 3-month → this-month fallback) + debt minimum payments + goal monthly contributions
 
-**Shown on:** Home · Insights (Burn Rate, Annualized Expense) · Financial Health · Debt Strategy (Time Cost) · Chat
+**Shown on:** Home (inside Runway, Debts Drag and Investment Boost; no Burn Rate figure of its own) · Insights (Burn Rate, Annualized Expense) · Financial Health · Debt Strategy (Time Cost) · Chat
 
 **Computed from:** `transactions` (spending base) · `debts` (`minPayment` of active debts you owe) · `savings_goals` (`recurringAmount` ÷ `frequency`, unless paused or at `targetAmount`)
 
@@ -276,7 +276,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (Total Debt):** current principal on active debts you owe; no future interest
 
-**Shown on:** Home (Projected Net Worth, Debts card) · Financial Health · Debt Strategy (Total Debt) · Chat
+**Shown on:** Home (Projected Net Worth, Debts card) · Financial Health (Total Debt, inside Self-sustain Impact) · Debt Strategy (Total Debt) · Chat (Total Debt)
 
 **Computed from:** `transactions` (cash, goal balances, principal repaid) · `investments` + `price_history` (market value) · `debts` (`initialAmount`, and `interestRate`, `interestType`, `termMonths`, `minPayment` for projected interest)
 
