@@ -62,9 +62,9 @@ These apply to every metric unless its section says otherwise.
 
 ## Runway
 
-**Formula:** Cash Balance ÷ [Burn Rate](#burn-rate). The runway-drop alert fires when it falls ≥25% below Runway Change's last-month figure
+**Formula:** Cash Balance ÷ [Burn Rate](#burn-rate). The runway-drop alert fires when it falls ≥25% below Runway Change's last-month figure. While Cash Balance is ₱0 or below, the out-of-cash alert fires instead, every month
 
-**Shown on:** Home · Insights · Financial Health · Chat · runway-drop alert
+**Shown on:** Home · Insights · Financial Health · Chat · runway-drop alert · out-of-cash alert
 
 **Computed from:** `transactions` (balance, spending) · `debts` (`minPayment`) · `savings_goals` (recurring contribution)
 
@@ -79,6 +79,7 @@ These apply to every metric unless its section says otherwise.
 | 1.15.0 | Same | Chat gets its own Runway |
 | 1.18.0 | Same | Runway-drop alert no longer drops the last day of last month |
 | Unreleased | Alert uses the screens' Runway | Runway-drop alert now compares the same Runway and last-month figure as Runway Change (`calculateRunwayTrend`) |
+| Unreleased | Out-of-cash alert while Cash Balance ≤ 0, in place of the runway-drop alert | The runway-drop alert skipped a drop to zero or below (since 1.8.1). The new alert repeats every month cash stays there, with its own once-a-month notification |
 
 ## Runway Change
 
@@ -206,13 +207,13 @@ These apply to every metric unless its section says otherwise.
 
 ## Burn Rate
 
-**Formula:** average of prior months' spending, excluding goal-tagged transactions and debt principal/interest (6-month → 3-month → this-month fallback) + debt minimum payments + goal monthly contributions
+**Formula:** average of up to 6 prior full months' spending (the first month counts only if it began on the 1st), excluding goal-tagged transactions and debt principal/interest; with no full month yet, daily spending since the first transaction × 30.44. Then + debt minimum payments + goal monthly contributions
 
 **Shown on:** Home (inside Runway, Debts Drag and Investment Boost; no Burn Rate figure of its own) · Insights (Burn Rate, Annualized Expense) · Financial Health · Debt Strategy (Time Cost) · Chat
 
 **Computed from:** `transactions` (spending base) · `debts` (`minPayment` of active debts you owe) · `savings_goals` (`recurringAmount` ÷ `frequency`, unless paused or at `targetAmount`)
 
-**Notes:** `calculateMonthlyBurnRate`, built on `getBurnRateBase`. Debt fees stay in, since minimum payments don't cover them. Debt Strategy's Time Cost uses the 6-month base alone, with no fallback, minimum payments or goals. The Comparison Chart's 3M/6M/1Y averages leave out goal purchases and skip the debt/goal add-on, since they're compared against plain monthly spending.
+**Notes:** `calculateMonthlyBurnRate`, built on `getBurnRateBase`. Debt fees stay in, since minimum payments don't cover them. Debt Strategy's Time Cost uses the 6-month base alone, with no fallback, minimum payments or goals. The Comparison Chart's 3M/6M/1Y averages leave out goal purchases and skip the debt/goal add-on, since they're compared against plain monthly spending. They count full months only, with no fallback.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
@@ -228,6 +229,7 @@ These apply to every metric unless its section says otherwise.
 | Unreleased | Same | Chat uses the same new-user fallback as the screens |
 | Unreleased | Base leaves out goal-tagged transactions and debt principal/interest (fees stay in) + minimum payments + goal contributions | **↩ Reverses the fees half of 1.17.0/1.18.0.** One shared base (`getBurnRateBase`) replaces copies in six places |
 | Unreleased | Same | Home, Insights, Financial Health and Chat share one calculation (`calculateMonthlyBurnRate`); the runway-drop alert uses it too |
+| Unreleased | Up to 6 prior full months; with none yet, daily spending since the first transaction × 30.44 | A partly tracked first month no longer counts as a full one. The 3-month step, which never changed the result, is gone, and the this-month fallback is pro-rated instead of treating a partial month as a whole one. Also changes Runway Change's last month, Debt Strategy's Time Cost and the Comparison Chart's averages |
 
 ## Debts Drag
 
