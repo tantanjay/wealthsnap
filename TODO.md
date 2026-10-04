@@ -126,7 +126,7 @@ A feature to track funds that accumulate over time for specific purposes (like a
 
 **Status:** All 5 phases implemented (schema/migration, `savingsGoalService.ts`/`savingsGoalMetrics.ts`, the Auto-Offset/Split-Funding logic in [TransactionForm.tsx](src/components/transaction/TransactionForm.tsx), recurring contribution + one-time goal-reached notification, [SavingsGoalsScreen.tsx](src/screens/SavingsGoalsScreen.tsx) + form + gear menu, Home dashboard widget, the Net Worth fix in [HomeScreen.tsx](src/screens/HomeScreen.tsx), Insights/Analytics burn-rate/trend filtering, History-list/Monthly-Summary display, AI chat context, and Backup/Export/Sync/Clear-Data below). All of it passes `tsc`/`eslint` clean. **Not yet run on a real device/emulator** — same caveat as other recent features in this log — needs a full walkthrough before being considered verified: contribution → spend → split-funding → delete → pause → goal-deletion-sweep; a check that Insights/Home/History/FinancialHealth all show consistent Burn Rate/Runway numbers; the History list + Monthly Summary text for a goal-tagged month; an AI chat conversation touching a goal-funded purchase; and a full Backup → Clear Data → Restore cycle plus an XLSX export, confirming goals and their recurring rules come back intact with FKs remapped.
 
-See [docs/backup/PLAN_SAVING_GOALS.md](docs/backup/PLAN_SAVING_GOALS.md) for the full phased implementation plan and rationale.
+See [plans/SAVING_GOALS.md](docs/plans/SAVING_GOALS.md) for the full phased implementation plan and rationale.
 
 - [x] **Database Schema Updates:** ([databaseSchema.ts](src/services/database/databaseSchema.ts))
   - Update `transactions` table: Add `savingsGoalId TEXT` to keep linking uniform with how `investmentId` and `debtId` work.

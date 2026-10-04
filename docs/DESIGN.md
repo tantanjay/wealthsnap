@@ -1,6 +1,6 @@
 # Design System — Refined Minimal
 
-The visual rules for every WealthSnap screen. Read this before building or restyling any UI. The reference implementation is the clickable prototype at [mock/navigation-redesign/navigation-redesign.html](../mock/navigation-redesign/navigation-redesign.html) — its CSS variables mirror the tokens below one-to-one.
+The visual rules for every WealthSnap screen. Read this before building or restyling any UI. The reference implementation is the clickable prototype at [docs/mockups/navigation-redesign/navigation-redesign.html](mockups/navigation-redesign/navigation-redesign.html) — its CSS variables mirror the tokens below one-to-one.
 
 **The idea in one line:** minimal means *fewer containers and deliberate hierarchy*, not the same box repeated. Content sits on the page; numbers carry the design.
 

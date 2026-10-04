@@ -191,7 +191,7 @@ changes in both ranges), plus `smartAdvisorService.ts` (only a 21-line unrelated
 Reviewed each via a parallel background subagent, full current file + call sites, not a diff.
 
 **Commit:** code fixes + this log entry in one commit; release notes in a separate commit (see
-`.notes/release/unreleased.md` and `CHANGELOG.md` "Investments"/"Restore" Fixed bullets).
+`docs/release/unreleased.md` and `CHANGELOG.md` "Investments"/"Restore" Fixed bullets).
 
 ### Fixed
 - `priceHistoryService.ts` `bulkSavePriceHistories`: bind array had 11 values for a 10-placeholder

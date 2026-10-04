@@ -2,7 +2,7 @@
 
 **Status:** Idea / mockup only — not yet implemented in the app.
 **Mockup:** [navigation-redesign.html](./navigation-redesign.html) — one fully clickable phone prototype (light/dark toggle above the phone). This file and that HTML are the single source for *what* the redesign contains.
-**Visual rules:** [docs/DESIGN.md](../../docs/DESIGN.md) — the Refined Minimal design system (tokens, type, components, screen checklist). This file says what goes on each screen; DESIGN.md says how it looks.
+**Visual rules:** [docs/DESIGN.md](../../DESIGN.md) — the Refined Minimal design system (tokens, type, components, screen checklist). This file says what goes on each screen; DESIGN.md says how it looks.
 
 ## Why
 
@@ -150,7 +150,7 @@ Nothing should require user action, so existing preferences migrate silently:
 
 ## 8. Versioning
 
-Per `.notes/dev/versioning-and-release-process.md` Section 1, this is a **MINOR** release (new screens, redesigned navigation, new persisted preference) as long as the migration above is silent — 1.19.0 from 1.18.0. Calling it 2.0.0 is a deliberate product choice and would need a line added to that doc allowing MAJOR for a full redesign.
+Per `docs/dev/versioning-and-release-process.md` Section 1, this is a **MINOR** release (new screens, redesigned navigation, new persisted preference) as long as the migration above is silent — 1.19.0 from 1.18.0. Calling it 2.0.0 is a deliberate product choice and would need a line added to that doc allowing MAJOR for a full redesign.
 
 ## Open questions before implementation
 
