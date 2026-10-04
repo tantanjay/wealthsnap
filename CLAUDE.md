@@ -21,6 +21,7 @@ Guidance for Claude Code when working in this repository.
 - When a message reads as discussion, brainstorming, or planning (including a reply that just answers a clarifying question), don't treat it as authorization to start coding — even if it sounds like a decision or an instruction phrased close to "do this."
 - Only start coding once the user explicitly says so — "code it," "implement it," "proceed," "please do this [as the actual ask, not a hypothetical]," or similarly unambiguous. If it's unclear whether a message means "build this" vs. "here's my thinking, keep discussing," ask rather than assume.
 - Exception: a small, obvious refinement to something already implemented this session (a tweak to styling/copy/sizing, "make X simpler," "that's too tall," etc.) can be coded directly, no confirmation needed. This only covers minor follow-up polish — a new feature, a behavior change, or anything with real design decisions still needs explicit go-ahead first.
+- **Check the actual blast radius before advising against a change.** Before recommending against moving, renaming, or restructuring something because "too much depends on it," grep for the real references and quote the count — don't estimate it.
 
 ## Code comment style
 
