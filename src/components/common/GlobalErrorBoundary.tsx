@@ -1,15 +1,72 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ScreenCapture from 'expo-screen-capture';
+import * as Sharing from 'expo-sharing';
 import * as Updates from 'expo-updates';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import BackupRestoreModal from '@components/data/BackupRestoreModal';
 import { ASYNC_KEYS } from '@constants/config';
+import { BackupProgress, createBackup } from '@services/integrations/backupService';
 import { generateUUID } from '@utils/uuid';
 
 interface Props {
     children: ReactNode;
 }
+
+// Lives inside the boundary's fallback, so it can't rely on providers that sit below the boundary.
+const CrashBackupAction: React.FC = () => {
+    const [visible, setVisible] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [progress, setProgress] = useState<BackupProgress | null>(null);
+    const [failure, setFailure] = useState<string | null>(null);
+
+    const handleSubmit = async (password: string) => {
+        if (!password) {
+            setFailure('Password is required to encrypt your backup.');
+            return;
+        }
+
+        setFailure(null);
+        setIsProcessing(true);
+        try {
+            const uri = await createBackup(password, setProgress);
+            setVisible(false);
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(uri);
+            } else {
+                setFailure(`Backup created at ${uri}`);
+            }
+        } catch (e) {
+            setFailure(`Failed to create backup: ${(e as Error).message}`);
+        } finally {
+            setIsProcessing(false);
+            setProgress(null);
+        }
+    };
+
+    return (
+        <>
+            <TouchableOpacity style={styles.secondaryButton} onPress={() => setVisible(true)}>
+                <Text style={styles.secondaryButtonText}>Back up data</Text>
+            </TouchableOpacity>
+            {failure ? <Text style={styles.backupMessage}>{failure}</Text> : null}
+            {/* The app-level SafeAreaProvider is below the boundary, so the modal needs its own. */}
+            <SafeAreaProvider>
+                <BackupRestoreModal
+                    visible={visible}
+                    mode="backup"
+                    onClose={() => setVisible(false)}
+                    onSubmit={handleSubmit}
+                    isProcessing={isProcessing}
+                    progress={progress}
+                />
+            </SafeAreaProvider>
+        </>
+    );
+};
 
 interface State {
     hasError: boolean;
@@ -41,6 +98,9 @@ export class GlobalErrorBoundary extends Component<Props, State> {
             error,
             errorInfo
         });
+
+        // PrivacyGuard unmounts with the crash and may leave screenshots blocked; the error is what users need to capture.
+        ScreenCapture.allowScreenCaptureAsync().catch(() => { });
 
         // Save crash report for later analysis
         this.saveCrashReport(error, errorInfo);
@@ -124,6 +184,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                         <TouchableOpacity style={styles.button} onPress={this.handleRestart}>
                             <Text style={styles.buttonText}>Reload App</Text>
                         </TouchableOpacity>
+                        <CrashBackupAction />
                     </View>
                 </View>
             );
@@ -189,5 +250,24 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
+    },
+    secondaryButton: {
+        marginTop: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 30,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#007AFF',
+    },
+    secondaryButtonText: {
+        color: '#007AFF',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    backupMessage: {
+        marginTop: 12,
+        fontSize: 13,
+        color: '#e03131',
+        textAlign: 'center',
     }
 });

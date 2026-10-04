@@ -58,6 +58,12 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
                     color: '#F44336', // Red
                     title: 'Runway Drop'
                 };
+            case 'OUT_OF_CASH':
+                return {
+                    icon: 'battery-dead-outline' as const,
+                    color: '#F44336', // Red
+                    title: 'Out of Cash'
+                };
             case 'SPIKE':
                 return {
                     icon: 'trending-up-outline' as const,
@@ -138,7 +144,7 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
                 <ScrollView showsVerticalScrollIndicator={false}>
                     <View>
                         <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                            WealthSnap helps you stay on top of your finances by detecting three types of events:
+                            WealthSnap helps you stay on top of your finances by detecting four types of events:
                         </Text>
 
                         <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5 }}>
@@ -177,6 +183,19 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
                                     <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>Runway Drop</Text>
                                     <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
                                         Triggered when your financial runway drops by 25% or more compared to last month (e.g. 8 months → 6 months).
+                                    </Text>
+                                </View>
+                            </View>
+
+                            {/* Out of Cash */}
+                            <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+                                <View style={{ width: 32, alignItems: 'center', marginRight: 12 }}>
+                                    <Ionicons name="battery-dead-outline" size={24} color="#F44336" />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>Out of Cash</Text>
+                                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
+                                        Shown every month your tracked cash balance is at or below zero. It replaces Runway Drop while it applies, so you don&apos;t get both.
                                     </Text>
                                 </View>
                             </View>

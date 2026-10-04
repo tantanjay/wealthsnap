@@ -167,7 +167,7 @@ Includes:
 - Debt minimum payments
 - Mandatory obligations
 
-Runway Drop Alert triggered at ≥25% decline MoM.
+Runway Drop Alert triggered at ≥25% decline MoM. While the balance is at or below zero, an Out of Cash alert fires instead, every month.
 
 ---
 
@@ -277,6 +277,7 @@ Triggers for:
 - Budget breaches
 - Spending spikes
 - Runway drop ≥25%
+- Out of cash (balance ≤ 0, repeats monthly)
 - Category-level anomaly detection
 
 Immediate anomaly detection after transaction save (v1.8.1 fix).

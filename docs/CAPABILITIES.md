@@ -342,6 +342,7 @@ A powerful alternate history view featuring:
 - Category-level anomaly detection
 - Spending spike detection
 - Runway Drop Detection (≥25%)
+- Out of Cash reminder, every month your tracked cash is at or below zero
 
 Alerts run immediately after saving transactions.
 

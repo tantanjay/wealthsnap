@@ -228,66 +228,57 @@ export const getMonthEndProjection = (transactions: Transaction[]) => {
     };
 };
 
-export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: number = 6, referenceDate: Date = new Date()): BigNumber => {
-    if (allTransactions.length === 0) return new BigNumber(0);
+const DAY_MS = 24 * 60 * 60 * 1000;
+const AVG_DAYS_PER_MONTH = 30.44;
 
-    const today = referenceDate;
-    // Start from LAST month to avoid using partial current data which lowers the average artificially
-    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-
-    // Find the earliest transaction date to determine account age
-    const firstTxDate = allTransactions.reduce((earliest, t) => {
+const getEarliestDate = (transactions: Transaction[]): Date =>
+    transactions.reduce((earliest, t) => {
         const tDate = parseDate(t.date);
         return tDate < earliest ? tDate : earliest;
     }, new Date());
 
-    const firstTxMonthStart = new Date(firstTxDate.getFullYear(), firstTxDate.getMonth(), 1);
-
-    // Calculate full months of history available (up to last month)
-    const monthDiff = (lastMonthStart.getFullYear() - firstTxMonthStart.getFullYear()) * 12 +
-        (lastMonthStart.getMonth() - firstTxMonthStart.getMonth()) + 1;
-
-    // If less than 1 month of history (i.e., new user in their first month), return 0
-    // The UI handles this 0 fallback by showing "Calculating..." or falling back to current month logic
-    if (monthDiff < 1) return new BigNumber(0);
-
-    const effectiveMonths = Math.max(1, Math.min(monthsBack, monthDiff));
-    let totalExpense = new BigNumber(0);
-    let monthsWithData = 0;
-
-    // Sum expenses for the effective window (excluding current month)
-    for (let i = 0; i < effectiveMonths; i++) {
-        const d = new Date(today.getFullYear(), today.getMonth() - 1 - i, 1); // Start from previous month
-        const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
-
-        // Only count months where we actually had activity if we want to be strict,
-        // but for burn rate, "0 spend" is valid if the account existed.
-        // A goal-funded EXPENSE's cash already left when it was contributed to the goal (the
-        // TRANSFER_OUT below), not when it was later spent - counting both would double the
-        // burn, so the EXPENSE leg is excluded and the actual historical contribution counted
-        // instead. Callers that pass in transactions already stripped of savingsGoalId (and
-        // add a settings-based projected obligation on top instead) are unaffected, since
-        // there's nothing left here to exclude or include.
-        const { expense } = calculateTotals(monthlyTransactions.filter(t => !(t.type === 'EXPENSE' && t.savingsGoalId)));
-        const goalContributions = monthlyTransactions
-            .filter(t => t.type === 'TRANSFER_OUT' && t.savingsGoalId)
-            .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
-        totalExpense = totalExpense.plus(expense).plus(goalContributions);
-        monthsWithData++;
-    }
-
-    return monthsWithData > 0 ? totalExpense.dividedBy(monthsWithData) : new BigNumber(0);
+// Full calendar months since the first transaction, up to the month before referenceDate's.
+// The first transaction's own month counts only if it began on the 1st.
+const countFullPriorMonths = (transactions: Transaction[], referenceDate: Date): number => {
+    const first = getEarliestDate(transactions);
+    const firstFullMonth = new Date(first.getFullYear(), first.getMonth() + (first.getDate() === 1 ? 0 : 1), 1);
+    return (referenceDate.getFullYear() - firstFullMonth.getFullYear()) * 12 +
+        (referenceDate.getMonth() - firstFullMonth.getMonth());
 };
 
-// Burn Rate's spending part as of referenceDate: 6-month average of prior months, falling back
-// to 3 months, then referenceDate's own month for a new user.
+// Average of up to monthsBack prior full months' EXPENSE; 0 with no full month yet. Callers strip
+// goal-tagged transactions first (getBurnRateBase, or a !savingsGoalId filter).
+export const calculateBurnRate = (allTransactions: Transaction[], monthsBack: number = 6, referenceDate: Date = new Date()): BigNumber => {
+    if (allTransactions.length === 0) return new BigNumber(0);
+
+    const effectiveMonths = Math.min(monthsBack, countFullPriorMonths(allTransactions, referenceDate));
+    if (effectiveMonths < 1) return new BigNumber(0);
+
+    // A full month with no spending still counts, as 0.
+    let totalExpense = new BigNumber(0);
+    for (let i = 1; i <= effectiveMonths; i++) {
+        const d = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - i, 1);
+        totalExpense = totalExpense.plus(calculateTotals(getTransactionsByMonth(allTransactions, d)).expense);
+    }
+    return totalExpense.dividedBy(effectiveMonths);
+};
+
+// Daily spending from the first transaction through referenceDate, scaled to a month.
+const calculateProratedMonthlyExpense = (transactions: Transaction[], referenceDate: Date): BigNumber => {
+    const upToDate = transactions.filter(t => parseDate(t.date) <= referenceDate);
+    if (upToDate.length === 0) return new BigNumber(0);
+
+    const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const days = Math.round((dayStart(referenceDate) - dayStart(getEarliestDate(upToDate))) / DAY_MS) + 1;
+    return calculateTotals(upToDate).expense.dividedBy(days).times(AVG_DAYS_PER_MONTH);
+};
+
+// Burn Rate's spending part as of referenceDate: average of up to 6 prior full months, or with
+// none yet, daily spending so far scaled to a month.
 export const calculateBaseBurnRate = (transactions: Transaction[], referenceDate: Date = new Date()): BigNumber => {
     const base = getBurnRateBase(transactions);
-    const average6Month = calculateBurnRate(base, 6, referenceDate);
-    if (average6Month.gt(0)) return average6Month;
-    const average3Month = calculateBurnRate(base, 3, referenceDate);
-    if (average3Month.gt(0)) return average3Month;
-    return calculateTotals(getTransactionsByMonth(base, referenceDate)).expense;
+    const average = calculateBurnRate(base, 6, referenceDate);
+    return average.gt(0) ? average : calculateProratedMonthlyExpense(base, referenceDate);
 };
 
 export interface MonthlyBurnRate {
@@ -342,45 +333,20 @@ export const calculateRunwayTrend = (
     return { cash, burnRate, runway, prevRunway, change };
 };
 
+// Average of up to monthsBack prior full months' INCOME, same months as calculateBurnRate. The
+// in-progress month is left out: its income may land before its bills.
 export const calculateAverageIncome = (allTransactions: Transaction[], monthsBack: number = 6, referenceDate: Date = new Date()): BigNumber => {
     if (allTransactions.length === 0) return new BigNumber(0);
 
-    const today = referenceDate;
-    // Start from LAST month to avoid using partial current data which lowers the average artificially
-    // And for Income, including current month might INFLATE potential capacity if expenses haven't hit yet.
-    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const effectiveMonths = Math.min(monthsBack, countFullPriorMonths(allTransactions, referenceDate));
+    if (effectiveMonths < 1) return new BigNumber(0);
 
-    // Find the earliest transaction date to determine account age
-    const firstTxDate = allTransactions.reduce((earliest, t) => {
-        const tDate = parseDate(t.date);
-        return tDate < earliest ? tDate : earliest;
-    }, new Date());
-
-    const firstTxMonthStart = new Date(firstTxDate.getFullYear(), firstTxDate.getMonth(), 1);
-
-    // Calculate full months of history available (up to last month)
-    const monthDiff = (lastMonthStart.getFullYear() - firstTxMonthStart.getFullYear()) * 12 +
-        (lastMonthStart.getMonth() - firstTxMonthStart.getMonth()) + 1;
-
-    // If less than 1 month of history (i.e., new user in their first month), return 0
-    // The UI handles this 0 fallback by showing "Calculating..." or falling back to current month logic
-    if (monthDiff < 1) return new BigNumber(0);
-
-    const effectiveMonths = Math.max(1, Math.min(monthsBack, monthDiff));
     let totalIncome = new BigNumber(0);
-    // Fixed: We loop through effectiveMonths, so monthsWithData is effectively effectiveMonths
-    // Let's stick to the loop logic to be safe and consistent with burn rate.
-
-    // Sum income for the effective window (excluding current month)
-    for (let i = 0; i < effectiveMonths; i++) {
-        const d = new Date(today.getFullYear(), today.getMonth() - 1 - i, 1); // Start from previous month
-        const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
-
-        const { income } = calculateTotals(monthlyTransactions);
-        totalIncome = totalIncome.plus(income);
+    for (let i = 1; i <= effectiveMonths; i++) {
+        const d = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - i, 1);
+        totalIncome = totalIncome.plus(calculateTotals(getTransactionsByMonth(allTransactions, d)).income);
     }
-
-    return effectiveMonths > 0 ? totalIncome.dividedBy(effectiveMonths) : new BigNumber(0);
+    return totalIncome.dividedBy(effectiveMonths);
 };
 
 // goalFundedAmount is the share of `amount` paid from a savings goal - shown in the breakdown,
@@ -555,8 +521,8 @@ export const getCurrentMonthCumulative = (currentMonthTransactions: Transaction[
 };
 
 export interface Anomaly {
-    type: 'SPIKE' | 'NEW_CATEGORY' | 'HIGH_SPENDING' | 'BUDGET_EXCEEDED' | 'RUNWAY_DROP';
-    category: string;
+    type: 'SPIKE' | 'NEW_CATEGORY' | 'HIGH_SPENDING' | 'BUDGET_EXCEEDED' | 'RUNWAY_DROP' | 'OUT_OF_CASH';
+    category: string; // also the once-a-month push notification key
     message: string;
     severity: 'LOW' | 'MEDIUM' | 'HIGH';
 }
@@ -568,16 +534,24 @@ export const detectAnomalies = (
 
     if (allTransactions.length < 10) return anomalies;
 
-    // --- 0. RUNWAY DROP CHECK ---
-    // Same Runway and Runway Change as Home and Financial Health; alerts on a >=25% drop since last month.
-    const { runway: currentRunway, prevRunway } = calculateRunwayTrend(allTransactions, debts, goals);
+    // --- 0. OUT OF CASH / RUNWAY DROP CHECK ---
+    // Same Runway and Runway Change as Home and Financial Health. Out of Cash fires every month cash
+    // stays at or below zero, in place of Runway Drop; otherwise alert on a >=25% drop since last month.
+    const { cash, runway: currentRunway, prevRunway } = calculateRunwayTrend(allTransactions, debts, goals);
 
-    if (prevRunway && prevRunway.isFinite() && prevRunway.gt(0) && currentRunway.isFinite() && currentRunway.gt(0)) {
+    if (cash.lte(0)) {
+        anomalies.push({
+            type: 'OUT_OF_CASH',
+            category: 'Cash',
+            message: 'Your tracked cash is at or below zero, so you have no runway left. If that doesn\'t look right, record your starting balance.',
+            severity: 'HIGH'
+        });
+    } else if (prevRunway && prevRunway.isFinite() && prevRunway.gt(0) && currentRunway.isFinite()) {
         const dropPercent = prevRunway.minus(currentRunway).dividedBy(prevRunway); // e.g. (10 - 7) / 10 = 0.3
 
         if (dropPercent.isGreaterThanOrEqualTo(0.25)) {
             anomalies.push({
-                type: 'RUNWAY_DROP' as any, // Cast to any to avoid TS error until type def is updated (or just update type def above)
+                type: 'RUNWAY_DROP',
                 category: 'Financial Health',
                 message: `Runway dropped from ${prevRunway.toFixed(1)} to ${currentRunway.toFixed(1)} months`,
                 severity: 'HIGH'
