@@ -25,7 +25,7 @@ If a release is fixes-only, it's a PATCH — do not bump MINOR just because it "
 1. **`package.json`** (`"version"`) and **`app.json`** (`expo.version`) — the actual build version. Bump both together.
 2. **`CHANGELOG.md`** — the source of truth for changelog *content*. **`src/constants/changelog.ts`** is a generated mirror of this file (wrapped in a template literal for the in-app Help Center viewer) — never hand-edit `changelog.ts` directly, regenerate it from `CHANGELOG.md` (see [Section 4](#4-regenerating-changelogts)).
 
-Optionally, a longer-form, user-facing writeup goes in `.notes/release/vX.Y.Z.md` (see existing files in that folder for the tone/format — headed sections with emoji, prose explanation, not terse bullets). This is a separate, richer document from `CHANGELOG.md`; it's not required to keep the repo consistent, but keep doing it if the project already has one per version.
+Optionally, a longer-form, user-facing writeup goes in `docs/release/vX.Y.Z.md` (see existing files in that folder for the tone/format — headed sections with emoji, prose explanation, not terse bullets). This is a separate, richer document from `CHANGELOG.md`; it's not required to keep the repo consistent, but keep doing it if the project already has one per version.
 
 ---
 
@@ -50,7 +50,7 @@ Full spec: [keepachangelog.com/en/1.1.0](https://keepachangelog.com/en/1.1.0/). 
   ```
   Insert the new version's line right after `[Unreleased]`, and update `[Unreleased]`'s base to the new version.
 - Bullet content should describe *what changed for the user*, not implementation detail — this file (via `changelog.ts`) is rendered directly in the in-app Help Center, so it's user-facing copy, not a commit log.
-- **Keep bullets terse — one short sentence, no rationale or mechanism explanation.** `CHANGELOG.md` is a scannable list, not documentation: match the length of the shortest existing entries (e.g. "Dividend Calendar tab sizing and portrait height issues.", "Time range selector redesigned as a compact dropdown across Insights charts."), not the longest. If a feature needs the fuller "why/how" treatment, that's what `.notes/release/unreleased.md` / `.notes/release/vX.Y.Z.md` are for (per Section 2) — don't pad the CHANGELOG bullet to compensate for not having written the longer doc.
+- **Keep bullets terse — one short sentence, no rationale or mechanism explanation.** `CHANGELOG.md` is a scannable list, not documentation: match the length of the shortest existing entries (e.g. "Dividend Calendar tab sizing and portrait height issues.", "Time range selector redesigned as a compact dropdown across Insights charts."), not the longest. If a feature needs the fuller "why/how" treatment, that's what `docs/release/unreleased.md` / `docs/release/vX.Y.Z.md` are for (per Section 2) — don't pad the CHANGELOG bullet to compensate for not having written the longer doc.
 - **Never give something its own `Changed`/`Fixed`/`Deprecated`/`Removed` bullet if the feature it touches is itself still an `### Added` bullet within the same `[Unreleased]` section.** Those four headers describe a difference from the last *released* version — if the feature hasn't shipped yet, there's no public "before" state to diff against, so a refinement made to it pre-release is just part of what "Added" means, not a change from it. Nest it as a sub-bullet under that feature's own `### Added` line instead, the way multi-part features are documented in already-released entries (e.g. 1.7.0's "Budget-Aware Smart Alerts", 1.10.0's "Financial Health Card"). Only use `Changed`/`Fixed`/etc. for touching a feature that shipped in an *earlier, already-released* version.
   - Example of the mistake: while `Chat` is still sitting under `### Added` in `[Unreleased]`, don't also write a `### Changed` bullet like "Chat's financial snapshot now includes budgets" — that's Chat before it ever existed publicly. Fold it into Chat's own `### Added` bullet as a sub-bullet instead.
   - `Savings Trend's "Understanding Your Chart" guide now includes a visual income breakdown diagram` is correctly `### Changed`, because Savings Trend itself shipped back in 1.14.0 — there's a real prior released state being changed.
@@ -123,6 +123,6 @@ All 24 releases from `v1.0.0` through `v1.14.0` were backfilled with tags on 202
 - [ ] Check no `Changed`/`Fixed`/etc. bullet actually belongs nested under an `Added` bullet in the same section (Section 3's last rule) — this only matters while still in `[Unreleased]`, so it's easy to miss once things get moved under a dated heading
 - [ ] Add the new version's link-reference line at the bottom of `CHANGELOG.md`; update `[Unreleased]`'s compare base
 - [ ] `npm run regen-changelog` then `npm run verify-changelog` (Section 4) — confirm `MATCH` before committing
-- [ ] (Optional but consistent with existing practice) write `.notes/release/vX.Y.Z.md` with the fuller user-facing writeup
+- [ ] (Optional but consistent with existing practice) write `docs/release/vX.Y.Z.md` with the fuller user-facing writeup
 - [ ] Commit, merge
 - [ ] `git tag vX.Y.Z` on the release commit, `git push origin vX.Y.Z`

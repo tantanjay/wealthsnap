@@ -14,7 +14,7 @@ When a new feature is introduced, you must also check and update [docs/CAPABILIT
 
 ## Design system
 
-[docs/DESIGN.md](docs/DESIGN.md) is the visual source of truth (Refined Minimal): tokens, type scale, components, and a checklist for new screens. Read it before building or restyling any UI, and match the prototype in `mock/navigation-redesign/`. If a screen needs something the guide doesn't cover, propose an addition to DESIGN.md instead of inventing a one-off style.
+[docs/DESIGN.md](docs/DESIGN.md) is the visual source of truth (Refined Minimal): tokens, type scale, components, and a checklist for new screens. Read it before building or restyling any UI, and match the prototype in `docs/mockups/navigation-redesign/`. If a screen needs something the guide doesn't cover, propose an addition to DESIGN.md instead of inventing a one-off style.
 
 ## Metric definitions
 
@@ -24,7 +24,7 @@ When a new feature is introduced, you must also check and update [docs/CAPABILIT
 
 **Metric history.** Each metric's section ends with its timeline. Add a row whenever its Formula line changes. If the change undoes part of an earlier one, mark it **↩** with that version, and say so in the release notes too.
 
-**Date changes from the code, not the changelog.** When recording when or how a behavior changed (metric history, release notes, "since vX" claims), check the code at the `vX.Y.Z` tags, e.g. by diffing consecutive tags. `CHANGELOG.md` and `.notes/release/` have been wrong about versions, formulas and affected screens, so treat their wording as a lead to verify, not as evidence.
+**Date changes from the code, not the changelog.** When recording when or how a behavior changed (metric history, release notes, "since vX" claims), check the code at the `vX.Y.Z` tags, e.g. by diffing consecutive tags. `CHANGELOG.md` and `docs/release/` have been wrong about versions, formulas and affected screens, so treat their wording as a lead to verify, not as evidence.
 
 ## Calculation explanations
 
@@ -34,9 +34,9 @@ In this repo these live in `src/constants/helpContent.ts` (Help Center guides, i
 
 ## Release notes / changelog
 
-When asked to update release notes for unreleased work, follow [.notes/dev/versioning-and-release-process.md](.notes/dev/versioning-and-release-process.md) exactly — don't improvise the format. Key points to not forget:
+When asked to update release notes for unreleased work, follow [docs/dev/versioning-and-release-process.md](docs/dev/versioning-and-release-process.md) exactly — don't improvise the format. Key points to not forget:
 
-- Three files, different jobs: [.notes/release/unreleased.md](.notes/release/unreleased.md) gets the long, prose writeup (why/how, headed sections, emoji); [CHANGELOG.md](CHANGELOG.md) gets terse one-line bullets under `### Added`/`Changed`/`Deprecated`/`Removed`/`Fixed`/`Security` only (Keep a Changelog format); [src/constants/changelog.ts](src/constants/changelog.ts) is a generated mirror of `CHANGELOG.md` — never hand-edit it. Regenerate with `npm run regen-changelog`, then confirm it matches with `npm run verify-changelog` (`scripts/regen-changelog.js` / `scripts/verify-changelog.js`) before committing — see Section 4 of the process doc.
+- Three files, different jobs: [docs/release/unreleased.md](docs/release/unreleased.md) gets the long, prose writeup (why/how, headed sections, emoji); [CHANGELOG.md](CHANGELOG.md) gets terse one-line bullets under `### Added`/`Changed`/`Deprecated`/`Removed`/`Fixed`/`Security` only (Keep a Changelog format); [src/constants/changelog.ts](src/constants/changelog.ts) is a generated mirror of `CHANGELOG.md` — never hand-edit it. Regenerate with `npm run regen-changelog`, then confirm it matches with `npm run verify-changelog` (`scripts/regen-changelog.js` / `scripts/verify-changelog.js`) before committing — see Section 4 of the process doc.
 - Don't pad `CHANGELOG.md` bullets with rationale — match the shortest existing entries, not the longest.
 - While a feature is still under `### Added` in `[Unreleased]`, don't give its own refinements a separate `### Changed`/`Fixed` bullet — nest them under the feature's own `Added` bullet instead. Only use `Changed`/`Fixed`/etc. for something that shipped in an already-released version.
 
