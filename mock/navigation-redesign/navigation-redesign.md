@@ -1,7 +1,8 @@
 # App Redesign — Home hub, privacy modes, Insights sheets, slim Profile, Learn tab
 
 **Status:** Idea / mockup only — not yet implemented in the app.
-**Mockup:** [navigation-redesign.html](./navigation-redesign.html) — one fully clickable phone prototype. This file and that HTML are the single source for the whole redesign.
+**Mockup:** [navigation-redesign.html](./navigation-redesign.html) — one fully clickable phone prototype (light/dark toggle above the phone). This file and that HTML are the single source for *what* the redesign contains.
+**Visual rules:** [docs/DESIGN.md](../../docs/DESIGN.md) — the Refined Minimal design system (tokens, type, components, screen checklist). This file says what goes on each screen; DESIGN.md says how it looks.
 
 ## Why
 
@@ -16,27 +17,27 @@
 
 | Today | After |
 | --- | --- |
-| Investment tab | Home → **Holdings** pill |
-| History tab | Home → **Ledger** pill |
-| Debts screen (Home stack) | Home → **Loans** pill |
-| Savings Goals screen (Home stack) | Home → **Goals** pill |
+| Investment tab | Home → **Holdings** tab |
+| History tab | Home → **Ledger** tab |
+| Debts screen (Home stack) | Home → **Loans** tab |
+| Savings Goals screen (Home stack) | Home → **Goals** tab |
 | Insights screen (Home stack, reached from the Cash Flow card) | **Insights** tab |
 | Financial Health screen | **Removed** — content moves into Insights bottom sheets (section 4) |
 | Help / About / Manifesto inside Profile | **Learn** tab |
 
-Every existing `navigate('Investment' | 'History' | 'Debts' | 'SavingsGoals' | 'FinancialHealth')` call has to route to the new pill or tab instead.
+Every existing `navigate('Investment' | 'History' | 'Debts' | 'SavingsGoals' | 'FinancialHealth')` call has to route to the new Home tab or bottom tab instead.
 
 ## 2. Home
 
-**Header:** greeting + one sliders button (Home Settings). No eye button. The sliders button shows a small badge (`%` or `***`) while Discreet or Hidden is active.
+**Header:** greeting + one sliders button (Home Settings). No eye button. While Discreet or Hidden is active, a small "Discreet" / "Hidden" chip sits next to the sliders button.
 
-**Top menu (scrollable pills, sticky under the header):** Snapshot · Ledger · Holdings · Goals · Loans. "Loans" instead of "Debts" because it covers both money you owe and money owed to you.
+**Top menu (scrollable underline tabs, sticky under the header):** Snapshot · Ledger · Holdings · Goals · Loans. "Loans" instead of "Debts" because it covers both money you owe and money owed to you.
 
 ### Snapshot
 
-1. **Static hero.** Projected Net Worth as the big number, with Runway (and its change) and Total Assets as sub-figures. No swipe. "See details" switches to the Insights tab; the ⓘ keeps the existing "How is this calculated?" sheet.
-2. **One grouped list** replaces the other four cards: tinted icon circle, label, main value (monospace, tabular), secondary line, chevron. Tapping a row jumps to its pill (Cash → Ledger, Investments → Holdings, Loans → Loans, Goals → Goals). No colored backgrounds — identity comes from the icon tint; green/red only on values that mean good/bad.
-3. **One Overall / This month toggle** above the list replaces every card's own swipe modes.
+1. **Static hero, no container.** Net worth as the display number on the page, a change line ("▲ ₱15,100 · 3.2% this month"), an accent sparkline, then Runway and Assets inline. No swipe, no colored block. "Details" switches to the Insights tab.
+2. **Overview rows** replace the other four cards: domain dot, label, secondary line, value (tabular) with a change line under it. Hairline rows on the page, no card. Tapping a row jumps to its tab (Cash → Ledger, Investments → Holdings, Loans → Loans, Goals → Goals).
+3. **One Overall / This month switch** — a text toggle ("Overall ⌄") in the Overview section header — replaces every card's own swipe modes.
    - Cash "This month" = Income − Expense as the main value, transfers on the secondary line (covers both of today's monthly cash pages).
    - Loans' obligations ("₱3.1k of ₱4.5k due this month") become the row's secondary line instead of a third swipe page.
 4. **Recent** (3 transactions) with "See all" → Ledger.
@@ -155,7 +156,6 @@ Per `.notes/dev/versioning-and-release-process.md` Section 1, this is a **MINOR*
 
 - Learn as a bottom tab vs a section inside Profile (bottom slots are usually for daily-use destinations).
 - Budgets / Recurring Rules / Reminders in Profile ("Money setup") or in Insights next to the budget bars?
-- Hero color: keep the primary-blue fill, or go neutral like the rows?
 - Floating gear bubble: its per-screen actions need rethinking once Investment and History stop being tabs, and its privacy item goes away.
 - Discreet formulas (savings rate window, "on track" for goals, % kept of income) need entries in `docs/METRICS.md` before coding.
 - Rollout: (1) Snapshot + privacy modes, (2) Home top menu with Ledger / Holdings / Goals / Loans, (3) Insights sheets + Financial Health screen removal, (4) bottom bar + Profile / Learn split.
