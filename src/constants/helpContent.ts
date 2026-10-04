@@ -152,6 +152,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Budget Exceeded — a category has spent past its set budget' },
             { type: 'bullet', text: 'Spending Spike — a category jumped well above its usual average' },
             { type: 'bullet', text: 'Runway Drop — your Financial Runway fell sharply versus last month' },
+            { type: 'bullet', text: 'Out of Cash — your tracked cash balance is at or below zero; repeats every month it stays there' },
             { type: 'paragraph', text: 'Catches anomalies you might miss and reduces the mental load of checking everything manually.' }
         ]
     },
@@ -205,11 +206,12 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Negative rate shown if expenses > income' },
 
             { type: 'heading2', text: 'Burn Rate' },
-            { type: 'formula', text: 'Burn Rate = Total Expenses (prior months) ÷ Effective Months' },
-            { type: 'paragraph', text: '"Total Expenses" here excludes purchases funded from a savings goal (that cash already left when contributed) and instead includes the actual goal contributions made that month — a goal-funded purchase would otherwise look like a spending spike, and its contribution would otherwise go uncounted.' },
+            { type: 'formula', text: 'Burn Rate = Total Expenses (prior full months) ÷ Effective Months' },
+            { type: 'paragraph', text: '"Total Expenses" here excludes purchases funded from a savings goal (that cash already left when contributed), so a goal-funded purchase doesn\'t look like a spending spike.' },
             { type: 'paragraph', text: 'Effective Months Logic:' },
-            { type: 'blockquote', text: 'Prevents inflated burn rates for new accounts by only averaging over months with actual data, and excludes the current, in-progress month.' },
-            { type: 'formula', text: 'effectiveMonths = min(monthsBack, accountAgeMonths)' },
+            { type: 'blockquote', text: 'Averages only full calendar months since your first transaction, so a partly tracked month doesn\'t understate it. Your first month counts only if it started on the 1st, and the current, in-progress month is left out. A full month with no spending still counts, as 0.' },
+            { type: 'formula', text: 'effectiveMonths = min(monthsBack, fullMonthsSinceFirstTransaction)' },
+            { type: 'paragraph', text: 'No full month yet? The Burn Rate and Runway cards use your daily spending since your first transaction × 30.44 instead.' },
             { type: 'paragraph', text: 'The Burn Rate and Runway cards then strip out all savings-goal transactions and debt principal/interest payments before this calculation (both are already inside a debt\'s minimum payment; debt fees stay in as normal spending, since minimum payments don\'t cover them) and add back your total minimum debt payments plus your active goals\' current monthly-equivalent contribution on top (see Financial Runway above) — a goal already at its target stops counting. The Comparison Chart\'s Avg 3M/6M/1Y bars use plain Burn Rate without that debt/goal adjustment.' },
 
             { type: 'heading2', text: 'Daily Average' },
@@ -322,6 +324,10 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading2', text: 'Runway Drop Detection' },
             { type: 'formula', text: 'Triggered when: Runway (same as the Runway card) has dropped 25% or more vs. the end of last month' },
+
+            { type: 'heading2', text: 'Out of Cash Detection' },
+            { type: 'formula', text: 'Triggered when: Cash Balance ≤ 0' },
+            { type: 'paragraph', text: 'Checked every month, so it keeps reminding you until your balance is back above zero. While it applies, Runway Drop is skipped.' },
 
             { type: 'divider' },
             { type: 'heading1', text: 'Edge Cases Handled' },

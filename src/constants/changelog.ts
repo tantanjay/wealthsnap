@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.19.0] — 2026-09-29
+
+### Added
+- Smart Alerts: a new Out of Cash alert reminds you every month your tracked cash is at or below zero.
+- Crash screen: a new "Back up data" button saves an encrypted backup before you reload, and screenshots are always allowed there so you can capture the error.
+
 ### Changed
 - Debt Strategy and Financial Health: the disclaimer now sits at the bottom of the screen instead of above your numbers; the PIN setup warning and the Gemini API Usage cost note use the same design.
 - Home: the Net Worth card is now labeled "Projected Net Worth", and its Liabilities figure "Debt + Interest", since both include the interest you're projected to pay on your debts.
@@ -25,9 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Monthly Summary and Chat: foreign-currency investments were converted twice, inflating buy, sell, dividend, and fee amounts.
 - Burn Rate, Runway, Debts Drag, Debt vs Life, Safe-to-Spend, and Chat stopped counting fees paid on debts (since 1.17.0 on Financial Health and Chat, 1.18.0 elsewhere).
 - Runway-drop alert and Financial Health's Net Flow: transactions dated in the future were left out.
-- Savings Goals guide: no longer says contributions count toward Avg Daily Spending.
+- Savings Goals guide: wrongly said contributions count toward Avg Daily Spending, that a one-off contribution raises Burn Rate, and that contributing raises Runway.
 - Runway-drop alert ignored your debt payments and savings goal contributions, so it could judge a different Runway than the one on screen.
 - Home and Financial Health: Runway Change could show different numbers on each screen.
+- Burn Rate, Runway, and the Comparison chart's averages treated a partly tracked month as a full one, understating spending for newer accounts.
+- Insights: the Runway explanation left out savings goal contributions.
+- Help Center: the Burn Rate formula misdescribed goal contributions and how new accounts are averaged.
+- PIN lock: the lock screen could crash the app with a "No safe area value available" error.
+
+---
 
 ## [1.18.0] — 2026-09-27
 

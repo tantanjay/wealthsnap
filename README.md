@@ -123,6 +123,7 @@ Features include:
 - Budget breach alerts
 - Spending spike detection
 - Runway drop detection (≥25%)
+- Monthly out-of-cash reminder when your tracked cash is at or below zero
 - Background reminder completion & snooze
 - Catch-up mode for missed reminders
 - Interactive notification actions

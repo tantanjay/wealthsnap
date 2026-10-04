@@ -23,6 +23,7 @@ import { useDataStatus } from '@context/DataStatusContext';
 import { UserProfile, Transaction, Investment, Debt } from '@types';
 import {
     getTransactionsByMonth,
+    calculateBalance,
     getCumulativeSpendingCurve,
     getCurrentMonthCumulative,
     getTopExpenses,
@@ -69,6 +70,8 @@ const HomeScreen = ({ navigation }: any) => {
     const [overallTransferOut, setOverallTransferOut] = useState(new BigNumber(0));
     const [monthTransferIn, setMonthTransferIn] = useState(new BigNumber(0));
     const [monthTransferOut, setMonthTransferOut] = useState(new BigNumber(0));
+    const [overallBalance, setOverallBalance] = useState(new BigNumber(0));
+    const [monthBalance, setMonthBalance] = useState(new BigNumber(0));
 
     const [investmentTotal, setInvestmentTotal] = useState(new BigNumber(0));
     const [realizedPL, setRealizedPL] = useState(new BigNumber(0));
@@ -245,6 +248,8 @@ const HomeScreen = ({ navigation }: any) => {
             setOverallTransferOut(oTransOut);
             setMonthTransferIn(mTransIn);
             setMonthTransferOut(mTransOut);
+            setOverallBalance(calculateBalance(t));
+            setMonthBalance(calculateBalance(getTransactionsByMonth(t, now)));
 
             // --- Investment Computation ---
             const groupedInvestments = inv.reduce((acc, item) => {
@@ -963,6 +968,8 @@ const HomeScreen = ({ navigation }: any) => {
                                     monthGoalExpense={monthGoalExpense}
                                     monthTransferIn={monthTransferIn}
                                     monthTransferOut={monthTransferOut}
+                                    overallBalance={overallBalance}
+                                    monthBalance={monthBalance}
                                     isLoading={isLoading}
                                     isPrivacyEnabled={isPrivacyEnabled}
                                     currency={profile?.currency || 'PHP'}

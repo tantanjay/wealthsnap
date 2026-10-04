@@ -58,13 +58,13 @@ These apply to every metric unless its section says otherwise.
 | 1.0.0 | Lifetime Income − Expense | Home Total Balance |
 | 1.7.0 | (Income + Transfer In) − (Expense + Transfer Out) | Home Cash Balance and History count transfers, introduced this version |
 | 1.8.1 | Same, for Insights too | Insights Runway's balance now counts transfers |
-| Unreleased | Every recorded transaction, future-dated included | Runway-drop alert stopped cutting off at today; hand-rolled copies in five files merged into `calculateBalance` |
+| 1.19.0 | Every recorded transaction, future-dated included | Runway-drop alert stopped cutting off at today; hand-rolled copies in five files merged into `calculateBalance` |
 
 ## Runway
 
-**Formula:** Cash Balance ÷ [Burn Rate](#burn-rate). The runway-drop alert fires when it falls ≥25% below Runway Change's last-month figure
+**Formula:** Cash Balance ÷ [Burn Rate](#burn-rate). The runway-drop alert fires when it falls ≥25% below Runway Change's last-month figure. While Cash Balance is ₱0 or below, the out-of-cash alert fires instead, every month
 
-**Shown on:** Home · Insights · Financial Health · Chat · runway-drop alert
+**Shown on:** Home · Insights · Financial Health · Chat · runway-drop alert · out-of-cash alert
 
 **Computed from:** `transactions` (balance, spending) · `debts` (`minPayment`) · `savings_goals` (recurring contribution)
 
@@ -74,11 +74,12 @@ These apply to every metric unless its section says otherwise.
 |---|---|---|
 | 1.3.1 | Balance ÷ Burn Rate | Runway card on Insights |
 | 1.4.0 | Same | Runway popup now says it's your *tracked* balance, not your bank balance |
-| 1.8.1 | Alert: Balance ÷ plain 6-month expense average | Runway-drop alert added (fires on a ≥25% drop vs last month). Until Unreleased it picked up no later Burn Rate change: no debt payments, goal contributions or debt/goal filtering |
+| 1.8.1 | Alert: Balance ÷ plain 6-month expense average | Runway-drop alert added (fires on a ≥25% drop vs last month). Until 1.19.0 it picked up no later Burn Rate change: no debt payments, goal contributions or debt/goal filtering |
 | 1.10.0 | Same | Runway added to the new Financial Health screen and Home card |
 | 1.15.0 | Same | Chat gets its own Runway |
 | 1.18.0 | Same | Runway-drop alert no longer drops the last day of last month |
-| Unreleased | Alert uses the screens' Runway | Runway-drop alert now compares the same Runway and last-month figure as Runway Change (`calculateRunwayTrend`) |
+| 1.19.0 | Alert uses the screens' Runway | Runway-drop alert now compares the same Runway and last-month figure as Runway Change (`calculateRunwayTrend`) |
+| 1.19.0 | Out-of-cash alert while Cash Balance ≤ 0, in place of the runway-drop alert | The runway-drop alert skipped a drop to zero or below (since 1.8.1). The new alert repeats every month cash stays there, with its own once-a-month notification |
 
 ## Runway Change
 
@@ -88,7 +89,7 @@ These apply to every metric unless its section says otherwise.
 
 **Computed from:** `transactions` (balance and spending as of last month's end; debt payments, to tell whether a debt was still open) · `debts` (`minPayment`, `status`, `direction`, start date) · `savings_goals` (today's recurring contribution)
 
-**Notes:** `calculateRunwayTrend`. 0 until you have a transaction before this month, or when either runway is infinite. Last month's divisor follows Burn Rate's base changes (1.17.0, 1.18.0, Unreleased); this history covers the rest.
+**Notes:** `calculateRunwayTrend`. 0 until you have a transaction before this month, or when either runway is infinite. Last month's divisor follows Burn Rate's base changes (1.17.0, 1.18.0, 1.19.0); this history covers the rest.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
@@ -97,7 +98,7 @@ These apply to every metric unless its section says otherwise.
 | 1.16.0 | Same | Whether a debt was open last month is worked out from its transactions, so editing a paid-off debt no longer skews it |
 | 1.17.0 | Debts you owe, active today, that were open last month | **↩ Partly undoes 1.13.0/1.16.0.** A debt paid off or forgiven is left out of last month too, so paying one off doesn't show as a runway gain |
 | 1.18.0 | + goal contributions | Today's contributions, since goals keep no history. Financial Health no longer drops last month's final day |
-| Unreleased | Last month's balance = balance at last month's end; base uses Burn Rate's fallback as of then | Home and Financial Health share one calculation (`calculateRunwayTrend`), also used by the runway-drop alert. Home stopped counting later-dated transactions in last month's balance; Financial Health stopped overstating last month's runway for someone who started last month |
+| 1.19.0 | Last month's balance = balance at last month's end; base uses Burn Rate's fallback as of then | Home and Financial Health share one calculation (`calculateRunwayTrend`), also used by the runway-drop alert. Home stopped counting later-dated transactions in last month's balance; Financial Health stopped overstating last month's runway for someone who started last month |
 
 ## Net Cash Flow (monthly)
 
@@ -120,7 +121,7 @@ These apply to every metric unless its section says otherwise.
 | 1.15.0 | Same | Monthly Summary, transfer-inclusive from the start |
 | 1.18.0 | Same, for Insights too | Insights switched to the transfer-inclusive formula so goal contributions and goal purchases net out |
 | 1.18.0 | Same | Savings Trend Cash Flow view and Financial Health's average net flow no longer drop the last day (bug since 1.10.1) |
-| Unreleased | Same | Financial Health's Net Flow includes this month's future-dated transactions |
+| 1.19.0 | Same | Financial Health's Net Flow includes this month's future-dated transactions |
 
 ## Total Expense / Monthly Net / Daily Average
 
@@ -144,17 +145,17 @@ These apply to every metric unless its section says otherwise.
 | 1.8.1 | Daily Average = month's expenses ÷ days elapsed | Was ÷ days in the month. The in-app help kept the old wording until 1.16.0 |
 | 1.12.0 | Same; a past month ÷ its full length | Insights month picker added; its cards follow the browsed month |
 | 1.18.0 | Expenses leave out goal-funded purchases | Insights Total Expense and Daily Average, History Expenses, Monthly Summary, Month-End Projection and spending charts. Savings Goals added |
-| Unreleased | Same; goal-funded purchases shown as "+ from goals" | Line added under Insights Total Expense, History Expenses and Home Expense; Home Monthly Net stopped subtracting them |
+| 1.19.0 | Same; goal-funded purchases shown as "+ from goals" | Line added under Insights Total Expense, History Expenses and Home Expense; Home Monthly Net stopped subtracting them |
 
 ## Category Breakdown / Top Category
 
 **Formula:** the month's expenses summed per item (`category`) or per category group, each with its share of the total. Goal-funded purchases are included, and each row carries its `goalFundedAmount`. Top Category = the largest item
 
-**Shown on:** Insights (spending pie, Top Spending list, All Categories, Top Category tile)
+**Shown on:** Insights (spending pie, Top Spending list, All Categories, Top Category tile, category trend popup) · Home (Top Transactions)
 
 **Computed from:** `transactions` (the month's expenses by `category`; groups come from the built-in category list)
 
-**Notes:** `getCategoryBreakdown`. The Group/Item toggle changes the pie and lists; Top Category always uses items.
+**Notes:** `getCategoryBreakdown`. The Group/Item toggle changes the pie and lists; Top Category always uses items. The category trend popup (`getCategoryTrend`) applies the same rule to each of the past months. Home's Top Transactions (`getTopExpenses`) lists the month's five largest single expenses. Both include goal-funded purchases.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
@@ -162,7 +163,7 @@ These apply to every metric unless its section says otherwise.
 | 1.3.1 | Same | Top Category tile added (largest item) |
 | 1.10.0 | Items grouped by `category` only | `subCategory` no longer splits items; it now holds tags such as debt `INTEREST` |
 | 1.18.0 | Same, goal-funded purchases included | Savings Goals added; their purchases show here in full |
-| Unreleased | Each row also carries `goalFundedAmount` | The spending breakdown marks each category's goal-funded share |
+| 1.19.0 | Each row also carries `goalFundedAmount` | The spending breakdown marks each category's goal-funded share |
 
 ## Savings Rate
 
@@ -183,7 +184,7 @@ These apply to every metric unless its section says otherwise.
 | 1.15.0 | Same | Monthly Summary and Chat added, using the card's formula (no principal) |
 | 1.18.0 | Expense leaves out goal-funded purchases | Savings Goals added. Card and chart still differ on principal |
 | 1.18.0 | Same | Chart no longer mixes up months' repayments on the 29th-31st |
-| Unreleased | (Income − Expense − Debt Principal Repaid) ÷ Income, everywhere | Card, Monthly Summary, Chat and Month-End Projection now count principal as spent, matching the chart. Month-End uses principal repaid so far |
+| 1.19.0 | (Income − Expense − Debt Principal Repaid) ÷ Income, everywhere | Card, Monthly Summary, Chat and Month-End Projection now count principal as spent, matching the chart. Month-End uses principal repaid so far |
 
 ## Budget Health
 
@@ -195,24 +196,24 @@ These apply to every metric unless its section says otherwise.
 
 **Computed from:** `transactions` (spending per category) · `budgets`
 
-**Notes:** The goal was the budget for its own purchases.
+**Notes:** The goal was the budget for its own purchases. The colors apply only to the Budget Health total. Per-category statuses in Monthly Summary and Chat use their own thresholds: a warning at ≥80% of that category's budget, over budget above 100%.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
 | 1.3.1 | Spent in budgeted categories ÷ total budgets | Introduced. Colors: green ≤80%, orange ≤100%, red >100% |
 | 1.4.0 | Same | Colors: green ≤70%, orange ≤90%, red >90% |
 | 1.18.0 | Same | Monthly Summary budget alerts, over-budget alerts and Chat budgets leave out goal-funded purchases; this card doesn't |
-| Unreleased | Leaves out goal-funded purchases | Also Home budget %, spending-breakdown bars, Smart Suggestions |
+| 1.19.0 | Leaves out goal-funded purchases | Also Home budget %, spending-breakdown bars, Smart Suggestions |
 
 ## Burn Rate
 
-**Formula:** average of prior months' spending, excluding goal-tagged transactions and debt principal/interest (6-month → 3-month → this-month fallback) + debt minimum payments + goal monthly contributions
+**Formula:** average of up to 6 prior full months' spending (the first month counts only if it began on the 1st), excluding goal-tagged transactions and debt principal/interest; with no full month yet, daily spending since the first transaction × 30.44. Then + debt minimum payments + goal monthly contributions
 
-**Shown on:** Home · Insights (Burn Rate, Annualized Expense) · Financial Health · Debt Strategy (Time Cost) · Chat
+**Shown on:** Home (inside Runway, Debts Drag and Investment Boost; no Burn Rate figure of its own) · Insights (Burn Rate, Annualized Expense) · Financial Health · Debt Strategy (Time Cost) · Chat
 
 **Computed from:** `transactions` (spending base) · `debts` (`minPayment` of active debts you owe) · `savings_goals` (`recurringAmount` ÷ `frequency`, unless paused or at `targetAmount`)
 
-**Notes:** `calculateMonthlyBurnRate`, built on `getBurnRateBase`. Debt fees stay in, since minimum payments don't cover them. Debt Strategy's Time Cost uses the 6-month base alone, with no fallback, minimum payments or goals. The Comparison Chart's 3M/6M/1Y averages leave out goal purchases and skip the debt/goal add-on, since they're compared against plain monthly spending.
+**Notes:** `calculateMonthlyBurnRate`, built on `getBurnRateBase`. Debt fees stay in, since minimum payments don't cover them. Debt Strategy's Time Cost uses the 6-month base alone, with no fallback, minimum payments or goals. The Comparison Chart's 3M/6M/1Y averages leave out goal purchases and skip the debt/goal add-on, since they're compared against plain monthly spending. They count full months only, with no fallback.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
@@ -225,9 +226,10 @@ These apply to every metric unless its section says otherwise.
 | 1.15.0 | Same | Chat gets its own Burn Rate, with no new-user fallback |
 | 1.17.0 | Leaves out every debt-tagged transaction + minimum payments | Financial Health and Chat: fixed the interest double-count. **Also dropped fees**, which the minimum payment doesn't cover |
 | 1.18.0 | Same, plus goal contributions from each goal's settings; goal-funded purchases left out | Same fix on Home, Insights, Debt vs Life (base only) and Safe-to-Spend; Savings Goals added |
-| Unreleased | Same | Chat uses the same new-user fallback as the screens |
-| Unreleased | Base leaves out goal-tagged transactions and debt principal/interest (fees stay in) + minimum payments + goal contributions | **↩ Reverses the fees half of 1.17.0/1.18.0.** One shared base (`getBurnRateBase`) replaces copies in six places |
-| Unreleased | Same | Home, Insights, Financial Health and Chat share one calculation (`calculateMonthlyBurnRate`); the runway-drop alert uses it too |
+| 1.19.0 | Same | Chat uses the same new-user fallback as the screens |
+| 1.19.0 | Base leaves out goal-tagged transactions and debt principal/interest (fees stay in) + minimum payments + goal contributions | **↩ Reverses the fees half of 1.17.0/1.18.0.** One shared base (`getBurnRateBase`) replaces copies in six places |
+| 1.19.0 | Same | Home, Insights, Financial Health and Chat share one calculation (`calculateMonthlyBurnRate`); the runway-drop alert uses it too |
+| 1.19.0 | Up to 6 prior full months; with none yet, daily spending since the first transaction × 30.44 | A partly tracked first month no longer counts as a full one. The 3-month step, which never changed the result, is gone, and the this-month fallback is pro-rated instead of treating a partial month as a whole one. Also changes Runway Change's last month, Debt Strategy's Time Cost and the Comparison Chart's averages |
 
 ## Debts Drag
 
@@ -245,8 +247,8 @@ These apply to every metric unless its section says otherwise.
 | 1.13.0 | Same | Money owed to you no longer counted as a debt payment |
 | 1.17.0 | Same | Financial Health: interest no longer counted twice (fees dropped too, see Burn Rate) |
 | 1.18.0 | Same | Same fix on Home; goal-funded purchases left out of living costs. Goal contributions were added to Runway but not here |
-| Unreleased | Living costs include goal contributions | Now measured against the real Runway |
-| Unreleased | Same | Fees count as living costs again (↩ see Burn Rate) |
+| 1.19.0 | Living costs include goal contributions | Now measured against the real Runway |
+| 1.19.0 | Same | Fees count as living costs again (↩ see Burn Rate) |
 
 ## Safe-to-Spend
 
@@ -267,8 +269,8 @@ These apply to every metric unless its section says otherwise.
 | 1.10.0 | Same − remaining debt minimum payments | Debt obligations added |
 | 1.13.0 | Same | Money owed to you no longer reserved as a payment |
 | 1.18.0 | Same − remaining goal contributions; debt-tagged and goal-funded spending left out of the allowance | Lent money no longer treated as a payment; interest counted once (fees dropped too, see Burn Rate). Goal-funded purchases left out of spending so far; recurring goal contributions not counted as bills; bills on the 29th-31st keep their day |
-| Unreleased | Same | Docs only: Daily/Weekly and Monthly formulas documented separately |
-| Unreleased | Allowance keeps debt fees | ↩ See Burn Rate |
+| 1.19.0 | Same | Docs only: Daily/Weekly and Monthly formulas documented separately |
+| 1.19.0 | Allowance keeps debt fees | ↩ See Burn Rate |
 
 ## Net Worth / Total Debt
 
@@ -276,7 +278,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (Total Debt):** current principal on active debts you owe; no future interest
 
-**Shown on:** Home (Projected Net Worth, Debts card) · Financial Health · Debt Strategy (Total Debt) · Chat
+**Shown on:** Home (Projected Net Worth, Debts card) · Financial Health (Total Debt, inside Self-sustain Impact) · Debt Strategy (Total Debt) · Chat (Total Debt)
 
 **Computed from:** `transactions` (cash, goal balances, principal repaid) · `investments` + `price_history` (market value) · `debts` (`initialAmount`, and `interestRate`, `interestType`, `termMonths`, `minPayment` for projected interest)
 
@@ -289,8 +291,8 @@ These apply to every metric unless its section says otherwise.
 | 1.16.0 | Same | Debt screen: Total Debt, Interest Leak and payoff plan drop money owed to you |
 | 1.17.0 | Cash + investments − (principal + projected interest) on debts you owe | Home Net Worth and Total Debt: money owed to you no longer a liability |
 | 1.18.0 | + goal balances | Money in a goal still counts as yours |
-| Unreleased | Same | Relabeled "Projected Net Worth" and "Debt + Interest" |
-| Unreleased | Same | Documented: money owed to you isn't an asset until repaid (code already worked this way) |
+| 1.19.0 | Same | Relabeled "Projected Net Worth" and "Debt + Interest" |
+| 1.19.0 | Same | Documented: money owed to you isn't an asset until repaid (code already worked this way) |
 
 ---
 
