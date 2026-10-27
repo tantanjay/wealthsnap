@@ -257,13 +257,14 @@ Supports:
 
 # 🏥 Financial Health & Analytics
 
-## 🧾 Financial Health Card
+## 🧾 Home Snapshot
 
-Top-of-dashboard summary with swipeable views:
+One calm overview instead of a stack of cards:
 
-- Health Metrics
-- Net Worth
-- Total Assets
+- Projected net worth with this month's change and a 6-month sparkline, plus Runway and Total Assets
+- Cash, Investments, Loans and Goals rows, each with a context line and change vs last month
+- One Overall / This month switch for every row
+- Drag to reorder the rows; 3 most recent transactions underneath
 
 ---
 
@@ -402,6 +403,7 @@ No black-box calculations.
 
 # 🛡 Privacy & Security
 
+- **Three privacy modes**: Open (every amount), Discreet (only percentages, months, counts and progress, so the screen stays useful without revealing how much money is involved) and Hidden (every amount masked)
 - Secure PIN lock
 - Intelligent auto-lock logic
 - Conditional screenshot blocking

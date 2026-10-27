@@ -7,17 +7,13 @@ Shared/core files are listed in their own module at the bottom — include them 
 ---
 
 ## Home Dashboard
-Tab: `Home`. Aggregated summary cards linking out to other modules.
+Tab: `Home`. Snapshot: net worth hero, Cash / Investments / Loans / Goals overview rows and Recent, linking out to other modules. Home Settings sheet holds the privacy mode and row order.
 
 - `src/screens/HomeScreen.tsx`
-- `src/components/home/HomeCashFlowCard.tsx`
-- `src/components/home/HomeDebtCard.tsx`
-- `src/components/home/HomeFinancialHealthCard.tsx`
-- `src/components/home/HomeInvestmentCard.tsx`
-- `src/components/home/HomeSavingsGoalsCard.tsx`
-- `src/components/home/HomeSettingsModal.tsx`
-- `src/components/home/HomeTransactionsCard.tsx`
-- `src/components/home/TopTransactions.tsx`
+- `src/components/home/SnapshotView.tsx`
+- `src/components/home/HomeSettingsSheet.tsx`
+- `src/components/home/SnapshotOrderList.tsx`
+- `src/utils/snapshotMetrics.ts`
 
 ## Record / Add Transaction
 Tab: `Actions`. Entry point for logging transactions, transfers, and recurring rules.
@@ -212,6 +208,7 @@ PIN lock, encryption, screenshot protection, privacy blur.
 - `src/screens/security/PinEntryScreen.tsx`
 - `src/context/SecurityContext.tsx`
 - `src/context/PrivacyContext.tsx`
+- `src/hooks/usePrivacyFormat.ts`
 - `src/components/common/PrivacyGuard.tsx`
 - `src/services/core/securityService.ts`
 - `src/services/core/encryptionService.ts`

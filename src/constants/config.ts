@@ -22,7 +22,9 @@ export const ASYNC_KEYS = {
     THEME_MODE: '@wealthsnap_theme_mode',
     NOTIFIED_ALERTS: '@wealthsnap_notified_alerts',
     SECURITY: {
+        // Legacy on/off flag; read once to migrate into PRIVACY_MODE.
         PRIVACY_ENABLED: '@wealthsnap_privacy_enabled',
+        PRIVACY_MODE: '@wealthsnap_privacy_mode',
         TIMEOUT_SETTING: '@wealthsnap_security_timeout',
         LAST_ACTIVE: '@wealthsnap_security_last_active',
         FAILED_PIN_ATTEMPTS: '@wealthsnap_failed_pin_attempts',
@@ -38,12 +40,17 @@ export const ASYNC_KEYS = {
         ACCEPTED_TERMS_VERSION: '@wealthsnap_accepted_terms_version',
     },
     HOME_SCREEN: {
-        FINANCIAL_HEALTH_DISPLAY_MODE: '@wealthsnap_health_display_mode',
-        FINANCE_DISPLAY_MODE: '@wealthsnap_finance_display_mode',
-        INVESTMENT_DISPLAY_MODE: '@wealthsnap_investment_display_mode',
-        DEBT_DISPLAY_MODE: '@wealthsnap_debt_display_mode',
+        SNAPSHOT_ORDER: '@wealthsnap_snapshot_order',
+        SNAPSHOT_PERIOD: '@wealthsnap_snapshot_period',
+        // Pre-1.19 Home cards; read once to migrate, then removed.
         CARD_ORDER: '@wealthsnap_card_order',
-        TRANSACTIONS_TAB: '@wealthsnap_home_transactions_tab',
+        LEGACY_DISPLAY_MODES: [
+            '@wealthsnap_health_display_mode',
+            '@wealthsnap_finance_display_mode',
+            '@wealthsnap_investment_display_mode',
+            '@wealthsnap_debt_display_mode',
+            '@wealthsnap_home_transactions_tab',
+        ],
     },
     INSIGHTS_SCREEN: {
         CARD_ORDER: '@wealthsnap_insights_card_order',

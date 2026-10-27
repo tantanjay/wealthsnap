@@ -188,118 +188,69 @@ export const getFloatingGearDocked = async (): Promise<boolean | null> => {
     }
 };
 
-// ============= Home Display Preferences (AsyncStorage) =============
-export type HomeDisplayMode = 'Overall' | 'Month' | 'MonthIncomeExpense';
-export type InvestmentDisplayMode = 'Total' | 'Month';
+// ============= Home Snapshot Preferences (AsyncStorage) =============
+export type SnapshotRowId = 'cash' | 'investments' | 'loans' | 'goals';
+export type SnapshotPeriod = 'overall' | 'month';
 
-export const saveHomeDisplayMode = async (mode: HomeDisplayMode): Promise<void> => {
+export const DEFAULT_SNAPSHOT_ORDER: SnapshotRowId[] = ['cash', 'investments', 'loans', 'goals'];
+
+// Old Home card ids -> Snapshot rows. 'financial-health' and 'transactions' are dropped (hero and Recent are fixed).
+const LEGACY_CARD_TO_ROW: Record<string, SnapshotRowId> = {
+    'cash-flow': 'cash',
+    'portfolio': 'investments',
+    'debt': 'loans',
+    'savings-goals': 'goals',
+};
+
+// Keeps known ids once each, in order, and appends any missing ones.
+const normalizeSnapshotOrder = (ids: string[]): SnapshotRowId[] => {
+    const known = ids.filter((id, i): id is SnapshotRowId =>
+        (DEFAULT_SNAPSHOT_ORDER as string[]).includes(id) && ids.indexOf(id) === i);
+    return [...known, ...DEFAULT_SNAPSHOT_ORDER.filter(id => !known.includes(id))];
+};
+
+export const saveSnapshotOrder = async (order: SnapshotRowId[]): Promise<void> => {
     try {
-        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.FINANCE_DISPLAY_MODE, mode);
+        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.SNAPSHOT_ORDER, JSON.stringify(order));
     } catch (error) {
-        console.error('Failed to save home display mode:', error);
+        console.error('Failed to save snapshot order:', error);
     }
 };
 
-export const getHomeDisplayMode = async (): Promise<HomeDisplayMode | null> => {
+// Migrates the old Home card order silently the first time it's read.
+export const getSnapshotOrder = async (): Promise<SnapshotRowId[]> => {
     try {
-        const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.FINANCE_DISPLAY_MODE);
-        return (mode === 'Overall' || mode === 'Month' || mode === 'MonthIncomeExpense') ? mode as HomeDisplayMode : null;
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.SNAPSHOT_ORDER);
+        if (data) return normalizeSnapshotOrder(JSON.parse(data));
+
+        const legacy = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.CARD_ORDER);
+        if (!legacy) return DEFAULT_SNAPSHOT_ORDER;
+
+        const migrated = normalizeSnapshotOrder((JSON.parse(legacy) as string[]).map(id => LEGACY_CARD_TO_ROW[id]).filter(Boolean));
+        await saveSnapshotOrder(migrated);
+        await AsyncStorage.multiRemove([ASYNC_KEYS.HOME_SCREEN.CARD_ORDER, ...ASYNC_KEYS.HOME_SCREEN.LEGACY_DISPLAY_MODES]);
+        return migrated;
     } catch (error) {
-        console.error('Failed to get home display mode:', error);
-        return null;
+        console.error('Failed to get snapshot order:', error);
+        return DEFAULT_SNAPSHOT_ORDER;
     }
 };
 
-export const saveHomeInvestmentDisplayMode = async (mode: InvestmentDisplayMode): Promise<void> => {
+export const saveSnapshotPeriod = async (period: SnapshotPeriod): Promise<void> => {
     try {
-        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.INVESTMENT_DISPLAY_MODE, mode);
+        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.SNAPSHOT_PERIOD, period);
     } catch (error) {
-        console.error('Failed to save home investment display mode:', error);
+        console.error('Failed to save snapshot period:', error);
     }
 };
 
-export const getHomeInvestmentDisplayMode = async (): Promise<InvestmentDisplayMode | null> => {
+export const getSnapshotPeriod = async (): Promise<SnapshotPeriod> => {
     try {
-        const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.INVESTMENT_DISPLAY_MODE);
-        return (mode === 'Total' || mode === 'Month') ? mode as InvestmentDisplayMode : null;
+        const period = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.SNAPSHOT_PERIOD);
+        return period === 'month' ? 'month' : 'overall';
     } catch (error) {
-        console.error('Failed to get home investment display mode:', error);
-        return null;
-    }
-};
-
-export type DebtDisplayMode = 'Total' | 'Month' | 'Obligations';
-
-export const saveHomeDebtDisplayMode = async (mode: DebtDisplayMode): Promise<void> => {
-    try {
-        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.DEBT_DISPLAY_MODE, mode);
-    } catch (error) {
-        console.error('Failed to save home debt display mode:', error);
-    }
-};
-
-export const getHomeDebtDisplayMode = async (): Promise<DebtDisplayMode | null> => {
-    try {
-        const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.DEBT_DISPLAY_MODE);
-        return (mode === 'Total' || mode === 'Month' || mode === 'Obligations') ? mode as DebtDisplayMode : null;
-    } catch (error) {
-        console.error('Failed to get home debt display mode:', error);
-        return null;
-    }
-};
-
-export type HomeFinancialHealthDisplayMode = 'NetWorth' | 'Assets' | 'Health';
-
-export const saveHomeFinancialHealthDisplayMode = async (mode: HomeFinancialHealthDisplayMode): Promise<void> => {
-    try {
-        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.FINANCIAL_HEALTH_DISPLAY_MODE, mode);
-    } catch (error) {
-        console.error('Failed to save home financial health display mode:', error);
-    }
-};
-
-export const getHomeFinancialHealthDisplayMode = async (): Promise<HomeFinancialHealthDisplayMode | null> => {
-    try {
-        const mode = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.FINANCIAL_HEALTH_DISPLAY_MODE);
-        return (mode === 'NetWorth' || mode === 'Assets' || mode === 'Health') ? mode as HomeFinancialHealthDisplayMode : null;
-    } catch (error) {
-        console.error('Failed to get home financial health display mode:', error);
-        return null;
-    }
-};
-
-export const saveHomeCardOrder = async (order: string[]): Promise<void> => {
-    try {
-        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.CARD_ORDER, JSON.stringify(order));
-    } catch (error) {
-        console.error('Failed to save home card order:', error);
-    }
-};
-
-export const getHomeCardOrder = async (): Promise<string[] | null> => {
-    try {
-        const data = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.CARD_ORDER);
-        return data ? JSON.parse(data) : null;
-    } catch (error) {
-        console.error('Failed to get home card order:', error);
-        return null;
-    }
-};
-
-export const saveHomeTransactionsTab = async (tab: string): Promise<void> => {
-    try {
-        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.TRANSACTIONS_TAB, tab);
-    } catch (error) {
-        console.error('Failed to save home transactions tab:', error);
-    }
-};
-
-export const getHomeTransactionsTab = async (): Promise<string | null> => {
-    try {
-        return await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.TRANSACTIONS_TAB);
-    } catch (error) {
-        console.error('Failed to get home transactions tab:', error);
-        return null;
+        console.error('Failed to get snapshot period:', error);
+        return 'overall';
     }
 };
 
