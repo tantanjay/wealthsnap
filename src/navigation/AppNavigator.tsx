@@ -14,8 +14,6 @@ import LegalAcceptanceScreen from '@screens/onboarding/LegalAcceptanceScreen';
 import ProfileScreen from '@screens/ProfileScreen';
 import InsightScreen from '@screens/InsightScreen';
 import FinancialHealthScreen from '@screens/FinancialHealthScreen';
-import DebtScreen from '@screens/DebtScreen';
-import SavingsGoalsScreen from '@screens/SavingsGoalsScreen';
 import HomeScreen from '@screens/HomeScreen';
 import InvestmentScreen from '@screens/InvestmentScreen';
 import HistoryScreen from '@screens/HistoryScreen';
@@ -35,8 +33,6 @@ const HomeStackNavigator = () => {
             <HomeStack.Screen name="HomeMain" component={HomeScreen} />
             <HomeStack.Screen name="FinancialHealth" component={FinancialHealthScreen} />
             <HomeStack.Screen name="Insights" component={InsightScreen} />
-            <HomeStack.Screen name="Debts" component={DebtScreen} />
-            <HomeStack.Screen name="SavingsGoals" component={SavingsGoalsScreen} />
         </HomeStack.Navigator>
     );
 };

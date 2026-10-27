@@ -15,13 +15,15 @@ interface DebtStatusModalProps {
     onEdit: (debt: Debt) => void;
     onDelete: (id: string, deleteLinked: boolean) => void;
     linkedTransaction: Transaction | null;
+    // Home's Loans tab opens this from a loan row, so recording a payment lives here too.
+    onRecordPayment?: (debt: Debt) => void;
 }
 
 // Explanation lives directly on each option instead of behind a separate confirm dialog -
 // by the time you tap, you've already read what it does, so there's nothing left to confirm.
 // Edit/Delete sit above the status options as quick single-line actions - everything you'd
 // want to do to a debt record, behind the one gear icon on its card.
-const DebtStatusModal: React.FC<DebtStatusModalProps> = ({ visible, onClose, debt, onUpdateStatus, onEdit, onDelete, linkedTransaction }) => {
+const DebtStatusModal: React.FC<DebtStatusModalProps> = ({ visible, onClose, debt, onUpdateStatus, onEdit, onDelete, linkedTransaction, onRecordPayment }) => {
     const { colors } = useTheme();
     const confirmDeleteDebt = useConfirmDeleteDebt(onDelete, onClose);
 
@@ -41,6 +43,12 @@ const DebtStatusModal: React.FC<DebtStatusModalProps> = ({ visible, onClose, deb
 
     const handleDeletePress = () => confirmDeleteDebt(debt.id, linkedTransaction);
 
+    // Closes first so the payment sheet never opens on top of this one.
+    const handlePaymentPress = () => {
+        onClose();
+        onRecordPayment?.(debt);
+    };
+
     return (
         <BottomModal
             visible={visible}
@@ -52,6 +60,21 @@ const DebtStatusModal: React.FC<DebtStatusModalProps> = ({ visible, onClose, deb
             <View style={styles.container}>
                 {/* Quick Actions */}
                 <View style={styles.quickActions}>
+                    {onRecordPayment && debt.status === 'ACTIVE' && (
+                        <>
+                            <TouchableOpacity
+                                style={[styles.actionButton, { backgroundColor: colors.surface }]}
+                                onPress={handlePaymentPress}
+                            >
+                                <Ionicons name="cash-outline" size={22} color={colors.primary} />
+                                <Text style={[styles.actionText, { color: colors.primary }]}>
+                                    {isReceivable ? 'Record Repayment' : 'Record Payment'}
+                                </Text>
+                                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                            <View style={[styles.separator, { backgroundColor: colors.border }]} />
+                        </>
+                    )}
                     <TouchableOpacity
                         style={[styles.actionButton, { backgroundColor: colors.surface }]}
                         onPress={handleEditPress}

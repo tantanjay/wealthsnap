@@ -7,9 +7,13 @@ import DraggableIconButton from '@components/common/DraggableIconButton';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { EmptyState } from '@components/common/EmptyState';
 import { ReviewAppModal } from '@components/common/ReviewAppModal';
-import { Row, SectionHeader } from '@components/ds';
+import { Row, SectionHeader, UnderlineTabs, UnderlineTab } from '@components/ds';
 import HomeSettingsSheet from '@components/home/HomeSettingsSheet';
 import SnapshotView, { SnapshotData } from '@components/home/SnapshotView';
+import LedgerTab, { LedgerView } from '@components/home/LedgerTab';
+import HoldingsTab from '@components/home/HoldingsTab';
+import GoalsTab from '@components/home/GoalsTab';
+import LoansTab from '@components/home/LoansTab';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
@@ -38,12 +42,21 @@ import * as Storage from '@services/core/storageService';
 
 const RECENT_COUNT = 3;
 
-// Snapshot rows open today's screens until Home gets its own Ledger/Holdings/Loans/Goals tabs.
-const ROW_DESTINATION: Record<Storage.SnapshotRowId, string> = {
-    cash: 'History',
-    investments: 'Investment',
-    loans: 'Debts',
-    goals: 'SavingsGoals',
+type HomeTab = 'snapshot' | 'ledger' | 'holdings' | 'goals' | 'loans';
+
+const TABS: UnderlineTab<HomeTab>[] = [
+    { key: 'snapshot', label: 'Snapshot' },
+    { key: 'ledger', label: 'Ledger' },
+    { key: 'holdings', label: 'Holdings' },
+    { key: 'goals', label: 'Goals' },
+    { key: 'loans', label: 'Loans' },
+];
+
+const ROW_DESTINATION: Record<Storage.SnapshotRowId, HomeTab> = {
+    cash: 'ledger',
+    investments: 'holdings',
+    loans: 'loans',
+    goals: 'goals',
 };
 
 const greeting = () => {
@@ -64,9 +77,13 @@ const HomeScreen = ({ navigation }: any) => {
     const [period, setPeriod] = useState<Storage.SnapshotPeriod>('overall');
     const [isSettingsVisible, setIsSettingsVisible] = useState(false);
     const [hasLoaded, setHasLoaded] = useState(false);
+    const [tab, setTab] = useState<HomeTab>('snapshot');
+    const [ledgerView, setLedgerView] = useState<LedgerView>('LIST');
+    const [isHoldingsSettingsVisible, setIsHoldingsSettingsVisible] = useState(false);
     const isLoading = useRef(false);
 
-    const format = usePrivacyFormat(profile?.currency || 'PHP');
+    const currency = profile?.currency || 'PHP';
+    const format = usePrivacyFormat(currency);
 
     const loadData = async () => {
         if (isLoading.current) return;
@@ -132,14 +149,41 @@ const HomeScreen = ({ navigation }: any) => {
         }, [checkReviewEligibility])
     );
 
+    // Other tabs edit goals, loans and transactions, so the Snapshot reloads whenever it's shown again.
+    const lastTab = useRef<HomeTab>(tab);
     useEffect(() => {
-        registerSecondAction(routeName, {
-            label: 'Screen Settings',
-            icon: 'options-outline',
-            onPress: () => setIsSettingsVisible(true),
-        });
+        if (tab === 'snapshot' && lastTab.current !== 'snapshot') loadData();
+        lastTab.current = tab;
+    // loadData is recreated every render; this should only fire on a tab change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tab]);
+
+    // The floating gear's screen action follows the tab: History's calendar switch on Ledger,
+    // the Investment screen's settings on Holdings, Home Settings everywhere else.
+    useEffect(() => {
+        if (tab === 'ledger') {
+            registerSecondAction(routeName, {
+                label: ledgerView === 'LIST' ? 'Switch to Calendar View' : 'Switch to List View',
+                icon: ledgerView === 'LIST' ? 'calendar-outline' : 'list-outline',
+                onPress: () => setLedgerView(ledgerView === 'LIST' ? 'CALENDAR' : 'LIST'),
+            });
+        } else if (tab === 'holdings') {
+            registerSecondAction(routeName, {
+                label: 'Holdings Settings',
+                icon: 'options-outline',
+                onPress: () => setIsHoldingsSettingsVisible(true),
+            });
+        } else {
+            registerSecondAction(routeName, {
+                label: 'Screen Settings',
+                icon: 'options-outline',
+                onPress: () => setIsSettingsVisible(true),
+            });
+        }
         return () => registerSecondAction(routeName, null);
-    }, [registerSecondAction, routeName]);
+    }, [registerSecondAction, routeName, tab, ledgerView]);
+
+    const openRecord = (params?: object) => navigation.navigate('Actions', params);
 
     const togglePeriod = () => {
         const next = period === 'overall' ? 'month' : 'overall';
@@ -166,7 +210,7 @@ const HomeScreen = ({ navigation }: any) => {
             <SectionHeader title="Get started" />
             <Row icon="receipt-outline" title="Add a transaction" chevron onPress={() => navigation.navigate('Actions')} />
             <Row icon="trending-up-outline" title="Add an investment" chevron onPress={() => navigation.navigate('Actions')} />
-            <Row icon="flag-outline" title="Set a savings goal" chevron last onPress={() => navigation.navigate('SavingsGoals')} />
+            <Row icon="flag-outline" title="Set a savings goal" chevron last onPress={() => setTab('goals')} />
         </View>
     );
 
@@ -196,26 +240,49 @@ const HomeScreen = ({ navigation }: any) => {
                 </View>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-                {isStatusChecking || !hasLoaded ? (
-                    <View style={styles.loading}>
-                        <ActivityIndicator size="large" color={ds.accent} />
+            {isStatusChecking || !hasLoaded ? (
+                <View style={styles.loading}>
+                    <ActivityIndicator size="large" color={ds.accent} />
+                </View>
+            ) : (
+                <>
+                    {/* Outside the tab's own scroll view, so it stays put under the top bar. */}
+                    <UnderlineTabs tabs={TABS} value={tab} onChange={setTab} />
+                    <View style={styles.body}>
+                        {tab === 'snapshot' && (
+                            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+                                {isNewUser || !snapshot ? (
+                                    renderNewUser()
+                                ) : (
+                                    <SnapshotView
+                                        data={snapshot}
+                                        format={format}
+                                        order={order}
+                                        period={period}
+                                        onTogglePeriod={togglePeriod}
+                                        onDetails={() => navigation.navigate('Insights')}
+                                        onRowPress={id => setTab(ROW_DESTINATION[id])}
+                                        onSeeAllRecent={() => setTab('ledger')}
+                                    />
+                                )}
+                            </ScrollView>
+                        )}
+                        {tab === 'ledger' && <LedgerTab format={format} view={ledgerView} onChangeView={setLedgerView} onOpenRecord={openRecord} />}
+                        {tab === 'holdings' && (
+                            <HoldingsTab
+                                format={format}
+                                currency={currency}
+                                settingsVisible={isHoldingsSettingsVisible}
+                                onOpenSettings={() => setIsHoldingsSettingsVisible(true)}
+                                onCloseSettings={() => setIsHoldingsSettingsVisible(false)}
+                                onOpenRecord={() => openRecord()}
+                            />
+                        )}
+                        {tab === 'goals' && <GoalsTab format={format} />}
+                        {tab === 'loans' && <LoansTab format={format} currency={currency} onOpenRecord={openRecord} />}
                     </View>
-                ) : isNewUser || !snapshot ? (
-                    renderNewUser()
-                ) : (
-                    <SnapshotView
-                        data={snapshot}
-                        format={format}
-                        order={order}
-                        period={period}
-                        onTogglePeriod={togglePeriod}
-                        onDetails={() => navigation.navigate('Insights')}
-                        onRowPress={id => navigation.navigate(ROW_DESTINATION[id])}
-                        onSeeAllRecent={() => navigation.navigate('History')}
-                    />
-                )}
-            </ScrollView>
+                </>
+            )}
 
             <HomeSettingsSheet
                 visible={isSettingsVisible}
@@ -259,6 +326,9 @@ const styles = StyleSheet.create({
     },
     iconButton: {
         padding: space[1],
+    },
+    body: {
+        flex: 1,
     },
     content: {
         paddingHorizontal: space[5],

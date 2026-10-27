@@ -16,6 +16,8 @@ interface HistoryCalendarProps {
     onSelectDate: (date: Date) => void;
     recurrenceRules?: RecurrenceRule[];
     currency?: string;
+    // Privacy Discreet/Hidden: drop the per-day amounts, keep the income/expense strips and badges.
+    hideAmounts?: boolean;
 }
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -27,7 +29,8 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
     selectedDate,
     onSelectDate,
     recurrenceRules = [],
-    currency = 'PHP'
+    currency = 'PHP',
+    hideAmounts = false,
 }) => {
     const { colors } = useTheme();
 
@@ -200,14 +203,14 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     </View>
                 </View>
                 <View style={styles.centerContent}>
-                    {date > new Date() && stat && (stat.futureIncomeAmount.isGreaterThan(0) || stat.futureExpenseAmount.isGreaterThan(0)) && (
+                    {!hideAmounts && date > new Date() && stat && (stat.futureIncomeAmount.isGreaterThan(0) || stat.futureExpenseAmount.isGreaterThan(0)) && (
                         <View style={styles.ghostStack}>
                             {stat.futureIncomeAmount.isGreaterThan(0) && <Text style={[styles.ghostText, { color: colors.success }]}>{formatCompactCurrency(stat.futureIncomeAmount, currency)}</Text>}
                             {stat.futureExpenseAmount.isGreaterThan(0) && <Text style={[styles.ghostText, { color: colors.error }]}>{formatCompactCurrency(stat.futureExpenseAmount, currency)}</Text>}
                         </View>
                     )}
                     {/* Past Recurring Expenses/Income - Displayed in Center */}
-                    {date <= new Date() && stat && (stat.recurringExpense.isGreaterThan(0) || stat.recurringIncome.isGreaterThan(0)) && (
+                    {!hideAmounts && date <= new Date() && stat && (stat.recurringExpense.isGreaterThan(0) || stat.recurringIncome.isGreaterThan(0)) && (
                         <View style={styles.ghostStack}>
                             {stat.recurringIncome.isGreaterThan(0) && (
                                 <Text style={[styles.ghostText, { color: colors.success }]}>

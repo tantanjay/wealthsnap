@@ -42,6 +42,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         content: [
             { type: 'heading1', text: 'Home Snapshot' },
             { type: 'paragraph', text: 'Home shows your net worth on top, then one row each for Cash, Investments, Loans and Goals, then your 3 most recent transactions. Tap "Overall" to switch every row to "This month". Reorder the rows from the sliders button.' },
+            { type: 'paragraph', text: 'The tabs under the greeting open the full lists: Ledger (every transaction by day, with search, filters and a calendar), Holdings, Goals and Loans. Tapping a row jumps to its tab.' },
             { type: 'divider' },
             { type: 'heading2', text: 'Projected Net Worth' },
             { type: 'formula', text: 'Net Worth = Cash + Investments + Goal balances − (Loan principal + Projected future interest)' },
@@ -54,11 +55,16 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Investments: market value. Return = Unrealized P/L ÷ Cost of what you still hold. This month: net invested (buys − sells) and the return on shares bought this month that you still hold.' },
             { type: 'bullet', text: 'Loans: what you still owe on active loans. % repaid = (Borrowed − Still owed) ÷ Borrowed. Obligations paid counts principal + interest paid this month (not fees), up to each loan\'s minimum payment, so overpaying one loan doesn\'t cover another.' },
             { type: 'bullet', text: 'Goals: total saved. % to target = Saved (each goal capped at its target) ÷ Total targets. A goal is on track once it reaches its target, or while it has an active recurring contribution. "On plan" means this month\'s contributions reached your goals\' monthly plan.' },
+            { type: 'heading2', text: 'Home tabs' },
+            { type: 'bullet', text: 'Ledger In / Out: In = Income + Transfer In, Out = Expense + Transfer Out, for this month. That is raw cash movement, so goal contributions, loan payments and investment buys count as Out.' },
+            { type: 'formula', text: 'Total return = (Unrealized P/L + Realized P/L + Dividends) ÷ Everything you ever invested' },
+            { type: 'bullet', text: 'Holdings: "everything you ever invested" is the cost of what you still hold plus the cost of what you sold. Each holding\'s own return is still unrealized only, like the Investments row above.' },
+            { type: 'bullet', text: 'Loans: "Owed to you" uses the same rules as money you owe: % collected = (Lent − Still owed) ÷ Lent, and repayments received count up to each loan\'s minimum.' },
             { type: 'divider' },
             { type: 'heading2', text: 'Privacy modes' },
             { type: 'paragraph', text: 'Pick a mode from the sliders button on Home. It applies everywhere as soon as you pick it.' },
             { type: 'bullet', text: 'Open: every amount.' },
-            { type: 'bullet', text: 'Discreet: only scale-free numbers, such as percentages, months, counts and progress bars. Transaction amounts are left out. Useful at a glance, without showing how much money is involved.' },
+            { type: 'bullet', text: 'Discreet: only scale-free numbers, such as percentages, months, counts and progress bars. Transaction amounts are left out. Useful at a glance, without showing how much money is involved. Holdings shows total return and each holding\'s weight and return, Goals and Loans show % to target and % repaid (or collected), and Ledger shows this month\'s Out as a % of In.' },
             { type: 'bullet', text: 'Hidden: every amount masked as ****.' },
             { type: 'alert', alertType: 'info', text: 'Screens that don\'t have a Discreet version yet show Hidden instead.' },
         ]
@@ -382,7 +388,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         type: 'document',
         content: [
             { type: 'heading1', text: 'Debt Strategy Overview' },
-            { type: 'paragraph', text: 'This guide explains the cards, payoff strategies, and payment tracking on the Debt Strategy screen.' },
+            { type: 'paragraph', text: 'This guide explains the payoff plan, strategies and payment tracking on Home\'s Loans tab. Switch between "You owe" and "Owed to you" at the top.' },
             { type: 'divider' },
 
             { type: 'heading2', text: 'Payable vs Receivable' },
@@ -408,14 +414,14 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'divider' },
             { type: 'heading2', text: 'Payoff Strategy' },
-            { type: 'paragraph', text: 'Choose how your Priority Payoff Order is ranked:' },
+            { type: 'paragraph', text: 'Tap the strategy name next to "Payoff plan" to choose how your active loans are ranked:' },
             { type: 'bullet', text: 'Avalanche — highest interest rate first. Mathematically minimizes total interest paid.' },
             { type: 'bullet', text: 'Snowball — smallest balance first. Clears individual debts faster for a motivational win.' },
             { type: 'paragraph', text: 'Overdue and due-soon debts always jump to the top of the list regardless of strategy.' },
 
             { type: 'divider' },
             { type: 'heading2', text: 'Recording a Payment' },
-            { type: 'paragraph', text: 'Tap "Pay Now" on any debt to log a payment split up to three ways:' },
+            { type: 'paragraph', text: 'Tap a loan, then "Record Payment", to log a payment split up to three ways:' },
             { type: 'bullet', text: 'Principal — reduces your debt balance' },
             { type: 'bullet', text: 'Interest — the cost of borrowing; doesn\'t reduce your balance' },
             { type: 'bullet', text: 'Fee / Insurance — optional add-ons like MRI (Mortgage Redemption Insurance) or Fire Insurance' },

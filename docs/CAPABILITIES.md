@@ -265,6 +265,8 @@ One calm overview instead of a stack of cards:
 - Cash, Investments, Loans and Goals rows, each with a context line and change vs last month
 - One Overall / This month switch for every row
 - Drag to reorder the rows; 3 most recent transactions underneath
+- Sticky Home tabs for the full views: **Ledger** (search, Income / Expense / Transfers filters, this month's in/out, transactions by day with day totals, calendar view), **Holdings** (portfolio, return, allocation by asset type, weight and return per holding), **Goals** (saved total, this month's contributions, progress per goal) and **Loans** (You owe / Owed to you, payoff plan, progress and next due date per loan)
+- Every tab follows the Open / Discreet / Hidden privacy mode
 
 ---
 

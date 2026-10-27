@@ -9,18 +9,19 @@ import { SEVERITY_ICON } from '@utils/severity';
 interface InvestmentSettingsModalProps {
     visible: boolean;
     onClose: () => void;
-    statsOrder: string[];
-    sectionOrder: string[];
-    onUpdateStatsOrder: (newOrder: string[]) => void;
-    onUpdateSectionOrder: (newOrder: string[]) => void;
+    // Omitted on Home's Holdings tab, whose layout has nothing to reorder.
+    statsOrder?: string[];
+    sectionOrder?: string[];
+    onUpdateStatsOrder?: (newOrder: string[]) => void;
+    onUpdateSectionOrder?: (newOrder: string[]) => void;
     onFetchPriceList?: (duration: string) => void;
 }
 
 const InvestmentSettingsModal: React.FC<InvestmentSettingsModalProps> = ({
     visible,
     onClose,
-    statsOrder,
-    sectionOrder,
+    statsOrder = [],
+    sectionOrder = [],
     onUpdateStatsOrder,
     onUpdateSectionOrder,
     onFetchPriceList
@@ -136,23 +137,29 @@ const InvestmentSettingsModal: React.FC<InvestmentSettingsModalProps> = ({
             <View style={styles.container}>
                 {view === 'MAIN' ? (
                     <>
-                        {renderMenuItem(
-                            "stats-chart",
-                            "Stats Cards Layout",
-                            "Reorder the summary cards",
-                            () => setView('STATS_REORDER')
+                        {onUpdateStatsOrder && (
+                            <>
+                                {renderMenuItem(
+                                    "stats-chart",
+                                    "Stats Cards Layout",
+                                    "Reorder the summary cards",
+                                    () => setView('STATS_REORDER')
+                                )}
+                                <View style={{ height: 12 }} />
+                            </>
                         )}
 
-                        <View style={{ height: 12 }} />
-
-                        {renderMenuItem(
-                            "layers",
-                            "Dashboard Sections",
-                            "Reorder main screen sections",
-                            () => setView('SECTION_REORDER')
+                        {onUpdateSectionOrder && (
+                            <>
+                                {renderMenuItem(
+                                    "layers",
+                                    "Dashboard Sections",
+                                    "Reorder main screen sections",
+                                    () => setView('SECTION_REORDER')
+                                )}
+                                <View style={{ height: 12 }} />
+                            </>
                         )}
-
-                        <View style={{ height: 12 }} />
 
                         {renderMenuItem(
                             "pricetag",
@@ -164,13 +171,13 @@ const InvestmentSettingsModal: React.FC<InvestmentSettingsModalProps> = ({
                 ) : view === 'STATS_REORDER' ? (
                     <ReorderList
                         items={getStatsItems()}
-                        onReorder={(newItems) => onUpdateStatsOrder(newItems.map(i => i.id))}
+                        onReorder={(newItems) => onUpdateStatsOrder?.(newItems.map(i => i.id))}
                         containerStyle={{ maxHeight: 400 }}
                     />
                 ) : view === 'SECTION_REORDER' ? (
                     <ReorderList
                         items={getSectionItems()}
-                        onReorder={(newItems) => onUpdateSectionOrder(newItems.map(i => i.id))}
+                        onReorder={(newItems) => onUpdateSectionOrder?.(newItems.map(i => i.id))}
                         containerStyle={{ maxHeight: 400 }}
                     />
                 ) : (
