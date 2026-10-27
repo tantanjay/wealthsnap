@@ -11,7 +11,9 @@ The single source of truth for every number the app computes: its formula, where
 - **Cash:** [Cash Balance](#cash-balance) · [Runway](#runway) · [Runway Change](#runway-change) · [Net Cash Flow](#net-cash-flow-monthly)
 - **Spending:** [Total Expense / Monthly Net / Daily Average](#total-expense--monthly-net--daily-average) · [Category Breakdown / Top Category](#category-breakdown--top-category) · [Savings Rate](#savings-rate) · [Budget Health](#budget-health)
 - **Obligations:** [Burn Rate](#burn-rate) · [Debts Drag](#debts-drag) · [Safe-to-Spend](#safe-to-spend)
-- **Wealth:** [Net Worth / Total Debt](#net-worth--total-debt)
+- **Wealth:** [Net Worth / Total Debt](#net-worth--total-debt) · [Net Worth Change](#net-worth-change)
+- **Home Snapshot rows:** [Cash Kept](#cash-kept) · [Investment Return](#investment-return) · [Loans Repaid / Obligations Paid](#loans-repaid--obligations-paid) · [Goals Progress / On Track](#goals-progress--on-track)
+- **Privacy modes:** [Discreet and Hidden rendering](#discreet-and-hidden-rendering)
 - **By transaction kind:** [What each transaction counts toward](#what-each-transaction-counts-toward)
 
 ## Where the numbers come from
@@ -169,7 +171,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula:** (Income − Total Expense − Debt Principal Repaid) ÷ Income × 100
 
-**Shown on:** Insights (card, Savings Rate Trend, Month-End Projection) · Monthly Summary · Chat
+**Shown on:** Insights (card, Savings Rate Trend, Month-End Projection) · Home Snapshot (Discreet hero sub-figure, Cash row "This month" in Discreet) · Monthly Summary · Chat
 
 **Computed from:** `transactions`. Monthly Summary and Chat show the stored copy in `monthly_summary`
 
@@ -185,6 +187,7 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | Expense leaves out goal-funded purchases | Savings Goals added. Card and chart still differ on principal |
 | 1.18.0 | Same | Chart no longer mixes up months' repayments on the 29th-31st |
 | 1.19.0 | (Income − Expense − Debt Principal Repaid) ÷ Income, everywhere | Card, Monthly Summary, Chat and Month-End Projection now count principal as spent, matching the chart. Month-End uses principal repaid so far |
+| Unreleased | Same; "—" on Home when the month has no income | Home Snapshot shows this month's rate in Discreet mode (hero and Cash row), change line in points vs last month |
 
 ## Budget Health
 
@@ -278,7 +281,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (Total Debt):** current principal on active debts you owe; no future interest
 
-**Shown on:** Home (Projected Net Worth, Debts card) · Financial Health (Total Debt, inside Self-sustain Impact) · Debt Strategy (Total Debt) · Chat (Total Debt)
+**Shown on:** Home Snapshot (hero, Total Assets, Loans row) · Financial Health (Total Debt, inside Self-sustain Impact) · Debt Strategy (Total Debt) · Chat (Total Debt)
 
 **Computed from:** `transactions` (cash, goal balances, principal repaid) · `investments` + `price_history` (market value) · `debts` (`initialAmount`, and `interestRate`, `interestType`, `termMonths`, `minPayment` for projected interest)
 
@@ -293,6 +296,105 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | + goal balances | Money in a goal still counts as yours |
 | 1.19.0 | Same | Relabeled "Projected Net Worth" and "Debt + Interest" |
 | 1.19.0 | Same | Documented: money owed to you isn't an asset until repaid (code already worked this way) |
+| Unreleased | Same | Home's Financial Health and Debts cards replaced by the Snapshot hero and Loans row; one shared calculation (`calculateNetWorth`) |
+
+## Net Worth Change
+
+**Formula (Net Worth at a past month-end):** Cash Balance as of then + goal balances as of then + investments held then × their latest price on or before then (price history, else the last trade price on or before then) − (principal as of then + projected future interest on it) for debts you owe that had started by then, whatever their status today
+
+**Formula (change this month):** Net Worth now − Net Worth at the end of last month. % = change ÷ |Net Worth then| × 100
+
+**Formula (sparkline):** Net Worth at each of the last 6 month-ends that have data, then now
+
+**Shown on:** Home Snapshot (hero change line in Open; hero value in Discreet; sparkline)
+
+**Computed from:** `transactions` (cash, goal balances, principal as of then) · `investments` + `price_history` (holdings and prices as of then) · `debts` (`initialAmount`, `interestRate`, `interestType`, `termMonths`, `minPayment`)
+
+**Notes:** `calculateNetWorth` / `calculateNetWorthChange`. No change line until there's a transaction before this month; the % is "—" while Net Worth then is ₱0 or below. Tone: up good, down bad. Past projected interest applies today's loan terms to that month's principal. Because status has no history, a debt marked Paid Off/Forgiven without a payment shows as a gain the month it's marked.
+
+| Version | Rule after this change | What changed |
+|---|---|---|
+| Unreleased | As above | Introduced with the Home Snapshot |
+
+## Cash Kept
+
+**Formula (Overall):** Cash Balance ÷ lifetime Income × 100. Change line: points vs the same ratio at the end of last month
+
+**Formula (This month):** [Monthly Net](#total-expense--monthly-net--daily-average) in Open, this month's [Savings Rate](#savings-rate) in Discreet; change line vs last month's figure
+
+**Shown on:** Home Snapshot (Cash row)
+
+**Computed from:** `transactions`
+
+**Notes:** `calculateCashKept`. "—" while lifetime Income is ₱0. Open shows Cash Balance with its change since last month-end (this month's net cash flow) as the change line. Tone: up good, down bad.
+
+| Version | Rule after this change | What changed |
+|---|---|---|
+| Unreleased | As above | Introduced with the Home Snapshot |
+
+## Investment Return
+
+**Formula (Overall):** unrealized return = Unrealized P/L ÷ cost basis of current holdings × 100. Top holding = largest holding's market value ÷ total market value
+
+**Formula (This month):** net invested = this month's buys (+ fees) − sells (− fees). Return on this month's buys = (market value − cost) of shares bought this month and still held ÷ that cost × 100
+
+**Shown on:** Home Snapshot (Investments row) · Investments (Unrealized P/L %)
+
+**Computed from:** `investments` · `price_history`
+
+**Notes:** `calculateInvestmentSnapshot`, same unrealized % as the Investments screen (`getPortfolioStats`). Realized gains and dividends aren't part of the return. "—" when cost basis is ₱0.
+
+| Version | Rule after this change | What changed |
+|---|---|---|
+| Unreleased | As above | Home Snapshot shows the existing unrealized % in Discreet; monthly buys' return documented |
+
+## Loans Repaid / Obligations Paid
+
+**Formula (% repaid):** (Σ initial amount − Σ remaining principal) ÷ Σ initial amount × 100, over active debts you owe. Change line: points vs the same debts' principal at the end of last month
+
+**Formula (obligations paid):** per active debt you owe, principal + interest paid this month (fees excluded), capped at its minimum payment; summed against Σ minimum payments. Paid count = debts whose payment reached their minimum, out of debts with a minimum above ₱0
+
+**Shown on:** Home Snapshot (Loans row: Overall secondary line and Discreet value; This month value)
+
+**Computed from:** `transactions` (principal and interest payments) · `debts` (`initialAmount`, `minPayment`, `status`, `direction`)
+
+**Notes:** `calculateLoansSnapshot`. The paid count uses the same "payment reached the minimum" rule as the next due date (`getNextDueDate`). Open shows Total Debt; its change line = outstanding now − outstanding at the end of last month, down is good.
+
+| Version | Rule after this change | What changed |
+|---|---|---|
+| Unreleased | Obligations capped per debt at its minimum | Home's Debts card summed raw payments, so paying extra on one debt covered another's minimum |
+
+## Goals Progress / On Track
+
+**Formula (% to target):** Σ min(goal balance, target) ÷ Σ target × 100. Change line: points vs end of last month
+
+**Formula (on track):** a goal has reached its target, or it isn't paused and has a recurring contribution set
+
+**Formula (funded this month):** goals not yet at target that received at least one contribution this month, out of all goals not yet at target
+
+**Formula (on plan):** this month's contributions ≥ Σ monthly-equivalent recurring amounts of goals counted in Burn Rate
+
+**Shown on:** Home Snapshot (Goals row)
+
+**Computed from:** `transactions` (contributions, balances) · `savings_goals` (`targetAmount`, `recurringAmount`, `frequency`, `isPaused`)
+
+**Notes:** `calculateGoalsSnapshot`. Capping each balance at its target stops one overfunded goal from hiding one that's behind. Goals keep no target date, so "on track" can't mean on pace for a date. Open shows Σ balances, with this month's net contributions as the change line.
+
+| Version | Rule after this change | What changed |
+|---|---|---|
+| Unreleased | As above | Introduced with the Home Snapshot |
+
+## Discreet and Hidden rendering
+
+**Rule:** Open shows every amount. Discreet replaces each amount with that metric's scale-free alternative (%, months, counts, progress); an amount with none is left out (transaction amounts) or shown as "—". Hidden shows `****`, keeping a leading sign. %, months and counts render unchanged in every mode
+
+**Shown on:** every amount. Screens without a Discreet version yet render Discreet as Hidden
+
+**Notes:** `usePrivacyFormat` (`src/hooks/usePrivacyFormat.ts`). Investment Boost months are always "—" in Discreet: a large figure implies investments far exceed spending.
+
+| Version | Rule after this change | What changed |
+|---|---|---|
+| Unreleased | Open / Discreet / Hidden | Replaced the on/off privacy toggle (on → Hidden, off → Open) |
 
 ---
 

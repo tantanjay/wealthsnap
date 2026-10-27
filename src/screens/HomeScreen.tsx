@@ -1,648 +1,121 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { BigNumber } from 'bignumber.js';
-import { Text, View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Text, View, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 
-import BottomModal from '@components/common/BottomModal';
 import DraggableIconButton from '@components/common/DraggableIconButton';
-import HomeTransactionsCard from '@components/home/HomeTransactionsCard';
-import HomeSettingsModal from '@components/home/HomeSettingsModal';
-import HomeCashFlowCard from '@components/home/HomeCashFlowCard';
-import HomeInvestmentCard from '@components/home/HomeInvestmentCard';
-import HomeDebtCard from '@components/home/HomeDebtCard';
-import HomeSavingsGoalsCard from '@components/home/HomeSavingsGoalsCard';
-import HomeFinancialHealthCard from '@components/home/HomeFinancialHealthCard';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
-import { Skeleton } from '@components/common/Skeleton';
 import { EmptyState } from '@components/common/EmptyState';
+import { ReviewAppModal } from '@components/common/ReviewAppModal';
+import { Row, SectionHeader } from '@components/ds';
+import HomeSettingsSheet from '@components/home/HomeSettingsSheet';
+import SnapshotView, { SnapshotData } from '@components/home/SnapshotView';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
 import { useDataStatus } from '@context/DataStatusContext';
-import { UserProfile, Transaction, Investment, Debt } from '@types';
+import { usePrivacyFormat } from '@hooks/usePrivacyFormat';
+import { useReviewPrompt } from '@hooks/useReviewPrompt';
+import { type, space, radius } from '@styles/theme';
+import { UserProfile } from '@types';
+import { calculateRunwayTrend } from '@utils/financialMetrics';
 import {
-    getTransactionsByMonth,
-    calculateBalance,
-    getCumulativeSpendingCurve,
-    getCurrentMonthCumulative,
-    getTopExpenses,
-    calculateRunwayTrend,
-    getCategoryBreakdown,
-} from '@utils/financialMetrics';
-import {
-    calculateDebtDrag,
-    calculateInvestmentBoost,
-} from '@utils/insightMetrics';
-import { formatCurrencyAmount } from '@utils/currencyUtils';
+    buildPriceLookup,
+    calculateCashKept,
+    calculateGoalsSnapshot,
+    calculateInvestmentSnapshot,
+    calculateLoansSnapshot,
+    calculateMonthCashFlow,
+    calculateNetWorthChange,
+} from '@utils/snapshotMetrics';
 import { processRecurrenceRules } from '@services/domain/recurrenceService';
 import { getCachedTransactions } from '@services/domain/transactionService';
 import { getCachedInvestments } from '@services/domain/investmentService';
-import { getAllBudgets } from '@services/domain/budgetService';
 import { getAllDebts } from '@services/domain/debtService';
 import { getAllSavingsGoals, checkGoalReachedNotifications } from '@services/domain/savingsGoalService';
-import { calculateGoalBalance } from '@utils/savingsGoalMetrics';
+import { getPriceHistoryForSymbols } from '@services/domain/priceHistoryService';
 import * as Storage from '@services/core/storageService';
-import { getAllPortfolioMetrics } from '@utils/investmentMetrics';
-import { getLatestPrices } from '@services/domain/priceHistoryService';
-import { ReviewAppModal } from '@components/common/ReviewAppModal';
-import { useReviewPrompt } from '@hooks/useReviewPrompt';
-import { calculateProjectedDebtLiability, calculateTotalDebtObligations } from '@utils/debtMetrics';
+
+const RECENT_COUNT = 3;
+
+// Snapshot rows open today's screens until Home gets its own Ledger/Holdings/Loans/Goals tabs.
+const ROW_DESTINATION: Record<Storage.SnapshotRowId, string> = {
+    cash: 'History',
+    investments: 'Investment',
+    loans: 'Debts',
+    goals: 'SavingsGoals',
+};
+
+const greeting = () => {
+    const h = new Date().getHours();
+    return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+};
 
 const HomeScreen = ({ navigation }: any) => {
-    const { colors } = useTheme();
-    const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
+    const { ds } = useTheme();
+    const { mode } = usePrivacy();
     const { isDocked, registerSecondAction } = useFloatingGear();
-    const { isChecking: isStatusChecking, isNewUser, hasInvestments, hasDebts, refresh: refreshDataStatus } = useDataStatus();
+    const { isChecking: isStatusChecking, isNewUser, refresh: refreshDataStatus } = useDataStatus();
     const routeName = useRoute().name;
+
     const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [snapshot, setSnapshot] = useState<SnapshotData | null>(null);
+    const [order, setOrder] = useState<Storage.SnapshotRowId[]>(Storage.DEFAULT_SNAPSHOT_ORDER);
+    const [period, setPeriod] = useState<Storage.SnapshotPeriod>('overall');
+    const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+    const [hasLoaded, setHasLoaded] = useState(false);
+    const isLoading = useRef(false);
 
-    // Calculated values for both modes
-    const [overallIncome, setOverallIncome] = useState(new BigNumber(0));
-    const [overallExpense, setOverallExpense] = useState(new BigNumber(0));
-    const [monthIncome, setMonthIncome] = useState(new BigNumber(0));
-    const [monthExpense, setMonthExpense] = useState(new BigNumber(0));
-    const [monthGoalExpense, setMonthGoalExpense] = useState(new BigNumber(0));
-
-    // Transfer States
-    const [overallTransferIn, setOverallTransferIn] = useState(new BigNumber(0));
-    const [overallTransferOut, setOverallTransferOut] = useState(new BigNumber(0));
-    const [monthTransferIn, setMonthTransferIn] = useState(new BigNumber(0));
-    const [monthTransferOut, setMonthTransferOut] = useState(new BigNumber(0));
-    const [overallBalance, setOverallBalance] = useState(new BigNumber(0));
-    const [monthBalance, setMonthBalance] = useState(new BigNumber(0));
-
-    const [investmentTotal, setInvestmentTotal] = useState(new BigNumber(0));
-    const [realizedPL, setRealizedPL] = useState(new BigNumber(0));
-    const [unrealizedPL, setUnrealizedPL] = useState(new BigNumber(0));
-    // Monthly Investment Metrics
-    const [monthInvested, setMonthInvested] = useState(new BigNumber(0));
-    const [monthRealizedPL, setMonthRealizedPL] = useState(new BigNumber(0));
-    const [monthUnrealizedPL, setMonthUnrealizedPL] = useState(new BigNumber(0));
-
-
-
-    const [debtTotal, setDebtTotal] = useState(new BigNumber(0));
-    const [debtBorrowed, setDebtBorrowed] = useState(new BigNumber(0));
-    const [debtRepaid, setDebtRepaid] = useState(new BigNumber(0));
-    const [monthDebtBorrowed, setMonthDebtBorrowed] = useState(new BigNumber(0));
-    const [monthDebtRepaid, setMonthDebtRepaid] = useState(new BigNumber(0));
-    const [monthlyObligations, setMonthlyObligations] = useState(new BigNumber(0));
-    const [monthlyObligationsPaid, setMonthlyObligationsPaid] = useState(new BigNumber(0));
-
-    const [savingsGoalsTotal, setSavingsGoalsTotal] = useState(new BigNumber(0));
-    const [savingsGoalsCount, setSavingsGoalsCount] = useState(0);
-    const [savingsGoalsTarget, setSavingsGoalsTarget] = useState(new BigNumber(0));
-    const [savingsGoalsSpent, setSavingsGoalsSpent] = useState(new BigNumber(0));
-    const [isLoading, setIsLoading] = useState(true);
-    const isInitialLoad = useRef(true);
-
-    const [financialHealth, setFinancialHealth] = useState({
-        totalAssets: new BigNumber(0),
-        netWorth: new BigNumber(0),
-        totalProjectedLiability: new BigNumber(0),
-        runwayInMonths: 0,
-        runwayChange: 0,
-        topHoldings: [] as { symbol: string, percent: number }[],
-        monthBudgetPercent: 0,
-        spendingDifferencePercent: 0,
-        cashBalance: new BigNumber(0),
-        investmentBoost: 0,
-        debtDrag: 0
-    });
-
-    // Settings Modal State
-    const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
-
-    // Active Display States (Swipeable) - persisted directly whenever the user swipes a card
-    const [displayMode, setDisplayMode] = useState<Storage.HomeDisplayMode>('Overall');
-    const [investmentDisplayMode, setInvestmentDisplayMode] = useState<Storage.InvestmentDisplayMode>('Total');
-    const [debtDisplayMode, setDebtDisplayMode] = useState<Storage.DebtDisplayMode>('Total');
-    const [financialHealthDisplayMode, setFinancialHealthDisplayMode] = useState<Storage.HomeFinancialHealthDisplayMode>('Health');
-
-    const [cardOrder, setCardOrder] = useState<string[]>(['financial-health', 'cash-flow', 'portfolio', 'debt', 'savings-goals', 'transactions']);
-
-    // Info Modal State
-    const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
-    const [infoModalMode, setInfoModalMode] = useState<'Overall' | 'Month' | 'MonthIncomeExpense' | 'Assets' | 'Health' | 'NetWorth'>('Overall');
-
-    const handleInfoPress = (mode: 'Overall' | 'Month' | 'MonthIncomeExpense' | 'Assets' | 'Health' | 'NetWorth') => {
-        setInfoModalMode(mode);
-        setIsInfoModalVisible(true);
-    };
+    const format = usePrivacyFormat(profile?.currency || 'PHP');
 
     const loadData = async () => {
+        if (isLoading.current) return;
+        isLoading.current = true;
         try {
-            setDebtTotal(new BigNumber(0)); // to remove lint
-            // Only reset to the loading skeleton on the very first load - a
-            // background refresh (e.g. returning to this tab) shouldn't wipe
-            // an already-rendered screen back to skeletons/empty-state.
-            if (isInitialLoad.current) {
-                setIsLoading(true);
-            }
+            setOrder(await Storage.getSnapshotOrder());
+            setPeriod(await Storage.getSnapshotPeriod());
 
-            // Load persisted display mode
-            const savedMode = await Storage.getHomeDisplayMode();
-            if (savedMode) {
-                setDisplayMode(savedMode);
-            }
-
-            const savedInvestmentMode = await Storage.getHomeInvestmentDisplayMode();
-            if (savedInvestmentMode) {
-                setInvestmentDisplayMode(savedInvestmentMode);
-            }
-
-            const savedFinancialMode = await Storage.getHomeFinancialHealthDisplayMode();
-            if (savedFinancialMode) {
-                setFinancialHealthDisplayMode(savedFinancialMode);
-            }
-
-            const savedDebtMode = await Storage.getHomeDebtDisplayMode();
-            if (savedDebtMode) {
-                setDebtDisplayMode(savedDebtMode);
-            }
-
-            // Load persisted card order
-            const savedOrder = await Storage.getHomeCardOrder();
-            if (savedOrder && savedOrder.length > 0) {
-                const defaultOrder = ['financial-health', 'cash-flow', 'portfolio', 'debt', 'savings-goals', 'transactions'];
-
-                // Check for missing cards
-                const missingCards = defaultOrder.filter(id => !savedOrder.includes(id));
-
-                let newOrder = [...savedOrder];
-
-                // If financial-health is missing (new feature), add it to the TOP
-                if (missingCards.includes('financial-health')) {
-                    newOrder = ['financial-health', ...newOrder];
-                }
-
-                // Add other missing cards to the end
-                const otherMissing = missingCards.filter(c => c !== 'financial-health');
-                newOrder = [...newOrder, ...otherMissing];
-
-                setCardOrder(newOrder);
-            }
-
-            // Process recurring rules first to ensure we fetch the latest transactions
+            // Process recurring rules first so the snapshot includes anything they just generated.
             await processRecurrenceRules();
 
-            const p = await Storage.getUserProfile();
-            const t = await getCachedTransactions();
-            const inv = await getCachedInvestments();
-            const allDebts = await getAllDebts();
-            const allGoals = await getAllSavingsGoals();
+            const [p, t, inv, debts, goals] = await Promise.all([
+                Storage.getUserProfile(),
+                getCachedTransactions(),
+                getCachedInvestments(),
+                getAllDebts(),
+                getAllSavingsGoals(),
+            ]);
 
             // Catches a goal that just crossed its target via a recurring auto-contribution
-            // the processRecurrenceRules() call above may have just generated - that engine
-            // has no per-transaction hook of its own to fire this from.
+            // generated above - that engine has no per-transaction hook of its own.
             checkGoalReachedNotifications(t).catch(err => console.error('Failed to check goal-reached notifications:', err));
 
             setProfile(p);
-            setTransactions(t);
-
-            // Nothing to compute yet - every metric below is derived from
-            // transactions/investments/debts/goals, which are all empty.
-            // (The shared DataStatusContext is what the render below actually
-            // branches on - this is just a perf shortcut for this fetch.)
-            if (t.length === 0 && inv.length === 0 && allDebts.length === 0 && allGoals.length === 0) {
+            if (t.length === 0 && inv.length === 0 && debts.length === 0 && goals.length === 0) {
+                setSnapshot(null);
                 return;
             }
 
-            // Calculate metrics
-            let oInc = new BigNumber(0), oExp = new BigNumber(0), mInc = new BigNumber(0), mExp = new BigNumber(0);
-            let oTransIn = new BigNumber(0), oTransOut = new BigNumber(0), mTransIn = new BigNumber(0), mTransOut = new BigNumber(0);
-            let mGoalExp = new BigNumber(0);
-
+            const symbols = Array.from(new Set(inv.map(i => i.symbol)));
+            const priceAt = buildPriceLookup(await getPriceHistoryForSymbols(symbols));
             const now = new Date();
-            const currentMonth = now.getMonth();
-            const currentYear = now.getFullYear();
 
-            t.forEach((tx: Transaction) => {
-                const val = tx.amount.abs();
-                const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
-
-                if (tx.type === 'INCOME') {
-                    oInc = oInc.plus(val.abs());
-                    if (isMonth) mInc = mInc.plus(val.abs());
-                } else if (tx.type === 'EXPENSE') {
-                    oExp = oExp.plus(val.abs());
-                    if (isMonth) mExp = mExp.plus(val.abs());
-                    if (isMonth && tx.savingsGoalId) mGoalExp = mGoalExp.plus(val);
-                } else if (tx.type === 'TRANSFER_IN') {
-                    oTransIn = oTransIn.plus(val.abs());
-                    if (isMonth) mTransIn = mTransIn.plus(val.abs());
-                } else if (tx.type === 'TRANSFER_OUT') {
-                    oTransOut = oTransOut.plus(val.abs());
-                    if (isMonth) mTransOut = mTransOut.plus(val.abs());
-                }
+            setSnapshot({
+                netWorth: calculateNetWorthChange(t, inv, debts, goals, priceAt, now),
+                runway: calculateRunwayTrend(t, debts, goals, now),
+                cash: calculateCashKept(t, now),
+                month: calculateMonthCashFlow(t, now),
+                prevMonth: calculateMonthCashFlow(t, new Date(now.getFullYear(), now.getMonth() - 1, 1)),
+                investments: calculateInvestmentSnapshot(inv, priceAt, now),
+                loans: calculateLoansSnapshot(t, debts, now),
+                goals: calculateGoalsSnapshot(t, goals, now),
+                recent: t.filter(tx => tx.type !== 'CAPITAL_GAIN' && tx.type !== 'CAPITAL_LOSS').slice(0, RECENT_COUNT),
             });
-
-            setOverallIncome(oInc);
-            setOverallExpense(oExp);
-            setMonthIncome(mInc);
-            setMonthExpense(mExp);
-            setMonthGoalExpense(mGoalExp);
-            setOverallTransferIn(oTransIn);
-            setOverallTransferOut(oTransOut);
-            setMonthTransferIn(mTransIn);
-            setMonthTransferOut(mTransOut);
-            setOverallBalance(calculateBalance(t));
-            setMonthBalance(calculateBalance(getTransactionsByMonth(t, now)));
-
-            // --- Investment Computation ---
-            const groupedInvestments = inv.reduce((acc, item) => {
-                if (!acc[item.symbol]) acc[item.symbol] = [];
-                acc[item.symbol].push(item);
-                return acc;
-            }, {} as Record<string, Investment[]>);
-
-            const uniqueSymbols = Object.keys(groupedInvestments);
-
-            const priceHistoryMap = await getLatestPrices(uniqueSymbols);
-
-            const currentPriceMap: Record<string, BigNumber> = {};
-
-            uniqueSymbols.forEach(symbol => {
-                if (priceHistoryMap[symbol]) {
-                    currentPriceMap[symbol] = priceHistoryMap[symbol].price;
-                } else {
-                    const symbolTxns = groupedInvestments[symbol].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-                    if (symbolTxns.length > 0) {
-                        currentPriceMap[symbol] = symbolTxns[0].price;
-                    } else {
-                        currentPriceMap[symbol] = new BigNumber(0);
-                    }
-                }
-            });
-
-            const portfolioMetrics = getAllPortfolioMetrics(inv, currentPriceMap);
-
-            const totalMarketValue = portfolioMetrics.reduce((sum, m) => sum.plus(m.totalMarketValue), new BigNumber(0));
-            const totalUnrealizedPL = portfolioMetrics.reduce((sum, m) => sum.plus(m.unrealizedPL), new BigNumber(0));
-
-            let totalRealizedPL = new BigNumber(0);
-            let mRealizedPL = new BigNumber(0);
-
-            t.forEach(tx => {
-                if (tx.type === 'CAPITAL_GAIN') {
-                    const val = tx.amount.abs();
-                    totalRealizedPL = totalRealizedPL.plus(val);
-
-                    const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
-                    if (isMonth) {
-                        mRealizedPL = mRealizedPL.plus(val);
-                    }
-                } else if (tx.type === 'CAPITAL_LOSS') {
-                    const val = tx.amount.abs();
-                    totalRealizedPL = totalRealizedPL.minus(val);
-
-                    const isMonth = new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
-                    if (isMonth) {
-                        mRealizedPL = mRealizedPL.minus(val);
-                    }
-                }
-            });
-
-            let mInvested = new BigNumber(0);
-            let mUnrealizedPL = new BigNumber(0);
-            const monthlyBuys: Record<string, { qty: BigNumber, cost: BigNumber }> = {};
-            const currentQuantities: Record<string, BigNumber> = {};
-
-            portfolioMetrics.forEach(m => {
-                currentQuantities[m.symbol] = m.currentQuantity;
-            });
-
-            inv.forEach(item => {
-                const isMonth = new Date(item.date).getMonth() === currentMonth && new Date(item.date).getFullYear() === currentYear;
-
-                if (isMonth && item.action === 'BUY') {
-                    const cost = item.price.times(item.quantity).plus(item.fees || 0);
-                    mInvested = mInvested.plus(cost);
-
-                    // Track monthly buys per symbol for P/L calculation
-                    if (!monthlyBuys[item.symbol]) {
-                        monthlyBuys[item.symbol] = { qty: new BigNumber(0), cost: new BigNumber(0) };
-                    }
-                    monthlyBuys[item.symbol].qty = monthlyBuys[item.symbol].qty.plus(item.quantity);
-                    monthlyBuys[item.symbol].cost = monthlyBuys[item.symbol].cost.plus(cost);
-                }
-            });
-
-            // Calculate Monthly Unrealized P/L
-            // Logic: Only count P/L for shares bought this month that are STILL HELD.
-            // If you bought 10 and sold 10, monthly unrealized P/L should be 0.
-            Object.keys(monthlyBuys).forEach(symbol => {
-                const buyData = monthlyBuys[symbol];
-                const currentQty = currentQuantities[symbol] || new BigNumber(0);
-
-                // Effective Quantity = Min(Bought This Month, Currently Held)
-                const effectiveQty = BigNumber.min(buyData.qty, currentQty);
-
-                if (effectiveQty.isGreaterThan(0)) {
-                    // Calculate average cost of the shares bought THIS MONTH
-                    const avgCostThisMonth = buyData.cost.dividedBy(buyData.qty);
-
-                    const currentPrice = currentPriceMap[symbol] || new BigNumber(0);
-                    const marketValue = currentPrice.times(effectiveQty);
-                    const costBasis = avgCostThisMonth.times(effectiveQty);
-
-                    const pl = marketValue.minus(costBasis);
-                    mUnrealizedPL = mUnrealizedPL.plus(pl);
-                }
-            });
-
-            setInvestmentTotal(totalMarketValue);
-            setUnrealizedPL(totalUnrealizedPL);
-            setRealizedPL(totalRealizedPL);
-
-            setMonthInvested(mInvested);
-            setMonthRealizedPL(mRealizedPL);
-            setMonthUnrealizedPL(mUnrealizedPL);
-
-            // 7. Calculate Debt Metrics
-            let totalBorrowed = new BigNumber(0);
-            let totalRepaid = new BigNumber(0);
-            let mDebtBorrowed = new BigNumber(0);
-            let mDebtRepaid = new BigNumber(0);
-
-            // Helper to get transaction total for a specific debt
-            const getDebtTransactions = (debtId: string, monthOnly: boolean = false) => {
-                return t.filter(tx => {
-                    const isDebt = tx.debtId === debtId;
-                    if (!isDebt) return false;
-                    if (monthOnly) {
-                        return new Date(tx.date).getMonth() === currentMonth && new Date(tx.date).getFullYear() === currentYear;
-                    }
-                    return true;
-                });
-            };
-
-            let currentTotalDebt = new BigNumber(0);
-
-            // Principal repayments move opposite cash depending on who owes whom:
-            // PAYABLE (you owe) -> repayments are TRANSFER_OUT; RECEIVABLE (owed to you) -> repayments are TRANSFER_IN
-            const getRepaymentTxType = (debt: Debt) => (debt.direction || 'PAYABLE') === 'PAYABLE' ? 'TRANSFER_OUT' : 'TRANSFER_IN';
-
-            allDebts.forEach(debt => {
-                // RECEIVABLE debts (money owed TO the user) aren't a liability - exclude
-                // them from Total Debt/Borrowed/Repaid, matching DebtScreen and
-                // FinancialHealthScreen's treatment of the same concept.
-                if ((debt.direction || 'PAYABLE') !== 'PAYABLE') return;
-
-                // 1. Borrowed
-                totalBorrowed = totalBorrowed.plus(debt.initialAmount);
-
-                const isMonthCreated = new Date(debt.startDate || debt.createdAt).getMonth() === currentMonth &&
-                    new Date(debt.startDate || debt.createdAt).getFullYear() === currentYear;
-
-                if (isMonthCreated) {
-                    mDebtBorrowed = mDebtBorrowed.plus(debt.initialAmount);
-                }
-
-                // 2. Repaid (Payments) & Interest
-                const payments = getDebtTransactions(debt.id);
-                const repaymentTxType = getRepaymentTxType(debt);
-
-                // User Logic:
-                // Repaid = Principal payment linked to debtId (TRANSFER_OUT for PAYABLE, TRANSFER_IN for RECEIVABLE)
-                // Interest = EXPENSE linked to debtId (excluding 'INITIAL_TRANSACTION' which is Fees)
-
-                const debtPrincipalRepaid = payments.reduce((sum, tx) => {
-                    if (tx.type === repaymentTxType) {
-                        return sum.plus(tx.amount.abs());
-                    }
-                    return sum;
-                }, new BigNumber(0));
-
-                // A debt resolved via manual status (Paid Off/Forgiven, e.g. settled outside the
-                // app with no matching transaction) would otherwise leave a permanent, confusing
-                // gap between Borrowed and Repaid. Once resolved, count it as fully repaid here -
-                // it's already excluded from currentTotalDebt below, so this only affects the
-                // lifetime Borrowed/Repaid totals, not the actual outstanding balance shown.
-                const lifetimeRepaid = debt.status !== 'ACTIVE'
-                    ? BigNumber.maximum(debtPrincipalRepaid, debt.initialAmount)
-                    : debtPrincipalRepaid;
-
-                totalRepaid = totalRepaid.plus(lifetimeRepaid);
-
-                // Month Repaid
-                const monthPayments = getDebtTransactions(debt.id, true);
-                const monthPrincipalRepaid = monthPayments.reduce((sum, tx) => {
-                    if (tx.type === repaymentTxType) {
-                        return sum.plus(tx.amount.abs());
-                    }
-                    return sum;
-                }, new BigNumber(0));
-
-                mDebtRepaid = mDebtRepaid.plus(monthPrincipalRepaid);
-
-                // 3. Current Balance (Initial - Principal Repaid)
-                // If status is PAID_OFF, balance is 0.
-                if (debt.status === 'ACTIVE') {
-                    const balance = debt.initialAmount.minus(debtPrincipalRepaid);
-                    // Don't show negative balance if overpaid (unless it's a credit?)
-                    if (balance.isGreaterThan(0)) {
-                        currentTotalDebt = currentTotalDebt.plus(balance);
-                    }
-                }
-            });
-
-            // Calculate Total Projected Liability (Principal + Future Interest)
-            let totalProjectedLiability = new BigNumber(0);
-
-            allDebts.forEach(debt => {
-                // Same RECEIVABLE exclusion as above - money owed TO the user isn't a liability.
-                if ((debt.direction || 'PAYABLE') !== 'PAYABLE') return;
-
-                if (debt.status === 'ACTIVE') {
-                    // 1. Calculate current principal balance
-                    const payments = getDebtTransactions(debt.id);
-                    const repaymentTxType = getRepaymentTxType(debt);
-                    const principalRepaid = payments.reduce((sum, tx) => {
-                        if (tx.type === repaymentTxType) return sum.plus(tx.amount.abs());
-                        return sum;
-                    }, new BigNumber(0));
-
-                    const currentPrincipal = debt.initialAmount.minus(principalRepaid);
-
-                    if (currentPrincipal.gt(0)) {
-                        const { totalLiability } = calculateProjectedDebtLiability(debt, currentPrincipal);
-                        totalProjectedLiability = totalProjectedLiability.plus(totalLiability);
-                    }
-                }
-            });
-
-            // Calculate Obligations Paid (Active Debts only)
-            let obligationsPaid = new BigNumber(0);
-            const totalDebtObligationsValue = calculateTotalDebtObligations(allDebts);
-
-            allDebts.forEach(debt => {
-                // Same RECEIVABLE exclusion as above - only PAYABLE debts count as "obligations".
-                if ((debt.direction || 'PAYABLE') !== 'PAYABLE') return;
-
-                if (debt.status === 'ACTIVE') {
-                    // Get all payments for this debt in current month
-                    const monthPayments = getDebtTransactions(debt.id, true);
-
-                    // Sum of Principal (repayment type) + Interest (EXPENSE). Fees are excluded -
-                    // minPayment never includes them, same rule as getNextDueDate.
-                    const repaymentTxType = getRepaymentTxType(debt);
-                    const totalPaid = monthPayments.reduce((sum, tx) => {
-                        const isPrincipalOrInterest = tx.type === repaymentTxType || tx.type === 'EXPENSE';
-                        if (isPrincipalOrInterest && tx.category !== 'Fees' && tx.subCategory !== 'INITIAL_TRANSACTION') {
-                            return sum.plus(tx.amount.abs());
-                        }
-                        return sum;
-                    }, new BigNumber(0));
-
-                    obligationsPaid = obligationsPaid.plus(totalPaid);
-                }
-            });
-
-            setDebtTotal(currentTotalDebt);
-            setDebtBorrowed(totalBorrowed);
-            setDebtRepaid(totalRepaid);
-            setMonthDebtBorrowed(mDebtBorrowed);
-            setMonthDebtRepaid(mDebtRepaid);
-            setMonthlyObligations(totalDebtObligationsValue);
-            setMonthlyObligationsPaid(obligationsPaid);
-
-            // 8. Calculate Financial Health Metrics
-            const runwayTrend = calculateRunwayTrend(t, allDebts, allGoals, now);
-            const currentCashBalance = runwayTrend.cash;
-
-            // A goal contribution already reduced currentCashBalance above (it's a
-            // TRANSFER_OUT, summed into oTransOut like any other transfer) - so the goal's
-            // balance has to be added back as its own asset bucket here, exactly like
-            // totalMarketValue already is for investment purchases, or Net Worth would
-            // incorrectly drop on every contribution instead of staying flat.
-            const totalSavingsGoalsBalance = allGoals.reduce(
-                (sum, goal) => sum.plus(calculateGoalBalance(goal, t)),
-                new BigNumber(0)
-            );
-            setSavingsGoalsTotal(totalSavingsGoalsBalance);
-            setSavingsGoalsCount(allGoals.length);
-
-            // Lifetime totals across every goal, for the "Total Target" / "Total Spent"
-            // sub-figures on the Home card (mirrors HomeDebtCard's Borrowed/Repaid pair).
-            // "Spent" is real purchases (GOAL_SPEND) only - a WITHDRAWAL/SWEEP moves money
-            // back to general cash rather than being spent, so isn't "spending" here.
-            setSavingsGoalsTarget(allGoals.reduce((sum, goal) => sum.plus(goal.targetAmount), new BigNumber(0)));
-            setSavingsGoalsSpent(
-                t.filter(tx => tx.type === 'TRANSFER_IN' && tx.savingsGoalId && tx.subCategory === 'GOAL_SPEND')
-                    .reduce((sum, tx) => sum.plus(tx.amount.abs()), new BigNumber(0))
-            );
-
-            const assetsTotal = currentCashBalance.plus(totalMarketValue).plus(totalSavingsGoalsBalance);
-
-            // Runway = Cash / (Living Expenses + Debt Obligations + Goal Contributions)
-            const { runway, change: runwayChange } = runwayTrend;
-            const { base: burnRate, goalContributions: totalGoalContributionsValue, total: totalBurnRate } = runwayTrend.burnRate;
-
-            // Month Budget % (Actual Budget Health)
-            // Fetch real budgets to match InsightScreen logic
-            const budgets = await getAllBudgets();
-            let monthBudgetPercent = 0;
-
-            if (budgets.length > 0) {
-                // Get breakdown for current month expenses
-                const currentMonthTransForBudget = getTransactionsByMonth(t, new Date());
-                const specificCategoryBreakdown = getCategoryBreakdown(currentMonthTransForBudget, 'EXPENSE', 'ITEM');
-
-                const budgetedCategorySpent = specificCategoryBreakdown
-                    .filter(cat => budgets.some(b => b.category === cat.name))
-                    // A goal was the budget for its own purchases - they never count against a category budget.
-                    .reduce((sum, cat) => sum.plus(cat.amount.minus(cat.goalFundedAmount)), new BigNumber(0));
-
-                const totalBudget = budgets.reduce((sum, b) => sum.plus(b.amount), new BigNumber(0));
-
-                monthBudgetPercent = totalBudget.isGreaterThan(0)
-                    ? budgetedCategorySpent.dividedBy(totalBudget).times(100).toNumber()
-                    : 0;
-            } else {
-                // Fallback if no budgets set
-                monthBudgetPercent = 0;
-            }
-
-            // Spending Difference % (Current Pacing vs 3-Month Average at this day)
-            // Logic adapted from CumulativeSpendingChart.tsx
-            let spendingDifference = 0;
-            const currentMonthTransForPacing = getTransactionsByMonth(t, new Date());
-            const currentPacingData = getCurrentMonthCumulative(currentMonthTransForPacing);
-            const avgPacingData = getCumulativeSpendingCurve(t, 3); // 3-month average
-
-            if (currentPacingData.length > 0 && avgPacingData.length > 0) {
-                const currentTotalAtDay = currentPacingData[currentPacingData.length - 1];
-                const dayIndex = currentPacingData.length - 1;
-                const avgAtThisDay = avgPacingData[Math.min(dayIndex, avgPacingData.length - 1)];
-
-                if (avgAtThisDay > 0) {
-                    spendingDifference = ((currentTotalAtDay - avgAtThisDay) / avgAtThisDay) * 100;
-                }
-            }
-
-            // Top Holding (Dynamic by Asset Type)
-            const topHoldings: { symbol: string, percent: number }[] = [];
-
-            if (portfolioMetrics.length > 0 && totalMarketValue.isGreaterThan(0)) {
-                // 1. Group by Asset Type
-                const holdingsByType: Record<string, typeof portfolioMetrics> = {};
-
-                portfolioMetrics.forEach(m => {
-                    const type = inv.find(i => i.symbol === m.symbol)?.type || 'STOCKS';
-                    if (!holdingsByType[type]) holdingsByType[type] = [];
-                    holdingsByType[type].push(m);
-                });
-
-                // 2. Calculate Total Value per Type
-                const typeValues = Object.entries(holdingsByType).map(([type, metrics]) => {
-                    const value = metrics.reduce((sum, m) => sum.plus(m.totalMarketValue), new BigNumber(0));
-                    return { type, value, metrics };
-                });
-
-                // 3. Sort Types by Value (Descending)
-                const topTypes = typeValues.sort((a, b) => b.value.minus(a.value).toNumber()).slice(0, 2);
-
-                // 4. For each Top Type, find the Top Holding
-                topTypes.forEach(typeData => {
-                    const sortedHoldings = typeData.metrics.sort((a, b) => b.totalMarketValue.minus(a.totalMarketValue).toNumber());
-                    if (sortedHoldings.length > 0) {
-                        const topHolding = sortedHoldings[0];
-                        topHoldings.push({
-                            symbol: topHolding.symbol,
-                            percent: topHolding.totalMarketValue.dividedBy(totalMarketValue).times(100).toNumber()
-                        });
-                    }
-                });
-            }
-
-            // Calculate Investment Boost & Debt Drag
-            const investmentBoost = calculateInvestmentBoost(totalMarketValue, totalBurnRate);
-            // Goal contributions count as living costs so drag is measured against the real Runway above.
-            const debtDrag = calculateDebtDrag(currentCashBalance, burnRate.plus(totalGoalContributionsValue), totalDebtObligationsValue);
-
-            setFinancialHealth({
-                totalAssets: assetsTotal,
-                netWorth: assetsTotal.minus(totalProjectedLiability),
-                totalProjectedLiability,
-                runwayInMonths: runway.toNumber(),
-                runwayChange: runwayChange,
-                topHoldings: topHoldings,
-                monthBudgetPercent: monthBudgetPercent,
-                spendingDifferencePercent: spendingDifference,
-                cashBalance: currentCashBalance,
-                investmentBoost: investmentBoost,
-                debtDrag: debtDrag
-            });
-
         } catch (error) {
             console.error('Error loading HomeScreen data:', error);
         } finally {
-            setIsLoading(false);
-            isInitialLoad.current = false;
+            isLoading.current = false;
+            setHasLoaded(true);
             refreshDataStatus();
         }
     };
@@ -663,445 +136,92 @@ const HomeScreen = ({ navigation }: any) => {
         registerSecondAction(routeName, {
             label: 'Screen Settings',
             icon: 'options-outline',
-            onPress: () => setIsSettingsModalVisible(true),
+            onPress: () => setIsSettingsVisible(true),
         });
         return () => registerSecondAction(routeName, null);
     }, [registerSecondAction, routeName]);
 
-    const handleModeSwipe = (newMode: Storage.HomeDisplayMode) => {
-        setDisplayMode(newMode);
-        Storage.saveHomeDisplayMode(newMode);
+    const togglePeriod = () => {
+        const next = period === 'overall' ? 'month' : 'overall';
+        setPeriod(next);
+        Storage.saveSnapshotPeriod(next);
     };
 
-    const handleInvestmentModeSwipe = (newMode: Storage.InvestmentDisplayMode) => {
-        setInvestmentDisplayMode(newMode);
-        Storage.saveHomeInvestmentDisplayMode(newMode);
+    const changeOrder = (next: Storage.SnapshotRowId[]) => {
+        setOrder(next);
+        Storage.saveSnapshotOrder(next);
     };
 
-    const handleFinancialHealthModeSwipe = (newMode: Storage.HomeFinancialHealthDisplayMode) => {
-        setFinancialHealthDisplayMode(newMode);
-        Storage.saveHomeFinancialHealthDisplayMode(newMode);
-    };
+    const settingsIcon = <Ionicons name="options-outline" size={22} color={ds.text2} />;
 
-    const handleDebtModeSwipe = (newMode: Storage.DebtDisplayMode) => {
-        setDebtDisplayMode(newMode);
-        Storage.saveHomeDebtDisplayMode(newMode);
-    };
-
-    const renderInfoModalContent = () => {
-        if (infoModalMode === 'Overall') {
-            return (
-                <View>
-                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                        &quot;Cash Balance&quot; represents your <Text style={{ fontWeight: 'bold' }}>total available funds</Text> across all accounts.
-                    </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
-                        <Text style={{ color: colors.text, fontFamily: 'monospace', fontSize: 14 }}>
-                            (Income + Transfers In) - (Expense + Transfers Out)
-                        </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
-                        <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginTop: 2, marginRight: 8 }} />
-                        <Text style={{ color: colors.textSecondary, flex: 1, fontSize: 14 }}>
-                            This includes all historical transactions since you started using the app.
-                        </Text>
-                    </View>
-                </View>
-            );
-        } else if (infoModalMode === 'Month') {
-            return (
-                <View>
-                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                        &quot;Monthly Balance&quot; shows the <Text style={{ fontWeight: 'bold' }}>net change</Text> in your funds for the current month.
-                    </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
-                        <Text style={{ color: colors.text, fontFamily: 'monospace', fontSize: 14 }}>
-                            (Income + Transfers In) - (Expense + Transfers Out)
-                        </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
-                        <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginTop: 2, marginRight: 8 }} />
-                        <Text style={{ color: colors.textSecondary, flex: 1, fontSize: 14 }}>
-                            Use this to see if you are net positive or negative for this month, considering all money movements.
-                        </Text>
-                    </View>
-                </View>
-            );
-
-        } else if (infoModalMode === 'NetWorth') {
-            return (
-                <View>
-                    <Text style={{ color: colors.text, marginBottom: 12, lineHeight: 22 }}>
-                        Your <Text style={{ fontWeight: 'bold' }}>Projected Net Worth</Text> is a conservative estimate of your true financial position.
-                    </Text>
-
-                    <View style={{ backgroundColor: colors.surface, padding: 16, borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <Text style={{ color: colors.text, fontWeight: '600' }}>Total Assets</Text>
-                            <Text style={{ color: colors.success, fontWeight: 'bold' }}>{formatCurrencyAmount(financialHealth.totalAssets, profile?.currency || 'PHP')}</Text>
-                        </View>
-
-                        {/* Asset Breakdown */}
-                        <View style={{ marginLeft: 16, marginBottom: 12, borderLeftWidth: 2, borderLeftColor: colors.border, paddingLeft: 12 }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Cash</Text>
-                                <Text style={{ color: colors.text, fontSize: 12 }}>{formatCurrencyAmount(financialHealth.cashBalance, profile?.currency || 'PHP')}</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Investments</Text>
-                                <Text style={{ color: colors.text, fontSize: 12 }}>{formatCurrencyAmount(investmentTotal, profile?.currency || 'PHP')}</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Savings Goals</Text>
-                                <Text style={{ color: colors.text, fontSize: 12 }}>{formatCurrencyAmount(savingsGoalsTotal, profile?.currency || 'PHP')}</Text>
-                            </View>
-                        </View>
-
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <Text style={{ color: colors.text, fontWeight: '600' }}>Total Liabilities</Text>
-                            <Text style={{ color: colors.error, fontWeight: 'bold' }}>- {formatCurrencyAmount(financialHealth.totalProjectedLiability, profile?.currency || 'PHP')}</Text>
-                        </View>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 16, marginLeft: 8 }}>
-                            Remaining Principal + Projected Future Interest, on debts you owe (money owed to you isn&apos;t a liability)
-                        </Text>
-
-                        <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 12 }} />
-
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>Projected Net Worth</Text>
-                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>
-                                {formatCurrencyAmount(financialHealth.netWorth, profile?.currency || 'PHP')}
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8 }}>
-                        <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginRight: 8, marginTop: 2 }} />
-                        <Text style={{ color: colors.primary, fontSize: 12, flex: 1, lineHeight: 18 }}>
-                            <Text style={{ fontWeight: 'bold' }}>Note:</Text> We include the interest you&apos;re projected to pay over the rest of each loan in your liabilities, to show the true cost of your debts if paid over time.
-                        </Text>
-                    </View>
-                </View>
-            );
-        } else if (infoModalMode === 'Assets') {
-            return (
-                <View>
-                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                        &quot;Total Assets&quot; is <Text style={{ fontWeight: 'bold' }}>everything you own</Text>, before subtracting any debts.
-                    </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
-                        <Text style={{ color: colors.text, fontFamily: 'monospace', fontSize: 14 }}>
-                            Cash Balance + Investments Value + Savings Goals
-                        </Text>
-                    </View>
-                </View>
-            );
-        } else if (infoModalMode === 'Health') {
-            return (
-                <View>
-                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                        &quot;Financial Health&quot; metrics help you understand the sustainability of your finances.
-                    </Text>
-                    <View style={{ marginBottom: 15 }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Runway</Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            How long your cash will last based on your average monthly living costs <Text style={{ fontWeight: 'bold' }}>+ debt minimum payments + savings goal contributions</Text>.
-                        </Text>
-                    </View>
-                    <View style={{ marginBottom: 15 }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Spending</Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            Your spending so far this month compared with your 3-month average at the same day, plus the percentage of your monthly budget used so far.
-                        </Text>
-                    </View>
-                    <View style={{ marginBottom: 15 }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Investment Boost</Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            Extra months of runway your investments would add if you sold them.
-                        </Text>
-                    </View>
-                    <View style={{ marginBottom: 15 }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 4 }}>Debts Drag</Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            Months of runway your debt minimum payments cost you.
-                        </Text>
-                    </View>
-                </View>
-            );
-        } else {
-            return (
-                <View>
-                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                        &quot;Monthly Net&quot; shows your <Text style={{ fontWeight: 'bold' }}>pure savings</Text> from income vs. expenses this month.
-                    </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 15 }}>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
-                        <Text style={{ color: colors.text, fontFamily: 'monospace', fontSize: 14 }}>
-                            Income - Expense
-                        </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
-                        <Ionicons name="swap-horizontal-outline" size={20} color={colors.warning} style={{ marginTop: 2, marginRight: 8 }} />
-                        <Text style={{ color: colors.textSecondary, flex: 1, fontSize: 14 }}>
-                            <Text style={{ fontWeight: 'bold', color: colors.warning }}>Excludes Transfers.</Text> This gives you a clearer picture of your actual earnings versus spending, ignoring money moved between your own accounts.
-                        </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
-                        <Ionicons name="wallet-outline" size={20} color={colors.primary} style={{ marginTop: 2, marginRight: 8 }} />
-                        <Text style={{ color: colors.textSecondary, flex: 1, fontSize: 14 }}>
-                            <Text style={{ fontWeight: 'bold', color: colors.primary }}>Goal purchases shown separately.</Text> Spending from a savings goal is listed under Expense as &quot;+ from goals&quot; but not subtracted — that money was set aside in earlier months.
-                        </Text>
-                    </View>
-                </View>
-            );
-        }
-    };
+    const renderNewUser = () => (
+        <View style={styles.newUser}>
+            <EmptyState
+                icon="cash-outline"
+                title="No financial data yet"
+                subtitle="Your net worth, cash, investments, loans and goals will show up here once you start logging money in and out."
+                ctaLabel="Add Your First Transaction"
+                onCtaPress={() => navigation.navigate('Actions')}
+            />
+            <SectionHeader title="Get started" />
+            <Row icon="receipt-outline" title="Add a transaction" chevron onPress={() => navigation.navigate('Actions')} />
+            <Row icon="trending-up-outline" title="Add an investment" chevron onPress={() => navigation.navigate('Actions')} />
+            <Row icon="flag-outline" title="Set a savings goal" chevron last onPress={() => navigation.navigate('SavingsGoals')} />
+        </View>
+    );
 
     return (
-        <ScreenWrapper scrollable={false}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Header with Settings Icon and Privacy Toggle */}
-                <View style={{ marginBottom: 20, marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-                        <Text style={{ color: colors.textSecondary }}>Welcome back,</Text>
-                        {isLoading ? (
-                            <Skeleton width={180} height={34} borderRadius={8} style={{ marginTop: 4 }} />
-                        ) : (
-                            <Text style={{ color: colors.text, fontSize: 28, fontWeight: 'bold' }}>{profile?.name || 'User'}</Text>
-                        )}
-                    </TouchableOpacity>
-                    {isDocked && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                            <DraggableIconButton
-                                onPress={togglePrivacy}
-                                style={[
-                                    styles.iconButton,
-                                    { backgroundColor: colors.surface }
-                                ]}
-                            >
-                                <Ionicons
-                                    name={isPrivacyEnabled ? 'eye-off' : 'eye'}
-                                    size={20}
-                                    color={colors.text}
-                                />
-                            </DraggableIconButton>
-                            <DraggableIconButton
-                                onPress={() => setIsSettingsModalVisible(true)}
-                                style={[
-                                    styles.iconButton,
-                                    { backgroundColor: colors.surface }
-                                ]}
-                            >
-                                <Ionicons name="options-outline" size={20} color={colors.text} />
-                            </DraggableIconButton>
+        <ScreenWrapper scrollable={false} noPadding style={{ backgroundColor: ds.bg }}>
+            <View style={styles.topBar}>
+                <Pressable onPress={() => navigation.navigate('Profile')} style={styles.greeting}>
+                    <Text style={[type.title, { color: ds.text }]} numberOfLines={1}>
+                        {greeting()}{profile?.name ? `, ${profile.name}` : ''}
+                    </Text>
+                </Pressable>
+                <View style={styles.actions}>
+                    {mode !== 'open' && (
+                        <View style={[styles.chip, { backgroundColor: ds.inset }]}>
+                            <Text style={[type.captionMedium, { color: ds.text2 }]}>{mode === 'discreet' ? 'Discreet' : 'Hidden'}</Text>
                         </View>
                     )}
+                    {isDocked ? (
+                        <DraggableIconButton onPress={() => setIsSettingsVisible(true)} style={styles.iconButton}>
+                            {settingsIcon}
+                        </DraggableIconButton>
+                    ) : (
+                        <Pressable onPress={() => setIsSettingsVisible(true)} style={styles.iconButton} accessibilityLabel="Home settings" hitSlop={space[2]}>
+                            {settingsIcon}
+                        </Pressable>
+                    )}
                 </View>
+            </View>
 
-                {/* isStatusChecking (DataStatusContext, checked once app-wide on
-                    launch) decides empty-state vs. real cards up front, so this
-                    screen's own isLoading is free to go back to what the cards
-                    use it for - their own per-card skeletons - instead of also
-                    gating which layout shows at all. */}
-                {isStatusChecking ? (
-                    <View style={styles.loadingBlock}>
-                        <ActivityIndicator size="large" color={colors.primary} />
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+                {isStatusChecking || !hasLoaded ? (
+                    <View style={styles.loading}>
+                        <ActivityIndicator size="large" color={ds.accent} />
                     </View>
-                ) : isNewUser ? (
-                    <View style={styles.newUserWrapper}>
-                        <EmptyState
-                            icon="cash-outline"
-                            title="No financial data yet"
-                            subtitle="Your cash flow, net worth, and runway will show up here once you start logging money in and out."
-                            ctaLabel="Add Your First Transaction"
-                            onCtaPress={() => navigation.navigate('Actions')}
-                        />
-
-                        <View style={[styles.checklist, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                            <TouchableOpacity
-                                style={[styles.checklistRow, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
-                                onPress={() => navigation.navigate('Actions')}
-                            >
-                                <View style={[styles.checklistIconCircle, { backgroundColor: colors.primary + '15' }]}>
-                                    <Ionicons name="receipt-outline" size={15} color={colors.primary} />
-                                </View>
-                                <Text style={[styles.checklistLabel, { color: colors.text }]}>Add a transaction</Text>
-                                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.checklistRow, { borderBottomColor: colors.border, borderBottomWidth: 1 }]}
-                                onPress={() => navigation.navigate('Actions')}
-                            >
-                                <View style={[styles.checklistIconCircle, { backgroundColor: colors.secondary + '15' }]}>
-                                    <Ionicons name="trending-up" size={15} color={colors.secondary} />
-                                </View>
-                                <Text style={[styles.checklistLabel, { color: colors.text }]}>Add an investment</Text>
-                                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.checklistRow}
-                                onPress={() => navigation.navigate('SavingsGoals')}
-                            >
-                                <View style={[styles.checklistIconCircle, { backgroundColor: colors.accent + '15' }]}>
-                                    <Ionicons name="wallet" size={15} color={colors.accent} />
-                                </View>
-                                <Text style={[styles.checklistLabel, { color: colors.text }]}>Set a savings goal</Text>
-                                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                ) : cardOrder.map((cardId) => {
-                    switch (cardId) {
-                        case 'cash-flow':
-                            return (
-                                <HomeCashFlowCard
-                                    key="cash-flow"
-                                    overallIncome={overallIncome}
-                                    overallExpense={overallExpense}
-                                    overallTransferIn={overallTransferIn}
-                                    overallTransferOut={overallTransferOut}
-                                    monthIncome={monthIncome}
-                                    monthExpense={monthExpense}
-                                    monthGoalExpense={monthGoalExpense}
-                                    monthTransferIn={monthTransferIn}
-                                    monthTransferOut={monthTransferOut}
-                                    overallBalance={overallBalance}
-                                    monthBalance={monthBalance}
-                                    isLoading={isLoading}
-                                    isPrivacyEnabled={isPrivacyEnabled}
-                                    currency={profile?.currency || 'PHP'}
-                                    displayMode={displayMode}
-                                    onDisplayModeChange={handleModeSwipe}
-                                    onInfoPress={handleInfoPress}
-                                    onNavigateToInsights={() => navigation.navigate('Insights')}
-                                />
-                            );
-
-                        case 'portfolio':
-                            return (
-                                <HomeInvestmentCard
-                                    key="portfolio"
-                                    hasInvestments={hasInvestments}
-                                    total={investmentTotal}
-                                    realizedPL={realizedPL}
-                                    unrealizedPL={unrealizedPL}
-                                    isLoading={isLoading}
-                                    isPrivacyEnabled={isPrivacyEnabled}
-                                    currency={profile?.currency || 'PHP'}
-                                    onPress={() => navigation.navigate('Investment')}
-
-                                    // Monthly Data
-                                    monthInvested={monthInvested}
-                                    monthRealizedPL={monthRealizedPL}
-                                    monthUnrealizedPL={monthUnrealizedPL}
-
-                                    // Display Mode
-                                    displayMode={investmentDisplayMode}
-                                    onDisplayModeChange={handleInvestmentModeSwipe}
-                                />
-                            );
-
-                        case 'debt':
-                            return (
-                                <HomeDebtCard
-                                    key="debt"
-                                    hasDebts={hasDebts}
-                                    total={debtTotal}
-                                    borrowed={debtBorrowed}
-                                    repaid={debtRepaid}
-                                    monthBorrowed={monthDebtBorrowed}
-                                    monthRepaid={monthDebtRepaid}
-                                    obligations={monthlyObligations}
-                                    obligationsPaid={monthlyObligationsPaid}
-                                    isLoading={isLoading}
-                                    isPrivacyEnabled={isPrivacyEnabled}
-                                    currency={profile?.currency || 'PHP'}
-                                    onPress={() => {
-                                        navigation.navigate('Debts');
-                                    }}
-                                    displayMode={debtDisplayMode}
-                                    onDisplayModeChange={handleDebtModeSwipe}
-                                />
-                            );
-
-                        case 'savings-goals':
-                            return (
-                                <HomeSavingsGoalsCard
-                                    key="savings-goals"
-                                    total={savingsGoalsTotal}
-                                    target={savingsGoalsTarget}
-                                    spent={savingsGoalsSpent}
-                                    goalCount={savingsGoalsCount}
-                                    isLoading={isLoading}
-                                    isPrivacyEnabled={isPrivacyEnabled}
-                                    currency={profile?.currency || 'PHP'}
-                                    onPress={() => navigation.navigate('SavingsGoals')}
-                                />
-                            );
-
-                        case 'transactions':
-                            return (
-                                <View key="transactions" style={{ marginBottom: 20 }}>
-                                    <HomeTransactionsCard
-                                        recentTransactions={transactions.filter(t => t.type === 'INCOME' || t.type === 'EXPENSE').slice(0, 5)}
-                                        topExpenses={getTopExpenses(transactions, 5)}
-                                        currency={profile?.currency || 'PHP'}
-                                        onTransactionPress={() => navigation.navigate('History')}
-                                        isPrivacyEnabled={isPrivacyEnabled}
-                                        isLoading={isLoading}
-                                    />
-                                </View>
-                            );
-                        case 'financial-health':
-                            return (
-                                <HomeFinancialHealthCard
-                                    key="financial-health"
-                                    totalAssets={financialHealth.totalAssets}
-                                    runwayInMonths={financialHealth.runwayInMonths}
-                                    runwayChange={financialHealth.runwayChange}
-                                    topHoldings={financialHealth.topHoldings}
-                                    monthBudgetPercent={financialHealth.monthBudgetPercent}
-                                    spendingDifferencePercent={financialHealth.spendingDifferencePercent}
-                                    investmentsTotal={investmentTotal}
-                                    cashBalance={financialHealth.cashBalance}
-                                    netWorth={financialHealth.netWorth}
-                                    investmentBoost={financialHealth.investmentBoost}
-                                    debtDrag={financialHealth.debtDrag}
-                                    isLoading={isLoading}
-                                    isPrivacyEnabled={isPrivacyEnabled}
-                                    currency={profile?.currency || 'PHP'}
-                                    displayMode={financialHealthDisplayMode}
-                                    onDisplayModeChange={handleFinancialHealthModeSwipe}
-                                    onInfoPress={handleInfoPress}
-                                    onSeeDetails={() => navigation.navigate('FinancialHealth')}
-                                />
-                            );
-                        default:
-                            return null;
-                    }
-                })}
+                ) : isNewUser || !snapshot ? (
+                    renderNewUser()
+                ) : (
+                    <SnapshotView
+                        data={snapshot}
+                        format={format}
+                        order={order}
+                        period={period}
+                        onTogglePeriod={togglePeriod}
+                        onDetails={() => navigation.navigate('Insights')}
+                        onRowPress={id => navigation.navigate(ROW_DESTINATION[id])}
+                        onSeeAllRecent={() => navigation.navigate('History')}
+                    />
+                )}
             </ScrollView>
-            {/* Info Modal */}
-            <BottomModal
-                visible={isInfoModalVisible}
-                onClose={() => setIsInfoModalVisible(false)}
-                title="How is this calculated?"
-            >
-                {renderInfoModalContent()}
-            </BottomModal>
 
-            {/* Settings Modal */}
-            <HomeSettingsModal
-                visible={isSettingsModalVisible}
-                onClose={() => setIsSettingsModalVisible(false)}
-                cardOrder={cardOrder}
-                onUpdateCardOrder={async (newOrder) => {
-                    setCardOrder(newOrder);
-                    await Storage.saveHomeCardOrder(newOrder);
-                }}
+            <HomeSettingsSheet
+                visible={isSettingsVisible}
+                onClose={() => setIsSettingsVisible(false)}
+                order={order}
+                onChangeOrder={changeOrder}
             />
 
             <ReviewAppModal
@@ -1115,53 +235,42 @@ const HomeScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-    iconButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    loadingBlock: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 80,
-    },
-    newUserWrapper: {
-        alignItems: 'center',
-        paddingBottom: 20,
-        paddingHorizontal: 12,
-    },
-    checklist: {
-        width: '100%',
-        marginTop: 8,
-        borderRadius: 14,
-        borderWidth: 1,
-        overflow: 'hidden',
-    },
-    checklistRow: {
+    topBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
+        justifyContent: 'space-between',
+        gap: space[3],
+        paddingTop: space[1],
+        paddingBottom: space[3],
+        paddingHorizontal: space[5],
     },
-    checklistIconCircle: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        justifyContent: 'center',
+    greeting: {
+        flexShrink: 1,
+    },
+    actions: {
+        flexDirection: 'row',
         alignItems: 'center',
+        gap: 6,
     },
-    checklistLabel: {
-        flex: 1,
-        fontSize: 14,
-        fontWeight: '600',
+    chip: {
+        paddingVertical: 3,
+        paddingHorizontal: space[2],
+        borderRadius: radius.sm,
+    },
+    iconButton: {
+        padding: space[1],
+    },
+    content: {
+        paddingHorizontal: space[5],
+        paddingBottom: space[7],
+    },
+    loading: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: space[7] * 2,
+    },
+    newUser: {
+        paddingTop: space[5],
     },
 });
 

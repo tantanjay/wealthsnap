@@ -30,7 +30,7 @@ When a new feature is introduced, you must also check and update [docs/CAPABILIT
 
 When a calculation changes, update its explanations in the same change. Search for every user-facing description of that number (help guides, info/"how is this calculated" modals, tooltips) and bring its wording and formula in line before calling the change done — don't wait for the user to ask about each one.
 
-In this repo these live in `src/constants/helpContent.ts` (Help Center guides, including Math & Formulas), the `*HelpModal.tsx` / `*InfoModal.tsx` components, and inline "How is this calculated?" / "Understanding Your Chart" `BottomModal`s inside screens and chart components (e.g. `HomeScreen`'s `renderInfoModalContent`).
+In this repo these live in `src/constants/helpContent.ts` (Help Center guides, including Math & Formulas and the Home Snapshot guide), the `*HelpModal.tsx` / `*InfoModal.tsx` components, and inline "How is this calculated?" / "Understanding Your Chart" `BottomModal`s inside screens and chart components.
 
 ## Release notes / changelog
 
