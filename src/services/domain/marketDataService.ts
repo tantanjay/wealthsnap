@@ -3,6 +3,7 @@ import { fetchExchangeRate } from '@services/integrations/currencyService';
 import { AssetRequest, FetchedPrice, fetchHistoricalPrices as fetchGeminiPrices, fetchDividendHistory as fetchGeminiDividends } from '@services/integrations/geminiService';
 import { addPriceHistory, updatePriceHistory, getPriceHistory } from '@services/domain/priceHistoryService';
 import { addDividendHistory, updateDividendHistory, getDividendHistory } from '@services/domain/dividendHistoryService';
+import { getAllAssets } from '@services/domain/assetService';
 import { BigNumber } from 'bignumber.js';
 
 /**
@@ -124,4 +125,53 @@ export const refreshAssetDividends = async (assets: AssetRequest[], duration: st
         }
     }
     return savedCount;
+};
+
+const FETCH_DURATIONS: Record<string, string> = {
+    'Today': 'Today',
+    'Last 3 days': 'Last 3 days',
+};
+
+// "Fetch price list" for every stock holding (Holdings tab and Investment screen). `notify` shows progress.
+export const refreshStockHoldingPrices = async (
+    holdings: { symbol: string; type?: string }[],
+    durationLabel: string,
+    targetCurrency: string,
+    notify: (message: string) => void,
+    onUpdated: () => void,
+): Promise<void> => {
+    if (holdings.length === 0) {
+        notify('No holdings to fetch prices for.');
+        return;
+    }
+    notify(`Fetching prices for ${durationLabel}...`);
+
+    try {
+        const stockHoldings = holdings.filter(h => h.type === 'STOCKS' || h.type === 'STOCK');
+        if (stockHoldings.length === 0) {
+            notify('No Stock holdings found.');
+            return;
+        }
+
+        const allAssets = await getAllAssets();
+        const requests: AssetRequest[] = stockHoldings.map(h => ({
+            symbol: h.symbol,
+            exchange: allAssets.find(a => a.symbol === h.symbol)?.exchange || 'Unknown',
+        }));
+
+        refreshAssetPrices(requests, FETCH_DURATIONS[durationLabel] || 'Last 7 days', targetCurrency).then(savedCount => {
+            if (savedCount > 0) {
+                notify(`Updated ${savedCount} prices.`);
+                onUpdated();
+            } else {
+                notify('No new prices to update.');
+            }
+        }).catch(err => {
+            console.error('Bulk fetch failed', err);
+            notify('Failed to fetch prices.');
+        });
+    } catch (e) {
+        console.error('Error preparing bulk fetch', e);
+        notify('Error initiating fetch.');
+    }
 };

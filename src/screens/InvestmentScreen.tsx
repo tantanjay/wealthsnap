@@ -17,9 +17,7 @@ import { EmptyState } from '@components/common/EmptyState';
 import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding, getActualDividendsGrouped } from '@services/domain/investmentService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
 import { getProjectedDividends, getDividendCalendar, CalendarEvent } from '@services/domain/dividendHistoryService';
-import { AssetRequest } from '@services/integrations/geminiService';
-import { refreshAssetPrices } from '@services/domain/marketDataService';
-import { getAllAssets } from '@services/domain/assetService';
+import { refreshStockHoldingPrices } from '@services/domain/marketDataService';
 import * as Storage from '@services/core/storageService';
 import { Ionicons } from '@expo/vector-icons';
 import InvestmentSettingsModal from '@components/investments/modals/InvestmentSettingsModal';
@@ -31,7 +29,7 @@ const VALID_SECTION_IDS = ['stats_carousel', 'smart_advisor', 'allocation_chart'
 
 const InvestmentScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
-    const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
+    const { isPrivacyEnabled } = usePrivacy();
     const { isDocked, registerSecondAction } = useFloatingGear();
     const { isChecking: isStatusChecking, hasInvestments, refresh: refreshDataStatus } = useDataStatus();
     const routeName = useRoute().name;
@@ -230,70 +228,11 @@ const InvestmentScreen = ({ navigation }: any) => {
         setRefreshing(false);
     }, [loadStats, activePriority]);
 
-    const handleBulkFetchPrices = async (durationLabel: string) => {
-        // Background process
+    const handleBulkFetchPrices = (durationLabel: string) => {
         const showToast = (msg: string) => {
-            if (Platform.OS === 'android') {
-                ToastAndroid.show(msg, ToastAndroid.SHORT);
-            }
+            if (Platform.OS === 'android') ToastAndroid.show(msg, ToastAndroid.SHORT);
         };
-
-        if (holdings.length === 0) {
-            showToast("No holdings to fetch prices for.");
-            return;
-        }
-
-        showToast(`Fetching prices for ${durationLabel}...`);
-
-        try {
-            // 1. Identify Stock Holdings
-            // We use 'type' from holdings (which comes from Asset or Investment)
-            // HoldingsList uses `type` field.
-            // Let's filter holdings where type is close to 'STOCK' or 'STOCKS' or check Asset Service for more precision if needed.
-            // For now, relies on holding.type (which comes from asset?.type)
-            const stockHoldings = holdings.filter(h =>
-                h.type === 'STOCKS' || h.type === 'STOCK' // Cover potential variations
-            );
-
-            if (stockHoldings.length === 0) {
-                showToast("No Stock holdings found.");
-                return;
-            }
-
-            // 2. Prepare Asset Requests
-            const allAssets = await getAllAssets();
-            const requests: AssetRequest[] = stockHoldings.map(h => {
-                const asset = allAssets.find(a => a.symbol === h.symbol);
-                return {
-                    symbol: h.symbol,
-                    exchange: asset?.exchange || 'Unknown'
-                };
-            });
-
-            // 3. Determine Duration
-            let durationPrompt = 'Last 7 days';
-            if (durationLabel === 'Today') durationPrompt = 'Today';
-            else if (durationLabel === 'Last 3 days') durationPrompt = 'Last 3 days';
-
-            // 4. Fetch
-            refreshAssetPrices(requests, durationPrompt, currency).then((savedCount) => {
-                if (savedCount > 0) {
-                    showToast(`Updated ${savedCount} prices.`);
-                    loadStats(); // Refresh UI
-                } else {
-                    showToast("No new prices to update.");
-                }
-
-            }).catch(err => {
-                console.error("Bulk fetch failed", err);
-                showToast("Failed to fetch prices.");
-            });
-
-
-        } catch (e) {
-            console.error("Error preparing bulk fetch", e);
-            showToast("Error initiating fetch.");
-        }
+        refreshStockHoldingPrices(holdings, durationLabel, currency, showToast, loadStats);
     };
 
 
@@ -389,19 +328,6 @@ const InvestmentScreen = ({ navigation }: any) => {
             </View>
             {isDocked && (
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                    <DraggableIconButton
-                        onPress={togglePrivacy}
-                        style={[
-                            styles.iconButton,
-                            { backgroundColor: colors.surface }
-                        ]}
-                    >
-                        <Ionicons
-                            name={isPrivacyEnabled ? 'eye-off' : 'eye'}
-                            size={20}
-                            color={colors.text}
-                        />
-                    </DraggableIconButton>
                     <DraggableIconButton
                         style={[styles.iconButton, { backgroundColor: colors.surface }]}
                         onPress={() => setShowSettings(true)}

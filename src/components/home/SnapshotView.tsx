@@ -191,7 +191,7 @@ const CATEGORY_ICONS: Record<string, string> = Object.fromEntries(
     [...EXPENSE_CATEGORY_GROUPS, ...INCOME_CATEGORY_GROUPS].flatMap(g => g.items.map(i => [i.value, i.icon])),
 );
 
-const transactionIcon = (t: Transaction): IconName => {
+export const transactionIcon = (t: Transaction): IconName => {
     if (t.type === 'TRANSFER_IN' || t.type === 'TRANSFER_OUT') return 'swap-horizontal-outline';
     const base = CATEGORY_ICONS[t.category];
     const outline = `${base}-outline`;
@@ -200,7 +200,7 @@ const transactionIcon = (t: Transaction): IconName => {
     return t.type === 'INCOME' ? 'wallet-outline' : 'receipt-outline';
 };
 
-const isMoneyIn = (t: Transaction) => t.type === 'INCOME' || t.type === 'TRANSFER_IN';
+export const isMoneyIn = (t: Transaction) => t.type === 'INCOME' || t.type === 'TRANSFER_IN';
 
 const heroContent = (d: SnapshotData, f: PrivacyFormat) => {
     const { change, percent, now } = d.netWorth;

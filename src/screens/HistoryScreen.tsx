@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { BigNumber } from 'bignumber.js';
 import { Text, View, SectionList, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,16 +15,15 @@ import { useFloatingGear } from '@context/FloatingGearContext';
 import { useDataStatus } from '@context/DataStatusContext';
 import { Skeleton } from '@components/common/Skeleton';
 import { EmptyState } from '@components/common/EmptyState';
-import { Transaction, UserProfile, Investment, RecurrenceRule, Debt, SavingsGoal } from '@types';
-import { deleteTransaction, getCachedTransactions } from '@services/domain/transactionService';
-import { deleteInvestment, getCachedInvestments } from '@services/domain/investmentService';
-import { getAllDebts, deleteDebt } from '@services/domain/debtService';
-import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
+import { Transaction, Investment, Debt } from '@types';
+import { deleteTransaction } from '@services/domain/transactionService';
+import { deleteInvestment } from '@services/domain/investmentService';
+import { deleteDebt } from '@services/domain/debtService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
-import { saveHistoryTimeFrame, getHistoryTimeFrame, getUserProfile } from '@services/core/storageService';
+import { saveHistoryTimeFrame, getHistoryTimeFrame } from '@services/core/storageService';
 import { HistoryCalendar } from '@components/history/HistoryCalendar';
 import { HistoryDatePickerModal } from '@components/history/HistoryDatePickerModal';
-import { getAllRecurrenceRules, addMonthsAnchored, getRecurrenceAnchorDay } from '@services/domain/recurrenceService';
+import { addMonthsAnchored, getRecurrenceAnchorDay } from '@services/domain/recurrenceService';
 import { HistoryCalendarHelpModal } from '@components/history/HistoryCalendarHelpModal';
 import { HistorySafeToSpendHelpModal } from '@components/history/HistorySafeToSpendHelpModal';
 import { HistorySummary } from '@components/history/HistorySummary';
@@ -32,19 +31,19 @@ import DebtOptionsModal from '@components/debts/DebtOptionsModal';
 import { calculateTotalDebtObligations } from '@utils/debtMetrics';
 import { calculateBalance, isBurnRateBase } from '@utils/financialMetrics';
 import { calculateTotalGoalContributions } from '@utils/savingsGoalMetrics';
-import HistoryListItem, { HistoryItem, isInvestment, isDebt } from '@components/history/HistoryListItem';
+import HistoryListItem, { HistoryItem, isDebt } from '@components/history/HistoryListItem';
 import HistorySectionHeader from '@components/history/HistorySectionHeader';
+import { useHistoryData } from '@hooks/useHistoryData';
+import {
+    HistoryFilter as FilterType,
+    HistorySection as TransactionSection,
+    getHistoryItemDate,
+    groupHistoryByDay,
+    matchesHistoryFilter,
+    matchesHistorySearch,
+} from '@utils/historyFeed';
 
 type TimeFrame = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
-type FilterType = 'ALL' | 'EXPENSE' | 'INVESTMENT' | 'DEBT' | 'INCOME' | 'CASH_FLOW';
-
-interface TransactionSection {
-    title: string;
-    data: HistoryItem[];
-    totalAmount: BigNumber;
-    count: number;
-    originalDate: Date;
-}
 
 interface FinancialSummary {
     totalIncome: BigNumber;
@@ -57,23 +56,29 @@ interface FinancialSummary {
 
 const HistoryScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
-    const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
+    const { isPrivacyEnabled } = usePrivacy();
     const { isDocked, registerSecondAction } = useFloatingGear();
-    const { isChecking: isStatusChecking, isNewUser, refresh: refreshDataStatus } = useDataStatus();
+    const { isChecking: isStatusChecking, isNewUser } = useDataStatus();
     const routeName = useRoute().name;
-    const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
-    const [allInvestments, setAllInvestments] = useState<Investment[]>([]);
-    const [allDebts, setAllDebts] = useState<Debt[]>([]);
-    const [allGoals, setAllGoals] = useState<SavingsGoal[]>([]);
-    const [recurrenceRules, setRecurrenceRules] = useState<RecurrenceRule[]>([]);
+    const {
+        transactions: allTransactions,
+        investments: allInvestments,
+        debts: allDebts,
+        goals: allGoals,
+        recurrenceRules,
+        profile,
+        isLoading,
+        reload: loadData,
+        investmentMap,
+        savingsGoalNameMap,
+        linkedPLByInvestmentId,
+        debtLegsByPrincipalId,
+    } = useHistoryData();
     const [timeFrame, setTimeFrame] = useState<TimeFrame>('MONTHLY');
     const [currentDate, setCurrentDate] = useState<Date>(new Date());
-    const [profile, setProfile] = useState<UserProfile | null>(null);
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
     const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const isInitialLoad = useRef(true);
     const [viewMode, setViewMode] = useState<'LIST' | 'CALENDAR'>('LIST');
     const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date>(new Date());
     const [showInfoModal, setShowInfoModal] = useState(false);
@@ -98,16 +103,6 @@ const HistoryScreen = ({ navigation }: any) => {
         return () => registerSecondAction(routeName, null);
     }, [viewMode, registerSecondAction, routeName]);
 
-    const loadRecurrenceRules = async () => {
-        const rules = await getAllRecurrenceRules();
-        setRecurrenceRules(rules);
-    };
-
-    const loadProfile = async () => {
-        const p = await getUserProfile();
-        setProfile(p);
-    };
-
     const loadTimeFramePref = async () => {
         const saved = await getHistoryTimeFrame();
         if (saved && ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'].includes(saved)) {
@@ -120,44 +115,7 @@ const HistoryScreen = ({ navigation }: any) => {
         if (viewMode === 'LIST') saveHistoryTimeFrame(tf);
     };
 
-    const loadData = async () => {
-        try {
-            // Only reset to the loading skeleton on the very first load - a
-            // background refresh (e.g. returning to this tab) shouldn't wipe
-            // an already-rendered screen back to skeletons/empty-state.
-            if (isInitialLoad.current) {
-                setIsLoading(true);
-            }
-            const [transactions, investments, debts, goals] = await Promise.all([
-                getCachedTransactions(),
-                getCachedInvestments(),
-                getAllDebts(),
-                getAllSavingsGoals()
-            ]);
-            setAllTransactions(transactions);
-            setAllInvestments(investments);
-            setAllDebts(debts);
-            setAllGoals(goals);
-        } catch (error) {
-            console.error('Error loading HistoryScreen data:', error);
-        } finally {
-            setIsLoading(false);
-            isInitialLoad.current = false;
-            refreshDataStatus();
-        }
-    };
-
-    useFocusEffect(
-        useCallback(() => {
-            loadData();
-            loadTimeFramePref();
-            loadProfile();
-            loadRecurrenceRules();
-        // loadData is recreated every render; listing it would re-run this (and reload all
-        // data) on every render instead of once per screen focus.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [])
-    );
+    useFocusEffect(useCallback(() => { loadTimeFramePref(); }, []));
 
     // Memoized so HistoryListItem/HistorySectionHeader (both React.memo-wrapped) receive a
     // stable function reference and can actually skip re-rendering when unrelated state
@@ -167,12 +125,7 @@ const HistoryScreen = ({ navigation }: any) => {
         return formatCurrencyAmount(amount, currency || profile?.currency || 'PHP');
     }, [isPrivacyEnabled, profile?.currency]);
 
-    const getItemDate = useCallback((item: HistoryItem): Date => {
-        if (isDebt(item)) {
-            return new Date(item.startDate || item.createdAt);
-        }
-        return new Date(item.date);
-    }, []);
+    const getItemDate = getHistoryItemDate;
 
     const getStartEndOfPeriod = (date: Date, mode: TimeFrame): { start: Date; end: Date } => {
         const start = new Date(date);
@@ -245,47 +198,6 @@ const HistoryScreen = ({ navigation }: any) => {
         return Array.from(years).sort((a, b) => b - a);
     }, [allHistoryItems, getItemDate]);
 
-    const investmentMap = useMemo(() => {
-        return allInvestments.reduce((acc, inv) => {
-            acc[inv.id] = inv;
-            return acc;
-        }, {} as Record<string, Investment>);
-    }, [allInvestments]);
-
-    const savingsGoalNameMap = useMemo(() => {
-        return allGoals.reduce((acc, goal) => {
-            acc[goal.id] = goal.name;
-            return acc;
-        }, {} as Record<string, string>);
-    }, [allGoals]);
-
-    // Precomputed once here instead of the old approach of running allTransactions.find(...)
-    // inside renderItem for every single SELL row - that was O(rows x transactions) on every
-    // render; this is O(transactions) once, whenever allTransactions actually changes.
-    const linkedPLByInvestmentId = useMemo(() => {
-        const map: Record<string, Transaction> = {};
-        allTransactions.forEach(t => {
-            if ((t.type === 'CAPITAL_GAIN' || t.type === 'CAPITAL_LOSS') && t.investmentId) {
-                map[t.investmentId] = t;
-            }
-        });
-        return map;
-    }, [allTransactions]);
-
-    // A debt payment's Interest/Fees legs are folded into their Principal leg's card (see
-    // isMergedIntoSibling below) - precomputed the same way as linkedPLByInvestmentId so the
-    // merged card can still show what it's rolling up.
-    const debtLegsByPrincipalId = useMemo(() => {
-        const map: Record<string, Transaction[]> = {};
-        allTransactions.forEach(t => {
-            if (t.debtId && t.linkedTransactionId && (t.subCategory === 'INTEREST' || t.subCategory === 'FEES')) {
-                if (!map[t.linkedTransactionId]) map[t.linkedTransactionId] = [];
-                map[t.linkedTransactionId].push(t);
-            }
-        });
-        return map;
-    }, [allTransactions]);
-
     const filteredData = useMemo(() => {
         let items = allHistoryItems;
 
@@ -315,43 +227,8 @@ const HistoryScreen = ({ navigation }: any) => {
             });
         }
 
-        // 2. Type Filter
-        if (activeFilter !== 'ALL') {
-            items = items.filter(item => {
-                if (activeFilter === 'INVESTMENT') return isInvestment(item);
-                if (activeFilter === 'DEBT') return isDebt(item);
-
-                if (isInvestment(item) || isDebt(item)) return false;
-
-                const t = item as Transaction;
-                if (activeFilter === 'EXPENSE') return t.type === 'EXPENSE';
-                if (activeFilter === 'INCOME') return t.type === 'INCOME';
-                if (activeFilter === 'CASH_FLOW') return t.type === 'TRANSFER_IN' || t.type === 'TRANSFER_OUT';
-                return false;
-            });
-        }
-
-        // 3. Search Filter
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            items = items.filter(item => {
-                if (isInvestment(item)) {
-                    return item.symbol.toLowerCase().includes(query) ||
-                        item.action.toLowerCase().includes(query);
-                }
-                if (isDebt(item)) {
-                    return item.name.toLowerCase().includes(query) ||
-                        (item.notes && item.notes.toLowerCase().includes(query));
-                }
-                const t = item as Transaction;
-                return t.category.toLowerCase().includes(query) ||
-                    (t.subCategory && t.subCategory.toLowerCase().includes(query)) ||
-                    (t.note && t.note.toLowerCase().includes(query)) ||
-                    (t.transferAccount && t.transferAccount.toLowerCase().includes(query));
-            });
-        }
-
-        return items;
+        // 2. Type Filter, 3. Search Filter
+        return items.filter(item => matchesHistoryFilter(item, activeFilter) && matchesHistorySearch(item, searchQuery));
     }, [allHistoryItems, currentDate, timeFrame, viewMode, selectedCalendarDate, getItemDate, activeFilter, searchQuery]);
 
     const calendarTransactions = useMemo(() => {
@@ -580,76 +457,7 @@ const HistoryScreen = ({ navigation }: any) => {
         };
     }, [summary, recurrenceRules, currentDate, timeFrame, viewMode, allTransactions, allDebts, allGoals, dashboardTransactions]);
 
-    // An investment's auto-generated cash-movement/realized-P&L transactions, a goal-funded
-    // expense's auto-generated "money left the goal" transfer, and a debt payment's Interest/
-    // Fees legs each fully double up a card the primary item (the Investment, the paired
-    // expense, or the Principal leg) already shows - fold them away rather than rendering both.
-    // `linkedTransactionId` has exactly one meaning across the app: "byproduct of transaction X"
-    // (set by the goal-spend offset and by Debt's Interest/Fees legs), so it's a general merge
-    // signal, not tied to any one feature's subCategory. Only folds away when the primary is
-    // actually a sibling in the same day group (so a leg whose primary got excluded by the
-    // active type/search filter, or deleted without cascading, still shows up rather than
-    // silently vanishing).
-    const isMergedIntoSibling = (item: HistoryItem, siblings: HistoryItem[]): boolean => {
-        if (isInvestment(item) || isDebt(item)) return false;
-        const t = item as Transaction;
-        if (t.investmentId) {
-            return siblings.some(s => isInvestment(s) && s.id === t.investmentId);
-        }
-        if (t.linkedTransactionId) {
-            return siblings.some(s => !isInvestment(s) && !isDebt(s) && (s as Transaction).id === t.linkedTransactionId);
-        }
-        return false;
-    };
-
-    const sections = useMemo((): TransactionSection[] => {
-        const grouped: { [key: string]: HistoryItem[] } = {};
-
-        filteredData.forEach(item => {
-            const dateKey = getItemDate(item).toDateString();
-            if (!grouped[dateKey]) grouped[dateKey] = [];
-            grouped[dateKey].push(item);
-        });
-
-        const now = new Date();
-        const yesterday = new Date(now.getTime() - 86400000);
-
-        const newSections: TransactionSection[] = Object.keys(grouped).map(dateKey => {
-            const items = grouped[dateKey];
-            // Computed from the full, unmerged group - a merged-away leg still moved real cash
-            // (or, for a goal spend, cancels out the expense it's paired with), so it must stay
-            // counted here even though it won't get its own row below.
-            const totalAmount = items.reduce((sum, item) => {
-                if (isInvestment(item) || isDebt(item)) return sum;
-
-                const t = item as Transaction;
-                if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') {
-                    return sum.plus(t.amount.abs());
-                }
-                if (t.type === 'EXPENSE' || t.type === 'TRANSFER_OUT') {
-                    return sum.minus(t.amount.abs());
-                }
-                return sum;
-            }, new BigNumber(0));
-
-            const visibleItems = items.filter(item => !isMergedIntoSibling(item, items));
-
-            const d = new Date(dateKey);
-            const title = d.toDateString() === now.toDateString() ? 'Today' :
-                d.toDateString() === yesterday.toDateString() ? 'Yesterday' :
-                    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-            return {
-                title,
-                data: visibleItems,
-                totalAmount,
-                count: visibleItems.length,
-                originalDate: getItemDate(items[0])
-            };
-        });
-
-        return newSections.sort((a, b) => b.originalDate.getTime() - a.originalDate.getTime());
-    }, [filteredData, getItemDate]);
+    const sections = useMemo((): TransactionSection[] => groupHistoryByDay(filteredData), [filteredData]);
 
 
     // Thin wrappers around the React.memo-wrapped HistoryListItem/HistorySectionHeader -
@@ -688,18 +496,6 @@ const HistoryScreen = ({ navigation }: any) => {
                             <Text style={{ color: colors.textSecondary }}>Transaction Log</Text>
                             <Text style={{ color: colors.text, fontSize: 28, fontWeight: 'bold' }}>History</Text>
                         </View>
-                        {isDocked && (
-                            <DraggableIconButton
-                                onPress={togglePrivacy}
-                                style={[styles.iconButton, { backgroundColor: colors.surface }]}
-                            >
-                                <Ionicons
-                                    name={isPrivacyEnabled ? 'eye-off' : 'eye'}
-                                    size={20}
-                                    color={colors.text}
-                                />
-                            </DraggableIconButton>
-                        )}
                     </View>
 
                     <EmptyState
@@ -739,19 +535,6 @@ const HistoryScreen = ({ navigation }: any) => {
                             </View>
                             {isDocked && (
                                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                                    <DraggableIconButton
-                                        onPress={togglePrivacy}
-                                        style={[
-                                            styles.iconButton,
-                                            { backgroundColor: colors.surface }
-                                        ]}
-                                    >
-                                        <Ionicons
-                                            name={isPrivacyEnabled ? 'eye-off' : 'eye'}
-                                            size={20}
-                                            color={colors.text}
-                                        />
-                                    </DraggableIconButton>
                                     <DraggableIconButton
                                         onPress={() => setViewMode(viewMode === 'LIST' ? 'CALENDAR' : 'LIST')}
                                         style={[styles.iconButton, { backgroundColor: colors.surface }]}
@@ -835,6 +618,7 @@ const HistoryScreen = ({ navigation }: any) => {
                                 selectedDate={selectedCalendarDate}
                                 onSelectDate={setSelectedCalendarDate}
                                 currency={profile?.currency}
+                                hideAmounts={isPrivacyEnabled}
                             />
                         )}
 

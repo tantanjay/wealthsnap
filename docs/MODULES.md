@@ -7,10 +7,14 @@ Shared/core files are listed in their own module at the bottom — include them 
 ---
 
 ## Home Dashboard
-Tab: `Home`. Snapshot: net worth hero, Cash / Investments / Loans / Goals overview rows and Recent, linking out to other modules. Home Settings sheet holds the privacy mode and row order.
+Tab: `Home`. Sticky top tabs: Snapshot (net worth hero, Cash / Investments / Loans / Goals overview rows, Recent), Ledger, Holdings, Goals, Loans. Home Settings sheet holds the privacy mode and row order. The Ledger, Holdings, Goals and Loans tabs reuse the History, Investments, Savings Goals and Debts modules' modals and services listed below.
 
 - `src/screens/HomeScreen.tsx`
 - `src/components/home/SnapshotView.tsx`
+- `src/components/home/LedgerTab.tsx`
+- `src/components/home/HoldingsTab.tsx`
+- `src/components/home/GoalsTab.tsx`
+- `src/components/home/LoansTab.tsx`
 - `src/components/home/HomeSettingsSheet.tsx`
 - `src/components/home/SnapshotOrderList.tsx`
 - `src/utils/snapshotMetrics.ts`
@@ -32,9 +36,11 @@ Tab: `Actions`. Entry point for logging transactions, transfers, and recurring r
 - `src/constants/categories.ts`
 
 ## History
-Tab: `History`. Calendar and list views of past transactions.
+Tab: `History` (removal candidate for Phase 4; Home's Ledger tab reuses its data loading and filters). Calendar and list views of past transactions.
 
 - `src/screens/HistoryScreen.tsx`
+- `src/hooks/useHistoryData.ts`
+- `src/utils/historyFeed.ts`
 - `src/components/history/HistoryCalendar.tsx`
 - `src/components/history/HistoryCalendarHelpModal.tsx`
 - `src/components/history/HistoryDatePickerModal.tsx`
@@ -66,7 +72,7 @@ Reached from Home. Spending/income analysis, trends, and monthly summaries.
 - `src/utils/monthlySummaryBuilder.ts`
 
 ## Investments
-Tab: `Investment`. Holdings, price/dividend history, allocation, AI advisor.
+Tab: `Investment` (removal candidate for Phase 4; Home's Holdings tab covers the same flows). Holdings, price/dividend history, allocation, AI advisor.
 
 - `src/screens/InvestmentScreen.tsx`
 - `src/components/investments/AllocationChart.tsx`
@@ -89,19 +95,18 @@ Tab: `Investment`. Holdings, price/dividend history, allocation, AI advisor.
 - `src/utils/investmentMetrics.ts`
 
 ## Debts
-Reached from Home. Debt tracking and payoff templates.
+Home → Loans tab (`src/components/home/LoansTab.tsx`). Debt tracking, payments, payoff plan and templates.
 
-- `src/screens/DebtScreen.tsx`
 - `src/components/debts/DebtForm.tsx`
 - `src/components/debts/DebtOptionsModal.tsx`
+- `src/components/debts/DebtStatusModal.tsx`
 - `src/services/domain/debtService.ts`
 - `src/utils/debtMetrics.ts`
 - `src/constants/debtTemplates.ts`
 
 ## Savings Goals
-Reached from Home. Set aside cash for a purpose (Travel Fund, Annual Insurance, etc.) and spend it down over time.
+Home → Goals tab (`src/components/home/GoalsTab.tsx`). Set aside cash for a purpose (Travel Fund, Annual Insurance, etc.) and spend it down over time.
 
-- `src/screens/SavingsGoalsScreen.tsx`
 - `src/components/savingsGoals/SavingsGoalForm.tsx`
 - `src/components/savingsGoals/SavingsGoalOptionsModal.tsx`
 - `src/components/savingsGoals/SavingsGoalAmountModal.tsx`

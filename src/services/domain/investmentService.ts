@@ -325,8 +325,22 @@ export const getPortfolioStats = async () => {
         ? totalRealizedPL.dividedBy(totalRealizedCostBasis).times(100).toNumber()
         : (totalRealizedPL.isZero() ? 0 : null);
 
+    // Total return (docs/METRICS.md, Investment Return): unrealized + realized + dividends over
+    // everything ever invested (cost of what's still held + cost of what was sold).
+    const totalReturn = unrealizedPL.plus(totalRealizedPL).plus(totalDividends);
+    const totalInvested = totalCostBasis.plus(totalRealizedCostBasis);
+    const totalReturnPercent = totalInvested.isGreaterThan(0)
+        ? totalReturn.dividedBy(totalInvested).times(100).toNumber()
+        : (totalReturn.isZero() ? 0 : null);
+    const dividendsPercent = totalInvested.isGreaterThan(0)
+        ? totalDividends.dividedBy(totalInvested).times(100).toNumber()
+        : null;
+
     return {
         totalEquity: totalEquity.toNumber(),
+        totalReturn: totalReturn.toNumber(),
+        totalReturnPercent,
+        dividendsPercent,
         realizedPL: totalRealizedPL.toNumber(),
         realizedPLPercent,
         unrealizedPL: unrealizedPL.toNumber(),

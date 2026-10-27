@@ -157,6 +157,25 @@ export const calculateMonthCashFlow = (transactions: Transaction[], month: Date)
     return { income, expense, monthlyNet: income.minus(expense), transfersNet, savingsRate };
 };
 
+export interface MonthMoneyInOut {
+    // Income + Transfer In / Expense + Transfer Out, every transaction dated this month.
+    moneyIn: BigNumber;
+    moneyOut: BigNumber;
+    // Out ÷ In; null when nothing came in.
+    outPercentOfIn: number | null;
+}
+
+// Home Ledger's "In / Out" line (docs/METRICS.md, Money In / Out).
+export const calculateMonthMoneyInOut = (transactions: Transaction[], month: Date): MonthMoneyInOut => {
+    let moneyIn = ZERO;
+    let moneyOut = ZERO;
+    getTransactionsByMonth(transactions, month).forEach(t => {
+        if (t.type === 'INCOME' || t.type === 'TRANSFER_IN') moneyIn = moneyIn.plus(t.amount.abs());
+        else if (t.type === 'EXPENSE' || t.type === 'TRANSFER_OUT') moneyOut = moneyOut.plus(t.amount.abs());
+    });
+    return { moneyIn, moneyOut, outPercentOfIn: percentOf(moneyOut, moneyIn) };
+};
+
 export interface CashKept {
     cash: BigNumber;
     cashPrev: BigNumber;
@@ -270,10 +289,13 @@ export interface LoansSnapshot {
     dueCount: number;
 }
 
-// Active debts you owe. Obligations: principal + interest paid this month (fees excluded),
-// capped per debt at its minimum payment, so overpaying one debt doesn't cover another.
-export const calculateLoansSnapshot = (transactions: Transaction[], debts: Debt[], now: Date = new Date()): LoansSnapshot => {
-    const active = debts.filter(d => isPayable(d) && d.status === 'ACTIVE');
+// Active debts you owe (or, for RECEIVABLE, money owed to you). Obligations: principal + interest
+// paid (received) this month, fees excluded, capped per debt at its minimum payment.
+export const calculateLoansSnapshot = (
+    transactions: Transaction[], debts: Debt[], now: Date = new Date(), direction: 'PAYABLE' | 'RECEIVABLE' = 'PAYABLE'
+): LoansSnapshot => {
+    const active = debts.filter(d => isPayable(d) === (direction === 'PAYABLE') && d.status === 'ACTIVE');
+    const paymentTypes: Transaction['type'][] = direction === 'PAYABLE' ? ['TRANSFER_OUT', 'EXPENSE'] : ['TRANSFER_IN', 'INCOME'];
     const prevEnd = endOfLastMonth(now);
     const prevTx = upTo(transactions, prevEnd);
     const existedPrev = active.filter(d => debtStart(d) <= prevEnd);
@@ -292,7 +314,7 @@ export const calculateLoansSnapshot = (transactions: Transaction[], debts: Debt[
     let dueCount = 0;
     active.filter(d => d.minPayment.gt(0)).forEach(d => {
         const paid = monthTx
-            .filter(t => t.debtId === d.id && (t.type === 'TRANSFER_OUT' || t.type === 'EXPENSE'))
+            .filter(t => t.debtId === d.id && paymentTypes.includes(t.type))
             .filter(t => t.category !== 'Fees' && t.subCategory !== 'INITIAL_TRANSACTION')
             .reduce((sum, t) => sum.plus(t.amount.abs()), ZERO);
         dueCount++;

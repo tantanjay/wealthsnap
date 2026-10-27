@@ -13,6 +13,7 @@ The single source of truth for every number the app computes: its formula, where
 - **Obligations:** [Burn Rate](#burn-rate) · [Debts Drag](#debts-drag) · [Safe-to-Spend](#safe-to-spend)
 - **Wealth:** [Net Worth / Total Debt](#net-worth--total-debt) · [Net Worth Change](#net-worth-change)
 - **Home Snapshot rows:** [Cash Kept](#cash-kept) · [Investment Return](#investment-return) · [Loans Repaid / Obligations Paid](#loans-repaid--obligations-paid) · [Goals Progress / On Track](#goals-progress--on-track)
+- **Home tabs:** [Money In / Out](#money-in--out) · [Loan Payoff Plan](#loan-payoff-plan)
 - **Privacy modes:** [Discreet and Hidden rendering](#discreet-and-hidden-rendering)
 - **By transaction kind:** [What each transaction counts toward](#what-each-transaction-counts-toward)
 
@@ -212,7 +213,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula:** average of up to 6 prior full months' spending (the first month counts only if it began on the 1st), excluding goal-tagged transactions and debt principal/interest; with no full month yet, daily spending since the first transaction × 30.44. Then + debt minimum payments + goal monthly contributions
 
-**Shown on:** Home (inside Runway, Debts Drag and Investment Boost; no Burn Rate figure of its own) · Insights (Burn Rate, Annualized Expense) · Financial Health · Debt Strategy (Time Cost) · Chat
+**Shown on:** Home (inside Runway, Debts Drag and Investment Boost; no Burn Rate figure of its own) · Insights (Burn Rate, Annualized Expense) · Financial Health · Home Loans tab (Time cost) · Chat
 
 **Computed from:** `transactions` (spending base) · `debts` (`minPayment` of active debts you owe) · `savings_goals` (`recurringAmount` ÷ `frequency`, unless paused or at `targetAmount`)
 
@@ -281,7 +282,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (Total Debt):** current principal on active debts you owe; no future interest
 
-**Shown on:** Home Snapshot (hero, Total Assets, Loans row) · Financial Health (Total Debt, inside Self-sustain Impact) · Debt Strategy (Total Debt) · Chat (Total Debt)
+**Shown on:** Home Snapshot (hero, Total Assets, Loans row) · Financial Health (Total Debt, inside Self-sustain Impact) · Home Loans tab (Outstanding) · Chat (Total Debt)
 
 **Computed from:** `transactions` (cash, goal balances, principal repaid) · `investments` + `price_history` (market value) · `debts` (`initialAmount`, and `interestRate`, `interestType`, `termMonths`, `minPayment` for projected interest)
 
@@ -336,17 +337,20 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (Overall):** unrealized return = Unrealized P/L ÷ cost basis of current holdings × 100. Top holding = largest holding's market value ÷ total market value
 
+**Formula (Total return, Holdings tab):** (Unrealized P/L + Realized P/L + Dividends) ÷ (cost basis of current holdings + cost basis of shares sold) × 100, all time. Realized % = Realized P/L ÷ cost basis of shares sold. Dividends % = Dividends ÷ the same total cost
+
 **Formula (This month):** net invested = this month's buys (+ fees) − sells (− fees). Return on this month's buys = (market value − cost) of shares bought this month and still held ÷ that cost × 100
 
-**Shown on:** Home Snapshot (Investments row) · Investments (Unrealized P/L %)
+**Shown on:** Home Snapshot (Investments row, unrealized) · Home Holdings tab (hero: total return; Realized and Dividends stats; top holding; each holding's unrealized return) · Investments (Unrealized P/L %)
 
 **Computed from:** `investments` · `price_history`
 
-**Notes:** `calculateInvestmentSnapshot`, same unrealized % as the Investments screen (`getPortfolioStats`). Realized gains and dividends aren't part of the return. "—" when cost basis is ₱0.
+**Notes:** `calculateInvestmentSnapshot`, same unrealized % as the Investments screen (`getPortfolioStats`). Realized gains and dividends aren't part of the return. "—" when cost basis is ₱0. The Holdings tab shows each holding's own unrealized % (`getPortfolioHoldings`) and its weight = its market value ÷ total market value (top holding is the largest weight).
 
 | Version | Rule after this change | What changed |
 |---|---|---|
 | Unreleased | As above | Home Snapshot shows the existing unrealized % in Discreet; monthly buys' return documented |
+| Unreleased | + Total return | Home Holdings tab: total return (realized, unrealized and dividends over all cost ever invested) in Open and Discreet; the Snapshot row stays unrealized |
 
 ## Loans Repaid / Obligations Paid
 
@@ -354,15 +358,16 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (obligations paid):** per active debt you owe, principal + interest paid this month (fees excluded), capped at its minimum payment; summed against Σ minimum payments. Paid count = debts whose payment reached their minimum, out of debts with a minimum above ₱0
 
-**Shown on:** Home Snapshot (Loans row: Overall secondary line and Discreet value; This month value)
+**Shown on:** Home Snapshot (Loans row: Overall secondary line and Discreet value; This month value) · Home Loans tab ("You owe" hero; each loan's % repaid)
 
 **Computed from:** `transactions` (principal and interest payments) · `debts` (`initialAmount`, `minPayment`, `status`, `direction`)
 
-**Notes:** `calculateLoansSnapshot`. The paid count uses the same "payment reached the minimum" rule as the next due date (`getNextDueDate`). Open shows Total Debt; its change line = outstanding now − outstanding at the end of last month, down is good.
+**Notes:** `calculateLoansSnapshot` (`direction` = RECEIVABLE runs the same formulas over active money owed to you, counting repayments received). The paid count uses the same "payment reached the minimum" rule as the next due date (`getNextDueDate`). Open shows Total Debt; its change line = outstanding now − outstanding at the end of last month, down is good.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
 | Unreleased | Obligations capped per debt at its minimum | Home's Debts card summed raw payments, so paying extra on one debt covered another's minimum |
+| Unreleased | Same rules for money owed to you | Home Loans tab "Owed to you": % collected and repayments received (principal + interest received, capped at each minimum) |
 
 ## Goals Progress / On Track
 
@@ -374,7 +379,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (on plan):** this month's contributions ≥ Σ monthly-equivalent recurring amounts of goals counted in Burn Rate
 
-**Shown on:** Home Snapshot (Goals row)
+**Shown on:** Home Snapshot (Goals row) · Home Goals tab (hero; each goal's % to target, capped at 100%, and on-track status)
 
 **Computed from:** `transactions` (contributions, balances) · `savings_goals` (`targetAmount`, `recurringAmount`, `frequency`, `isPaused`)
 
@@ -384,13 +389,47 @@ These apply to every metric unless its section says otherwise.
 |---|---|---|
 | Unreleased | As above | Introduced with the Home Snapshot |
 
+## Money In / Out
+
+**Formula (In):** Income + Transfer In, every transaction dated this month
+
+**Formula (Out):** Expense + Transfer Out, every transaction dated this month. Discreet: Out ÷ In × 100 ("82% of in")
+
+**Shown on:** Home Ledger tab (In / Out line)
+
+**Computed from:** `transactions`
+
+**Notes:** `calculateMonthMoneyInOut`. Raw cash movement, not Total Expense: goal-funded purchases, goal contributions, debt payments and investment buys all count, so In − Out is how much cash changed this month. "—" when nothing came in. Discreet leaves In out.
+
+| Version | Rule after this change | What changed |
+|---|---|---|
+| Unreleased | As above | Introduced with the Home Ledger tab |
+
+## Loan Payoff Plan
+
+**Formula (interest still to pay):** total interest from the payoff simulation (minimum payments, chosen strategy). Discreet: ÷ Total Debt × 100
+
+**Formula (interest cost):** Σ yearly interest ÷ 365 ÷ 24 per hour (Flat on the original amount, otherwise on the balance). Discreet: Σ yearly interest ÷ Total Debt × 100, a blended yearly rate
+
+**Formula (paid-off interest):** interest paid (received) on that loan. Discreet: ÷ its original amount × 100
+
+**Shown on:** Home Loans tab (Payoff plan, Paid off)
+
+**Computed from:** `transactions` · `debts` (`interestRate`, `interestType`, `minPayment`, `initialAmount`)
+
+**Notes:** `calculateDebtPayoffStrategy` and the Debts screen's Interest Leak, moved to the Loans tab. Total Debt = principal still owed on active debts you owe.
+
+| Version | Rule after this change | What changed |
+|---|---|---|
+| Unreleased | As above | Moved from the Debt Strategy screen; Discreet percentages added |
+
 ## Discreet and Hidden rendering
 
 **Rule:** Open shows every amount. Discreet replaces each amount with that metric's scale-free alternative (%, months, counts, progress); an amount with none is left out (transaction amounts) or shown as "—". Hidden shows `****`, keeping a leading sign. %, months and counts render unchanged in every mode
 
 **Shown on:** every amount. Screens without a Discreet version yet render Discreet as Hidden
 
-**Notes:** `usePrivacyFormat` (`src/hooks/usePrivacyFormat.ts`). Investment Boost months are always "—" in Discreet: a large figure implies investments far exceed spending.
+**Notes:** `usePrivacyFormat` (`src/hooks/usePrivacyFormat.ts`). Investment Boost months are always "—" in Discreet: a large figure implies investments far exceed spending. Discreet leaves out Ledger's "In" and paid-off loan amounts (their interest shows as %).
 
 | Version | Rule after this change | What changed |
 |---|---|---|
