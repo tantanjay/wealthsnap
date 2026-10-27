@@ -3,6 +3,10 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useFonts } from 'expo-font';
+import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
 
 import AppNavigator from '@navigation/AppNavigator';
 import BottomModal from '@components/common/BottomModal';
@@ -37,6 +41,9 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 export default function App() {
   const [loading, setLoading] = useState(true);
+  // Per-weight imports keep the other 15 Inter files out of the bundle. A load error falls back to the system font.
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold });
+  const fontsSettled = fontsLoaded || fontError !== null;
 
   const [initialRoute, setInitialRoute] = useState<'Onboarding' | 'Main' | 'LegalAcceptance'>('Onboarding');
 
@@ -92,7 +99,7 @@ export default function App() {
   // starting once the first screen that needs it mounts.
   return (
     <DataStatusProvider>
-      {loading ? (
+      {loading || !fontsSettled ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" />
         </View>
