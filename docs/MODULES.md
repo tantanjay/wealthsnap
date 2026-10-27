@@ -260,6 +260,20 @@ Not a user-facing feature; app shell, data layer, and utilities used across modu
 - `src/hooks/useReviewPrompt.ts`
 - `src/styles/theme.ts`
 
+**Design System Primitives (Refined Minimal, see `docs/DESIGN.md`)**
+- `src/styles/theme.ts` (`ds` colors, `elevation`, `type`, `space`, `radius`, `fontFamily`)
+- `src/components/ds/index.ts`
+- `src/components/ds/tone.ts`
+- `src/components/ds/ChangeLine.tsx`
+- `src/components/ds/Hero.tsx`
+- `src/components/ds/ProgressBar.tsx`
+- `src/components/ds/Row.tsx`
+- `src/components/ds/SectionHeader.tsx`
+- `src/components/ds/SegmentedControl.tsx`
+- `src/components/ds/Sheet.tsx`
+- `src/components/ds/Tile.tsx`
+- `src/components/ds/UnderlineTabs.tsx`
+
 **Database & Storage**
 - `src/services/database/databaseSchema.ts`
 - `src/services/database/databaseService.ts`

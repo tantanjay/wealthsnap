@@ -1,0 +1,172 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, Modal, Pressable, ScrollView, StyleSheet, DimensionValue, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { useTheme } from '@context/ThemeContext';
+import { useSecurity } from '@context/SecurityContext';
+import { type, space, radius } from '@styles/theme';
+
+export interface SheetProps {
+    visible: boolean;
+    onClose: () => void;
+    // Either a title (+ optional subtitle) or a custom header such as a Hero.
+    title?: string;
+    subtitle?: string;
+    header?: React.ReactNode;
+    children: React.ReactNode;
+    // Footer region (inset fill, hairline top), normally the one primary button.
+    footer?: React.ReactNode;
+    maxHeight?: DimensionValue;
+    dismissable?: boolean;
+    closeOnLock?: boolean;
+    // Turn off when the body brings its own virtualized list.
+    scroll?: boolean;
+}
+
+// Refined Minimal bottom sheet. Lock/keyboard handling mirrors common/BottomModal.
+// Never open another modal on top of a Sheet; use a collapsible section instead.
+const Sheet: React.FC<SheetProps> = ({
+    visible,
+    onClose,
+    title,
+    subtitle,
+    header,
+    children,
+    footer,
+    maxHeight = '88%',
+    dismissable = true,
+    closeOnLock = true,
+    scroll = true,
+}) => {
+    const { ds, elevation } = useTheme();
+    const insets = useSafeAreaInsets();
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+    let isLocked = false;
+    try {
+        const security = useSecurity();
+        isLocked = security.isLocked;
+    } catch {
+        // Used outside SecurityProvider
+    }
+
+    useEffect(() => {
+        if (visible && closeOnLock && isLocked) {
+            onClose();
+        }
+    }, [visible, closeOnLock, isLocked, onClose]);
+
+    // maxHeight is measured against the space above the keyboard, so relax it while typing
+    useEffect(() => {
+        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+        const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+        const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
+
+    const handleClose = () => {
+        if (dismissable) {
+            onClose();
+        }
+    };
+
+    const bodyPadding = { paddingBottom: footer ? space[4] : Math.max(insets.bottom, space[4]) };
+    const body = (
+        <>
+            {header}
+            {!header && title ? <Text style={[type.title, { color: ds.text }]}>{title}</Text> : null}
+            {!header && subtitle ? <Text style={[type.small, styles.subtitle, { color: ds.text2 }]}>{subtitle}</Text> : null}
+            {children}
+        </>
+    );
+
+    return (
+        <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+            <KeyboardAvoidingView
+                behavior="padding"
+                keyboardVerticalOffset={Platform.OS === 'android' ? -insets.bottom : 0}
+                style={[styles.overlay, { backgroundColor: ds.scrim }]}
+            >
+                <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} accessibilityLabel="Close" />
+
+                <View
+                    style={[
+                        styles.sheet,
+                        elevation.sheet,
+                        { backgroundColor: ds.sheet, maxHeight: keyboardVisible ? '95%' : maxHeight },
+                    ]}
+                >
+                    <View style={[styles.grabber, { backgroundColor: ds.hairline }]} />
+
+                    {scroll ? (
+                        <ScrollView
+                            style={styles.bodyScroll}
+                            contentContainerStyle={[styles.body, bodyPadding]}
+                            keyboardShouldPersistTaps="handled"
+                        >
+                            {body}
+                        </ScrollView>
+                    ) : (
+                        <View style={[styles.bodyScroll, styles.body, bodyPadding]}>{body}</View>
+                    )}
+
+                    {footer ? (
+                        <View
+                            style={[
+                                styles.footer,
+                                {
+                                    backgroundColor: ds.inset,
+                                    borderTopColor: ds.hairline,
+                                    paddingBottom: Math.max(insets.bottom, space[6]),
+                                },
+                            ]}
+                        >
+                            {footer}
+                        </View>
+                    ) : null}
+                </View>
+            </KeyboardAvoidingView>
+        </Modal>
+    );
+};
+
+const styles = StyleSheet.create({
+    overlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+    },
+    sheet: {
+        width: '100%',
+        borderTopLeftRadius: radius.lg,
+        borderTopRightRadius: radius.lg,
+        paddingTop: space[3],
+    },
+    grabber: {
+        width: 36,
+        height: 4,
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginBottom: space[4],
+    },
+    bodyScroll: {
+        flexShrink: 1,
+    },
+    body: {
+        paddingHorizontal: space[5],
+    },
+    subtitle: {
+        marginTop: 2,
+        marginBottom: space[2],
+    },
+    footer: {
+        paddingTop: space[3],
+        paddingHorizontal: space[5],
+        borderTopWidth: 1,
+    },
+});
+
+export default Sheet;
