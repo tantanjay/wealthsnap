@@ -306,7 +306,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (Net Worth at a past month-end):** Cash Balance as of then + goal balances as of then + investments held then × their latest price on or before then (price history, else the last trade price on or before then) − (principal as of then + projected future interest on it) for debts you owe that had started by then, whatever their status today
 
-**Formula (change this month):** Net Worth now − Net Worth at the end of last month. % = change ÷ |Net Worth then| × 100
+**Formula (change this month):** Net Worth now − Net Worth at the end of last month. % = change ÷ Net Worth then × 100
 
 **Formula (sparkline):** Net Worth at each of the last 6 month-ends that have data, then now
 
@@ -359,7 +359,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (% repaid):** (Σ initial amount − Σ remaining principal) ÷ Σ initial amount × 100, over active debts you owe. Change line: points vs the same debts' principal at the end of last month
 
-**Formula (obligations paid):** per active debt you owe, principal + interest paid this month (fees excluded), capped at its minimum payment; summed against Σ minimum payments. Paid count = debts whose payment reached their minimum, out of debts with a minimum above ₱0
+**Formula (obligations paid):** per active debt you owe, principal + interest paid this month (fees excluded), capped at its minimum payment; summed against Σ minimum payments. Paid count = debts whose payment reached their minimum, out of debts with a minimum above ₱0. A debt repaid in full earlier but still marked Active is left out
 
 **Shown on:** Home Snapshot (Loans row: Overall secondary line and Discreet value; This month value) · Home Loans tab ("You owe" hero; each loan's % repaid)
 

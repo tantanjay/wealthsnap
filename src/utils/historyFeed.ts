@@ -90,6 +90,44 @@ export const groupHistoryByDay = (items: HistoryItem[], now: Date = new Date()):
     }).sort((a, b) => b.originalDate.getTime() - a.originalDate.getTime());
 };
 
+export const isMoneyIn = (t: Transaction): boolean => t.type === 'INCOME' || t.type === 'TRANSFER_IN';
+
+// Signed cash effect; a debt payment's principal row carries its merged interest/fee legs.
+export const transactionCashAmount = (t: Transaction, legs: Transaction[] = []): BigNumber => {
+    let amount = isMoneyIn(t) ? t.amount.abs() : t.amount.abs().negated();
+    legs.forEach(l => { amount = isMoneyIn(l) ? amount.plus(l.amount.abs()) : amount.minus(l.amount.abs()); });
+    return amount;
+};
+
+export interface RecentTransaction {
+    transaction: Transaction;
+    amount: BigNumber;
+}
+
+// Home's Recent list: newest first, up to today, with merged legs folded away as the Ledger does.
+export const buildRecentTransactions = (transactions: Transaction[], count: number, now: Date = new Date()): RecentTransaction[] => {
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const pool = transactions
+        .filter(t => t.type !== 'CAPITAL_GAIN' && t.type !== 'CAPITAL_LOSS' && new Date(t.date) <= endOfToday)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const ids = new Set(pool.map(t => t.id));
+    const legsByPrincipalId: Record<string, Transaction[]> = {};
+    pool.forEach(t => {
+        if (t.debtId && t.linkedTransactionId && (t.subCategory === 'INTEREST' || t.subCategory === 'FEES')) {
+            (legsByPrincipalId[t.linkedTransactionId] ||= []).push(t);
+        }
+    });
+
+    return pool
+        .filter(t => !(t.linkedTransactionId && ids.has(t.linkedTransactionId)))
+        .slice(0, count)
+        .map(t => ({
+            transaction: t,
+            amount: transactionCashAmount(t, t.debtId && t.subCategory === 'PRINCIPAL' ? legsByPrincipalId[t.id] : []),
+        }));
+};
+
 export interface HistoryLookups {
     investmentMap: Record<string, Investment>;
     savingsGoalNameMap: Record<string, string>;

@@ -16,17 +16,26 @@ export interface MoneyOptions {
     compact?: boolean;
 }
 
-const groupDigits = (value: number, locale: string, maxFractionDigits: number, compact: boolean): string => {
-    const options: Intl.NumberFormatOptions = compact
-        ? { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: maxFractionDigits }
-        : { minimumFractionDigits: 0, maximumFractionDigits: maxFractionDigits };
-    let text: string;
+const groupDigits = (value: number, locale: string, maxFractionDigits: number): string => {
+    const options: Intl.NumberFormatOptions = { minimumFractionDigits: 0, maximumFractionDigits: maxFractionDigits };
     try {
-        text = new Intl.NumberFormat(locale, options).format(value);
+        return new Intl.NumberFormat(locale, options).format(value);
     } catch {
-        text = new Intl.NumberFormat('en-US', options).format(value);
+        return new Intl.NumberFormat('en-US', options).format(value);
     }
-    return compact ? text.replace('K', 'k') : text;
+};
+
+// Descending, so the first unit that fits is the largest. Hand-rolled: Intl compact notation isn't reliable on Hermes.
+const COMPACT_UNITS: [number, string][] = [[1e9, 'B'], [1e6, 'M'], [1e3, 'k']];
+
+const compactDigits = (value: number, locale: string): string => {
+    const start = COMPACT_UNITS.findIndex(([size]) => value >= size);
+    if (start === -1) return groupDigits(Math.round(value), locale, 0);
+    // 999,960 rounds to 1000k, so step up to 1M.
+    let index = start;
+    if (index > 0 && Math.round((value / COMPACT_UNITS[index][0]) * 10) / 10 >= 1000) index--;
+    const [size, suffix] = COMPACT_UNITS[index];
+    return `${groupDigits(Math.round((value / size) * 10) / 10, locale, 1)}${suffix}`;
 };
 
 const signOf = (amount: BigNumber, signed: boolean): string => {
@@ -39,7 +48,10 @@ export const formatMoney = (amount: BigNumber | number, currency: string, { sign
     const bn = new BigNumber(amount);
     const { symbol, locale } = getCurrencyInfo(currency);
     const abs = bn.abs().toNumber();
-    return `${signOf(bn, signed)}${symbol}${groupDigits(abs, locale, compact ? 1 : 0, compact)}`;
+    // An amount that rounds to zero carries no sign ("₱0", never "−₱0").
+    const shownZero = abs < 0.5;
+    const digits = compact ? compactDigits(abs, locale) : groupDigits(abs, locale, 0);
+    return `${shownZero ? '' : signOf(bn, signed)}${symbol}${digits}`;
 };
 
 // Percent with an optional sign; null renders as "—".

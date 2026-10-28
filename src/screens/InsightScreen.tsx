@@ -238,6 +238,11 @@ const InsightScreen = ({ navigation }: any) => {
         });
     }, []);
 
+    // Read through refs so browsing months or regrouping doesn't re-run the focus fetch (and Financial Health's reload);
+    // the effect below recalculates for those.
+    const viewRef = useRef({ selectedDate, expenseGrouping });
+    useEffect(() => { viewRef.current = { selectedDate, expenseGrouping }; }, [selectedDate, expenseGrouping]);
+
     const fetchAllData = useCallback(async (isManualRefresh = false) => {
         if (!isManualRefresh) setIsLoading(true);
         try {
@@ -263,13 +268,13 @@ const InsightScreen = ({ navigation }: any) => {
             setDebts(allDebts);
             setGoals(allGoals);
             // We pass variables directly here to bypass the React state update delay
-            await calculateMetrics(safeTransactions, allDebts, allGoals, expenseGrouping, selectedDate);
+            await calculateMetrics(safeTransactions, allDebts, allGoals, viewRef.current.expenseGrouping, viewRef.current.selectedDate);
         } catch (error) {
             console.error("Error loading insights:", error);
         } finally {
             setIsLoading(false);
         }
-    }, [calculateMetrics, expenseGrouping, selectedDate, loadHealth]);
+    }, [calculateMetrics, loadHealth]);
 
     useFocusEffect(
         useCallback(() => {
