@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, ScrollView, Text, RefreshControl, StyleSheet, Pressable } from 'react-native';
+import { View, ScrollView, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -40,7 +40,6 @@ const InsightScreen = ({ navigation }: any) => {
     const [currency, setCurrency] = useState('PHP');
     const format = usePrivacyFormat(currency);
     const { data: health, load: loadHealth, scenario } = useFinancialHealth();
-    const [refreshing, setRefreshing] = useState(false);
     const [expenseGrouping, setExpenseGrouping] = useState<'GROUP' | 'ITEM'>('ITEM');
     const [isLoading, setIsLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -239,8 +238,8 @@ const InsightScreen = ({ navigation }: any) => {
     const viewRef = useRef({ selectedDate, expenseGrouping });
     useEffect(() => { viewRef.current = { selectedDate, expenseGrouping }; }, [selectedDate, expenseGrouping]);
 
-    const fetchAllData = useCallback(async (isManualRefresh = false) => {
-        if (!isManualRefresh) setIsLoading(true);
+    const fetchAllData = useCallback(async () => {
+        setIsLoading(true);
         try {
             const [profile, savedGrid, savedSectionOrder, allTransactions, allDebts, allGoals] = await Promise.all([
                 Storage.getUserProfile(),
@@ -285,12 +284,6 @@ const InsightScreen = ({ navigation }: any) => {
             calculateMetrics(transactions, debts, goals, expenseGrouping, selectedDate);
         }
     }, [expenseGrouping, calculateMetrics, transactions, debts, goals, selectedDate]);
-
-    const onRefresh = useCallback(async () => {
-        setRefreshing(true);
-        await fetchAllData(true);
-        setRefreshing(false);
-    }, [fetchAllData]);
 
     const isCurrentMonth = selectedDate.getMonth() === new Date().getMonth() && selectedDate.getFullYear() === new Date().getFullYear();
     const shortMonth = selectedDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
@@ -443,9 +436,6 @@ const InsightScreen = ({ navigation }: any) => {
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.content}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ds.accent} />
-                }
             >
                 <FinancialHealthGrid
                     grid={grid}
