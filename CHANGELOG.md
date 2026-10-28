@@ -12,11 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 - Home Snapshot: Projected Net Worth with this month's change, then Cash, Investments, Loans and Goals rows with one Overall / This month switch, replacing Home's five cards.
   - Home settings sheet that changes with the selected tab: privacy mode everywhere, plus the net worth graph range and row order on Snapshot and the section order on Holdings; your old card order carries over.
-  - Loans' "due this month" counts each loan only up to its own minimum payment.
-  - Home tabs: Ledger, Holdings, Goals and Loans, which replace the Savings Goals and Debt Strategy screens.
-  - Insights: a Financial Health grid of 4 numbers you pick from 13, with a detail sheet for each, replacing the overview cards and the Financial Health screen.
-  - New bottom bar: Home · Insights · Record · Profile · Learn; the Investment and History tabs move into Home's Holdings and Ledger tabs.
-  - Profile keeps only settings; guides, help and app info move to the new Learn tab, with new Runway, Privacy Modes and Goals guides and an FAQ.
+- Home tabs: Ledger, Holdings, Goals and Loans, which replace the History and Investment tabs and the Savings Goals and Debt Strategy screens.
+  - Ledger shows this month's Safe-to-Spend under In / Out.
+- Insights: a Financial Health grid of 4 numbers you pick from 13, with a detail sheet for each, replacing the overview cards and the Financial Health screen.
+- New bottom bar: Home · Insights · Record · Profile · Learn.
+- Learn tab: guides, help and app info move out of Profile, with new Runway, Privacy Modes and Goals guides and an FAQ.
 - Privacy modes: Open, Discreet (percentages, months and counts instead of amounts) and Hidden (the old privacy toggle).
   - Pick the mode in Home settings.
   - Insights and Holdings charts show in Discreet without amounts; Hidden shows one placeholder.
@@ -29,13 +29,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Time range selector on Insights charts opens as a dropdown under its button.
 - Fetch price list opens its date options directly.
 - Getting Started guide opens full screen.
+- Investment boost labels its rate "Dividend yield" (or "Assumed return") instead of "12-Month Return".
+- Runway on Insights shows a negative figure below zero cash, like Home, instead of 0.0 months.
+- Budget Health shows 0% instead of N/A when you have budgets but no spending yet.
 - Updated Expo SDK 57 patch dependencies.
 
 ### Removed
 - Floating gear: the draggable settings button is now a plain settings icon on Home and Insights. Monthly summary and Reveal for screenshot move to Profile.
+- History's Daily, Weekly and Yearly views and their Safe-to-Spend; the Ledger shows this month's.
+- Pull-to-refresh on Insights.
 
 ### Fixed
+- Home's "due this month" let an extra payment on one loan cover another loan's minimum.
 - Transaction, investment and loan detail sheets showed real amounts while privacy was on.
+- Monthly Summary, Budgets, Recurring Rules and Smart Suggestions showed amounts while privacy was on.
 
 ## [1.19.0] — 2026-09-29
 

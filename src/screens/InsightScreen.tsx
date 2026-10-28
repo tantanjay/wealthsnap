@@ -39,7 +39,7 @@ const InsightScreen = ({ navigation }: any) => {
     const { checkConsent } = useAIConsent();
     const [currency, setCurrency] = useState('PHP');
     const format = usePrivacyFormat(currency);
-    const { data: health, load: loadHealth, scenario } = useFinancialHealth();
+    const { data: health, load: loadHealth, scenario } = useFinancialHealth(format.isDiscreet);
     const [expenseGrouping, setExpenseGrouping] = useState<'GROUP' | 'ITEM'>('ITEM');
     const [isLoading, setIsLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date());

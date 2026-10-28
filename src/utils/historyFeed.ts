@@ -84,7 +84,10 @@ export const groupHistoryByDay = (items: HistoryItem[], now: Date = new Date()):
         const d = new Date(dateKey);
         const title = d.toDateString() === now.toDateString() ? 'Today'
             : d.toDateString() === yesterday.toDateString() ? 'Yesterday'
-                : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                // The Ledger spans every year, so other years carry theirs.
+                : d.toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', ...(d.getFullYear() !== now.getFullYear() && { year: 'numeric' }),
+                });
 
         return { title, data: visibleItems, totalAmount, count: visibleItems.length, originalDate: getHistoryItemDate(dayItems[0]) };
     }).sort((a, b) => b.originalDate.getTime() - a.originalDate.getTime());

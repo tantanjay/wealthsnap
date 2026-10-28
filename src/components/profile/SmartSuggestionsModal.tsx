@@ -7,6 +7,7 @@ import { EmptyState } from '@components/common/EmptyState';
 import { ChangeLine, IconName, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { usePrivacy } from '@context/PrivacyContext';
 import { getAllBudgets, setBudget } from '@services/domain/budgetService';
 import { getCachedTransactions } from '@services/domain/transactionService';
 import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
@@ -56,6 +57,8 @@ interface SmartSuggestionsModalProps {
 const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, onClose, currency, onApplied }) => {
     const { ds } = useTheme();
     const { showAlert } = useAlert();
+    // No Discreet version: Discreet falls back to Hidden.
+    const { isPrivacyEnabled } = usePrivacy();
     const [loading, setLoading] = useState(false);
     const [applying, setApplying] = useState(false);
     const [rows, setRows] = useState<SuggestionRow[]>([]);
@@ -263,7 +266,7 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
                                         <Text style={[type.caption, { color: ds.text2 }]}>Not budgeted yet</Text>
                                     ) : (
                                         <ChangeLine
-                                            text={`${isUp ? '+' : '−'}${formatCurrencyAmount(delta, currency)} vs current`}
+                                            text={`${isUp ? '+' : '−'}${isPrivacyEnabled ? '****' : formatCurrencyAmount(delta, currency)} vs current`}
                                             tone={isUp ? 'warning' : 'good'}
                                         />
                                     )}

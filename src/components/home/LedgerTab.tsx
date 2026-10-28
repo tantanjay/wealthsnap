@@ -8,16 +8,19 @@ import DebtOptionsModal from '@components/debts/DebtOptionsModal';
 import { HistoryCalendar } from '@components/history/HistoryCalendar';
 import { HistoryItem, isDebt, isInvestment } from '@components/history/HistoryListItem';
 import { EmptyState } from '@components/common/EmptyState';
+import BottomModal from '@components/common/BottomModal';
 import { Row } from '@components/ds';
+import { Formula, HowCalculated, SheetHero, StatLine } from '@components/insights/FinancialHealthDetails';
 import { useTheme } from '@context/ThemeContext';
 import { useHistoryData } from '@hooks/useHistoryData';
-import { PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
+import { DASH, PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { type, space, radius } from '@styles/theme';
 import { Debt, Investment, Transaction } from '@types';
 import { deleteTransaction } from '@services/domain/transactionService';
 import { deleteInvestment } from '@services/domain/investmentService';
 import { deleteDebt } from '@services/domain/debtService';
-import { addMonthsAnchored } from '@services/domain/recurrenceService';
+import { addMonthsAnchored, sumUpcomingRecurring } from '@services/domain/recurrenceService';
+import { calculateMonthSafeToSpend, getTransactionsByMonth } from '@utils/financialMetrics';
 import { HistoryFilter, HistorySection, groupHistoryByDay, matchesHistoryFilter, matchesHistorySearch, getHistoryItemDate, transactionCashAmount } from '@utils/historyFeed';
 import { calculateMonthMoneyInOut } from '@utils/snapshotMetrics';
 import { transactionIcon } from './SnapshotView';
@@ -55,6 +58,7 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
     const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
     const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
+    const [isSafeToSpendVisible, setIsSafeToSpendVisible] = useState(false);
 
     // Realized gain/loss rows are display-only legs of a sale; the sale's own transfer already shows.
     const cashTransactions = useMemo(
@@ -82,10 +86,12 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
     }, [feedItems, view, selectedDate, filter, query]);
 
     const monthFlow = useMemo(() => calculateMonthMoneyInOut(transactions, new Date()), [transactions]);
-    const calendarMonthTx = useMemo(() => transactions.filter(t => {
-        const d = new Date(t.date);
-        return d.getMonth() === month.getMonth() && d.getFullYear() === month.getFullYear();
-    }), [transactions, month]);
+    const safeToSpend = useMemo(() => {
+        const now = new Date();
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        return calculateMonthSafeToSpend(transactions, data.debts, data.goals, sumUpcomingRecurring(data.recurrenceRules, now, monthEnd), now);
+    }, [transactions, data.debts, data.goals, data.recurrenceRules]);
+    const calendarMonthTx = useMemo(() => getTransactionsByMonth(transactions, month), [transactions, month]);
     const calendarMonthInv = useMemo(() => investments.filter(i => {
         const d = new Date(i.date);
         return d.getMonth() === month.getMonth() && d.getFullYear() === month.getFullYear();
@@ -258,6 +264,16 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                 )}
                 {viewLink('Calendar', 'calendar-outline', 'CALENDAR')}
             </View>
+            {/* Safe-to-Spend has no scale-free version, so Discreet shows "—". */}
+            <Row
+                icon="shield-checkmark-outline"
+                title="Safe to spend"
+                subtitle={`Rest of ${shortMonth}, after bills and commitments`}
+                value={f.show(f.money(safeToSpend.amount, { signed: true }), DASH)}
+                valueTone={f.isOpen ? (safeToSpend.amount.lt(0) ? 'bad' : 'good') : undefined}
+                onPress={() => setIsSafeToSpendVisible(true)}
+                last
+            />
         </View>
     );
 
@@ -302,6 +318,28 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.content}
             />
+
+            <BottomModal visible={isSafeToSpendVisible} onClose={() => setIsSafeToSpendVisible(false)} title="Safe to spend">
+                <SheetHero
+                    label={`Rest of ${shortMonth}`}
+                    value={f.show(f.money(safeToSpend.amount, { signed: true }), DASH)}
+                    change={f.isDiscreet ? 'Not shown in Discreet: it has no scale-free version' : undefined}
+                />
+                {!f.isDiscreet && (
+                    <>
+                        <StatLine label="Daily living costs" note="Last 90 days of one-off spending" value={f.money(safeToSpend.dailyBurnRate)} />
+                        <StatLine label="Living costs to month-end" value={f.money(safeToSpend.projectedVariableSpend)} />
+                        <StatLine label="Unpaid debt minimums" value={f.money(safeToSpend.remainingDebtObligations)} />
+                        <StatLine label="Unpaid goal contributions" value={f.money(safeToSpend.remainingGoalObligations)} last />
+                    </>
+                )}
+                <HowCalculated>
+                    <Formula
+                        formula="(Income + recurring income still due) − (Expenses + Transfers out) − recurring bills still due − daily living costs × days left − unpaid debt minimums − unpaid goal contributions"
+                        explanation="This month only. Daily living costs average your last 90 days of non-recurring spending, without debt payments or goal transactions (debt fees count). Goal-funded purchases don't count as spent."
+                    />
+                </HowCalculated>
+            </BottomModal>
 
             <TransactionOptionsModal
                 visible={!!selectedTransaction}

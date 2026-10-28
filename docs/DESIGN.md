@@ -135,7 +135,7 @@ Change lines and secondary text go through the same helper. Months, percentages 
 
 ## 8. Implementation notes (React Native)
 
-- Tokens live in `src/styles/theme.ts` (light and dark objects with the names above); components read them through `useTheme()`. No hex values in components.
+- Tokens live in `src/styles/theme.ts` (light and dark objects with the names above); components read them through `useTheme()` as `const { ds, elevation } = useTheme()` (`ds.text2`, `ds.inset`, `elevation.sheet`). No hex values in components.
 - Load Inter with `expo-font` (already a dependency), e.g. via `@expo-google-fonts/inter`; expose the weights as `fontFamily` entries in the type styles.
 - Type styles, spacing and radii are exported constants (`type.display`, `space[4]`, `radius.md`), so screens never hand-write sizes.
 - Build the shared pieces once — `Row`, `SectionHeader`, `Tile`, `Hero`, `ChangeLine`, `UnderlineTabs`, `Sheet` — and compose screens from them.

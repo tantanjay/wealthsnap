@@ -501,7 +501,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Recording a payment on a Receivable logs Transfer In + Income, instead of Transfer Out + Expense' },
 
             { type: 'divider' },
-            { type: 'heading2', text: 'The Cards' },
+            { type: 'heading2', text: 'What the Loans tab shows' },
 
             { type: 'heading3', text: 'Estimated Debt-Free Date' },
             { type: 'blockquote', text: 'Shows: When you\'ll be debt-free, simulated month by month using your active debts\' minimum payments.' },
@@ -581,35 +581,32 @@ export const HELP_TOPICS: HelpTopic[] = [
         type: 'document',
         content: [
             { type: 'heading1', text: 'Investments Overview' },
-            { type: 'paragraph', text: 'This guide explains the portfolio stats, allocation chart, dividend tracking, and Smart Advisor on the Investments screen.' },
+            { type: 'paragraph', text: 'This guide explains the portfolio total, holdings, allocation, dividends and Smart Advisor on Home\'s Holdings tab.' },
             { type: 'divider' },
 
-            { type: 'heading2', text: 'Portfolio Stats' },
+            { type: 'heading2', text: 'Portfolio' },
 
-            { type: 'heading3', text: 'Total Equity' },
-            { type: 'blockquote', text: 'Shows: The current market value of everything you hold.' },
-            { type: 'bullet', text: 'Subtitle shows this month\'s net amount invested — green if you added money, red if you withdrew via selling' },
+            { type: 'heading3', text: 'Portfolio value and total return' },
+            { type: 'blockquote', text: 'Shows: The current market value of everything you hold, with your all-time total return underneath.' },
+            { type: 'formula', text: 'Total return = (Unrealized P/L + Realized P/L + Dividends) ÷ (Cost of what you still hold + Cost of what you sold)' },
+            { type: 'bullet', text: 'Green when you\'re ahead, red when you\'re behind' },
 
-            { type: 'heading3', text: 'Realized P/L' },
-            { type: 'blockquote', text: 'Shows: Profit or loss you\'ve already locked in by selling.' },
-            { type: 'bullet', text: 'Comes from your logged Capital Gain / Capital Loss transactions' },
-            { type: 'bullet', text: 'Subtitle shows this as a percentage of what those sold shares originally cost you' },
+            { type: 'heading3', text: 'Realized' },
+            { type: 'blockquote', text: 'Shows: Profit or loss you\'ve already locked in by selling, from your Capital Gain / Capital Loss transactions.' },
+            { type: 'bullet', text: 'Discreet shows it as a % of what those sold shares originally cost you' },
 
-            { type: 'heading3', text: 'Unrealized P/L' },
-            { type: 'blockquote', text: 'Shows: Paper profit or loss on what you\'re still holding — the gap between what it\'s worth now and what you paid.' },
-            { type: 'bullet', text: 'Green if positive, red if negative' },
-            { type: 'bullet', text: 'Subtitle shows this as a percentage of your cost basis' },
-
-            { type: 'heading3', text: 'Total Dividends Received' },
+            { type: 'heading3', text: 'Dividends' },
             { type: 'blockquote', text: 'Shows: All dividend income ever recorded.' },
-            { type: 'bullet', text: 'Subtitle shows dividends received this month' },
+            { type: 'bullet', text: 'Discreet shows it as a % of the same total cost as total return' },
+
+            { type: 'paragraph', text: 'The bar under the total splits your portfolio by asset type (stocks, funds, crypto and so on).' },
 
             { type: 'divider' },
-            { type: 'heading2', text: 'Holdings List' },
-            { type: 'paragraph', text: 'One card per asset you hold.' },
-            { type: 'bullet', text: 'Price and gain/loss %, with an allocation bar showing its share of your portfolio' },
-            { type: 'bullet', text: 'Dividend yield badge and an estimated annual dividend income for that holding' },
-            { type: 'bullet', text: 'Sort by Allocation, Alphabetical, P/L amount, P/L %, or Yield' },
+            { type: 'heading2', text: 'Holdings' },
+            { type: 'paragraph', text: 'One row per asset you hold: its value, its weight in your portfolio, and its unrealized return.' },
+            { type: 'formula', text: 'Return = Unrealized P/L ÷ Cost of what you still hold' },
+            { type: 'bullet', text: 'Tap a holding for its trades, price history and dividends' },
+            { type: 'bullet', text: 'Sort from the section header: by value, return, P/L, yield, or A–Z' },
 
             { type: 'heading2', text: 'Allocation Chart' },
             { type: 'blockquote', text: 'Shows: How your money is spread out, as a treemap — box size reflects weight in your portfolio.' },

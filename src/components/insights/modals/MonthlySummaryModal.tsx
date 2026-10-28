@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet } from
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
+import { usePrivacy } from '@context/PrivacyContext';
 import { type, space, radius } from '@styles/theme';
 import { getAllMonthlySummaries, syncMonthlySummaries, MonthlySummaryRow } from '@services/domain/monthlySummaryService';
 
@@ -18,6 +19,8 @@ const formatMonthLabel = (yearMonth: string): string => {
 
 const MonthlySummaryModal: React.FC<MonthlySummaryModalProps> = ({ visible, onClose }) => {
     const { ds } = useTheme();
+    // The recap is free text full of amounts, so it can't be masked: Discreet and Hidden withhold it.
+    const { isPrivacyEnabled } = usePrivacy();
     const [summaries, setSummaries] = useState<MonthlySummaryRow[]>([]);
     const [selectedYearMonth, setSelectedYearMonth] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -120,9 +123,15 @@ const MonthlySummaryModal: React.FC<MonthlySummaryModalProps> = ({ visible, onCl
                                     </Text>
                                 )}
                                 <View style={[styles.block, { backgroundColor: ds.inset }]}>
-                                    <Text selectable style={[type.smallNum, { color: ds.text }]}>
-                                        {selected.summaryText}
-                                    </Text>
+                                    {isPrivacyEnabled ? (
+                                        <Text style={[type.small, { color: ds.text2 }]}>
+                                            Hidden while privacy is on. Switch to Open in Home settings to read this summary.
+                                        </Text>
+                                    ) : (
+                                        <Text selectable style={[type.smallNum, { color: ds.text }]}>
+                                            {selected.summaryText}
+                                        </Text>
+                                    )}
                                 </View>
                                 <Text style={[type.caption, styles.generated, { color: ds.text2 }]}>
                                     Last generated {new Date(selected.updatedAt).toLocaleString()}
