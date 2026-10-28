@@ -308,7 +308,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (change this month):** Net Worth now − Net Worth at the end of last month. % = change ÷ Net Worth then × 100
 
-**Formula (sparkline):** Net Worth at each of the last 6 month-ends that have data, then now
+**Formula (sparkline):** Net Worth at each month-end that has data across the chosen range (6 months, 1 year, 3 years or all time; Home settings, default 6 months), then now. Long ranges skip months to stay near 36 points
 
 **Shown on:** Home Snapshot (hero change line in Open; hero value in Discreet; sparkline)
 

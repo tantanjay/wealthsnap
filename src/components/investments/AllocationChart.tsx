@@ -1,9 +1,8 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, LayoutChangeEvent } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
 
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
-import { saveInvestmentAllocationTab, getInvestmentAllocationTab } from '@services/core/storageService';
 
 // Applies a variable opacity to a theme hex color (e.g. colors.success), so gain/loss
 // intensity can still scale with magnitude without falling back to a hardcoded rgba().
@@ -26,8 +25,12 @@ interface Holding {
     type?: string;
 }
 
+export type AllocationTab = 'stocks' | 'sector' | 'type';
+
 interface AllocationChartProps {
     holdingsData: Holding[];
+    // Which grouping to draw; the page picks it.
+    tab: AllocationTab;
     isLoading?: boolean;
     isPrivacyEnabled?: boolean;
 }
@@ -100,30 +103,10 @@ const getTreemapLayout = (data: any[], width: number, height: number): TreeMapIt
 };
 
 // --- Main Component ---
-export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, isLoading = false, isPrivacyEnabled = false }) => {
-    const { colors } = useTheme();
-    const [selectedTab, setSelectedTab] = useState<'stocks' | 'sector' | 'type'>('stocks');
+export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, tab: selectedTab, isLoading = false, isPrivacyEnabled = false }) => {
+    const { colors, ds } = useTheme();
     const [containerWidth, setContainerWidth] = useState(0);
     const chartHeight = 220;
-
-    // Restore the last-selected tab (Stocks / Sector / Type) on mount
-    const isInitialTabLoad = useRef(true);
-    useEffect(() => {
-        const loadTab = async () => {
-            const saved = await getInvestmentAllocationTab();
-            if (saved === 'stocks' || saved === 'sector' || saved === 'type') {
-                setSelectedTab(saved);
-            }
-            isInitialTabLoad.current = false;
-        };
-        loadTab();
-    }, []);
-
-    useEffect(() => {
-        if (!isInitialTabLoad.current) {
-            saveInvestmentAllocationTab(selectedTab);
-        }
-    }, [selectedTab]);
 
     const onLayout = useCallback((event: LayoutChangeEvent) => {
         const { width } = event.nativeEvent.layout;
@@ -240,42 +223,25 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
     }, [chartItems, containerWidth]);
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.surface }]}>
-            <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.text }]}>Allocation</Text>
-                <View style={[styles.tabContainer, { backgroundColor: colors.background }]}>
-                    {(['stocks', 'sector', 'type'] as const).map((tab) => (
-                        <TouchableOpacity
-                            key={tab}
-                            style={[styles.tab, selectedTab === tab && { backgroundColor: colors.primary }]}
-                            onPress={() => setSelectedTab(tab)}
-                        >
-                            <Text style={[styles.tabText, { color: selectedTab === tab ? '#fff' : colors.textSecondary }]}>
-                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </View>
-
+        <View>
             {isLoading ? (
-                <View style={{ padding: 16 }}>
+                <View>
                     <Skeleton width="100%" height={chartHeight} borderRadius={12} />
                 </View>
             ) : isPrivacyEnabled ? (
-                <View style={{ height: chartHeight, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.border + '20', marginHorizontal: 16, marginBottom: 16, borderRadius: 12 }}>
-                    <Text style={{ color: colors.textSecondary }}>🔒 Chart hidden for privacy</Text>
+                <View style={{ height: chartHeight, justifyContent: 'center', alignItems: 'center', backgroundColor: ds.inset, borderRadius: 12 }}>
+                    <Text style={{ color: ds.text2 }}>Chart hidden for privacy</Text>
                 </View>
             ) : (!holdingsData || holdingsData.length === 0) ? (
-                <View style={{ height: chartHeight, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.border + '20', marginHorizontal: 16, marginBottom: 16, borderRadius: 12 }}>
-                    <Text style={{ color: colors.textSecondary, fontStyle: 'italic' }}>No active holdings.</Text>
+                <View style={{ height: chartHeight, justifyContent: 'center', alignItems: 'center', backgroundColor: ds.inset, borderRadius: 12 }}>
+                    <Text style={{ color: ds.text2 }}>No active holdings.</Text>
                 </View>
             ) : (
                 <View style={styles.chartWrapper} onLayout={onLayout}>
                     <View style={[styles.chartContainer, { height: chartHeight }]}>
                         {layout.length === 0 ? (
                             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                                <Text style={{ color: colors.textSecondary }}>No data for {selectedTab}</Text>
+                                <Text style={{ color: ds.text2 }}>No data for {selectedTab}</Text>
                             </View>
                         ) : (
                             layout.map((item) => {
@@ -296,7 +262,7 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                                                 width: item.width,
                                                 height: item.height,
                                                 backgroundColor: item.color,
-                                                borderColor: colors.surface,
+                                                borderColor: ds.bg,
                                             }
                                         ]}
                                     >
@@ -342,25 +308,8 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
 };
 
 const styles = StyleSheet.create({
-    container: {
-        borderRadius: 16,
-        marginBottom: 20,
-        marginHorizontal: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 16,
-    },
     chartWrapper: {
-        marginHorizontal: 16,
-        marginBottom: 16,
+        marginTop: 4,
     },
     chartContainer: {
         width: '100%',
@@ -368,10 +317,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         overflow: 'hidden',
     },
-    title: { fontSize: 18, fontWeight: 'bold' },
-    tabContainer: { flexDirection: 'row', borderRadius: 8, padding: 2 },
-    tab: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 6 },
-    tabText: { fontSize: 12, fontWeight: '700' },
     box: {
         position: 'absolute',
         borderWidth: 1,

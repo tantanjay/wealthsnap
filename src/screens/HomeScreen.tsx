@@ -72,6 +72,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [snapshot, setSnapshot] = useState<SnapshotData | null>(null);
     const [order, setOrder] = useState<Storage.SnapshotRowId[]>(Storage.DEFAULT_SNAPSHOT_ORDER);
     const [period, setPeriod] = useState<Storage.SnapshotPeriod>('overall');
+    const [range, setRange] = useState<Storage.SnapshotRange>('6M');
     const [isSettingsVisible, setIsSettingsVisible] = useState(false);
     const [hasLoaded, setHasLoaded] = useState(false);
     const [tab, setTab] = useState<HomeTab>('snapshot');
@@ -88,6 +89,8 @@ const HomeScreen = ({ navigation }: any) => {
         try {
             setOrder(await Storage.getSnapshotOrder());
             setPeriod(await Storage.getSnapshotPeriod());
+            const savedRange = await Storage.getSnapshotRange();
+            setRange(savedRange);
 
             // Process recurring rules first so the snapshot includes anything they just generated.
             await processRecurrenceRules();
@@ -115,7 +118,7 @@ const HomeScreen = ({ navigation }: any) => {
             const now = new Date();
 
             setSnapshot({
-                netWorth: calculateNetWorthChange(t, inv, debts, goals, priceAt, now),
+                netWorth: calculateNetWorthChange(t, inv, debts, goals, priceAt, now, Storage.SNAPSHOT_RANGES.find(r => r.key === savedRange)?.months),
                 runway: calculateRunwayTrend(t, debts, goals, now),
                 cash: calculateCashKept(t, now),
                 month: calculateMonthCashFlow(t, now),
@@ -161,6 +164,12 @@ const HomeScreen = ({ navigation }: any) => {
         const next = period === 'overall' ? 'month' : 'overall';
         setPeriod(next);
         Storage.saveSnapshotPeriod(next);
+    };
+
+    const changeRange = (next: Storage.SnapshotRange) => {
+        setRange(next);
+        // Saved first: the reload reads the range back from storage.
+        Storage.saveSnapshotRange(next).then(() => loadData());
     };
 
     const changeOrder = (next: Storage.SnapshotRowId[]) => {
@@ -255,6 +264,8 @@ const HomeScreen = ({ navigation }: any) => {
                 onClose={() => setIsSettingsVisible(false)}
                 order={order}
                 onChangeOrder={changeOrder}
+                range={range}
+                onChangeRange={changeRange}
             />
 
             <ReviewAppModal

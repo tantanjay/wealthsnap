@@ -2,11 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, ToastAndroid } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
-import BottomModal from '@components/common/BottomModal';
 import { EmptyState } from '@components/common/EmptyState';
 import { Hero, Row, SectionHeader, Tone } from '@components/ds';
 import { SmartAdvisor, Suggestion } from '@components/investments/SmartAdvisor';
-import { AllocationChart } from '@components/investments/AllocationChart';
+import { AllocationChart, AllocationTab } from '@components/investments/AllocationChart';
 import { DividendChart } from '@components/investments/DividendChart';
 import { InvestmentHistoryModal } from '@components/investments/modals/InvestmentHistoryModal';
 import InvestmentSettingsModal from '@components/investments/modals/InvestmentSettingsModal';
@@ -32,7 +31,11 @@ interface HoldingsTabProps {
 
 type PortfolioStats = Awaited<ReturnType<typeof getPortfolioStats>>;
 type SortOption = 'ALLOCATION' | 'PL_PERCENT' | 'PL_AMOUNT' | 'YIELD' | 'ALPHABETICAL';
-type ToolSheet = 'advisor' | 'dividends' | 'allocation';
+const ALLOCATION_TABS: { key: AllocationTab; label: string }[] = [
+    { key: 'stocks', label: 'Stocks' },
+    { key: 'sector', label: 'Sector' },
+    { key: 'type', label: 'Type' },
+];
 
 // Same sort keys the Investment screen saves, cycled from the section header.
 const SORTS: { key: SortOption; label: string }[] = [
@@ -68,10 +71,10 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
     const [actualDividends, setActualDividends] = useState<Record<number, MonthlyDividend[]>>({});
     const [calendarData, setCalendarData] = useState<Record<number, CalendarEvent[]>>({});
     const [sort, setSort] = useState<SortOption>('ALLOCATION');
+    const [allocationTab, setAllocationTab] = useState<AllocationTab>('stocks');
     // Kept after closing so the history sheet doesn't blank out while it slides away.
     const [historySymbol, setHistorySymbol] = useState('');
     const [isHistoryVisible, setIsHistoryVisible] = useState(false);
-    const [toolSheet, setToolSheet] = useState<ToolSheet | null>(null);
 
     const loadData = useCallback(async () => {
         try {
@@ -100,7 +103,8 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
 
     const isInitialPrefsLoad = useRef(true);
     useEffect(() => {
-        Promise.all([Storage.getInvestmentHoldingsSort(), Storage.getInvestmentAdvisorPriority()]).then(([savedSort, savedPriority]) => {
+        Promise.all([Storage.getInvestmentHoldingsSort(), Storage.getInvestmentAdvisorPriority(), Storage.getInvestmentAllocationTab()]).then(([savedSort, savedPriority, savedTab]) => {
+            if (ALLOCATION_TABS.some(t => t.key === savedTab)) setAllocationTab(savedTab as AllocationTab);
             if (savedSort && SORTS.some(s => s.key === savedSort.option)) setSort(savedSort.option as SortOption);
             if (savedPriority === 'div' || savedPriority === 'crash' || savedPriority === 'balance' || savedPriority === 'all') setPriority(savedPriority);
             isInitialPrefsLoad.current = false;
@@ -111,6 +115,12 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
         const next = SORTS[(SORTS.findIndex(s => s.key === sort) + 1) % SORTS.length].key;
         setSort(next);
         Storage.saveInvestmentHoldingsSort({ option: next, direction: next === 'ALPHABETICAL' ? 'ASC' : 'DESC' });
+    };
+
+    const cycleAllocationTab = () => {
+        const next = ALLOCATION_TABS[(ALLOCATION_TABS.findIndex(t => t.key === allocationTab) + 1) % ALLOCATION_TABS.length].key;
+        setAllocationTab(next);
+        Storage.saveInvestmentAllocationTab(next);
     };
 
     const changePriority = (p: Priority) => {
@@ -231,27 +241,9 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
                             );
                         })}
 
-                        <SectionHeader title="Tools" />
-                        <Row icon="add-circle-outline" title="Add an investment" subtitle="Buy, sell or dividend, from Record" chevron onPress={onOpenRecord} />
-                        <Row icon="bulb-outline" title="Smart advisor" subtitle="Dip, dividend and rebalance ideas" chevron onPress={() => setToolSheet('advisor')} />
-                        <Row icon="calendar-outline" title="Dividends" subtitle="Received, upcoming and projected" chevron onPress={() => setToolSheet('dividends')} />
-                        <Row icon="pie-chart-outline" title="Allocation" subtitle="Treemap by holding" chevron onPress={() => setToolSheet('allocation')} />
-                        <Row icon="cloud-download-outline" title="Fetch price list" subtitle="AI estimates for your stocks" chevron last onPress={onOpenSettings} />
-                    </>
-                )}
-            </ScrollView>
+                        <SectionHeader title="Allocation" actionLabel={`${ALLOCATION_TABS.find(t => t.key === allocationTab)?.label} ⌄`} onAction={cycleAllocationTab} />
+                        <AllocationChart holdingsData={holdings} tab={allocationTab} isPrivacyEnabled={isPrivacyEnabled} />
 
-            <BottomModal
-                visible={!!toolSheet}
-                onClose={() => setToolSheet(null)}
-                title={toolSheet === 'advisor' ? 'Smart advisor' : toolSheet === 'dividends' ? 'Dividends' : 'Allocation'}
-                maxHeight="85%"
-            >
-                <ScrollView>
-                    {toolSheet === 'advisor' && (
-                        <SmartAdvisor suggestions={suggestions} activePriority={priority} onPriorityChange={changePriority} currency={currency} isPrivacyEnabled={isPrivacyEnabled} />
-                    )}
-                    {toolSheet === 'dividends' && (
                         <DividendChart
                             projectedDividends={projectedDividends}
                             actualDividends={actualDividends}
@@ -259,10 +251,15 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
                             currency={currency}
                             isPrivacyEnabled={isPrivacyEnabled}
                         />
-                    )}
-                    {toolSheet === 'allocation' && <AllocationChart holdingsData={holdings} isPrivacyEnabled={isPrivacyEnabled} />}
-                </ScrollView>
-            </BottomModal>
+
+                        <SmartAdvisor suggestions={suggestions} activePriority={priority} onPriorityChange={changePriority} currency={currency} isPrivacyEnabled={isPrivacyEnabled} />
+
+                        <SectionHeader title="Tools" />
+                        <Row icon="add-circle-outline" title="Add an investment" subtitle="Buy, sell or dividend, from Record" chevron onPress={onOpenRecord} />
+                        <Row icon="cloud-download-outline" title="Fetch price list" subtitle="AI estimates for your stocks" chevron last onPress={onOpenSettings} />
+                    </>
+                )}
+            </ScrollView>
 
             <InvestmentHistoryModal
                 visible={isHistoryVisible}

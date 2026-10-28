@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Skeleton } from '@components/common/Skeleton';
+import { SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { type, space } from '@styles/theme';
 import { formatCurrencyAmount, formatCompactNumber, formatCompactCurrency } from '@utils/currencyUtils';
 import { CalendarEvent } from '@services/domain/dividendHistoryService';
 import { MonthlyDividend } from '@services/domain/investmentService';
@@ -27,7 +29,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
     isLoading = false,
     isPrivacyEnabled = false,
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { width: windowWidth } = useWindowDimensions();
     const isLandscape = windowWidth > 600; // Simple landscape check
 
@@ -87,7 +89,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
             <View style={{ flex: 1, flexDirection: 'row', marginTop: 10 }}>
                 <View style={{ width: 35, justifyContent: 'space-between', paddingBottom: 20, alignItems: 'flex-end', paddingRight: 4 }}>
                     {[...yLabels].reverse().map((label, i) => (
-                        <Text key={i} style={{ color: colors.textSecondary, fontSize: 9 }}>{label}</Text>
+                        <Text key={i} style={{ color: ds.text2, fontSize: 9 }}>{label}</Text>
                     ))}
                 </View>
 
@@ -111,8 +113,8 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                                         position: 'relative',
                                         height: Math.max(2, barHeight),
                                         width: '70%',
-                                        backgroundColor: activeTab === 'actual' ? colors.primary : '#10B981',
-                                        opacity: isSelected ? 0.7 : 1,
+                                        backgroundColor: ds.accent,
+                                        opacity: isSelected ? 0.7 : activeTab === 'actual' ? 1 : 0.55,
                                         borderRadius: 4,
                                         minWidth: 3,
                                         maxWidth: 30
@@ -120,35 +122,35 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                                 </TouchableOpacity>
 
                                 {isSelected && (
-                                    <View style={[styles.tooltip, { backgroundColor: colors.surface, borderColor: colors.border, bottom: Math.max(2, barHeight) + 10 }]}>
-                                        <Text style={{ color: colors.text, fontSize: 10, fontWeight: 'bold', marginBottom: 4 }}>{labels[index]}</Text>
+                                    <View style={[styles.tooltip, { backgroundColor: ds.raised, borderColor: ds.hairline, bottom: Math.max(2, barHeight) + 10 }]}>
+                                        <Text style={{ color: ds.text, fontSize: 10, fontWeight: 'bold', marginBottom: 4 }}>{labels[index]}</Text>
 
                                         {data[index].breakdown.length > 0 ? (
                                             <View style={{ width: '100%', marginBottom: 4 }}>
                                                 {data[index].breakdown.map((item, i) => (
                                                     <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
-                                                        <Text style={{ color: colors.textSecondary, fontSize: 8 }}>{item.symbol}</Text>
-                                                        <Text style={{ color: colors.text, fontSize: 8, fontWeight: '600' }}>
+                                                        <Text style={{ color: ds.text2, fontSize: 8 }}>{item.symbol}</Text>
+                                                        <Text style={{ color: ds.text, fontSize: 8, fontWeight: '600' }}>
                                                             {formatCompactCurrency(item.amount, currency)}
                                                         </Text>
                                                     </View>
                                                 ))}
-                                                <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 4 }} />
+                                                <View style={{ height: 1, backgroundColor: ds.hairline, marginVertical: 4 }} />
                                             </View>
                                         ) : null}
 
                                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', gap: 10 }}>
-                                            <Text style={{ color: colors.text, fontSize: 9, fontWeight: 'bold' }}>Total</Text>
-                                            <Text style={{ color: colors.primary, fontSize: 9, fontWeight: 'bold' }}>
+                                            <Text style={{ color: ds.text, fontSize: 9, fontWeight: 'bold' }}>Total</Text>
+                                            <Text style={{ color: ds.accent, fontSize: 9, fontWeight: 'bold' }}>
                                                 {formatCompactCurrency(data[index].total, currency)}
                                             </Text>
                                         </View>
 
-                                        <View style={[styles.tooltipArrow, { backgroundColor: colors.surface, borderColor: colors.border }]} />
+                                        <View style={[styles.tooltipArrow, { backgroundColor: ds.raised, borderColor: ds.hairline }]} />
                                     </View>
                                 )}
 
-                                <Text numberOfLines={1} style={[styles.barLabel, { color: isSelected ? colors.primary : colors.textSecondary, opacity: shouldShowLabel || isSelected ? 1 : 0 }]}>
+                                <Text numberOfLines={1} style={[styles.barLabel, { color: isSelected ? ds.accent : ds.text2, opacity: shouldShowLabel || isSelected ? 1 : 0 }]}>
                                     {labels[index]}
                                 </Text>
                             </View>
@@ -173,9 +175,9 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                         }}
                         disabled={availableYears.indexOf(selectedYear) <= 0}
                     >
-                        <Ionicons name="chevron-back" size={20} color={availableYears.indexOf(selectedYear) <= 0 ? colors.border : colors.text} />
+                        <Ionicons name="chevron-back" size={20} color={availableYears.indexOf(selectedYear) <= 0 ? ds.text3 : ds.text} />
                     </TouchableOpacity>
-                    <Text style={[styles.yearText, { color: colors.text }]}>{selectedYear}</Text>
+                    <Text style={[styles.yearText, { color: ds.text }]}>{selectedYear}</Text>
                     <TouchableOpacity
                         onPress={() => {
                             const idx = availableYears.indexOf(selectedYear);
@@ -183,7 +185,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                         }}
                         disabled={availableYears.indexOf(selectedYear) >= availableYears.length - 1 || availableYears.length === 0}
                     >
-                        <Ionicons name="chevron-forward" size={20} color={availableYears.indexOf(selectedYear) >= availableYears.length - 1 || availableYears.length === 0 ? colors.border : colors.text} />
+                        <Ionicons name="chevron-forward" size={20} color={availableYears.indexOf(selectedYear) >= availableYears.length - 1 || availableYears.length === 0 ? ds.text3 : ds.text} />
                     </TouchableOpacity>
                 </View>
                 {renderBarChart(months, currentData)}
@@ -211,20 +213,20 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                                 styles.calendarMonth,
                                 {
                                     width: monthWidth,
-                                    borderColor: colors.border,
-                                    backgroundColor: colors.surface
+                                    borderColor: ds.hairline,
+                                    backgroundColor: ds.inset
                                 },
                                 isLastRow && { marginBottom: 0 }
                             ]}
                         >
-                            <Text style={[styles.monthTitle, { color: colors.textSecondary }]}>{month}</Text>
+                            <Text style={[styles.monthTitle, { color: ds.text2 }]}>{month}</Text>
                             <View style={styles.assetList}>
                                 {events.length > 0 ? events.map((ev, i) => (
-                                    <View key={i} style={[styles.assetBadge, { backgroundColor: colors.primary + '15' }]}>
-                                        <Text style={[styles.assetText, { color: colors.primary }]}>{ev.symbol}</Text>
+                                    <View key={i} style={[styles.assetBadge, { backgroundColor: ds.inset }]}>
+                                        <Text style={[styles.assetText, { color: ds.accent }]}>{ev.symbol}</Text>
                                     </View>
                                 )) : (
-                                    <Text style={{ fontSize: 8, color: colors.border, fontStyle: 'italic' }}>-</Text>
+                                    <Text style={{ fontSize: 8, color: ds.text3 }}>-</Text>
                                 )}
                             </View>
                         </View>
@@ -238,7 +240,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
         if (isPrivacyEnabled) {
             return (
                 <View style={styles.placeholderContainer}>
-                    <Text style={{ color: colors.textSecondary }}>🔒 Chart hidden for privacy</Text>
+                    <Text style={{ color: ds.text2 }}>Chart hidden for privacy</Text>
                 </View>
             );
         }
@@ -256,101 +258,39 @@ export const DividendChart: React.FC<DividendChartProps> = ({
         }
     };
 
+    const cycleTab = () => {
+        const order: TabType[] = ['actual', 'calendar', 'projected'];
+        setActiveTab(order[(order.indexOf(activeTab) + 1) % order.length]);
+    };
+    const tabLabel = activeTab === 'actual' ? 'Actual' : activeTab === 'calendar' ? 'Calendar' : 'Projected';
+
     return (
-        <View style={styles.outerContainer}>
-            <View style={styles.headerRow}>
-                <View>
-                    <Text style={[styles.title, { color: colors.text }]}>Dividends</Text>
-                    <Text style={[styles.total, { color: colors.primary, opacity: activeTab === 'calendar' ? 0 : 1 }]}>
-                        {isPrivacyEnabled ? "••••" : formatCurrencyAmount(displayTotal, currency)}
-                    </Text>
+        <View>
+            <SectionHeader title="Dividends" actionLabel={`${tabLabel} ⌄`} onAction={cycleTab} />
+            {activeTab !== 'calendar' && (
+                <Text style={[type.titleNum, styles.total, { color: ds.text }]}>
+                    {isPrivacyEnabled ? '****' : formatCurrencyAmount(displayTotal, currency)}
+                </Text>
+            )}
+
+            {isLoading ? (
+                <Skeleton width="100%" height={220} borderRadius={12} />
+            ) : (
+                // key={activeTab} forces a clean remount per tab instead of reusing the same
+                // native node across drastically different content shapes (fixed-height bar
+                // chart vs. content-sized calendar grid), which was leaving stale layout
+                // sizing behind when switching back from Calendar to Actual/Projected.
+                <View key={activeTab} style={activeTab === 'calendar' ? undefined : { height: 220 }}>
+                    {renderContent()}
                 </View>
-
-                {/* Tabs moved to Header */}
-                <View style={[styles.tabContainer, { backgroundColor: colors.background, marginBottom: 0 }]}>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'actual' && { backgroundColor: colors.primary }]}
-                        onPress={() => setActiveTab('actual')}
-                    >
-                        <Text style={[styles.tabText, { color: activeTab === 'actual' ? '#fff' : colors.textSecondary }]}>Actual</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'calendar' && { backgroundColor: colors.primary }]}
-                        onPress={() => setActiveTab('calendar')}
-                    >
-                        <Text style={[styles.tabText, { color: activeTab === 'calendar' ? '#fff' : colors.textSecondary }]}>Calendar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'projected' && { backgroundColor: colors.primary }]}
-                        onPress={() => setActiveTab('projected')}
-                    >
-                        <Text style={[styles.tabText, { color: activeTab === 'projected' ? '#fff' : colors.textSecondary }]}>Proj.</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            <View style={[styles.card, { backgroundColor: colors.surface }]}>
-
-                {isLoading ? (
-                    <Skeleton width="100%" height={220} borderRadius={12} />
-                ) : (
-                    // key={activeTab} forces a clean remount per tab instead of reusing the same
-                    // native node across drastically different content shapes (fixed-height bar
-                    // chart vs. content-sized calendar grid), which was leaving stale layout
-                    // sizing behind when switching back from Calendar to Actual/Projected.
-                    <View key={activeTab} style={activeTab === 'calendar' ? undefined : { height: 220 }}>
-                        {renderContent()}
-                    </View>
-                )}
-            </View>
+            )}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    outerContainer: {
-        marginBottom: 20,
-        marginHorizontal: 16,
-    },
-    headerRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
-        paddingHorizontal: 4
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
     total: {
-        fontSize: 16,
-        fontWeight: 'bold'
-    },
-    card: {
-        borderRadius: 16,
-        padding: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-    tabContainer: {
-        flexDirection: 'row',
-        marginBottom: 12,
-        borderRadius: 8,
-        padding: 2,
-        alignSelf: 'flex-start'
-    },
-    tab: {
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 6,
-    },
-    tabText: {
-        fontSize: 12,
-        fontWeight: '700'
+        marginBottom: space[2],
     },
     placeholderContainer: {
         height: 200,

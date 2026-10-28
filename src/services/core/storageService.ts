@@ -171,6 +171,15 @@ export const getHistoryTimeFrame = async (): Promise<string | null> => {
 // ============= Home Snapshot Preferences (AsyncStorage) =============
 export type SnapshotRowId = 'cash' | 'investments' | 'loans' | 'goals';
 export type SnapshotPeriod = 'overall' | 'month';
+// How far back the net worth graph reaches.
+export type SnapshotRange = '6M' | '1Y' | '3Y' | 'ALL';
+
+export const SNAPSHOT_RANGES: { key: SnapshotRange; label: string; months: number | 'ALL' }[] = [
+    { key: '6M', label: '6 months', months: 6 },
+    { key: '1Y', label: '1 year', months: 12 },
+    { key: '3Y', label: '3 years', months: 36 },
+    { key: 'ALL', label: 'All time', months: 'ALL' },
+];
 
 export const DEFAULT_SNAPSHOT_ORDER: SnapshotRowId[] = ['cash', 'investments', 'loans', 'goals'];
 
@@ -221,6 +230,24 @@ export const saveSnapshotPeriod = async (period: SnapshotPeriod): Promise<void> 
         await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.SNAPSHOT_PERIOD, period);
     } catch (error) {
         console.error('Failed to save snapshot period:', error);
+    }
+};
+
+export const saveSnapshotRange = async (range: SnapshotRange): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.SNAPSHOT_RANGE, range);
+    } catch (error) {
+        console.error('Failed to save snapshot range:', error);
+    }
+};
+
+export const getSnapshotRange = async (): Promise<SnapshotRange> => {
+    try {
+        const range = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.SNAPSHOT_RANGE);
+        return SNAPSHOT_RANGES.some(r => r.key === range) ? (range as SnapshotRange) : '6M';
+    } catch (error) {
+        console.error('Failed to get snapshot range:', error);
+        return '6M';
     }
 };
 

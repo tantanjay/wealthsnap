@@ -48,7 +48,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'formula', text: 'Net Worth = Cash + Investments + Goal balances − (Loan principal + Projected future interest)' },
             { type: 'bullet', text: 'Only loans you owe count. Money owed to you isn\'t an asset until it\'s repaid.' },
             { type: 'bullet', text: 'Change this month = Net Worth now − Net Worth at the end of last month. The % divides by last month\'s figure, and shows "—" while that was zero or below.' },
-            { type: 'bullet', text: 'Last month\'s figure uses your cash, goal balances and loan principal as of then, and each holding\'s latest price on or before then (or its last trade price). The line under the number shows up to 6 past month-ends.' },
+            { type: 'bullet', text: 'Last month\'s figure uses your cash, goal balances and loan principal as of then, and each holding\'s latest price on or before then (or its last trade price). The line under the number shows your past month-ends, 6 months back by default; change it to 1 year, 3 years or all time in Home settings.' },
             { type: 'heading2', text: 'Overview rows' },
             { type: 'bullet', text: 'Cash (Overall): your cash balance. Cash kept = Cash balance ÷ Lifetime income.' },
             { type: 'bullet', text: 'Cash (This month): Monthly net = Income − Expense, with goal-funded purchases left out. Savings rate = (Income − Expense − Debt principal repaid) ÷ Income.' },
