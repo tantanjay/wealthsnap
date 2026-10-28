@@ -5,6 +5,7 @@ import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
+import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
 import { Investment, Transaction } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
@@ -29,6 +30,9 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
     currency = 'PHP'
 }) => {
     const { colors } = useTheme();
+    const { isPrivacyEnabled } = usePrivacy();
+    // Detail sheets follow the privacy mode too: Discreet and Hidden both mask amounts here.
+    const money = (...args: Parameters<typeof formatCurrencyAmount>) => (isPrivacyEnabled ? '****' : formatCurrencyAmount(...args));
     const { showAlert } = useAlert();
 
     if (!investment) return null;
@@ -103,7 +107,7 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
                         <View style={styles.details}>
                             <Text style={[styles.category, { color: colors.text }]}>{investment.symbol} ({investment.action})</Text>
                             <Text style={[styles.note, { color: colors.textSecondary }]}>
-                                {investment.quantity.toString()} units @ {formatCurrencyAmount(displayPrice, displayCurrency)}
+                                {investment.quantity.toString()} units @ {money(displayPrice, displayCurrency)}
                             </Text>
                             {isNative && (
                                 <Text style={[styles.note, { color: colors.textSecondary, fontSize: 12, marginTop: 2 }]}>
@@ -115,7 +119,7 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
                             styles.amount,
                             { color: colors.text }
                         ]}>
-                            {formatCurrencyAmount(totalValue, displayCurrency)}
+                            {money(totalValue, displayCurrency)}
                         </Text>
                     </View>
 
@@ -124,7 +128,7 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
                         <View style={[styles.linkedInfo, { backgroundColor: colors.background }]}>
                             <Ionicons name="link-outline" size={14} color={colors.primary} />
                             <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 6 }}>
-                                Linked to Transaction • {displayLinkedAmount ? formatCurrencyAmount(displayLinkedAmount, displayCurrency) : ''}
+                                Linked to Transaction • {displayLinkedAmount ? money(displayLinkedAmount, displayCurrency) : ''}
                             </Text>
                         </View>
                     )}

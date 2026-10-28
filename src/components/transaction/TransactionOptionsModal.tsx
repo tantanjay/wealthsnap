@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
+import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
 import { Transaction } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
@@ -26,6 +27,9 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
     currency = 'PHP'
 }) => {
     const { colors } = useTheme();
+    const { isPrivacyEnabled } = usePrivacy();
+    // Detail sheets follow the privacy mode too: Discreet and Hidden both mask amounts here.
+    const money = (...args: Parameters<typeof formatCurrencyAmount>) => (isPrivacyEnabled ? '****' : formatCurrencyAmount(...args));
     const { showAlert } = useAlert();
 
     if (!transaction) return null;
@@ -104,7 +108,7 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
                             styles.amount,
                             { color: isExpense ? colors.error : colors.success }
                         ]}>
-                            {isExpense ? '-' : '+'}{formatCurrencyAmount(transaction.amount, currency)}
+                            {isExpense ? '-' : '+'}{money(transaction.amount, currency)}
                         </Text>
                     </View>
                 </View>

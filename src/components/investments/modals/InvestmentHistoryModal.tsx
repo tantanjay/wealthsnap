@@ -6,6 +6,7 @@ import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
+import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
 import { getAllInvestments, deleteInvestment } from '@services/domain/investmentService';
 import { getAllTransactions, deleteTransaction } from '@services/domain/transactionService';
@@ -53,6 +54,9 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     onDataChange
 }) => {
     const { colors } = useTheme();
+    const { isPrivacyEnabled } = usePrivacy();
+    // Detail sheets follow the privacy mode too: Discreet and Hidden both mask amounts here.
+    const money = (...args: Parameters<typeof formatCurrencyAmount>) => (isPrivacyEnabled ? '****' : formatCurrencyAmount(...args));
     const { showAlert } = useAlert();
     const { checkConsent } = useAIConsent();
     const navigation = useNavigation<any>();
@@ -515,7 +519,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             }
         }
 
-        const displayAmount = formatCurrencyAmount(displayAmountValue, displayCurrency);
+        const displayAmount = money(displayAmountValue, displayCurrency);
 
         return (
             <TouchableOpacity
@@ -536,7 +540,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                     <Text style={[styles.itemDate, { color: colors.textSecondary }]}>
                         {new Date(item.date).toLocaleDateString()}
                         {(item.shares !== undefined) && item.originalInvestment && (
-                            <Text> • {item.shares} @ {formatCurrencyAmount(
+                            <Text> • {item.shares} @ {money(
                                 item.price
                                     ? (isConverted ? new BigNumber(item.price).dividedBy(rate) : item.price)
                                     : 0,
@@ -600,7 +604,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
                 <View style={styles.itemLeft}>
                     <Text style={[styles.itemType, { color: colors.text }]}>
-                        {formatCurrencyAmount(displayPrice.toNumber(), displayCurrency)}
+                        {money(displayPrice.toNumber(), displayCurrency)}
                     </Text>
                     <Text style={[styles.itemDate, { color: colors.textSecondary }]}>
                         {new Date(item.timestamp).toLocaleDateString()}
@@ -652,7 +656,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
                 <View style={styles.itemLeft}>
                     <Text style={[styles.itemType, { color: colors.text }]}>
-                        {formatCurrencyAmount(item.amount.toNumber(), currency)}
+                        {money(item.amount.toNumber(), currency)}
                     </Text>
                     <Text style={[styles.itemDate, { color: colors.textSecondary }]}>
                         Ex: {new Date(item.exDate).toLocaleDateString()}
@@ -774,7 +778,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                 styles.summaryValue,
                                 { color: realizedPL >= 0 ? colors.success : colors.error }
                             ]}>
-                                {realizedPL >= 0 ? '+' : ''}{formatCurrencyAmount(realizedPL, currency)}
+                                {realizedPL >= 0 ? '+' : ''}{money(realizedPL, currency)}
                             </Text>
                         </View>
                     )}

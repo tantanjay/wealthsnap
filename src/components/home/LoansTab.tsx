@@ -139,7 +139,10 @@ const LoansTab: React.FC<LoansTabProps> = ({ format: f, currency, onOpenRecord }
             blendedRatePercent: totalDebt.gt(0) ? yearlyInterest.div(totalDebt).times(100).toNumber() : null,
             timeCostMonths: burnRate.gt(0) ? totalDebt.div(burnRate).toNumber() : 0,
             debtFreeDate: plan.freedomDate,
-            monthsToGo: plan.freedomDate ? Math.ceil((plan.freedomDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)) : null,
+            // Calendar months, so it agrees with the "Debt-free by" month beside it.
+            monthsToGo: plan.freedomDate
+                ? Math.max(0, (plan.freedomDate.getFullYear() - now.getFullYear()) * 12 + plan.freedomDate.getMonth() - now.getMonth())
+                : null,
             totalInterest: plan.totalInterest,
             unpayableNames: owe.filter(r => plan.unpayableDebtIds.includes(r.debt.id)).map(r => r.debt.name),
         };

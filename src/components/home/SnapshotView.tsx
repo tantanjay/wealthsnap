@@ -11,6 +11,7 @@ import { PrivacyFormat, DASH, formatPercent, formatPoints } from '@hooks/usePriv
 import { SnapshotPeriod, SnapshotRowId } from '@services/core/storageService';
 import { Transaction } from '@types';
 import { RunwayTrend } from '@utils/financialMetrics';
+import { RecentTransaction } from '@utils/historyFeed';
 import {
     CashKept,
     GoalsSnapshot,
@@ -30,7 +31,7 @@ export interface SnapshotData {
     investments: InvestmentSnapshot;
     loans: LoansSnapshot;
     goals: GoalsSnapshot;
-    recent: Transaction[];
+    recent: RecentTransaction[];
 }
 
 interface SnapshotViewProps {
@@ -200,8 +201,6 @@ export const transactionIcon = (t: Transaction): IconName => {
     return t.type === 'INCOME' ? 'wallet-outline' : 'receipt-outline';
 };
 
-export const isMoneyIn = (t: Transaction) => t.type === 'INCOME' || t.type === 'TRANSFER_IN';
-
 const heroContent = (d: SnapshotData, f: PrivacyFormat) => {
     const { change, percent, now } = d.netWorth;
     const arrow = change === null || change.isZero() ? '' : change.gt(0) ? '▲ ' : '▼ ';
@@ -272,7 +271,7 @@ const SnapshotView: React.FC<SnapshotViewProps> = ({ data, format: f, order, per
             <SectionHeader title="Recent" actionLabel="See all" onAction={onSeeAllRecent} />
             {data.recent.length === 0 ? (
                 <Text style={[type.small, styles.emptyRecent, { color: ds.text2 }]}>No transactions yet.</Text>
-            ) : data.recent.map((t, i) => {
+            ) : data.recent.map(({ transaction: t, amount }, i) => {
                 const date = new Date(t.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
                 const isTransfer = t.type === 'TRANSFER_IN' || t.type === 'TRANSFER_OUT';
                 return (
@@ -282,7 +281,7 @@ const SnapshotView: React.FC<SnapshotViewProps> = ({ data, format: f, order, per
                         title={t.note || t.category}
                         subtitle={t.note ? `${t.category} · ${date}` : date}
                         // Discreet leaves transaction amounts out entirely.
-                        value={f.isDiscreet ? undefined : f.money(isMoneyIn(t) ? t.amount.abs() : t.amount.abs().negated(), { signed: true })}
+                        value={f.isDiscreet ? undefined : f.money(amount, { signed: true })}
                         valueTone={isTransfer ? 'neutral' : t.type === 'INCOME' && !f.isHidden ? 'good' : undefined}
                         onPress={onSeeAllRecent}
                         last={i === data.recent.length - 1}

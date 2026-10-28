@@ -36,7 +36,7 @@ const BUCKET_ORDER: SavingsGoalBucket[] = ['ACTIVE', 'PAUSED', 'COMPLETED'];
 const goalStatus = (goal: SavingsGoal, bucket: SavingsGoalBucket): { text: string; tone: Tone } => {
     if (bucket === 'COMPLETED') return { text: 'Reached', tone: 'good' };
     if (bucket === 'PAUSED') return { text: 'Paused', tone: 'neutral' };
-    if (goal.recurringAmount && goal.frequency) return { text: 'On track', tone: 'good' };
+    if (goal.recurringAmount?.gt(0) && goal.frequency) return { text: 'On track', tone: 'good' };
     return { text: 'No recurring plan', tone: 'warning' };
 };
 
@@ -107,7 +107,7 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ format: f }) => {
     };
 
     const recurringLine = (goal: SavingsGoal): string | undefined => {
-        if (!goal.recurringAmount || !goal.frequency || goal.isPaused) return undefined;
+        if (!goal.recurringAmount?.gt(0) || !goal.frequency || goal.isPaused) return undefined;
         const rule = goal.recurrenceId ? recurrenceRulesById.get(goal.recurrenceId) : undefined;
         const freq = goal.frequency.charAt(0) + goal.frequency.slice(1).toLowerCase().replace('_', '-');
         return rule ? `${freq} · next ${shortDate(rule.nextDueDate)}` : freq;

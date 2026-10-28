@@ -18,7 +18,10 @@ const TAB_ICONS: Record<string, IconName> = {
 };
 
 const FAB_SIZE = 48;
-const FAB_RAISE = 18;
+// How far the Record button pokes above the bar's top line.
+const FAB_RAISE = 10;
+// Items other than Record start below the raised area, so the button sits inside the bar's (and its own item's) touch bounds on Android.
+const ITEM_TOP = FAB_RAISE + space[2];
 
 // Refined Minimal bottom tab bar (docs/DESIGN.md, "Bottom tab bar"); Record is the raised center action.
 const BottomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
@@ -26,7 +29,8 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
     const insets = useSafeAreaInsets();
 
     return (
-        <View style={[styles.bar, { backgroundColor: ds.bg, borderTopColor: ds.hairline, paddingBottom: Math.max(insets.bottom, space[2]) }]}>
+        <View style={[styles.bar, { backgroundColor: ds.bg, paddingBottom: Math.max(insets.bottom, space[2]) }]}>
+            <View pointerEvents="none" style={[styles.line, { backgroundColor: ds.hairline }]} />
             {state.routes.map((route, index) => {
                 const focused = state.index === index;
                 const color = focused ? ds.accent : ds.text2;
@@ -48,7 +52,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
                         accessibilityRole="button"
                         accessibilityState={focused ? { selected: true } : {}}
                         accessibilityLabel={route.name}
-                        style={styles.item}
+                        style={[styles.item, !isRecord && { paddingTop: ITEM_TOP }]}
                     >
                         {isRecord ? (
                             <View style={[styles.fab, { backgroundColor: ds.accent }, elevation.fab]}>
@@ -69,8 +73,13 @@ const styles = StyleSheet.create({
     bar: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        borderTopWidth: 1,
-        paddingTop: space[2],
+    },
+    line: {
+        position: 'absolute',
+        top: FAB_RAISE,
+        left: 0,
+        right: 0,
+        height: 1,
     },
     item: {
         flex: 1,
@@ -83,7 +92,6 @@ const styles = StyleSheet.create({
         borderRadius: radius.full,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: -FAB_RAISE,
     },
 });
 

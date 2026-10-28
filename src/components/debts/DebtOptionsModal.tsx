@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
+import { usePrivacy } from '@context/PrivacyContext';
 import { Debt, Transaction } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { getDebtResolution, DEBT_RESOLUTION_LABELS } from '@utils/debtMetrics';
@@ -29,6 +30,9 @@ const DebtOptionsModal: React.FC<DebtOptionsModalProps> = ({
     currency = 'PHP'
 }) => {
     const { colors } = useTheme();
+    const { isPrivacyEnabled } = usePrivacy();
+    // Detail sheets follow the privacy mode too: Discreet and Hidden both mask amounts here.
+    const money = (...args: Parameters<typeof formatCurrencyAmount>) => (isPrivacyEnabled ? '****' : formatCurrencyAmount(...args));
     const confirmDeleteDebt = useConfirmDeleteDebt(onDelete, onClose);
 
     if (!debt) return null;
@@ -94,7 +98,7 @@ const DebtOptionsModal: React.FC<DebtOptionsModalProps> = ({
                             styles.amount,
                             { color: colors.text }
                         ]}>
-                            {formatCurrencyAmount(debt.initialAmount, displayCurrency)}
+                            {money(debt.initialAmount, displayCurrency)}
                         </Text>
                     </View>
 
@@ -103,7 +107,7 @@ const DebtOptionsModal: React.FC<DebtOptionsModalProps> = ({
                         <View style={[styles.linkedInfo, { backgroundColor: colors.background }]}>
                             <Ionicons name="link-outline" size={14} color={colors.primary} />
                             <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 6 }}>
-                                Linked to Transaction • {formatCurrencyAmount(linkedTransaction.amount, displayCurrency)}
+                                Linked to Transaction • {money(linkedTransaction.amount, displayCurrency)}
                             </Text>
                         </View>
                     )}

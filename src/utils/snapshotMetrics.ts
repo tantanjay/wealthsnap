@@ -317,6 +317,8 @@ export const calculateLoansSnapshot = (
             .filter(t => t.debtId === d.id && paymentTypes.includes(t.type))
             .filter(t => t.category !== 'Fees' && t.subCategory !== 'INITIAL_TRANSACTION')
             .reduce((sum, t) => sum.plus(t.amount.abs()), ZERO);
+        // Repaid in full earlier but still marked Active: nothing is due (the Loans tab lists it as paid off).
+        if (paid.isZero() && calculateCurrentDebtBalance(d, transactions).lte(0)) return;
         dueCount++;
         obligationsDue = obligationsDue.plus(d.minPayment);
         obligationsPaid = obligationsPaid.plus(BigNumber.min(paid, d.minPayment));
@@ -372,7 +374,7 @@ export const calculateGoalsSnapshot = (transactions: Transaction[], goals: Savin
         const balance = calculateGoalBalance(g, transactions);
         total = total.plus(balance);
         const reached = g.targetAmount.gt(0) && balance.gte(g.targetAmount);
-        if (reached || (!g.isPaused && g.recurringAmount && g.frequency)) onTrackCount++;
+        if (reached || (!g.isPaused && g.recurringAmount?.gt(0) && g.frequency)) onTrackCount++;
         if (!reached) {
             fundableCount++;
             if (monthTx.some(t => t.savingsGoalId === g.id && t.type === 'TRANSFER_OUT')) fundedCount++;

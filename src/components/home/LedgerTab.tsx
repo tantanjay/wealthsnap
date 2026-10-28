@@ -1,13 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, Pressable, SectionList, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BigNumber } from 'bignumber.js';
 
 import TransactionOptionsModal from '@components/transaction/TransactionOptionsModal';
 import InvestmentOptionsModal from '@components/investments/modals/InvestmentOptionsModal';
 import DebtOptionsModal from '@components/debts/DebtOptionsModal';
 import { HistoryCalendar } from '@components/history/HistoryCalendar';
-import { HistoryItem } from '@components/history/HistoryListItem';
+import { HistoryItem, isDebt, isInvestment } from '@components/history/HistoryListItem';
 import { EmptyState } from '@components/common/EmptyState';
 import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
@@ -19,9 +18,9 @@ import { deleteTransaction } from '@services/domain/transactionService';
 import { deleteInvestment } from '@services/domain/investmentService';
 import { deleteDebt } from '@services/domain/debtService';
 import { addMonthsAnchored } from '@services/domain/recurrenceService';
-import { HistoryFilter, HistorySection, groupHistoryByDay, matchesHistoryFilter, matchesHistorySearch } from '@utils/historyFeed';
+import { HistoryFilter, HistorySection, groupHistoryByDay, matchesHistoryFilter, matchesHistorySearch, getHistoryItemDate, transactionCashAmount } from '@utils/historyFeed';
 import { calculateMonthMoneyInOut } from '@utils/snapshotMetrics';
-import { isMoneyIn, transactionIcon } from './SnapshotView';
+import { transactionIcon } from './SnapshotView';
 
 export type LedgerView = 'LIST' | 'CALENDAR';
 
@@ -43,13 +42,6 @@ const CHIPS: { key: HistoryFilter; label: string }[] = [
 const titleCase = (value?: string) => value?.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 const isTransfer = (t: Transaction) => t.type === 'TRANSFER_IN' || t.type === 'TRANSFER_OUT';
 
-// Signed cash effect; a debt payment's principal row carries its merged interest/fee legs, as on History.
-const rowAmount = (t: Transaction, legs: Transaction[]): BigNumber => {
-    let amount = isMoneyIn(t) ? t.amount.abs() : t.amount.abs().negated();
-    legs.forEach(l => { amount = isMoneyIn(l) ? amount.plus(l.amount.abs()) : amount.minus(l.amount.abs()); });
-    return amount;
-};
-
 const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, onOpenRecord }) => {
     const { ds } = useTheme();
     const data = useHistoryData();
@@ -70,13 +62,24 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
         [transactions],
     );
 
+    // Investments and loans recorded without a cash entry would otherwise be invisible here.
+    const uncashedItems = useMemo((): HistoryItem[] => {
+        const investmentIds = new Set(transactions.map(t => t.investmentId).filter(Boolean));
+        const debtIds = new Set(transactions.map(t => t.debtId).filter(Boolean));
+        return [
+            ...investments.filter(i => !investmentIds.has(i.id)),
+            ...data.debts.filter(d => !debtIds.has(d.id)),
+        ];
+    }, [transactions, investments, data.debts]);
+    const feedItems = useMemo((): HistoryItem[] => [...cashTransactions, ...uncashedItems], [cashTransactions, uncashedItems]);
+
     const sections = useMemo((): HistorySection[] => {
         if (view === 'CALENDAR') {
             const day = selectedDate.toDateString();
-            return groupHistoryByDay(cashTransactions.filter(t => new Date(t.date).toDateString() === day));
+            return groupHistoryByDay(feedItems.filter(item => getHistoryItemDate(item).toDateString() === day));
         }
-        return groupHistoryByDay(cashTransactions.filter(t => matchesHistoryFilter(t, filter) && matchesHistorySearch(t, query)));
-    }, [cashTransactions, view, selectedDate, filter, query]);
+        return groupHistoryByDay(feedItems.filter(item => matchesHistoryFilter(item, filter) && matchesHistorySearch(item, query)));
+    }, [feedItems, view, selectedDate, filter, query]);
 
     const monthFlow = useMemo(() => calculateMonthMoneyInOut(transactions, new Date()), [transactions]);
     const calendarMonthTx = useMemo(() => transactions.filter(t => {
@@ -117,12 +120,29 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
         return { title: t.note || t.category, subtitle: parts.filter(Boolean).join(' · ') || undefined };
     };
 
+    const renderUncashedItem = (item: Investment | Debt, last: boolean) => {
+        const investment = isInvestment(item);
+        const total = investment ? item.price.times(item.quantity) : (item as Debt).initialAmount;
+        const base = investment ? `${titleCase(item.action)} ${item.symbol}` : (item as Debt).name;
+        const detail = investment ? `${item.quantity.toString()} units` : titleCase((item as Debt).type) || 'Loan';
+        return (
+            <Row
+                icon={investment ? 'trending-up-outline' : 'card-outline'}
+                title={base}
+                subtitle={`${detail} · No cash entry`}
+                value={f.isDiscreet ? undefined : f.money(total)}
+                onPress={() => (investment ? setSelectedInvestment(item) : setSelectedDebt(item as Debt))}
+                last={last}
+            />
+        );
+    };
+
     const renderItem = ({ item: historyItem, index, section }: { item: HistoryItem; index: number; section: HistorySection }) => {
-        // The Ledger feed holds transactions only.
+        if (isInvestment(historyItem) || isDebt(historyItem)) return renderUncashedItem(historyItem, index === section.data.length - 1);
         const item = historyItem as Transaction;
         const { title, subtitle } = rowText(item);
         const legs = item.debtId && item.subCategory === 'PRINCIPAL' ? (debtLegsByPrincipalId[item.id] || []) : [];
-        const amount = rowAmount(item, legs);
+        const amount = transactionCashAmount(item, legs);
         return (
             <Row
                 icon={transactionIcon(item)}
@@ -237,7 +257,7 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
         );
     }
 
-    if (cashTransactions.length === 0) {
+    if (feedItems.length === 0) {
         return (
             <View style={styles.content}>
                 <EmptyState

@@ -23,6 +23,7 @@ import { useReviewPrompt } from '@hooks/useReviewPrompt';
 import { type, space, radius } from '@styles/theme';
 import { UserProfile } from '@types';
 import { calculateRunwayTrend } from '@utils/financialMetrics';
+import { buildRecentTransactions } from '@utils/historyFeed';
 import {
     buildPriceLookup,
     calculateCashKept,
@@ -126,7 +127,7 @@ const HomeScreen = ({ navigation }: any) => {
                 investments: calculateInvestmentSnapshot(inv, priceAt, now),
                 loans: calculateLoansSnapshot(t, debts, now),
                 goals: calculateGoalsSnapshot(t, goals, now),
-                recent: t.filter(tx => tx.type !== 'CAPITAL_GAIN' && tx.type !== 'CAPITAL_LOSS').slice(0, RECENT_COUNT),
+                recent: buildRecentTransactions(t, RECENT_COUNT, now),
             });
         } catch (error) {
             console.error('Error loading HomeScreen data:', error);

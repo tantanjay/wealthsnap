@@ -152,7 +152,7 @@ export const buildHealthEntries = (
         },
         savings: hasIncome
             ? {
-                value: `${m.savingsRate.toFixed(1)}%`,
+                value: formatPercent(m.savingsRate.toNumber(), { decimals: 1 }),
                 change: m.savingsRate.gte(20) ? 'healthy' : 'below goal',
                 changeTone: m.savingsRate.gte(20) ? 'good' : 'warning',
             }
