@@ -1,11 +1,11 @@
 import React from 'react';
-import { Text, Pressable, Linking, StyleSheet } from 'react-native';
+import { Text, Linking, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space } from '@styles/theme';
 import { CONFIG } from '@constants/config';
 
 interface SupportModalProps {
@@ -31,11 +31,6 @@ const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
             visible={visible}
             onClose={onClose}
             title="Back the human layer"
-            footer={
-                <Pressable onPress={onClose} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
-                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Close</Text>
-                </Pressable>
-            }
         >
             <Text style={[type.small, styles.intro, { color: ds.text2 }]}>
                 WealthSnap is free because its architecture costs nothing to run.
@@ -69,12 +64,6 @@ const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
 const styles = StyleSheet.create({
     intro: {
         marginBottom: space[2],
-    },
-    button: {
-        height: 48,
-        borderRadius: radius.md,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
 });
 

@@ -1,35 +1,56 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { View, Text, Dimensions, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Dimensions, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Card } from '@components/index';
-import { Row } from '@components/ds';
+import { Row, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
+import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { Transaction } from '@types';
-import { type, space } from '@styles/theme';
-import { formatCompactCurrency } from '@utils/currencyUtils';
+import { type, space, radius } from '@styles/theme';
 import { getCumulativeSpendingCurve, getCurrentMonthCumulative, getTransactionsByMonth } from '@utils/financialMetrics';
 import { saveInsightsPulsePeriod, getInsightsPulsePeriod } from '@services/core/storageService';
 
 interface CumulativeSpendingChartProps {
     transactions: Transaction[];
     currency: string;
-    isPrivacyEnabled: boolean;
     isLoading?: boolean;
     selectedDate?: Date;
 }
 
+const CHART_HEIGHT = 200;
+
+const PERIODS = [
+    { key: '3', label: '3M avg' },
+    { key: '6', label: '6M avg' },
+    { key: '12', label: '12M avg' },
+];
+
+// Signed % change of a value against its reference; null when there's no reference.
+const changeVs = (value: number, reference: number): number | null =>
+    reference > 0 ? ((value - reference) / reference) * 100 : null;
+
+// Hidden mode: same size, fill and copy as every other hidden chart.
+const HiddenChart: React.FC<{ height: number }> = ({ height }) => {
+    const { ds } = useTheme();
+    return (
+        <View style={[styles.hidden, { height, backgroundColor: ds.inset }]}>
+            <Ionicons name="lock-closed-outline" size={18} color={ds.text2} />
+            <Text style={[type.small, { color: ds.text2 }]}>Chart hidden for privacy</Text>
+        </View>
+    );
+};
+
 const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     transactions,
     currency,
-    isPrivacyEnabled,
     isLoading = false,
     selectedDate = new Date()
 }) => {
-    const { colors, ds } = useTheme();
+    const { ds } = useTheme();
+    const format = usePrivacyFormat(currency);
     const screenWidth = Dimensions.get('window').width;
     const [period, setPeriod] = useState<3 | 6 | 12>(3);
     const [showInfo, setShowInfo] = useState(false);
@@ -96,46 +117,32 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
             const diff = currentTotal - avgAtThisDay;
             const monthName = isCurrentMonth ? "" : today.toLocaleDateString('en-US', { month: 'short' }) + " ";
 
-            if (diff > 0) {
-                insight = isPrivacyEnabled
-                    ? `${monthName}Pacing **** above ${period}M avg`
-                    : `${monthName}Pacing ${formatCompactCurrency(diff, currency)} above ${period}M avg`;
-            } else {
-                insight = isPrivacyEnabled
-                    ? `${monthName}Pacing **** below ${period}M avg`
-                    : `${monthName}Pacing ${formatCompactCurrency(Math.abs(diff), currency)} below ${period}M avg`;
-            }
+            // Discreet: the gap as % of the average so far; Hidden masks the amount.
+            const pct = changeVs(currentTotal, avgAtThisDay);
+            const gap = format.isDiscreet
+                ? (pct === null ? '' : `${formatPercent(Math.abs(pct))} `)
+                : `${format.money(Math.abs(diff), { compact: true })} `;
+            insight = `${monthName}Pacing ${gap}${diff > 0 ? 'above' : 'below'} ${period}M avg`;
         } else if (avgData.length === 0) {
             insight = "Not enough history for comparison";
         }
 
         return { currentData, avgData, projectionData, insight };
-    }, [transactions, period, currency, isPrivacyEnabled, selectedDate]);
+    }, [transactions, period, format, selectedDate]);
 
     // 2. Prepare DataSet (FIX: All logic inside useMemo to prevent re-renders)
     const dataSet = useMemo(() => {
-        const ds = [];
+        const sets = [];
 
-        // --- A. Prepare Average Data ---
-        const averageLineData = avgData.map((value, index) => ({
-            value,
-            type: 'Average',
-            day: index + 1
-        }));
-
+        // --- A. Prepare Average Data (reference series) ---
         if (avgData.length > 0) {
-            ds.push({
-                data: averageLineData,
-                color: 'rgba(160, 160, 160, 1)',
-                strokeDashArray: [5, 5],
-                thickness: 2,
+            sets.push({
+                data: avgData.map((value, index) => ({ value, type: 'Average', day: index + 1 })),
+                color: ds.text2,
+                strokeDashArray: [4, 4],
+                thickness: 1.5,
                 hideDataPoints: true,
                 zIndex: 1,
-                startFillColor: 'rgba(160, 160, 160, 0.2)',
-                endFillColor: 'rgba(160, 160, 160, 0.01)',
-                startOpacity: 0.2,
-                endOpacity: 0.01,
-                areaChart: true,
             });
         }
 
@@ -158,45 +165,29 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         }
 
         if (fullProjectionLine.length > 0) {
-            ds.push({
+            sets.push({
                 data: fullProjectionLine,
-                color: colors.primary,
-                strokeDashArray: [8, 4],
-                thickness: 2,
+                color: ds.accent,
+                strokeDashArray: [6, 4],
+                thickness: 1.5,
                 hideDataPoints: true,
                 zIndex: 2,
-                startFillColor: 'rgba(160, 160, 160, 0.2)',
-                endFillColor: 'rgba(160, 160, 160, 0.01)',
-                startOpacity: 0.2,
-                endOpacity: 0.01,
-                areaChart: true,
             });
         }
 
         // --- C. Prepare Current Data ---
-        const currentLineData = currentData.map((value, index) => ({
-            value,
-            type: 'Current',
-            day: index + 1
-        }));
-
         if (currentData.length > 0) {
-            ds.push({
-                data: currentLineData,
-                color: colors.primary,
-                thickness: 3,
+            sets.push({
+                data: currentData.map((value, index) => ({ value, type: 'Current', day: index + 1 })),
+                color: ds.accent,
+                thickness: 1.5,
                 hideDataPoints: true,
                 zIndex: 3,
-                startFillColor: 'rgba(160, 160, 160, 0.4)',
-                endFillColor: 'rgba(160, 160, 160, 0.01)',
-                startOpacity: 0.2,
-                endOpacity: 0.01,
-                areaChart: true,
             });
         }
 
-        return ds;
-    }, [avgData, currentData, projectionData, colors.primary]);
+        return sets;
+    }, [avgData, currentData, projectionData, ds]);
 
     // Calculate Max Value for dynamic tooltip positioning
     const maxValue = useMemo(() => {
@@ -211,9 +202,9 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     // 3. Pointer Config (Stable)
     const pointerConfig = useMemo(() => ({
         pointerStripHeight: 160,
-        pointerStripColor: colors.border,
-        pointerStripWidth: 2,
-        pointerColor: colors.primary,
+        pointerStripColor: ds.hairline,
+        pointerStripWidth: 1,
+        pointerColor: ds.accent,
         radius: 6,
         pointerLabelWidth: 140,
         pointerLabelHeight: 100,
@@ -224,16 +215,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
             const isProjected = safeItems.some((i: any) => i?.type === 'Projected');
 
             if (isProjected) {
-                return (
-                    <View style={{
-                        height: 10,
-                        width: 10,
-                        borderRadius: 5,
-                        backgroundColor: colors.primary,
-                        borderWidth: 2,
-                        borderColor: colors.surface
-                    }} />
-                );
+                return <View style={[styles.pointer, { backgroundColor: ds.accent, borderColor: ds.bg }]} />;
             }
             return <View />;
         },
@@ -264,52 +246,36 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                 marginTop = 40; // Push below point
             }
 
+            // Discreet: the day's change vs the average curve instead of either amount.
+            const vsAvg = mainItem && averageItem ? changeVs(mainItem.value, averageItem.value) : null;
+
             return (
-                <View
-                    style={{
-                        height: 100,
-                        width: 140,
-                        justifyContent: 'center',
-                        marginTop: marginTop,
-                        marginLeft: marginLeft,
-                    }}>
-                    <View style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 10,
-                        borderRadius: 12,
-                        backgroundColor: colors.surface,
-                        elevation: 5,
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 3.84,
-                        borderWidth: 1,
-                        borderColor: colors.border + '20'
-                    }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: 'bold', marginBottom: 6, textAlign: 'center' }}>
+                <View style={[styles.pointerLabelWrap, { marginTop, marginLeft }]}>
+                    <View style={[styles.pointerLabel, { backgroundColor: ds.raised, borderColor: ds.hairline }]}>
+                        <Text style={[type.captionMedium, styles.pointerTitle, { color: ds.text2 }]}>
                             Day {mainItem?.day || averageItem?.day || '?'}
                         </Text>
 
                         {mainItem && (
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary, marginRight: 6 }} />
-                                    <Text style={{ color: colors.textSecondary, fontSize: 10 }}>{mainItem.type === 'Current' ? 'Actual' : 'Projected'}</Text>
+                            <View style={styles.pointerRow}>
+                                <View style={styles.pointerKey}>
+                                    <View style={[styles.pointerDot, { backgroundColor: ds.accent }]} />
+                                    <Text style={[type.caption, { color: ds.text2 }]}>{mainItem.type === 'Current' ? 'Actual' : 'Projected'}</Text>
                                 </View>
-                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>
-                                    {formatCompactCurrency(mainItem.value, currency)}
+                                <Text style={[type.captionNum, type.captionMedium, { color: ds.text }]}>
+                                    {format.isDiscreet ? `${formatPercent(vsAvg, { signed: true })} vs avg` : format.money(mainItem.value, { compact: true })}
                                 </Text>
                             </View>
                         )}
 
-                        {averageItem && (
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#A0A0A0', marginRight: 6 }} />
-                                    <Text style={{ color: colors.textSecondary, fontSize: 10 }}>History</Text>
+                        {averageItem && !format.isDiscreet && (
+                            <View style={styles.pointerRow}>
+                                <View style={styles.pointerKey}>
+                                    <View style={[styles.pointerDot, { backgroundColor: ds.text2 }]} />
+                                    <Text style={[type.caption, { color: ds.text2 }]}>History</Text>
                                 </View>
-                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>
-                                    {formatCompactCurrency(averageItem.value, currency)}
+                                <Text style={[type.captionNum, type.captionMedium, { color: ds.text }]}>
+                                    {format.money(averageItem.value, { compact: true })}
                                 </Text>
                             </View>
                         )}
@@ -317,120 +283,81 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                 </View>
             );
         },
-    }), [colors, currency, maxValue]);
+    }), [ds, format, maxValue]);
+
+    const axisText = [type.caption, { color: ds.text2 }];
 
     return (
-        <View style={{ marginBottom: 20 }}>
-            {/* Header + Tabs */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-                <View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginRight: 8 }}>Monthly Pulse</Text>
-                        <TouchableOpacity onPress={() => setShowInfo(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    </View>
-                    <Text style={{ color: colors.text === '#ffffff' ? '#A0A0A0' : '#666', fontSize: 12 }}>
-                        {insight || "Cumulative Spending"}
-                    </Text>
-                </View>
-
-                {/* Tabs */}
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    {avgData.length > 0 && (
-                        <View style={{ flexDirection: 'row', backgroundColor: colors.border + '40', borderRadius: 8, padding: 2 }}>
-                            {[3, 6, 12].map((m) => (
-                                <TouchableOpacity
-                                    key={m}
-                                    onPress={() => handlePeriodChange(m as 3 | 6 | 12)}
-                                    style={{
-                                        paddingVertical: 4,
-                                        paddingHorizontal: 12,
-                                        backgroundColor: period === m ? colors.surface : 'transparent',
-                                        borderRadius: 6,
-                                        elevation: period === m ? 1 : 0,
-                                        shadowColor: '#000',
-                                        shadowOffset: { width: 0, height: 1 },
-                                        shadowOpacity: period === m ? 0.1 : 0,
-                                        shadowRadius: 1
-                                    }}
-                                >
-                                    <Text style={{
-                                        color: period === m ? colors.primary : colors.textSecondary,
-                                        fontSize: 12,
-                                        fontWeight: period === m ? '600' : '400'
-                                    }}>{m}M</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    )}
-                </View>
+        <View>
+            <SectionHeader
+                title="Monthly pulse"
+                menu={avgData.length > 0
+                    ? { options: PERIODS, value: String(period), onSelect: key => handlePeriodChange(Number(key) as 3 | 6 | 12) }
+                    : undefined}
+            />
+            <View style={styles.subline}>
+                <Text style={[type.small, styles.flex, { color: ds.text2 }]}>{insight || "Cumulative spending"}</Text>
+                <Pressable onPress={() => setShowInfo(true)} hitSlop={space[2]}>
+                    <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
+                </Pressable>
             </View>
 
-            {/* Chart */}
-            <Card>
-                {isLoading ? (
-                    <View style={{ height: 200, padding: 10 }}>
-                        <Skeleton height={180} width="100%" borderRadius={16} />
-                    </View>
-                ) : isPrivacyEnabled ? (
-                    <View style={{ height: 200, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.border + '20', borderRadius: 16 }}>
-                        <Text style={{ color: colors.textSecondary }}>🔒 Chart hidden for privacy</Text>
-                    </View>
-                ) : (
-                    <View style={{ overflow: 'hidden', marginLeft: -20 }}>
-                        <LineChart
-                            dataSet={dataSet}
-                            height={200}
-                            width={screenWidth - 40}
-                            spacing={(screenWidth - 80) / 31}
-                            initialSpacing={10}
-                            thickness={2}
-                            hideRules={false}
-                            rulesColor={colors.border + '40'}
-                            yAxisColor="transparent"
-                            xAxisColor="transparent"
-                            yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10, marginLeft: 4 }}
-                            xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10, width: 30, textAlign: 'center' }}
-                            hideDataPoints
-                            curved
-                            curveType={0}
-                            xAxisIndicesHeight={2}
-                            xAxisIndicesWidth={2}
-                            noOfSections={4}
-                            xAxisLabelTexts={Array.from({ length: 31 }, (_, i) => (i + 1) % 5 === 0 ? (i + 1).toString() : "")}
-                            formatYLabel={(value: string) => {
-                                const num = parseFloat(value);
-                                if (isNaN(num) || num === 0) return formatCompactCurrency(0, currency);
-                                return formatCompactCurrency(num, currency);
-                            }}
-                            yAxisLabelWidth={65}
-                            animationDuration={1000}
-                            pointerConfig={pointerConfig}
-                        />
-                    </View>
-                )}
+            {isLoading ? (
+                <Skeleton height={CHART_HEIGHT} width="100%" borderRadius={radius.md} />
+            ) : format.isHidden ? (
+                <HiddenChart height={CHART_HEIGHT} />
+            ) : (
+                <View style={styles.chart}>
+                    <LineChart
+                        dataSet={dataSet}
+                        height={CHART_HEIGHT}
+                        width={screenWidth - 40}
+                        spacing={(screenWidth - 80) / 31}
+                        initialSpacing={10}
+                        thickness={1.5}
+                        hideRules
+                        yAxisColor="transparent"
+                        xAxisColor="transparent"
+                        yAxisTextStyle={axisText}
+                        xAxisLabelTextStyle={[axisText, styles.xLabel]}
+                        hideYAxisText={!format.isOpen}
+                        hideDataPoints
+                        curved
+                        curveType={0}
+                        xAxisIndicesHeight={2}
+                        xAxisIndicesWidth={2}
+                        noOfSections={4}
+                        xAxisLabelTexts={Array.from({ length: 31 }, (_, i) => (i + 1) % 5 === 0 ? (i + 1).toString() : "")}
+                        formatYLabel={(value: string) => {
+                            const num = parseFloat(value);
+                            return format.money(isNaN(num) ? 0 : num, { compact: true });
+                        }}
+                        yAxisLabelWidth={format.isOpen ? 56 : space[5]}
+                        animationDuration={1000}
+                        pointerConfig={pointerConfig}
+                    />
+                </View>
+            )}
 
-                {/* Legend */}
-                {!isPrivacyEnabled && avgData.length > 0 && (
-                    <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 10, flexWrap: 'wrap' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15, marginBottom: 5 }}>
-                            <View style={{ width: 12, height: 2, backgroundColor: colors.primary, marginRight: 6 }} />
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Current</Text>
-                        </View>
-                        {projectionData.length > 0 && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15, marginBottom: 5 }}>
-                                <View style={{ width: 12, height: 2, backgroundColor: colors.primary, marginRight: 6, borderStyle: 'dashed', borderRadius: 1 }} />
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Projected</Text>
-                            </View>
-                        )}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                            <View style={{ width: 12, height: 2, backgroundColor: '#A0A0A0', marginRight: 6, borderStyle: 'dashed', borderRadius: 1 }} />
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{period}M Average</Text>
-                        </View>
+            {/* Legend */}
+            {!isLoading && !format.isHidden && avgData.length > 0 && (
+                <View style={styles.legend}>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.swatch, { backgroundColor: ds.accent }]} />
+                        <Text style={[type.caption, { color: ds.text2 }]}>Current</Text>
                     </View>
-                )}
-            </Card>
+                    {projectionData.length > 0 && (
+                        <View style={styles.legendItem}>
+                            <View style={[styles.swatch, styles.dashed, { borderColor: ds.accent }]} />
+                            <Text style={[type.caption, { color: ds.text2 }]}>Projected</Text>
+                        </View>
+                    )}
+                    <View style={styles.legendItem}>
+                        <View style={[styles.swatch, styles.dashed, { borderColor: ds.text2 }]} />
+                        <Text style={[type.caption, { color: ds.text2 }]}>{period}M average</Text>
+                    </View>
+                </View>
+            )}
 
             <BottomModal
                 visible={showInfo}
@@ -454,7 +381,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                         subtitle="Where you're headed based on your historical spending pattern."
                     />
                     <Row
-                        leading={<View style={[modalStyles.swatch, modalStyles.dashed, { borderColor: ds.text3 }]} />}
+                        leading={<View style={[modalStyles.swatch, modalStyles.dashed, { borderColor: ds.text2 }]} />}
                         title="Dashed line (average)"
                         subtitle="How you usually spend by this time of the month."
                         last
@@ -473,6 +400,90 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    subline: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+        marginBottom: space[3],
+    },
+    flex: {
+        flex: 1,
+    },
+    chart: {
+        overflow: 'hidden',
+        marginLeft: -space[5],
+    },
+    xLabel: {
+        width: 30,
+        textAlign: 'center',
+    },
+    hidden: {
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: space[2],
+    },
+    pointer: {
+        height: 10,
+        width: 10,
+        borderRadius: radius.full,
+        borderWidth: 2,
+    },
+    pointerLabelWrap: {
+        height: 100,
+        width: 140,
+        justifyContent: 'center',
+    },
+    pointerLabel: {
+        paddingHorizontal: space[3],
+        paddingVertical: space[2],
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        gap: space[1],
+    },
+    pointerTitle: {
+        textAlign: 'center',
+    },
+    pointerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: space[2],
+    },
+    pointerKey: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[1],
+    },
+    pointerDot: {
+        width: 6,
+        height: 6,
+        borderRadius: radius.full,
+    },
+    legend: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: space[4],
+        marginTop: space[2],
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+    },
+    swatch: {
+        width: 12,
+        height: 2,
+    },
+    dashed: {
+        height: 0,
+        borderTopWidth: 2,
+        borderStyle: 'dashed',
+    },
+});
 
 const modalStyles = StyleSheet.create({
     lead: {

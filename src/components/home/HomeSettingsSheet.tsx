@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 import { useTheme } from '@context/ThemeContext';
 import { PrivacyMode, usePrivacy } from '@context/PrivacyContext';
@@ -62,11 +62,6 @@ const HomeSettingsSheet: React.FC<HomeSettingsSheetProps> = ({ visible, onClose,
             visible={visible}
             onClose={onClose}
             title={`${TAB_LABEL[tab]} settings`}
-            footer={
-                <Pressable onPress={onClose} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
-                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Done</Text>
-                </Pressable>
-            }
         >
             <SectionHeader title="Privacy" />
             <Text style={[type.small, { color: ds.text2 }]}>Applies everywhere as soon as you pick one.</Text>
@@ -125,12 +120,6 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: radius.full,
-    },
-    button: {
-        height: 48,
-        borderRadius: radius.md,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
 });
 

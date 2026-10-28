@@ -492,12 +492,29 @@ Total income and Total expense compare month-to-date figures while the month is 
 
 **Shown on:** every amount. Screens without a Discreet version yet render Discreet as Hidden
 
-**Notes:** `usePrivacyFormat` (`src/hooks/usePrivacyFormat.ts`). Investment Boost months are always "—" in Discreet: a large figure implies investments far exceed spending (Hidden still shows them, as months aren't amounts). Discreet leaves out Ledger's "In" and paid-off loan amounts (their interest shows as %). The Debt drag stepper shows a step count in Discreet. Insights' numbers: see [Financial Health grid](#financial-health-grid).
+**Notes:** `usePrivacyFormat` (`src/hooks/usePrivacyFormat.ts`). Investment Boost months are always "—" in Discreet: a large figure implies investments far exceed spending (Hidden still shows them, as months aren't amounts). Discreet leaves out Ledger's "In" and paid-off loan amounts (their interest shows as %). The Debt drag stepper shows a step count in Discreet. Insights' numbers: see [Financial Health grid](#financial-health-grid). Charts: Open draws them as is. Discreet draws them with no currency: amount axes are dropped and tooltips, legends and header totals show a scale-free figure (below) or are left out. Hidden replaces every chart with one placeholder (lock icon, "Chart hidden for privacy") and masks amounts around it with `****`. Screenshots: blocked in Open and Discreet, allowed in Hidden or during Profile → Security → "Reveal for screenshot" (15 seconds).
 
 | Version | Rule after this change | What changed |
 |---|---|---|
 | Unreleased | Open / Discreet / Hidden | Replaced the on/off privacy toggle (on → Hidden, off → Open) |
 | Unreleased | Same | Insights follows it; its eye button is gone |
+| Unreleased | Charts in Discreet | Insights and Holdings charts draw in Discreet without amounts instead of hiding; Hidden keeps one placeholder |
+| Unreleased | Screenshots | Discreet blocks screenshots like Open (it now shows charts); Reveal for screenshot works in both |
+
+**Discreet chart figures**
+
+| Chart | Discreet shows |
+|---|---|
+| Monthly pulse | "Pacing 12% above 3M avg"; tooltip: actual/projected vs average % for that day; no amount axis |
+| Spending comparison | "On track to spend 12% more than your 3-month average"; tooltips vs 3-month average % |
+| Expense analysis, All categories | Pie and % legend unchanged; rows show share %; "from goals" as goal-funded % of the category; budget line shows % only |
+| Category trend | Tooltip vs average %; Total and Average left out; Highest = peak month and its % vs average |
+| Income analytics | Tooltips vs average %; Sources pie and % legend unchanged; growth % shown in every mode |
+| Savings trend | Rate tab unchanged; Saved and Cash flow: current = % of that month's income, Average = total kept ÷ total income, Best/Worst = month names; tooltips drop income/expense |
+| Allocation treemap | Same as Open (weights and returns only) |
+| Dividends (Actual, Projected) | Bars without an amount axis; tooltip: each ticker's share of the month and the month's share of the year; year total left out |
+| Dividends (Calendar) | Same as Open (tickers only) |
+
 
 ---
 

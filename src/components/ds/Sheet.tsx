@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Modal, Pressable, StyleSheet, DimensionValue, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@context/ThemeContext';
@@ -90,7 +91,16 @@ const Sheet: React.FC<SheetProps> = ({
     const body = (
         <>
             {header}
-            {!header && title ? <Text style={[type.title, { color: ds.text }]}>{title}</Text> : null}
+            {!header && title ? (
+                <View style={styles.titleRow}>
+                    <Text style={[type.title, styles.title, { color: ds.text }]}>{title}</Text>
+                    {dismissable ? (
+                        <Pressable onPress={handleClose} hitSlop={space[2]} accessibilityLabel="Close">
+                            <Ionicons name="close" size={22} color={ds.text2} />
+                        </Pressable>
+                    ) : null}
+                </View>
+            ) : null}
             {!header && subtitle ? <Text style={[type.small, styles.subtitle, { color: ds.text2 }]}>{subtitle}</Text> : null}
             {children}
         </>
@@ -179,6 +189,15 @@ const styles = StyleSheet.create({
     },
     body: {
         paddingHorizontal: space[5],
+    },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    title: {
+        flex: 1,
+        marginRight: space[3],
     },
     subtitle: {
         marginTop: 2,

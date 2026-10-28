@@ -157,11 +157,6 @@ const LearnScreen = ({ navigation }: any) => {
                 visible={showWhyFreeModal}
                 onClose={() => setShowWhyFreeModal(false)}
                 title="Why is WealthSnap free?"
-                footer={
-                    <Pressable onPress={() => setShowWhyFreeModal(false)} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
-                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Got it</Text>
-                    </Pressable>
-                }
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
                     <Text style={[type.body, { color: ds.text2 }]}>
@@ -190,11 +185,6 @@ const LearnScreen = ({ navigation }: any) => {
                 visible={showDevMessageModal}
                 onClose={() => setShowDevMessageModal(false)}
                 title="Hello there!"
-                footer={
-                    <Pressable onPress={() => setShowDevMessageModal(false)} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
-                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Close</Text>
-                    </Pressable>
-                }
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
                     <Text style={[type.body, { color: ds.text }]}>
@@ -267,11 +257,6 @@ const LearnScreen = ({ navigation }: any) => {
                 visible={showManifestoModal}
                 onClose={() => setShowManifestoModal(false)}
                 title="Vision, philosophy and goals"
-                footer={
-                    <Pressable onPress={() => setShowManifestoModal(false)} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
-                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Close</Text>
-                    </Pressable>
-                }
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
                     <SectionHeader title="Vision" style={styles.firstHeader} />

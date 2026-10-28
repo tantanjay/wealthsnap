@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 import { Row, SectionHeader, Sheet } from '@components/ds';
 import SnapshotOrderList, { OrderItemMeta } from '@components/home/SnapshotOrderList';
 import { useTheme } from '@context/ThemeContext';
 import { HEALTH_GRID_SIZE, HEALTH_METRIC_IDS, HealthMetricId } from '@services/core/storageService';
-import { type, space, radius } from '@styles/theme';
+import { type, space } from '@styles/theme';
 import { HEALTH_METRIC_META } from './financialHealthPool';
 
 // Sections below the grid, in their default order. 'budgets' is new with the redesign.
@@ -64,11 +64,6 @@ const InsightsSettingsSheet: React.FC<InsightsSettingsSheetProps> = ({ visible, 
             visible={visible}
             onClose={onClose}
             title="Insights settings"
-            footer={
-                <Pressable onPress={onClose} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
-                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Done</Text>
-                </Pressable>
-            }
         >
             {/* SectionHeader's spacing, with a counter instead of a link on the right. */}
             <View style={styles.headerRow}>
@@ -124,12 +119,6 @@ const styles = StyleSheet.create({
     },
     lastPicked: {
         borderBottomWidth: 2,
-    },
-    button: {
-        height: 48,
-        borderRadius: radius.md,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
 });
 

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 
 import { Row, SectionHeader, Sheet } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
-import { type, radius } from '@styles/theme';
+import { radius } from '@styles/theme';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -33,11 +33,6 @@ const AppearanceCard: React.FC<AppearanceCardProps> = ({ mode, setMode }) => {
                 visible={visible}
                 onClose={() => setVisible(false)}
                 title="Theme"
-                footer={
-                    <Pressable onPress={() => setVisible(false)} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
-                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Done</Text>
-                    </Pressable>
-                }
             >
                 {THEME_OPTIONS.map((option, i) => {
                     const selected = mode === option.value;
@@ -74,12 +69,6 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: radius.full,
-    },
-    button: {
-        height: 48,
-        borderRadius: radius.md,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
 });
 
