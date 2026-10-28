@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Home settings sheet to pick a privacy mode and reorder the rows; your old card order carries over.
   - Loans' "due this month" counts each loan only up to its own minimum payment.
   - Home tabs: Ledger, Holdings, Goals and Loans, which replace the Savings Goals and Debt Strategy screens.
+  - Insights: a Financial Health grid of 4 numbers you pick from 13, with a detail sheet for each, replacing the overview cards and the Financial Health screen.
 - Privacy modes: Open, Discreet (percentages, months and counts instead of amounts) and Hidden (the old privacy toggle).
 
 ## [1.19.0] — 2026-09-29

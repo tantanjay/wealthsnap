@@ -11,7 +11,12 @@ import { SnapshotRowId } from '@services/core/storageService';
 
 const ROW_HEIGHT = 56;
 
-export const SNAPSHOT_ROW_META: Record<SnapshotRowId, { label: string; domain: Domain }> = {
+export interface OrderItemMeta {
+    label: string;
+    domain?: Domain;
+}
+
+export const SNAPSHOT_ROW_META: Record<SnapshotRowId, OrderItemMeta> = {
     cash: { label: 'Cash', domain: 'cash' },
     investments: { label: 'Investments', domain: 'invest' },
     loans: { label: 'Loans', domain: 'loans' },
@@ -19,17 +24,16 @@ export const SNAPSHOT_ROW_META: Record<SnapshotRowId, { label: string; domain: D
 };
 
 interface DragRowProps {
-    id: SnapshotRowId;
+    meta: OrderItemMeta;
     index: number;
     count: number;
     onDrop: (from: number, to: number) => void;
 }
 
-const DragRow: React.FC<DragRowProps> = ({ id, index, count, onDrop }) => {
+const DragRow: React.FC<DragRowProps> = ({ meta, index, count, onDrop }) => {
     const { ds, elevation } = useTheme();
     const offset = useSharedValue(0);
     const [dragging, setDragging] = useState(false);
-    const meta = SNAPSHOT_ROW_META[id];
 
     const pan = Gesture.Pan()
         .onStart(() => {
@@ -66,19 +70,20 @@ const DragRow: React.FC<DragRowProps> = ({ id, index, count, onDrop }) => {
                     <Ionicons name="reorder-two-outline" size={20} color={ds.text2} />
                 </View>
             </GestureDetector>
-            <View style={[styles.dot, { backgroundColor: domainColor(ds, meta.domain) }]} />
+            {meta.domain && <View style={[styles.dot, { backgroundColor: domainColor(ds, meta.domain) }]} />}
             <Text style={[type.body, styles.label, { color: ds.text }]}>{meta.label}</Text>
         </Animated.View>
     );
 };
 
-interface SnapshotOrderListProps {
-    order: SnapshotRowId[];
-    onChange: (order: SnapshotRowId[]) => void;
+interface SnapshotOrderListProps<K extends string> {
+    order: K[];
+    meta: Record<K, OrderItemMeta>;
+    onChange: (order: K[]) => void;
 }
 
-// Drag the handle to reorder the Snapshot Overview rows.
-const SnapshotOrderList: React.FC<SnapshotOrderListProps> = ({ order, onChange }) => {
+// Drag the handle to reorder rows: Home's Snapshot Overview rows, Insights' sections.
+function SnapshotOrderList<K extends string>({ order, meta, onChange }: SnapshotOrderListProps<K>) {
     const handleDrop = (from: number, to: number) => {
         if (from === to) return;
         const next = [...order];
@@ -91,11 +96,11 @@ const SnapshotOrderList: React.FC<SnapshotOrderListProps> = ({ order, onChange }
     return (
         <GestureHandlerRootView>
             {order.map((id, index) => (
-                <DragRow key={id} id={id} index={index} count={order.length} onDrop={handleDrop} />
+                <DragRow key={id} meta={meta[id]} index={index} count={order.length} onDrop={handleDrop} />
             ))}
         </GestureHandlerRootView>
     );
-};
+}
 
 const styles = StyleSheet.create({
     row: {

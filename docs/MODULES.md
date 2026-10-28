@@ -51,19 +51,19 @@ Tab: `History` (removal candidate for Phase 4; Home's Ledger tab reuses its data
 - `src/services/domain/transactionService.ts`
 
 ## Insights
-Reached from Home. Spending/income analysis, trends, and monthly summaries.
+Reached from Home. Financial Health grid and detail sheets, spending/income analysis, trends, budgets, and monthly summaries.
 
 - `src/screens/InsightScreen.tsx`
+- `src/components/insights/BudgetsSection.tsx`
 - `src/components/insights/ComparisonChart.tsx`
 - `src/components/insights/CumulativeSpendingChart.tsx`
 - `src/components/insights/ExpenseAnalysis.tsx`
 - `src/components/insights/IncomeAnalysis.tsx`
-- `src/components/insights/InsightsOverviewCards.tsx`
+- `src/components/insights/InsightsSettingsSheet.tsx`
 - `src/components/insights/SavingsRateTrend.tsx`
 - `src/components/insights/SmartAlerts.tsx`
 - `src/components/insights/modals/AllExpensesModal.tsx`
 - `src/components/insights/modals/CategoryTrendModal.tsx`
-- `src/components/insights/modals/InsightsSettingsModal.tsx`
 - `src/components/insights/modals/MonthEndProjectionModal.tsx`
 - `src/components/insights/modals/MonthlySummaryModal.tsx`
 - `src/components/insights/modals/RecurringExpensesSummaryModal.tsx`
@@ -116,14 +116,13 @@ Home → Goals tab (`src/components/home/GoalsTab.tsx`). Set aside cash for a pu
 - `src/utils/savingsGoalMetrics.ts`
 
 ## Financial Health
-Reached from Home. Composite score, cash flow, wealth growth, debt pressure.
+Insights → Financial Health grid (2×2 of 13 numbers) and their detail sheets: Runway, Spending pace, Debt drag (extra-payment stepper), Investment boost.
 
-- `src/screens/FinancialHealthScreen.tsx`
-- `src/components/financialHealth/DebtPressureCard.tsx`
-- `src/components/financialHealth/FinancialHealthHelpModal.tsx`
-- `src/components/financialHealth/FinancialStateCard.tsx`
-- `src/components/financialHealth/SpendingCashFlowCard.tsx`
-- `src/components/financialHealth/WealthGrowthCard.tsx`
+- `src/components/insights/financialHealthPool.ts`
+- `src/components/insights/FinancialHealthGrid.tsx`
+- `src/components/insights/FinancialHealthSheet.tsx`
+- `src/components/insights/FinancialHealthDetails.tsx`
+- `src/hooks/useFinancialHealth.ts`
 - `src/utils/financialMetrics.ts`
 - `src/utils/financialSnapshotBuilder.ts`
 

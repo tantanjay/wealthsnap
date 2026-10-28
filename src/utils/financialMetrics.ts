@@ -404,7 +404,7 @@ export const getMonthlyTrends = (allTransactions: Transaction[], monthsBack: num
 
         const monthlyTransactions = getTransactionsByMonth(allTransactions, d);
         // Excludes savingsGoalId-tagged EXPENSE from the expense figure only - feeds
-        // ComparisonChart, getSavingsRateTrend, and FinancialHealthScreen's own trend usage,
+        // ComparisonChart, getSavingsRateTrend, and useFinancialHealth's net-flow average,
         // all of which need a lump-sum goal purchase not to read as a false monthly spike.
         // netCashFlow below deliberately stays on the full unfiltered set - the Auto-Offset
         // pair already nets that leg to ₱0, so it needs no adjustment.

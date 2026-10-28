@@ -13,7 +13,6 @@ import TermsAndPrivacyScreen from '@screens/onboarding/TermsAndPrivacyScreen';
 import LegalAcceptanceScreen from '@screens/onboarding/LegalAcceptanceScreen';
 import ProfileScreen from '@screens/ProfileScreen';
 import InsightScreen from '@screens/InsightScreen';
-import FinancialHealthScreen from '@screens/FinancialHealthScreen';
 import HomeScreen from '@screens/HomeScreen';
 import InvestmentScreen from '@screens/InvestmentScreen';
 import HistoryScreen from '@screens/HistoryScreen';
@@ -31,7 +30,6 @@ const HomeStackNavigator = () => {
     return (
         <HomeStack.Navigator screenOptions={{ headerShown: false }}>
             <HomeStack.Screen name="HomeMain" component={HomeScreen} />
-            <HomeStack.Screen name="FinancialHealth" component={FinancialHealthScreen} />
             <HomeStack.Screen name="Insights" component={InsightScreen} />
         </HomeStack.Navigator>
     );

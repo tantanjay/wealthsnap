@@ -6,7 +6,7 @@ import { PrivacyMode, usePrivacy } from '@context/PrivacyContext';
 import { type, radius } from '@styles/theme';
 import { Row, SectionHeader, Sheet } from '@components/ds';
 import { SnapshotRowId } from '@services/core/storageService';
-import SnapshotOrderList from './SnapshotOrderList';
+import SnapshotOrderList, { SNAPSHOT_ROW_META } from './SnapshotOrderList';
 
 const PRIVACY_OPTIONS: { mode: PrivacyMode; label: string; description: string }[] = [
     { mode: 'open', label: 'Open', description: 'Shows every amount.' },
@@ -60,7 +60,7 @@ const HomeSettingsSheet: React.FC<HomeSettingsSheetProps> = ({ visible, onClose,
 
             <SectionHeader title="Snapshot order" />
             <Text style={[type.small, { color: ds.text2 }]}>Drag to reorder the Overview rows. Net worth stays on top.</Text>
-            <SnapshotOrderList order={order} onChange={onChangeOrder} />
+            <SnapshotOrderList order={order} meta={SNAPSHOT_ROW_META} onChange={onChangeOrder} />
         </Sheet>
     );
 };

@@ -14,6 +14,7 @@ The single source of truth for every number the app computes: its formula, where
 - **Wealth:** [Net Worth / Total Debt](#net-worth--total-debt) · [Net Worth Change](#net-worth-change)
 - **Home Snapshot rows:** [Cash Kept](#cash-kept) · [Investment Return](#investment-return) · [Loans Repaid / Obligations Paid](#loans-repaid--obligations-paid) · [Goals Progress / On Track](#goals-progress--on-track)
 - **Home tabs:** [Money In / Out](#money-in--out) · [Loan Payoff Plan](#loan-payoff-plan)
+- **Insights:** [Spending Pace](#spending-pace) · [Investment Boost](#investment-boost) · [Financial Health grid](#financial-health-grid)
 - **Privacy modes:** [Discreet and Hidden rendering](#discreet-and-hidden-rendering)
 - **By transaction kind:** [What each transaction counts toward](#what-each-transaction-counts-toward)
 
@@ -50,7 +51,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula:** (Income + Transfer In) − (Expense + Transfer Out), every recorded transaction, future-dated included
 
-**Shown on:** Home · Insights · Financial Health · History · Chat
+**Shown on:** Home · Insights (incl. Runway sheet) · History · Chat
 
 **Computed from:** `transactions`
 
@@ -67,7 +68,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula:** Cash Balance ÷ [Burn Rate](#burn-rate). The runway-drop alert fires when it falls ≥25% below Runway Change's last-month figure. While Cash Balance is ₱0 or below, the out-of-cash alert fires instead, every month
 
-**Shown on:** Home · Insights · Financial Health · Chat · runway-drop alert · out-of-cash alert
+**Shown on:** Home · Insights (Runway tile and sheet) · Chat · runway-drop alert · out-of-cash alert
 
 **Computed from:** `transactions` (balance, spending) · `debts` (`minPayment`) · `savings_goals` (recurring contribution)
 
@@ -83,12 +84,13 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | Same | Runway-drop alert no longer drops the last day of last month |
 | 1.19.0 | Alert uses the screens' Runway | Runway-drop alert now compares the same Runway and last-month figure as Runway Change (`calculateRunwayTrend`) |
 | 1.19.0 | Out-of-cash alert while Cash Balance ≤ 0, in place of the runway-drop alert | The runway-drop alert skipped a drop to zero or below (since 1.8.1). The new alert repeats every month cash stays there, with its own once-a-month notification |
+| Unreleased | Same | Insights' Financial Runway card and the Financial Health screen merged into one Runway tile and sheet (`calculateRunwayTrend`). The old Insights card showed 0.0 months below zero cash; the tile now shows the same (negative) figure as Home |
 
 ## Runway Change
 
 **Formula:** Runway now − Runway at the end of last month. Last month's Runway = Cash Balance as of then ÷ (Burn Rate base as of then, same fallback + minimum payments of debts you owe that are active today and had a balance then + today's goal contributions)
 
-**Shown on:** Home · Financial Health · runway-drop alert
+**Shown on:** Home · Insights (Runway tile and sheet) · runway-drop alert
 
 **Computed from:** `transactions` (balance and spending as of last month's end; debt payments, to tell whether a debt was still open) · `debts` (`minPayment`, `status`, `direction`, start date) · `savings_goals` (today's recurring contribution)
 
@@ -107,7 +109,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula:** (Income + Transfer In) − (Expense + Transfer Out) for one month
 
-**Shown on:** Home (Monthly Balance) · Insights (Net Cash Flow, Savings Rate Trend "Cash Flow" view) · Financial Health (Net Flow) · Monthly Summary
+**Shown on:** Home (Monthly Balance) · Insights (Net Cash Flow, Savings Rate Trend "Cash Flow" view, Spending pace sheet's Net Flow) · Monthly Summary
 
 **Computed from:** `transactions`. Monthly Summary shows its stored copy in `monthly_summary`
 
@@ -213,7 +215,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula:** average of up to 6 prior full months' spending (the first month counts only if it began on the 1st), excluding goal-tagged transactions and debt principal/interest; with no full month yet, daily spending since the first transaction × 30.44. Then + debt minimum payments + goal monthly contributions
 
-**Shown on:** Home (inside Runway, Debts Drag and Investment Boost; no Burn Rate figure of its own) · Insights (Burn Rate, Annualized Expense) · Financial Health · Home Loans tab (Time cost) · Chat
+**Shown on:** Home (inside Runway) · Insights (Burn Rate, Annualized Expense; inside Runway, Debt drag and Investment boost) · Home Loans tab (Time cost) · Chat
 
 **Computed from:** `transactions` (spending base) · `debts` (`minPayment` of active debts you owe) · `savings_goals` (`recurringAmount` ÷ `frequency`, unless paused or at `targetAmount`)
 
@@ -239,11 +241,11 @@ These apply to every metric unless its section says otherwise.
 
 **Formula:** Runway without debt payments − Runway with them; living costs include goal contributions
 
-**Shown on:** Home · Financial Health
+**Shown on:** Insights (Debt drag tile and sheet, Runway sheet)
 
 **Computed from:** `transactions` (cash, spending base) · `debts` (`minPayment`) · `savings_goals` (recurring contribution)
 
-**Notes:** `calculateDebtDrag`.
+**Notes:** `calculateDebtDrag`. The Debt drag sheet also shows mandatory payments, interest cost (Σ balance × monthly rate; Flat loans use the original amount), self-sustain delay (Total Debt ÷ (6-month average income − Burn Rate) × 12) and the "extra per month" payoff stepper (payoff date with minimums − payoff date with the extra, same simulation as the Loans tab).
 
 | Version | Rule after this change | What changed |
 |---|---|---|
@@ -253,6 +255,7 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | Same | Same fix on Home; goal-funded purchases left out of living costs. Goal contributions were added to Runway but not here |
 | 1.19.0 | Living costs include goal contributions | Now measured against the real Runway |
 | 1.19.0 | Same | Fees count as living costs again (↩ see Burn Rate) |
+| Unreleased | Same | Moved from the Financial Health screen to Insights' Debt drag tile and sheet. Discreet: payments as a loan count, interest as % of payments, stepper as a step count |
 
 ## Safe-to-Spend
 
@@ -282,7 +285,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (Total Debt):** current principal on active debts you owe; no future interest
 
-**Shown on:** Home Snapshot (hero, Total Assets, Loans row) · Financial Health (Total Debt, inside Self-sustain Impact) · Home Loans tab (Outstanding) · Chat (Total Debt)
+**Shown on:** Home Snapshot (hero, Total Assets, Loans row) · Insights Debt drag sheet (Total Debt, inside Self-sustain impact) · Home Loans tab (Outstanding) · Chat (Total Debt)
 
 **Computed from:** `transactions` (cash, goal balances, principal repaid) · `investments` + `price_history` (market value) · `debts` (`initialAmount`, and `interestRate`, `interestType`, `termMonths`, `minPayment` for projected interest)
 
@@ -423,17 +426,78 @@ These apply to every metric unless its section says otherwise.
 |---|---|---|
 | Unreleased | As above | Moved from the Debt Strategy screen; Discreet percentages added |
 
+## Spending Pace
+
+**Formula:** (this month's spending through today − the 3 prior months' average spending through the same day) ÷ that average × 100. Spending = expenses excluding goal-funded purchases
+
+**Shown on:** Insights (Spending pace tile and sheet; "Spending" line on the Runway sheet)
+
+**Computed from:** `transactions`
+
+**Notes:** `getCurrentMonthCumulative` / `getCumulativeSpendingCurve`. Months with no transactions are skipped from the average. "—" until there's a prior month with spending. Tone: lower is good, higher is bad. The sheet also shows Net Flow this month, and Impact on self-sustain = 3-month average Net Cash Flow × 12 ÷ Burn Rate (months per year). Always as of today, whichever month Insights is browsing.
+
+| Version | Rule after this change | What changed |
+|---|---|---|
+| 1.10.0 | As above | Spending trend on the Financial Health screen |
+| Unreleased | Same | Moved to Insights as the Spending pace tile and sheet. Documented here for the first time |
+
+## Investment Boost
+
+**Formula:** investment market value ÷ [Burn Rate](#burn-rate), in months
+
+**Shown on:** Insights (Investment boost tile and sheet; Runway sheet)
+
+**Computed from:** `investments` + `price_history` (latest price, else the last trade price) · Burn Rate's sources
+
+**Notes:** `calculateInvestmentBoost`. Always "—" in Discreet (see [Discreet and Hidden rendering](#discreet-and-hidden-rendering)). The sheet also shows the yearly rate it projects with: dividend yield = Σ held shares × annual dividend per share ÷ market value, or 7.2% with no dividend data. Annual dividend impact = market value × that rate ÷ Burn Rate. Self-sustain = years for investments to reach 300 × (Burn Rate − debt minimums), investing today's average monthly buys vs your full surplus (6-month average income − Burn Rate).
+
+| Version | Rule after this change | What changed |
+|---|---|---|
+| 1.10.0 | As above | Wealth Growth card on the Financial Health screen |
+| Unreleased | Same | Moved to Insights as the Investment boost tile and sheet. Documented here for the first time. The sheet labels the rate "Dividend yield" ("Assumed return" at the 7.2% default) instead of "12-Month Return" |
+
+## Financial Health grid
+
+**Rule:** a 2×2 grid at the top of Insights showing 4 numbers from a pool of 13, in the order they were checked in Insights settings (default: Runway, Spending pace, Debt drag, Investment boost). Runway, Spending pace, Debt drag and Investment boost are as of today; the other nine follow the month Insights is browsing
+
+**Shown on:** Insights (grid, "Show all" sheet, detail sheets)
+
+**Notes:** Values and their Discreet versions. Hidden masks amounts with `****`; percentages and months show as in Discreet. "—" whenever a divisor is ₱0.
+
+| Number | Open | Discreet |
+|---|---|---|
+| Runway | months · change vs last month | same |
+| Spending pace | % lower/higher vs 3-month average | same |
+| Debt drag | months of runway lost | same |
+| Investment boost | months, if sold | "—" |
+| Budget health | % of budgets used | same |
+| Net cash flow | ₱ | Net Cash Flow ÷ Income × 100, "% kept" |
+| Savings rate | % | same |
+| Total income | ₱ | (Income − average income of up to 6 prior full months) ÷ that average × 100 |
+| Total expense | ₱ · "+ from goals" | Total Expense ÷ Income × 100, "of income" |
+| Burn rate | ₱ | Burn Rate ÷ average income of up to 6 prior full months (as of today) × 100 |
+| Daily average | ₱ | Daily Average vs (3-month average Total Expense ÷ 30.44), % lower/higher |
+| Annualized exp. | ₱ | same as Burn rate (yearly cost ÷ yearly income) |
+| Top category | name · ₱ | name · % of spending |
+
+Total income and Total expense compare month-to-date figures while the month is in progress. Detail sheets follow the same rules; the Runway and Investment boost sheets drop Cash, Monthly costs, Portfolio value and the boost in Discreet, and the Investment boost sheet's hero becomes the yearly rate.
+
+| Version | Rule after this change | What changed |
+|---|---|---|
+| Unreleased | As above | Replaced Insights' 10 swipeable overview cards and the Financial Health screen. The old overview card order isn't migrated |
+
 ## Discreet and Hidden rendering
 
 **Rule:** Open shows every amount. Discreet replaces each amount with that metric's scale-free alternative (%, months, counts, progress); an amount with none is left out (transaction amounts) or shown as "—". Hidden shows `****`, keeping a leading sign. %, months and counts render unchanged in every mode
 
 **Shown on:** every amount. Screens without a Discreet version yet render Discreet as Hidden
 
-**Notes:** `usePrivacyFormat` (`src/hooks/usePrivacyFormat.ts`). Investment Boost months are always "—" in Discreet: a large figure implies investments far exceed spending. Discreet leaves out Ledger's "In" and paid-off loan amounts (their interest shows as %).
+**Notes:** `usePrivacyFormat` (`src/hooks/usePrivacyFormat.ts`). Investment Boost months are always "—" in Discreet: a large figure implies investments far exceed spending (Hidden still shows them, as months aren't amounts). Discreet leaves out Ledger's "In" and paid-off loan amounts (their interest shows as %). The Debt drag stepper shows a step count in Discreet. Insights' numbers: see [Financial Health grid](#financial-health-grid).
 
 | Version | Rule after this change | What changed |
 |---|---|---|
 | Unreleased | Open / Discreet / Hidden | Replaced the on/off privacy toggle (on → Hidden, off → Open) |
+| Unreleased | Same | Insights follows it; its eye button is gone |
 
 ---
 
