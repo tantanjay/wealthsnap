@@ -143,6 +143,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                 thickness: 1.5,
                 hideDataPoints: true,
                 zIndex: 1,
+                ...NO_FILL,
             });
         }
 
@@ -172,6 +173,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                 thickness: 1.5,
                 hideDataPoints: true,
                 zIndex: 2,
+                ...NO_FILL,
             });
         }
 
@@ -183,6 +185,12 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                 thickness: 1.5,
                 hideDataPoints: true,
                 zIndex: 3,
+                // Soft shade under what's actually been spent; projection and average stay plain lines.
+                areaChart: true,
+                startFillColor: ds.accent,
+                endFillColor: ds.accent,
+                startOpacity: 0.18,
+                endOpacity: 0,
             });
         }
 
@@ -407,6 +415,10 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         </View>
     );
 };
+
+// gifted-charts stores area fills only for filled sets but looks them up by set index, so every set
+// gets a fill (invisible on the reference lines) to keep the Actual line's shade at its own index.
+const NO_FILL = { areaChart: true, startOpacity: 0, endOpacity: 0 };
 
 // Room before day 1 and after day 31, so the first and last x labels aren't clipped.
 const X_START = 10;

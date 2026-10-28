@@ -86,7 +86,7 @@ Text is sentence case everywhere (no ALL-CAPS section labels).
 | **Bottom sheet** | `sheet` fill, top radius 20, 36×4 grabber. Title `title` *or* a hero (label / display / change line). Body rows follow the Row recipe. Footer: `inset` background + hairline top, holding the primary button. Never open a modal on top of a sheet — use a collapsible section instead. |
 | **"How is this calculated?"** | Collapsible: `small` 500 `accent` summary with `calculator-outline` icon → `inset` formula block (radius 8, `small`) → one `small` `text2` explanation line. |
 | **Selection lists** | Radio (20px ring, accent dot) for single choice; numbered checkbox (22px, radius 6, accent fill with position number) when choice order matters. |
-| **Charts** | Bars: `accent` at 100% for recorded amounts, 22% for projected or estimated ones (the projected rest of this month stacks faint on top of its solid part); a pressed bar dims to 70%. Top radius 4, no gridlines, `caption` `text2` axis labels. Lines: 1.5px `accent`. |
+| **Charts** | Bars: `accent` at 100% for recorded amounts, 22% for projected or estimated ones (the projected rest of this month stacks faint on top of its solid part); a pressed bar dims to 70%. Top radius 4, no gridlines, `caption` `text2` axis labels. Lines: 1.5px `accent`; the recorded (actual) series may carry a soft `accent` fill fading from 18% to 0, projections and averages never do. |
 
 ## 4. Numbers
 
