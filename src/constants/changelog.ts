@@ -22,10 +22,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Pick the mode in Home settings.
   - Insights and Holdings charts show in Discreet without amounts; Hidden shows one placeholder.
   - Open and Discreet block screenshots; Reveal for screenshot (Profile → Security) works in both.
-- Sheets close with an X in the header instead of Done / Close / Got it buttons.
+  - Single transactions keep their amount in Discreet; day and month totals don't.
+
+### Changed
+- Bottom sheets, pop-ups and Record forms restyled to match the new design.
+- Info sheets close with an X in the header instead of Close / Got it buttons.
+- Time range selector on Insights charts opens as a dropdown under its button.
+- Fetch price list opens its date options directly.
+- Getting Started guide opens full screen.
+- Updated Expo SDK 57 patch dependencies.
 
 ### Removed
 - Floating gear: the draggable settings button is now a plain settings icon on Home and Insights. Monthly summary and Reveal for screenshot move to Profile.
+
+### Fixed
+- Transaction, investment and loan detail sheets showed real amounts while privacy was on.
 
 ## [1.19.0] — 2026-09-29
 
