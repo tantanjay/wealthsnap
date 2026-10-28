@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,17 +12,25 @@ import OnboardingGuide from '@screens/onboarding/OnboardingGuideScreen';
 interface HelpCenterProps {
     onFinish: () => void;
     mode?: 'onboarding' | 'view';
+    // Opens straight into one topic; going back from it closes the Help Center instead of showing the menu.
+    initialTopicId?: string;
 }
 
-const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboarding' }) => {
+const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboarding', initialTopicId }) => {
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
-    const [selectedTopic, setSelectedTopic] = useState<HelpTopic | null>(null);
+    const [selectedTopic, setSelectedTopic] = useState<HelpTopic | null>(
+        () => HELP_TOPICS.find(t => t.id === initialTopicId) ?? null
+    );
+    const closeTopic = useCallback(() => {
+        if (initialTopicId) onFinish();
+        else setSelectedTopic(null);
+    }, [initialTopicId, onFinish]);
 
     useEffect(() => {
         const backAction = () => {
             if (selectedTopic) {
-                setSelectedTopic(null);
+                closeTopic();
                 return true;
             }
             if (mode === 'onboarding') {
@@ -34,7 +42,7 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
 
         const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
         return () => backHandler.remove();
-    }, [selectedTopic, mode, onFinish]);
+    }, [selectedTopic, mode, onFinish, closeTopic]);
 
     const renderMenu = () => (
         <ScrollView
@@ -101,7 +109,7 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
                 <View style={[styles.viewerHeader, { borderBottomColor: colors.border }]}>
                     <TouchableOpacity
                         style={styles.viewerBack}
-                        onPress={() => setSelectedTopic(null)}
+                        onPress={closeTopic}
                     >
                         <Ionicons name="arrow-back" size={24} color={colors.text} />
                     </TouchableOpacity>
@@ -335,7 +343,7 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
             {!selectedTopic ? (
                 renderMenu()
             ) : selectedTopic.type === 'onboarding' ? (
-                <OnboardingGuide onFinish={() => setSelectedTopic(null)} mode="view" />
+                <OnboardingGuide onFinish={closeTopic} mode="view" />
             ) : (
                 renderDocument(selectedTopic)
             )}

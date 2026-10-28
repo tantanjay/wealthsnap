@@ -1,91 +1,91 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Card } from '@components/index';
-import SettingItem from '@components/common/SettingItem';
-import { useTheme } from '@context/ThemeContext';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+
+import { Row, SectionHeader } from '@components/ds';
+import { getAllBudgets } from '@services/domain/budgetService';
+import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
+import { getAllReminders } from '@services/domain/reminderService';
 
 interface QuickActionsCardProps {
     onAssetsPress: () => void;
     onRecurringPress: () => void;
     onBudgetPress: () => void;
     onRemindersPress: () => void;
+    // Bumped when one of the opened modals closes, so the counts refresh.
+    refreshSignal?: number;
 }
 
+const countLabel = (n: number, noun: string) => (n === 0 ? 'None set' : `${n} ${noun}`);
+
+// Profile → Money setup.
 const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
     onAssetsPress,
     onRecurringPress,
     onBudgetPress,
-    onRemindersPress
+    onRemindersPress,
+    refreshSignal,
 }) => {
-    const { colors } = useTheme();
+    const [counts, setCounts] = useState<{ budgets: number; rules: number; reminders: number } | null>(null);
+
+    const loadCounts = useCallback(async () => {
+        try {
+            const [budgets, rules, reminders] = await Promise.all([getAllBudgets(), getAllRecurrenceRules(), getAllReminders()]);
+            setCounts({
+                budgets: budgets.length,
+                // Goal auto-contributions are managed from the goal, not the Recurring rules list.
+                rules: rules.filter(r => r.isActive && !r.transactionTemplate?.savingsGoalId).length,
+                reminders: reminders.filter(r => r.isActive).length,
+            });
+        } catch (error) {
+            console.error('Failed to load money setup counts:', error);
+        }
+    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadCounts();
+        }, [loadCounts])
+    );
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- async storage read after a modal closes
+        if (refreshSignal) loadCounts();
+    }, [refreshSignal, loadCounts]);
 
     return (
-        <Card style={{ marginBottom: 16 }}>
-            <View style={styles.cardHeader}>
-                <View style={[styles.headerIcon, { backgroundColor: colors.accent + '20' }]}>
-                    <Ionicons name="briefcase-outline" size={22} color={colors.accent} />
-                </View>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>Financial Planning</Text>
-            </View>
-            <SettingItem
-                icon="list"
-                title="Asset Dictionary"
-                subtitle="Manage asset definitions"
-                onPress={onAssetsPress}
-                iconBg={colors.info + '20'}
-                iconColor={colors.info}
-                isLast={false}
-            />
-            <SettingItem
-                icon="repeat"
-                title="Recurring Transactions"
-                subtitle="Manage automatic entries"
-                onPress={onRecurringPress}
-                iconBg={colors.success + '20'}
-                iconColor={colors.success}
-                isLast={false}
-            />
-            <SettingItem
-                icon="calculator"
-                title="Budget Management"
-                subtitle="Set spending limits"
+        <>
+            <SectionHeader title="Money setup" />
+            <Row
+                icon="pie-chart-outline"
+                title="Budgets"
+                subtitle={counts ? countLabel(counts.budgets, counts.budgets === 1 ? 'category budgeted' : 'categories budgeted') : undefined}
+                chevron
                 onPress={onBudgetPress}
-                iconBg={colors.warning + '20'}
-                iconColor={colors.warning}
-                isLast={false}
             />
-            <SettingItem
+            <Row
+                icon="repeat-outline"
+                title="Recurring rules"
+                subtitle={counts ? countLabel(counts.rules, 'active') : undefined}
+                chevron
+                onPress={onRecurringPress}
+            />
+            <Row
                 icon="notifications-outline"
                 title="Reminders"
-                subtitle="Schedule alerts for tasks"
+                subtitle={counts ? countLabel(counts.reminders, 'active') : undefined}
+                chevron
                 onPress={onRemindersPress}
-                iconBg={colors.primary + '20'}
-                iconColor={colors.primary}
-                isLast={true}
             />
-        </Card>
+            <Row
+                icon="list-outline"
+                title="Asset dictionary"
+                subtitle="Manage asset definitions"
+                chevron
+                onPress={onAssetsPress}
+                last
+            />
+        </>
     );
 };
-
-const styles = StyleSheet.create({
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    headerIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-    },
-});
 
 export default QuickActionsCard;

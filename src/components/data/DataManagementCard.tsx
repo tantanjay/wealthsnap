@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { Text, View, StyleSheet, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator } from 'react-native';
 import { CommonActions, NavigationProp } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 
 import BackupRestoreModal from '@components/data/BackupRestoreModal';
 import CsvImportFlow from '@components/data/CsvImportFlow';
-import SettingItem from '@components/common/SettingItem';
-import { Card } from '@components/index';
+import { Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { useSecurity } from '@context/SecurityContext';
@@ -23,7 +21,7 @@ interface DataManagementCardProps {
 type ModalMode = 'backup' | 'restore';
 
 const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { temporarilyDisableLock } = useSecurity();
 
     // Backup/Restore State
@@ -204,65 +202,23 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
 
     return (
         <>
-            <Card style={{ marginBottom: 16 }}>
-                <View style={styles.cardHeader}>
-                    <View style={[styles.headerIcon, { backgroundColor: colors.info + '20' }]}>
-                        <Ionicons name="shield-checkmark" size={22} color={colors.info} />
-                    </View>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>Data Management</Text>
-                </View>
+            <SectionHeader title="Backup" />
+            <Row icon="cloud-upload-outline" title="Backup data" subtitle="Create an encrypted backup file" chevron onPress={() => setModalMode('backup')} />
+            <Row icon="cloud-download-outline" title="Restore data" subtitle="Load from a backup file" chevron onPress={handleSelectRestoreFile} last />
 
-                <SettingItem
-                    icon="cloud-upload"
-                    title="Backup Data"
-                    subtitle="Create encrypted backup file"
-                    onPress={() => setModalMode('backup')}
-                    iconBg={colors.success + '20'}
-                    iconColor={colors.success}
-                />
-                <SettingItem
-                    icon="cloud-download"
-                    title="Restore Data"
-                    subtitle="Import from backup file"
-                    onPress={handleSelectRestoreFile}
-                    iconBg={colors.primary + '20'}
-                    iconColor={colors.primary}
-                />
-                <SettingItem
-                    icon="download-outline"
-                    title="Import Transactions"
-                    subtitle="Load from CSV or TSV file"
-                    onPress={() => setShowImportFlow(true)}
-                    iconBg={colors.accent + '20'}
-                    iconColor={colors.accent}
-                />
-                <SettingItem
-                    icon="grid-outline"
-                    title="Export to Excel"
-                    subtitle="Save transactions, investments & debts as .xlsx"
-                    onPress={isExporting ? undefined : handleExport}
-                    iconBg={colors.accent + '20'}
-                    iconColor={colors.accent}
-                    rightElement={isExporting ? <ActivityIndicator size="small" color={colors.accent} /> : undefined}
-                />
-                <SettingItem
-                    icon="sync-circle"
-                    title="Sync from Device"
-                    subtitle="Merge data with a nearby device over WiFi"
-                    onPress={() => navigation.navigate('LiveSync')}
-                    iconBg={colors.primary + '20'}
-                    iconColor={colors.primary}
-                />
-                <SettingItem
-                    icon="trash"
-                    title="Clear All Data"
-                    subtitle="Delete everything and restart"
-                    onPress={handleClearData}
-                    iconBg={colors.error + '20'}
-                    iconColor={colors.error}
-                    isLast={true}
-                />
-            </Card>
+            <SectionHeader title="Import and export" />
+            <Row icon="download-outline" title="Import transactions" subtitle="Load from a CSV or TSV file" chevron onPress={() => setShowImportFlow(true)} />
+            <Row
+                icon="grid-outline"
+                title="Export to Excel"
+                subtitle="Transactions, investments and debts as .xlsx"
+                onPress={isExporting ? undefined : handleExport}
+                trailing={isExporting ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
+            />
+            <Row icon="sync-outline" title="Sync from device" subtitle="Merge data with a nearby device over WiFi" chevron onPress={() => navigation.navigate('LiveSync')} last />
+
+            <SectionHeader title="Reset" />
+            <Row icon="trash-outline" title="Clear all data" subtitle="Delete everything and restart" onPress={handleClearData} last />
 
             <CsvImportFlow
                 visible={showImportFlow}
@@ -280,25 +236,5 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
         </>
     );
 };
-
-const styles = StyleSheet.create({
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    headerIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-    },
-});
 
 export default DataManagementCard;

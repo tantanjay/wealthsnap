@@ -279,6 +279,14 @@ One calm overview instead of a stack of cards:
 
 ---
 
+## 🧭 Five-tab navigation
+
+- Bottom bar: Home · Insights · Record · Profile · Learn, with Record as the raised center action
+- Profile holds account and app settings only: Money setup, Data, Security and intelligence, Appearance
+- Learn gathers the guides, Help center and About WealthSnap in one place
+
+---
+
 ## 📊 Advanced Net Worth Tracking
 
 - Assets minus liabilities
@@ -378,7 +386,7 @@ Alerts run immediately after saving transactions.
 - Horizontal quick-select categories
 - Rapid entry mode (auto “Add More”)
 - Smart Document Scanner
-- History Screen Filters (by type, keyword, date range)
+- Ledger filters (by type, keyword, date range)
 - Floating Quick Actions (draggable menu bubble)
 - Swipeable balance cards
 - Persistent display preferences
@@ -389,7 +397,7 @@ Alerts run immediately after saving transactions.
 
 # 📚 Built-In Education & Transparency
 
-- Full Help Center (Getting Started, Financial Insights, Debt Strategy, Investments)
+- Learn tab: guides shelf, FAQ and full Help Center (Getting Started, Home Snapshot, What Runway Tells You, Privacy Modes, Saving with Goals, Financial Insights, Debt Strategy, Investments)
 - Financial Insights explanations
 - Math & Formula documentation
 - Vision & Philosophy modal

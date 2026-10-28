@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -11,10 +11,10 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@context/ThemeContext';
-import { usePrivacy } from '@context/PrivacyContext';
+import { PrivacyMode, usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
 import { useFloatingGear } from '@context/FloatingGearContext';
-import BottomModal from './BottomModal';
+import { Row, Sheet, IconName } from '@components/ds';
 import MonthlySummaryModal from '@components/insights/modals/MonthlySummaryModal';
 
 const BUBBLE_SIZE = 56;
@@ -24,10 +24,14 @@ const DOCK_ZONE_HEIGHT = 140;
 // How long the bubble stays blue after the menu closes before fading back to grey.
 const COLOR_REVERT_DELAY_MS = 3000;
 
+const PRIVACY_LABEL: Record<PrivacyMode, string> = { open: 'Open', discreet: 'Discreet', hidden: 'Hidden' };
+// The gear's privacy row steps through the modes in this order (Home settings picks one directly).
+const NEXT_PRIVACY_MODE: Record<PrivacyMode, PrivacyMode> = { open: 'discreet', discreet: 'hidden', hidden: 'open' };
+
 export default function FloatingGearBubble() {
     const { colors, mode } = useTheme();
     const insets = useSafeAreaInsets();
-    const { isPrivacyEnabled, togglePrivacy, revealForScreenshot } = usePrivacy();
+    const { mode: privacyMode, setMode: setPrivacyMode, revealForScreenshot } = usePrivacy();
     const { showAlert } = useAlert();
     const { isDocked, pendingPosition, secondAction, requestDock, updatePosition } = useFloatingGear();
 
@@ -169,10 +173,8 @@ export default function FloatingGearBubble() {
     const iconColor = isActiveColor ? '#FFFFFF' : colors.text;
     const ringColor = mode === 'dark' ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.08)';
 
-    const handleTogglePrivacy = () => {
-        togglePrivacy();
-        closeMenu();
-    };
+    // Stays open so the row can be tapped again to keep cycling.
+    const handleCyclePrivacy = () => setPrivacyMode(NEXT_PRIVACY_MODE[privacyMode]);
 
     const handleSecondAction = () => {
         secondAction?.onPress();
@@ -184,7 +186,9 @@ export default function FloatingGearBubble() {
         setSummaryModalVisible(true);
     };
 
+    // Closes the sheet first: nothing opens on top of a sheet.
     const handleRevealForScreenshot = () => {
+        closeMenu();
         showAlert(
             'Allow Screenshot?',
             'This will briefly allow a screenshot with real numbers visible, then screenshot protection resumes automatically.',
@@ -192,10 +196,7 @@ export default function FloatingGearBubble() {
                 { text: 'No', style: 'cancel' },
                 {
                     text: 'Yes',
-                    onPress: () => {
-                        revealForScreenshot();
-                        closeMenu();
-                    },
+                    onPress: revealForScreenshot,
                 },
             ]
         );
@@ -217,47 +218,27 @@ export default function FloatingGearBubble() {
                 </GestureDetector>
             </View>
 
-            <BottomModal visible={menuVisible} onClose={closeMenu} title="Quick Actions">
-                <TouchableOpacity
-                    style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                    onPress={handleTogglePrivacy}
-                >
-                    <Ionicons name={isPrivacyEnabled ? 'eye-off' : 'eye'} size={20} color={colors.text} />
-                    <Text style={[styles.menuLabel, { color: colors.text }]}>
-                        {isPrivacyEnabled ? 'Show Balances' : 'Hide Balances'}
-                    </Text>
-                </TouchableOpacity>
-
+            <Sheet visible={menuVisible} onClose={closeMenu} title="Quick actions">
+                <Row
+                    icon={privacyMode === 'open' ? 'eye-outline' : 'eye-off-outline'}
+                    title="Privacy"
+                    subtitle={`Tap for ${PRIVACY_LABEL[NEXT_PRIVACY_MODE[privacyMode]]}`}
+                    value={PRIVACY_LABEL[privacyMode]}
+                    onPress={handleCyclePrivacy}
+                />
                 {secondAction && (
-                    <TouchableOpacity
-                        style={[styles.menuRow, { borderBottomColor: colors.border }]}
-                        onPress={handleSecondAction}
-                    >
-                        <Ionicons name={secondAction.icon as any} size={20} color={colors.text} />
-                        <Text style={[styles.menuLabel, { color: colors.text }]}>{secondAction.label}</Text>
-                    </TouchableOpacity>
+                    <Row icon={secondAction.icon as IconName} title={secondAction.label} onPress={handleSecondAction} />
                 )}
-
-                <TouchableOpacity
-                    style={[
-                        styles.menuRow,
-                        // Monthly Summary is the last row whenever Reveal for Screenshot is hidden -
-                        // drop its border in that case instead of leaving an unthemed default line.
-                        !isPrivacyEnabled ? { borderBottomColor: colors.border } : styles.noBorder
-                    ]}
+                <Row
+                    icon="document-text-outline"
+                    title="Monthly summary"
                     onPress={handleOpenMonthlySummary}
-                >
-                    <Ionicons name="document-text-outline" size={20} color={colors.text} />
-                    <Text style={[styles.menuLabel, { color: colors.text }]}>Monthly Summary</Text>
-                </TouchableOpacity>
-
-                {!isPrivacyEnabled && (
-                    <TouchableOpacity style={[styles.menuRow, styles.noBorder]} onPress={handleRevealForScreenshot}>
-                        <Ionicons name="camera-outline" size={20} color={colors.text} />
-                        <Text style={[styles.menuLabel, { color: colors.text }]}>Reveal for Screenshot</Text>
-                    </TouchableOpacity>
+                    last={privacyMode !== 'open'}
+                />
+                {privacyMode === 'open' && (
+                    <Row icon="camera-outline" title="Reveal for screenshot" onPress={handleRevealForScreenshot} last />
                 )}
-            </BottomModal>
+            </Sheet>
 
             <MonthlySummaryModal visible={summaryModalVisible} onClose={() => setSummaryModalVisible(false)} />
         </>
@@ -279,19 +260,5 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
         elevation: 10,
         zIndex: 999,
-    },
-    menuRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        paddingVertical: 14,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    noBorder: {
-        borderBottomWidth: 0,
-    },
-    menuLabel: {
-        fontSize: 16,
-        fontWeight: '500',
     },
 });

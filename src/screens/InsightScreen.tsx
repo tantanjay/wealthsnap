@@ -405,9 +405,6 @@ const InsightScreen = ({ navigation }: any) => {
     return (
         <ScreenWrapper scrollable={false} noPadding style={{ backgroundColor: ds.bg }}>
             <View style={styles.topBar}>
-                <Pressable onPress={() => navigation.goBack()} accessibilityLabel="Back" hitSlop={space[2]}>
-                    <Ionicons name="chevron-back" size={22} color={ds.text2} />
-                </Pressable>
                 <Text style={[type.title, styles.title, { color: ds.text }]} numberOfLines={1}>Insights</Text>
                 <View style={styles.actions}>
                     {mode !== 'open' && (

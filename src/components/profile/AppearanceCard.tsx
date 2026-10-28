@@ -1,89 +1,85 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Card } from '@components/index';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+
+import { Row, SectionHeader, Sheet } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { type, radius } from '@styles/theme';
+
+type ThemeMode = 'light' | 'dark' | 'system';
+
+const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
+    { value: 'light', label: 'Light' },
+    { value: 'dark', label: 'Dark' },
+    { value: 'system', label: 'System' },
+];
 
 interface AppearanceCardProps {
     mode: string;
-    setMode: (mode: 'light' | 'dark' | 'system') => void;
+    setMode: (mode: ThemeMode) => void;
 }
 
-const ThemeOption = ({ icon, title, value, current, setMode, colors }: { icon: string, title: string, value: 'light' | 'dark' | 'system', current: string, setMode: (m: 'light' | 'dark' | 'system') => void, colors: any }) => (
-    <TouchableOpacity
-        style={[
-            styles.themeButton,
-            {
-                backgroundColor: current === value ? colors.primary : 'transparent',
-                borderColor: current === value ? colors.primary : colors.border,
-            }
-        ]}
-        onPress={() => setMode(value)}
-    >
-        <Ionicons
-            name={icon as any}
-            size={18}
-            color={current === value ? '#fff' : colors.text}
-            style={{ marginRight: 6 }}
-        />
-        <Text style={{
-            color: current === value ? '#fff' : colors.text,
-            fontWeight: current === value ? '600' : '400'
-        }}>
-            {title}
-        </Text>
-    </TouchableOpacity>
-);
-
+// Profile → Appearance: one Theme row; the choice lives in a sheet since it's rarely changed.
 const AppearanceCard: React.FC<AppearanceCardProps> = ({ mode, setMode }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
+    const [visible, setVisible] = useState(false);
+    const current = THEME_OPTIONS.find(o => o.value === mode)?.label ?? 'System';
 
     return (
-        <Card style={{ marginBottom: 16 }}>
-            <View style={styles.cardHeader}>
-                <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
-                    <Ionicons name="color-palette" size={22} color={colors.primary} />
-                </View>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>Appearance</Text>
-            </View>
-            <View style={styles.themeContainer}>
-                <ThemeOption icon="sunny" title="Light" value="light" current={mode} setMode={setMode} colors={colors} />
-                <ThemeOption icon="moon" title="Dark" value="dark" current={mode} setMode={setMode} colors={colors} />
-                <ThemeOption icon="phone-portrait" title="System" value="system" current={mode} setMode={setMode} colors={colors} />
-            </View>
-        </Card>
+        <>
+            <SectionHeader title="Appearance" />
+            <Row icon="contrast-outline" title="Theme" subtitle={current} chevron last onPress={() => setVisible(true)} />
+
+            <Sheet
+                visible={visible}
+                onClose={() => setVisible(false)}
+                title="Theme"
+                footer={
+                    <Pressable onPress={() => setVisible(false)} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
+                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Done</Text>
+                    </Pressable>
+                }
+            >
+                {THEME_OPTIONS.map((option, i) => {
+                    const selected = mode === option.value;
+                    return (
+                        <Row
+                            key={option.value}
+                            title={option.label}
+                            subtitle={option.value === 'system' ? 'Follows your device setting' : undefined}
+                            leading={
+                                <View style={[styles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
+                                    {selected && <View style={[styles.radioDot, { backgroundColor: ds.accent }]} />}
+                                </View>
+                            }
+                            onPress={() => setMode(option.value)}
+                            last={i === THEME_OPTIONS.length - 1}
+                        />
+                    );
+                })}
+            </Sheet>
+        </>
     );
 };
 
 const styles = StyleSheet.create({
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    headerIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-    },
-    themeContainer: {
-        flexDirection: 'row',
-        gap: 10,
-    },
-    themeButton: {
-        flex: 1,
-        paddingVertical: 10,
+    radio: {
+        width: 20,
+        height: 20,
+        borderRadius: radius.full,
+        borderWidth: 2,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderRadius: 8,
+    },
+    radioDot: {
+        width: 10,
+        height: 10,
+        borderRadius: radius.full,
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });
 

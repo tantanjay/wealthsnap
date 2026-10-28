@@ -20,7 +20,7 @@ Tab: `Home`. Sticky top tabs: Snapshot (net worth hero, Cash / Investments / Loa
 - `src/utils/snapshotMetrics.ts`
 
 ## Record / Add Transaction
-Tab: `Actions`. Entry point for logging transactions, transfers, and recurring rules.
+Tab: `Record` (raised center button). Entry point for logging transactions, transfers, and recurring rules.
 
 - `src/screens/RecordScreen.tsx`
 - `src/components/record/CalculatorModal.tsx`
@@ -36,22 +36,16 @@ Tab: `Actions`. Entry point for logging transactions, transfers, and recurring r
 - `src/constants/categories.ts`
 
 ## History
-Tab: `History` (removal candidate for Phase 4; Home's Ledger tab reuses its data loading and filters). Calendar and list views of past transactions.
+Home → Ledger tab (`src/components/home/LedgerTab.tsx`). Calendar and list views of past transactions.
 
-- `src/screens/HistoryScreen.tsx`
 - `src/hooks/useHistoryData.ts`
 - `src/utils/historyFeed.ts`
 - `src/components/history/HistoryCalendar.tsx`
-- `src/components/history/HistoryCalendarHelpModal.tsx`
-- `src/components/history/HistoryDatePickerModal.tsx`
 - `src/components/history/HistoryListItem.tsx`
-- `src/components/history/HistorySafeToSpendHelpModal.tsx`
-- `src/components/history/HistorySectionHeader.tsx`
-- `src/components/history/HistorySummary.tsx`
 - `src/services/domain/transactionService.ts`
 
 ## Insights
-Reached from Home. Financial Health grid and detail sheets, spending/income analysis, trends, budgets, and monthly summaries.
+Tab: `Insights`. Financial Health grid and detail sheets, spending/income analysis, trends, budgets, and monthly summaries.
 
 - `src/screens/InsightScreen.tsx`
 - `src/components/insights/BudgetsSection.tsx`
@@ -72,17 +66,13 @@ Reached from Home. Financial Health grid and detail sheets, spending/income anal
 - `src/utils/monthlySummaryBuilder.ts`
 
 ## Investments
-Tab: `Investment` (removal candidate for Phase 4; Home's Holdings tab covers the same flows). Holdings, price/dividend history, allocation, AI advisor.
+Home → Holdings tab (`src/components/home/HoldingsTab.tsx`). Holdings, price/dividend history, allocation, AI advisor.
 
-- `src/screens/InvestmentScreen.tsx`
 - `src/components/investments/AllocationChart.tsx`
 - `src/components/investments/DividendChart.tsx`
-- `src/components/investments/HoldingsList.tsx`
 - `src/components/investments/InvestmentForm.tsx`
-- `src/components/investments/InvestmentStats.tsx`
 - `src/components/investments/SmartAdvisor.tsx`
 - `src/components/investments/modals/DividendHistoryFormModal.tsx`
-- `src/components/investments/modals/InvestmentEquityHelpModal.tsx`
 - `src/components/investments/modals/InvestmentHistoryModal.tsx`
 - `src/components/investments/modals/InvestmentOptionsModal.tsx`
 - `src/components/investments/modals/InvestmentSettingsModal.tsx`
@@ -127,14 +117,12 @@ Insights → Financial Health grid (2×2 of 13 numbers) and their detail sheets:
 - `src/utils/financialSnapshotBuilder.ts`
 
 ## Profile & Settings
-Tab: `Profile`. Account settings, budgets, assets, appearance, help.
+Tab: `Profile`. Account and app settings only: Money setup (budgets, recurring rules, reminders, asset dictionary), Data, Security and intelligence, Appearance.
 
 - `src/screens/ProfileScreen.tsx`
-- `src/components/profile/AboutCard.tsx`
 - `src/components/profile/AppearanceCard.tsx`
 - `src/components/profile/BudgetManagementModal.tsx`
 - `src/components/profile/DeveloperToolsCard.tsx`
-- `src/components/profile/HelpSectionCard.tsx`
 - `src/components/profile/ProfileHeader.tsx`
 - `src/components/profile/QuickActionsCard.tsx`
 - `src/components/profile/RecurringRulesListModal.tsx`
@@ -142,16 +130,23 @@ Tab: `Profile`. Account settings, budgets, assets, appearance, help.
 - `src/components/profile/SmartSuggestionsModal.tsx`
 - `src/components/profile/assets/AssetForm.tsx`
 - `src/components/profile/assets/AssetsListModal.tsx`
-- `src/components/profile/settings/ContactDeveloperModal.tsx`
 - `src/components/profile/settings/GeminiSettingsModal.tsx`
 - `src/components/profile/settings/GeminiUsageModal.tsx`
-- `src/components/profile/settings/SupportModal.tsx`
 - `src/services/domain/budgetService.ts`
 - `src/services/domain/assetService.ts`
 
-## Data Management (Backup / Restore / Import / Export)
-Reached from Profile. Local backups, CSV import, sample data.
+## Learn
+Tab: `Learn`. Guides shelf (Help Center topics), Help center (Math and formulas, FAQ, contact, feedback, terms) and About WealthSnap (why it's free, manifesto, developer message, supporter wall, support, rate, version / what's new). Guides open `HelpCenterScreen` (Onboarding) with `helpContent.ts` (Shared Core).
 
+- `src/screens/LearnScreen.tsx`
+- `src/components/profile/settings/ContactDeveloperModal.tsx`
+- `src/components/profile/settings/SupportModal.tsx`
+
+## Data Management (Backup / Restore / Import / Export)
+Profile → Data → Auto backup / Import / export (stack screens). Local backups, CSV import, Excel export, sample data.
+
+- `src/screens/AutoBackupScreen.tsx`
+- `src/screens/ImportExportScreen.tsx`
 - `src/components/data/AutoBackupCard.tsx`
 - `src/components/data/BackupReminderModal.tsx`
 - `src/components/data/BackupRestoreModal.tsx`
@@ -167,7 +162,7 @@ Reached from Profile. Local backups, CSV import, sample data.
 - `src/services/integrations/dummyDataService.ts`
 
 ## Multi-Device Sync
-Reached from Profile. QR/WiFi pairing and two-way merge engine.
+Profile → Data → Import / export. QR/WiFi pairing and two-way merge engine.
 
 - `src/screens/LiveSyncScreen.tsx`
 - `src/services/integrations/syncService.ts`
@@ -244,6 +239,7 @@ Not a user-facing feature; app shell, data layer, and utilities used across modu
 **Navigation & App Shell**
 - `src/navigation/AppNavigator.tsx`
 - `src/navigation/navigationRef.ts`
+- `src/navigation/BottomTabBar.tsx`
 - `src/context/ThemeContext.tsx`
 - `src/context/FloatingGearContext.tsx`
 - `src/context/AlertContext.tsx`
@@ -253,7 +249,6 @@ Not a user-facing feature; app shell, data layer, and utilities used across modu
 - `src/components/common/DraggableIconButton.tsx`
 - `src/components/common/CustomAlert.tsx`
 - `src/components/common/BottomModal.tsx`
-- `src/components/common/SettingItem.tsx`
 - `src/components/common/Skeleton.tsx`
 - `src/components/common/TimeRangeSelector.tsx`
 - `src/components/common/ReorderList.tsx`
