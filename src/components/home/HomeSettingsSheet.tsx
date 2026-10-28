@@ -96,7 +96,7 @@ const HomeSettingsSheet: React.FC<HomeSettingsSheetProps> = ({ visible, onClose,
                     ))}
 
                     <SectionHeader title="Snapshot order" />
-                    <Text style={[type.small, { color: ds.text2 }]}>Drag to reorder the Overview rows. Net worth stays on top.</Text>
+                    <Text style={[type.small, { color: ds.text2 }]}>Hold the handle and drag to reorder the Overview rows. Net worth stays on top.</Text>
                     <SnapshotOrderList order={order} meta={SNAPSHOT_ROW_META} onChange={onChangeOrder} />
                 </>
             )}
@@ -104,7 +104,7 @@ const HomeSettingsSheet: React.FC<HomeSettingsSheetProps> = ({ visible, onClose,
             {tab === 'holdings' && (
                 <>
                     <SectionHeader title="Section order" />
-                    <Text style={[type.small, { color: ds.text2 }]}>Drag to reorder the sections under your portfolio summary.</Text>
+                    <Text style={[type.small, { color: ds.text2 }]}>Hold the handle and drag to reorder the sections under your portfolio summary.</Text>
                     <SnapshotOrderList order={holdingsOrder} meta={HOLDINGS_SECTION_META} onChange={onChangeHoldingsOrder} />
                 </>
             )}

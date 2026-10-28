@@ -39,7 +39,7 @@ interface SnapshotViewProps {
     format: PrivacyFormat;
     order: SnapshotRowId[];
     period: SnapshotPeriod;
-    onTogglePeriod: () => void;
+    onChangePeriod: (period: SnapshotPeriod) => void;
     onDetails: () => void;
     onRowPress: (id: SnapshotRowId) => void;
     onSeeAllRecent: () => void;
@@ -186,6 +186,11 @@ const ROW_BUILDERS: Record<SnapshotRowId, (d: SnapshotData, p: SnapshotPeriod, f
     goals: goalsRow,
 };
 
+const PERIODS: { key: SnapshotPeriod; label: string }[] = [
+    { key: 'overall', label: 'Overall' },
+    { key: 'month', label: 'This month' },
+];
+
 const MONTH_TITLES: Partial<Record<SnapshotRowId, string>> = { cash: 'Monthly net' };
 
 const CATEGORY_ICONS: Record<string, string> = Object.fromEntries(
@@ -229,7 +234,7 @@ const heroContent = (d: SnapshotData, f: PrivacyFormat) => {
     };
 };
 
-const SnapshotView: React.FC<SnapshotViewProps> = ({ data, format: f, order, period, onTogglePeriod, onDetails, onRowPress, onSeeAllRecent }) => {
+const SnapshotView: React.FC<SnapshotViewProps> = ({ data, format: f, order, period, onChangePeriod, onDetails, onRowPress, onSeeAllRecent }) => {
     const { ds } = useTheme();
     const hero = heroContent(data, f);
 
@@ -247,7 +252,7 @@ const SnapshotView: React.FC<SnapshotViewProps> = ({ data, format: f, order, per
                 style={styles.hero}
             />
 
-            <SectionHeader title="Overview" actionLabel={`${period === 'overall' ? 'Overall' : 'This month'} ⌄`} onAction={onTogglePeriod} />
+            <SectionHeader title="Overview" menu={{ options: PERIODS, value: period, onSelect: key => onChangePeriod(key as SnapshotPeriod) }} />
             {order.map((id, i) => {
                 const row = ROW_BUILDERS[id](data, period, f);
                 const meta = SNAPSHOT_ROW_META[id];

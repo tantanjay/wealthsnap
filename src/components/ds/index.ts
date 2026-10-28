@@ -1,4 +1,5 @@
 export { default as ChangeLine } from './ChangeLine';
+export { default as DropdownMenu } from './DropdownMenu';
 export { default as Hero } from './Hero';
 export { default as ProgressBar } from './ProgressBar';
 export { default as Row } from './Row';
@@ -9,10 +10,11 @@ export { default as Tile } from './Tile';
 export { default as UnderlineTabs } from './UnderlineTabs';
 export * from './tone';
 export type { ChangeLineProps } from './ChangeLine';
+export type { DropdownAnchor, DropdownMenuProps, DropdownOption } from './DropdownMenu';
 export type { HeroProps, HeroStat } from './Hero';
 export type { ProgressBarProps } from './ProgressBar';
 export type { RowProps } from './Row';
-export type { SectionHeaderProps } from './SectionHeader';
+export type { SectionHeaderProps, SectionHeaderMenu } from './SectionHeader';
 export type { SegmentedControlProps, SegmentOption } from './SegmentedControl';
 export type { SheetProps } from './Sheet';
 export type { TileProps } from './Tile';

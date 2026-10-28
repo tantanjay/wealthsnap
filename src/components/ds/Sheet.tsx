@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Modal, Pressable, ScrollView, StyleSheet, DimensionValue, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, Modal, Pressable, StyleSheet, DimensionValue, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@context/ThemeContext';
@@ -23,6 +24,14 @@ export interface SheetProps {
     scroll?: boolean;
 }
 
+// Lets a drag handle inside the sheet hold off its scrolling (SnapshotOrderList).
+export interface SheetScrollControl {
+    scrollRef: React.RefObject<ScrollView | null>;
+    setScrollLocked: (locked: boolean) => void;
+}
+
+export const SheetScrollContext = createContext<SheetScrollControl | null>(null);
+
 // Refined Minimal bottom sheet. Lock/keyboard handling mirrors common/BottomModal.
 // Never open another modal on top of a Sheet; use a collapsible section instead.
 const Sheet: React.FC<SheetProps> = ({
@@ -41,6 +50,9 @@ const Sheet: React.FC<SheetProps> = ({
     const { ds, elevation } = useTheme();
     const insets = useSafeAreaInsets();
     const [keyboardVisible, setKeyboardVisible] = useState(false);
+    const [scrollLocked, setScrollLocked] = useState(false);
+    const scrollRef = useRef<ScrollView>(null);
+    const scrollControl = useMemo(() => ({ scrollRef, setScrollLocked }), []);
 
     let isLocked = false;
     try {
@@ -86,6 +98,9 @@ const Sheet: React.FC<SheetProps> = ({
 
     return (
         <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+            {/* A Modal renders outside the app's gesture root on Android, so it needs its own. */}
+            <GestureHandlerRootView style={styles.root}>
+            <SheetScrollContext.Provider value={scrollControl}>
             <KeyboardAvoidingView
                 behavior="padding"
                 keyboardVerticalOffset={Platform.OS === 'android' ? -insets.bottom : 0}
@@ -104,6 +119,8 @@ const Sheet: React.FC<SheetProps> = ({
 
                     {scroll ? (
                         <ScrollView
+                            ref={scrollRef}
+                            scrollEnabled={!scrollLocked}
                             style={styles.bodyScroll}
                             contentContainerStyle={[styles.body, bodyPadding]}
                             keyboardShouldPersistTaps="handled"
@@ -130,11 +147,16 @@ const Sheet: React.FC<SheetProps> = ({
                     ) : null}
                 </View>
             </KeyboardAvoidingView>
+            </SheetScrollContext.Provider>
+            </GestureHandlerRootView>
         </Modal>
     );
 };
 
 const styles = StyleSheet.create({
+    root: {
+        flex: 1,
+    },
     overlay: {
         flex: 1,
         justifyContent: 'flex-end',

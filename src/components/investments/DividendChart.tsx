@@ -21,6 +21,12 @@ interface DividendChartProps {
 
 type TabType = 'actual' | 'calendar' | 'projected';
 
+const TABS: { key: TabType; label: string }[] = [
+    { key: 'actual', label: 'Actual' },
+    { key: 'calendar', label: 'Calendar' },
+    { key: 'projected', label: 'Projected' },
+];
+
 export const DividendChart: React.FC<DividendChartProps> = ({
     projectedDividends,
     actualDividends,
@@ -258,15 +264,9 @@ export const DividendChart: React.FC<DividendChartProps> = ({
         }
     };
 
-    const cycleTab = () => {
-        const order: TabType[] = ['actual', 'calendar', 'projected'];
-        setActiveTab(order[(order.indexOf(activeTab) + 1) % order.length]);
-    };
-    const tabLabel = activeTab === 'actual' ? 'Actual' : activeTab === 'calendar' ? 'Calendar' : 'Projected';
-
     return (
         <View>
-            <SectionHeader title="Dividends" actionLabel={`${tabLabel} ⌄`} onAction={cycleTab} />
+            <SectionHeader title="Dividends" menu={{ options: TABS, value: activeTab, onSelect: key => setActiveTab(key as TabType) }} />
             {activeTab !== 'calendar' && (
                 <Text style={[type.titleNum, styles.total, { color: ds.text }]}>
                     {isPrivacyEnabled ? '****' : formatCurrencyAmount(displayTotal, currency)}
