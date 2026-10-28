@@ -287,6 +287,12 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
 
     const axisText = [type.caption, { color: ds.text2 }];
 
+    // The chart box is the page width minus its right gutter (it bleeds into the left one), so day 31's
+    // label must fit inside that box: spacing comes from what's left after the y-axis and edge room.
+    const yAxisWidth = format.isOpen ? 56 : space[5];
+    const plotWidth = screenWidth - space[5] - yAxisWidth;
+    const pointSpacing = (plotWidth - X_START - X_END) / 30;
+
     return (
         <View>
             <SectionHeader
@@ -311,9 +317,10 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                     <LineChart
                         dataSet={dataSet}
                         height={CHART_HEIGHT}
-                        width={screenWidth - 40}
-                        spacing={(screenWidth - 80) / 31}
-                        initialSpacing={10}
+                        width={plotWidth}
+                        spacing={pointSpacing}
+                        initialSpacing={X_START}
+                        endSpacing={X_END}
                         thickness={1.5}
                         hideRules
                         yAxisColor="transparent"
@@ -332,7 +339,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                             const num = parseFloat(value);
                             return format.money(isNaN(num) ? 0 : num, { compact: true });
                         }}
-                        yAxisLabelWidth={format.isOpen ? 56 : space[5]}
+                        yAxisLabelWidth={yAxisWidth}
                         animationDuration={1000}
                         pointerConfig={pointerConfig}
                     />
@@ -400,6 +407,10 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         </View>
     );
 };
+
+// Room before day 1 and after day 31, so the first and last x labels aren't clipped.
+const X_START = 10;
+const X_END = 16;
 
 const styles = StyleSheet.create({
     subline: {
