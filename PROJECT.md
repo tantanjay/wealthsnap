@@ -22,7 +22,7 @@ When a new feature is introduced, you must also check and update [docs/CAPABILIT
 
 **New transaction kinds.** When a feature adds a new kind of transaction (a new type/tag/subCategory combination), add its row to the "What each transaction counts toward" table in `docs/METRICS.md` and fill every column before writing code. Screens and components never filter transactions for a metric themselves; they call the shared function in `financialMetrics.ts` (e.g. `getBurnRateBase`, `calculateBalance`), so a rule change is a one-place edit.
 
-**Metric history.** Each metric's section ends with its timeline. Add a row whenever its Formula line changes. If the change undoes part of an earlier one, mark it **↩** with that version, and say so in the release notes too.
+**Metric history.** Each metric's section ends with its timeline. Add a row whenever its Formula line changes. If the change undoes part of an earlier one, mark it **↩** with that version, and say so in the release notes too. While a change is unreleased, a metric gets at most one `Unreleased` row, stating the net difference from the last released version. A refinement made before release updates that row instead of adding another; a metric that's new in this release gets only its "Introduced" row.
 
 **Date changes from the code, not the changelog.** When recording when or how a behavior changed (metric history, release notes, "since vX" claims), check the code at the `vX.Y.Z` tags, e.g. by diffing consecutive tags. `CHANGELOG.md` and `docs/release/` have been wrong about versions, formulas and affected screens, so treat their wording as a lead to verify, not as evidence.
 

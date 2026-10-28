@@ -324,7 +324,6 @@ These apply to every metric unless its section says otherwise.
 | Version | Rule after this change | What changed |
 |---|---|---|
 | Unreleased | As above | Introduced with the Home Snapshot |
-| Unreleased | Resolved debts drop out of past month-ends from their last update | Counting every started debt whatever its status kept a resolved debt's remaining principal in every past month-end, so its payoff showed as a gain every month |
 
 ## Cash Kept
 
@@ -358,9 +357,7 @@ These apply to every metric unless its section says otherwise.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | As above | Home Snapshot shows the existing unrealized % in Discreet; monthly buys' return documented |
-| Unreleased | + Total return | Home Holdings tab: total return (realized, unrealized and dividends over all cost ever invested) in Open and Discreet; the Snapshot row stays unrealized |
-| Unreleased | Same | Investments screen removed; its figures moved to the Holdings tab |
+| Unreleased | Unrealized % unchanged; + Total return; monthly buys' return documented | Investments screen removed. The Home Snapshot Investments row shows the existing unrealized % (also in Discreet); the new Holdings tab adds total return (realized, unrealized and dividends over all cost ever invested) in Open and Discreet |
 
 ## Loans Repaid / Obligations Paid
 
@@ -376,9 +373,7 @@ These apply to every metric unless its section says otherwise.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | Obligations capped per debt at its minimum | Home's Debts card summed raw payments, so paying extra on one debt covered another's minimum |
-| Unreleased | Same rules for money owed to you | Home Loans tab "Owed to you": % collected and repayments received (principal + interest received, capped at each minimum) |
-| Unreleased | Change line on last month's debts only | Compared all of today's debts with last month's, so a new loan read as a drop in % repaid |
+| Unreleased | Obligations capped per debt at its minimum; same rules for money owed to you | Home's Debts card summed raw payments, so paying extra on one debt covered another's minimum. Moved to the Snapshot Loans row and the Loans tab, which adds "Owed to you" (% collected, repayments received capped at each minimum) and the % repaid change line |
 
 ## Goals Progress / On Track
 
@@ -504,12 +499,7 @@ Total income and Total expense compare month-to-date figures while the month is 
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | Open / Discreet / Hidden | Replaced the on/off privacy toggle (on → Hidden, off → Open) |
-| Unreleased | Same | Insights follows it; its eye button is gone |
-| Unreleased | Transaction amounts | Single transactions show their amount in Discreet; day totals and month In / Out still don't |
-| Unreleased | Charts in Discreet | Insights and Holdings charts draw in Discreet without amounts instead of hiding; Hidden keeps one placeholder |
-| Unreleased | Screenshots | Discreet blocks screenshots like Open (it now shows charts); Reveal for screenshot works in both |
-| Unreleased | Fallback screens | Budgets, Recurring rules, Smart suggestions and Monthly Summary followed no privacy setting (since they were added); they now fall back to Hidden |
+| Unreleased | Open / Discreet / Hidden | Replaced the on/off privacy toggle (on → Hidden, off → Open), set from Home settings instead of eye buttons; Insights follows it too. Screenshots stay blocked except in Hidden (the old "on"). Budgets, Recurring rules, Smart suggestions and Monthly Summary ignored the old toggle; they now fall back to Hidden |
 
 **Discreet chart figures**
 
