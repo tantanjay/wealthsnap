@@ -1,10 +1,11 @@
 import React from 'react';
 import { BigNumber } from 'bignumber.js';
-import { Text, View, TouchableOpacity } from 'react-native';
+import { Text, View, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Card } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
+import { Domain, domainColor } from '@components/ds';
+import { type, space, radius } from '@styles/theme';
 import { Transaction, Investment, Debt } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 
@@ -17,12 +18,6 @@ export const isInvestment = (item: HistoryItem): item is Investment => {
 export const isDebt = (item: HistoryItem): item is Debt => {
     return (item as Debt).minPayment !== undefined && (item as Debt).initialAmount !== undefined;
 };
-
-// Category-identity color for anything tied to a Savings Goal, same role as Investment's
-// dedicated purple below - a fixed accent independent of theme/dark-mode and unrelated to the
-// income/expense semantic colors, so a goal-funded expense's left border doesn't get confused
-// with its (still red) amount text.
-const GOAL_COLOR = '#00897B';
 
 // Cosmetic only - enum-like values (transferAccount, subCategory tags like INITIAL_FUNDING/
 // GOAL_SPEND, TransactionType) are stored SCREAMING_SNAKE_CASE, but should never show that
@@ -66,12 +61,15 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
     onSelectInvestment,
     onSelectDebt,
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
+
+    // Row recipe (docs/DESIGN.md §3): domain dot or outline icon, title + secondary, trailing value.
+    const leadingDot = (domain: Domain) => (
+        <View style={[styles.dot, { backgroundColor: domainColor(ds, domain) }]} />
+    );
 
     if (isInvestment(item)) {
         const inv = item;
-        // Distinct color for investments (Purple/Blue)
-        const iconColor = '#8E24AA';
 
         // Conversion Logic for Display
         const rate = inv.exchangeRate ? new BigNumber(inv.exchangeRate) : new BigNumber(1);
@@ -92,7 +90,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
 
                 plElement = (
                     <Text>
-                        {" • "}<Text style={{ color: isGain ? colors.success : colors.error, fontWeight: 'bold' }}>
+                        {" • "}<Text style={{ color: isGain ? ds.success : ds.danger }}>
                             {isGain ? '+' : '-'}{formatCurrency(nativePL.abs(), inv.currency)}
                         </Text>
                     </Text>
@@ -101,85 +99,50 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
         }
 
         return (
-            <TouchableOpacity onPress={() => onSelectInvestment(inv)} style={{ marginBottom: 8 }} activeOpacity={0.9}>
-                <Card flat style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0, borderLeftWidth: 4, borderLeftColor: iconColor }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                            <View style={{
-                                width: 36, height: 36, borderRadius: 18,
-                                backgroundColor: iconColor + '15',
-                                justifyContent: 'center', alignItems: 'center'
-                            }}>
-                                <Ionicons name="stats-chart" size={18} color={iconColor} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-                                    {inv.symbol} <Text style={{ fontSize: 14, color: colors.textSecondary }}>({inv.action})</Text>
-                                </Text>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                                    {inv.quantity.toString()} units @ {formatCurrencyAmount(nativePrice, inv.currency || profileCurrency || 'PHP')}
-                                    {plElement}
-                                </Text>
-                            </View>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={{
-                                fontSize: 16, fontWeight: 'bold',
-                                color: colors.text
-                            }}>
-                                {formatCurrency(nativeTotal, inv.currency)}
-                            </Text>
-                            <View style={{ backgroundColor: iconColor + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
-                                <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>{inv.type}</Text>
-                            </View>
-                        </View>
-                    </View>
-                </Card>
-            </TouchableOpacity>
+            <Pressable onPress={() => onSelectInvestment(inv)} style={[styles.row, { borderBottomColor: ds.hairline }]}>
+                {leadingDot('invest')}
+                <View style={styles.main}>
+                    <Text style={[type.body, { color: ds.text }]}>
+                        {inv.symbol} <Text style={[type.small, { color: ds.text2 }]}>({inv.action})</Text>
+                    </Text>
+                    <Text style={[type.smallNum, { color: ds.text2 }]} numberOfLines={1}>
+                        {inv.quantity.toString()} units @ {formatCurrencyAmount(nativePrice, inv.currency || profileCurrency || 'PHP')}
+                        {plElement}
+                    </Text>
+                </View>
+                <View style={styles.end}>
+                    <Text style={[type.bodyNum, { color: ds.text }]}>
+                        {formatCurrency(nativeTotal, inv.currency)}
+                    </Text>
+                    <Text style={[type.caption, { color: ds.text2 }]}>{inv.type}</Text>
+                </View>
+            </Pressable>
         );
     }
 
     if (isDebt(item)) {
         const debt = item;
         const isPayable = debt.direction === 'PAYABLE';
-        const iconColor = isPayable ? colors.error : colors.success;
-        const iconName = isPayable ? "arrow-down-circle-outline" : "arrow-up-circle-outline";
+        const amountColor = isPayable ? ds.danger : ds.success;
 
         return (
-            <TouchableOpacity onPress={() => onSelectDebt(debt)} style={{ marginBottom: 8 }} activeOpacity={0.9}>
-                <Card flat style={{ paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0, borderLeftWidth: 4, borderLeftColor: iconColor }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                            <View style={{
-                                width: 36, height: 36, borderRadius: 18,
-                                backgroundColor: iconColor + '15',
-                                justifyContent: 'center', alignItems: 'center'
-                            }}>
-                                <Ionicons name={iconName} size={18} color={iconColor} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-                                    {debt.name}
-                                </Text>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                                    {debt.type.replace(/_/g, ' ')} • {debt.interestRate.toString()}% {debt.interestType}
-                                </Text>
-                            </View>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={{
-                                fontSize: 16, fontWeight: 'bold',
-                                color: iconColor
-                            }}>
-                                {formatCurrencyAmount(debt.initialAmount, debt.currency)}
-                            </Text>
-                            <View style={{ backgroundColor: iconColor + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4 }}>
-                                <Text style={{ color: iconColor, fontSize: 10, fontWeight: 'bold' }}>{isPayable ? 'I OWE' : 'OWED TO ME'}</Text>
-                            </View>
-                        </View>
-                    </View>
-                </Card>
-            </TouchableOpacity>
+            <Pressable onPress={() => onSelectDebt(debt)} style={[styles.row, { borderBottomColor: ds.hairline }]}>
+                {leadingDot('loans')}
+                <View style={styles.main}>
+                    <Text style={[type.body, { color: ds.text }]}>
+                        {debt.name}
+                    </Text>
+                    <Text style={[type.smallNum, { color: ds.text2 }]} numberOfLines={1}>
+                        {debt.type.replace(/_/g, ' ')} • {debt.interestRate.toString()}% {debt.interestType}
+                    </Text>
+                </View>
+                <View style={styles.end}>
+                    <Text style={[type.bodyNum, { color: amountColor }]}>
+                        {formatCurrencyAmount(debt.initialAmount, debt.currency)}
+                    </Text>
+                    <Text style={[type.caption, { color: ds.text2 }]}>{isPayable ? 'I OWE' : 'OWED TO ME'}</Text>
+                </View>
+            </Pressable>
         );
     }
 
@@ -191,16 +154,14 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
     const isNegativeFlow = isExpense || isTransferOut;
 
     // Determine Icon and Color based on logic
-    let iconName: any = "wallet";
-    let statusColor = isExpense ? colors.error : colors.success;
+    let iconName: React.ComponentProps<typeof Ionicons>['name'] = "wallet-outline";
 
     if (isTransfer) {
-        statusColor = isTransferIn ? colors.success : colors.error;
         iconName = isTransferIn ? "arrow-down-circle-outline" : "arrow-up-circle-outline";
     } else if (t.creationMethod === 'AI') {
-        iconName = "sparkles";
+        iconName = "sparkles-outline";
     } else if (t.isRecurring) {
-        iconName = "repeat";
+        iconName = "repeat-outline";
     }
 
     const getDisplayName = () => {
@@ -290,73 +251,83 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
     const isDebtNetNegative = debtNetAmount.isNegative();
 
     return (
-        <TouchableOpacity
+        <Pressable
             onPress={() => {
                 if (isLocked) return;
                 onSelectTransaction(t);
             }}
-            activeOpacity={isLocked ? 1 : 0.7}
-            style={{ marginBottom: 8 }}
+            style={[styles.row, { borderBottomColor: ds.hairline }]}
         >
-            <Card flat style={{
-                paddingVertical: 12, paddingHorizontal: 16, marginBottom: 0,
-                ...(t.savingsGoalId ? { borderLeftWidth: 4, borderLeftColor: GOAL_COLOR } : null),
-                ...(t.debtId ? { borderLeftWidth: 4, borderLeftColor: statusColor } : null)
-            }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                        <View style={{
-                            width: 36, height: 36, borderRadius: 18,
-                            backgroundColor: statusColor + '15',
-                            justifyContent: 'center', alignItems: 'center'
-                        }}>
-                            <Ionicons name={iconName} size={18} color={statusColor} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-                                {getDisplayName()}
+            {t.savingsGoalId
+                ? leadingDot('goals')
+                : t.debtId
+                    ? leadingDot('loans')
+                    : <Ionicons name={iconName} size={20} color={ds.text2} />}
+            <View style={styles.main}>
+                <Text style={[type.body, { color: ds.text }]}>
+                    {getDisplayName()}
+                </Text>
+                {!isNotedTransferRow && (subtitleText || goalFundedName) && (
+                    <Text style={[type.small, { color: ds.text2 }]} numberOfLines={1}>
+                        {subtitleText}
+                        {goalFundedName && (
+                            <Text>
+                                {subtitleText ? " • " : ""}{goalFundedName}
                             </Text>
-                            {!isNotedTransferRow && (subtitleText || goalFundedName) && (
-                                <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
-                                    {subtitleText}
-                                    {goalFundedName && (
-                                        <Text style={{ color: colors.textSecondary }}>
-                                            {subtitleText ? " • " : ""}{goalFundedName}
-                                        </Text>
-                                    )}
-                                </Text>
-                            )}
-                            {hasDebtBreakdown && (
-                                <Text style={{ fontSize: 12 }} numberOfLines={1}>
-                                    <Text style={{ color: t.type === 'TRANSFER_OUT' ? colors.error : colors.success, fontWeight: 'bold' }}>
-                                        {t.type === 'TRANSFER_OUT' ? '-' : '+'}{formatCurrency(t.amount)} principal
-                                    </Text>
-                                    {debtInterestLeg && (
-                                        <Text style={{ color: debtInterestLeg.type === 'INCOME' ? colors.success : colors.error, fontWeight: 'bold' }}>
-                                            {" • "}{debtInterestLeg.type === 'INCOME' ? '+' : '-'}{formatCurrency(debtInterestLeg.amount)} interest
-                                        </Text>
-                                    )}
-                                    {debtFeeLeg && (
-                                        <Text style={{ color: colors.error, fontWeight: 'bold' }}>
-                                            {" • -"}{formatCurrency(debtFeeLeg.amount)} fees
-                                        </Text>
-                                    )}
-                                </Text>
-                            )}
-                        </View>
-                    </View>
-                    <Text style={{
-                        color: hasDebtBreakdown ? (isDebtNetNegative ? colors.error : colors.success) : (isNegativeFlow ? colors.error : colors.success),
-                        fontSize: 16, fontWeight: 'bold'
-                    }}>
-                        {hasDebtBreakdown
-                            ? `${isDebtNetNegative ? '-' : '+'}${formatCurrency(debtNetAmount.abs())}`
-                            : `${isNegativeFlow ? '-' : '+'}${formatCurrency(displayAmount, displayCurrency)}`}
+                        )}
                     </Text>
-                </View>
-            </Card>
-        </TouchableOpacity>
+                )}
+                {hasDebtBreakdown && (
+                    <Text style={type.smallNum} numberOfLines={1}>
+                        <Text style={{ color: t.type === 'TRANSFER_OUT' ? ds.danger : ds.success }}>
+                            {t.type === 'TRANSFER_OUT' ? '-' : '+'}{formatCurrency(t.amount)} principal
+                        </Text>
+                        {debtInterestLeg && (
+                            <Text style={{ color: debtInterestLeg.type === 'INCOME' ? ds.success : ds.danger }}>
+                                {" • "}{debtInterestLeg.type === 'INCOME' ? '+' : '-'}{formatCurrency(debtInterestLeg.amount)} interest
+                            </Text>
+                        )}
+                        {debtFeeLeg && (
+                            <Text style={{ color: ds.danger }}>
+                                {" • -"}{formatCurrency(debtFeeLeg.amount)} fees
+                            </Text>
+                        )}
+                    </Text>
+                )}
+            </View>
+            <Text style={[
+                type.bodyNum,
+                { color: hasDebtBreakdown ? (isDebtNetNegative ? ds.danger : ds.success) : (isNegativeFlow ? ds.danger : ds.success) }
+            ]}>
+                {hasDebtBreakdown
+                    ? `${isDebtNetNegative ? '-' : '+'}${formatCurrency(debtNetAmount.abs())}`
+                    : `${isNegativeFlow ? '-' : '+'}${formatCurrency(displayAmount, displayCurrency)}`}
+            </Text>
+        </Pressable>
     );
 };
+
+const styles = StyleSheet.create({
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        paddingVertical: space[3],
+        minHeight: 56,
+        borderBottomWidth: 1,
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: radius.full,
+    },
+    main: {
+        flex: 1,
+        minWidth: 0,
+    },
+    end: {
+        alignItems: 'flex-end',
+    },
+});
 
 export default React.memo(HistoryListItem);

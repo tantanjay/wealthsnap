@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, Platform } from 'react-native';
+import { View, Text, Platform, StyleSheet } from 'react-native';
 
 import { useTheme } from '@context/ThemeContext';
 import { parseChatMarkdown, parseInlineMarkdown } from '@utils/chatMarkdown';
+import { type, space, fontFamily } from '@styles/theme';
 
 interface MarkdownMessageProps {
     text: string;
@@ -17,7 +18,7 @@ const MONOSPACE = Platform.select({ ios: 'Menlo', android: 'monospace', default:
  * markdown syntax in a bubble. See src/utils/chatMarkdown.ts for the parser.
  */
 const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ text, color }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
 
     if (!text) return null;
 
@@ -26,7 +27,7 @@ const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ text, color }) => {
             {parseInlineMarkdown(line).map((token, i) => {
                 if (token.code) {
                     return (
-                        <Text key={i} style={{ fontFamily: MONOSPACE, backgroundColor: colors.border, fontSize: 13 }}>
+                        <Text key={i} style={{ fontFamily: MONOSPACE, backgroundColor: ds.raised, fontSize: type.small.fontSize }}>
                             {token.text}
                         </Text>
                     );
@@ -36,7 +37,7 @@ const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ text, color }) => {
                         <Text
                             key={i}
                             style={{
-                                fontWeight: token.bold ? '700' : undefined,
+                                fontFamily: token.bold ? fontFamily.semibold : undefined,
                                 fontStyle: token.italic ? 'italic' : undefined
                             }}
                         >
@@ -55,38 +56,36 @@ const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ text, color }) => {
         <View>
             {blocks.map((block, index) => {
                 switch (block.type) {
-                    case 'heading': {
-                        const fontSize = block.level <= 1 ? 18 : block.level === 2 ? 17 : block.level === 3 ? 16 : 15;
+                    case 'heading':
                         return (
-                            <View key={index} style={{ marginTop: index > 0 ? 8 : 0, marginBottom: 4 }}>
-                                {renderInline(block.text, { color, fontSize, fontWeight: 'bold' })}
+                            <View key={index} style={{ marginTop: index > 0 ? space[2] : 0, marginBottom: space[1] }}>
+                                {renderInline(block.text, { ...type.bodyStrong, color })}
                             </View>
                         );
-                    }
                     case 'bullet':
                         return (
-                            <View key={index} style={{ flexDirection: 'row', marginBottom: 2, paddingLeft: block.indent * 12 }}>
-                                <Text style={{ color, fontSize: 15, marginRight: 6, minWidth: block.ordered ? 18 : undefined }}>
+                            <View key={index} style={{ flexDirection: 'row', marginBottom: space[1], paddingLeft: block.indent * space[3] }}>
+                                <Text style={[type.bodyNum, { color, marginRight: space[2], minWidth: block.ordered ? 18 : undefined }]}>
                                     {block.ordered ? `${block.number}.` : '•'}
                                 </Text>
-                                {renderInline(block.text, { color, fontSize: 15, lineHeight: 21, flex: 1 })}
+                                {renderInline(block.text, { ...type.body, color, flex: 1 })}
                             </View>
                         );
                     case 'blockquote':
                         return (
                             <View
                                 key={index}
-                                style={{ borderLeftWidth: 3, borderLeftColor: colors.border, paddingLeft: 8, marginVertical: 4 }}
+                                style={{ borderLeftWidth: 3, borderLeftColor: ds.text3, paddingLeft: space[2], marginVertical: space[1] }}
                             >
-                                {renderInline(block.text, { color, fontStyle: 'italic', fontSize: 14 })}
+                                {renderInline(block.text, { ...type.small, color, fontStyle: 'italic' })}
                             </View>
                         );
                     case 'divider':
-                        return <View key={index} style={{ height: 1, backgroundColor: colors.border, marginVertical: 8 }} />;
+                        return <View key={index} style={{ height: StyleSheet.hairlineWidth, backgroundColor: ds.text3, marginVertical: space[2] }} />;
                     case 'paragraph':
                         return (
-                            <View key={index} style={{ marginBottom: 4 }}>
-                                {renderInline(block.text, { color, fontSize: 15, lineHeight: 21 })}
+                            <View key={index} style={{ marginBottom: space[1] }}>
+                                {renderInline(block.text, { ...type.body, color })}
                             </View>
                         );
                     default:

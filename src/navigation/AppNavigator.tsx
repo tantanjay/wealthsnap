@@ -36,16 +36,16 @@ const MainTabs = () => (
 );
 
 const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'LegalAcceptance' }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const navigationTheme = {
         ...DefaultTheme,
         colors: {
             ...DefaultTheme.colors,
-            background: colors.background,
-            card: colors.surface,
-            text: colors.text,
-            border: colors.border,
-            primary: colors.primary,
+            background: ds.bg,
+            card: ds.sheet,
+            text: ds.text,
+            border: ds.hairline,
+            primary: ds.accent,
         },
     };
 

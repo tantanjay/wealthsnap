@@ -75,16 +75,11 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
         loadData();
     }, []);
 
-    // Category colors; AllExpensesModal uses the same list so dots match slices.
-    const CHART_COLORS = [
-        '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
-        '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50'
-    ];
-
     const pieData = categoryBreakdown.map((item, index) => ({
         name: item.name,
         population: BigNumber.isBigNumber(item.amount) ? item.amount.toNumber() : 0,
-        color: CHART_COLORS[index % CHART_COLORS.length],
+        // AllExpensesModal indexes ds.chart the same way, so its dots match these slices.
+        color: ds.chart[index % ds.chart.length],
     }));
 
     const topCategory = categoryBreakdown[0];
@@ -190,7 +185,8 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
             return (
                 <Row
                     key={index}
-                    leading={<View style={[styles.dot, { backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }]} />}
+                    // Rows are re-sorted by budget status; color by the pie's order so dots match slices.
+                    leading={<View style={[styles.dot, { backgroundColor: ds.chart[categoryBreakdown.indexOf(item) % ds.chart.length] }]} />}
                     title={item.name}
                     subtitle={item.goalFundedAmount?.isGreaterThan(0)
                         ? `${format.show(format.money(item.goalFundedAmount, { compact: true }), formatPercent(goalShare))} from goals`

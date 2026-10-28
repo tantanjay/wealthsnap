@@ -16,7 +16,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     style,
     borderRadius = 4
 }) => {
-    const { mode } = useTheme();
+    const { ds } = useTheme();
     const [opacity] = useState(() => new Animated.Value(0.3));
 
     useEffect(() => {
@@ -40,7 +40,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         return () => animation.stop();
     }, [opacity]);
 
-    const baseColor = mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    const baseColor = ds.hairline;
 
     return (
         <Animated.View

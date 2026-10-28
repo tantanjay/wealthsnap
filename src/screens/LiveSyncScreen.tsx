@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
@@ -11,11 +11,13 @@ import { useSecurity } from '@context/SecurityContext';
 import { Button } from '@components/index';
 import { hostSyncSession, joinSyncSession, QrPayload, LiveSyncSession } from '@services/integrations/liveSyncTransport';
 import { SyncSummary } from '@services/integrations/syncService';
+import { SEVERITY_ICON } from '@utils/severity';
+import { type, space, radius } from '@styles/theme';
 
 type ScreenState = 'choice' | 'hosting' | 'scanning' | 'connecting' | 'result' | 'error';
 
 const LiveSyncScreen = ({ navigation }: any) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const insets = useSafeAreaInsets();
     const { showAlert } = useAlert();
     const { temporarilyDisableLock } = useSecurity();
@@ -142,11 +144,9 @@ const LiveSyncScreen = ({ navigation }: any) => {
 
     const renderChoice = () => (
         <View style={styles.centerContent}>
-            <View style={[styles.bigIconContainer, { backgroundColor: colors.primary + '20' }]}>
-                <Ionicons name="sync-circle" size={72} color={colors.primary} />
-            </View>
-            <Text style={[styles.bigTitle, { color: colors.text }]}>Sync from Device</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            <Ionicons name="sync-outline" size={56} color={ds.text2} style={styles.bigIcon} />
+            <Text style={[type.title, styles.bigTitle, { color: ds.text }]}>Sync from Device</Text>
+            <Text style={[type.body, styles.subtitle, { color: ds.text2 }]}>
                 Both devices need to be on the same WiFi network. One shows a code, the other scans it.
             </Text>
             <View style={styles.buttonWrapper}>
@@ -158,15 +158,15 @@ const LiveSyncScreen = ({ navigation }: any) => {
 
     const renderHosting = () => (
         <View style={styles.centerContent}>
-            <Text style={[styles.bigTitle, { color: colors.text, fontSize: 22 }]}>Show this to your other device</Text>
-            <View style={styles.qrCard}>
+            <Text style={[type.title, styles.bigTitle, { color: ds.text }]}>Show this to your other device</Text>
+            <View style={[styles.qrCard, { backgroundColor: ds.qrSurface }]}>
                 {qrValue ? (
                     <QRCode value={qrValue} size={220} />
                 ) : (
-                    <ActivityIndicator size="large" color={colors.primary} />
+                    <ActivityIndicator size="large" color={ds.accent} />
                 )}
             </View>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            <Text style={[type.bodyNum, styles.subtitle, { color: ds.text2 }]}>
                 {qrValue ? `Expires in ${secondsLeft}s` : 'Starting local server…'}
             </Text>
             <View style={styles.buttonWrapper}>
@@ -184,9 +184,9 @@ const LiveSyncScreen = ({ navigation }: any) => {
                 onBarcodeScanned={hasScanned ? undefined : handleBarcodeScanned}
             />
             <View style={styles.scanOverlay} pointerEvents="none">
-                <View style={styles.scanFrame} />
+                <View style={[styles.scanFrame, { borderColor: ds.onMedia }]} />
             </View>
-            <View style={[styles.scanFooter, { paddingBottom: insets.bottom + 16 }]}>
+            <View style={[styles.scanFooter, { paddingBottom: insets.bottom + space[4] }]}>
                 <Button title="Cancel" onPress={goToChoice} variant="outline" style={styles.button} />
             </View>
         </View>
@@ -194,8 +194,8 @@ const LiveSyncScreen = ({ navigation }: any) => {
 
     const renderConnecting = () => (
         <View style={styles.centerContent}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[styles.subtitle, { color: colors.textSecondary, marginTop: 20 }]}>{progressLabel}</Text>
+            <ActivityIndicator size="large" color={ds.accent} />
+            <Text style={[type.body, styles.subtitle, { color: ds.text2, marginTop: space[5] }]}>{progressLabel}</Text>
         </View>
     );
 
@@ -203,17 +203,20 @@ const LiveSyncScreen = ({ navigation }: any) => {
         const hasFailures = !!summary?.failures.length;
         return (
             <View style={styles.centerContent}>
-                <View style={[styles.bigIconContainer, { backgroundColor: (hasFailures ? colors.error : colors.success) + '20' }]}>
-                    <Ionicons name={hasFailures ? 'alert-circle' : 'checkmark-circle'} size={72} color={hasFailures ? colors.error : colors.success} />
-                </View>
-                <Text style={[styles.bigTitle, { color: colors.text }]}>
+                <Ionicons
+                    name={hasFailures ? SEVERITY_ICON.warning : SEVERITY_ICON.success}
+                    size={56}
+                    color={hasFailures ? ds.warning : ds.success}
+                    style={styles.bigIcon}
+                />
+                <Text style={[type.title, styles.bigTitle, { color: ds.text }]}>
                     {hasFailures ? 'Sync Partially Completed' : 'Sync Complete'}
                 </Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                <Text style={[type.bodyNum, styles.subtitle, { color: ds.text2 }]}>
                     {summary ? `${summary.added} added, ${summary.updated} updated, ${summary.removed} removed.` : ''}
                 </Text>
                 {hasFailures && (
-                    <Text style={[styles.subtitle, { color: colors.error }]}>
+                    <Text style={[type.body, styles.subtitle, { color: ds.danger }]}>
                         {summary!.failures.length} failed to sync: {summary!.failures.join(', ')}. Try again to retry these.
                     </Text>
                 )}
@@ -226,11 +229,9 @@ const LiveSyncScreen = ({ navigation }: any) => {
 
     const renderError = () => (
         <View style={styles.centerContent}>
-            <View style={[styles.bigIconContainer, { backgroundColor: colors.error + '20' }]}>
-                <Ionicons name="close-circle" size={72} color={colors.error} />
-            </View>
-            <Text style={[styles.bigTitle, { color: colors.text }]}>Sync Failed</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{errorMessage}</Text>
+            <Ionicons name={SEVERITY_ICON.error} size={56} color={ds.danger} style={styles.bigIcon} />
+            <Text style={[type.title, styles.bigTitle, { color: ds.text }]}>Sync Failed</Text>
+            <Text style={[type.body, styles.subtitle, { color: ds.text2 }]}>{errorMessage}</Text>
             <View style={styles.buttonWrapper}>
                 <Button title="Try Again" onPress={goToChoice} style={styles.button} />
                 <Button title="Close" onPress={() => navigation.goBack()} variant="outline" style={styles.button} />
@@ -239,10 +240,12 @@ const LiveSyncScreen = ({ navigation }: any) => {
     );
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-            <View style={[styles.header, { borderBottomColor: colors.border }]}>
-                <Ionicons name="chevron-back" size={24} color={colors.text} onPress={() => navigation.goBack()} />
-                <Text style={[styles.headerTitle, { color: colors.text }]}>Sync from Device</Text>
+        <View style={[styles.container, { backgroundColor: ds.bg, paddingTop: insets.top }]}>
+            <View style={styles.header}>
+                <Pressable onPress={() => navigation.goBack()} accessibilityLabel="Back" hitSlop={space[2]}>
+                    <Ionicons name="chevron-back" size={22} color={ds.text2} />
+                </Pressable>
+                <Text style={[type.title, { color: ds.text }]}>Sync from Device</Text>
             </View>
 
             {state === 'choice' && renderChoice()}
@@ -262,44 +265,30 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 15,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginLeft: 10,
+        gap: space[2],
+        paddingTop: space[1],
+        paddingHorizontal: space[5],
     },
     centerContent: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 30,
+        paddingHorizontal: space[6],
     },
-    bigIconContainer: {
-        width: 110,
-        height: 110,
-        borderRadius: 55,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 24,
+    bigIcon: {
+        marginBottom: space[5],
     },
     bigTitle: {
-        fontSize: 26,
-        fontWeight: 'bold',
-        marginBottom: 12,
+        marginBottom: space[3],
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 15,
-        lineHeight: 22,
         textAlign: 'center',
-        marginBottom: 30,
+        marginBottom: space[6],
     },
     buttonWrapper: {
         width: '100%',
-        gap: 10,
+        gap: space[3],
     },
     button: {
         width: '100%',
@@ -307,13 +296,11 @@ const styles = StyleSheet.create({
     qrCard: {
         width: 260,
         height: 260,
-        borderRadius: 16,
-        // Intentionally not theme-aware: QR scanners need high contrast (dark modules on a
-        // light background) to read reliably, regardless of whether the app is in dark mode.
-        backgroundColor: '#FFFFFF',
+        borderRadius: radius.md,
+        // ds.qrSurface (white in every theme) is applied inline: scanners need dark on light.
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: space[5],
     },
     cameraContainer: {
         flex: 1,
@@ -326,17 +313,17 @@ const styles = StyleSheet.create({
     scanFrame: {
         width: 240,
         height: 240,
-        borderRadius: 16,
+        borderRadius: radius.md,
         borderWidth: 3,
-        borderColor: '#FFFFFF',
+        // ds.onMedia (white in every theme) is applied inline: drawn over the camera feed.
     },
     scanFooter: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        paddingHorizontal: 30,
-        paddingTop: 16,
+        paddingHorizontal: space[6],
+        paddingTop: space[4],
     },
 });
 

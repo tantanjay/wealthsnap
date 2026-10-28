@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, Pressable, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Platform, KeyboardAvoidingView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
@@ -9,6 +9,7 @@ import { useAlert } from '@context/AlertContext';
 import BottomModal from '@components/common/BottomModal';
 import { Disclaimer } from '@components/common/Disclaimer';
 import MarkdownMessage from '@components/common/MarkdownMessage';
+import { Row, SegmentedControl } from '@components/ds';
 import { type, space, radius } from '@styles/theme';
 import { generateUUID } from '@utils/uuid';
 import {
@@ -88,7 +89,7 @@ const pickRandomPrompts = (pool: string[], count: number): string[] => {
 const DEBT_BEHAVIOR_PROMPT = "Looking at all my debts - paid off, forgiven, or still active - what does that say about how I handle debt?";
 
 const ChatScreen = ({ navigation }: any) => {
-    const { colors, ds } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const insets = useSafeAreaInsets();
 
@@ -299,125 +300,103 @@ const ChatScreen = ({ navigation }: any) => {
     };
 
     const renderHeader = (title: string, right?: React.ReactNode) => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: insets.top + 12, paddingBottom: 12 }}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 15 }}>
-                <Ionicons name="arrow-back" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', flex: 1 }}>{title}</Text>
+        <View style={[styles.topBar, { paddingTop: insets.top + space[3] }]}>
+            <Pressable onPress={() => navigation.goBack()} accessibilityLabel="Back" hitSlop={space[2]}>
+                <Ionicons name="chevron-back" size={22} color={ds.text2} />
+            </Pressable>
+            <Text style={[type.title, { color: ds.text, flex: 1 }]}>{title}</Text>
             {right}
         </View>
+    );
+
+    const renderPrimaryButton = (label: string, onPress: () => void, disabled: boolean) => (
+        <Pressable
+            onPress={onPress}
+            disabled={disabled}
+            style={[styles.primaryButton, { backgroundColor: ds.accent, marginBottom: Math.max(insets.bottom, space[4]) }]}
+        >
+            <Text style={[type.bodyStrong, { color: ds.onAccent }]}>{label}</Text>
+        </Pressable>
     );
 
     // --- Phase 0: sensitive-category exclusion ---
     if (!categoriesConfirmed) {
         return (
-            <View style={{ flex: 1, backgroundColor: colors.background }}>
+            <View style={{ flex: 1, backgroundColor: ds.bg }}>
                 {renderHeader('Chat')}
-                <View style={{ flex: 1, paddingHorizontal: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 8 }}>
+                <View style={styles.page}>
+                    <Text style={[type.body, { color: ds.text, marginBottom: space[1] }]}>
                         Anything you&apos;d rather keep out of this?
                     </Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 12, lineHeight: 18 }}>
+                    <Text style={[type.small, { color: ds.text2, marginBottom: space[3] }]}>
                         Tap a category to exclude it from the data sent to the AI (e.g. Credit Payment). Everything else is included by default.
                     </Text>
 
-                    <View style={{
-                        flexDirection: 'row',
-                        backgroundColor: colors.warning + '20',
-                        borderRadius: 10,
-                        padding: 10,
-                        marginBottom: 16,
-                        gap: 8
-                    }}>
-                        <Ionicons name="information-circle-outline" size={16} color={colors.textSecondary} style={{ marginTop: 1 }} />
-                        <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17, flex: 1 }}>
+                    <View style={[styles.note, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="information-circle-outline" size={16} color={ds.text2} style={{ marginTop: 1 }} />
+                        <Text style={[type.small, { color: ds.text2, flex: 1 }]}>
                             Excluding a category, or keeping your debt names private below, only hides the label - the amounts still count in every total sent to the AI.
                         </Text>
                     </View>
 
                     {loadingCategories ? (
-                        <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-                            <ActivityIndicator color={colors.primary} />
+                        <View style={styles.loading}>
+                            <ActivityIndicator color={ds.accent} />
                         </View>
                     ) : (
-                        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 8, paddingBottom: 12 }} showsVerticalScrollIndicator={false}>
-                            {availableCategories.map(category => {
+                        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: space[3] }} showsVerticalScrollIndicator={false}>
+                            {availableCategories.map((category, index) => {
                                 const isExcluded = excludedCategories.has(category);
+                                const last = index === availableCategories.length - 1;
                                 return (
-                                    <TouchableOpacity
+                                    <Pressable
                                         key={category}
                                         onPress={() => toggleCategoryExclusion(category)}
-                                        style={{
-                                            flexDirection: 'row',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            padding: 14,
-                                            borderRadius: 12,
-                                            backgroundColor: isExcluded ? colors.border + '30' : colors.surface,
-                                            borderWidth: 1,
-                                            borderColor: isExcluded ? colors.textSecondary : colors.border
-                                        }}
+                                        style={[styles.row, { borderBottomColor: ds.hairline, borderBottomWidth: last ? 0 : 1 }]}
                                     >
-                                        <Text style={{
-                                            color: isExcluded ? colors.textSecondary : colors.text,
-                                            fontSize: 15,
-                                            fontWeight: '500',
-                                            textDecorationLine: isExcluded ? 'line-through' : 'none'
-                                        }}>
+                                        <Text style={[
+                                            type.body,
+                                            { flex: 1, color: isExcluded ? ds.text2 : ds.text, textDecorationLine: isExcluded ? 'line-through' : 'none' }
+                                        ]}>
                                             {category}
                                         </Text>
                                         <Ionicons
                                             name={isExcluded ? 'eye-off-outline' : 'eye-outline'}
-                                            size={18}
-                                            color={isExcluded ? colors.textSecondary : colors.primary}
+                                            size={20}
+                                            color={isExcluded ? ds.text2 : ds.accent}
                                         />
-                                    </TouchableOpacity>
+                                    </Pressable>
                                 );
                             })}
                         </ScrollView>
                     )}
 
                     {hasDebts && (
-                        <View style={{ marginTop: 16 }}>
-                            <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600', marginBottom: 6 }}>
+                        <View style={{ marginTop: space[4] }}>
+                            <Text style={[type.smallStrong, { color: ds.text, marginBottom: space[1] }]}>
                                 Include your debt names?
                             </Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 10, lineHeight: 17 }}>
+                            <Text style={[type.small, { color: ds.text2, marginBottom: space[3] }]}>
                                 Debt amounts, types, and status are included either way - this only decides whether the AI sees the real names (e.g. &quot;Mom&apos;s Loan&quot;) or just &quot;Debt 1&quot;, &quot;Debt 2&quot;, etc.
                             </Text>
-                            <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 3 }}>
-                                <TouchableOpacity
-                                    onPress={() => setDiscloseDebtNames(true)}
-                                    style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8, backgroundColor: discloseDebtNames ? colors.primary : 'transparent' }}
-                                >
-                                    <Text style={{ color: discloseDebtNames ? colors.textLight : colors.text, fontWeight: 'bold', fontSize: 13 }}>Include Names</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={() => setDiscloseDebtNames(false)}
-                                    style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8, backgroundColor: !discloseDebtNames ? colors.primary : 'transparent' }}
-                                >
-                                    <Text style={{ color: !discloseDebtNames ? colors.textLight : colors.text, fontWeight: 'bold', fontSize: 13 }}>Keep Anonymous</Text>
-                                </TouchableOpacity>
-                            </View>
+                            <SegmentedControl
+                                options={[
+                                    { key: 'include', label: 'Include Names' },
+                                    { key: 'anonymous', label: 'Keep Anonymous' }
+                                ]}
+                                value={discloseDebtNames ? 'include' : 'anonymous'}
+                                onChange={key => setDiscloseDebtNames(key === 'include')}
+                            />
                         </View>
                     )}
 
-                    <TouchableOpacity
-                        onPress={handleConfirmCategories}
-                        disabled={loadingCategories}
-                        style={{
-                            backgroundColor: colors.primary,
-                            borderRadius: 12,
-                            paddingVertical: 14,
-                            alignItems: 'center',
-                            marginTop: 12,
-                            marginBottom: Math.max(insets.bottom, 16)
-                        }}
-                    >
-                        <Text style={{ color: colors.textLight, fontSize: 15, fontWeight: '600' }}>
-                            {excludedCategories.size > 0 ? `Continue (${excludedCategories.size} excluded)` : 'Continue'}
-                        </Text>
-                    </TouchableOpacity>
+                    <View style={{ marginTop: space[3] }}>
+                        {renderPrimaryButton(
+                            excludedCategories.size > 0 ? `Continue (${excludedCategories.size} excluded)` : 'Continue',
+                            handleConfirmCategories,
+                            loadingCategories
+                        )}
+                    </View>
                 </View>
             </View>
         );
@@ -426,42 +405,32 @@ const ChatScreen = ({ navigation }: any) => {
     // --- Phase A: range picker ---
     if (!selectedRange) {
         return (
-            <View style={{ flex: 1, backgroundColor: colors.background }}>
+            <View style={{ flex: 1, backgroundColor: ds.bg }}>
                 {renderHeader('Chat')}
-                <View style={{ flex: 1, paddingHorizontal: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 8 }}>
+                <View style={styles.page}>
+                    <Text style={[type.body, { color: ds.text, marginBottom: space[1] }]}>
                         How much history do you want to use?
                     </Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 20, lineHeight: 18 }}>
+                    <Text style={[type.small, { color: ds.text2, marginBottom: space[2] }]}>
                         This grounds the conversation in your actual data. More history means better context, but a larger prompt sent with every message.
                     </Text>
 
                     {loadingContext ? (
-                        <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-                            <ActivityIndicator color={colors.primary} />
+                        <View style={styles.loading}>
+                            <ActivityIndicator color={ds.accent} />
                         </View>
                     ) : (
-                        <View style={{ gap: 10 }}>
-                            {RANGE_OPTIONS.map(opt => {
+                        <View>
+                            {RANGE_OPTIONS.map((opt, index) => {
                                 const estimate = contextInputs ? assembleContextForRange(contextInputs, opt.value).estimatedTokens : 0;
                                 return (
-                                    <TouchableOpacity
+                                    <Row
                                         key={opt.value}
+                                        title={opt.label}
+                                        trailing={<Text style={[type.smallNum, { color: ds.text2 }]}>~{formatTokens(estimate)} tokens</Text>}
+                                        last={index === RANGE_OPTIONS.length - 1}
                                         onPress={() => handleSelectRange(opt.value, opt.label)}
-                                        style={{
-                                            flexDirection: 'row',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            padding: 16,
-                                            borderRadius: 12,
-                                            backgroundColor: colors.surface,
-                                            borderWidth: 1,
-                                            borderColor: colors.border
-                                        }}
-                                    >
-                                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{opt.label}</Text>
-                                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>~{formatTokens(estimate)} tokens</Text>
-                                    </TouchableOpacity>
+                                    />
                                 );
                             })}
                         </View>
@@ -471,55 +440,49 @@ const ChatScreen = ({ navigation }: any) => {
         );
     }
 
+    const sendDisabled = sending || !inputText.trim();
+
     // --- Phase B: conversation ---
     return (
         <KeyboardAvoidingView
-            style={{ flex: 1, backgroundColor: colors.background }}
+            style={{ flex: 1, backgroundColor: ds.bg }}
             behavior="padding"
             keyboardVerticalOffset={Platform.OS === 'android' ? -insets.bottom : 0}
         >
             {renderHeader(
                 'Chat',
-                <TouchableOpacity onPress={() => setContextModalVisible(true)} style={{ padding: 4 }}>
-                    <Ionicons name="document-text-outline" size={22} color={colors.text} />
-                </TouchableOpacity>
+                <Pressable onPress={() => setContextModalVisible(true)} accessibilityLabel="Generated context" hitSlop={space[2]}>
+                    <Ionicons name="document-text-outline" size={22} color={ds.text2} />
+                </Pressable>
             )}
 
-            <View style={{ paddingHorizontal: 16, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{selectedRange.label} of history</Text>
+            <View style={styles.metaLine}>
+                <Text style={[type.caption, { color: ds.text2 }]}>{selectedRange.label} of history</Text>
                 {sessionTotals.tokens > 0 && (
-                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                    <Text style={[type.captionNum, { color: ds.text2 }]}>
                         Session: {formatTokens(sessionTotals.tokens)} tokens · {formatCost(sessionTotals.costUSD)}
                     </Text>
                 )}
             </View>
 
-            <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 8 }}>
+            <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={styles.thread}>
                 {messages.length === 0 && (
-                    <View style={{ marginTop: 20 }}>
-                        <Text style={{ color: colors.textSecondary, fontStyle: 'italic', textAlign: 'center', marginBottom: 16 }}>
+                    <View style={{ marginTop: space[5] }}>
+                        <Text style={[type.small, { color: ds.text2, textAlign: 'center', marginBottom: space[4] }]}>
                             Ask anything about your income, spending, investments, or debt.
                         </Text>
                         {suggestedPrompts.length > 0 && (
-                            <View style={{ gap: 8 }}>
+                            <View style={{ gap: space[2] }}>
                                 {suggestedPrompts.map((prompt, idx) => (
-                                    <TouchableOpacity
+                                    <Pressable
                                         key={idx}
                                         onPress={() => handleSend(prompt)}
                                         disabled={sending}
-                                        style={{
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
-                                            backgroundColor: colors.surface,
-                                            borderWidth: 1,
-                                            borderColor: colors.border,
-                                            borderRadius: 14,
-                                            padding: 12
-                                        }}
+                                        style={[styles.prompt, { backgroundColor: ds.inset }]}
                                     >
-                                        <Ionicons name="sparkles-outline" size={16} color={colors.primary} style={{ marginRight: 10 }} />
-                                        <Text style={{ color: colors.text, fontSize: 13, flex: 1 }}>{prompt}</Text>
-                                    </TouchableOpacity>
+                                        <Ionicons name="sparkles-outline" size={16} color={ds.accent} />
+                                        <Text style={[type.small, { color: ds.text, flex: 1 }]}>{prompt}</Text>
+                                    </Pressable>
                                 ))}
                             </View>
                         )}
@@ -528,24 +491,20 @@ const ChatScreen = ({ navigation }: any) => {
                 {messages.map(m => (
                     <View
                         key={m.id}
-                        style={{
-                            alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                            maxWidth: '85%',
-                            backgroundColor: m.role === 'user' ? colors.primary : colors.surface,
-                            borderRadius: 16,
-                            borderWidth: m.role === 'user' ? 0 : 1,
-                            borderColor: colors.border,
-                            padding: 12,
-                            marginBottom: 10
-                        }}
+                        style={[
+                            styles.bubble,
+                            m.role === 'user'
+                                ? { alignSelf: 'flex-end', backgroundColor: ds.accent }
+                                : { alignSelf: 'flex-start', backgroundColor: ds.inset }
+                        ]}
                     >
                         {m.role === 'user' ? (
-                            <Text style={{ color: colors.textLight, fontSize: 15, lineHeight: 21 }}>{m.text}</Text>
+                            <Text style={[type.body, { color: ds.onAccent }]}>{m.text}</Text>
                         ) : (
-                            <MarkdownMessage text={m.text || (m.streaming ? '...' : '')} color={colors.text} />
+                            <MarkdownMessage text={m.text || (m.streaming ? '...' : '')} color={ds.text} />
                         )}
                         {m.role === 'model' && !m.streaming && m.inputTokens !== undefined && (
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 6 }}>
+                            <Text style={[type.captionNum, { color: ds.text2, marginTop: space[2] }]}>
                                 {formatTokens(m.inputTokens)} in / {formatTokens(m.outputTokens || 0)} out · {formatCost(m.costUSD || new BigNumber(0))}
                             </Text>
                         )}
@@ -553,53 +512,28 @@ const ChatScreen = ({ navigation }: any) => {
                 ))}
             </ScrollView>
 
-            <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 16,
-                paddingTop: 8,
-                paddingBottom: Math.max(insets.bottom, 12),
-                borderTopWidth: 1,
-                borderTopColor: colors.border,
-                gap: 10
-            }}>
+            <View style={[styles.inputBar, { borderTopColor: ds.hairline, paddingBottom: Math.max(insets.bottom, space[3]) }]}>
                 <TextInput
-                    style={{
-                        flex: 1,
-                        backgroundColor: colors.surface,
-                        borderRadius: 20,
-                        paddingHorizontal: 16,
-                        paddingVertical: 10,
-                        color: colors.text,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        maxHeight: 100
-                    }}
+                    style={[styles.field, type.body, { backgroundColor: ds.inset, color: ds.text }]}
                     placeholder="Ask a question..."
-                    placeholderTextColor={colors.gray500}
+                    placeholderTextColor={ds.text3}
                     value={inputText}
                     onChangeText={setInputText}
                     multiline
                     editable={!sending}
                 />
-                <TouchableOpacity
+                <Pressable
                     onPress={() => handleSend()}
-                    disabled={sending || !inputText.trim()}
-                    style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 22,
-                        backgroundColor: sending || !inputText.trim() ? colors.gray300 : colors.primary,
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
+                    disabled={sendDisabled}
+                    accessibilityLabel="Send"
+                    style={[styles.sendButton, { backgroundColor: sendDisabled ? ds.inset : ds.accent }]}
                 >
                     {sending ? (
-                        <ActivityIndicator color={colors.textLight} size="small" />
+                        <ActivityIndicator color={ds.text3} size="small" />
                     ) : (
-                        <Ionicons name="send" size={18} color={colors.textLight} />
+                        <Ionicons name="send" size={18} color={sendDisabled ? ds.text3 : ds.onAccent} />
                     )}
-                </TouchableOpacity>
+                </Pressable>
             </View>
 
             <BottomModal
@@ -633,5 +567,89 @@ const ChatScreen = ({ navigation }: any) => {
         </KeyboardAvoidingView>
     );
 };
+
+
+const styles = StyleSheet.create({
+    topBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+        paddingHorizontal: space[5],
+        paddingBottom: space[3],
+    },
+    page: {
+        flex: 1,
+        paddingHorizontal: space[5],
+    },
+    note: {
+        flexDirection: 'row',
+        gap: space[2],
+        borderRadius: radius.md,
+        padding: space[3],
+        marginBottom: space[2],
+    },
+    loading: {
+        paddingVertical: space[7],
+        alignItems: 'center',
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        paddingVertical: space[3],
+        minHeight: 56,
+    },
+    primaryButton: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    metaLine: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: space[5],
+        paddingBottom: space[2],
+    },
+    thread: {
+        paddingHorizontal: space[5],
+        paddingVertical: space[2],
+    },
+    prompt: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        borderRadius: radius.md,
+        padding: space[3],
+    },
+    bubble: {
+        maxWidth: '85%',
+        borderRadius: radius.md,
+        padding: space[3],
+        marginBottom: space[2],
+    },
+    inputBar: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        gap: space[2],
+        paddingHorizontal: space[5],
+        paddingTop: space[2],
+        borderTopWidth: 1,
+    },
+    field: {
+        flex: 1,
+        borderRadius: radius.md,
+        paddingHorizontal: space[3],
+        paddingVertical: space[3],
+        maxHeight: 112,
+    },
+    sendButton: {
+        width: 44,
+        height: 44,
+        borderRadius: radius.full,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
 
 export default ChatScreen;

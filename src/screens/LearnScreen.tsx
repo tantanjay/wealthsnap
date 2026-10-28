@@ -26,8 +26,8 @@ const GUIDES = HELP_TOPICS.filter(t => !ROW_TOPICS.includes(t.id));
 
 // Guides, help center and about content (moved out of Profile).
 const LearnScreen = ({ navigation }: any) => {
-    // colors.background: the guide still paints the older background, so the status-bar strip matches it.
-    const { ds, colors } = useTheme();
+    // ds.bg matches the guide, so the status-bar strip blends with it.
+    const { ds } = useTheme();
     const insets = useSafeAreaInsets();
 
     // Kept after closing so the modal doesn't swap content during its close animation.
@@ -147,7 +147,7 @@ const LearnScreen = ({ navigation }: any) => {
 
             <Modal visible={showGuide} animationType="slide" statusBarTranslucent onRequestClose={() => setShowGuide(false)}>
                 {/* A Modal renders outside the app's gesture root on Android; the guide swipes between slides. */}
-                <GestureHandlerRootView style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.background }}>
+                <GestureHandlerRootView style={{ flex: 1, paddingTop: insets.top, backgroundColor: ds.bg }}>
                     <OnboardingGuide mode="view" onFinish={() => setShowGuide(false)} />
                 </GestureHandlerRootView>
             </Modal>

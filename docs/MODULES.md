@@ -248,7 +248,6 @@ Not a user-facing feature; app shell, data layer, and utilities used across modu
 - `src/components/common/BottomModal.tsx`
 - `src/components/common/Skeleton.tsx`
 - `src/components/common/TimeRangeSelector.tsx`
-- `src/components/common/ReorderList.tsx`
 - `src/components/common/ReviewAppModal.tsx`
 - `src/hooks/useReviewPrompt.ts`
 - `src/styles/theme.ts`

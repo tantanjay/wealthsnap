@@ -13,7 +13,7 @@ interface Props {
 }
 
 export const ScreenWrapper: React.FC<Props> = ({ children, style, noPadding, scrollable = true }) => {
-    const { colors, mode } = useTheme();
+    const { ds, theme } = useTheme();
     const insets = useSafeAreaInsets();
 
     const content = scrollable ? (
@@ -30,14 +30,14 @@ export const ScreenWrapper: React.FC<Props> = ({ children, style, noPadding, scr
         <KeyboardAvoidingView
             style={[{
                 flex: 1,
-                backgroundColor: colors.background,
+                backgroundColor: ds.bg,
                 paddingTop: insets.top,
                 paddingHorizontal: noPadding ? 0 : 16,
             }, style]}
             behavior="padding"
             keyboardVerticalOffset={Platform.OS === 'android' ? -insets.bottom : 0}
         >
-            <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+            <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
             {content}
         </KeyboardAvoidingView>
     );

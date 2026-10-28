@@ -1,32 +1,6 @@
 import type { TextStyle, ViewStyle } from 'react-native';
 
-export const PALETTE = {
-    primary: '#1976D2',      // Financial Blue 700
-    primaryDark: '#0D47A1',  // Blue 900
-    primaryLight: '#42A5F5', // Blue 400
-    secondary: '#FFA000',    // Amber 700 (Complementary, Wealth/Gold)
-    secondaryDark: '#FF6F00',// Amber 900
-    secondaryLight: '#FFCA28',// Amber 200
-    accent: '#00BFA5',       // Teal A700 - decorative/interactive only; positive values use `success`, not this
-    white: '#FFFFFF',
-    black: '#000000',
-    gray100: '#F5F5F5',
-    gray200: '#EEEEEE',
-    gray300: '#E0E0E0',
-    gray400: '#BDBDBD',
-    gray500: '#9E9E9E',
-    gray600: '#757575',
-    gray700: '#616161',
-    gray800: '#424242',
-    gray900: '#212121',
-    error: '#D32F2F',        // Red 700 (Standard Error)
-    warning: '#F57C00',      // Orange 700
-    info: '#0288D1',         // Light Blue 700
-    success: '#388E3C',      // Green 700 (Positive/Growth)
-};
-
-
-// Refined Minimal tokens (docs/DESIGN.md §2). Namespaced under `ds` so they don't collide with the legacy `colors` keys.
+// Refined Minimal tokens (docs/DESIGN.md §2): the only colors components use, so a theme swaps them here.
 const lightDs = {
     bg: '#FFFFFF',
     inset: '#F4F5F7',
@@ -47,9 +21,24 @@ const lightDs = {
     domainLoans: '#B0896B',
     domainGoals: '#3AA39A',
     scrim: 'rgba(0, 0, 0, 0.40)',
+    // White in every theme: a QR code needs dark on light to scan, and marks drawn over the camera feed.
+    qrSurface: '#FFFFFF',
+    onMedia: '#FFFFFF',
+    // Categorical palette for pies and their legends only; slice i uses chart[i % length].
+    chart: ['#3A8FA6', '#C25A7C', '#84923A', '#A05FA8', '#A8862A', '#5D7F5B', '#C27A4E', '#6B6F7A'],
 };
 
 export type DsColors = typeof lightDs;
+
+// Dialog/notice severity -> semantic token; info stays neutral since accent means "tappable".
+export const severityColor = (ds: DsColors, severity: 'error' | 'warning' | 'success' | 'info'): string => {
+    switch (severity) {
+        case 'error': return ds.danger;
+        case 'warning': return ds.warning;
+        case 'success': return ds.success;
+        default: return ds.text2;
+    }
+};
 
 const darkDs: DsColors = {
     bg: '#0E1013',
@@ -71,6 +60,9 @@ const darkDs: DsColors = {
     domainLoans: '#C4A288',
     domainGoals: '#5CBDB3',
     scrim: 'rgba(0, 0, 0, 0.60)',
+    qrSurface: '#FFFFFF',
+    onMedia: '#FFFFFF',
+    chart: ['#5FB0C6', '#E07F9E', '#AEBB62', '#C084C7', '#D6B45A', '#8EB08A', '#DE9A70', '#8B92A3'],
 };
 
 // Shadows for floating layers only (sheets, Record FAB); mirrors the prototype's --float-shadow / --fab-shadow.
@@ -88,60 +80,12 @@ const darkElevation: DsElevation = {
 
 export const lightTheme = {
     mode: 'light',
-    colors: {
-        primary: PALETTE.primary,
-        primaryDark: PALETTE.primaryDark,
-        primaryLight: PALETTE.primaryLight,
-        secondary: PALETTE.secondary,
-        secondaryDark: PALETTE.secondaryDark,
-        secondaryLight: PALETTE.secondaryLight,
-        accent: PALETTE.accent,
-        background: '#F8F9FA',
-        surface: '#FFFFFF',
-        text: '#212121',
-        textSecondary: '#757575',
-        textLight: '#FFFFFF',
-        border: '#E0E0E0',
-        divider: '#BDBDBD',
-        error: PALETTE.error,
-        warning: PALETTE.warning,
-        info: PALETTE.info,
-        success: PALETTE.success,
-        tabBar: '#FFFFFF',
-        gray300: PALETTE.gray300,
-        gray500: PALETTE.gray500,
-        white: PALETTE.white,
-    },
     ds: lightDs,
     elevation: lightElevation,
 };
 
 export const darkTheme = {
     mode: 'dark',
-    colors: {
-        primary: PALETTE.primary,
-        primaryDark: PALETTE.primaryDark,
-        primaryLight: PALETTE.primaryLight,
-        secondary: PALETTE.secondary,
-        secondaryDark: PALETTE.secondaryDark,
-        secondaryLight: PALETTE.secondaryLight,
-        accent: PALETTE.accent,
-        background: '#121212',
-        surface: '#1E1E1E',
-        text: '#E0E0E0',
-        textSecondary: '#B0B0B0',
-        textLight: '#121212',
-        border: '#333333',
-        divider: '#424242',
-        error: '#EF5350', // Keep desaturated red for dark mode
-        warning: '#FFA726', // Keep desaturated orange for dark mode
-        info: '#42A5F5',    // Keep light blue for dark mode
-        success: '#66BB6A', // Keep lighter green for dark mode
-        tabBar: '#1E1E1E',
-        gray300: '#555555',
-        gray500: '#888888',
-        white: '#FFFFFF',
-    },
     ds: darkDs,
     elevation: darkElevation,
 };

@@ -18,7 +18,6 @@ export interface HelpTopic {
     title: string;
     subtitle: string;
     icon: string;
-    color: string;
     type: 'onboarding' | 'document';
     content?: ContentItem[];
 }
@@ -29,7 +28,6 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Getting Started',
         subtitle: 'The basic guide to WealthSnap',
         icon: 'rocket-outline',
-        color: '#4CAF50',
         type: 'onboarding'
     },
     {
@@ -37,7 +35,6 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Home Snapshot',
         subtitle: 'Net worth, overview rows and privacy modes',
         icon: 'home-outline',
-        color: '#3AA39A',
         type: 'document',
         content: [
             { type: 'heading1', text: 'Home Snapshot' },
@@ -70,7 +67,6 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'What Runway Tells You',
         subtitle: 'How long your cash would last',
         icon: 'hourglass-outline',
-        color: '#1976D2',
         type: 'document',
         content: [
             { type: 'heading1', text: 'What Runway Tells You' },
@@ -99,7 +95,6 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Privacy Modes',
         subtitle: 'Open, Discreet and Hidden',
         icon: 'eye-off-outline',
-        color: '#607D8B',
         type: 'document',
         content: [
             { type: 'heading1', text: 'Privacy Modes' },
@@ -121,7 +116,6 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Saving with Goals',
         subtitle: 'Set money aside and spend it down',
         icon: 'flag-outline',
-        color: '#3AA39A',
         type: 'document',
         content: [
             { type: 'heading1', text: 'Saving with Goals' },
@@ -146,7 +140,6 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Financial Insights',
         subtitle: 'Financial Health grid and charts',
         icon: 'bar-chart-outline',
-        color: '#2196F3',
         type: 'document',
         content: [
             { type: 'heading1', text: 'Financial Health & Charts' },
@@ -293,7 +286,6 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Math & Formulas',
         subtitle: 'Calculations reference',
         icon: 'calculator-outline',
-        color: '#9C27B0',
         type: 'document',
         content: [
             { type: 'heading1', text: 'Mathematical Documentation' },
@@ -497,7 +489,6 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Debt Strategy',
         subtitle: 'Payoff plans, interest cost, and payments',
         icon: 'trending-down-outline',
-        color: '#FF5722',
         type: 'document',
         content: [
             { type: 'heading1', text: 'Debt Strategy Overview' },
@@ -587,7 +578,6 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Investments',
         subtitle: 'Portfolio stats, Smart Advisor, and dividends',
         icon: 'trending-up-outline',
-        color: '#00BFA5',
         type: 'document',
         content: [
             { type: 'heading1', text: 'Investments Overview' },
@@ -685,7 +675,6 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'FAQ',
         subtitle: 'Common questions',
         icon: 'help-circle-outline',
-        color: '#795548',
         type: 'document',
         content: [
             { type: 'heading1', text: 'FAQ' },
@@ -716,7 +705,6 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Change Logs',
         subtitle: 'Version history and release notes',
         icon: 'git-branch-outline',
-        color: '#607D8B',
         type: 'document',
         content: parseMarkdownToContentItems(CHANGELOG_MARKDOWN)
     }

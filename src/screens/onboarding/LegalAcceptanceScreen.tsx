@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, BackHandler, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, Pressable, StyleSheet, ScrollView, BackHandler, Dimensions } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import TermsContent from '@components/onboarding/TermsContent';
-import { Button } from '@components/index';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius, fontFamily } from '@styles/theme';
 import { saveAcceptedTermsVersion } from '@services/core/storageService';
 import { CONFIG } from '@constants/config';
 
 const { height } = Dimensions.get('window');
 
 const LegalAcceptanceScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const insets = useSafeAreaInsets();
     const [hasAgreed, setHasAgreed] = useState(false);
     const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
@@ -46,119 +45,24 @@ const LegalAcceptanceScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
         );
     };
 
-    const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-            padding: 20,
-        },
-        heroHeader: {
-            alignItems: 'center',
-            marginBottom: 20,
-            paddingTop: 10,
-        },
-        iconContainer: {
-            width: 70,
-            height: 70,
-            borderRadius: 35,
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: 12,
-        },
-        gradientBg: {
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0,
-            borderRadius: 35,
-        },
-        title: {
-            fontSize: 22,
-            fontWeight: 'bold',
-            textAlign: 'center',
-            marginBottom: 8,
-        },
-        description: {
-            fontSize: 15,
-            textAlign: 'center',
-            opacity: 0.8,
-            lineHeight: 22,
-        },
-        termsCard: {
-            flex: 1,
-            maxHeight: height * 0.65,
-            borderWidth: 1,
-            borderRadius: 16,
-            marginBottom: 16,
-            padding: 2,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 4,
-            elevation: 2,
-        },
-        termsInnerScroll: {
-            padding: 16,
-        },
-        scrollIndicator: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 16,
-            paddingVertical: 8,
-            paddingHorizontal: 16,
-            borderRadius: 20,
-            alignSelf: 'center',
-        },
-        checkboxRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: 16,
-            padding: 12,
-        },
-        checkbox: {
-            width: 24,
-            height: 24,
-            borderRadius: 6,
-            borderWidth: 2,
-            marginRight: 12,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        checkboxLabel: {
-            flex: 1,
-            fontSize: 14,
-            lineHeight: 20,
-        },
-        button: {
-            height: 56,
-            borderRadius: 16,
-        }
-    });
-
     return (
-        <ScreenWrapper scrollable={false} noPadding>
-            <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+        <ScreenWrapper scrollable={false} noPadding style={{ backgroundColor: ds.bg }}>
+            <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, space[5]) }]}>
                 <View style={styles.heroHeader}>
-                    <View style={styles.iconContainer}>
-                        <LinearGradient
-                            colors={[colors.primary, colors.primary + 'CC']}
-                            style={styles.gradientBg}
-                        />
-                        <Ionicons name="document-text" size={36} color="#FFF" />
+                    <View style={[styles.iconContainer, { backgroundColor: ds.accentSoft }]}>
+                        <Ionicons name="document-text-outline" size={32} color={ds.accent} />
                     </View>
-                    <Text style={[styles.title, { color: colors.text }]}>
-                        Terms Updated
+                    <Text style={[type.title, styles.center, { color: ds.text }]}>
+                        Terms updated
                     </Text>
-                    <Text style={[styles.description, { color: colors.textSecondary }]}>
+                    <Text style={[type.small, styles.center, { color: ds.text2 }]}>
                         We&apos;ve updated our Terms of Use and Privacy Policy. Please review and accept them to continue using WealthSnap.
                     </Text>
                 </View>
 
-                <View style={[styles.termsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={[styles.termsCard, { backgroundColor: ds.inset }]}>
                     <ScrollView
                         style={{ flex: 1 }}
-                        contentContainerStyle={styles.termsInnerScroll}
                         nestedScrollEnabled
                         showsVerticalScrollIndicator
                         onScroll={(event) => {
@@ -175,56 +79,118 @@ const LegalAcceptanceScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                 </View>
 
                 {!hasScrolledToBottom ? (
-                    <View style={[styles.scrollIndicator, { backgroundColor: colors.primary + '15' }]}>
-                        <Ionicons name="arrow-down-circle" size={18} color={colors.primary} />
-                        <Text style={{ color: colors.primary, fontSize: 13, marginLeft: 8, fontWeight: '500' }}>
+                    <View style={styles.scrollIndicator}>
+                        <Ionicons name="arrow-down-circle-outline" size={18} color={ds.text2} />
+                        <Text style={[type.smallMedium, { color: ds.text2 }]}>
                             Scroll to the bottom to continue
                         </Text>
                     </View>
                 ) : (
-                    <View style={[styles.scrollIndicator, { backgroundColor: colors.success + '15' }]}>
-                        <Ionicons name="checkmark-circle" size={18} color={colors.success || '#4CAF50'} />
-                        <Text style={{ color: colors.success || '#4CAF50', fontSize: 13, marginLeft: 8, fontWeight: '500' }}>
+                    <View style={styles.scrollIndicator}>
+                        <Ionicons name="checkmark-circle-outline" size={18} color={ds.success} />
+                        <Text style={[type.smallMedium, { color: ds.success }]}>
                             You&apos;ve read the updates
                         </Text>
                     </View>
                 )}
 
-                <TouchableOpacity
-                    style={[
-                        styles.checkboxRow,
-                        {
-                            opacity: hasScrolledToBottom ? 1 : 0.4,
-                            backgroundColor: hasAgreed ? colors.primary + '10' : 'transparent',
-                            borderRadius: 12,
-                        }
-                    ]}
+                <Pressable
+                    style={[styles.checkboxRow, { opacity: hasScrolledToBottom ? 1 : 0.4 }]}
                     onPress={() => hasScrolledToBottom && setHasAgreed(!hasAgreed)}
                     disabled={!hasScrolledToBottom}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: hasAgreed, disabled: !hasScrolledToBottom }}
                 >
                     <View style={[
                         styles.checkbox,
                         {
-                            borderColor: hasScrolledToBottom ? (hasAgreed ? colors.primary : colors.gray500) : colors.gray500,
-                            backgroundColor: hasAgreed ? colors.primary : 'transparent'
+                            borderColor: hasAgreed ? ds.accent : ds.text3,
+                            backgroundColor: hasAgreed ? ds.accent : 'transparent',
                         }
                     ]}>
-                        {hasAgreed && <Ionicons name="checkmark" size={16} color="#FFF" />}
+                        {hasAgreed && <Ionicons name="checkmark" size={16} color={ds.onAccent} />}
                     </View>
-                    <Text style={[styles.checkboxLabel, { color: hasScrolledToBottom ? colors.text : colors.gray500 }]}>
-                        I have read and agree to the <Text style={{ fontWeight: 'bold', color: colors.primary }}>Terms of Use</Text> and <Text style={{ fontWeight: 'bold', color: colors.primary }}>Privacy Policy</Text>
+                    <Text style={[type.small, styles.checkboxLabel, { color: ds.text }]}>
+                        I have read and agree to the <Text style={{ fontFamily: fontFamily.medium, color: ds.accent }}>Terms of Use</Text> and <Text style={{ fontFamily: fontFamily.medium, color: ds.accent }}>Privacy Policy</Text>
                     </Text>
-                </TouchableOpacity>
+                </Pressable>
 
-                <Button
-                    title="Accept & Continue"
+                <Pressable
                     onPress={handleAccept}
                     disabled={!hasAgreed}
-                    style={styles.button}
-                />
+                    style={[styles.button, { backgroundColor: hasAgreed ? ds.accent : ds.inset }]}
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: !hasAgreed }}
+                >
+                    <Text style={[type.bodyStrong, { color: hasAgreed ? ds.onAccent : ds.text3 }]}>Accept & continue</Text>
+                </Pressable>
             </View>
         </ScreenWrapper>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        paddingHorizontal: space[5],
+        paddingTop: space[5],
+    },
+    heroHeader: {
+        alignItems: 'center',
+        gap: space[2],
+        marginBottom: space[5],
+        paddingTop: space[2],
+    },
+    iconContainer: {
+        width: 64,
+        height: 64,
+        borderRadius: radius.full,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: space[1],
+    },
+    center: {
+        textAlign: 'center',
+    },
+    termsCard: {
+        flex: 1,
+        maxHeight: height * 0.65,
+        borderRadius: radius.md,
+        marginBottom: space[3],
+        overflow: 'hidden',
+    },
+    scrollIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: space[2],
+        marginBottom: space[3],
+        paddingVertical: space[2],
+    },
+    checkboxRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        marginBottom: space[4],
+        paddingVertical: space[3],
+    },
+    checkbox: {
+        width: 22,
+        height: 22,
+        borderRadius: 6,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkboxLabel: {
+        flex: 1,
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
 
 export default LegalAcceptanceScreen;

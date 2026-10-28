@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button } from '@components/index';
+import { Row, IconName } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius, fontFamily } from '@styles/theme';
 import { HELP_TOPICS, HelpTopic } from '@constants/helpContent';
 import { splitBoldSegments } from '@utils/markdownParser';
 import OnboardingGuide from '@screens/onboarding/OnboardingGuideScreen';
@@ -17,7 +18,7 @@ interface HelpCenterProps {
 }
 
 const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboarding', initialTopicId }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const insets = useSafeAreaInsets();
     const [selectedTopic, setSelectedTopic] = useState<HelpTopic | null>(
         () => HELP_TOPICS.find(t => t.id === initialTopicId) ?? null
@@ -47,47 +48,45 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
     const renderMenu = () => (
         <ScrollView
             style={styles.menuContainer}
-            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+            contentContainerStyle={{ paddingBottom: insets.bottom + space[5] }}
             showsVerticalScrollIndicator={false}
         >
             <View style={styles.header}>
-                <Text style={[styles.mainTitle, { color: colors.text }]}>Help Center 📚</Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                <Text style={[type.title, { color: ds.text }]}>Help Center 📚</Text>
+                <Text style={[type.small, { color: ds.text2 }]}>
                     Everything you need to know about WealthSnap
                 </Text>
             </View>
 
-            {HELP_TOPICS.map((topic) => (
-                <TouchableOpacity
+            {HELP_TOPICS.map((topic, index) => (
+                <Row
                     key={topic.id}
-                    style={[styles.topicCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                    icon={topic.icon as IconName}
+                    title={topic.title}
+                    subtitle={topic.subtitle}
+                    chevron
+                    last={index === HELP_TOPICS.length - 1}
                     onPress={() => setSelectedTopic(topic)}
-                >
-                    <View style={[styles.topicIcon, { backgroundColor: topic.color + '20' }]}>
-                        <Ionicons name={topic.icon as any} size={24} color={topic.color} />
-                    </View>
-                    <View style={styles.topicInfo}>
-                        <Text style={[styles.topicTitle, { color: colors.text }]}>{topic.title}</Text>
-                        <Text style={[styles.topicSubtitle, { color: colors.textSecondary }]}>{topic.subtitle}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
+                />
             ))}
 
             <View style={styles.footer}>
                 {mode === 'onboarding' ? (
-                    <Button
-                        title="Get Started"
+                    <Pressable
                         onPress={onFinish}
-                        style={styles.actionButton}
-                    />
+                        style={[styles.actionButton, { backgroundColor: ds.accent }]}
+                        accessibilityRole="button"
+                    >
+                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Get started</Text>
+                    </Pressable>
                 ) : (
-                    <Button
-                        title="Close"
+                    <Pressable
                         onPress={onFinish}
-                        variant="outline"
-                        style={styles.actionButton}
-                    />
+                        style={[styles.actionButton, { backgroundColor: ds.inset }]}
+                        accessibilityRole="button"
+                    >
+                        <Text style={[type.bodyStrong, { color: ds.text }]}>Close</Text>
+                    </Pressable>
                 )}
             </View>
         </ScrollView>
@@ -97,7 +96,7 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
         return (
             <Text style={baseStyle}>
                 {splitBoldSegments(text).map((seg, i) =>
-                    seg.bold ? <Text key={i} style={{ fontWeight: 'bold' }}>{seg.text}</Text> : seg.text
+                    seg.bold ? <Text key={i} style={{ fontFamily: fontFamily.semibold, color: ds.text }}>{seg.text}</Text> : seg.text
                 )}
             </Text>
         );
@@ -106,14 +105,15 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
     const renderDocument = (topic: HelpTopic) => {
         return (
             <View style={styles.documentWrapper}>
-                <View style={[styles.viewerHeader, { borderBottomColor: colors.border }]}>
-                    <TouchableOpacity
-                        style={styles.viewerBack}
+                <View style={[styles.viewerHeader, { borderBottomColor: ds.hairline }]}>
+                    <Pressable
                         onPress={closeTopic}
+                        hitSlop={space[2]}
+                        accessibilityLabel="Back"
                     >
-                        <Ionicons name="arrow-back" size={24} color={colors.text} />
-                    </TouchableOpacity>
-                    <Text style={[styles.viewerTitle, { color: colors.text }]} numberOfLines={1}>
+                        <Ionicons name="arrow-back" size={24} color={ds.text2} />
+                    </Pressable>
+                    <Text style={[type.body, styles.viewerTitle, { color: ds.text }]} numberOfLines={1}>
                         {topic.title}
                     </Text>
                     <View style={{ width: 24 }} />
@@ -121,21 +121,21 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
 
                 <ScrollView
                     style={styles.documentScroll}
-                    contentContainerStyle={[styles.documentContent, { paddingBottom: insets.bottom + 20 }]}
+                    contentContainerStyle={[styles.documentContent, { paddingBottom: insets.bottom + space[5] }]}
                     showsVerticalScrollIndicator={false}
                 >
                     {topic.content?.map((item, index) => {
                         switch (item.type) {
                             case 'heading1':
-                                return <Text key={index} style={[styles.h1, { color: colors.text }]}>{item.text}</Text>;
+                                return <Text key={index} style={[type.title, styles.h1, { color: ds.text }]}>{item.text}</Text>;
                             case 'heading2':
-                                return <Text key={index} style={[styles.h2, { color: colors.text }]}>{item.text}</Text>;
+                                return <Text key={index} style={[type.bodyStrong, styles.h2, { color: ds.text }]}>{item.text}</Text>;
                             case 'heading3':
-                                return <Text key={index} style={[styles.h3, { color: colors.text }]}>{item.text}</Text>;
+                                return <Text key={index} style={[type.smallStrong, styles.h3, { color: ds.text }]}>{item.text}</Text>;
                             case 'paragraph':
                                 return (
                                     <View key={index}>
-                                        {renderFormattedText(item.text, [styles.p, { color: colors.textSecondary }])}
+                                        {renderFormattedText(item.text, [type.body, styles.p, { color: ds.text2 }])}
                                     </View>
                                 );
                             case 'bullet':
@@ -144,202 +144,40 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
                                         key={index}
                                         style={[
                                             styles.bulletRow,
-                                            item.indent ? { paddingLeft: item.indent * 20 } : null
+                                            item.indent ? { paddingLeft: item.indent * space[5] } : null
                                         ]}
                                     >
-                                        <Text style={[styles.bulletDot, { color: topic.color }]}>•</Text>
-                                        {renderFormattedText(item.text, [styles.bulletText, { color: colors.textSecondary }])}
+                                        <Text style={[type.body, styles.bulletDot, { color: ds.text3 }]}>•</Text>
+                                        {renderFormattedText(item.text, [type.body, styles.bulletText, { color: ds.text2 }])}
                                     </View>
                                 );
                             case 'blockquote':
                                 return (
-                                    <View key={index} style={[styles.blockquote, { borderLeftColor: topic.color, backgroundColor: topic.color + '10' }]}>
-                                        <Text style={[styles.blockquoteText, { color: colors.text }]}>{item.text}</Text>
+                                    <View key={index} style={[styles.blockquote, { backgroundColor: ds.inset }]}>
+                                        <Text style={[type.small, styles.blockquoteText, { color: ds.text }]}>{item.text}</Text>
                                     </View>
                                 );
                             case 'formula':
                                 return (
-                                    <View key={index} style={[styles.formulaBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                                        <Text style={[styles.formulaLabel, { color: colors.textSecondary }]}>FORMULA</Text>
-                                        <Text style={[styles.formulaText, { color: colors.primary }]}>{item.text}</Text>
+                                    <View key={index} style={[styles.formulaBox, { backgroundColor: ds.inset }]}>
+                                        <Text style={[type.captionMedium, styles.formulaLabel, { color: ds.text2 }]}>Formula</Text>
+                                        <Text style={[type.smallMedium, styles.formulaText, { color: ds.text }]}>{item.text}</Text>
                                     </View>
                                 );
                             case 'divider':
-                                return <View key={index} style={[styles.divider, { backgroundColor: colors.border }]} />;
+                                return <View key={index} style={[styles.divider, { backgroundColor: ds.hairline }]} />;
                             default:
                                 return null;
                         }
                     })}
-                    <View style={{ height: 40 }} />
+                    <View style={{ height: space[7] }} />
                 </ScrollView>
             </View>
         );
     };
 
-    const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-            backgroundColor: colors.background,
-        },
-        menuContainer: {
-            flex: 1,
-            padding: 20,
-        },
-        header: {
-            marginTop: 10,
-            marginBottom: 20,
-            paddingHorizontal: 0,
-        },
-        mainTitle: {
-            fontSize: 32,
-            fontWeight: '800',
-            marginBottom: 8,
-        },
-        subtitle: {
-            fontSize: 16,
-            lineHeight: 22,
-        },
-        topicCard: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            padding: 16,
-            borderRadius: 16,
-            borderWidth: 1,
-            marginBottom: 16,
-        },
-        topicIcon: {
-            width: 48,
-            height: 48,
-            borderRadius: 12,
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginRight: 16,
-        },
-        topicInfo: {
-            flex: 1,
-        },
-        topicTitle: {
-            fontSize: 18,
-            fontWeight: '700',
-            marginBottom: 4,
-        },
-        topicSubtitle: {
-            fontSize: 14,
-        },
-        footer: {
-            marginTop: 20,
-            marginBottom: 40,
-        },
-        actionButton: {
-            height: 56,
-            borderRadius: 16,
-        },
-        viewerBack: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginTop: 20,
-        },
-        // Document Styles
-        documentWrapper: {
-            flex: 1,
-        },
-        viewerHeader: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 20,
-            paddingVertical: 15,
-            borderBottomWidth: 1,
-            marginTop: 10,
-        },
-        viewerTitle: {
-            fontSize: 18,
-            fontWeight: '700',
-            flex: 1,
-            textAlign: 'center',
-        },
-        documentScroll: {
-            flex: 1,
-        },
-        documentContent: {
-            padding: 20,
-        },
-        h1: {
-            fontSize: 28,
-            fontWeight: '800',
-            marginBottom: 16,
-        },
-        h2: {
-            fontSize: 22,
-            fontWeight: '700',
-            marginTop: 24,
-            marginBottom: 12,
-        },
-        h3: {
-            fontSize: 18,
-            fontWeight: '700',
-            marginTop: 16,
-            marginBottom: 8,
-        },
-        p: {
-            fontSize: 16,
-            lineHeight: 24,
-            marginBottom: 16,
-        },
-        bulletRow: {
-            flexDirection: 'row',
-            marginBottom: 12,
-            paddingRight: 20,
-        },
-        bulletDot: {
-            fontSize: 20,
-            marginRight: 10,
-            marginTop: -2,
-        },
-        bulletText: {
-            fontSize: 16,
-            lineHeight: 24,
-            flex: 1,
-        },
-        blockquote: {
-            padding: 16,
-            borderLeftWidth: 4,
-            borderRadius: 8,
-            marginBottom: 20,
-        },
-        blockquoteText: {
-            fontSize: 15,
-            fontStyle: 'italic',
-            lineHeight: 22,
-        },
-        formulaBox: {
-            padding: 16,
-            borderRadius: 12,
-            borderWidth: 1,
-            marginBottom: 20,
-            alignItems: 'center',
-        },
-        formulaLabel: {
-            fontSize: 10,
-            fontWeight: '800',
-            letterSpacing: 1,
-            marginBottom: 8,
-        },
-        formulaText: {
-            fontSize: 18,
-            fontWeight: '700',
-            fontFamily: 'monospace',
-            textAlign: 'center',
-        },
-        divider: {
-            height: 1,
-            marginVertical: 20,
-            opacity: 0.3,
-        }
-    });
-
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: ds.bg }]}>
             {!selectedTopic ? (
                 renderMenu()
             ) : selectedTopic.type === 'onboarding' ? (
@@ -350,5 +188,104 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    menuContainer: {
+        flex: 1,
+        paddingHorizontal: space[5],
+        paddingTop: space[5],
+    },
+    header: {
+        gap: space[1],
+        marginTop: space[2],
+        marginBottom: space[4],
+    },
+    footer: {
+        marginTop: space[6],
+        marginBottom: space[7],
+    },
+    actionButton: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    // Document Styles
+    documentWrapper: {
+        flex: 1,
+    },
+    viewerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: space[3],
+        paddingHorizontal: space[5],
+        paddingVertical: space[4],
+        borderBottomWidth: 1,
+        marginTop: space[2],
+    },
+    viewerTitle: {
+        flex: 1,
+        textAlign: 'center',
+    },
+    documentScroll: {
+        flex: 1,
+    },
+    documentContent: {
+        padding: space[5],
+    },
+    h1: {
+        marginBottom: space[4],
+    },
+    h2: {
+        marginTop: space[6],
+        marginBottom: space[3],
+    },
+    h3: {
+        marginTop: space[4],
+        marginBottom: space[2],
+    },
+    p: {
+        marginBottom: space[4],
+    },
+    bulletRow: {
+        flexDirection: 'row',
+        marginBottom: space[3],
+        paddingRight: space[5],
+    },
+    bulletDot: {
+        marginRight: space[2],
+    },
+    bulletText: {
+        flex: 1,
+    },
+    blockquote: {
+        padding: space[4],
+        borderRadius: radius.sm,
+        marginBottom: space[5],
+    },
+    blockquoteText: {
+        fontStyle: 'italic',
+    },
+    formulaBox: {
+        padding: space[4],
+        borderRadius: radius.sm,
+        marginBottom: space[5],
+        alignItems: 'center',
+    },
+    formulaLabel: {
+        marginBottom: space[2],
+    },
+    formulaText: {
+        textAlign: 'center',
+    },
+    divider: {
+        height: 1,
+        marginVertical: space[5],
+    },
+});
 
 export default HelpCenterScreen;

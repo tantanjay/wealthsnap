@@ -9,8 +9,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import BackupRestoreModal from '@components/data/BackupRestoreModal';
 import { ASYNC_KEYS } from '@constants/config';
+import { useTheme } from '@context/ThemeContext';
 import { BackupProgress, createBackup } from '@services/integrations/backupService';
 import { generateUUID } from '@utils/uuid';
+import { type, space, radius } from '@styles/theme';
 
 interface Props {
     children: ReactNode;
@@ -18,6 +20,7 @@ interface Props {
 
 // Lives inside the boundary's fallback, so it can't rely on providers that sit below the boundary.
 const CrashBackupAction: React.FC = () => {
+    const { ds } = useTheme();
     const [visible, setVisible] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState<BackupProgress | null>(null);
@@ -49,10 +52,10 @@ const CrashBackupAction: React.FC = () => {
 
     return (
         <>
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => setVisible(true)}>
-                <Text style={styles.secondaryButtonText}>Back up data</Text>
+            <TouchableOpacity style={[styles.button, styles.secondaryButton, { backgroundColor: ds.inset }]} onPress={() => setVisible(true)}>
+                <Text style={[type.bodyStrong, { color: ds.text }]}>Back up data</Text>
             </TouchableOpacity>
-            {failure ? <Text style={styles.backupMessage}>{failure}</Text> : null}
+            {failure ? <Text style={[type.small, styles.backupMessage, { color: ds.danger }]}>{failure}</Text> : null}
             {/* The app-level SafeAreaProvider is below the boundary, so the modal needs its own. */}
             <SafeAreaProvider>
                 <BackupRestoreModal
@@ -65,6 +68,33 @@ const CrashBackupAction: React.FC = () => {
                 />
             </SafeAreaProvider>
         </>
+    );
+};
+
+// ThemeProvider sits above the boundary, so the fallback can still read tokens.
+const CrashScreen: React.FC<{ error: Error | null; onRestart: () => void }> = ({ error, onRestart }) => {
+    const { ds } = useTheme();
+    return (
+        <View style={[styles.container, { backgroundColor: ds.bg }]}>
+            <View style={styles.content}>
+                <Ionicons name="alert-circle-outline" size={56} color={ds.danger} />
+                <Text style={[type.title, styles.title, { color: ds.text }]}>Something went wrong</Text>
+                <Text style={[type.small, styles.subtitle, { color: ds.text2 }]}>
+                    We&apos;re sorry, but the app has encountered an unexpected error.
+                </Text>
+
+                <ScrollView style={[styles.errorContainer, { backgroundColor: ds.inset }]}>
+                    <Text style={[type.caption, { color: ds.danger }]}>
+                        {error && error.toString()}
+                    </Text>
+                </ScrollView>
+
+                <TouchableOpacity style={[styles.button, { backgroundColor: ds.accent }]} onPress={onRestart}>
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Reload app</Text>
+                </TouchableOpacity>
+                <CrashBackupAction />
+            </View>
+        </View>
     );
 };
 
@@ -166,28 +196,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
 
     render() {
         if (this.state.hasError) {
-            return (
-                <View style={styles.container}>
-                    <View style={styles.content}>
-                        <Ionicons name="alert-circle" size={64} color="#FF6B6B" />
-                        <Text style={styles.title}>Oops! Something went wrong.</Text>
-                        <Text style={styles.subtitle}>
-                            We&apos;re sorry, but the app has encountered an unexpected error.
-                        </Text>
-
-                        <ScrollView style={styles.errorContainer}>
-                            <Text style={styles.errorText}>
-                                {this.state.error && this.state.error.toString()}
-                            </Text>
-                        </ScrollView>
-
-                        <TouchableOpacity style={styles.button} onPress={this.handleRestart}>
-                            <Text style={styles.buttonText}>Reload App</Text>
-                        </TouchableOpacity>
-                        <CrashBackupAction />
-                    </View>
-                </View>
-            );
+            return <CrashScreen error={this.state.error} onRestart={this.handleRestart} />;
         }
 
         return this.props.children;
@@ -197,9 +206,8 @@ export class GlobalErrorBoundary extends Component<Props, State> {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
         justifyContent: 'center',
-        padding: 20,
+        padding: space[5],
     },
     content: {
         alignItems: 'center',
@@ -207,67 +215,33 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginTop: 20,
-        marginBottom: 10,
-        color: '#333',
+        marginTop: space[5],
+        marginBottom: space[2],
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 16,
-        color: '#666',
         textAlign: 'center',
-        marginBottom: 30,
+        marginBottom: space[6],
     },
     errorContainer: {
         maxHeight: 200,
         width: '100%',
-        backgroundColor: '#f8f9fa',
-        padding: 15,
-        borderRadius: 8,
-        marginBottom: 30,
-        borderWidth: 1,
-        borderColor: '#eee',
-    },
-    errorText: {
-        fontFamily: 'monospace',
-        fontSize: 12,
-        color: '#e03131',
+        padding: space[3],
+        borderRadius: radius.sm,
+        marginBottom: space[6],
     },
     button: {
-        backgroundColor: '#007AFF', // Primary Blue
-        paddingVertical: 14,
-        paddingHorizontal: 30,
-        borderRadius: 12,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
+        alignSelf: 'stretch',
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     secondaryButton: {
-        marginTop: 12,
-        paddingVertical: 14,
-        paddingHorizontal: 30,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#007AFF',
-    },
-    secondaryButtonText: {
-        color: '#007AFF',
-        fontSize: 16,
-        fontWeight: '600',
+        marginTop: space[3],
     },
     backupMessage: {
-        marginTop: 12,
-        fontSize: 13,
-        color: '#e03131',
+        marginTop: space[3],
         textAlign: 'center',
-    }
+    },
 });
