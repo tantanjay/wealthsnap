@@ -20,6 +20,7 @@ import {
     MonthCashFlow,
     NetWorthChange,
 } from '@utils/snapshotMetrics';
+import { formatMonths } from '@components/insights/financialHealthPool';
 import { SNAPSHOT_ROW_META } from './SnapshotOrderList';
 
 export interface SnapshotData {
@@ -148,7 +149,7 @@ const loansRow = (d: SnapshotData, period: SnapshotPeriod, f: PrivacyFormat): Ov
         subtitle: dueLine,
         value: f.show(f.money(l.outstanding), `${formatPercent(l.repaidPercent)} repaid`),
         ...(f.isDiscreet
-            ? ptsChange(l.repaidPercent, l.repaidPercentPrev)
+            ? (l.repaidPointsChange === null ? {} : ptsChange(l.repaidPointsChange, 0))
             : l.repaidPercentPrev === null ? {} : moneyChange(f, l.outstanding.minus(l.outstandingPrev), false)),
         progress: l.repaidPercent,
     };
@@ -228,7 +229,7 @@ const heroContent = (d: SnapshotData, f: PrivacyFormat) => {
         change: changeText,
         changeTone,
         stats: [
-            { label: 'Runway', value: runway.isFinite() ? `${runway.toNumber().toFixed(1)} mo` : '∞' },
+            { label: 'Runway', value: formatMonths(runway.isFinite() ? runway.toNumber() : Infinity) },
             f.show({ label: 'Assets', value: f.money(now.assets, { compact: true }) }, { label: 'Savings rate', value: formatPercent(d.month.savingsRate) }),
         ],
     };

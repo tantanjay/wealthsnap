@@ -14,14 +14,14 @@ WealthSnap calculates what you can *actually* spend without hurting your future.
 **Formula:**
 
 ```
-(Current Cash + Future Income)
-- (Future Bills + Mandatory Debt Payments + Life Burnrate)
+(This Month's Income + Future Income)
+- (Spending and Transfers Out So Far + Future Bills + Unpaid Debt Payments + Unpaid Goal Contributions + Life Burnrate)
 = Safe-to-Spend
 ```
 
-Where:
+Shown on Home's Ledger tab for the rest of the month, where:
 
-- **Future Income** includes recurring income before period end  
+- **Future Income** includes recurring income before month-end  
 - **Mandatory Debt Payments** are treated as non-optional  
 - **Life Burnrate** is a rolling 90-day average of non-recurring daily spending  
 
@@ -167,13 +167,10 @@ These payments are treated as **mandatory obligations** across:
 
 ---
 
-## 📊 Debt Analytics Card
+## 📊 Loans at a Glance
 
-- Swipe between **Lifetime** and **Monthly** views
-- See:
-  - Required Payments
-  - Paid Principal
-  - Interest Cost
+- Home Snapshot's Loans row: outstanding and % repaid overall, or this month's payments made vs due
+- Loans tab: outstanding, still due this month, each loan's progress and next due date
 - Clear separation of obligations vs activity
 
 ---
@@ -343,14 +340,12 @@ Your month at a glance, written in plain language instead of raw numbers.
 
 # 📆 Smart History Calendar
 
-A powerful alternate history view featuring:
+The Ledger tab's month calendar, featuring:
 
 - Income / Expense / Transfer bars per day
-- Safe-to-Spend for period
 - Ghost Forecast (upcoming recurring bills)
 - Discretionary spending heatmap
 - Investment BUY/SELL signal markers
-- Interactive learning modal
 
 ---
 
@@ -386,11 +381,9 @@ Alerts run immediately after saving transactions.
 - Horizontal quick-select categories
 - Rapid entry mode (auto “Add More”)
 - Smart Document Scanner
-- Ledger filters (by type, keyword, date range)
-- Floating Quick Actions (draggable menu bubble)
-- Swipeable balance cards
+- Ledger filters (by type and keyword) and a month calendar
 - Persistent display preferences
-- Reorderable dashboard sections
+- Reorderable Snapshot rows, Holdings sections and Insights sections
 - Integrated Change Logs in Help Center
 
 ---

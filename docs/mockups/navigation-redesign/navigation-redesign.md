@@ -46,7 +46,7 @@ Spending pace, budget %, Investment Boost and Debt Drag leave Home; they live in
 
 ### Ledger / Holdings / Goals / Loans
 
-- **Ledger:** search, filter chips (All / Income / Expense / Transfers), this month's income and expense, transactions grouped by day.
+- **Ledger:** search, filter chips (All / Income / Expense / Transfers), this month's money in and out, this month's Safe to spend, transactions grouped by day.
 - **Holdings:** portfolio total and all-time return, allocation bar by asset type, each holding with value, weight and return.
 - **Goals:** saved-in-goals total and this month's contributions, one progress card per goal.
 - **Loans:** "You owe / Owed to you" switch, outstanding and due-this-month, one progress card per loan with its next due date.
@@ -74,13 +74,15 @@ The chosen mode applies app-wide (Insights isn't under Home but still follows it
 | Hero sub-figure | Total Assets ₱ | Savings rate % |
 | Runway | months | months (already scale-free) |
 | Cash row | balance ₱ | % kept of income (Overall) / savings rate (This month) |
-| Investments row / Holdings | value ₱ | total return %, weight % per holding |
+| Investments row | value ₱ | unrealized return %, top holding weight % |
+| Holdings | value ₱ | total return %, weight % per holding |
 | Loans row / Loans | outstanding ₱ | % repaid, obligations paid count |
 | Goals row / Goals | balance ₱ | % to target, goals on track |
-| Ledger / Recent | amounts | name, category and date only |
-| Debt Drag sheet stepper | ₱ extra per month | number of steps |
+| Ledger / Recent | amounts, day totals, In / Out | each transaction's own amount; no day totals; Out as % of In |
+| Ledger Safe to spend | ₱ | "—" |
+| Debt Drag sheet stepper | ₱ extra per month | number of steps, starting from 0 |
 
-Dropped in Discreet because they still leak scale: Investment Boost months (a huge "+N months" implies investments far exceed spending), portfolio value, and individual transaction amounts.
+Dropped in Discreet because they still leak scale: Investment Boost months (a huge "+N months" implies investments far exceed spending), portfolio value, totals built from transactions (day totals, month In / Out, Safe to spend), and the stepper's income-based starting amount. A single transaction's own amount stays: one record says nothing about your totals (see `docs/METRICS.md` → Discreet and Hidden rendering).
 
 ## 4. Insights
 
@@ -150,12 +152,13 @@ Nothing should require user action, so existing preferences migrate silently:
 
 ## 8. Versioning
 
-Per `docs/dev/versioning-and-release-process.md` Section 1, this is a **MINOR** release (new screens, redesigned navigation, new persisted preference) as long as the migration above is silent — 1.19.0 from 1.18.0. Calling it 2.0.0 is a deliberate product choice and would need a line added to that doc allowing MAJOR for a full redesign.
+Per `docs/dev/versioning-and-release-process.md` Section 1, this is a **MINOR** release (new screens, redesigned navigation, new persisted preference) as long as the migration above is silent — 1.20.0 from 1.19.0 (1.19.0 shipped before the redesign landed). Calling it 2.0.0 is a deliberate product choice and would need a line added to that doc allowing MAJOR for a full redesign.
 
-## Open questions before implementation
+## Decisions made during implementation
 
-- Learn as a bottom tab vs a section inside Profile (bottom slots are usually for daily-use destinations).
-- Budgets / Recurring Rules / Reminders in Profile ("Money setup") or in Insights next to the budget bars?
-- Floating gear bubble: its per-screen actions need rethinking once Investment and History stop being tabs, and its privacy item goes away.
-- Discreet formulas (savings rate window, "on track" for goals, % kept of income) need entries in `docs/METRICS.md` before coding.
-- Rollout: (1) Snapshot + privacy modes, (2) Home top menu with Ledger / Holdings / Goals / Loans, (3) Insights sheets + Financial Health screen removal, (4) bottom bar + Profile / Learn split.
+- Learn is a bottom tab.
+- Budgets, Recurring rules and Reminders live in Profile → Money setup.
+- The floating gear was removed: Home and Insights have a plain settings icon; Monthly summary moved to Profile → Data and Reveal for screenshot to Profile → Security.
+- Discreet formulas are documented in `docs/METRICS.md`.
+- Safe-to-Spend (History) moved to the Ledger as this month's figure; History's Daily / Weekly / Yearly views were dropped.
+- Rolled out in four phases: (1) Snapshot + privacy modes, (2) Home tabs, (3) Insights sheets + Financial Health screen removal, (4) bottom bar + Profile / Learn split.

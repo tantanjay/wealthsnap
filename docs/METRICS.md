@@ -51,7 +51,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula:** (Income + Transfer In) − (Expense + Transfer Out), every recorded transaction, future-dated included
 
-**Shown on:** Home · Insights (incl. Runway sheet) · History · Chat
+**Shown on:** Home Snapshot (Cash row, inside Net Worth and Runway) · Insights (incl. Runway sheet) · Chat
 
 **Computed from:** `transactions`
 
@@ -63,6 +63,7 @@ These apply to every metric unless its section says otherwise.
 | 1.7.0 | (Income + Transfer In) − (Expense + Transfer Out) | Home Cash Balance and History count transfers, introduced this version |
 | 1.8.1 | Same, for Insights too | Insights Runway's balance now counts transfers |
 | 1.19.0 | Every recorded transaction, future-dated included | Runway-drop alert stopped cutting off at today; hand-rolled copies in five files merged into `calculateBalance` |
+| Unreleased | Same | History removed; Home's cards replaced by the Snapshot Cash row |
 
 ## Runway
 
@@ -90,7 +91,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula:** Runway now − Runway at the end of last month. Last month's Runway = Cash Balance as of then ÷ (Burn Rate base as of then, same fallback + minimum payments of debts you owe that are active today and had a balance then + today's goal contributions)
 
-**Shown on:** Home · Insights (Runway tile and sheet) · runway-drop alert
+**Shown on:** Insights (Runway tile and sheet) · runway-drop alert
 
 **Computed from:** `transactions` (balance and spending as of last month's end; debt payments, to tell whether a debt was still open) · `debts` (`minPayment`, `status`, `direction`, start date) · `savings_goals` (today's recurring contribution)
 
@@ -104,12 +105,13 @@ These apply to every metric unless its section says otherwise.
 | 1.17.0 | Debts you owe, active today, that were open last month | **↩ Partly undoes 1.13.0/1.16.0.** A debt paid off or forgiven is left out of last month too, so paying one off doesn't show as a runway gain |
 | 1.18.0 | + goal contributions | Today's contributions, since goals keep no history. Financial Health no longer drops last month's final day |
 | 1.19.0 | Last month's balance = balance at last month's end; base uses Burn Rate's fallback as of then | Home and Financial Health share one calculation (`calculateRunwayTrend`), also used by the runway-drop alert. Home stopped counting later-dated transactions in last month's balance; Financial Health stopped overstating last month's runway for someone who started last month |
+| Unreleased | Same | Home no longer shows it: the Snapshot hero shows Runway in months only. Financial Health's moved to the Insights Runway tile and sheet |
 
 ## Net Cash Flow (monthly)
 
 **Formula:** (Income + Transfer In) − (Expense + Transfer Out) for one month
 
-**Shown on:** Home (Monthly Balance) · Insights (Net Cash Flow, Savings Rate Trend "Cash Flow" view, Spending pace sheet's Net Flow) · Monthly Summary
+**Shown on:** Home Snapshot (Cash row's change line, Overall) · Insights (Net Cash Flow, Savings Rate Trend "Cash Flow" view, Spending pace sheet's Net Flow) · Monthly Summary
 
 **Computed from:** `transactions`. Monthly Summary shows its stored copy in `monthly_summary`
 
@@ -127,6 +129,7 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | Same, for Insights too | Insights switched to the transfer-inclusive formula so goal contributions and goal purchases net out |
 | 1.18.0 | Same | Savings Trend Cash Flow view and Financial Health's average net flow no longer drop the last day (bug since 1.10.1) |
 | 1.19.0 | Same | Financial Health's Net Flow includes this month's future-dated transactions |
+| Unreleased | Same | Home Monthly Balance card removed; the Snapshot Cash row's change line shows cash now − cash at last month-end |
 
 ## Total Expense / Monthly Net / Daily Average
 
@@ -136,7 +139,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (Daily Average):** Total Expense ÷ days elapsed this month; a past month ÷ its length
 
-**Shown on:** Insights (Total Expense, Daily Average) · History (Expenses) · Home (Monthly Net) · Monthly Summary
+**Shown on:** Insights (Total Expense, Daily Average) · Home Snapshot (Cash row "This month": Monthly Net, Income and Expense) · Monthly Summary
 
 **Computed from:** `transactions`. Monthly Summary shows its stored copy in `monthly_summary`
 
@@ -151,16 +154,17 @@ These apply to every metric unless its section says otherwise.
 | 1.12.0 | Same; a past month ÷ its full length | Insights month picker added; its cards follow the browsed month |
 | 1.18.0 | Expenses leave out goal-funded purchases | Insights Total Expense and Daily Average, History Expenses, Monthly Summary, Month-End Projection and spending charts. Savings Goals added |
 | 1.19.0 | Same; goal-funded purchases shown as "+ from goals" | Line added under Insights Total Expense, History Expenses and Home Expense; Home Monthly Net stopped subtracting them |
+| Unreleased | Same | History (and its Expenses figure) removed; Home's Monthly Net moved to the Snapshot Cash row ("This month"), without a "from goals" line |
 
 ## Category Breakdown / Top Category
 
 **Formula:** the month's expenses summed per item (`category`) or per category group, each with its share of the total. Goal-funded purchases are included, and each row carries its `goalFundedAmount`. Top Category = the largest item
 
-**Shown on:** Insights (spending pie, Top Spending list, All Categories, Top Category tile, category trend popup) · Home (Top Transactions)
+**Shown on:** Insights (spending pie, Top Spending list, All Categories, Top Category tile, category trend popup)
 
 **Computed from:** `transactions` (the month's expenses by `category`; groups come from the built-in category list)
 
-**Notes:** `getCategoryBreakdown`. The Group/Item toggle changes the pie and lists; Top Category always uses items. The category trend popup (`getCategoryTrend`) applies the same rule to each of the past months. Home's Top Transactions (`getTopExpenses`) lists the month's five largest single expenses. Both include goal-funded purchases.
+**Notes:** `getCategoryBreakdown`. The Group/Item toggle changes the pie and lists; Top Category always uses items. The category trend popup (`getCategoryTrend`) applies the same rule to each of the past months, goal-funded purchases included.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
@@ -169,6 +173,7 @@ These apply to every metric unless its section says otherwise.
 | 1.10.0 | Items grouped by `category` only | `subCategory` no longer splits items; it now holds tags such as debt `INTEREST` |
 | 1.18.0 | Same, goal-funded purchases included | Savings Goals added; their purchases show here in full |
 | 1.19.0 | Each row also carries `goalFundedAmount` | The spending breakdown marks each category's goal-funded share |
+| Unreleased | Same | Home's Top Transactions list (the month's five largest expenses, `getTopExpenses`) removed with Home's cards |
 
 ## Savings Rate
 
@@ -198,7 +203,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (Budget Health):** Budget spent in budgeted categories ÷ total budgets. Green ≤70%, orange ≤90%, red >90%
 
-**Shown on:** Insights (Budget Health, spending-breakdown bars) · Home (budget %) · Smart Suggestions · Monthly Summary · over-budget alerts · Chat
+**Shown on:** Insights (Budget Health tile, Budgets section's per-budget %, spending-breakdown bars) · Smart Suggestions · Monthly Summary · over-budget alerts · Chat
 
 **Computed from:** `transactions` (spending per category) · `budgets`
 
@@ -210,6 +215,7 @@ These apply to every metric unless its section says otherwise.
 | 1.4.0 | Same | Colors: green ≤70%, orange ≤90%, red >90% |
 | 1.18.0 | Same | Monthly Summary budget alerts, over-budget alerts and Chat budgets leave out goal-funded purchases; this card doesn't |
 | 1.19.0 | Leaves out goal-funded purchases | Also Home budget %, spending-breakdown bars, Smart Suggestions |
+| Unreleased | Same; 0% (not "N/A") when budgets exist but nothing is spent | Home budget % removed. Insights tile shows "—" only when no budgets are set. New Budgets section: each budget's spent ÷ its amount, same colors |
 
 ## Burn Rate
 
@@ -255,19 +261,17 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | Same | Same fix on Home; goal-funded purchases left out of living costs. Goal contributions were added to Runway but not here |
 | 1.19.0 | Living costs include goal contributions | Now measured against the real Runway |
 | 1.19.0 | Same | Fees count as living costs again (↩ see Burn Rate) |
-| Unreleased | Same | Moved from the Financial Health screen to Insights' Debt drag tile and sheet. Discreet: payments as a loan count, interest as % of payments, stepper as a step count |
+| Unreleased | Same | Moved from the Financial Health screen to Insights' Debt drag tile and sheet. Discreet: payments as a loan count, interest as % of payments, stepper as a step count starting from 0 (the income-based starting amount would reveal scale) |
 
 ## Safe-to-Spend
 
-**Formula (Daily / Weekly):** allowance from your 90-day non-recurring spending (same base as Burn Rate, so debt fees count) − spending so far this period − the day's or week's share of remaining debt and goal obligations
+**Formula (this month):** Income + upcoming recurring income − spending so far − **all** transfers out − upcoming recurring bills − projected living costs (90-day allowance × days left) − remaining debt and goal obligations. Allowance = your 90-day non-recurring spending ÷ 90 (same base as Burn Rate, so debt fees count)
 
-**Formula (Monthly / Yearly / Calendar):** Income + upcoming recurring income − spending so far − **all** transfers out − upcoming recurring bills − projected living costs (90-day allowance × days left) − remaining debt and goal obligations
-
-**Shown on:** History
+**Shown on:** Home Ledger tab (Safe to spend row and its sheet)
 
 **Computed from:** `transactions` (spending so far, 90-day allowance) · `recurrence_rules` (upcoming income and bills) · `debts` (`minPayment`) · `savings_goals` (recurring contribution)
 
-**Notes:** Investment buys, plain transfers and money lent out lower the Monthly view but not Daily/Weekly. Safe-to-Spend never adds any `TRANSFER_IN`.
+**Notes:** `calculateMonthSafeToSpend`, with upcoming bills and income from `sumUpcomingRecurring` (goal auto-contributions skipped, since they're reserved as goal obligations). Investment buys, plain transfers and money lent out lower it. Safe-to-Spend never adds any `TRANSFER_IN`. It has no scale-free version: Discreet shows "—".
 
 | Version | Rule after this change | What changed |
 |---|---|---|
@@ -278,6 +282,7 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | Same − remaining goal contributions; debt-tagged and goal-funded spending left out of the allowance | Lent money no longer treated as a payment; interest counted once (fees dropped too, see Burn Rate). Goal-funded purchases left out of spending so far; recurring goal contributions not counted as bills; bills on the 29th-31st keep their day |
 | 1.19.0 | Same | Docs only: Daily/Weekly and Monthly formulas documented separately |
 | 1.19.0 | Allowance keeps debt fees | ↩ See Burn Rate |
+| Unreleased | This month only (the Monthly formula) | Moved from History to the Ledger tab. History's Daily, Weekly and Yearly views and their formulas are gone. Bi-annual recurring rules now count every occurrence due before month-end (History counted only the next one) |
 
 ## Net Worth / Total Debt
 
@@ -304,7 +309,7 @@ These apply to every metric unless its section says otherwise.
 
 ## Net Worth Change
 
-**Formula (Net Worth at a past month-end):** Cash Balance as of then + goal balances as of then + investments held then × their latest price on or before then (price history, else the last trade price on or before then) − (principal as of then + projected future interest on it) for debts you owe that had started by then, whatever their status today
+**Formula (Net Worth at a past month-end):** Cash Balance as of then + goal balances as of then + investments held then × their latest price on or before then (price history, else the last trade price on or before then) − (principal as of then + projected future interest on it) for debts you owe that had started by then and were still owed then: active today, or marked Paid off / Forgiven after then (dated by the debt's last update)
 
 **Formula (change this month):** Net Worth now − Net Worth at the end of last month. % = change ÷ Net Worth then × 100
 
@@ -314,11 +319,12 @@ These apply to every metric unless its section says otherwise.
 
 **Computed from:** `transactions` (cash, goal balances, principal as of then) · `investments` + `price_history` (holdings and prices as of then) · `debts` (`initialAmount`, `interestRate`, `interestType`, `termMonths`, `minPayment`)
 
-**Notes:** `calculateNetWorth` / `calculateNetWorthChange`. No change line until there's a transaction before this month; the % is "—" while Net Worth then is ₱0 or below. Tone: up good, down bad. Past projected interest applies today's loan terms to that month's principal. Because status has no history, a debt marked Paid Off/Forgiven without a payment shows as a gain the month it's marked.
+**Notes:** `calculateNetWorth` / `calculateNetWorthChange`. No change line until there's a transaction before this month; the % is "—" while Net Worth then is ₱0 or below. Tone: up good, down bad. Past projected interest applies today's loan terms to that month's principal. Status has no history, so a resolved debt's last update (`updatedAt`) stands in for when it was marked. A debt marked Paid off / Forgiven without a payment shows as a gain once, in the month it's marked. Editing it later moves that month.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
 | Unreleased | As above | Introduced with the Home Snapshot |
+| Unreleased | Resolved debts drop out of past month-ends from their last update | Counting every started debt whatever its status kept a resolved debt's remaining principal in every past month-end, so its payoff showed as a gain every month |
 
 ## Cash Kept
 
@@ -344,20 +350,21 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (This month):** net invested = this month's buys (+ fees) − sells (− fees). Return on this month's buys = (market value − cost) of shares bought this month and still held ÷ that cost × 100
 
-**Shown on:** Home Snapshot (Investments row, unrealized) · Home Holdings tab (hero: total return; Realized and Dividends stats; top holding; each holding's unrealized return) · Investments (Unrealized P/L %)
+**Shown on:** Home Snapshot (Investments row, unrealized) · Home Holdings tab (hero: total return; Realized and Dividends stats; top holding; each holding's unrealized return)
 
 **Computed from:** `investments` · `price_history`
 
-**Notes:** `calculateInvestmentSnapshot`, same unrealized % as the Investments screen (`getPortfolioStats`). Realized gains and dividends aren't part of the return. "—" when cost basis is ₱0. The Holdings tab shows each holding's own unrealized % (`getPortfolioHoldings`) and its weight = its market value ÷ total market value (top holding is the largest weight).
+**Notes:** `calculateInvestmentSnapshot`, same unrealized % as `getPortfolioStats` (the old Investments screen's figure). Realized gains and dividends aren't part of the return. "—" when cost basis is ₱0. The Holdings tab shows each holding's own unrealized % (`getPortfolioHoldings`) and its weight = its market value ÷ total market value (top holding is the largest weight).
 
 | Version | Rule after this change | What changed |
 |---|---|---|
 | Unreleased | As above | Home Snapshot shows the existing unrealized % in Discreet; monthly buys' return documented |
 | Unreleased | + Total return | Home Holdings tab: total return (realized, unrealized and dividends over all cost ever invested) in Open and Discreet; the Snapshot row stays unrealized |
+| Unreleased | Same | Investments screen removed; its figures moved to the Holdings tab |
 
 ## Loans Repaid / Obligations Paid
 
-**Formula (% repaid):** (Σ initial amount − Σ remaining principal) ÷ Σ initial amount × 100, over active debts you owe. Change line: points vs the same debts' principal at the end of last month
+**Formula (% repaid):** (Σ initial amount − Σ remaining principal) ÷ Σ initial amount × 100, over active debts you owe. Change line (Discreet): points moved this month on the debts that existed at the end of last month, their % repaid now − their % repaid then, so a loan taken out this month isn't a drop
 
 **Formula (obligations paid):** per active debt you owe, principal + interest paid this month (fees excluded), capped at its minimum payment; summed against Σ minimum payments. Paid count = debts whose payment reached their minimum, out of debts with a minimum above ₱0. A debt repaid in full earlier but still marked Active is left out
 
@@ -371,6 +378,7 @@ These apply to every metric unless its section says otherwise.
 |---|---|---|
 | Unreleased | Obligations capped per debt at its minimum | Home's Debts card summed raw payments, so paying extra on one debt covered another's minimum |
 | Unreleased | Same rules for money owed to you | Home Loans tab "Owed to you": % collected and repayments received (principal + interest received, capped at each minimum) |
+| Unreleased | Change line on last month's debts only | Compared all of today's debts with last month's, so a new loan read as a drop in % repaid |
 
 ## Goals Progress / On Track
 
@@ -492,7 +500,7 @@ Total income and Total expense compare month-to-date figures while the month is 
 
 **Shown on:** every amount. Screens without a Discreet version yet render Discreet as Hidden
 
-**Notes:** `usePrivacyFormat` (`src/hooks/usePrivacyFormat.ts`). Investment Boost months are always "—" in Discreet: a large figure implies investments far exceed spending (Hidden still shows them, as months aren't amounts). Discreet leaves out Ledger's "In" and paid-off loan amounts (their interest shows as %). The Debt drag stepper shows a step count in Discreet. Insights' numbers: see [Financial Health grid](#financial-health-grid). Charts: Open draws them as is. Discreet draws them with no currency: amount axes are dropped and tooltips, legends and header totals show a scale-free figure (below) or are left out. Hidden replaces every chart with one placeholder (lock icon, "Chart hidden for privacy") and masks amounts around it with `****`. Screenshots: blocked in Open and Discreet, allowed in Hidden or during Profile → Security → "Reveal for screenshot" (15 seconds).
+**Notes:** `usePrivacyFormat` (`src/hooks/usePrivacyFormat.ts`). Investment Boost months are always "—" in Discreet: a large figure implies investments far exceed spending (Hidden still shows them, as months aren't amounts). Discreet leaves out Ledger's "In" and paid-off loan amounts (their interest shows as %). The Debt drag stepper shows a step count in Discreet, starting from 0. Ledger's Safe to spend shows "—". Budgets, Recurring rules and Smart suggestions mask amounts in Discreet and Hidden; Monthly Summary (free text) is withheld there. Insights' numbers: see [Financial Health grid](#financial-health-grid). Charts: Open draws them as is. Discreet draws them with no currency: amount axes are dropped and tooltips, legends and header totals show a scale-free figure (below) or are left out. Hidden replaces every chart with one placeholder (lock icon, "Chart hidden for privacy") and masks amounts around it with `****`. Screenshots: blocked in Open and Discreet, allowed in Hidden or during Profile → Security → "Reveal for screenshot" (15 seconds).
 
 | Version | Rule after this change | What changed |
 |---|---|---|
@@ -501,6 +509,7 @@ Total income and Total expense compare month-to-date figures while the month is 
 | Unreleased | Transaction amounts | Single transactions show their amount in Discreet; day totals and month In / Out still don't |
 | Unreleased | Charts in Discreet | Insights and Holdings charts draw in Discreet without amounts instead of hiding; Hidden keeps one placeholder |
 | Unreleased | Screenshots | Discreet blocks screenshots like Open (it now shows charts); Reveal for screenshot works in both |
+| Unreleased | Fallback screens | Budgets, Recurring rules, Smart suggestions and Monthly Summary followed no privacy setting (since they were added); they now fall back to Hidden |
 
 **Discreet chart figures**
 

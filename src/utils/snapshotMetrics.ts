@@ -7,6 +7,7 @@ import {
     calculateSavingsRate,
     calculateTotals,
     getTransactionsByMonth,
+    isDebtFee,
     parseDate,
 } from '@utils/financialMetrics';
 import { calculateCurrentDebtBalance, calculateProjectedDebtLiability } from '@utils/debtMetrics';
@@ -26,6 +27,11 @@ const upTo = <T extends { date: string }>(items: T[], asOf?: Date): T[] =>
 
 const isPayable = (d: Debt) => (d.direction || 'PAYABLE') === 'PAYABLE';
 const debtStart = (d: Debt) => new Date(d.startDate || d.createdAt);
+// Owed as of a past date: started by then, and still active or resolved after it. Status keeps no
+// history, so a Paid off / Forgiven debt counts as resolved from its last update (updatedAt).
+const isOwedAsOf = (d: Debt, asOf: Date) =>
+    debtStart(d) <= asOf && (d.status === 'ACTIVE' || new Date(d.updatedAt) > asOf);
+const isFeeOrOpening = (t: Transaction) => isDebtFee(t) || t.subCategory === 'INITIAL_TRANSACTION';
 const percentOf = (part: BigNumber, whole: BigNumber): number | null =>
     whole.gt(0) ? part.dividedBy(whole).times(100).toNumber() : null;
 
@@ -71,7 +77,7 @@ export interface NetWorthBreakdown {
 }
 
 // Projected Net Worth now, or as of a past date. Now: active debts you owe. Past: debts you owe
-// that had started by then, whatever their status today (status keeps no history).
+// that were owed then (isOwedAsOf).
 export const calculateNetWorth = (
     transactions: Transaction[], investments: Investment[], debts: Debt[], goals: SavingsGoal[], priceAt: PriceLookup, asOf?: Date
 ): NetWorthBreakdown => {
@@ -84,7 +90,7 @@ export const calculateNetWorth = (
         .reduce((sum, m) => sum.plus(m.totalMarketValue), ZERO);
 
     const liabilities = debts
-        .filter(d => isPayable(d) && (asOf ? debtStart(d) <= asOf : d.status === 'ACTIVE'))
+        .filter(d => isPayable(d) && (asOf ? isOwedAsOf(d, asOf) : d.status === 'ACTIVE'))
         .reduce((sum, d) => {
             const principal = calculateCurrentDebtBalance(d, tx);
             return principal.gt(0) ? sum.plus(calculateProjectedDebtLiability(d, principal).totalLiability) : sum;
@@ -295,6 +301,8 @@ export interface LoansSnapshot {
     outstandingPrev: BigNumber;
     repaidPercent: number | null;
     repaidPercentPrev: number | null;
+    // Points moved this month on the loans that existed at last month-end, so a new loan isn't a drop.
+    repaidPointsChange: number | null;
     obligationsDue: BigNumber;
     obligationsPaid: BigNumber;
     paidCount: number;
@@ -327,7 +335,7 @@ export const calculateLoansSnapshot = (
     active.filter(d => d.minPayment.gt(0)).forEach(d => {
         const paid = monthTx
             .filter(t => t.debtId === d.id && paymentTypes.includes(t.type))
-            .filter(t => t.category !== 'Fees' && t.subCategory !== 'INITIAL_TRANSACTION')
+            .filter(t => !isFeeOrOpening(t))
             .reduce((sum, t) => sum.plus(t.amount.abs()), ZERO);
         // Repaid in full earlier but still marked Active: nothing is due (the Loans tab lists it as paid off).
         if (paid.isZero() && calculateCurrentDebtBalance(d, transactions).lte(0)) return;
@@ -337,12 +345,16 @@ export const calculateLoansSnapshot = (
         if (paid.gte(d.minPayment)) paidCount++;
     });
 
+    const repaidPercentPrev = existedPrev.length > 0 ? repaidPct(existedPrev, outstandingPrev) : null;
+    const sameLoansNow = existedPrev.length > 0 ? repaidPct(existedPrev, remaining(existedPrev, transactions)) : null;
+
     return {
         hasLoans: active.length > 0,
         outstanding,
         outstandingPrev,
         repaidPercent: repaidPct(active, outstanding),
-        repaidPercentPrev: existedPrev.length > 0 ? repaidPct(existedPrev, outstandingPrev) : null,
+        repaidPercentPrev,
+        repaidPointsChange: sameLoansNow !== null && repaidPercentPrev !== null ? sameLoansNow - repaidPercentPrev : null,
         obligationsDue,
         obligationsPaid,
         paidCount,

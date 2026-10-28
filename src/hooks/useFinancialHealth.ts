@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { BigNumber } from 'bignumber.js';
 
 import { Debt } from '@types';
@@ -101,14 +101,22 @@ const stepsFromZero = (amount: number): number => {
 };
 
 // Financial Health numbers (Runway, Spending pace, Debt drag, Investment boost) as of today.
-export const useFinancialHealth = () => {
+// `discreet`: the stepper starts at 0, since the income-based default would reveal scale as a step count.
+export const useFinancialHealth = (discreet = false) => {
     const [data, setData] = useState<FinancialHealthData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [payableDebts, setPayableDebts] = useState<PayableDebt[]>([]);
     const [payoffStrategy, setPayoffStrategy] = useState<'SNOWBALL' | 'AVALANCHE'>('AVALANCHE');
-    const [scenarioAmount, setScenarioAmount] = useState(200);
-    // Once the user taps the stepper, a reload keeps their amount instead of the smart default.
-    const isScenarioManual = useRef(false);
+    const [smartAmount, setSmartAmount] = useState(200);
+    // Set once the user taps the stepper, so a reload or mode change keeps their amount.
+    const [manualAmount, setManualAmount] = useState<number | null>(null);
+    // A mode change drops the tapped amount: carried into Discreet it would show as a revealing step count.
+    const [amountMode, setAmountMode] = useState(discreet);
+    if (amountMode !== discreet) {
+        setAmountMode(discreet);
+        setManualAmount(null);
+    }
+    const scenarioAmount = manualAmount ?? (discreet ? 0 : smartAmount);
 
     const load = useCallback(async () => {
         try {
@@ -221,7 +229,7 @@ export const useFinancialHealth = () => {
             const freedom = calculateFreedomAcceleration(totalPortfolioValue, currentMonthlyInvest, freedomBurnRate, extraMonthlyInvest, annualReturnPercent / 100);
 
             setPayableDebts(payable);
-            if (!isScenarioManual.current) setScenarioAmount(smartScenarioAmount);
+            setSmartAmount(smartScenarioAmount);
             setData({
                 runway: {
                     months: runwayMonths,
@@ -272,9 +280,11 @@ export const useFinancialHealth = () => {
     }, []);
 
     const step = useCallback((delta: 1 | -1) => {
-        isScenarioManual.current = true;
-        setScenarioAmount(prev => Math.max(0, prev + delta * getScenarioStep(prev)));
-    }, []);
+        setManualAmount(prev => {
+            const current = prev ?? scenarioAmount;
+            return Math.max(0, current + delta * getScenarioStep(current));
+        });
+    }, [scenarioAmount]);
 
     // A real payoff simulation with and without the extra: months saved = how much sooner every balance hits zero.
     const monthsSaved = useMemo(() => {

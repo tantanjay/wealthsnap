@@ -333,6 +333,66 @@ export const calculateRunwayTrend = (
     return { cash, burnRate, runway, prevRunway, change };
 };
 
+export interface SafeToSpend {
+    amount: BigNumber;
+    dailyBurnRate: BigNumber;
+    // Daily burn rate × days left in the month.
+    projectedVariableSpend: BigNumber;
+    remainingDebtObligations: BigNumber;
+    remainingGoalObligations: BigNumber;
+}
+
+const SAFE_TO_SPEND_WINDOW_DAYS = 90;
+
+// This month's Safe-to-Spend (docs/METRICS.md, Monthly). `upcoming` = active recurring rules due
+// after now and before month-end, goal auto-contributions excluded (see sumUpcomingRecurring).
+export const calculateMonthSafeToSpend = (
+    transactions: Transaction[], debts: Debt[], goals: SavingsGoal[],
+    upcoming: { bills: BigNumber; income: BigNumber }, now: Date = new Date()
+): SafeToSpend => {
+    const windowStart = new Date(now);
+    windowStart.setDate(windowStart.getDate() - SAFE_TO_SPEND_WINDOW_DAYS);
+    const recentSpend = transactions
+        .filter(t => {
+            const d = parseDate(t.date);
+            return isExpense(t) && !t.isRecurring && isBurnRateBase(t) && d >= windowStart && d <= now;
+        })
+        .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
+    const dailyBurnRate = recentSpend.dividedBy(SAFE_TO_SPEND_WINDOW_DAYS);
+
+    const monthTx = getTransactionsByMonth(transactions, now);
+    let income = new BigNumber(0);
+    let expense = new BigNumber(0);
+    let transferOut = new BigNumber(0);
+    monthTx.forEach(t => {
+        if (isIncome(t)) income = income.plus(t.amount.abs());
+        // Goal-funded purchases left when they were contributed, not now.
+        else if (isExpense(t) && !t.savingsGoalId) expense = expense.plus(t.amount.abs());
+        else if (t.type === 'TRANSFER_OUT') transferOut = transferOut.plus(t.amount.abs());
+    });
+
+    // Paid so far toward debts you owe: principal + interest, as minPayment covers (no fees, no lending out).
+    const payableIds = new Set(debts.filter(d => (d.direction || 'PAYABLE') === 'PAYABLE').map(d => d.id));
+    const debtPaid = monthTx
+        .filter(t => t.debtId && payableIds.has(t.debtId) && (t.type === 'TRANSFER_OUT' || isExpense(t)) &&
+            !isDebtFee(t) && t.subCategory !== 'INITIAL_TRANSACTION')
+        .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
+    const goalPaid = monthTx
+        .filter(t => t.type === 'TRANSFER_OUT' && t.savingsGoalId)
+        .reduce((sum, t) => sum.plus(t.amount.abs()), new BigNumber(0));
+    const remainingDebtObligations = BigNumber.max(0, calculateTotalDebtObligations(debts).minus(debtPaid));
+    const remainingGoalObligations = BigNumber.max(0, calculateTotalGoalContributions(goals, transactions).minus(goalPaid));
+
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const daysRemaining = Math.ceil((monthEnd.getTime() - now.getTime()) / 86400000);
+    const projectedVariableSpend = dailyBurnRate.times(daysRemaining);
+
+    const amount = income.plus(upcoming.income).minus(expense).minus(transferOut)
+        .minus(upcoming.bills).minus(projectedVariableSpend).minus(remainingDebtObligations).minus(remainingGoalObligations);
+
+    return { amount, dailyBurnRate, projectedVariableSpend, remainingDebtObligations, remainingGoalObligations };
+};
+
 // Average of up to monthsBack prior full months' INCOME, same months as calculateBurnRate. The
 // in-progress month is left out: its income may land before its bills.
 export const calculateAverageIncome = (allTransactions: Transaction[], monthsBack: number = 6, referenceDate: Date = new Date()): BigNumber => {

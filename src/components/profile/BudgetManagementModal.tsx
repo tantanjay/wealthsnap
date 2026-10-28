@@ -8,6 +8,7 @@ import SmartSuggestionsModal from '@components/profile/SmartSuggestionsModal';
 import { Row, IconName } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { usePrivacy } from '@context/PrivacyContext';
 import { BigNumber } from 'bignumber.js';
 import { type, space, radius } from '@styles/theme';
 
@@ -25,6 +26,9 @@ interface BudgetManagementProps {
 
 const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClose, currency }) => {
     const { ds } = useTheme();
+    // No Discreet version: Discreet falls back to Hidden.
+    const { isPrivacyEnabled } = usePrivacy();
+    const amount = (value: BigNumber) => (isPrivacyEnabled ? '****' : formatCurrencyAmount(value, currency));
     const { showAlert } = useAlert();
     const [budgets, setBudgetsList] = useState<Budget[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -164,7 +168,7 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
                             </Text>
                             {budgets.length > 0 && (
                                 <Text style={[type.smallNum, { color: ds.text2 }]}>
-                                    Total {formatCurrencyAmount(totalBudget, currency)}
+                                    Total {amount(totalBudget)}
                                 </Text>
                             )}
                         </View>
@@ -184,7 +188,7 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
                                 <Row
                                     icon={getCategoryIcon(item.category)}
                                     title={item.category}
-                                    subtitle={`${formatCurrencyAmount(item.amount, currency)} / month`}
+                                    subtitle={`${amount(item.amount)} / month`}
                                     onPress={() => handleEditBudget(item)}
                                     last={index === budgets.length - 1}
                                     trailing={

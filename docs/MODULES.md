@@ -7,7 +7,7 @@ Shared/core files are listed in their own module at the bottom — include them 
 ---
 
 ## Home Dashboard
-Tab: `Home`. Sticky top tabs: Snapshot (net worth hero, Cash / Investments / Loans / Goals overview rows, Recent), Ledger, Holdings, Goals, Loans. Home Settings sheet holds the privacy mode and row order. The Ledger, Holdings, Goals and Loans tabs reuse the History, Investments, Savings Goals and Debts modules' modals and services listed below.
+Tab: `Home`. Sticky top tabs: Snapshot (net worth hero, Cash / Investments / Loans / Goals overview rows, Recent), Ledger, Holdings, Goals, Loans. Home Settings sheet holds the privacy mode, the net worth graph range and row order (Snapshot) and the section order (Holdings). The Ledger shows this month's Safe-to-Spend (`calculateMonthSafeToSpend`). The Ledger, Holdings, Goals and Loans tabs reuse the History, Investments, Savings Goals and Debts modules' modals and services listed below.
 
 - `src/screens/HomeScreen.tsx`
 - `src/components/home/SnapshotView.tsx`
@@ -90,6 +90,7 @@ Home → Loans tab (`src/components/home/LoansTab.tsx`). Debt tracking, payments
 - `src/components/debts/DebtForm.tsx`
 - `src/components/debts/DebtOptionsModal.tsx`
 - `src/components/debts/DebtStatusModal.tsx`
+- `src/hooks/useConfirmDeleteDebt.ts`
 - `src/services/domain/debtService.ts`
 - `src/utils/debtMetrics.ts`
 - `src/constants/debtTemplates.ts`
@@ -249,6 +250,10 @@ Not a user-facing feature; app shell, data layer, and utilities used across modu
 - `src/components/common/Skeleton.tsx`
 - `src/components/common/TimeRangeSelector.tsx`
 - `src/components/common/ReviewAppModal.tsx`
+- `src/components/common/EmptyState.tsx`
+- `src/components/common/Disclaimer.tsx`
+- `src/components/index.tsx`
+- `src/context/DataStatusContext.tsx`
 - `src/hooks/useReviewPrompt.ts`
 - `src/styles/theme.ts`
 
@@ -257,6 +262,7 @@ Not a user-facing feature; app shell, data layer, and utilities used across modu
 - `src/components/ds/index.ts`
 - `src/components/ds/tone.ts`
 - `src/components/ds/ChangeLine.tsx`
+- `src/components/ds/DropdownMenu.tsx`
 - `src/components/ds/Hero.tsx`
 - `src/components/ds/ProgressBar.tsx`
 - `src/components/ds/Row.tsx`
@@ -271,7 +277,7 @@ Not a user-facing feature; app shell, data layer, and utilities used across modu
 - `src/services/database/databaseService.ts`
 - `src/services/core/storageService.ts`
 - `src/services/core/dataCache.ts`
-- `src/services/core/logService.ts`
+- `src/services/domain/logService.ts`
 
 **Utilities & Types**
 - `src/types/index.ts`
@@ -279,6 +285,10 @@ Not a user-facing feature; app shell, data layer, and utilities used across modu
 - `src/utils/currencyData.ts`
 - `src/utils/uuid.ts`
 - `src/utils/scenarioUtils.ts`
+- `src/utils/severity.ts`
+- `src/utils/index.ts`
+- `src/services/integrations/index.ts`
+- `src/services/integrations/currencyService.ts`
 - `src/constants/config.ts`
 - `src/constants/changelog.ts`
 - `src/constants/helpContent.ts`
