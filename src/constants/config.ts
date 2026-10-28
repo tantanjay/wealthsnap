@@ -42,6 +42,7 @@ export const ASYNC_KEYS = {
     HOME_SCREEN: {
         SNAPSHOT_ORDER: '@wealthsnap_snapshot_order',
         SNAPSHOT_PERIOD: '@wealthsnap_snapshot_period',
+        SNAPSHOT_RANGE: '@wealthsnap_snapshot_range',
         // Pre-1.19 Home cards; read once to migrate, then removed.
         CARD_ORDER: '@wealthsnap_card_order',
         LEGACY_DISPLAY_MODES: [

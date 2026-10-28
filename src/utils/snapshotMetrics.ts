@@ -101,14 +101,16 @@ export interface NetWorthChange {
     change: BigNumber | null;
     // null when there's no prev, or prev net worth is <= 0.
     percent: number | null;
-    // Up to 6 past month-ends with data, then now.
+    // Past month-ends with data across the chosen range (thinned past MAX_SPARKLINE_POINTS), then now.
     sparkline: number[];
 }
 
-const SPARKLINE_MONTHS = 6;
+// A point costs a full net worth calculation, so long ranges skip months to stay near this.
+const MAX_SPARKLINE_POINTS = 36;
 
 export const calculateNetWorthChange = (
-    transactions: Transaction[], investments: Investment[], debts: Debt[], goals: SavingsGoal[], priceAt: PriceLookup, now: Date = new Date()
+    transactions: Transaction[], investments: Investment[], debts: Debt[], goals: SavingsGoal[], priceAt: PriceLookup,
+    now: Date = new Date(), rangeMonths: number | 'ALL' = 6
 ): NetWorthChange => {
     const current = calculateNetWorth(transactions, investments, debts, goals, priceAt);
     const firstDate = transactions.reduce<Date | null>((min, t) => {
@@ -116,14 +118,24 @@ export const calculateNetWorthChange = (
         return !min || d < min ? d : min;
     }, null);
 
+    const monthsBack = rangeMonths === 'ALL'
+        ? (firstDate ? (now.getFullYear() - firstDate.getFullYear()) * 12 + now.getMonth() - firstDate.getMonth() : 0)
+        : rangeMonths;
+    const step = Math.max(1, Math.ceil(monthsBack / MAX_SPARKLINE_POINTS));
+
+    const netWorthAtMonthEnd = (monthsAgo: number): NetWorthBreakdown | null => {
+        const monthEnd = endOfMonth(now.getFullYear(), now.getMonth() - monthsAgo);
+        return !firstDate || firstDate > monthEnd
+            ? null
+            : calculateNetWorth(transactions, investments, debts, goals, priceAt, monthEnd);
+    };
+
+    // Last month-end drives the change line whatever the range, and is always the newest past point.
+    const prev = netWorthAtMonthEnd(1);
     const sparkline: number[] = [];
-    let prev: NetWorthBreakdown | null = null;
-    for (let i = SPARKLINE_MONTHS; i >= 1; i--) {
-        const monthEnd = endOfMonth(now.getFullYear(), now.getMonth() - i);
-        if (!firstDate || firstDate > monthEnd) continue;
-        const nw = calculateNetWorth(transactions, investments, debts, goals, priceAt, monthEnd);
-        sparkline.push(nw.netWorth.toNumber());
-        if (i === 1) prev = nw;
+    for (let i = 1 + Math.floor((monthsBack - 1) / step) * step; i >= 1; i -= step) {
+        const nw = i === 1 ? prev : netWorthAtMonthEnd(i);
+        if (nw) sparkline.push(nw.netWorth.toNumber());
     }
     sparkline.push(current.netWorth.toNumber());
 

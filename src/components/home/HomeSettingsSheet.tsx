@@ -5,7 +5,7 @@ import { useTheme } from '@context/ThemeContext';
 import { PrivacyMode, usePrivacy } from '@context/PrivacyContext';
 import { type, radius } from '@styles/theme';
 import { Row, SectionHeader, Sheet } from '@components/ds';
-import { SnapshotRowId } from '@services/core/storageService';
+import { SNAPSHOT_RANGES, SnapshotRange, SnapshotRowId } from '@services/core/storageService';
 import SnapshotOrderList, { SNAPSHOT_ROW_META } from './SnapshotOrderList';
 
 const PRIVACY_OPTIONS: { mode: PrivacyMode; label: string; description: string }[] = [
@@ -28,9 +28,11 @@ interface HomeSettingsSheetProps {
     onClose: () => void;
     order: SnapshotRowId[];
     onChangeOrder: (order: SnapshotRowId[]) => void;
+    range: SnapshotRange;
+    onChangeRange: (range: SnapshotRange) => void;
 }
 
-const HomeSettingsSheet: React.FC<HomeSettingsSheetProps> = ({ visible, onClose, order, onChangeOrder }) => {
+const HomeSettingsSheet: React.FC<HomeSettingsSheetProps> = ({ visible, onClose, order, onChangeOrder, range, onChangeRange }) => {
     const { ds } = useTheme();
     const { mode, setMode } = usePrivacy();
 
@@ -55,6 +57,18 @@ const HomeSettingsSheet: React.FC<HomeSettingsSheetProps> = ({ visible, onClose,
                     leading={<Radio selected={mode === option.mode} />}
                     onPress={() => setMode(option.mode)}
                     last={i === PRIVACY_OPTIONS.length - 1}
+                />
+            ))}
+
+            <SectionHeader title="Net worth graph" />
+            <Text style={[type.small, { color: ds.text2 }]}>How far back the line under your net worth reaches.</Text>
+            {SNAPSHOT_RANGES.map((option, i) => (
+                <Row
+                    key={option.key}
+                    title={option.label}
+                    leading={<Radio selected={range === option.key} />}
+                    onPress={() => onChangeRange(option.key)}
+                    last={i === SNAPSHOT_RANGES.length - 1}
                 />
             ))}
 
