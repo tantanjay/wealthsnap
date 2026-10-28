@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { View, Text, TouchableOpacity, TextInput, Platform } from 'react-native';
+import { View, Text, Pressable, TextInput, Platform, Switch, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Card } from '@components/index';
+import { Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { RECURRENCE_OPTIONS } from '@constants/categories';
+import { type, space, radius } from '@styles/theme';
 
 interface RecurringOptionsProps {
     isRecurring: boolean;
@@ -36,82 +37,67 @@ export const RecurringOptions: React.FC<RecurringOptionsProps> = ({
     endDate,
     setEndDate
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
-    return (
-        <Card>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ color: colors.text, fontSize: 16 }}>Recurring Transaction?</Text>
-                <TouchableOpacity onPress={() => setIsRecurring(!isRecurring)}>
-                    <Ionicons name={isRecurring ? 'checkbox' : 'square-outline'} size={24} color={colors.primary} />
-                </TouchableOpacity>
-            </View>
-            {isRecurring && (
-                <View style={{ marginTop: 10 }}>
-                    <Text style={{ color: colors.textSecondary, marginBottom: 5 }}>Label (e.g. &quot;Netflix Subscription&quot;)</Text>
-                    <TextInput
-                        style={{
-                            color: colors.text,
-                            fontSize: 16,
-                            borderBottomWidth: 1,
-                            borderBottomColor: colors.border,
-                            padding: 8,
-                            marginBottom: 16
-                        }}
-                        value={recurringLabel}
-                        onChangeText={setRecurringLabel}
-                        placeholder="Name this recurring transaction"
-                        placeholderTextColor={colors.gray500}
-                    />
+    const fieldLabel = [type.small, styles.fieldLabel, { color: ds.text2 }];
+    const fieldBox = [styles.field, { backgroundColor: ds.inset }];
+    const formatDate = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
-                    <Text style={{ color: colors.textSecondary, marginBottom: 5 }}>Frequency</Text>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 }}>
-                        {RECURRENCE_OPTIONS.filter(o => o.value !== 'NONE').map(opt => (
-                            <TouchableOpacity
-                                key={opt.value}
-                                onPress={() => setFrequency(opt.value)}
-                                style={{
-                                    backgroundColor: frequency === opt.value ? colors.primary : colors.background,
-                                    paddingVertical: 8,
-                                    paddingHorizontal: 12,
-                                    borderRadius: 8,
-                                    marginRight: 8,
-                                    marginBottom: 8,
-                                    borderWidth: 1,
-                                    borderColor: frequency === opt.value ? colors.primary : colors.border,
-                                }}
-                            >
-                                <Text style={{
-                                    color: frequency === opt.value ? '#FFF' : colors.text,
-                                    fontSize: 14,
-                                }}>
-                                    {opt.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+    return (
+        <View>
+            <SectionHeader title="Repeat" />
+            <Row
+                icon="repeat-outline"
+                title="Recurring"
+                subtitle="Log this automatically on a schedule"
+                last={!isRecurring}
+                trailing={
+                    <Switch
+                        value={isRecurring}
+                        onValueChange={setIsRecurring}
+                        trackColor={{ true: ds.accent }}
+                    />
+                }
+            />
+            {isRecurring && (
+                <View style={styles.details}>
+                    <Text style={fieldLabel}>Label</Text>
+                    <View style={fieldBox}>
+                        <Ionicons name="pricetag-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={[type.body, styles.fieldInput, { color: ds.text }]}
+                            value={recurringLabel}
+                            onChangeText={setRecurringLabel}
+                            placeholder="e.g. Netflix subscription"
+                            placeholderTextColor={ds.text3}
+                        />
                     </View>
 
-                    <Text style={{ color: colors.textSecondary, marginBottom: 5 }}>Start Date</Text>
-                    <TouchableOpacity
-                        onPress={() => setShowStartDatePicker(true)}
-                        style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            backgroundColor: colors.background,
-                            padding: 12,
-                            borderRadius: 8,
-                            marginBottom: 16,
-                            borderWidth: 1,
-                            borderColor: colors.border,
-                        }}
-                    >
-                        <Ionicons name="calendar" size={20} color={colors.primary} style={{ marginRight: 10 }} />
-                        <Text style={{ color: colors.text, fontSize: 16 }}>
-                            {startDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                        </Text>
-                    </TouchableOpacity>
+                    <Text style={[fieldLabel, styles.fieldGap]}>Frequency</Text>
+                    <View style={styles.chips}>
+                        {RECURRENCE_OPTIONS.filter(o => o.value !== 'NONE').map(opt => {
+                            const isActive = frequency === opt.value;
+                            return (
+                                <Pressable
+                                    key={opt.value}
+                                    onPress={() => setFrequency(opt.value)}
+                                    style={[styles.chip, isActive && { backgroundColor: ds.inset }]}
+                                >
+                                    <Text style={[type.smallMedium, { color: isActive ? ds.text : ds.text2 }]}>
+                                        {opt.label}
+                                    </Text>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
+
+                    <Text style={[fieldLabel, styles.fieldGap]}>Start date</Text>
+                    <Pressable onPress={() => setShowStartDatePicker(true)} style={fieldBox}>
+                        <Ionicons name="calendar-outline" size={18} color={ds.text2} />
+                        <Text style={[type.body, { color: ds.text }]}>{formatDate(startDate)}</Text>
+                    </Pressable>
                     {showStartDatePicker && (
                         <DateTimePicker
                             value={startDate}
@@ -124,34 +110,26 @@ export const RecurringOptions: React.FC<RecurringOptionsProps> = ({
                         />
                     )}
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                        <Text style={{ color: colors.textSecondary, marginRight: 10 }}>Ends Never?</Text>
-                        <TouchableOpacity onPress={() => setEndsNever(!endsNever)}>
-                            <Ionicons name={endsNever ? 'checkbox' : 'square-outline'} size={24} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
+                    <Row
+                        title="Never ends"
+                        last={endsNever}
+                        style={styles.fieldGap}
+                        trailing={
+                            <Switch
+                                value={endsNever}
+                                onValueChange={setEndsNever}
+                                trackColor={{ true: ds.accent }}
+                            />
+                        }
+                    />
 
                     {!endsNever && (
                         <>
-                            <Text style={{ color: colors.textSecondary, marginBottom: 5, marginTop: 10 }}>End Date</Text>
-                            <TouchableOpacity
-                                onPress={() => setShowEndDatePicker(true)}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: colors.background,
-                                    padding: 12,
-                                    borderRadius: 8,
-                                    marginBottom: 10,
-                                    borderWidth: 1,
-                                    borderColor: colors.border,
-                                }}
-                            >
-                                <Ionicons name="calendar" size={20} color={colors.primary} style={{ marginRight: 10 }} />
-                                <Text style={{ color: colors.text, fontSize: 16 }}>
-                                    {endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                                </Text>
-                            </TouchableOpacity>
+                            <Text style={[fieldLabel, styles.fieldGap]}>End date</Text>
+                            <Pressable onPress={() => setShowEndDatePicker(true)} style={fieldBox}>
+                                <Ionicons name="calendar-outline" size={18} color={ds.text2} />
+                                <Text style={[type.body, { color: ds.text }]}>{formatDate(endDate)}</Text>
+                            </Pressable>
                             {showEndDatePicker && (
                                 <DateTimePicker
                                     value={endDate}
@@ -168,6 +146,40 @@ export const RecurringOptions: React.FC<RecurringOptionsProps> = ({
                     )}
                 </View>
             )}
-        </Card>
+        </View>
     );
 };
+
+const styles = StyleSheet.create({
+    details: {
+        paddingTop: space[4],
+    },
+    fieldLabel: {
+        marginBottom: space[1],
+    },
+    fieldGap: {
+        marginTop: space[4],
+    },
+    field: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+        padding: space[3],
+        borderRadius: radius.md,
+    },
+    // Android TextInput adds its own padding; zero it so typed fields match the pressable ones.
+    fieldInput: {
+        flex: 1,
+        padding: 0,
+    },
+    chips: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: space[1],
+    },
+    chip: {
+        paddingVertical: space[2],
+        paddingHorizontal: space[3],
+        borderRadius: radius.sm,
+    },
+});

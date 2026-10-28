@@ -11,6 +11,7 @@ import { InvestmentForm } from '@components/investments/InvestmentForm';
 import { ReceiptReviewForm } from '@components/ai/ReceiptReviewForm';
 import { DebtForm } from '@components/debts/DebtForm';
 import { useAlert } from '@context/AlertContext';
+import { useTheme } from '@context/ThemeContext';
 import { Transaction, TransactionType, ReceiptAnalysisResult, InvestmentType, DebtType, Investment } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveTransactionWithReceipt } from '@services/domain/transactionService';
@@ -19,6 +20,7 @@ import { getUserProfile } from '@services/core/storageService';
 type ViewMode = 'MENU' | 'TRANSACTION' | 'INVESTMENT' | 'AI' | 'AI_REVIEW' | 'DEBT';
 
 const RecordScreen = ({ navigation, route }: any) => {
+    const { ds } = useTheme();
     const [viewMode, setViewMode] = useState<ViewMode>('MENU');
     const [modalVisible, setModalVisible] = useState<boolean>(true);
     const [transactionType, setTransactionType] = useState<TransactionType>('EXPENSE');
@@ -311,7 +313,12 @@ const RecordScreen = ({ navigation, route }: any) => {
 
 
     return (
-        <ScreenWrapper scrollable={viewMode !== 'TRANSACTION' && viewMode !== 'AI_REVIEW' && viewMode !== 'INVESTMENT' && viewMode !== 'DEBT'}>
+        <ScreenWrapper
+            scrollable={viewMode !== 'TRANSACTION' && viewMode !== 'AI_REVIEW' && viewMode !== 'INVESTMENT' && viewMode !== 'DEBT'}
+            noPadding
+            style={{ backgroundColor: ds.bg }}
+        >
+            {/* Each form owns its space[5] gutter so its fixed footer can span the full width */}
             {/* Transaction Form */}
             {viewMode === 'TRANSACTION' && transactionType !== 'TRANSFER_IN' && transactionType !== 'TRANSFER_OUT' && (
                 <TransactionForm

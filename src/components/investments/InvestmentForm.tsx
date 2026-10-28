@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform, StyleSheet, ActivityIndicator, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 
 import BottomModal from '@components/common/BottomModal';
 import { CalculatorModal } from '@components/record/CalculatorModal';
-import { Button, Card } from '@components/index';
-import { Row, SectionHeader } from '@components/ds';
+import { Row, SectionHeader, SegmentedControl, SegmentOption } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Investment, InvestmentType, InvestmentAction, Transaction, TransactionType, Asset } from '@types';
@@ -37,7 +36,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     onSave,
     onCancel
 }) => {
-    const { colors, ds } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
 
     // Helper to get initial values (converting back to native if needed)
@@ -412,46 +411,118 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
         }
     };
 
-    const actions: { label: string; value: InvestmentAction; color: string }[] = [
-        { label: 'Buy', value: 'BUY', color: colors.success },
-        { label: 'Sell', value: 'SELL', color: colors.error },
-        { label: 'Dividend', value: 'DIVIDEND', color: colors.primary },
+    const actions: SegmentOption<InvestmentAction>[] = [
+        { key: 'BUY', label: 'Buy' },
+        { key: 'SELL', label: 'Sell' },
+        { key: 'DIVIDEND', label: 'Dividend' },
     ];
 
-    return (
-        <View style={{ flex: 1 }}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 10 }}>
-                    {initialInvestment ? 'Edit Investment' : `New ${investmentType === 'STOCKS' ? 'Stock' : investmentType === 'FUNDS' ? 'Fund' : investmentType === 'CRYPTO' ? 'Crypto' : 'Investment'}`}
-                </Text>
+    const title = initialInvestment
+        ? 'Edit investment'
+        : `New ${investmentType === 'STOCKS' ? 'stock' : investmentType === 'FUNDS' ? 'fund' : investmentType === 'CRYPTO' ? 'crypto' : 'investment'}`;
 
-                {/* Date and Time Selection */}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-                    <TouchableOpacity
-                        onPress={() => setShowDatePicker(true)}
-                        style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                    >
-                        <Ionicons name="calendar-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-                        <View>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Date</Text>
-                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+    const pl = parseFloat(realizedPL) || 0;
+    const inputStyle = [type.bodyNum, styles.input, { color: ds.text }];
+
+    return (
+        <View style={[styles.page, { backgroundColor: ds.bg }]}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+                <Text style={[type.title, styles.title, { color: ds.text }]}>{title}</Text>
+
+                <SegmentedControl options={actions} value={action} onChange={setAction} />
+
+                {/* Asset */}
+                <Text style={[type.small, styles.label, styles.groupLabel, { color: ds.text2 }]}>
+                    {investmentType === 'FUNDS' ? 'Fund' : investmentType === 'CRYPTO' ? 'Coin' : 'Symbol'}
+                </Text>
+                <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                    <Ionicons name="pricetag-outline" size={18} color={ds.text2} />
+                    {loadingAssets ? (
+                        <ActivityIndicator color={ds.text2} style={styles.input} />
+                    ) : (
+                        <Picker
+                            selectedValue={symbol}
+                            onValueChange={(itemValue) => setSymbol(itemValue)}
+                            style={[styles.picker, { color: ds.text }]}
+                            dropdownIconColor={ds.text3}
+                        >
+                            <Picker.Item label="Select asset..." value="" enabled={false} />
+                            {assets.map((asset) => (
+                                <Picker.Item
+                                    key={asset.symbol}
+                                    label={`${asset.symbol} - ${asset.name || 'Unnamed'}`}
+                                    value={asset.symbol}
+                                />
+                            ))}
+                        </Picker>
+                    )}
+                </View>
+                {assets.length === 0 && !loadingAssets && (
+                    <Text style={[type.small, styles.hint, { color: ds.text2 }]}>
+                        No assets found. Add one in Profile settings.
+                    </Text>
+                )}
+
+                {/* Native currency */}
+                {showCurrencyCheckbox && (
+                    <>
+                        <Row
+                            title={useNativeCurrency ? `Using native currency (${assetCurrency})` : `Use native currency (${assetCurrency})`}
+                            subtitle={useNativeCurrency
+                                ? 'Investment kept in native. Transferred value converted using the rate below.'
+                                : 'Save this investment in its original currency.'}
+                            trailing={
+                                <Switch
+                                    value={useNativeCurrency}
+                                    onValueChange={setUseNativeCurrency}
+                                    trackColor={{ true: ds.accent }}
+                                />
+                            }
+                            last
+                        />
+                        {useNativeCurrency && (
+                            <>
+                                <Text style={[type.small, styles.label, { color: ds.text2 }]}>
+                                    Exchange rate (1 {assetCurrency} in {currency})
+                                </Text>
+                                <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                                    <Ionicons name="swap-horizontal-outline" size={18} color={ds.text2} />
+                                    <TextInput
+                                        style={inputStyle}
+                                        value={exchangeRate}
+                                        onChangeText={setExchangeRate}
+                                        keyboardType="numeric"
+                                        placeholder="1.0"
+                                        placeholderTextColor={ds.text3}
+                                    />
+                                    {isFetchingRate && <ActivityIndicator size="small" color={ds.text2} />}
+                                    <Text style={[type.body, { color: ds.text2 }]}>{currency}</Text>
+                                </View>
+                            </>
+                        )}
+                    </>
+                )}
+
+                {/* Date and time */}
+                <View style={styles.pair}>
+                    <View style={styles.pairItem}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Date</Text>
+                        <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="calendar-outline" size={18} color={ds.text2} />
+                            <Text style={[type.bodyNum, { color: ds.text }]}>
                                 {investmentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </Text>
-                        </View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        onPress={() => setShowTimePicker(true)}
-                        style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                    >
-                        <Ionicons name="time-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-                        <View>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Time</Text>
-                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.pairItem}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Time</Text>
+                        <TouchableOpacity onPress={() => setShowTimePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="time-outline" size={18} color={ds.text2} />
+                            <Text style={[type.bodyNum, { color: ds.text }]}>
                                 {investmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                             </Text>
-                        </View>
-                    </TouchableOpacity>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {showDatePicker && (
@@ -486,240 +557,65 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                     />
                 )}
 
-                {/* Action Toggle */}
-                <View style={{ flexDirection: 'row', marginBottom: 10, backgroundColor: colors.surface, borderRadius: 12, padding: 4 }}>
-                    {actions.map((item) => (
-                        <TouchableOpacity
-                            key={item.value}
-                            style={{
-                                flex: 1,
-                                padding: 12,
-                                alignItems: 'center',
-                                backgroundColor: action === item.value ? item.color : 'transparent',
-                                borderRadius: 8
-                            }}
-                            onPress={() => setAction(item.value)}
-                        >
-                            <Text style={{ color: action === item.value ? '#FFF' : colors.text, fontWeight: 'bold', fontSize: 10 }} numberOfLines={1}>
-                                {item.label}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                <SectionHeader title="Amounts" />
 
-                {/* Transaction Checkbox */}
-                <Card style={{ marginBottom: 10, paddingVertical: 10 }}>
-                    <TouchableOpacity
-                        onPress={initialInvestment ? undefined : toggleCreateTransaction}
-                        activeOpacity={initialInvestment ? 0.6 : 0.7}
-                        style={{ flexDirection: 'row', alignItems: 'center', opacity: initialInvestment ? 0.6 : 1 }}
-                    >
-                        <Ionicons
-                            name={createTransaction ? "checkbox" : "square-outline"}
-                            size={24}
-                            color={createTransaction ? colors.primary : colors.textSecondary}
-                            style={{ marginRight: 12 }}
-                        />
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>
-                                {initialInvestment ? "Linked Transaction" : "Add corresponding transaction?"}
-                            </Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
-                                {(() => {
-                                    if (initialInvestment) return "Auto-updated with investment changes";
-                                    if (!createTransaction) return "No transaction will be recorded";
-
-                                    switch (action) {
-                                        case 'BUY': return "Will record as Transfer Out (Cash Out)";
-                                        case 'SELL': return "Will record as Transfer In (Cash In)";
-                                        case 'DIVIDEND': return "Will record as Income";
-                                        default: return "Will record a transaction";
-                                    }
-                                })()}
-                            </Text>
+                {/* Quantity and price */}
+                <View style={styles.pair}>
+                    <View style={styles.pairItem}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Quantity</Text>
+                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="layers-outline" size={18} color={ds.text2} />
+                            <TextInput
+                                style={inputStyle}
+                                value={quantity}
+                                onChangeText={setQuantity}
+                                keyboardType="numeric"
+                                placeholder="0.00"
+                                placeholderTextColor={ds.text3}
+                            />
                         </View>
-                        <TouchableOpacity onPress={() => setShowInfoModal(true)} style={{ padding: 4 }}>
-                            <Ionicons name="information-circle-outline" size={22} color={colors.primary} />
-                        </TouchableOpacity>
-                    </TouchableOpacity>
-                </Card>
-
-                {/* Symbol Selection */}
-                <Card style={{ marginBottom: 10 }}>
-                    <Text style={{ color: colors.textSecondary }}>{investmentType === 'FUNDS' ? 'Select Fund' : investmentType === 'CRYPTO' ? 'Select Coin' : 'Select Symbol'}</Text>
-                    {loadingAssets ? (
-                        <ActivityIndicator color={colors.primary} style={{ marginTop: 10 }} />
-                    ) : (
-                        <View style={{ marginHorizontal: -10 }}>
-                            <Picker
-                                selectedValue={symbol}
-                                onValueChange={(itemValue) => setSymbol(itemValue)}
-                                style={{ color: colors.text }}
-                                dropdownIconColor={colors.text}
-                            >
-                                <Picker.Item label="Select Asset..." value="" enabled={false} />
-                                {assets.map((asset) => (
-                                    <Picker.Item
-                                        key={asset.symbol}
-                                        label={`${asset.symbol} - ${asset.name || 'Unnamed'}`}
-                                        value={asset.symbol}
-                                    />
-                                ))}
-                            </Picker>
-                        </View>
-                    )}
-                    {assets.length === 0 && !loadingAssets && (
-                        <Text style={{ color: colors.error, fontSize: 12, marginTop: 4 }}>
-                            No assets found. Please add in Profile Settings.
-                        </Text>
-                    )}
-                </Card>
-
-                {/* Currency Checkbox - Premium Style */}
-                {showCurrencyCheckbox && (
-                    <View style={{ marginBottom: 16 }}>
-                        <TouchableOpacity
-                            onPress={() => setUseNativeCurrency(!useNativeCurrency)}
-                            activeOpacity={0.8}
-                            style={{
-                                borderRadius: 16,
-                                borderWidth: 1,
-                                borderColor: useNativeCurrency ? colors.primary : colors.border,
-                                backgroundColor: useNativeCurrency ? colors.primary + '10' : colors.surface,
-                                overflow: 'hidden',
-                                // If using native currency, we might show a split view below, but kept the main toggle wrapper same for consistency
-                            }}
-                        >
-                            {/* Status Bar Decorator */}
-                            {useNativeCurrency && (
-                                <View style={{ height: 4, backgroundColor: colors.primary, width: '100%' }} />
-                            )}
-
-                            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
-                                <View style={{
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: 20,
-                                    backgroundColor: useNativeCurrency ? colors.primary : colors.surface,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    marginRight: 12
-                                }}>
-                                    <Ionicons
-                                        name={useNativeCurrency ? "swap-horizontal" : "radio-button-off"}
-                                        size={20}
-                                        color={useNativeCurrency ? '#FFF' : colors.textSecondary}
-                                    />
-                                </View>
-
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{
-                                        color: useNativeCurrency ? colors.primary : colors.text,
-                                        fontWeight: 'bold',
-                                        fontSize: 14,
-                                        marginBottom: 2
-                                    }}>
-                                        {useNativeCurrency ? `Using Native Currency (${assetCurrency})` : `Switch to Native Currency (${assetCurrency})`}
-                                    </Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                        {useNativeCurrency
-                                            ? "Investment kept in native. Transferred value converted using rate below."
-                                            : "Tap to save this investment in its original currency."}
-                                    </Text>
-                                </View>
-
-                                {useNativeCurrency && (
-                                    <Ionicons name="radio-button-on" size={24} color={colors.primary} />
-                                )}
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* Exchange Rate Input (Visible only when checked) */}
-                        {useNativeCurrency && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
-                                <View style={{ marginRight: 12, alignItems: 'center', justifyContent: 'center' }}>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 2 }}>
-                                        Exchange Rate
-                                    </Text>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>
-                                        1 {assetCurrency} =
-                                    </Text>
-                                </View>
-
-                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.primary, paddingBottom: 4 }}>
-                                    <TextInput
-                                        style={{ flex: 1, color: colors.text, fontSize: 18, fontWeight: 'bold', textAlign: 'center' }}
-                                        value={exchangeRate}
-                                        onChangeText={setExchangeRate}
-                                        keyboardType="numeric"
-                                        placeholder="1.0"
-                                        placeholderTextColor={colors.gray300}
-                                    />
-                                    {isFetchingRate && (
-                                        <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 8 }} />
-                                    )}
-                                </View>
-
-                                <Text style={{ color: colors.text, fontWeight: 'bold', marginLeft: 12 }}>
-                                    {currency}
-                                </Text>
-                            </View>
-                        )}
                     </View>
-                )}
-
-                {/* Quantity and Price */}
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                    <Card style={{ flex: 1 }}>
-                        <Text style={{ color: colors.textSecondary }}>Quantity</Text>
-                        <TextInput
-                            style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                            value={quantity}
-                            onChangeText={setQuantity}
-                            keyboardType="numeric"
-                            placeholder="0.00"
-                            placeholderTextColor={colors.gray300}
-                        />
-                    </Card>
-                    <Card style={{ flex: 1 }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={{ color: colors.textSecondary }}>Price</Text>
-                            <TouchableOpacity onPress={() => setShowPriceCalculator(true)} style={{ padding: 4 }}>
-                                <Ionicons name="calculator" size={20} color={colors.primary} />
+                    <View style={styles.pairItem}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Price</Text>
+                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="pricetags-outline" size={18} color={ds.text2} />
+                            <TextInput
+                                style={inputStyle}
+                                value={price}
+                                onChangeText={setPrice}
+                                keyboardType="numeric"
+                                placeholder="0.00"
+                                placeholderTextColor={ds.text3}
+                            />
+                            <TouchableOpacity onPress={() => setShowPriceCalculator(true)} hitSlop={space[2]}>
+                                <Ionicons name="calculator-outline" size={18} color={ds.text2} />
                             </TouchableOpacity>
                         </View>
-                        <TextInput
-                            style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                            value={price}
-                            onChangeText={setPrice}
-                            keyboardType="numeric"
-                            placeholder="0.00"
-                            placeholderTextColor={colors.gray300}
-                        />
-                    </Card>
+                    </View>
                 </View>
 
-                {/* Fees and Total (Auto-calculated) */}
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                    <Card style={{ flex: 1 }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={{ color: colors.textSecondary }}>Fees</Text>
-                            <TouchableOpacity onPress={() => setShowFeesCalculator(true)} style={{ padding: 4 }}>
-                                <Ionicons name="calculator" size={20} color={colors.primary} />
+                {/* Fees and total (auto-calculated) */}
+                <View style={styles.pair}>
+                    <View style={styles.pairItem}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Fees</Text>
+                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="receipt-outline" size={18} color={ds.text2} />
+                            <TextInput
+                                style={inputStyle}
+                                value={fees}
+                                onChangeText={setFees}
+                                keyboardType="numeric"
+                                placeholder="0.00"
+                                placeholderTextColor={ds.text3}
+                            />
+                            <TouchableOpacity onPress={() => setShowFeesCalculator(true)} hitSlop={space[2]}>
+                                <Ionicons name="calculator-outline" size={18} color={ds.text2} />
                             </TouchableOpacity>
                         </View>
-                        <TextInput
-                            style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                            value={fees}
-                            onChangeText={setFees}
-                            keyboardType="numeric"
-                            placeholder="0.00"
-                            placeholderTextColor={colors.gray300}
-                        />
-                    </Card>
-                    <Card style={{ flex: 1, opacity: 0.8 }}>
-                        <Text style={{ color: colors.textSecondary }}>Total</Text>
-                        <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', padding: 8 }}>
+                    </View>
+                    <View style={styles.pairItem}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Total</Text>
+                        <Text style={[type.bodyNum, styles.readOnly, { color: ds.text }]} numberOfLines={1}>
                             {(() => {
                                 const qty = new BigNumber(quantity || 0);
                                 const prc = new BigNumber(price || 0);
@@ -733,37 +629,30 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                                     : formatCurrencyAmount(total, displayCurrency);
                             })()}
                         </Text>
-                    </Card>
+                    </View>
                 </View>
 
-                {/* Realized P/L Display (Only for SELL) */}
+                {/* Realized P/L (sell only) */}
                 {action === 'SELL' && (
-                    <Card style={{ marginTop: 10 }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={{ color: colors.textSecondary }}>Realized P/L</Text>
-                            <TouchableOpacity onPress={() => setShowPLCalculator(true)} style={{ padding: 4 }}>
-                                <Ionicons name="calculator" size={20} color={colors.primary} />
+                    <>
+                        <Text style={[type.small, styles.label, styles.groupLabel, { color: ds.text2 }]}>Realized P/L</Text>
+                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="trending-up-outline" size={18} color={ds.text2} />
+                            <TextInput
+                                style={[type.bodyNum, styles.input, { color: pl >= 0 ? ds.success : ds.danger }]}
+                                value={realizedPL}
+                                onChangeText={setRealizedPL}
+                                keyboardType="numeric" // Note: iOS numeric keyboard doesn't always have minus sign!
+                                placeholder="0.00"
+                                placeholderTextColor={ds.text3}
+                            />
+                            <TouchableOpacity onPress={() => setShowPLCalculator(true)} hitSlop={space[2]}>
+                                <Ionicons name="calculator-outline" size={18} color={ds.text2} />
                             </TouchableOpacity>
                         </View>
-                        <TextInput
-                            style={{
-                                color: (parseFloat(realizedPL) || 0) >= 0 ? colors.success : colors.error,
-                                fontSize: 20,
-                                fontWeight: 'bold',
-                                borderBottomWidth: 1,
-                                borderBottomColor: colors.border,
-                                padding: 8
-                            }}
-                            value={realizedPL}
-                            onChangeText={setRealizedPL}
-                            keyboardType="numeric" // Note: iOS numeric keyboard doesn't always have minus sign!
-                            placeholder="0.00"
-                            placeholderTextColor={colors.gray300}
-                        />
 
-                        {/* Info Footer */}
                         {quantity && price && (
-                            <View style={{ marginTop: 8 }}>
+                            <View style={styles.hint}>
                                 {(() => {
                                     const qty = new BigNumber(quantity);
                                     const prc = new BigNumber(price);
@@ -771,45 +660,77 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                                     const proceeds = qty.multipliedBy(prc).minus(f);
 
                                     return (
-                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
-                                                Avg Cost: {formatCurrencyAmount(averageCost)}
+                                        <View style={styles.hintRow}>
+                                            <Text style={[type.smallNum, { color: ds.text2 }]}>
+                                                Avg cost: {formatCurrencyAmount(averageCost)}
                                             </Text>
-                                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
+                                            <Text style={[type.smallNum, { color: ds.text2 }]}>
                                                 Proceeds: {formatCurrencyAmount(proceeds)}
                                             </Text>
                                         </View>
                                     );
                                 })()}
-                                <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 4, fontStyle: 'italic' }}>
-                                    * Auto-calculated. Edit if needed.
+                                <Text style={[type.small, { color: ds.text2 }]}>
+                                    Auto-calculated. Edit if needed.
                                 </Text>
-                                {(parseFloat(realizedPL) || 0) < 0 && (
-                                    <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2, fontStyle: 'italic' }}>
-                                        * Loss includes {formatCurrencyAmount(new BigNumber(fees || 0))} fees + price difference
+                                {pl < 0 && (
+                                    <Text style={[type.small, { color: ds.text2 }]}>
+                                        Loss includes {formatCurrencyAmount(new BigNumber(fees || 0))} fees + price difference.
                                     </Text>
                                 )}
-                                {((parseFloat(realizedPL) || 0) > 0 && (parseFloat(fees) || 0) > 0) && (
-                                    <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2, fontStyle: 'italic' }}>
-                                        * Net gain after deducting {formatCurrencyAmount(new BigNumber(fees || 0))} fees
+                                {(pl > 0 && (parseFloat(fees) || 0) > 0) && (
+                                    <Text style={[type.small, { color: ds.text2 }]}>
+                                        Net gain after deducting {formatCurrencyAmount(new BigNumber(fees || 0))} fees.
                                     </Text>
                                 )}
                             </View>
                         )}
-                    </Card>
+                    </>
                 )}
 
                 {/* Note */}
-                <Card>
-                    <Text style={{ color: colors.textSecondary }}>Note (Optional)</Text>
+                <Text style={[type.small, styles.label, styles.groupLabel, { color: ds.text2 }]}>Note</Text>
+                <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                    <Ionicons name="create-outline" size={18} color={ds.text2} />
                     <TextInput
-                        style={{ color: colors.text, fontSize: 16, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
+                        style={[type.body, styles.input, { color: ds.text }]}
                         value={notes}
                         onChangeText={setNotes}
-                        placeholder="Description"
-                        placeholderTextColor={colors.gray500}
+                        placeholder="Optional"
+                        placeholderTextColor={ds.text3}
                     />
-                </Card>
+                </View>
+
+                {/* Linked transaction */}
+                <SectionHeader title="Cash flow" />
+                <Row
+                    title={initialInvestment ? 'Linked transaction' : 'Record a transaction'}
+                    subtitle={(() => {
+                        if (initialInvestment) return 'Auto-updated with investment changes';
+                        if (!createTransaction) return 'No transaction will be recorded';
+
+                        switch (action) {
+                            case 'BUY': return 'Will record as Transfer Out (cash out)';
+                            case 'SELL': return 'Will record as Transfer In (cash in)';
+                            case 'DIVIDEND': return 'Will record as Income';
+                            default: return 'Will record a transaction';
+                        }
+                    })()}
+                    trailing={
+                        <View style={styles.trailing}>
+                            <TouchableOpacity onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
+                                <Ionicons name="information-circle-outline" size={20} color={ds.text2} />
+                            </TouchableOpacity>
+                            <Switch
+                                value={createTransaction}
+                                onValueChange={toggleCreateTransaction}
+                                disabled={!!initialInvestment}
+                                trackColor={{ true: ds.accent }}
+                            />
+                        </View>
+                    }
+                    last
+                />
 
                 {/* Price Calculator */}
                 <CalculatorModal
@@ -897,43 +818,105 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
             </BottomModal>
 
             {/* Fixed Footer Actions */}
-            <View style={[styles.footer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Button
-                    title="Cancel"
-                    variant="outline"
-                    onPress={onCancel}
-                    style={{ flex: 1 }}
-                />
-                <Button
-                    title="Save"
-                    onPress={handleSave}
-                    style={{ flex: 1 }}
-                />
+            <View style={[styles.footer, { backgroundColor: ds.inset, borderTopColor: ds.hairline }]}>
+                <TouchableOpacity onPress={onCancel} style={styles.cancelButton}>
+                    <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSave} style={[styles.saveButton, { backgroundColor: ds.accent }]}>
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Save investment</Text>
+                </TouchableOpacity>
             </View>
         </View>
     );
 };
 
+const FOOTER_HEIGHT = space[3] + 48 + space[4] + 1;
+
 const styles = StyleSheet.create({
-    inputRow: {
+    // RecordScreen adds no padding, so the page color and footer run edge to edge.
+    page: {
         flex: 1,
+    },
+    content: {
+        paddingHorizontal: space[5],
+        paddingBottom: FOOTER_HEIGHT + space[6],
+    },
+    title: {
+        marginTop: space[4],
+        marginBottom: space[4],
+    },
+    label: {
+        marginTop: space[3],
+        marginBottom: space[1],
+    },
+    groupLabel: {
+        marginTop: space[6],
+    },
+    field: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
-        borderRadius: 12,
-        borderWidth: 1,
+        gap: space[2],
+        padding: space[3],
+        borderRadius: radius.md,
+    },
+    // Android TextInput adds its own padding; zero it so typed fields match the pressable ones.
+    input: {
+        flex: 1,
+        padding: 0,
+    },
+    // Android's Picker brings its own height and side padding; trim it to the field's size.
+    picker: {
+        flex: 1,
+        marginVertical: -space[3],
+        marginRight: -space[2],
+    },
+    readOnly: {
+        paddingVertical: space[3],
+    },
+    pair: {
+        flexDirection: 'row',
+        gap: space[3],
+    },
+    pairItem: {
+        flex: 1,
+    },
+    hint: {
+        marginTop: space[2],
+        gap: space[1],
+    },
+    hintRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    trailing: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
     },
     footer: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        paddingTop: 16,
-        paddingHorizontal: 16,
-        paddingBottom: 16,
-        borderTopWidth: 1,
         flexDirection: 'row',
-        gap: 12
+        gap: space[3],
+        paddingTop: space[3],
+        paddingHorizontal: space[5],
+        paddingBottom: space[4],
+        borderTopWidth: 1,
+    },
+    cancelButton: {
+        flex: 1,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    saveButton: {
+        flex: 2,
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     flow: {
         flexDirection: 'row',
