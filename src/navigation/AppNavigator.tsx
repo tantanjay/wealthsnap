@@ -3,7 +3,6 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
-import { useFloatingGear } from '@context/FloatingGearContext';
 import { navigationRef } from '@navigation/navigationRef';
 import BottomTabBar from '@navigation/BottomTabBar';
 
@@ -38,7 +37,6 @@ const MainTabs = () => (
 
 const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'LegalAcceptance' }) => {
     const { colors } = useTheme();
-    const { setActiveRoute } = useFloatingGear();
     const navigationTheme = {
         ...DefaultTheme,
         colors: {
@@ -51,20 +49,10 @@ const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 
         },
     };
 
-    // Tracks the current leaf route name the moment navigation state changes,
-    // independent of the destination screen's own mount/focus effects - so the
-    // floating gear knows which screen's menu to show without waiting on it.
-    const syncActiveRoute = () => {
-        const routeName = navigationRef.getCurrentRoute()?.name;
-        if (routeName) setActiveRoute(routeName);
-    };
-
     return (
         <NavigationContainer
             ref={navigationRef}
             theme={navigationTheme}
-            onReady={syncActiveRoute}
-            onStateChange={syncActiveRoute}
         >
             <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
                 <Stack.Screen name="Onboarding" component={WelcomeScreen} />

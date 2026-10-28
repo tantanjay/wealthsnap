@@ -9,11 +9,17 @@ import GeminiSettingsModal from '@components/profile/settings/GeminiSettingsModa
 import GeminiUsageModal from '@components/profile/settings/GeminiUsageModal';
 import { Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { usePrivacy } from '@context/PrivacyContext';
+import { useAlert } from '@context/AlertContext';
 import { getAIConfig } from '@services/core/storageService';
 import * as Security from '@services/core/securityService';
 
 const SecurityCard = () => {
     const { colors } = useTheme();
+    const { mode: privacyMode, revealForScreenshot } = usePrivacy();
+    const { showAlert } = useAlert();
+    // Discreet and Hidden already allow screenshots.
+    const showReveal = privacyMode === 'open';
     const [hasPin, setHasPin] = useState(false);
     const [hasApiKey, setHasApiKey] = useState(false);
     const [timeoutSetting, setTimeoutSetting] = useState<Security.TimeoutOption>('daily');
@@ -46,6 +52,17 @@ const SecurityCard = () => {
         setShowTimeoutModal(false);
     };
 
+    const handleRevealForScreenshot = () => {
+        showAlert(
+            'Allow Screenshot?',
+            'This will briefly allow a screenshot with real numbers visible, then screenshot protection resumes automatically.',
+            [
+                { text: 'No', style: 'cancel' },
+                { text: 'Yes', onPress: revealForScreenshot },
+            ]
+        );
+    };
+
     const getTimeoutLabel = (value: Security.TimeoutOption) => {
         const option = Security.TIMEOUT_OPTIONS.find(o => o.value === value);
         return option ? option.label : 'Select';
@@ -76,7 +93,7 @@ const SecurityCard = () => {
                 subtitle={hasApiKey ? 'API key configured' : 'Configure AI provider'}
                 chevron
                 onPress={() => setShowGeminiSettings(true)}
-                last={!hasApiKey}
+                last={!hasApiKey && !showReveal}
             />
             {hasApiKey && (
                 <Row
@@ -85,6 +102,15 @@ const SecurityCard = () => {
                     subtitle="Track token usage and costs"
                     chevron
                     onPress={() => setShowGeminiUsage(true)}
+                    last={!showReveal}
+                />
+            )}
+            {showReveal && (
+                <Row
+                    icon="camera-outline"
+                    title="Reveal for screenshot"
+                    subtitle="Allow one screenshot with real numbers for 15 seconds"
+                    onPress={handleRevealForScreenshot}
                     last
                 />
             )}

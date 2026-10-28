@@ -23,7 +23,7 @@ import { refreshStockHoldingPrices } from '@services/domain/marketDataService';
 interface HoldingsTabProps {
     format: PrivacyFormat;
     currency: string;
-    // Holdings settings (fetch price list), also opened from the floating gear.
+    // Holdings settings (fetch price list).
     settingsVisible: boolean;
     onOpenSettings: () => void;
     onCloseSettings: () => void;
