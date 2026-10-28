@@ -76,6 +76,8 @@ export interface PrivacyFormat {
     isHidden: boolean;
     // Open: formatted amount. Hidden (and Discreet, if a caller forgets to swap it): **** keeping a leading sign.
     money: (amount: BigNumber | number, options?: MoneyOptions) => string;
+    // A single transaction's own amount: shown in Open and Discreet, **** only in Hidden.
+    recordMoney: (amount: BigNumber | number, options?: MoneyOptions) => string;
     // Discreet swaps in the metric's scale-free alternative; Open and Hidden keep the amount-based text.
     show: <T>(amountText: T, discreetAlternative: T) => T;
 }
@@ -91,6 +93,11 @@ export const usePrivacyFormat = (currency: string): PrivacyFormat => {
         return `${signOf(new BigNumber(amount), !!options.signed)}${MASK}`;
     }, [isOpen, currency]);
 
+    const recordMoney = useCallback((amount: BigNumber | number, options: MoneyOptions = {}) => {
+        if (mode !== 'hidden') return formatMoney(amount, currency, options);
+        return `${signOf(new BigNumber(amount), !!options.signed)}${MASK}`;
+    }, [mode, currency]);
+
     const show = useCallback(<T,>(amountText: T, discreetAlternative: T): T => (isDiscreet ? discreetAlternative : amountText), [isDiscreet]);
 
     return useMemo(() => ({
@@ -99,6 +106,7 @@ export const usePrivacyFormat = (currency: string): PrivacyFormat => {
         isDiscreet,
         isHidden: mode === 'hidden',
         money,
+        recordMoney,
         show,
-    }), [mode, isOpen, isDiscreet, money, show]);
+    }), [mode, isOpen, isDiscreet, money, recordMoney, show]);
 };

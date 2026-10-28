@@ -285,8 +285,8 @@ const SnapshotView: React.FC<SnapshotViewProps> = ({ data, format: f, order, per
                         icon={transactionIcon(t)}
                         title={t.note || t.category}
                         subtitle={t.note ? `${t.category} · ${date}` : date}
-                        // Discreet leaves transaction amounts out entirely.
-                        value={f.isDiscreet ? undefined : f.money(amount, { signed: true })}
+                        // Single transactions show in Discreet; only totals are scale-free there.
+                        value={f.recordMoney(amount, { signed: true })}
                         valueTone={isTransfer ? 'neutral' : t.type === 'INCOME' && !f.isHidden ? 'good' : undefined}
                         onPress={onSeeAllRecent}
                         last={i === data.recent.length - 1}

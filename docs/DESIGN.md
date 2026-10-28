@@ -100,7 +100,7 @@ Text is sentence case everywhere (no ALL-CAPS section labels).
 Every amount renders through one helper that knows the current mode (Open / Discreet / Hidden):
 
 - **Open:** the value.
-- **Discreet:** the metric's scale-free alternative (%, months, counts, progress). Each metric defines its own; if it has none, the value is omitted (e.g. transaction amounts) or shown as "—" (Investment boost).
+- **Discreet:** the metric's scale-free alternative (%, months, counts, progress). Each metric defines its own; if it has none, the value is shown as "—" (Investment boost). A single transaction's own amount shows as in Open; totals built from them (day, month) stay out.
 - **Hidden:** `****`, keeping a leading sign (`+****`).
 
 Change lines and secondary text go through the same helper. Months, percentages and counts render unchanged in every mode.

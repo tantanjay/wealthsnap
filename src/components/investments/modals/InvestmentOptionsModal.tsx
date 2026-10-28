@@ -32,9 +32,9 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
     currency = 'PHP'
 }) => {
     const { ds } = useTheme();
-    const { isPrivacyEnabled } = usePrivacy();
-    // Detail sheets follow the privacy mode too: Discreet and Hidden both mask amounts here.
-    const money = (...args: Parameters<typeof formatCurrencyAmount>) => (isPrivacyEnabled ? '****' : formatCurrencyAmount(...args));
+    const { mode } = usePrivacy();
+    // A single record's amount shows in Discreet, like its Ledger row; Hidden masks it.
+    const money = (...args: Parameters<typeof formatCurrencyAmount>) => (mode === 'hidden' ? '****' : formatCurrencyAmount(...args));
     const { showAlert } = useAlert();
 
     if (!investment) return null;

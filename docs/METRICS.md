@@ -488,7 +488,7 @@ Total income and Total expense compare month-to-date figures while the month is 
 
 ## Discreet and Hidden rendering
 
-**Rule:** Open shows every amount. Discreet replaces each amount with that metric's scale-free alternative (%, months, counts, progress); an amount with none is left out (transaction amounts) or shown as "—". Hidden shows `****`, keeping a leading sign. %, months and counts render unchanged in every mode
+**Rule:** Open shows every amount. Discreet replaces each amount with that metric's scale-free alternative (%, months, counts, progress); an amount with none is shown as "—". A single transaction's own amount (Ledger rows, Home's Recent, its options sheet) shows as in Open: one record says nothing about your totals; day totals and the month In / Out stay out. Hidden shows `****`, keeping a leading sign. %, months and counts render unchanged in every mode
 
 **Shown on:** every amount. Screens without a Discreet version yet render Discreet as Hidden
 
@@ -498,6 +498,7 @@ Total income and Total expense compare month-to-date figures while the month is 
 |---|---|---|
 | Unreleased | Open / Discreet / Hidden | Replaced the on/off privacy toggle (on → Hidden, off → Open) |
 | Unreleased | Same | Insights follows it; its eye button is gone |
+| Unreleased | Transaction amounts | Single transactions show their amount in Discreet; day totals and month In / Out still don't |
 | Unreleased | Charts in Discreet | Insights and Holdings charts draw in Discreet without amounts instead of hiding; Hidden keeps one placeholder |
 | Unreleased | Screenshots | Discreet blocks screenshots like Open (it now shows charts); Reveal for screenshot works in both |
 
