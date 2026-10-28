@@ -53,6 +53,8 @@ export const ASYNC_KEYS = {
         ],
     },
     INSIGHTS_SCREEN: {
+        HEALTH_GRID: '@wealthsnap_insights_health_grid',
+        // Pre-redesign overview card order; ignored (the grid starts from its default) and removed on first read.
         CARD_ORDER: '@wealthsnap_insights_card_order',
         SECTION_ORDER: '@wealthsnap_insights_section_order',
         EXPENSE_GROUPING: '@wealthsnap_insights_expense_grouping',

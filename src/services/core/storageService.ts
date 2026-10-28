@@ -256,21 +256,41 @@ export const getSnapshotPeriod = async (): Promise<SnapshotPeriod> => {
 
 // ============= Insights Order (AsyncStorage) =============
 
-export const saveInsightsCardOrder = async (order: string[]): Promise<void> => {
+// The Financial Health pool (docs/METRICS.md → Financial Health grid).
+export type HealthMetricId =
+    | 'runway' | 'spending' | 'debt' | 'wealth'
+    | 'budget' | 'netflow' | 'savings' | 'income' | 'expense' | 'burn' | 'daily' | 'annual' | 'topcat';
+
+export const HEALTH_METRIC_IDS: HealthMetricId[] = [
+    'runway', 'spending', 'debt', 'wealth',
+    'budget', 'netflow', 'savings', 'income', 'expense', 'burn', 'daily', 'annual', 'topcat',
+];
+
+export const HEALTH_GRID_SIZE = 4;
+export const DEFAULT_HEALTH_GRID: HealthMetricId[] = ['runway', 'spending', 'debt', 'wealth'];
+
+export const saveHealthGrid = async (ids: HealthMetricId[]): Promise<void> => {
     try {
-        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.CARD_ORDER, JSON.stringify(order));
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.HEALTH_GRID, JSON.stringify(ids));
     } catch (error) {
-        console.error('Failed to save insights card order:', error);
+        console.error('Failed to save health grid:', error);
     }
 };
 
-export const getInsightsCardOrder = async (): Promise<string[] | null> => {
+// Grid order = the order the ids were checked. The old overview card order is dropped, not migrated.
+export const getHealthGrid = async (): Promise<HealthMetricId[]> => {
     try {
-        const data = await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.CARD_ORDER);
-        return data ? JSON.parse(data) : null;
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.HEALTH_GRID);
+        if (!data) {
+            await AsyncStorage.removeItem(ASYNC_KEYS.INSIGHTS_SCREEN.CARD_ORDER);
+            return DEFAULT_HEALTH_GRID;
+        }
+        const ids = (JSON.parse(data) as string[]).filter((id, i, all): id is HealthMetricId =>
+            (HEALTH_METRIC_IDS as string[]).includes(id) && all.indexOf(id) === i);
+        return ids.slice(0, HEALTH_GRID_SIZE);
     } catch (error) {
-        console.error('Failed to get insights card order:', error);
-        return null;
+        console.error('Failed to get health grid:', error);
+        return DEFAULT_HEALTH_GRID;
     }
 };
 

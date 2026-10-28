@@ -48,7 +48,7 @@ Includes:
 
 ## 🏥 Financial Health Intelligence System
 
-A top-level diagnostic engine that evaluates:
+Lives in Insights as a pick-your-4 grid with a detail sheet per number. It evaluates:
 
 - **Stability Runway**
 - **Net Cash Flow**
@@ -267,6 +267,15 @@ One calm overview instead of a stack of cards:
 - Drag to reorder the rows; 3 most recent transactions underneath
 - Sticky Home tabs for the full views: **Ledger** (search, Income / Expense / Transfers filters, this month's in/out, transactions by day with day totals, calendar view), **Holdings** (portfolio, return, allocation by asset type, weight and return per holding), **Goals** (saved total, this month's contributions, progress per goal) and **Loans** (You owe / Owed to you, payoff plan, progress and next due date per loan)
 - Every tab follows the Open / Discreet / Hidden privacy mode
+
+---
+
+## 🩺 Insights: Financial Health grid
+
+- Fixed 2×2 grid of the 4 numbers you pick from a pool of 13, in the order you check them in Insights settings; "Show all" lists every number with its value
+- Runway, Spending pace, Debt drag and Investment boost open full detail sheets (Debt drag includes the "extra per month" payoff stepper); the rest show their value and formula
+- Budgets per category, "Ask about your money" (AI chat), and drag-to-reorder for the sections below the grid
+- Follows the Open / Discreet / Hidden privacy mode
 
 ---
 
