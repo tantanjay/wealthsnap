@@ -1,14 +1,13 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import BottomModal from '@components/common/BottomModal';
-import SettingItem from '@components/common/SettingItem';
 import PinCreationScreen from '@screens/security/PinCreationScreen';
 import GeminiSettingsModal from '@components/profile/settings/GeminiSettingsModal';
 import GeminiUsageModal from '@components/profile/settings/GeminiUsageModal';
-import { Card } from '@components/index';
+import { Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { getAIConfig } from '@services/core/storageService';
 import * as Security from '@services/core/securityService';
@@ -54,57 +53,41 @@ const SecurityCard = () => {
 
     return (
         <>
-            <Card style={{ marginBottom: 16 }}>
-                <View style={styles.cardHeader}>
-                    <View style={[styles.headerIcon, { backgroundColor: colors.error + '20' }]}>
-                        <Ionicons name="shield" size={22} color={colors.error} />
-                    </View>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>Security & Intelligence</Text>
-                </View>
-
-                <SettingItem
-                    icon="lock-closed"
-                    title="App Lock"
-                    subtitle={hasPin ? "Tap to change your PIN" : "Secure your app with a PIN"}
-                    onPress={() => setShowPinModal(true)}
-                    iconBg={colors.error + '20'}
-                    iconColor={colors.error}
+            <SectionHeader title="Security and intelligence" />
+            <Row
+                icon="lock-closed-outline"
+                title="App lock"
+                subtitle={hasPin ? 'PIN on · tap to change' : 'Off · secure the app with a PIN'}
+                chevron
+                onPress={() => setShowPinModal(true)}
+            />
+            {hasPin && (
+                <Row
+                    icon="timer-outline"
+                    title="Auto-lock timeout"
+                    subtitle={getTimeoutLabel(timeoutSetting)}
+                    chevron
+                    onPress={() => setShowTimeoutModal(true)}
                 />
-
-                {hasPin && (
-                    <SettingItem
-                        icon="timer"
-                        title="Auto-Lock Timeout"
-                        subtitle={getTimeoutLabel(timeoutSetting)}
-                        onPress={() => setShowTimeoutModal(true)}
-                        iconBg={colors.warning + '20'}
-                        iconColor={colors.warning}
-                    />
-                )}
-
-                {/* AI Section */}
-                <SettingItem
-                    icon="sparkles"
-                    title="Google Gemini"
-                    subtitle={hasApiKey ? "API Key configured" : "Configure AI provider"}
-                    onPress={() => setShowGeminiSettings(true)}
-                    iconBg={colors.primary + '20'}
-                    iconColor={colors.primary}
-                    isLast={!hasApiKey}
+            )}
+            <Row
+                icon="sparkles-outline"
+                title="Google Gemini"
+                subtitle={hasApiKey ? 'API key configured' : 'Configure AI provider'}
+                chevron
+                onPress={() => setShowGeminiSettings(true)}
+                last={!hasApiKey}
+            />
+            {hasApiKey && (
+                <Row
+                    icon="bar-chart-outline"
+                    title="Usage statistics"
+                    subtitle="Track token usage and costs"
+                    chevron
+                    onPress={() => setShowGeminiUsage(true)}
+                    last
                 />
-
-                {hasApiKey && (
-                    <SettingItem
-                        icon="bar-chart"
-                        title="Usage Statistics"
-                        subtitle="Track token usage and costs"
-                        onPress={() => setShowGeminiUsage(true)}
-                        iconBg={colors.info + '20'}
-                        iconColor={colors.info}
-                        isLast={true}
-                    />
-                )}
-            </Card>
+            )}
 
             {/* PIN Modal */}
             <Modal visible={showPinModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPinModal(false)}>
@@ -178,25 +161,5 @@ const SecurityCard = () => {
         </>
     );
 };
-
-const styles = StyleSheet.create({
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    headerIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-    },
-});
 
 export default SecurityCard;

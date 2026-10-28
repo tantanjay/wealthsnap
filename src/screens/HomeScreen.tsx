@@ -183,7 +183,7 @@ const HomeScreen = ({ navigation }: any) => {
         return () => registerSecondAction(routeName, null);
     }, [registerSecondAction, routeName, tab, ledgerView]);
 
-    const openRecord = (params?: object) => navigation.navigate('Actions', params);
+    const openRecord = (params?: object) => navigation.navigate('Record', params);
 
     const togglePeriod = () => {
         const next = period === 'overall' ? 'month' : 'overall';
@@ -205,11 +205,11 @@ const HomeScreen = ({ navigation }: any) => {
                 title="No financial data yet"
                 subtitle="Your net worth, cash, investments, loans and goals will show up here once you start logging money in and out."
                 ctaLabel="Add Your First Transaction"
-                onCtaPress={() => navigation.navigate('Actions')}
+                onCtaPress={() => navigation.navigate('Record')}
             />
             <SectionHeader title="Get started" />
-            <Row icon="receipt-outline" title="Add a transaction" chevron onPress={() => navigation.navigate('Actions')} />
-            <Row icon="trending-up-outline" title="Add an investment" chevron onPress={() => navigation.navigate('Actions')} />
+            <Row icon="receipt-outline" title="Add a transaction" chevron onPress={() => navigation.navigate('Record')} />
+            <Row icon="trending-up-outline" title="Add an investment" chevron onPress={() => navigation.navigate('Record')} />
             <Row icon="flag-outline" title="Set a savings goal" chevron last onPress={() => setTab('goals')} />
         </View>
     );

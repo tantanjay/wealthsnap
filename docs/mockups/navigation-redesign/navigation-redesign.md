@@ -1,6 +1,6 @@
 # App Redesign — Home hub, privacy modes, Insights sheets, slim Profile, Learn tab
 
-**Status:** Idea / mockup only — not yet implemented in the app.
+**Status:** Implemented (rollout phases 1–4: Snapshot and privacy modes, Home tabs, Insights sheets, bottom bar and Profile / Learn split). Not yet released.
 **Mockup:** [navigation-redesign.html](./navigation-redesign.html) — one fully clickable phone prototype (light/dark toggle above the phone). This file and that HTML are the single source for *what* the redesign contains.
 **Visual rules:** [docs/DESIGN.md](../../DESIGN.md) — the Refined Minimal design system (tokens, type, components, screen checklist). This file says what goes on each screen; DESIGN.md says how it looks.
 

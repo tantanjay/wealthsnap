@@ -20,6 +20,8 @@ export interface RowProps {
     valueTone?: Tone;
     change?: string;
     changeTone?: Tone;
+    // Custom trailing control (switch, spinner), placed before the chevron.
+    trailing?: React.ReactNode;
     // Only when the destination isn't obvious.
     chevron?: boolean;
     // Rendered under the subtitle, e.g. a ProgressBar.
@@ -40,6 +42,7 @@ const Row: React.FC<RowProps> = ({
     valueTone,
     change,
     changeTone = 'neutral',
+    trailing,
     chevron,
     children,
     last,
@@ -79,6 +82,7 @@ const Row: React.FC<RowProps> = ({
                 </View>
             ) : null}
 
+            {trailing}
             {chevron && <Ionicons name="chevron-forward" size={16} color={ds.text3} />}
         </Pressable>
     );

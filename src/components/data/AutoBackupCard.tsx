@@ -4,9 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import BottomModal from '@components/common/BottomModal';
-import SettingItem from '@components/common/SettingItem';
-import { Card, Button } from '@components/index';
+import { Button } from '@components/index';
+import { Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { type, space } from '@styles/theme';
 import { useAlert } from '@context/AlertContext';
 import { useSecurity } from '@context/SecurityContext';
 import * as Security from '@services/core/securityService';
@@ -42,7 +43,7 @@ interface AutoBackupCardProps {
 }
 
 const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
-    const { colors } = useTheme();
+    const { colors, ds } = useTheme();
     const { showAlert } = useAlert();
     const { temporarilyDisableLock } = useSecurity();
 
@@ -149,78 +150,60 @@ const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
         setShowFrequencyModal(false);
     };
 
+    const warningIcon = <Ionicons name="alert-circle-outline" size={18} color={ds.warning} />;
     const frequencyLabel = FREQUENCY_OPTIONS.find(o => o.value === frequency)?.label ?? 'Weekly';
     const folderLabel = getFolderDisplayName(folderUri);
 
     return (
         <>
-            <Card style={{ marginBottom: 16 }}>
-                <View style={styles.cardHeader}>
-                    <View style={[styles.headerIcon, { backgroundColor: colors.success + '20' }]}>
-                        <Ionicons name="time" size={22} color={colors.success} />
-                    </View>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>Auto Backup</Text>
-                </View>
+            <SectionHeader title="Auto backup" />
+            <Row
+                icon="cloud-done-outline"
+                title="Automatic backups"
+                subtitle={enabled ? formatLastRun(lastRunAt) : 'Off'}
+                last={!enabled}
+                trailing={
+                    <Switch
+                        value={enabled}
+                        onValueChange={handleToggle}
+                        trackColor={{ false: ds.hairline, true: ds.accentSoft }}
+                        thumbColor={enabled ? ds.accent : ds.text3}
+                    />
+                }
+            />
 
-                <SettingItem
-                    icon="cloud-done"
-                    title="Automatic Backups"
-                    subtitle={enabled ? formatLastRun(lastRunAt) : 'Off'}
-                    iconBg={colors.success + '20'}
-                    iconColor={colors.success}
-                    isLast={!enabled}
-                    rightElement={
-                        <Switch
-                            value={enabled}
-                            onValueChange={handleToggle}
-                            trackColor={{ false: colors.gray300, true: colors.primary + '80' }}
-                            thumbColor={enabled ? colors.primary : colors.gray300}
+            {enabled && (
+                <>
+                    <Row icon="repeat-outline" title="Frequency" subtitle={frequencyLabel} chevron onPress={() => setShowFrequencyModal(true)} />
+
+                    {Platform.OS === 'android' && (
+                        <Row
+                            icon="folder-outline"
+                            title="Backup folder"
+                            subtitle={folderLabel ?? 'Required — tap to choose a folder'}
+                            trailing={folderLabel ? undefined : warningIcon}
+                            chevron
+                            onPress={handlePickFolder}
                         />
-                    }
-                />
+                    )}
 
-                {enabled && (
-                    <>
-                        <SettingItem
-                            icon="repeat"
-                            title="Frequency"
-                            subtitle={frequencyLabel}
-                            onPress={() => setShowFrequencyModal(true)}
-                            iconBg={colors.info + '20'}
-                            iconColor={colors.info}
-                        />
+                    <Row
+                        icon="key-outline"
+                        title="Backup password"
+                        subtitle={hasPassword ? 'Tap to change' : 'Required — tap to set'}
+                        trailing={hasPassword ? undefined : warningIcon}
+                        chevron
+                        onPress={handlePasswordRowPress}
+                        last
+                    />
 
-                        {Platform.OS === 'android' && (
-                            <SettingItem
-                                icon="folder"
-                                title="Backup Folder"
-                                subtitle={folderLabel ?? 'Required — tap to choose a folder'}
-                                onPress={handlePickFolder}
-                                iconBg={folderLabel ? colors.primary + '20' : colors.warning + '20'}
-                                iconColor={folderLabel ? colors.primary : colors.warning}
-                            />
-                        )}
-
-                        <SettingItem
-                            icon="key"
-                            title="Backup Password"
-                            subtitle={hasPassword ? 'Tap to change' : 'Required — tap to set'}
-                            onPress={handlePasswordRowPress}
-                            iconBg={hasPassword ? colors.primary + '20' : colors.warning + '20'}
-                            iconColor={hasPassword ? colors.primary : colors.warning}
-                            isLast
-                        />
-
-                        {Platform.OS === 'ios' && (
-                            <View style={{ paddingTop: 12 }}>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 18 }}>
-                                    Auto-backups are saved to WealthSnap&apos;s on-device folder. Open the Files app (On My iPhone → WealthSnap) to move copies to iCloud Drive or elsewhere.
-                                </Text>
-                            </View>
-                        )}
-                    </>
-                )}
-            </Card>
+                    {Platform.OS === 'ios' && (
+                        <Text style={[type.small, styles.note, { color: ds.text2 }]}>
+                            Auto-backups are saved to WealthSnap&apos;s on-device folder. Open the Files app (On My iPhone → WealthSnap) to move copies to iCloud Drive or elsewhere.
+                        </Text>
+                    )}
+                </>
+            )}
 
             {/* Frequency Selection Modal */}
             <BottomModal
@@ -367,22 +350,8 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ visible, mode, onClose, o
 };
 
 const styles = StyleSheet.create({
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    headerIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: '700',
+    note: {
+        paddingTop: space[3],
     },
 });
 

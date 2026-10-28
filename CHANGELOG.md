@@ -15,7 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Loans' "due this month" counts each loan only up to its own minimum payment.
   - Home tabs: Ledger, Holdings, Goals and Loans, which replace the Savings Goals and Debt Strategy screens.
   - Insights: a Financial Health grid of 4 numbers you pick from 13, with a detail sheet for each, replacing the overview cards and the Financial Health screen.
+  - New bottom bar: Home · Insights · Record · Profile · Learn; the Investment and History tabs move into Home's Holdings and Ledger tabs.
+  - Profile keeps only settings; guides, help and app info move to the new Learn tab, with new Runway, Privacy Modes and Goals guides and an FAQ.
 - Privacy modes: Open, Discreet (percentages, months and counts instead of amounts) and Hidden (the old privacy toggle).
+  - The floating gear's privacy item cycles Open → Discreet → Hidden.
 
 ## [1.19.0] — 2026-09-29
 
