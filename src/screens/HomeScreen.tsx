@@ -7,7 +7,7 @@ import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { EmptyState } from '@components/common/EmptyState';
 import { ReviewAppModal } from '@components/common/ReviewAppModal';
 import { Row, SectionHeader, UnderlineTabs, UnderlineTab } from '@components/ds';
-import HomeSettingsSheet from '@components/home/HomeSettingsSheet';
+import HomeSettingsSheet, { HomeTab } from '@components/home/HomeSettingsSheet';
 import SnapshotView, { SnapshotData } from '@components/home/SnapshotView';
 import LedgerTab, { LedgerView } from '@components/home/LedgerTab';
 import HoldingsTab from '@components/home/HoldingsTab';
@@ -41,8 +41,6 @@ import * as Storage from '@services/core/storageService';
 
 const RECENT_COUNT = 3;
 
-type HomeTab = 'snapshot' | 'ledger' | 'holdings' | 'goals' | 'loans';
-
 const TABS: UnderlineTab<HomeTab>[] = [
     { key: 'snapshot', label: 'Snapshot' },
     { key: 'ledger', label: 'Ledger' },
@@ -73,6 +71,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [order, setOrder] = useState<Storage.SnapshotRowId[]>(Storage.DEFAULT_SNAPSHOT_ORDER);
     const [period, setPeriod] = useState<Storage.SnapshotPeriod>('overall');
     const [range, setRange] = useState<Storage.SnapshotRange>('6M');
+    const [holdingsOrder, setHoldingsOrder] = useState<Storage.HoldingsSectionId[]>(Storage.DEFAULT_HOLDINGS_ORDER);
     const [isSettingsVisible, setIsSettingsVisible] = useState(false);
     const [hasLoaded, setHasLoaded] = useState(false);
     const [tab, setTab] = useState<HomeTab>('snapshot');
@@ -89,6 +88,7 @@ const HomeScreen = ({ navigation }: any) => {
         try {
             setOrder(await Storage.getSnapshotOrder());
             setPeriod(await Storage.getSnapshotPeriod());
+            setHoldingsOrder(await Storage.getHoldingsOrder());
             const savedRange = await Storage.getSnapshotRange();
             setRange(savedRange);
 
@@ -172,6 +172,11 @@ const HomeScreen = ({ navigation }: any) => {
         Storage.saveSnapshotRange(next).then(() => loadData());
     };
 
+    const changeHoldingsOrder = (next: Storage.HoldingsSectionId[]) => {
+        setHoldingsOrder(next);
+        Storage.saveHoldingsOrder(next);
+    };
+
     const changeOrder = (next: Storage.SnapshotRowId[]) => {
         setOrder(next);
         Storage.saveSnapshotOrder(next);
@@ -251,6 +256,7 @@ const HomeScreen = ({ navigation }: any) => {
                                 onOpenSettings={() => setIsHoldingsSettingsVisible(true)}
                                 onCloseSettings={() => setIsHoldingsSettingsVisible(false)}
                                 onOpenRecord={() => openRecord()}
+                                sectionOrder={holdingsOrder}
                             />
                         )}
                         {tab === 'goals' && <GoalsTab format={format} />}
@@ -262,10 +268,13 @@ const HomeScreen = ({ navigation }: any) => {
             <HomeSettingsSheet
                 visible={isSettingsVisible}
                 onClose={() => setIsSettingsVisible(false)}
+                tab={tab}
                 order={order}
                 onChangeOrder={changeOrder}
                 range={range}
                 onChangeRange={changeRange}
+                holdingsOrder={holdingsOrder}
+                onChangeHoldingsOrder={changeHoldingsOrder}
             />
 
             <ReviewAppModal

@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - Home Snapshot: Projected Net Worth with this month's change, then Cash, Investments, Loans and Goals rows with one Overall / This month switch, replacing Home's five cards.
-  - Home settings sheet to pick a privacy mode and reorder the rows; your old card order carries over.
+  - Home settings sheet that changes with the selected tab: privacy mode everywhere, plus the net worth graph range and row order on Snapshot and the section order on Holdings; your old card order carries over.
   - Loans' "due this month" counts each loan only up to its own minimum payment.
   - Home tabs: Ledger, Holdings, Goals and Loans, which replace the Savings Goals and Debt Strategy screens.
   - Insights: a Financial Health grid of 4 numbers you pick from 13, with a detail sheet for each, replacing the overview cards and the Financial Health screen.

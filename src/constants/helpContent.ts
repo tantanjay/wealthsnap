@@ -41,7 +41,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         type: 'document',
         content: [
             { type: 'heading1', text: 'Home Snapshot' },
-            { type: 'paragraph', text: 'Home shows your net worth on top, then one row each for Cash, Investments, Loans and Goals, then your 3 most recent transactions. Tap "Overall" to switch every row to "This month". Reorder the rows from the sliders button.' },
+            { type: 'paragraph', text: 'Home shows your net worth on top, then one row each for Cash, Investments, Loans and Goals, then your 3 most recent transactions. Tap "Overall" to switch every row to "This month". Reorder the rows from the sliders button, which opens the settings for whichever Home tab you are on.' },
             { type: 'paragraph', text: 'The tabs under the greeting open the full lists: Ledger (every transaction by day, with search, filters and a calendar), Holdings, Goals and Loans. Tapping a row jumps to its tab.' },
             { type: 'divider' },
             { type: 'heading2', text: 'Projected Net Worth' },
