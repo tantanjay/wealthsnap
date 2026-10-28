@@ -202,7 +202,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
         allocation: (
             <>
                 <SectionHeader title="Allocation" menu={{ options: ALLOCATION_TABS, value: allocationTab, onSelect: key => changeAllocationTab(key as AllocationTab) }} />
-                <AllocationChart holdingsData={holdings} tab={allocationTab} isPrivacyEnabled={isPrivacyEnabled} />
+                <AllocationChart holdingsData={holdings} tab={allocationTab} />
             </>
         ),
         dividends: (
@@ -211,7 +211,6 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
                 actualDividends={actualDividends}
                 calendarData={calendarData}
                 currency={currency}
-                isPrivacyEnabled={isPrivacyEnabled}
             />
         ),
         advisor: (

@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Profile keeps only settings; guides, help and app info move to the new Learn tab, with new Runway, Privacy Modes and Goals guides and an FAQ.
 - Privacy modes: Open, Discreet (percentages, months and counts instead of amounts) and Hidden (the old privacy toggle).
   - Pick the mode in Home settings.
+  - Insights and Holdings charts show in Discreet without amounts; Hidden shows one placeholder.
+  - Open and Discreet block screenshots; Reveal for screenshot (Profile → Security) works in both.
+- Sheets close with an X in the header instead of Done / Close / Got it buttons.
 
 ### Removed
 - Floating gear: the draggable settings button is now a plain settings icon on Home and Insights. Monthly summary and Reveal for screenshot move to Profile.

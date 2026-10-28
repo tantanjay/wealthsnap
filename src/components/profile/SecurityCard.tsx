@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable, Modal, ScrollView, StyleSheet } from 'react-native';
+import { View, Pressable, Modal, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import PinCreationScreen from '@screens/security/PinCreationScreen';
@@ -12,14 +13,14 @@ import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
 import { getAIConfig } from '@services/core/storageService';
 import * as Security from '@services/core/securityService';
-import { type, space, radius } from '@styles/theme';
+import { space, radius } from '@styles/theme';
 
 const SecurityCard = () => {
     const { ds } = useTheme();
     const { mode: privacyMode, revealForScreenshot } = usePrivacy();
     const { showAlert } = useAlert();
-    // Discreet and Hidden already allow screenshots.
-    const showReveal = privacyMode === 'open';
+    // Hidden already allows screenshots.
+    const showReveal = privacyMode !== 'hidden';
     const [hasPin, setHasPin] = useState(false);
     const [hasApiKey, setHasApiKey] = useState(false);
     const [timeoutSetting, setTimeoutSetting] = useState<Security.TimeoutOption>('daily');
@@ -55,7 +56,7 @@ const SecurityCard = () => {
     const handleRevealForScreenshot = () => {
         showAlert(
             'Allow Screenshot?',
-            'This will briefly allow a screenshot with real numbers visible, then screenshot protection resumes automatically.',
+            "This will briefly allow a screenshot of what's on screen, then screenshot protection resumes automatically.",
             [
                 { text: 'No', style: 'cancel' },
                 { text: 'Yes', onPress: revealForScreenshot },
@@ -109,7 +110,7 @@ const SecurityCard = () => {
                 <Row
                     icon="camera-outline"
                     title="Reveal for screenshot"
-                    subtitle="Allow one screenshot with real numbers for 15 seconds"
+                    subtitle="Allow screenshots for 15 seconds"
                     onPress={handleRevealForScreenshot}
                     last
                 />
@@ -119,8 +120,8 @@ const SecurityCard = () => {
             <Modal visible={showPinModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPinModal(false)}>
                 <View style={[styles.pinPage, { backgroundColor: ds.bg }]}>
                     <View style={styles.pinHeader}>
-                        <Pressable onPress={() => setShowPinModal(false)} hitSlop={space[2]} accessibilityRole="button">
-                            <Text style={[type.bodyStrong, { color: ds.accent }]}>Close</Text>
+                        <Pressable onPress={() => setShowPinModal(false)} hitSlop={space[2]} accessibilityRole="button" accessibilityLabel="Close">
+                            <Ionicons name="close" size={22} color={ds.text2} />
                         </Pressable>
                     </View>
                     <PinCreationScreen

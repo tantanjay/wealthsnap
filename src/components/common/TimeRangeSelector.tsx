@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useRef, useState } from 'react';
+import { View, Text, Pressable } from 'react-native';
 
+import { DropdownMenu, DropdownAnchor } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { type, space } from '@styles/theme';
 
 export type TimeRange = '6M' | '1Y' | '3Y' | 'ALL';
 
@@ -19,83 +20,29 @@ interface TimeRangeSelectorProps {
     options?: readonly TimeRange[];
 }
 
+// Text trigger ("6M ⌄") with a dropdown anchored under it, like SectionHeader's menu.
 const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({ value, onChange, options = ['6M', '1Y', '3Y', 'ALL'] }) => {
-    const { colors } = useTheme();
-    const [isOpen, setIsOpen] = useState(false);
+    const { ds } = useTheme();
+    const triggerRef = useRef<View>(null);
+    const [anchor, setAnchor] = useState<DropdownAnchor | null>(null);
+
+    const openMenu = () => {
+        triggerRef.current?.measureInWindow((x, y, width, height) => setAnchor({ x, y, width, height }));
+    };
 
     return (
-        <View>
-            <TouchableOpacity
-                onPress={() => setIsOpen(true)}
-                activeOpacity={0.7}
-                style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: colors.border + '40',
-                    borderRadius: 8,
-                    paddingVertical: 6,
-                    paddingHorizontal: 10,
-                }}
-            >
-                <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600', marginRight: 4 }}>
-                    {value}
-                </Text>
-                <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
-            </TouchableOpacity>
-
-            {/* Centered overlay - never anchored to the trigger's on-screen position, so it can't overflow on any page/width */}
-            <Modal visible={isOpen} transparent animationType="fade" onRequestClose={() => setIsOpen(false)}>
-                <TouchableOpacity
-                    style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' }}
-                    activeOpacity={1}
-                    onPress={() => setIsOpen(false)}
-                >
-                    <View
-                        style={{
-                            backgroundColor: colors.surface,
-                            borderRadius: 10,
-                            paddingVertical: 4,
-                            minWidth: 180,
-                            borderWidth: 1,
-                            borderColor: colors.border,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.15,
-                            shadowRadius: 6,
-                            elevation: 8,
-                        }}
-                    >
-                        {options.map((range) => (
-                            <TouchableOpacity
-                                key={range}
-                                onPress={() => {
-                                    onChange(range);
-                                    setIsOpen(false);
-                                }}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    paddingVertical: 10,
-                                    paddingHorizontal: 14,
-                                }}
-                            >
-                                <Text style={{
-                                    color: value === range ? colors.primary : colors.text,
-                                    fontSize: 13,
-                                    fontWeight: value === range ? '600' : '400',
-                                }}>
-                                    {RANGE_LABELS[range]}
-                                </Text>
-                                {value === range && (
-                                    <Ionicons name="checkmark" size={16} color={colors.primary} />
-                                )}
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-        </View>
+        <>
+            <Pressable ref={triggerRef} onPress={openMenu} hitSlop={space[2]}>
+                <Text style={[type.smallMedium, { color: ds.accent }]}>{value} ⌄</Text>
+            </Pressable>
+            <DropdownMenu
+                anchor={anchor}
+                options={options.map(range => ({ key: range, label: RANGE_LABELS[range] }))}
+                value={value}
+                onSelect={onChange}
+                onClose={() => setAnchor(null)}
+            />
+        </>
     );
 };
 

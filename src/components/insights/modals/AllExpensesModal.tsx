@@ -5,10 +5,10 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import BottomModal from '@components/common/BottomModal';
 import { ProgressBar, Row, Tone, toneColor } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { Budget } from '@types';
 import { checkBudgetStatus } from '@services/domain/budgetService';
 import { type, space, radius } from '@styles/theme';
-import { formatCompactCurrency } from '@utils/currencyUtils';
 
 interface AllExpensesModalProps {
     visible: boolean;
@@ -21,7 +21,6 @@ interface AllExpensesModalProps {
     }[];
     budgets: Budget[];
     currency: string;
-    isPrivacyEnabled: boolean;
     onSelectCategory: (category: string) => void;
 }
 
@@ -40,10 +39,10 @@ const AllExpensesModal: React.FC<AllExpensesModalProps> = ({
     categoryBreakdown,
     budgets,
     currency,
-    isPrivacyEnabled,
     onSelectCategory
 }) => {
     const { ds } = useTheme();
+    const format = usePrivacyFormat(currency);
 
     return (
         <BottomModal
@@ -57,6 +56,11 @@ const AllExpensesModal: React.FC<AllExpensesModalProps> = ({
                     const budget = budgets.find(b => b.category === item.name);
                     const budgetStatus = budget ? checkBudgetStatus(item.amount.minus(item.goalFundedAmount ?? 0), budget.amount) : null;
                     const tone = budgetStatus ? budgetTone(budgetStatus.status) : 'good';
+                    const share = `${item.percentage.toFixed(1)}%`;
+                    // Discreet: the goal-funded part as % of the category.
+                    const goalShare = item.goalFundedAmount && item.amount.isGreaterThan(0)
+                        ? item.goalFundedAmount.dividedBy(item.amount).times(100).toNumber()
+                        : null;
 
                     return (
                         <Row
@@ -64,22 +68,22 @@ const AllExpensesModal: React.FC<AllExpensesModalProps> = ({
                             leading={<View style={[styles.dot, { backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }]} />}
                             title={item.name}
                             subtitle={item.goalFundedAmount?.isGreaterThan(0)
-                                ? `${isPrivacyEnabled ? '***' : formatCompactCurrency(item.goalFundedAmount, currency)} from goals`
+                                ? `${format.show(format.money(item.goalFundedAmount, { compact: true }), formatPercent(goalShare))} from goals`
                                 : undefined}
-                            value={isPrivacyEnabled ? '***' : formatCompactCurrency(item.amount, currency)}
-                            change={`${item.percentage.toFixed(1)}%`}
-                            chevron={!isPrivacyEnabled}
-                            onPress={isPrivacyEnabled ? undefined : () => {
+                            value={format.show(format.money(item.amount, { compact: true }), share)}
+                            change={format.isDiscreet ? undefined : share}
+                            chevron={!format.isHidden}
+                            onPress={format.isHidden ? undefined : () => {
                                 onSelectCategory(item.name);
                                 onClose();
                             }}
                             last={index === categoryBreakdown.length - 1}
                         >
-                            {budget && budgetStatus && !isPrivacyEnabled && (
+                            {budget && budgetStatus && (
                                 <View style={styles.budget}>
                                     <View style={styles.budgetLine}>
                                         <Text style={[type.captionNum, { color: ds.text2 }]}>
-                                            Budget {formatCompactCurrency(budget.amount, currency)}
+                                            {format.show(`Budget ${format.money(budget.amount, { compact: true })}`, 'Budget')}
                                         </Text>
                                         <Text style={[type.captionNum, type.captionMedium,{ color: toneColor(ds, tone) }]}>
                                             {budgetStatus.percentage.toFixed(0)}%

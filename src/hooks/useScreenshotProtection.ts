@@ -3,19 +3,16 @@ import * as ScreenCapture from 'expo-screen-capture';
 
 import { usePrivacy } from '@context/PrivacyContext';
 
-/**
- * Hook to manage screen capture protection based on privacy settings.
- *
- * - ON (Privacy Enabled/Hidden Values): Allows screenshots.
- * - OFF (Privacy Disabled/Visible Values): Prevents screenshots (FLAG_SECURE).
- */
+// Blocks screenshots (FLAG_SECURE) in Open and Discreet; only Hidden, or an active
+// "Reveal for screenshot" window, allows them.
 export const useScreenshotProtection = () => {
-    const { isPrivacyEnabled, isScreenshotRevealActive } = usePrivacy();
+    const { mode, isScreenshotRevealActive } = usePrivacy();
+    const allowCapture = mode === 'hidden' || isScreenshotRevealActive;
 
     useEffect(() => {
         const updateProtection = async () => {
             try {
-                if (isPrivacyEnabled || isScreenshotRevealActive) {
+                if (allowCapture) {
                     await ScreenCapture.allowScreenCaptureAsync();
                 } else {
                     await ScreenCapture.preventScreenCaptureAsync();
@@ -26,5 +23,5 @@ export const useScreenshotProtection = () => {
         };
 
         updateProtection();
-    }, [isPrivacyEnabled, isScreenshotRevealActive]);
+    }, [allowCapture]);
 };

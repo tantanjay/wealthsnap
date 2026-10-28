@@ -5,7 +5,7 @@ import { usePrivacy } from '@context/PrivacyContext';
 import { useScreenshotProtection } from '@hooks/useScreenshotProtection';
 
 export const PrivacyGuard: React.FC = () => {
-    const { isPrivacyEnabled } = usePrivacy();
+    const { mode } = usePrivacy();
     const [isAppActive, setIsAppActive] = useState(true);
 
     // 1. Activate OS-Level Protection (FLAG_SECURE)
@@ -20,13 +20,10 @@ export const PrivacyGuard: React.FC = () => {
         return () => {
             subscription.remove();
         };
-    }, [isPrivacyEnabled]);
+    }, []);
 
-    // Logic:
-    // If Privacy Mode is OFF (Protection Needed: isPrivacyEnabled = false)
-    // AND App is NOT Active (Background/Inactive)
-    // THEN Show Overlay
-    const showOverlay = !isPrivacyEnabled && !isAppActive;
+    // Mask the app switcher whenever screenshots are blocked (every mode but Hidden).
+    const showOverlay = mode !== 'hidden' && !isAppActive;
 
     if (!showOverlay) {
         return null;

@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Skeleton } from '@components/common/Skeleton';
 import { SectionHeader } from '@components/ds';
+import { usePrivacy } from '@context/PrivacyContext';
 import { useTheme } from '@context/ThemeContext';
-import { type, space } from '@styles/theme';
+import { formatPercent } from '@hooks/usePrivacyFormat';
+import { type, space, radius } from '@styles/theme';
 import { formatCurrencyAmount, formatCompactNumber, formatCompactCurrency } from '@utils/currencyUtils';
 import { CalendarEvent } from '@services/domain/dividendHistoryService';
 import { MonthlyDividend } from '@services/domain/investmentService';
@@ -16,10 +18,11 @@ interface DividendChartProps {
     calendarData: Record<number, CalendarEvent[]>;
     currency?: string;
     isLoading?: boolean;
-    isPrivacyEnabled?: boolean;
 }
 
 type TabType = 'actual' | 'calendar' | 'projected';
+
+const CHART_HEIGHT = 220;
 
 const TABS: { key: TabType; label: string }[] = [
     { key: 'actual', label: 'Actual' },
@@ -33,9 +36,11 @@ export const DividendChart: React.FC<DividendChartProps> = ({
     calendarData,
     currency = 'PHP',
     isLoading = false,
-    isPrivacyEnabled = false,
 }) => {
     const { ds } = useTheme();
+    const { mode } = usePrivacy();
+    const isDiscreet = mode === 'discreet';
+    const isHidden = mode === 'hidden';
     const { width: windowWidth } = useWindowDimensions();
     const isLandscape = windowWidth > 600; // Simple landscape check
 
@@ -76,14 +81,20 @@ export const DividendChart: React.FC<DividendChartProps> = ({
     const actualTotal = actualYearData.reduce((acc, curr) => acc + curr.total, 0);
     const projectedTotal = projectedDividends.data.reduce((acc, curr) => acc + curr.total, 0);
     const displayTotal = activeTab === 'actual' ? actualTotal : projectedTotal;
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
 
-    const renderBarChart = (labels: string[], data: MonthlyDividend[]) => {
+    // Discreet drops the amount axis; tooltips show shares instead (% of the month, % of the year).
+    const renderBarChart = (labels: string[], data: MonthlyDividend[], currentIndex: number | null) => {
         const values = data.map(d => d.total);
         const maxValue = Math.max(...values, 1);
+        const yearTotal = values.reduce((sum, v) => sum + v, 0);
         const yMax = maxValue * 1.1;
         const yMin = 0;
         const yRange = yMax - yMin;
         const chartHeight = 160;
+        const highlightIndex = selectedBarIndex ?? currentIndex;
+        const shareOf = (part: number, whole: number) => formatPercent(whole > 0 ? (part / whole) * 100 : null);
 
         const yLabels: string[] = [];
         for (let i = 0; i < 4; i++) {
@@ -92,14 +103,16 @@ export const DividendChart: React.FC<DividendChartProps> = ({
         }
 
         return (
-            <View style={{ flex: 1, flexDirection: 'row', marginTop: 10 }}>
-                <View style={{ width: 35, justifyContent: 'space-between', paddingBottom: 20, alignItems: 'flex-end', paddingRight: 4 }}>
-                    {[...yLabels].reverse().map((label, i) => (
-                        <Text key={i} style={{ color: ds.text2, fontSize: 9 }}>{label}</Text>
-                    ))}
-                </View>
+            <View style={styles.barChart}>
+                {!isDiscreet && (
+                    <View style={styles.yAxis}>
+                        {[...yLabels].reverse().map((label, i) => (
+                            <Text key={i} style={[type.captionNum, { color: ds.text2 }]}>{label}</Text>
+                        ))}
+                    </View>
+                )}
 
-                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around' }}>
+                <View style={styles.bars}>
                     {data.map((item, index) => {
                         const value = item.total;
                         const barHeight = yRange > 0 ? ((value - yMin) / yRange) * chartHeight : 0;
@@ -115,40 +128,35 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                                     onPressOut={() => setSelectedBarIndex(null)}
                                     style={{ height: chartHeight, justifyContent: 'flex-end', width: '100%', alignItems: 'center' }}
                                 >
-                                    <View style={{
-                                        position: 'relative',
+                                    <View style={[styles.bar, {
                                         height: Math.max(2, barHeight),
-                                        width: '70%',
                                         backgroundColor: ds.accent,
-                                        opacity: isSelected ? 0.7 : activeTab === 'actual' ? 1 : 0.55,
-                                        borderRadius: 4,
-                                        minWidth: 3,
-                                        maxWidth: 30
-                                    }} />
+                                        opacity: highlightIndex === index ? 1 : 0.22,
+                                    }]} />
                                 </TouchableOpacity>
 
                                 {isSelected && (
-                                    <View style={[styles.tooltip, { backgroundColor: ds.raised, borderColor: ds.hairline, bottom: Math.max(2, barHeight) + 10 }]}>
-                                        <Text style={{ color: ds.text, fontSize: 10, fontWeight: 'bold', marginBottom: 4 }}>{labels[index]}</Text>
+                                    <View style={[styles.tooltip, { backgroundColor: ds.raised, borderColor: ds.hairline, bottom: Math.max(2, barHeight) + space[2] }]}>
+                                        <Text style={[type.captionMedium, { color: ds.text, marginBottom: space[1] }]}>{labels[index]}</Text>
 
                                         {data[index].breakdown.length > 0 ? (
-                                            <View style={{ width: '100%', marginBottom: 4 }}>
+                                            <View style={{ width: '100%', marginBottom: space[1] }}>
                                                 {data[index].breakdown.map((item, i) => (
-                                                    <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
-                                                        <Text style={{ color: ds.text2, fontSize: 8 }}>{item.symbol}</Text>
-                                                        <Text style={{ color: ds.text, fontSize: 8, fontWeight: '600' }}>
-                                                            {formatCompactCurrency(item.amount, currency)}
+                                                    <View key={i} style={styles.tooltipRow}>
+                                                        <Text style={[type.caption, { color: ds.text2 }]}>{item.symbol}</Text>
+                                                        <Text style={[type.captionNum, { color: ds.text }]}>
+                                                            {isDiscreet ? shareOf(item.amount, data[index].total) : formatCompactCurrency(item.amount, currency)}
                                                         </Text>
                                                     </View>
                                                 ))}
-                                                <View style={{ height: 1, backgroundColor: ds.hairline, marginVertical: 4 }} />
+                                                <View style={{ height: 1, backgroundColor: ds.hairline, marginVertical: space[1] }} />
                                             </View>
                                         ) : null}
 
-                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', gap: 10 }}>
-                                            <Text style={{ color: ds.text, fontSize: 9, fontWeight: 'bold' }}>Total</Text>
-                                            <Text style={{ color: ds.accent, fontSize: 9, fontWeight: 'bold' }}>
-                                                {formatCompactCurrency(data[index].total, currency)}
+                                        <View style={styles.tooltipRow}>
+                                            <Text style={[type.captionMedium, { color: ds.text }]}>{isDiscreet ? 'Of year' : 'Total'}</Text>
+                                            <Text style={[type.captionNum, { color: ds.text }]}>
+                                                {isDiscreet ? shareOf(data[index].total, yearTotal) : formatCompactCurrency(data[index].total, currency)}
                                             </Text>
                                         </View>
 
@@ -156,7 +164,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                                     </View>
                                 )}
 
-                                <Text numberOfLines={1} style={[styles.barLabel, { color: isSelected ? ds.accent : ds.text2, opacity: shouldShowLabel || isSelected ? 1 : 0 }]}>
+                                <Text numberOfLines={1} style={[type.caption, styles.barLabel, { color: highlightIndex === index ? ds.text : ds.text2, opacity: shouldShowLabel || isSelected ? 1 : 0 }]}>
                                     {labels[index]}
                                 </Text>
                             </View>
@@ -183,7 +191,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                     >
                         <Ionicons name="chevron-back" size={20} color={availableYears.indexOf(selectedYear) <= 0 ? ds.text3 : ds.text} />
                     </TouchableOpacity>
-                    <Text style={[styles.yearText, { color: ds.text }]}>{selectedYear}</Text>
+                    <Text style={[type.smallStrong, { color: ds.text }]}>{selectedYear}</Text>
                     <TouchableOpacity
                         onPress={() => {
                             const idx = availableYears.indexOf(selectedYear);
@@ -194,7 +202,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                         <Ionicons name="chevron-forward" size={20} color={availableYears.indexOf(selectedYear) >= availableYears.length - 1 || availableYears.length === 0 ? ds.text3 : ds.text} />
                     </TouchableOpacity>
                 </View>
-                {renderBarChart(months, currentData)}
+                {renderBarChart(months, currentData, selectedYear === currentYear ? currentMonth : null)}
             </View>
         );
     };
@@ -217,22 +225,16 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                             key={month}
                             style={[
                                 styles.calendarMonth,
-                                {
-                                    width: monthWidth,
-                                    borderColor: ds.hairline,
-                                    backgroundColor: ds.inset
-                                },
+                                { width: monthWidth, backgroundColor: ds.inset },
                                 isLastRow && { marginBottom: 0 }
                             ]}
                         >
-                            <Text style={[styles.monthTitle, { color: ds.text2 }]}>{month}</Text>
+                            <Text style={[type.captionMedium, { color: ds.text2 }]}>{month}</Text>
                             <View style={styles.assetList}>
                                 {events.length > 0 ? events.map((ev, i) => (
-                                    <View key={i} style={[styles.assetBadge, { backgroundColor: ds.inset }]}>
-                                        <Text style={[styles.assetText, { color: ds.accent }]}>{ev.symbol}</Text>
-                                    </View>
+                                    <Text key={i} style={[type.captionMedium, { color: ds.text }]}>{ev.symbol}</Text>
                                 )) : (
-                                    <Text style={{ fontSize: 8, color: ds.text3 }}>-</Text>
+                                    <Text style={[type.caption, { color: ds.text3 }]}>—</Text>
                                 )}
                             </View>
                         </View>
@@ -243,10 +245,11 @@ export const DividendChart: React.FC<DividendChartProps> = ({
     };
 
     const renderContent = () => {
-        if (isPrivacyEnabled) {
+        if (isHidden) {
             return (
-                <View style={styles.placeholderContainer}>
-                    <Text style={{ color: ds.text2 }}>Chart hidden for privacy</Text>
+                <View style={[styles.placeholder, { backgroundColor: ds.inset }]}>
+                    <Ionicons name="lock-closed-outline" size={18} color={ds.text2} />
+                    <Text style={[type.small, { color: ds.text2 }]}>Chart hidden for privacy</Text>
                 </View>
             );
         }
@@ -260,27 +263,29 @@ export const DividendChart: React.FC<DividendChartProps> = ({
             default:
                 const labels = projectedDividends.labels.length > 0 ? projectedDividends.labels : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
                 const data = projectedDividends.data.length > 0 ? projectedDividends.data : Array.from({ length: 12 }, () => ({ total: 0, breakdown: [] }));
-                return renderBarChart(labels, data);
+                // Projections cover the current year.
+                return renderBarChart(labels, data, currentMonth);
         }
     };
 
     return (
         <View>
             <SectionHeader title="Dividends" menu={{ options: TABS, value: activeTab, onSelect: key => setActiveTab(key as TabType) }} />
-            {activeTab !== 'calendar' && (
+            {/* Discreet leaves the year's total out; it has no scale-free version here. */}
+            {activeTab !== 'calendar' && !isDiscreet && (
                 <Text style={[type.titleNum, styles.total, { color: ds.text }]}>
-                    {isPrivacyEnabled ? '****' : formatCurrencyAmount(displayTotal, currency)}
+                    {isHidden ? '****' : formatCurrencyAmount(displayTotal, currency)}
                 </Text>
             )}
 
             {isLoading ? (
-                <Skeleton width="100%" height={220} borderRadius={12} />
+                <Skeleton width="100%" height={CHART_HEIGHT} borderRadius={radius.md} />
             ) : (
                 // key={activeTab} forces a clean remount per tab instead of reusing the same
                 // native node across drastically different content shapes (fixed-height bar
                 // chart vs. content-sized calendar grid), which was leaving stale layout
                 // sizing behind when switching back from Calendar to Actual/Projected.
-                <View key={activeTab} style={activeTab === 'calendar' ? undefined : { height: 220 }}>
+                <View key={activeTab} style={activeTab === 'calendar' && !isHidden ? undefined : { height: CHART_HEIGHT }}>
                     {renderContent()}
                 </View>
             )}
@@ -292,19 +297,51 @@ const styles = StyleSheet.create({
     total: {
         marginBottom: space[2],
     },
-    placeholderContainer: {
-        height: 200,
+    placeholder: {
+        flex: 1,
+        borderRadius: radius.md,
         justifyContent: 'center',
         alignItems: 'center',
+        gap: space[2],
+    },
+    barChart: {
+        flex: 1,
+        flexDirection: 'row',
+        marginTop: space[2],
+    },
+    yAxis: {
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        paddingBottom: space[5],
+        paddingRight: space[1],
+    },
+    bars: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'space-around',
+    },
+    bar: {
+        width: '70%',
+        minWidth: 3,
+        maxWidth: 30,
+        borderTopLeftRadius: 4,
+        borderTopRightRadius: 4,
     },
     tooltip: {
         position: 'absolute',
-        padding: 6,
-        borderRadius: 6,
+        padding: space[2],
+        borderRadius: radius.sm,
         borderWidth: 1,
         alignItems: 'center',
         zIndex: 1000,
         minWidth: 100,
+    },
+    tooltipRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        gap: space[3],
     },
     tooltipArrow: {
         position: 'absolute',
@@ -317,55 +354,35 @@ const styles = StyleSheet.create({
         zIndex: -1
     },
     barLabel: {
-        fontSize: 8,
-        marginTop: 4,
-        width: 30,
+        marginTop: space[1],
+        width: 32,
         textAlign: 'center',
     },
     yearSelector: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 20,
-        marginBottom: 4
-    },
-    yearText: {
-        fontSize: 14,
-        fontWeight: 'bold'
+        gap: space[5],
+        marginBottom: space[1],
     },
     calendarGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        paddingTop: 4
+        paddingTop: space[1],
     },
     calendarMonth: {
-        borderWidth: 1,
-        borderRadius: 8,
-        padding: 6,
-        marginBottom: 8,
+        borderRadius: radius.sm,
+        padding: space[2],
+        marginBottom: space[2],
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 56
-    },
-    monthTitle: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        marginBottom: 2
+        minHeight: 56,
     },
     assetList: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'center',
-        gap: 2
+        columnGap: space[1],
     },
-    assetBadge: {
-        paddingHorizontal: 3,
-        paddingVertical: 1,
-        borderRadius: 4
-    },
-    assetText: {
-        fontSize: 7,
-        fontWeight: 'bold'
-    }
 });

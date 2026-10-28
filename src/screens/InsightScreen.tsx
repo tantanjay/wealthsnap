@@ -35,7 +35,7 @@ import { getCachedTransactions } from '@services/domain/transactionService';
 
 const InsightScreen = ({ navigation }: any) => {
     const { ds } = useTheme();
-    const { isPrivacyEnabled, mode } = usePrivacy();
+    const { mode } = usePrivacy();
     const { checkConsent } = useAIConsent();
     const [currency, setCurrency] = useState('PHP');
     const format = usePrivacyFormat(currency);
@@ -331,7 +331,6 @@ const InsightScreen = ({ navigation }: any) => {
             <CumulativeSpendingChart
                 transactions={transactions}
                 currency={currency}
-                isPrivacyEnabled={isPrivacyEnabled}
                 isLoading={isLoading}
                 selectedDate={selectedDate}
             />
@@ -344,7 +343,6 @@ const InsightScreen = ({ navigation }: any) => {
                 average6Month={data.average6Month}
                 average1Year={data.average1Year}
                 currency={currency}
-                isPrivacyEnabled={isPrivacyEnabled}
                 transactions={transactions}
                 isLoading={isLoading}
                 selectedDate={selectedDate}
@@ -354,7 +352,6 @@ const InsightScreen = ({ navigation }: any) => {
             <ExpenseAnalysis
                 categoryBreakdown={data.expenseBreakdown}
                 currency={currency}
-                isPrivacyEnabled={isPrivacyEnabled}
                 grouping={expenseGrouping}
                 onToggleGrouping={setExpenseGrouping}
                 transactions={transactions}
@@ -367,7 +364,6 @@ const InsightScreen = ({ navigation }: any) => {
                 monthlyTrends={data.incomeTrends}
                 categoryBreakdown={data.incomeBreakdown}
                 currency={currency}
-                isPrivacyEnabled={isPrivacyEnabled}
                 transactions={transactions}
                 isLoading={isLoading}
                 selectedDate={selectedDate}
@@ -376,7 +372,6 @@ const InsightScreen = ({ navigation }: any) => {
         savings: (
             <SavingsRateTrend
                 transactions={transactions}
-                privacyMode={isPrivacyEnabled}
                 isLoading={isLoading}
                 currency={currency}
                 selectedDate={selectedDate}

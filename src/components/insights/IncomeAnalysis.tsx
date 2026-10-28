@@ -1,20 +1,19 @@
 import React, { useEffect, useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-gifted-charts';
 
 import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
 import MonthEndProjectionModal from '@components/insights/modals/MonthEndProjectionModal';
-import { Card } from '@components/index';
-import { SectionHeader } from '@components/ds';
+import { Row, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
+import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { Transaction } from '@types';
 import { type, space, radius } from '@styles/theme';
 import { getMonthlyTrends, getMonthlyTrendsForYear } from '@utils/financialMetrics';
-import { CURRENCY_SYMBOLS, formatCompactCurrency } from '@utils/currencyUtils';
 import { saveInsightsIncomeTab, getInsightsIncomeTab, saveInsightsIncomeTimeRange, getInsightsIncomeTimeRange } from '@services/core/storageService';
 
 interface IncomeAnalysisProps {
@@ -29,14 +28,37 @@ interface IncomeAnalysisProps {
         percentage: BigNumber;
     }[];
     currency: string;
-    isPrivacyEnabled: boolean;
     transactions: Transaction[];
     isLoading?: boolean;
     selectedDate?: Date;
 }
 
-const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialTrends, categoryBreakdown, currency, isPrivacyEnabled, transactions, isLoading = false, selectedDate = new Date() }) => {
-    const { colors, ds } = useTheme();
+const TREND_HEIGHT = 220;
+const PIE_HEIGHT = 160;
+// Resting bars; the selected month or pressed bar draws at full strength.
+const BAR_REST_OPACITY = 0.22;
+// Hex alpha suffixes for source slices: 100%, 60%, 30%.
+const SOURCE_ALPHAS = ['FF', '99', '4D'];
+
+const TABS = [
+    { key: 'TREND', label: 'Trend' },
+    { key: 'SOURCES', label: 'Sources' },
+];
+
+// Hidden mode: same size, fill and copy as every other hidden chart.
+const HiddenChart: React.FC<{ height: number }> = ({ height }) => {
+    const { ds } = useTheme();
+    return (
+        <View style={[styles.hidden, { height, backgroundColor: ds.inset }]}>
+            <Ionicons name="lock-closed-outline" size={18} color={ds.text2} />
+            <Text style={[type.small, { color: ds.text2 }]}>Chart hidden for privacy</Text>
+        </View>
+    );
+};
+
+const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialTrends, categoryBreakdown, currency, transactions, isLoading = false, selectedDate = new Date() }) => {
+    const { ds } = useTheme();
+    const format = usePrivacyFormat(currency);
     const [showProjectionModal, setShowProjectionModal] = React.useState(false);
     const [showInfoModal, setShowInfoModal] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState<'TREND' | 'SOURCES'>('TREND');
@@ -121,19 +143,16 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
         return getMonthlyTrends(transactions, monthsToLoad, selectedDate);
     }, [transactions, monthsToLoad, timeRange, selectedYear, selectedDate]);
 
+    // Sources step down through accent strengths, like the allocation bar's opacity steps.
     const pieData = categoryBreakdown.map((item, index) => ({
         name: item.name,
         population: item.amount,
-        color: index % 2 === 0 ? colors.primary : '#FF9800',
-        legendFontColor: colors.textSecondary,
-        legendFontSize: 12
+        color: `${ds.accent}${SOURCE_ALPHAS[index % SOURCE_ALPHAS.length]}`,
     }));
 
     // ... getInsight and renderTimeFilter ...
-    // Generate smart insight (using active trends)
+    // Generate smart insight (using active trends); it only uses %, so every mode shows it.
     const getInsight = () => {
-        if (isPrivacyEnabled) return "Income insights hidden in privacy mode.";
-
         const data = activeMonthlyTrends.incomeData;
         if (data.length < 2) return "Great start! Keep tracking to see income trends.";
 
@@ -168,370 +187,266 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
         const hasPrev = currentIndex < availableYears.length - 1;
 
         return (
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, marginBottom: 12 }}>
-                <TouchableOpacity
+            <View style={styles.yearSelector}>
+                <Pressable
                     onPress={() => setSelectedYear(availableYears[currentIndex + 1])}
                     disabled={!hasPrev}
+                    hitSlop={space[2]}
                 >
-                    <Ionicons name="chevron-back" size={20} color={hasPrev ? colors.text : colors.border} />
-                </TouchableOpacity>
-                <Text style={{ fontSize: 14, fontWeight: 'bold', color: colors.text }}>{selectedYear}</Text>
-                <TouchableOpacity
+                    <Ionicons name="chevron-back" size={18} color={hasPrev ? ds.text : ds.text3} />
+                </Pressable>
+                <Text style={[type.smallMediumNum, { color: ds.text }]}>{selectedYear}</Text>
+                <Pressable
                     onPress={() => setSelectedYear(availableYears[currentIndex - 1])}
                     disabled={!hasNext}
+                    hitSlop={space[2]}
                 >
-                    <Ionicons name="chevron-forward" size={20} color={hasNext ? colors.text : colors.border} />
-                </TouchableOpacity>
+                    <Ionicons name="chevron-forward" size={18} color={hasNext ? ds.text : ds.text3} />
+                </Pressable>
             </View>
         );
     };
 
+    const renderTrend = () => {
+        // Prepare data with pro-rated projection (Historical Average Strategy)
+        // Use historical average as the target for the current month's projection
+
+        const labels = [...activeMonthlyTrends.labels];
+        const fullLabels = activeMonthlyTrends.fullLabels ? [...activeMonthlyTrends.fullLabels] : [...labels];
+        const rawData = [...activeMonthlyTrends.incomeData];
+
+        // Last element is current month
+        const isCurrentlyThisMonth = selectedDate.getMonth() === new Date().getMonth() && selectedDate.getFullYear() === new Date().getFullYear();
+        const currentMonthIncome = rawData[rawData.length - 1] || new BigNumber(0);
+
+        // Calculate Average from historical months (exclude current)
+        const historicalData = rawData.slice(0, rawData.length - 1);
+
+        const historicalTotal = historicalData.reduce(
+            (sum, val) => sum.plus(val),
+            new BigNumber(0)
+        );
+
+        const averageIncome = historicalData.length > 0
+            ? historicalTotal.dividedBy(historicalData.length)
+            : currentMonthIncome;
+
+        // Projection = Max(Current, Average)
+        const proRatedIncome = isCurrentlyThisMonth ? BigNumber.max(currentMonthIncome, averageIncome) : currentMonthIncome;
+
+        // Discreet: a bar's signed % change vs that historical average.
+        const vsAverage = (value: BigNumber): number | null =>
+            averageIncome.isGreaterThan(0) ? value.minus(averageIncome).dividedBy(averageIncome).times(100).toNumber() : null;
+
+        // Replace last label with * indicator only if it's the actual current month
+        if (labels.length > 0 && isCurrentlyThisMonth) {
+            labels[labels.length - 1] = labels[labels.length - 1] + "*";
+            fullLabels[fullLabels.length - 1] = fullLabels[fullLabels.length - 1] + "*";
+        }
+
+        const barData = labels.map((label, index) => {
+            const today = new Date();
+            const isActualCurrentMonth = selectedYear === today.getFullYear() && index === today.getMonth();
+            const isCurrentMonth = timeRange === '1Y' ? (isActualCurrentMonth && isCurrentlyThisMonth) : (index === labels.length - 1 && isCurrentlyThisMonth);
+            // The month picked at the top of Insights is the highlighted bar.
+            const isSelectedMonth = timeRange === '1Y'
+                ? selectedYear === selectedDate.getFullYear() && index === selectedDate.getMonth()
+                : index === labels.length - 1;
+
+            const value = isCurrentMonth ? proRatedIncome : (rawData[index] || new BigNumber(0));
+            const actual = rawData[index] || new BigNumber(0);
+
+            // Smart Labeling: Throttling for density
+            const showLabelInterval = Math.ceil(labels.length / 6);
+            const shouldShowLabel = index === 0 || index === labels.length - 1 || index % showLabelInterval === 0;
+
+            return {
+                label: shouldShowLabel ? label : '',
+                fullLabel: fullLabels[index],
+                value,
+                actual,
+                isProjected: isCurrentMonth,
+                isCurrent: isSelectedMonth,
+            };
+        });
+
+        const maxValue = BigNumber.max(...barData.map(b => b.value), 1); // Prevent 0 division
+        const yMin = 0;
+        const yMax = maxValue.toNumber() * 1.05; // 5% padding
+        const yRange = yMax - yMin;
+        const chartHeight = 150;
+
+        // Y-axis labels (4), amounts only: Discreet drops the axis.
+        const yLabels = Array.from({ length: 4 }, (_, i) => format.money(yMin + (yRange * (i / 3)), { compact: true }));
+
+        return (
+            <View style={styles.plot}>
+                {format.isOpen && (
+                    <View style={styles.yAxis}>
+                        {yLabels.reverse().map((label, i) => (
+                            <Text key={i} style={[type.captionNum, { color: ds.text2 }]}>{label}</Text>
+                        ))}
+                    </View>
+                )}
+
+                {/* Bars */}
+                <View style={styles.bars}>
+                    {barData.map((bar, index) => {
+                        const totalHeight = yRange > 0 ? ((bar.value.toNumber() - yMin) / yRange) * chartHeight : 0;
+                        const actualHeight = yRange > 0 ? ((bar.actual.toNumber() - yMin) / yRange) * chartHeight : 0;
+                        // If projected < actual, prevent overflow
+                        const projectedHeight = bar.isProjected ? Math.max(0, totalHeight - actualHeight) : 0;
+                        const isSelected = selectedBarIndex === index;
+                        const barOpacity = isSelected || bar.isCurrent ? 1 : BAR_REST_OPACITY;
+
+                        return (
+                            <View key={index} style={[styles.barColumn, { zIndex: isSelected ? 100 : 0, elevation: isSelected ? 10 : 0 }]}>
+                                <TouchableOpacity
+                                    activeOpacity={1}
+                                    onPressIn={() => setSelectedBarIndex(index)}
+                                    onPressOut={() => setSelectedBarIndex(null)}
+                                    style={[styles.barTouch, { height: chartHeight }]}
+                                >
+                                    {bar.isProjected ? (
+                                        // Stacked bar: actual (solid) + projected remainder (resting tint)
+                                        <View style={styles.barWidth}>
+                                            <View style={[styles.barTop, { height: projectedHeight, backgroundColor: ds.accent, opacity: BAR_REST_OPACITY }]} />
+                                            <View style={[
+                                                projectedHeight > 0 ? undefined : styles.barTop,
+                                                { height: Math.max(0, actualHeight), backgroundColor: ds.accent, opacity: barOpacity },
+                                            ]} />
+                                        </View>
+                                    ) : (
+                                        <View style={[styles.barTop, styles.barWidth, {
+                                            height: Math.max(0, totalHeight),
+                                            backgroundColor: ds.accent,
+                                            opacity: barOpacity,
+                                        }]} />
+                                    )}
+                                </TouchableOpacity>
+
+                                {/* Tooltip Overlay */}
+                                {isSelected && (
+                                    <View style={[styles.tooltip, { bottom: Math.max(0, totalHeight) + 8, backgroundColor: ds.raised, borderColor: ds.hairline }]}>
+                                        <Text style={[type.captionMedium, { color: ds.text }]}>{bar.fullLabel.replace('*', '')}</Text>
+                                        <Text style={[type.captionNum, { color: ds.text2 }]}>
+                                            Actual: <Text style={{ color: ds.text }}>
+                                                {format.isDiscreet ? `${formatPercent(vsAverage(bar.actual), { signed: true })} vs avg` : format.money(bar.actual, { compact: true })}
+                                            </Text>
+                                        </Text>
+                                        {bar.isProjected && (
+                                            <Text style={[type.captionNum, { color: ds.text2 }]}>
+                                                Proj: <Text style={{ color: ds.text }}>
+                                                    {format.isDiscreet ? `${formatPercent(vsAverage(bar.value), { signed: true })} vs avg` : format.money(bar.value, { compact: true })}
+                                                </Text>
+                                            </Text>
+                                        )}
+                                        <View style={[styles.tooltipArrow, { backgroundColor: ds.raised, borderColor: ds.hairline }]} />
+                                    </View>
+                                )}
+
+                                <Text
+                                    numberOfLines={1}
+                                    style={[type.caption, styles.barLabel, {
+                                        color: isSelected ? ds.accent : ds.text2,
+                                        opacity: bar.label || isSelected ? 1 : 0
+                                    }]}
+                                >
+                                    {bar.label}
+                                </Text>
+                            </View>
+                        );
+                    })}
+                </View>
+            </View>
+        );
+    };
+
+    const renderSources = () => {
+        if (pieData.length === 0) {
+            return <Text style={[type.small, styles.empty, { color: ds.text2 }]}>No income data available.</Text>;
+        }
+        return (
+            <View style={styles.pie}>
+                <View style={styles.pieChart}>
+                    <PieChart
+                        data={pieData.map(d => ({ value: d.population.toNumber(), color: d.color, text: '' }))}
+                        radius={70}
+                        donut
+                        innerCircleColor={ds.bg}
+                        innerRadius={40}
+                        centerLabelComponent={() => (
+                            <View style={styles.pieCenter}>
+                                <Text style={[type.bodyNum, { color: ds.text }]}>{categoryBreakdown.length}</Text>
+                                <Text style={[type.caption, { color: ds.text2 }]}>Sources</Text>
+                            </View>
+                        )}
+                    />
+                </View>
+
+                {/* Shares are % of total, so the legend reads the same in every mode */}
+                <View style={styles.pieLegend}>
+                    {categoryBreakdown.map((item, index) => (
+                        <View key={index} style={styles.legendItem}>
+                            <View style={[styles.dot, { backgroundColor: pieData[index].color }]} />
+                            <Text style={[type.caption, styles.flex, { color: ds.text2 }]}>
+                                {item.name} <Text style={[type.captionMedium, { color: ds.text }]}>({item.percentage.toFixed(0)}%)</Text>
+                            </Text>
+                        </View>
+                    ))}
+                </View>
+            </View>
+        );
+    };
+
+    const chartHeight = activeTab === 'TREND' ? TREND_HEIGHT : PIE_HEIGHT;
+
     return (
         <View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginRight: 8 }}>Income Analytics</Text>
-                    <TouchableOpacity onPress={() => setShowInfoModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
+            <SectionHeader
+                title="Income analytics"
+                menu={{ options: TABS, value: activeTab, onSelect: key => handleTabChange(key as 'TREND' | 'SOURCES') }}
+            />
 
-                {/* Projection Button */}
-                {!isPrivacyEnabled && (
-                    <TouchableOpacity
-                        onPress={() => setShowProjectionModal(true)}
-                        style={{
-                            padding: 8,
-                            backgroundColor: colors.primary + '20',
-                            borderRadius: 8
-                        }}
-                    >
-                        <Ionicons name="trending-up" size={18} color={colors.primary} />
-                    </TouchableOpacity>
-                )}
+            <View style={styles.subline}>
+                <Text style={[type.small, styles.flex, { color: ds.text2 }]}>{isLoading ? "Analyzing income trends..." : getInsight()}</Text>
+                <Pressable onPress={() => setShowInsightInfo(true)} hitSlop={space[2]}>
+                    <Ionicons name="calculator-outline" size={18} color={ds.text2} />
+                </Pressable>
             </View>
 
-            <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 12, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, marginRight: 10 }}>💡</Text>
-                <Text style={{ color: colors.text, flex: 1 }}>{isLoading ? "Analyzing income trends..." : getInsight()}</Text>
-                <TouchableOpacity onPress={() => setShowInsightInfo(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
+            <View style={styles.toolbar}>
+                {/* Time Range Filter - Only show for TREND tab */}
+                {activeTab === 'TREND' ? (
+                    <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
+                ) : <View />}
+                <Pressable onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
+                    <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
+                </Pressable>
             </View>
 
-            <Card>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <View style={{ flexDirection: 'row', backgroundColor: colors.background, borderRadius: 8, padding: 2 }}>
-                        <TouchableOpacity
-                            onPress={() => handleTabChange('TREND')}
-                            style={{
-                                paddingVertical: 6,
-                                paddingHorizontal: 12,
-                                backgroundColor: activeTab === 'TREND' ? colors.surface : 'transparent',
-                                borderRadius: 6,
-                                borderWidth: activeTab === 'TREND' ? 1 : 0,
-                                borderColor: colors.border
-                            }}
-                        >
-                            <Text style={{
-                                color: activeTab === 'TREND' ? colors.text : colors.textSecondary,
-                                fontSize: 12,
-                                fontWeight: activeTab === 'TREND' ? '600' : '400'
-                            }}>Trend</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => handleTabChange('SOURCES')}
-                            style={{
-                                paddingVertical: 6,
-                                paddingHorizontal: 12,
-                                backgroundColor: activeTab === 'SOURCES' ? colors.surface : 'transparent',
-                                borderRadius: 6,
-                                borderWidth: activeTab === 'SOURCES' ? 1 : 0,
-                                borderColor: colors.border
-                            }}
-                        >
-                            <Text style={{
-                                color: activeTab === 'SOURCES' ? colors.text : colors.textSecondary,
-                                fontSize: 12,
-                                fontWeight: activeTab === 'SOURCES' ? '600' : '400'
-                            }}>Sources</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Time Range Filter - Only show for TREND tab */}
-                    {activeTab === 'TREND' && (
-                        <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
-                    )}
+            {isLoading ? (
+                <Skeleton width="100%" height={chartHeight} borderRadius={radius.md} />
+            ) : format.isHidden ? (
+                <HiddenChart height={chartHeight} />
+            ) : activeTab === 'TREND' ? (
+                <View style={styles.trendArea}>
+                    {timeRange === '1Y' && renderYearSelector()}
+                    {renderTrend()}
                 </View>
+            ) : renderSources()}
 
-                {!isPrivacyEnabled ? (
-                    isLoading ? (
-                        <View style={{ height: 220, padding: 10, justifyContent: 'center', alignItems: 'center' }}>
-                            <Skeleton width="100%" height={200} borderRadius={16} />
-                        </View>
-                    ) : activeTab === 'TREND' ? (
-                        <View style={{ height: 220, paddingVertical: 10 }}>
-                            {activeTab === 'TREND' && timeRange === '1Y' && renderYearSelector()}
-                            {(() => {
-                                // Prepare data with pro-rated projection (Historical Average Strategy)
-                                // Use historical average as the target for the current month's projection
-
-                                const labels = [...activeMonthlyTrends.labels];
-                                const fullLabels = activeMonthlyTrends.fullLabels ? [...activeMonthlyTrends.fullLabels] : [...labels];
-                                const rawData = [...activeMonthlyTrends.incomeData];
-
-                                // Last element is current month
-                                const isCurrentlyThisMonth = selectedDate.getMonth() === new Date().getMonth() && selectedDate.getFullYear() === new Date().getFullYear();
-                                const currentMonthIncome = rawData[rawData.length - 1] || new BigNumber(0);
-
-                                // Calculate Average from historical months (exclude current)
-                                const historicalData = rawData.slice(0, rawData.length - 1);
-
-                                const historicalTotal = historicalData.reduce(
-                                    (sum, val) => sum.plus(val),
-                                    new BigNumber(0)
-                                );
-
-                                const averageIncome = historicalData.length > 0
-                                    ? historicalTotal.dividedBy(historicalData.length)
-                                    : currentMonthIncome;
-
-                                // Projection = Max(Current, Average)
-                                const proRatedIncome = isCurrentlyThisMonth ? BigNumber.max(currentMonthIncome, averageIncome) : currentMonthIncome;
-
-                                // Replace last label with * indicator only if it's the actual current month
-                                if (labels.length > 0 && isCurrentlyThisMonth) {
-                                    labels[labels.length - 1] = labels[labels.length - 1] + "*";
-                                    fullLabels[fullLabels.length - 1] = fullLabels[fullLabels.length - 1] + "*";
-                                }
-
-                                const barData = labels.map((label, index) => {
-                                    const today = new Date();
-                                    const isActualCurrentMonth = selectedYear === today.getFullYear() && index === today.getMonth();
-                                    const isCurrentMonth = timeRange === '1Y' ? (isActualCurrentMonth && isCurrentlyThisMonth) : (index === labels.length - 1 && isCurrentlyThisMonth);
-
-                                    const value = isCurrentMonth ? proRatedIncome : (rawData[index] || 0);
-                                    const actual = rawData[index] || 0;
-
-                                    // Smart Labeling: Throttling for density
-                                    const showLabelInterval = Math.ceil(labels.length / 6);
-                                    const shouldShowLabel = index === 0 || index === labels.length - 1 || index % showLabelInterval === 0;
-
-                                    return {
-                                        label: shouldShowLabel ? label : '',
-                                        fullLabel: fullLabels[index],
-                                        value,
-                                        actual,
-                                        isProjected: isCurrentMonth
-                                    };
-                                });
-
-                                const maxValue = BigNumber.max(...barData.map(b => b.value), 1); // Prevent 0 division
-                                const yMin = 0;
-                                const yMax = maxValue.toNumber() * 1.05; // 5% padding
-                                const yRange = yMax - yMin;
-                                const chartHeight = 150;
-
-                                // Generate Y-axis labels (4 labels)
-                                const yLabels = [];
-                                for (let i = 0; i < 4; i++) {
-                                    const value = yMin + (yRange * (i / 3));
-                                    let formatted = value;
-                                    let suffix = '';
-                                    if (value >= 1000000) {
-                                        formatted = value / 1000000;
-                                        suffix = 'M';
-                                    } else if (value >= 1000) {
-                                        formatted = value / 1000;
-                                        suffix = 'K';
-                                    }
-                                    yLabels.push(`${CURRENCY_SYMBOLS[currency] || currency}${formatted.toFixed(1)}${suffix}`);
-                                }
-
-                                return (
-                                    <View style={{ flex: 1, flexDirection: 'row' }}>
-                                        {/* Y-Axis Labels */}
-                                        <View style={{ width: 45, justifyContent: 'space-between', paddingBottom: 25, alignItems: 'flex-end', paddingRight: 5 }}>
-                                            {yLabels.reverse().map((label, i) => (
-                                                <Text key={i} style={{ color: colors.textSecondary, fontSize: 10 }}>{label}</Text>
-                                            ))}
-                                        </View>
-
-                                        {/* Bars */}
-                                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around' }}>
-                                            {barData.map((bar, index) => {
-                                                const totalHeight = yRange > 0 ? ((bar.value.toNumber() - yMin) / yRange) * chartHeight : 0;
-                                                const actualHeight = yRange > 0 ? ((bar.actual.toNumber() - yMin) / yRange) * chartHeight : 0;
-                                                // If projected < actual, prevent overflow
-                                                const projectedHeight = bar.isProjected ? Math.max(0, totalHeight - actualHeight) : 0;
-                                                const isSelected = selectedBarIndex === index;
-
-                                                return (
-                                                    <View key={index} style={{ alignItems: 'center', flex: 1, zIndex: isSelected ? 100 : 0, elevation: isSelected ? 10 : 0 }}>
-                                                        <TouchableOpacity
-                                                            activeOpacity={1}
-                                                            onPressIn={() => setSelectedBarIndex(index)}
-                                                            onPressOut={() => setSelectedBarIndex(null)}
-                                                            style={{ height: chartHeight, justifyContent: 'flex-end', width: '100%', alignItems: 'center' }}
-                                                        >
-                                                            {bar.isProjected ? (
-                                                                <View style={{ width: '50%', borderRadius: 4, overflow: 'hidden' }}>
-                                                                    {/* Projected (Lighter) */}
-                                                                    <View style={{
-                                                                        height: projectedHeight,
-                                                                        backgroundColor: isSelected ? colors.primary + '80' : colors.primary + '50', // Lighter opacity
-                                                                        borderTopLeftRadius: 4,
-                                                                        borderTopRightRadius: 4,
-                                                                    }} />
-                                                                    {/* Actual (Solid) */}
-                                                                    <View style={{
-                                                                        height: Math.max(0, actualHeight),
-                                                                        backgroundColor: isSelected ? colors.primary : colors.primary,
-                                                                        opacity: isSelected ? 0.9 : 1,
-                                                                        borderBottomLeftRadius: 4,
-                                                                        borderBottomRightRadius: 4,
-                                                                        borderTopLeftRadius: projectedHeight > 0 ? 0 : 4,
-                                                                        borderTopRightRadius: projectedHeight > 0 ? 0 : 4,
-                                                                    }} />
-                                                                </View>
-                                                            ) : (
-                                                                <View style={{
-                                                                    height: Math.max(0, totalHeight),
-                                                                    width: '50%',
-                                                                    backgroundColor: colors.primary,
-                                                                    opacity: isSelected ? 0.8 : 1,
-                                                                    borderRadius: 4,
-                                                                }} />
-                                                            )}
-                                                        </TouchableOpacity>
-
-                                                        {/* Tooltip Overlay */}
-                                                        {isSelected && (
-                                                            <View style={{
-                                                                position: 'absolute',
-                                                                bottom: Math.max(0, totalHeight) + 8, // Dynamic positioning
-                                                                backgroundColor: colors.surface,
-                                                                padding: 8,
-                                                                borderRadius: 8,
-                                                                shadowColor: '#000',
-                                                                shadowOffset: { width: 0, height: 2 },
-                                                                shadowOpacity: 0.15,
-                                                                shadowRadius: 4,
-                                                                elevation: 10,
-                                                                minWidth: 100,
-                                                                alignItems: 'center',
-                                                                borderWidth: 1,
-                                                                borderColor: colors.border,
-                                                                zIndex: 100
-                                                            }}>
-                                                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: 'bold', marginBottom: 2 }}>{bar.fullLabel.replace('*', '')}</Text>
-                                                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
-                                                                    Actual: <Text style={{ color: colors.text }}>{formatCompactCurrency(bar.actual, currency)}</Text>
-                                                                </Text>
-                                                                {bar.isProjected && (
-                                                                    <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
-                                                                        Proj: <Text style={{ color: colors.text }}>{formatCompactCurrency(bar.value, currency)}</Text>
-                                                                    </Text>
-                                                                )}
-                                                                {/* Arrow */}
-                                                                <View style={{
-                                                                    position: 'absolute',
-                                                                    bottom: -6,
-                                                                    width: 12,
-                                                                    height: 12,
-                                                                    backgroundColor: colors.surface,
-                                                                    transform: [{ rotate: '45deg' }],
-                                                                    borderBottomWidth: 1,
-                                                                    borderRightWidth: 1,
-                                                                    borderColor: colors.border,
-                                                                    zIndex: -1
-                                                                }} />
-                                                            </View>
-                                                        )}
-
-                                                        <Text
-                                                            numberOfLines={1}
-                                                            style={{
-                                                                color: isSelected ? colors.primary : colors.textSecondary,
-                                                                fontSize: 10,
-                                                                marginTop: 6,
-                                                                width: 40,
-                                                                textAlign: 'center',
-                                                                fontWeight: isSelected ? 'bold' : 'normal',
-                                                                opacity: bar.label || isSelected ? 1 : 0
-                                                            }}
-                                                        >
-                                                            {bar.label}
-                                                        </Text>
-                                                    </View>
-                                                )
-                                            })}
-                                        </View>
-                                    </View>
-                                );
-                            })()}
-                        </View>
-                    ) : (
-                        pieData.length > 0 ? (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                {/* Chart Section */}
-                                <View style={{ flex: 6, alignItems: 'center' }}>
-                                    <PieChart
-                                        data={pieData.map(d => ({
-                                            value: d.population.toNumber(),
-                                            color: d.color,
-                                            text: '', // No text inside slices, moving to legend
-                                        }))}
-                                        radius={70} // Reduced radius to fit side-by-side
-                                        donut
-                                        innerCircleColor={colors.surface}
-                                        innerRadius={40}
-                                        centerLabelComponent={() => {
-                                            return (
-                                                <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                                                    <Text style={{ fontSize: 16, color: colors.text, fontWeight: 'bold' }}>
-                                                        {categoryBreakdown.length}
-                                                    </Text>
-                                                    <Text style={{ fontSize: 8, color: colors.textSecondary }}>Sources</Text>
-                                                </View>
-                                            );
-                                        }}
-                                    />
-                                </View>
-
-                                {/* Legend (Ledger) Section - Right Side */}
-                                <View style={{ flex: 4, paddingLeft: 10 }}>
-                                    <View style={{ gap: 8 }}>
-                                        {categoryBreakdown.map((item, index) => {
-                                            return (
-                                                <View key={index} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: pieData[index].color, marginRight: 8, marginTop: 2 }} />
-                                                    <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 1 }}>
-                                                        {item.name} <Text style={{ fontWeight: 'bold', color: colors.text }}>({item.percentage.toFixed(0)}%)</Text>
-                                                    </Text>
-                                                </View>
-                                            );
-                                        })}
-                                    </View>
-                                </View>
-                            </View>
-                        ) : (
-                            <Text style={{ color: colors.textSecondary, textAlign: 'center', padding: 20 }}>No income data available.</Text>
-                        )
-                    )
-                ) : (
-                    <View style={{
-                        height: 220,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: colors.border + '20',
-                        borderRadius: 16,
-                        marginVertical: 8
-                    }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>🔒 Chart hidden for privacy</Text>
-                    </View>
-                )}
-            </Card>
+            {/* The projection sheet lists amounts and isn't privacy-aware yet */}
+            {format.isOpen && (
+                <Row
+                    icon="trending-up-outline"
+                    title="Month-end projection"
+                    chevron
+                    onPress={() => setShowProjectionModal(true)}
+                    style={styles.projection}
+                    last
+                />
+            )}
 
             <MonthEndProjectionModal
                 visible={showProjectionModal}
@@ -564,7 +479,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                         <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
                             <View style={modalStyles.scenarioBars}>
                                 <View style={[modalStyles.scenarioBar, modalStyles.split]}>
-                                    <View style={[modalStyles.flex, { backgroundColor: ds.accent, opacity: 0.3 }]} />
+                                    <View style={[modalStyles.flex, { backgroundColor: ds.accent, opacity: BAR_REST_OPACITY }]} />
                                     <View style={[modalStyles.flex, { backgroundColor: ds.accent }]} />
                                 </View>
                             </View>
@@ -616,9 +531,136 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                     </View>
                 </View>
             </BottomModal>
-        </View >
+        </View>
     );
 };
+
+const styles = StyleSheet.create({
+    subline: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+    },
+    flex: {
+        flex: 1,
+    },
+    toolbar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: space[3],
+        marginBottom: space[2],
+    },
+    hidden: {
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: space[2],
+    },
+    empty: {
+        textAlign: 'center',
+        paddingVertical: space[5],
+    },
+    trendArea: {
+        height: TREND_HEIGHT,
+        paddingVertical: space[2],
+    },
+    yearSelector: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: space[5],
+        marginBottom: space[3],
+    },
+    plot: {
+        flex: 1,
+        flexDirection: 'row',
+    },
+    yAxis: {
+        width: 48,
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        paddingBottom: 25,
+        paddingRight: space[1],
+    },
+    bars: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'space-around',
+    },
+    barColumn: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    barTouch: {
+        width: '100%',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+    },
+    barWidth: {
+        width: '50%',
+    },
+    barTop: {
+        borderTopLeftRadius: 4,
+        borderTopRightRadius: 4,
+    },
+    barLabel: {
+        width: 40,
+        marginTop: space[2],
+        textAlign: 'center',
+    },
+    tooltip: {
+        position: 'absolute',
+        minWidth: 100,
+        alignItems: 'center',
+        padding: space[2],
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        zIndex: 100,
+    },
+    tooltipArrow: {
+        position: 'absolute',
+        bottom: -5,
+        width: 10,
+        height: 10,
+        transform: [{ rotate: '45deg' }],
+        borderBottomWidth: 1,
+        borderRightWidth: 1,
+        zIndex: -1,
+    },
+    pie: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    pieChart: {
+        flex: 6,
+        alignItems: 'center',
+    },
+    pieCenter: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    pieLegend: {
+        flex: 4,
+        paddingLeft: space[2],
+        gap: space[2],
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: radius.full,
+    },
+    projection: {
+        marginTop: space[2],
+    },
+});
 
 const modalStyles = StyleSheet.create({
     scenarios: {
