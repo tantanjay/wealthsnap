@@ -5,13 +5,12 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { BigNumber } from 'bignumber.js';
 import * as Clipboard from 'expo-clipboard';
 
-import { Button, Card } from '@components/index';
 import { Row, SectionHeader } from '@components/ds';
 import BottomModal from '@components/common/BottomModal';
 import { CalculatorModal } from '@components/record/CalculatorModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, fontFamily } from '@styles/theme';
 import { Debt, DebtType, DebtDirection, DebtInterestType, Transaction, TransactionType } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveDebt } from '@services/domain/debtService';
@@ -36,7 +35,7 @@ const getAutoDirection = (type: DebtType): DebtDirection => {
 };
 
 export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, initialDebt, defaultType }) => {
-    const { colors, ds } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
 
     // Form State
@@ -351,326 +350,294 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
         };
 
         return (
-            <Card style={{ marginBottom: 10, paddingVertical: 0, paddingHorizontal: 0, overflow: 'hidden' }}>
-                <TouchableOpacity
+            <>
+                <SectionHeader title="Payment schedule" actionLabel="Copy" onAction={handleCopySchedule} />
+                <Row
+                    title="Estimated monthly payment"
+                    value={`${formCurrency} ${new BigNumber(minPayment).toFormat(2)}`}
                     onPress={() => setIsPaymentDetailsExpanded(!isPaymentDetailsExpanded)}
-                    style={{ flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: colors.surface }}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons
-                        name={isPaymentDetailsExpanded ? "chevron-down" : "chevron-forward"}
-                        size={20}
-                        color={colors.primary}
-                        style={{ marginRight: 8 }}
-                    />
-                    <View style={{ flex: 1 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Estimated Monthly Payment</Text>
-                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
-                            {formCurrency} {new BigNumber(minPayment).toFormat(2)}
-                        </Text>
-                    </View>
-                    <TouchableOpacity onPress={handleCopySchedule} style={{ padding: 4 }}>
-                        <Ionicons name="copy-outline" size={20} color={colors.primary} />
-                    </TouchableOpacity>
-                </TouchableOpacity>
+                    trailing={<Ionicons name={isPaymentDetailsExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={ds.text3} />}
+                    last={!isPaymentDetailsExpanded}
+                />
 
                 {isPaymentDetailsExpanded && (
-                    <View style={{ borderTopWidth: 1, borderTopColor: colors.border, padding: 12, backgroundColor: colors.surface }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, paddingHorizontal: 4 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 1.5 }}>Date</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 2, textAlign: 'right' }}>Principal</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 2, textAlign: 'right' }}>Interest</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 2, textAlign: 'right' }}>Balance</Text>
+                    <View>
+                        <View style={[styles.scheduleRow, { borderBottomColor: ds.hairline }]}>
+                            <Text style={[type.caption, styles.colDate, { color: ds.text2 }]}>Date</Text>
+                            <Text style={[type.caption, styles.colNum, { color: ds.text2 }]}>Principal</Text>
+                            <Text style={[type.caption, styles.colNum, { color: ds.text2 }]}>Interest</Text>
+                            <Text style={[type.caption, styles.colNum, { color: ds.text2 }]}>Balance</Text>
                         </View>
 
-                        <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled showsVerticalScrollIndicator={true}>
+                        <ScrollView style={styles.schedule} nestedScrollEnabled showsVerticalScrollIndicator={true}>
                             {schedule.length === 0 ? (
-                                <Text style={{ color: colors.textSecondary, textAlign: 'center', marginVertical: 10 }}>
+                                <Text style={[type.small, styles.scheduleEmpty, { color: ds.text2 }]}>
                                     Calculation unavailable. Check amounts.
                                 </Text>
                             ) : (
                                 schedule.map((item) => (
-                                    <View key={item.month} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5, borderBottomColor: colors.border + '30', paddingHorizontal: 4 }}>
-                                        <Text style={{ color: colors.text, fontSize: 12, flex: 1.5 }}>
+                                    <View key={item.month} style={[styles.scheduleRow, { borderBottomColor: ds.hairline }]}>
+                                        <Text style={[type.smallNum, styles.colDate, { color: ds.text }]}>
                                             {item.date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}
                                         </Text>
-                                        <Text style={{ color: colors.success, fontSize: 12, flex: 2, textAlign: 'right' }}>{item.principal.toFormat(2)}</Text>
-                                        <Text style={{ color: colors.error, fontSize: 12, flex: 2, textAlign: 'right' }}>{item.interest.toFormat(2)}</Text>
-                                        <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 2, textAlign: 'right' }}>{item.balance.toFormat(2)}</Text>
+                                        <Text style={[type.smallNum, styles.colNum, { color: ds.text }]}>{item.principal.toFormat(2)}</Text>
+                                        <Text style={[type.smallNum, styles.colNum, { color: ds.text }]}>{item.interest.toFormat(2)}</Text>
+                                        <Text style={[type.smallNum, styles.colNum, { color: ds.text2 }]}>{item.balance.toFormat(2)}</Text>
                                     </View>
                                 ))
                             )}
                             {(months === 0 && schedule.length >= 120) && (
-                                <Text style={{ color: colors.textSecondary, fontSize: 10, textAlign: 'center', marginTop: 8 }}>
-                                    (Projection limited to 10 years)
+                                <Text style={[type.caption, styles.scheduleEmpty, { color: ds.text2 }]}>
+                                    Projection limited to 10 years
                                 </Text>
                             )}
                         </ScrollView>
 
-                        {/* Summary Footer */}
-                        <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>Est. Total Interest:</Text>
-                            <Text style={{ color: colors.error, fontSize: 12, fontWeight: 'bold' }}>
+                        <View style={styles.scheduleTotal}>
+                            <Text style={[type.small, { color: ds.text2 }]}>Est. total interest</Text>
+                            <Text style={[type.smallMediumNum, { color: ds.text }]}>
                                 {formCurrency} {totalInterest.toFormat(2)}
                             </Text>
                         </View>
                     </View>
                 )}
-            </Card>
+            </>
         );
     };
 
+    const debtTypes: { type: DebtType; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
+        { type: 'LOAN', label: 'Loan', icon: 'cash-outline' },
+        { type: 'CREDIT_CARD', label: 'Credit card', icon: 'card-outline' },
+        { type: 'MORTGAGE', label: 'Mortgage', icon: 'home-outline' },
+        { type: 'I_OWE_YOU', label: 'I owe', icon: 'arrow-redo-outline' },
+        { type: 'YOU_OWE_ME', label: 'Owed to me', icon: 'arrow-undo-outline' },
+    ];
+
+    const fieldInput = [type.bodyNum, styles.input, { color: ds.text }];
+
     return (
-        <View style={{ flex: 1 }}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 4, paddingBottom: 120 }}>
-                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 8 }}>
-                    {initialDebt ? 'Edit Debt / Loan' : 'Add Debt / Loan'}
+        <View style={[styles.page, { backgroundColor: ds.bg }]}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+                <Text style={[type.title, styles.title, { color: ds.text }]}>
+                    {initialDebt ? 'Edit loan' : 'New loan'}
                 </Text>
 
-                {/* Templates ScrollView */}
-                <View style={{ marginBottom: 12 }}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                        {templates.map((t) => (
-                            <TouchableOpacity
-                                key={t.label}
-                                onPress={() => applyTemplate(t)}
-                                style={{
-                                    backgroundColor: colors.surface,
-                                    paddingHorizontal: 12,
-                                    paddingVertical: 8,
-                                    borderRadius: 16,
-                                    borderWidth: 1,
-                                    borderColor: colors.border,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    gap: 6
-                                }}
-                            >
-                                <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 12 }}>+ {t.label}</Text>
-                                {t.interestRate && (
-                                    <View style={{ backgroundColor: colors.primary + '15', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4 }}>
-                                        <Text style={{ color: colors.primary, fontSize: 10, fontWeight: 'bold' }}>{t.interestRate}%</Text>
-                                    </View>
-                                )}
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-
-                {/* Start Date */}
-                <Card style={{ marginBottom: 10, paddingVertical: 10 }}>
-                    <TouchableOpacity
-                        onPress={() => setShowStartDatePicker(true)}
-                        style={{ flexDirection: 'row', alignItems: 'center' }}
-                    >
-                        <Ionicons name="calendar-outline" size={20} color={colors.primary} style={{ marginRight: 12 }} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Start Date (First Payment)</Text>
-                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', marginTop: 2 }}>
-                                {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {/* Templates */}
+                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Start from a template</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.shelf} contentContainerStyle={styles.shelfContent}>
+                    {templates.map((t) => (
+                        <TouchableOpacity key={t.label} onPress={() => applyTemplate(t)} style={styles.chip}>
+                            <Ionicons name="add-outline" size={16} color={ds.text2} />
+                            <Text style={[type.smallMedium, { color: ds.text2 }]}>
+                                {t.label}{t.interestRate ? ` · ${t.interestRate}%` : ''}
                             </Text>
-                        </View>
-                        {showStartDatePicker && (
-                            <DateTimePicker
-                                value={startDate}
-                                mode="date"
-                                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                                onChange={(event: DateTimePickerEvent, date?: Date) => {
-                                    setShowStartDatePicker(Platform.OS === 'ios');
-                                    if (date) {
-                                        setStartDate(date);
-                                    }
-                                }}
-                            />
-                        )}
-                    </TouchableOpacity>
-                </Card>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
 
-                {/* Name */}
-                <Card style={{ marginBottom: 10, paddingVertical: 10 }}>
-                    <Text style={{ color: colors.textSecondary, marginBottom: 2, fontSize: 12 }}>Name / Description</Text>
-                    <TextInput
-                        style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', padding: 0 }}
-                        value={name}
-                        onChangeText={setName}
-                        placeholder="e.g. Car Loan"
-                        placeholderTextColor={colors.gray500}
-                    />
-                </Card>
-
-                {/* Type & Direction - Compact Row */}
-                <View style={{ marginBottom: 10 }}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-                        {(['LOAN', 'CREDIT_CARD', 'MORTGAGE', 'I_OWE_YOU', 'YOU_OWE_ME'] as DebtType[]).map((t) => (
+                {/* Type; direction follows it and isn't user-editable */}
+                <Text style={[type.small, styles.label, styles.groupLabel, { color: ds.text2 }]}>Type</Text>
+                <View style={styles.tiles}>
+                    {debtTypes.map((t) => {
+                        const selected = debtType === t.type;
+                        const tint = selected ? ds.accent : ds.text2;
+                        return (
                             <TouchableOpacity
-                                key={t}
-                                onPress={() => setDebtType(t)}
-                                style={{
-                                    paddingHorizontal: 12,
-                                    paddingVertical: 6,
-                                    borderRadius: 8,
-                                    backgroundColor: debtType === t ? colors.primary : colors.surface,
-                                    borderWidth: 1,
-                                    borderColor: debtType === t ? colors.primary : colors.border
-                                }}
+                                key={t.type}
+                                onPress={() => setDebtType(t.type)}
+                                style={[styles.tile, { backgroundColor: selected ? ds.accentSoft : ds.inset }]}
                             >
-                                <Text style={{ color: debtType === t ? '#FFF' : colors.text, fontWeight: 'bold', fontSize: 11 }}>
-                                    {t.replace(/_/g, ' ')}
+                                <Ionicons name={t.icon} size={20} color={tint} />
+                                <Text
+                                    style={[type.small, styles.tileLabel, { color: selected ? ds.accent : ds.text }]}
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit
+                                >
+                                    {t.label}
                                 </Text>
                             </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                        );
+                    })}
                 </View>
-
-                {/* Direction Toggle - Non Clickable, auto-set by Debt Type */}
-                <View style={{ flexDirection: 'row', marginBottom: 10, backgroundColor: colors.surface, borderRadius: 12, padding: 3 }}>
-                    <View style={{ flex: 1, padding: 8, alignItems: 'center', backgroundColor: direction === 'PAYABLE' ? colors.error : 'transparent', borderRadius: 8 }}>
-                        <Text style={{ color: direction === 'PAYABLE' ? '#FFF' : colors.text, fontWeight: 'bold', fontSize: 11 }}>Payable</Text>
-                    </View>
-                    <View style={{ flex: 1, padding: 8, alignItems: 'center', backgroundColor: direction === 'RECEIVABLE' ? colors.success : 'transparent', borderRadius: 8 }}>
-                        <Text style={{ color: direction === 'RECEIVABLE' ? '#FFF' : colors.text, fontWeight: 'bold', fontSize: 11 }}>Receivable</Text>
-                    </View>
-                </View>
+                <Text style={[type.small, styles.hint, { color: ds.text2 }]}>
+                    {direction === 'PAYABLE' ? 'You owe this.' : 'This is owed to you.'}
+                </Text>
 
                 {/* Amount */}
-                <Card style={{ marginBottom: 10, paddingVertical: 10 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Initial Amount ({formCurrency})</Text>
-                        <TouchableOpacity onPress={() => setShowAmountCalculator(true)} style={{ padding: 2 }}>
-                            <Ionicons name="calculator" size={18} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
+                <View style={[styles.amountLabel, styles.groupLabel]}>
+                    <Text style={[type.small, { color: ds.text2 }]}>Initial amount ({formCurrency})</Text>
+                    <TouchableOpacity onPress={() => setShowAmountCalculator(true)} hitSlop={space[2]}>
+                        <Ionicons name="calculator-outline" size={22} color={ds.text2} />
+                    </TouchableOpacity>
+                </View>
+                <TextInput
+                    style={[styles.amountInput, { color: ds.text, borderBottomColor: ds.hairline }]}
+                    value={amount}
+                    onChangeText={setAmount}
+                    keyboardType="numeric"
+                    placeholder="0"
+                    placeholderTextColor={ds.text3}
+                />
+
+                {/* Name */}
+                <Text style={[type.small, styles.label, styles.groupLabel, { color: ds.text2 }]}>Name</Text>
+                <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                    <Ionicons name="pricetag-outline" size={18} color={ds.text2} />
                     <TextInput
-                        style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', paddingTop: 2, paddingBottom: 0 }}
-                        value={amount}
-                        onChangeText={setAmount}
-                        keyboardType="numeric"
-                        placeholder="0.00"
-                        placeholderTextColor={colors.gray300}
+                        style={[type.body, styles.input, { color: ds.text }]}
+                        value={name}
+                        onChangeText={setName}
+                        placeholder="e.g. Car loan"
+                        placeholderTextColor={ds.text3}
                     />
-                </Card>
+                </View>
 
-                {/* Add Transaction Checkbox - Only for New Debts */}
+                {/* Start date */}
+                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Start date (first payment)</Text>
+                <TouchableOpacity onPress={() => setShowStartDatePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
+                    <Ionicons name="calendar-outline" size={18} color={ds.text2} />
+                    <Text style={[type.bodyNum, { color: ds.text }]}>
+                        {startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </Text>
+                </TouchableOpacity>
+                {showStartDatePicker && (
+                    <DateTimePicker
+                        value={startDate}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event: DateTimePickerEvent, date?: Date) => {
+                            setShowStartDatePicker(Platform.OS === 'ios');
+                            if (date) {
+                                setStartDate(date);
+                            }
+                        }}
+                    />
+                )}
 
+                <SectionHeader title="Interest and payments" />
 
-                {/* Interest Section - Side by Side and Compact */}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-                    <View style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Interest Rate (%)</Text>
+                {/* Interest rate and method */}
+                <View style={styles.pair}>
+                    <View style={styles.pairItem}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Interest rate (%)</Text>
+                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="trending-up-outline" size={18} color={ds.text2} />
                             <TextInput
-                                style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', padding: 0, marginTop: 2 }}
+                                style={fieldInput}
                                 value={interestRate}
                                 onChangeText={setInterestRate}
                                 keyboardType="numeric"
                                 placeholder="0"
-                                placeholderTextColor={colors.gray300}
+                                placeholderTextColor={ds.text3}
                             />
                         </View>
                     </View>
-                    <TouchableOpacity
-                        onPress={() => setShowInterestTypeModal(true)}
-                        style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                    >
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Type</Text>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
-                                <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>{interestType}</Text>
-                                <Ionicons name="help-circle-outline" size={16} color={colors.primary} />
-                            </View>
-                        </View>
-                    </TouchableOpacity>
+                    <View style={styles.pairItem}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Method</Text>
+                        <TouchableOpacity
+                            onPress={() => setShowInterestTypeModal(true)}
+                            style={[styles.field, { backgroundColor: ds.inset }]}
+                        >
+                            <Ionicons name="list-outline" size={18} color={ds.text2} />
+                            <Text style={[type.body, styles.input, { color: ds.text }]} numberOfLines={1}>
+                                {interestType.charAt(0) + interestType.slice(1).toLowerCase()}
+                            </Text>
+                            <Ionicons name="chevron-down" size={16} color={ds.text3} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
-                {/* Terms and Min Pay */}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-                    <View style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Term (Months)</Text>
+                {/* Term and min payment */}
+                <View style={styles.pair}>
+                    <View style={styles.pairItem}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Term (months)</Text>
+                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="hourglass-outline" size={18} color={ds.text2} />
                             <TextInput
-                                style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', padding: 0, marginTop: 2 }}
+                                style={fieldInput}
                                 value={termMonths}
                                 onChangeText={setTermMonths}
                                 keyboardType="numeric"
                                 placeholder="#"
-                                placeholderTextColor={colors.gray300}
+                                placeholderTextColor={ds.text3}
                             />
                         </View>
                     </View>
-                    <View style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Min. Payment</Text>
+                    <View style={styles.pairItem}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Min. payment</Text>
+                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="cash-outline" size={18} color={ds.text2} />
                             <TextInput
-                                style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', padding: 0, marginTop: 2 }}
+                                style={fieldInput}
                                 value={minPayment}
                                 onChangeText={handleMinPaymentChange}
                                 keyboardType="numeric"
                                 placeholder="0.00"
-                                placeholderTextColor={colors.gray300}
+                                placeholderTextColor={ds.text3}
                             />
                         </View>
                     </View>
                 </View>
 
-                {/* Fees and Contact */}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-                    <View style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Fees</Text>
+                <SectionHeader title="Details" />
+
+                {/* Fees and contact */}
+                <View style={styles.pair}>
+                    <View style={styles.pairItem}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Fees</Text>
+                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="receipt-outline" size={18} color={ds.text2} />
                             <TextInput
-                                style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', padding: 0, marginTop: 2 }}
+                                style={fieldInput}
                                 value={fees}
                                 onChangeText={setFees}
                                 keyboardType="numeric"
                                 placeholder="0.00"
-                                placeholderTextColor={colors.gray300}
+                                placeholderTextColor={ds.text3}
                             />
                         </View>
                     </View>
-                    <View style={[styles.inputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Contact Info</Text>
+                    <View style={styles.pairItem}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Contact</Text>
+                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="person-outline" size={18} color={ds.text2} />
                             <TextInput
-                                style={{ color: colors.text, fontSize: 14, fontWeight: 'bold', padding: 0, marginTop: 2 }}
+                                style={[type.body, styles.input, { color: ds.text }]}
                                 value={contactInfo}
                                 onChangeText={setContactInfo}
                                 placeholder="Name / #"
-                                placeholderTextColor={colors.gray300}
+                                placeholderTextColor={ds.text3}
                             />
                         </View>
                     </View>
                 </View>
 
                 {/* Notes */}
-                <Card style={{ marginBottom: 10, paddingVertical: 10 }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Notes</Text>
+                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Notes</Text>
+                <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                    <Ionicons name="create-outline" size={18} color={ds.text2} />
                     <TextInput
-                        style={{ color: colors.text, fontSize: 14, marginTop: 2, padding: 0 }}
+                        style={[type.body, styles.input, { color: ds.text }]}
                         value={notes}
                         onChangeText={setNotes}
-                        placeholder="Description"
-                        placeholderTextColor={colors.gray500}
+                        placeholder="Optional"
+                        placeholderTextColor={ds.text3}
                         multiline
                     />
-                </Card>
+                </View>
 
                 {/* Payment Breakdown / Computation */}
                 {renderPaymentBreakdown()}
             </ScrollView>
 
             {/* Fixed Footer Actions */}
-            <View style={[styles.footer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Button
-                    title="Cancel"
-                    variant="outline"
-                    onPress={onCancel}
-                    style={{ flex: 1 }}
-                />
-                <Button
-                    title="Save Debt"
-                    onPress={handleSave}
-                    style={{ flex: 1 }}
-                />
+            <View style={[styles.footer, { backgroundColor: ds.inset, borderTopColor: ds.hairline }]}>
+                <TouchableOpacity onPress={onCancel} style={styles.cancelButton}>
+                    <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSave} style={[styles.saveButton, { backgroundColor: ds.accent }]}>
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Save loan</Text>
+                </TouchableOpacity>
             </View>
 
             {/* Transaction Info Modal */}
@@ -771,26 +738,145 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
     );
 };
 
+const FOOTER_HEIGHT = space[3] + 48 + space[4] + 1;
+
 const styles = StyleSheet.create({
-    inputRow: {
+    // RecordScreen adds no padding, so the page color and footer run edge to edge.
+    page: {
         flex: 1,
+    },
+    content: {
+        paddingHorizontal: space[5],
+        paddingBottom: FOOTER_HEIGHT + space[6],
+    },
+    title: {
+        marginTop: space[4],
+        marginBottom: space[4],
+    },
+    label: {
+        marginTop: space[3],
+        marginBottom: space[1],
+    },
+    groupLabel: {
+        marginTop: space[6],
+    },
+    hint: {
+        marginTop: space[2],
+    },
+    // Bleeds to the screen edges; inner padding lines the first chip's text up with the gutter.
+    shelf: {
+        marginHorizontal: -space[5],
+    },
+    shelfContent: {
+        paddingHorizontal: space[2],
+    },
+    chip: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12, // Increased to match Card/InvestmentForm standard
-        borderRadius: 12,
-        borderWidth: 1,
+        gap: space[1],
+        paddingVertical: space[2],
+        paddingHorizontal: space[3],
+        borderRadius: radius.sm,
+    },
+    tiles: {
+        flexDirection: 'row',
+        gap: space[2],
+    },
+    // Tile recipe with tightened padding so five fit a phone width (matches the Record menu).
+    tile: {
+        flex: 1,
+        aspectRatio: 1,
+        padding: space[2],
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    tileLabel: {
+        marginTop: space[2],
+        textAlign: 'center',
+    },
+    amountLabel: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: space[1],
+    },
+    amountInput: {
+        fontFamily: fontFamily.semibold,
+        fontSize: 44,
+        lineHeight: 52,
+        fontVariant: ['tabular-nums'],
+        padding: 0,
+        paddingBottom: space[2],
+        borderBottomWidth: 1,
+    },
+    field: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+        padding: space[3],
+        borderRadius: radius.md,
+    },
+    // Android TextInput adds its own padding; zero it so typed fields match the pressable ones.
+    input: {
+        flex: 1,
+        padding: 0,
+    },
+    pair: {
+        flexDirection: 'row',
+        gap: space[3],
+    },
+    pairItem: {
+        flex: 1,
+    },
+    schedule: {
+        maxHeight: 200,
+    },
+    scheduleRow: {
+        flexDirection: 'row',
+        paddingVertical: space[2],
+        borderBottomWidth: 1,
+    },
+    colDate: {
+        flex: 1.5,
+    },
+    colNum: {
+        flex: 2,
+        textAlign: 'right',
+    },
+    scheduleEmpty: {
+        textAlign: 'center',
+        marginVertical: space[2],
+    },
+    scheduleTotal: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: space[3],
     },
     footer: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        paddingTop: 16,
-        paddingHorizontal: 16,
-        paddingBottom: 24, // Extra space for safe area
-        borderTopWidth: 1,
         flexDirection: 'row',
-        gap: 12
+        gap: space[3],
+        paddingTop: space[3],
+        paddingHorizontal: space[5],
+        paddingBottom: space[4],
+        borderTopWidth: 1,
+    },
+    cancelButton: {
+        flex: 1,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    saveButton: {
+        flex: 2,
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     question: {
         borderRadius: radius.md,

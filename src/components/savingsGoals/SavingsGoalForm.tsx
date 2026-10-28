@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator, StyleSheet, TextStyle } from 'react-native';
 import { BigNumber } from 'bignumber.js';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button, Card } from '@components/index';
+import { SectionHeader } from '@components/ds';
 import { CategorySelectModal } from '@components/record/CategorySelectModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { type, space, radius, fontFamily } from '@styles/theme';
 import { SavingsGoal, Transaction, RecurrenceRule, RecurrenceFrequency } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { EXPENSE_CATEGORY_GROUPS, RECURRENCE_OPTIONS } from '@constants/categories';
@@ -23,7 +24,7 @@ interface SavingsGoalFormProps {
 }
 
 export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, existingRule, existingTransactions, onSave, onCancel }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
 
     const [name, setName] = useState(initialGoal?.name || '');
@@ -152,6 +153,9 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
         }
     };
 
+    const fieldInput: TextStyle[] = [type.body, styles.fieldInput, { color: ds.text }];
+    const numInput: TextStyle[] = [type.bodyNum, styles.fieldInput, { color: ds.text }];
+
     return (
         // height: '100%' (not flex: 1) - this form is hosted inside BottomModal, which sizes
         // itself to content rather than providing a bounded flex context, so a flex:1 root
@@ -159,121 +163,118 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
         // the same pattern.
         <View style={{ height: '100%' }}>
             <View style={{ flex: 1 }}>
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 10 }}>
-                    {initialGoal ? 'Edit Savings Goal' : 'New Savings Goal'}
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: space[7] }}>
+                <Text style={[type.title, { color: ds.text }]}>
+                    {initialGoal ? 'Edit savings goal' : 'New savings goal'}
                 </Text>
 
-                <Card>
-                    <Text style={{ color: colors.textSecondary }}>Name</Text>
+                <View style={styles.amountBlock}>
+                    <Text style={[type.small, { color: ds.text2 }]}>Target amount</Text>
                     <TextInput
-                        style={{ color: colors.text, fontSize: 18, fontWeight: '600', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                        value={name}
-                        onChangeText={setName}
-                        placeholder="e.g. Travel Fund"
-                        placeholderTextColor={colors.gray500}
-                    />
-                </Card>
-
-                <Card>
-                    <Text style={{ color: colors.textSecondary }}>Target Amount</Text>
-                    <TextInput
-                        style={{ color: colors.text, fontSize: 32, fontWeight: 'bold', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
+                        style={[styles.amountInput, { color: ds.text, borderBottomColor: ds.hairline }]}
                         value={targetAmount}
                         onChangeText={setTargetAmount}
                         keyboardType="numeric"
-                        placeholder="0.00"
-                        placeholderTextColor={colors.gray300}
+                        placeholder="0"
+                        placeholderTextColor={ds.text3}
                     />
-                </Card>
+                </View>
 
-                <View style={{ marginBottom: 10 }}>
-                    <Text style={{ color: colors.textSecondary, marginBottom: 8, marginLeft: 4 }}>Category</Text>
-                    <TouchableOpacity
+                <View style={styles.group}>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Name</Text>
+                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="create-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={fieldInput}
+                            value={name}
+                            onChangeText={setName}
+                            placeholder="e.g. Travel fund"
+                            placeholderTextColor={ds.text3}
+                        />
+                    </View>
+                </View>
+
+                <View style={styles.group}>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Category</Text>
+                    <Pressable
                         onPress={() => setShowCategoryModal(true)}
-                        style={{
-                            padding: 14,
-                            borderRadius: 12,
-                            backgroundColor: colors.surface,
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                        }}
+                        style={[styles.field, { backgroundColor: ds.inset }]}
                     >
-                        <Text style={{ color: category ? colors.text : colors.gray500, fontSize: 15 }}>
+                        <Ionicons name="grid-outline" size={18} color={ds.text2} />
+                        <Text style={[type.body, styles.fieldInput, { color: category ? ds.text : ds.text3 }]} numberOfLines={1}>
                             {category || 'Select a category'}
                         </Text>
-                        <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 6, marginLeft: 4 }}>
+                        <Ionicons name="chevron-forward" size={16} color={ds.text3} />
+                    </Pressable>
+                    <Text style={[type.small, styles.hint, { color: ds.text2 }]}>
                         Pre-fills onto any expense you fund from this goal (still editable per-expense).
                     </Text>
                 </View>
 
-                <Card>
-                    <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Recurring Auto-Contribution (Optional)</Text>
+                <SectionHeader title="Auto-contribution (optional)" />
+                <View style={[styles.field, { backgroundColor: ds.inset, marginTop: space[2] }]}>
+                    <Ionicons name="repeat-outline" size={18} color={ds.text2} />
                     <TextInput
-                        style={{ color: colors.text, fontSize: 20, fontWeight: '600', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8, marginBottom: 10 }}
+                        style={numInput}
                         value={recurringAmount}
                         onChangeText={setRecurringAmount}
                         keyboardType="numeric"
-                        placeholder="0.00"
-                        placeholderTextColor={colors.gray300}
+                        placeholder="0"
+                        placeholderTextColor={ds.text3}
                     />
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                        {RECURRENCE_OPTIONS.map((opt) => {
-                            const isActive = frequency === opt.value;
-                            return (
-                                <TouchableOpacity
-                                    key={opt.value}
-                                    onPress={() => setFrequency(opt.value)}
-                                    style={{
-                                        paddingVertical: 8,
-                                        paddingHorizontal: 12,
-                                        borderRadius: 10,
-                                        borderWidth: 1.5,
-                                        borderColor: isActive ? colors.primary : 'transparent',
-                                        backgroundColor: isActive ? colors.primary + '15' : colors.background,
-                                    }}
-                                >
-                                    <Text style={{ color: isActive ? colors.primary : colors.text, fontSize: 12, fontWeight: isActive ? '700' : '500' }}>
-                                        {opt.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </ScrollView>
-                    {nextDuePreview && (
-                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 10 }}>
-                            Next contribution: {nextDuePreview.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </Text>
-                    )}
-                </Card>
-
-                {!initialGoal && (
-                    <Card>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Start with a lump sum today? (Optional)</Text>
-                        <TextInput
-                            style={{ color: colors.text, fontSize: 20, fontWeight: '600', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                            value={initialContribution}
-                            onChangeText={setInitialContribution}
-                            keyboardType="numeric"
-                            placeholder="0.00"
-                            placeholderTextColor={colors.gray300}
-                        />
-                    </Card>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipStrip}>
+                    {RECURRENCE_OPTIONS.map((opt) => {
+                        const isActive = frequency === opt.value;
+                        return (
+                            <Pressable
+                                key={opt.value}
+                                onPress={() => setFrequency(opt.value)}
+                                style={[styles.chip, isActive && { backgroundColor: ds.inset }]}
+                            >
+                                <Text style={[type.smallMedium, { color: isActive ? ds.text : ds.text2 }]}>
+                                    {opt.label}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
+                </ScrollView>
+                {nextDuePreview && (
+                    <Text style={[type.small, styles.hint, { color: ds.text2 }]}>
+                        Next contribution: {nextDuePreview.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </Text>
                 )}
 
-                <Card>
-                    <Text style={{ color: colors.textSecondary }}>Notes (Optional)</Text>
-                    <TextInput
-                        style={{ color: colors.text, fontSize: 16, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                        value={notes}
-                        onChangeText={setNotes}
-                        placeholder="Description"
-                        placeholderTextColor={colors.gray500}
-                    />
-                </Card>
+                {!initialGoal && (
+                    <View style={[styles.group, { marginTop: space[6] }]}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Start with a lump sum today? (optional)</Text>
+                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="wallet-outline" size={18} color={ds.text2} />
+                            <TextInput
+                                style={numInput}
+                                value={initialContribution}
+                                onChangeText={setInitialContribution}
+                                keyboardType="numeric"
+                                placeholder="0"
+                                placeholderTextColor={ds.text3}
+                            />
+                        </View>
+                    </View>
+                )}
+
+                <View style={[styles.group, { marginTop: space[6] }]}>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Notes (optional)</Text>
+                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="document-text-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={fieldInput}
+                            value={notes}
+                            onChangeText={setNotes}
+                            placeholder="Description"
+                            placeholderTextColor={ds.text3}
+                        />
+                    </View>
+                </View>
 
                 <CategorySelectModal
                     visible={showCategoryModal}
@@ -287,11 +288,87 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
                 />
                 </ScrollView>
 
-                <View style={{ flexDirection: 'row', gap: 12, paddingTop: 8 }}>
-                    <Button title="Cancel" variant="outline" onPress={onCancel} style={{ flex: 1 }} />
-                    <Button title="Save" onPress={handleSave} loading={isSaving} style={{ flex: 1 }} />
+                {/* Inline actions: the host BottomModal doesn't pass a footer. */}
+                <View style={[styles.actions, { borderTopColor: ds.hairline }]}>
+                    <Pressable onPress={onCancel} style={styles.cancelButton}>
+                        <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
+                    </Pressable>
+                    <Pressable
+                        onPress={handleSave}
+                        disabled={isSaving}
+                        style={[styles.primaryButton, { backgroundColor: ds.accent }]}
+                    >
+                        {isSaving
+                            ? <ActivityIndicator color={ds.onAccent} />
+                            : <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Save goal</Text>}
+                    </Pressable>
                 </View>
             </View>
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    amountBlock: {
+        marginTop: space[5],
+    },
+    amountInput: {
+        fontFamily: fontFamily.semibold,
+        fontSize: 44,
+        lineHeight: 52,
+        fontVariant: ['tabular-nums'],
+        borderBottomWidth: 1,
+        paddingVertical: space[1],
+        paddingHorizontal: 0,
+    },
+    group: {
+        marginTop: space[5],
+    },
+    label: {
+        marginBottom: space[1],
+    },
+    hint: {
+        marginTop: space[2],
+    },
+    field: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        padding: space[3],
+        borderRadius: radius.md,
+    },
+    fieldInput: {
+        flex: 1,
+        padding: 0,
+    },
+    chipStrip: {
+        marginTop: space[2],
+    },
+    chips: {
+        gap: space[1],
+    },
+    chip: {
+        paddingVertical: space[2],
+        paddingHorizontal: space[3],
+        borderRadius: radius.sm,
+    },
+    actions: {
+        flexDirection: 'row',
+        gap: space[3],
+        paddingTop: space[3],
+        borderTopWidth: 1,
+    },
+    cancelButton: {
+        flex: 1,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    primaryButton: {
+        flex: 2,
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});

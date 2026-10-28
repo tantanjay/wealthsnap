@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, Platform, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button, Card } from '@components/index';
+import { SectionHeader, SegmentedControl } from '@components/ds';
 import { CalculatorModal } from '@components/record/CalculatorModal';
 import { CategorySelectModal } from '@components/record/CategorySelectModal';
 import { RecurringOptions } from '@components/transaction/RecurringOptions';
@@ -18,6 +18,7 @@ import { saveRecurrenceRule, calculateNextDueDate } from '@services/domain/recur
 import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
 import { calculateGoalBalance } from '@utils/savingsGoalMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { type as typeScale, space, radius } from '@styles/theme';
 
 interface TransactionFormProps {
     transactionType: TransactionType;
@@ -32,7 +33,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     onSave,
     onCancel
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
 
     // Form state
@@ -324,58 +325,146 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         }
     };
 
+    const fieldLabel = [typeScale.small, styles.fieldLabel, { color: ds.text2 }];
+    const fieldBox = [styles.field, { backgroundColor: ds.inset }];
+
     return (
         <View style={{ flex: 1 }}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 10 }}>
-                    {initialTransaction ? 'Edit Transaction' : 'New Transaction'}
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+                <Text style={[typeScale.title, styles.title, { color: ds.text }]}>
+                    {initialTransaction ? 'Edit transaction' : 'New transaction'}
                 </Text>
 
-                {/* Date and Time Selection */}
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-                    <TouchableOpacity
-                        onPress={() => setShowTransactionDatePicker(true)}
-                        style={{
-                            flex: 1,
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            backgroundColor: colors.surface,
-                            padding: 12,
-                            borderRadius: 12,
-                            borderWidth: 1,
-                            borderColor: colors.border
-                        }}
+                <SegmentedControl
+                    options={[{ key: 'EXPENSE', label: 'Expense' }, { key: 'INCOME', label: 'Income' }]}
+                    value={type}
+                    onChange={setType}
+                />
+
+                {/* Amount */}
+                <View style={styles.amountBlock}>
+                    <View style={styles.amountLabelRow}>
+                        <Text style={[typeScale.small, { color: ds.text2 }]}>Amount</Text>
+                        <Pressable onPress={() => setShowCalculator(true)} hitSlop={space[2]} accessibilityRole="button" accessibilityLabel="Open calculator">
+                            <Ionicons name="calculator-outline" size={22} color={ds.text2} />
+                        </Pressable>
+                    </View>
+                    <TextInput
+                        style={[typeScale.recordAmount, styles.amountInput, { color: ds.text, borderBottomColor: ds.hairline }]}
+                        value={amount}
+                        onChangeText={setAmount}
+                        keyboardType="numeric"
+                        placeholder="0"
+                        placeholderTextColor={ds.text3}
+                    />
+                </View>
+
+                {/* Category Selection */}
+                <SectionHeader title="Category" />
+                <ScrollView
+                    ref={categoryScrollRef}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={[styles.tileStrip, { gap: ITEM_GAP }]}
+                >
+                    {/* Search Button */}
+                    <Pressable
+                        onPress={() => setShowCategoryModal(true)}
+                        style={[styles.tile, { width: ITEM_WIDTH, backgroundColor: ds.inset }]}
                     >
-                        <Ionicons name="calendar-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-                        <View>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Date</Text>
-                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                        <Ionicons name="search-outline" size={20} color={ds.text2} />
+                        <Text style={[typeScale.small, { color: ds.text }]}>Search</Text>
+                    </Pressable>
+
+                    {/* Recent Categories */}
+                    {(() => {
+                        const categoriesToDisplay = [...recentCategories];
+                        if (category && !categoriesToDisplay.includes(category)) {
+                            categoriesToDisplay.unshift(category);
+                        }
+
+                        return categoriesToDisplay.map((cat) => {
+                            const isActive = category === cat;
+                            const catGroupItem = categoryGroups.flatMap(g => g.items).find(c => c.value === cat);
+                            const icon = catGroupItem?.icon || 'ellipsis-horizontal';
+
+                            return (
+                                <Pressable
+                                    key={cat}
+                                    onPress={() => {
+                                        setCategory(cat);
+                                        setSubCategory('');
+                                    }}
+                                    style={[styles.tile, { width: ITEM_WIDTH, backgroundColor: isActive ? ds.accentSoft : ds.inset }]}
+                                >
+                                    <Ionicons name={icon as any} size={20} color={isActive ? ds.accent : ds.text2} />
+                                    <Text style={[typeScale.small, { color: isActive ? ds.accent : ds.text }]} numberOfLines={1}>
+                                        {cat}
+                                    </Text>
+                                </Pressable>
+                            );
+                        });
+                    })()}
+                </ScrollView>
+
+                {/* Funding Source (Savings Goals) */}
+                {canPickFundingSource && savingsGoals.length > 0 && (
+                    <>
+                        <SectionHeader title="Funding source" />
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipStrip}>
+                            <Pressable
+                                onPress={() => handleSelectFundingGoal(null)}
+                                style={[styles.chip, !fundingGoalId && { backgroundColor: ds.inset }]}
+                            >
+                                <Text style={[typeScale.smallMedium, { color: !fundingGoalId ? ds.text : ds.text2 }]}>
+                                    General funds
+                                </Text>
+                            </Pressable>
+
+                            {savingsGoals.map((goal) => {
+                                const isActive = fundingGoalId === goal.id;
+                                return (
+                                    <Pressable
+                                        key={goal.id}
+                                        onPress={() => handleSelectFundingGoal(goal)}
+                                        style={[styles.chip, isActive && { backgroundColor: ds.inset }]}
+                                    >
+                                        <Text style={[typeScale.smallMedium, { color: isActive ? ds.text : ds.text2 }]} numberOfLines={1}>
+                                            {goal.name}
+                                        </Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </ScrollView>
+                        {fundingGoalId && (
+                            <Text style={[typeScale.small, styles.hint, { color: ds.text2 }]}>
+                                This still logs as a normal expense - it just draws from the goal instead of general cash.
+                            </Text>
+                        )}
+                    </>
+                )}
+
+                {/* Date, Time and Note */}
+                <SectionHeader title="Details" />
+                <View style={styles.dateRow}>
+                    <View style={styles.dateCol}>
+                        <Text style={fieldLabel}>Date</Text>
+                        <Pressable onPress={() => setShowTransactionDatePicker(true)} style={fieldBox}>
+                            <Ionicons name="calendar-outline" size={18} color={ds.text2} />
+                            <Text style={[typeScale.body, { color: ds.text }]} numberOfLines={1}>
                                 {transactionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </Text>
-                        </View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        onPress={() => setShowTransactionTimePicker(true)}
-                        style={{
-                            flex: 1,
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            backgroundColor: colors.surface,
-                            padding: 12,
-                            borderRadius: 12,
-                            borderWidth: 1,
-                            borderColor: colors.border
-                        }}
-                    >
-                        <Ionicons name="time-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-                        <View>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Time</Text>
-                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                        </Pressable>
+                    </View>
+                    <View style={styles.dateCol}>
+                        <Text style={fieldLabel}>Time</Text>
+                        <Pressable onPress={() => setShowTransactionTimePicker(true)} style={fieldBox}>
+                            <Ionicons name="time-outline" size={18} color={ds.text2} />
+                            <Text style={[typeScale.body, { color: ds.text }]} numberOfLines={1}>
                                 {transactionDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                             </Text>
-                        </View>
-                    </TouchableOpacity>
+                        </Pressable>
+                    </View>
                 </View>
 
                 {showTransactionDatePicker && (
@@ -410,190 +499,17 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                     />
                 )}
 
-                {/* Type Toggle */}
-                <View style={{ flexDirection: 'row', marginBottom: 10, backgroundColor: colors.surface, borderRadius: 12, padding: 4 }}>
-                    <TouchableOpacity
-                        style={{ flex: 1, padding: 12, alignItems: 'center', backgroundColor: type === 'EXPENSE' ? colors.error : 'transparent', borderRadius: 8 }}
-                        onPress={() => setType('EXPENSE')}
-                    >
-                        <Text style={{ color: type === 'EXPENSE' ? '#FFF' : colors.text, fontWeight: 'bold' }}>Expense</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={{ flex: 1, padding: 12, alignItems: 'center', backgroundColor: type === 'INCOME' ? colors.success : 'transparent', borderRadius: 8 }}
-                        onPress={() => setType('INCOME')}
-                    >
-                        <Text style={{ color: type === 'INCOME' ? '#FFF' : colors.text, fontWeight: 'bold' }}>Income</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Amount */}
-                <Card>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={{ color: colors.textSecondary }}>Amount</Text>
-                        <TouchableOpacity onPress={() => setShowCalculator(true)} style={{ padding: 4 }}>
-                            <Ionicons name="calculator" size={24} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
+                <Text style={[fieldLabel, styles.fieldGap]}>Note (optional)</Text>
+                <View style={fieldBox}>
+                    <Ionicons name="create-outline" size={18} color={ds.text2} />
                     <TextInput
-                        style={{ color: type === 'EXPENSE' ? colors.error : colors.success, fontSize: 32, fontWeight: 'bold', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                        value={amount}
-                        onChangeText={setAmount}
-                        keyboardType="numeric"
-                        placeholder="0.00"
-                        placeholderTextColor={colors.gray300}
-                    />
-                </Card>
-
-                {/* Category Selection */}
-                <View style={{ marginBottom: 10 }}>
-                    <Text style={{ color: colors.textSecondary, marginBottom: 8, marginLeft: 4 }}>Category</Text>
-                    <ScrollView
-                        ref={categoryScrollRef}
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ gap: ITEM_GAP }}
-                    >
-                        {/* Search Button */}
-                        <TouchableOpacity
-                            onPress={() => setShowCategoryModal(true)}
-                            style={{
-                                width: 90,
-                                paddingVertical: 12,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                borderRadius: 12,
-                                borderWidth: 1.5,
-                                borderColor: 'transparent',
-                                backgroundColor: colors.surface,
-                            }}
-                        >
-                            <Ionicons name="search" size={22} color={colors.textSecondary} />
-                            <Text style={{
-                                color: colors.text,
-                                fontSize: 12,
-                                fontWeight: '700',
-                                marginTop: 6,
-                                textAlign: 'center'
-                            }}>Search</Text>
-                        </TouchableOpacity>
-
-                        {/* Recent Categories */}
-                        {(() => {
-                            const categoriesToDisplay = [...recentCategories];
-                            if (category && !categoriesToDisplay.includes(category)) {
-                                categoriesToDisplay.unshift(category);
-                            }
-
-                            return categoriesToDisplay.map((cat) => {
-                                const isActive = category === cat;
-                                const catGroupItem = categoryGroups.flatMap(g => g.items).find(c => c.value === cat);
-                                const icon = catGroupItem?.icon || 'ellipsis-horizontal';
-
-                                return (
-                                    <TouchableOpacity
-                                        key={cat}
-                                        onPress={() => {
-                                            setCategory(cat);
-                                            setSubCategory('');
-                                        }}
-                                        style={{
-                                            width: 90,
-                                            paddingVertical: 12,
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            borderRadius: 12,
-                                            borderWidth: 1.5,
-                                            borderColor: isActive ? colors.primary : 'transparent',
-                                            backgroundColor: isActive ? colors.primary + '15' : colors.surface,
-                                        }}
-                                    >
-                                        <Ionicons
-                                            name={icon as any}
-                                            size={22}
-                                            color={isActive ? colors.primary : colors.textSecondary}
-                                        />
-                                        <Text style={{
-                                            color: isActive ? colors.primary : colors.text,
-                                            fontSize: 12,
-                                            fontWeight: isActive ? '700' : '500',
-                                            marginTop: 6,
-                                            textAlign: 'center'
-                                        }} numberOfLines={1}>
-                                            {cat}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            });
-                        })()}
-                    </ScrollView>
-                </View>
-
-                {/* Funding Source (Savings Goals) */}
-                {canPickFundingSource && savingsGoals.length > 0 && (
-                    <View style={{ marginBottom: 10 }}>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 8, marginLeft: 4 }}>Funding Source</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: ITEM_GAP }}>
-                            <TouchableOpacity
-                                onPress={() => handleSelectFundingGoal(null)}
-                                style={{
-                                    paddingVertical: 12,
-                                    paddingHorizontal: 14,
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    borderRadius: 12,
-                                    borderWidth: 1.5,
-                                    borderColor: !fundingGoalId ? colors.primary : 'transparent',
-                                    backgroundColor: !fundingGoalId ? colors.primary + '15' : colors.surface,
-                                }}
-                            >
-                                <Text style={{ color: !fundingGoalId ? colors.primary : colors.text, fontSize: 12, fontWeight: !fundingGoalId ? '700' : '500' }}>
-                                    General Funds
-                                </Text>
-                            </TouchableOpacity>
-
-                            {savingsGoals.map((goal) => {
-                                const isActive = fundingGoalId === goal.id;
-                                return (
-                                    <TouchableOpacity
-                                        key={goal.id}
-                                        onPress={() => handleSelectFundingGoal(goal)}
-                                        style={{
-                                            paddingVertical: 12,
-                                            paddingHorizontal: 14,
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            borderRadius: 12,
-                                            borderWidth: 1.5,
-                                            borderColor: isActive ? colors.primary : 'transparent',
-                                            backgroundColor: isActive ? colors.primary + '15' : colors.surface,
-                                        }}
-                                    >
-                                        <Text style={{ color: isActive ? colors.primary : colors.text, fontSize: 12, fontWeight: isActive ? '700' : '500' }} numberOfLines={1}>
-                                            {goal.name}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                        {fundingGoalId && (
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 6, marginLeft: 4 }}>
-                                This still logs as a normal expense - it just draws from the goal instead of general cash.
-                            </Text>
-                        )}
-                    </View>
-                )}
-
-                {/* Note */}
-                <Card>
-                    <Text style={{ color: colors.textSecondary }}>Note (Optional)</Text>
-                    <TextInput
-                        style={{ color: colors.text, fontSize: 16, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
+                        style={[typeScale.body, styles.fieldInput, { color: ds.text }]}
                         value={note}
                         onChangeText={setNote}
                         placeholder="Description"
-                        placeholderTextColor={colors.gray500}
+                        placeholderTextColor={ds.text3}
                     />
-                </Card>
+                </View>
 
                 {/* Recurring - hidden while a goal is selected as funding source, since a
                     goal-funded expense is never also a recurring transaction */}
@@ -636,32 +552,115 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </ScrollView>
 
             {/* Fixed Footer Actions */}
-            <View style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                paddingTop: 16,
-                paddingHorizontal: 16,
-                paddingBottom: 16,
-                backgroundColor: colors.surface,
-                borderTopWidth: 1,
-                borderColor: colors.border,
-                flexDirection: 'row',
-                gap: 12
-            }}>
-                <Button
-                    title="Cancel"
-                    variant="outline"
-                    onPress={onCancel}
-                    style={{ flex: 1 }}
-                />
-                <Button
-                    title="Save"
-                    onPress={handleSave}
-                    style={{ flex: 1 }}
-                />
+            <View style={[styles.footer, { backgroundColor: ds.inset, borderTopColor: ds.hairline }]}>
+                <Pressable onPress={onCancel} style={styles.cancelButton} accessibilityRole="button">
+                    <Text style={[typeScale.body, { color: ds.text2 }]}>Cancel</Text>
+                </Pressable>
+                <Pressable onPress={handleSave} style={[styles.saveButton, { backgroundColor: ds.accent }]} accessibilityRole="button">
+                    <Text style={[typeScale.bodyStrong, { color: ds.onAccent }]}>
+                        {type === 'INCOME' ? 'Save income' : 'Save expense'}
+                    </Text>
+                </Pressable>
             </View>
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    // Bottom padding clears the fixed footer.
+    content: {
+        paddingHorizontal: space[5],
+        paddingBottom: 120,
+    },
+    title: {
+        marginTop: space[4],
+        marginBottom: space[5],
+    },
+    amountBlock: {
+        marginTop: space[6],
+    },
+    amountLabelRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    amountInput: {
+        borderBottomWidth: 1,
+        paddingVertical: space[2],
+        paddingHorizontal: 0,
+    },
+    tileStrip: {
+        paddingTop: space[2],
+    },
+    tile: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: space[1],
+        paddingVertical: space[3],
+        paddingHorizontal: space[2],
+        borderRadius: radius.md,
+    },
+    chipStrip: {
+        gap: space[1],
+        paddingTop: space[2],
+    },
+    chip: {
+        paddingVertical: space[2],
+        paddingHorizontal: space[3],
+        borderRadius: radius.sm,
+    },
+    hint: {
+        marginTop: space[2],
+    },
+    dateRow: {
+        flexDirection: 'row',
+        gap: space[3],
+        paddingTop: space[2],
+    },
+    dateCol: {
+        flex: 1,
+    },
+    fieldLabel: {
+        marginBottom: space[1],
+    },
+    fieldGap: {
+        marginTop: space[4],
+    },
+    field: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+        padding: space[3],
+        borderRadius: radius.md,
+    },
+    // Android TextInput adds its own padding; zero it so typed fields match the pressable ones.
+    fieldInput: {
+        flex: 1,
+        padding: 0,
+    },
+    footer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        gap: space[3],
+        paddingTop: space[3],
+        paddingHorizontal: space[5],
+        paddingBottom: space[4],
+        borderTopWidth: 1,
+    },
+    cancelButton: {
+        flex: 1,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    saveButton: {
+        flex: 2,
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});

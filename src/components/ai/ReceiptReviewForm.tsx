@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, ScrollView, TouchableOpacity, BackHandler, TextInput, ActivityIndicator, Platform, Modal, Switch } from 'react-native';
+import { View, Text, ScrollView, Pressable, BackHandler, TextInput, ActivityIndicator, Platform, Modal, Switch, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button } from '@components/index';
+import { Row, SectionHeader } from '@components/ds';
+import { Disclaimer } from '@components/common/Disclaimer';
 import { useAlert } from '@context/AlertContext';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius, fontFamily } from '@styles/theme';
 import { analyzeReceiptImage } from '@services/integrations';
 import { getUserProfile } from '@services/core/storageService';
 import { ReceiptAnalysisResult, ReceiptItem } from '@types';
@@ -22,7 +24,7 @@ interface ReceiptReviewFormProps {
 }
 
 export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, onSave, onCancel }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const insets = useSafeAreaInsets();
     const [loading, setLoading] = useState(true);
@@ -225,13 +227,15 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                     ]);
                 }}
             >
-                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={{ marginTop: 20, color: colors.text, fontSize: 16 }}>{processingStep}</Text>
+                <View style={[styles.loading, { backgroundColor: ds.bg }]}>
+                    <ActivityIndicator size="large" color={ds.accent} />
+                    <Text style={[type.body, { marginTop: space[5], color: ds.text2 }]}>{processingStep}</Text>
                 </View>
             </Modal>
         );
     }
+
+    const groupEntries = Object.entries(groupedItems);
 
     return (
         <Modal
@@ -246,304 +250,224 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                 ]);
             }}
         >
-            <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
-                <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Review Receipt</Text>
-                    {/* Split Toggle */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Save as Items</Text>
-                        <Switch
-                            value={splitByCategory}
-                            onValueChange={setSplitByCategory}
-                            trackColor={{ false: colors.border, true: colors.primary }}
-                            thumbColor={Platform.OS === 'ios' ? '#fff' : splitByCategory ? colors.primary : '#f4f3f4'}
-                        />
-                    </View>
+            <View style={{ flex: 1, backgroundColor: ds.bg, paddingTop: insets.top }}>
+                <View style={styles.topBar}>
+                    <Text style={[type.title, { color: ds.text }]}>Review receipt</Text>
                 </View>
 
-                <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 150 }}>
-                    {/* Warning Strip */}
-                    <View style={{ backgroundColor: 'rgba(255, 152, 0, 0.1)', padding: 12, borderRadius: 8, marginBottom: 16, flexDirection: 'row' }}>
-                        <Ionicons name="warning-outline" size={20} color="#FF9800" style={{ marginRight: 8, marginTop: 2 }} />
-                        <Text style={{ color: colors.text, fontSize: 13, flex: 1, lineHeight: 18 }}>
-                            AI analysis may contain errors. Please verify all details before saving.
+                <ScrollView contentContainerStyle={{ paddingHorizontal: space[5], paddingBottom: 150 }}>
+                    <Disclaimer severity="warning" style={{ marginTop: 0 }}>
+                        AI analysis may contain errors. Please verify all details before saving.
+                    </Disclaimer>
+
+                    {/* Total is derived from the items below, so it reads like the amount input but isn't editable */}
+                    <View style={styles.amountBlock}>
+                        <Text style={[type.small, { color: ds.text2 }]}>Total estimate</Text>
+                        <Text style={[styles.amount, { color: ds.text, borderBottomColor: ds.hairline }]} numberOfLines={1} adjustsFontSizeToFit>
+                            {formatCurrencyAmount(totalAmount, currency)}
                         </Text>
                     </View>
 
-                    {/* Global Info */}
-                    <View style={{ gap: 12 }}>
-                        {/* Date & Time Selection */}
-                        <View style={{ flexDirection: 'row', gap: 10 }}>
-                            <TouchableOpacity
-                                onPress={() => setShowDatePicker(true)}
-                                style={{
-                                    flex: 1,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: colors.surface,
-                                    padding: 12,
-                                    borderRadius: 12,
-                                    borderWidth: 1,
-                                    borderColor: colors.border
-                                }}
-                            >
-                                <Ionicons name="calendar-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-                                <View>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Date</Text>
-                                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
-                                        {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                onPress={() => setShowTimePicker(true)}
-                                style={{
-                                    flex: 1,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: colors.surface,
-                                    padding: 12,
-                                    borderRadius: 12,
-                                    borderWidth: 1,
-                                    borderColor: colors.border
-                                }}
-                            >
-                                <Ionicons name="time-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-                                <View>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Time</Text>
-                                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
-                                        {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                                    </Text>
-                                </View>
-                            </TouchableOpacity>
+                    {/* Date & Time Selection */}
+                    <View style={[styles.group, styles.dateRow]}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Date</Text>
+                            <Pressable onPress={() => setShowDatePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="calendar-outline" size={18} color={ds.text2} />
+                                <Text style={[type.bodyNum, styles.fieldValue, { color: ds.text }]} numberOfLines={1}>
+                                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </Text>
+                            </Pressable>
                         </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Time</Text>
+                            <Pressable onPress={() => setShowTimePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="time-outline" size={18} color={ds.text2} />
+                                <Text style={[type.bodyNum, styles.fieldValue, { color: ds.text }]} numberOfLines={1}>
+                                    {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                </Text>
+                            </Pressable>
+                        </View>
+                    </View>
 
-                        {/* Merchant */}
-                        <View>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Merchant</Text>
+                    <View style={styles.group}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Merchant</Text>
+                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="storefront-outline" size={18} color={ds.text2} />
                             <TextInput
                                 value={merchant}
                                 onChangeText={setMerchant}
-                                style={{ color: colors.text, borderBottomWidth: 1, borderColor: colors.border, paddingVertical: 4, fontWeight: 'bold', fontSize: 16 }}
+                                style={[type.body, styles.fieldValue, { color: ds.text }]}
                             />
                         </View>
+                    </View>
 
-                        {/* Note */}
-                        <View>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Note</Text>
+                    <View style={styles.group}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Note</Text>
+                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="document-text-outline" size={18} color={ds.text2} />
                             <TextInput
                                 value={note}
                                 onChangeText={setNote}
-                                style={{ color: colors.text, borderBottomWidth: 1, borderColor: colors.border, paddingVertical: 4 }}
+                                style={[type.body, styles.fieldValue, { color: ds.text }]}
                                 placeholder="Add a note..."
-                                placeholderTextColor={colors.gray500}
+                                placeholderTextColor={ds.text3}
                             />
                         </View>
                     </View>
 
                     {/* Main Category Selection (Only if NOT splitting) */}
                     {!splitByCategory && (
-                        <View style={{ marginBottom: 20, marginTop: 10 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>Main Category</Text>
-                            <TouchableOpacity
+                        <View style={styles.group}>
+                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Main category</Text>
+                            <Pressable
                                 onPress={() => {
                                     setActiveEditingItemIndex(null); // Null implies Main Category
                                     setCategoryModalVisible(true);
                                 }}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: colors.surface,
-                                    padding: 12,
-                                    borderRadius: 12,
-                                    borderWidth: 1,
-                                    borderColor: colors.border
-                                }}
+                                style={[styles.field, { backgroundColor: ds.inset }]}
                             >
-                                <View style={{
-                                    width: 32,
-                                    height: 32,
-                                    borderRadius: 16,
-                                    backgroundColor: colors.primary + '20',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    marginRight: 12
-                                }}>
-                                    <Ionicons name="folder-open" size={16} color={colors.primary} />
-                                </View>
-                                <Text style={{ color: colors.text, fontSize: 16, flex: 1, fontWeight: '600' }}>{mainCategory}</Text>
-                                <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
-                            </TouchableOpacity>
+                                <Ionicons name="folder-open-outline" size={18} color={ds.text2} />
+                                <Text style={[type.body, styles.fieldValue, { color: ds.text }]} numberOfLines={1}>{mainCategory}</Text>
+                                <Ionicons name="chevron-down" size={16} color={ds.text3} />
+                            </Pressable>
                         </View>
                     )}
 
+                    <Row
+                        title="Save as items"
+                        subtitle="One expense per category instead of one total"
+                        trailing={
+                            <Switch
+                                value={splitByCategory}
+                                onValueChange={setSplitByCategory}
+                                trackColor={{ false: ds.hairline, true: ds.accent }}
+                            />
+                        }
+                        last
+                        style={{ marginTop: space[3] }}
+                    />
+
                     {/* Categories & Items */}
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 12, marginTop: 8 }}>
-                        Items by Category
-                    </Text>
+                    <SectionHeader title="Items by category" />
 
-                    {Object.entries(groupedItems).map(([category, data]) => (
-                        <View key={category} style={{ marginBottom: 16 }}>
-                            <TouchableOpacity
-                                onPress={() => setExpandedCategory(expandedCategory === category ? null : category)}
-                                style={{
-                                    flexDirection: 'row',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    backgroundColor: colors.surface,
-                                    padding: 16,
-                                    borderRadius: 12,
-                                    borderWidth: 1,
-                                    borderColor: expandedCategory === category ? colors.primary : colors.border
-                                }}
-                            >
-                                <View>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{category}</Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{data.count} items</Text>
-                                </View>
-                                <View style={{ alignItems: 'flex-end' }}>
-                                    <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>
-                                        {formatCurrencyAmount(data.total, currency)}
-                                    </Text>
-                                    <Ionicons name={expandedCategory === category ? "chevron-up" : "chevron-down"} size={16} color={colors.textSecondary} />
-                                </View>
-                            </TouchableOpacity>
+                    {groupEntries.map(([category, data], groupIndex) => {
+                        const isExpanded = expandedCategory === category;
+                        return (
+                            <View key={category}>
+                                <Row
+                                    title={category}
+                                    subtitle={`${data.count} items`}
+                                    value={formatCurrencyAmount(data.total, currency)}
+                                    trailing={<Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color={ds.text3} />}
+                                    onPress={() => setExpandedCategory(isExpanded ? null : category)}
+                                    last={groupIndex === groupEntries.length - 1 && !isExpanded}
+                                />
 
-                            {/* Expanded Items List */}
-                            {expandedCategory === category && (
-                                <View style={{ marginTop: 8, paddingLeft: 8 }}>
-                                    {data.items.map((item, idx) => {
-                                        const realIndex = items.indexOf(item);
-                                        return (
-                                            <View key={idx} style={{
-                                                backgroundColor: colors.surface,
-                                                borderRadius: 8,
-                                                padding: 12,
-                                                marginBottom: 8,
-                                                flexDirection: 'row',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center'
-                                            }}>
-                                                <TouchableOpacity
-                                                    onPress={() => {
-                                                        setActiveEditingItemIndex(realIndex);
-                                                        setCategoryModalVisible(true);
-                                                    }}
-                                                    style={{
-                                                        marginRight: 12,
-                                                        width: 32,
-                                                        height: 32,
-                                                        borderRadius: 16,
-                                                        backgroundColor: colors.primary + '15',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center'
-                                                    }}
-                                                >
-                                                    <Ionicons name="folder-open" size={16} color={colors.primary} />
-                                                </TouchableOpacity>
-                                                <View style={{ flex: 1, marginRight: 8 }}>
-                                                    <TextInput
-                                                        value={item.description}
-                                                        onChangeText={(txt) => {
-                                                            const newItems = [...items];
-                                                            newItems[realIndex].description = txt;
-                                                            setItems(newItems);
+                                {/* Expanded Items List */}
+                                {isExpanded && (
+                                    <View style={[styles.itemList, { borderBottomColor: ds.hairline }]}>
+                                        {data.items.map((item, idx) => {
+                                            const realIndex = items.indexOf(item);
+                                            return (
+                                                <View key={idx} style={[styles.itemRow, { borderBottomColor: ds.hairline }]}>
+                                                    <Pressable
+                                                        onPress={() => {
+                                                            setActiveEditingItemIndex(realIndex);
+                                                            setCategoryModalVisible(true);
                                                         }}
-                                                        style={{ color: colors.text, fontWeight: '500', marginBottom: 4 }}
-                                                    />
-                                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>x</Text>
+                                                        hitSlop={space[2]}
+                                                        accessibilityLabel="Change item category"
+                                                    >
+                                                        <Ionicons name="folder-open-outline" size={20} color={ds.text2} />
+                                                    </Pressable>
+                                                    <View style={{ flex: 1 }}>
                                                         <TextInput
-                                                            value={item.quantity.toString()}
-                                                            keyboardType="numeric"
+                                                            value={item.description}
                                                             onChangeText={(txt) => {
-                                                                const qty = parseFloat(txt) || 0;
                                                                 const newItems = [...items];
-                                                                newItems[realIndex].quantity = qty;
-                                                                newItems[realIndex].amount = newItems[realIndex].unitPrice.multipliedBy(qty);
+                                                                newItems[realIndex].description = txt;
                                                                 setItems(newItems);
                                                             }}
-                                                            style={{ color: colors.textSecondary, fontSize: 12, borderBottomWidth: 1, borderColor: colors.border, marginHorizontal: 4, minWidth: 20, textAlign: 'center' }}
+                                                            style={[type.body, styles.inlineInput, { color: ds.text }]}
                                                         />
+                                                        <View style={styles.qtyRow}>
+                                                            <Text style={[type.small, { color: ds.text2 }]}>Qty</Text>
+                                                            <TextInput
+                                                                value={item.quantity.toString()}
+                                                                keyboardType="numeric"
+                                                                onChangeText={(txt) => {
+                                                                    const qty = parseFloat(txt) || 0;
+                                                                    const newItems = [...items];
+                                                                    newItems[realIndex].quantity = qty;
+                                                                    newItems[realIndex].amount = newItems[realIndex].unitPrice.multipliedBy(qty);
+                                                                    setItems(newItems);
+                                                                }}
+                                                                style={[type.smallNum, styles.qtyInput, { color: ds.text, backgroundColor: ds.inset }]}
+                                                            />
+                                                        </View>
+                                                    </View>
+                                                    <View style={styles.itemEnd}>
+                                                        <TextInput
+                                                            value={item.amount.toString()}
+                                                            keyboardType="numeric"
+                                                            onChangeText={(txt) => {
+                                                                const rawBn = new BigNumber(txt);
+                                                                const amt = rawBn.isNaN() ? new BigNumber(0) : rawBn;
+                                                                const newItems = [...items];
+                                                                newItems[realIndex].amount = amt;
+                                                                if (newItems[realIndex].quantity > 0)
+                                                                    newItems[realIndex].unitPrice = amt.dividedBy(newItems[realIndex].quantity);
+                                                                setItems(newItems);
+                                                            }}
+                                                            style={[type.bodyNum, styles.amountField, { color: ds.text, backgroundColor: ds.inset }]}
+                                                        />
+                                                        <Pressable
+                                                            onPress={() => {
+                                                                const newItems = items.filter((_, i) => i !== realIndex);
+                                                                setItems(newItems);
+                                                            }}
+                                                            hitSlop={space[2]}
+                                                        >
+                                                            <Text style={[type.smallMedium, { color: ds.danger }]}>Remove</Text>
+                                                        </Pressable>
                                                     </View>
                                                 </View>
-                                                <View style={{ alignItems: 'flex-end', minWidth: 80 }}>
-                                                    <TextInput
-                                                        value={item.amount.toString()}
-                                                        keyboardType="numeric"
-                                                        onChangeText={(txt) => {
-                                                            const rawBn = new BigNumber(txt);
-                                                            const amt = rawBn.isNaN() ? new BigNumber(0) : rawBn;
-                                                            const newItems = [...items];
-                                                            newItems[realIndex].amount = amt;
-                                                            if (newItems[realIndex].quantity > 0)
-                                                                newItems[realIndex].unitPrice = amt.dividedBy(newItems[realIndex].quantity);
-                                                            setItems(newItems);
-                                                        }}
-                                                        style={{ color: colors.text, fontWeight: 'bold', borderBottomWidth: 1, borderColor: colors.border, textAlign: 'right' }}
-                                                    />
-                                                    <TouchableOpacity onPress={() => {
-                                                        const newItems = items.filter((_, i) => i !== realIndex);
-                                                        setItems(newItems);
-                                                    }}>
-                                                        <Text style={{ color: colors.error, fontSize: 10, marginTop: 4 }}>Remove</Text>
-                                                    </TouchableOpacity>
-                                                </View>
-                                            </View>
-                                        );
-                                    })}
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            const newItem: ReceiptItem = {
-                                                description: "New Item",
-                                                quantity: 1,
-                                                unitPrice: new BigNumber(0),
-                                                amount: new BigNumber(0),
-                                                category: category
-                                            };
-                                            setItems([...items, newItem]);
-                                        }}
-                                        style={{ padding: 12, alignItems: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: colors.border, borderRadius: 8 }}
-                                    >
-                                        <Text style={{ color: colors.primary }}>+ Add Item</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            )}
-                        </View>
-                    ))}
-
-                    {/* Total Summary */}
-                    <View style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        backgroundColor: colors.surface,
-                        padding: 16,
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: colors.border
-                    }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 16 }}>Total Estimate</Text>
-                        <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>
-                            {formatCurrencyAmount(totalAmount, currency)}
-                        </Text>
-                    </View>
+                                            );
+                                        })}
+                                        <Pressable
+                                            onPress={() => {
+                                                const newItem: ReceiptItem = {
+                                                    description: "New Item",
+                                                    quantity: 1,
+                                                    unitPrice: new BigNumber(0),
+                                                    amount: new BigNumber(0),
+                                                    category: category
+                                                };
+                                                setItems([...items, newItem]);
+                                            }}
+                                            style={styles.addItem}
+                                        >
+                                            <Ionicons name="add-outline" size={18} color={ds.accent} />
+                                            <Text style={[type.smallMedium, { color: ds.accent }]}>Add item</Text>
+                                        </Pressable>
+                                    </View>
+                                )}
+                            </View>
+                        );
+                    })}
                 </ScrollView>
 
                 {/* Footer Actions */}
-                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingTop: 16, paddingHorizontal: 16, paddingBottom: 16 + insets.bottom, backgroundColor: colors.surface, borderTopWidth: 1, borderColor: colors.border, flexDirection: 'row', gap: 12 }}>
-                    <Button
-                        title="Cancel"
-                        variant="outline"
-                        onPress={onCancel}
-                        style={{ flex: 1 }}
-                    />
-                    <Button
-                        title="Save Record"
-                        onPress={handleSave}
-                        style={{ flex: 1 }}
-                    />
+                <View style={[styles.footer, { paddingBottom: space[4] + insets.bottom, backgroundColor: ds.inset, borderTopColor: ds.hairline }]}>
+                    <Pressable onPress={onCancel} style={styles.cancelButton}>
+                        <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
+                    </Pressable>
+                    <Pressable onPress={handleSave} style={[styles.primaryButton, { backgroundColor: ds.accent }]}>
+                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>
+                            {splitByCategory ? 'Save expenses' : 'Save expense'}
+                        </Text>
+                    </Pressable>
                 </View>
 
                 {/* Date Pickers */}
@@ -588,3 +512,117 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
         </Modal>
     );
 };
+
+const styles = StyleSheet.create({
+    loading: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    topBar: {
+        paddingHorizontal: space[5],
+        paddingTop: space[3],
+        paddingBottom: space[4],
+    },
+    amountBlock: {
+        marginTop: space[5],
+    },
+    amount: {
+        fontFamily: fontFamily.semibold,
+        fontSize: 44,
+        lineHeight: 52,
+        fontVariant: ['tabular-nums'],
+        borderBottomWidth: 1,
+        paddingVertical: space[1],
+    },
+    group: {
+        marginTop: space[5],
+    },
+    dateRow: {
+        flexDirection: 'row',
+        gap: space[3],
+    },
+    label: {
+        marginBottom: space[1],
+    },
+    field: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        padding: space[3],
+        borderRadius: radius.md,
+    },
+    fieldValue: {
+        flex: 1,
+        padding: 0,
+    },
+    itemList: {
+        paddingLeft: space[5],
+        borderBottomWidth: 1,
+    },
+    itemRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        paddingVertical: space[3],
+        borderBottomWidth: 1,
+    },
+    inlineInput: {
+        padding: 0,
+    },
+    qtyRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+        marginTop: space[1],
+    },
+    qtyInput: {
+        minWidth: 32,
+        paddingVertical: 0,
+        paddingHorizontal: space[2],
+        borderRadius: radius.sm,
+        textAlign: 'center',
+    },
+    itemEnd: {
+        alignItems: 'flex-end',
+        gap: space[1],
+        minWidth: 88,
+    },
+    amountField: {
+        minWidth: 88,
+        paddingVertical: space[1],
+        paddingHorizontal: space[2],
+        borderRadius: radius.sm,
+        textAlign: 'right',
+    },
+    addItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[1],
+        paddingVertical: space[3],
+    },
+    footer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        gap: space[3],
+        paddingTop: space[3],
+        paddingHorizontal: space[5],
+        borderTopWidth: 1,
+    },
+    cancelButton: {
+        flex: 1,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    primaryButton: {
+        flex: 2,
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
