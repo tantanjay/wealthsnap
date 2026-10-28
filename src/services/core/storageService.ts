@@ -233,6 +233,36 @@ export const saveSnapshotPeriod = async (period: SnapshotPeriod): Promise<void> 
     }
 };
 
+// Sections of the Holdings tab below its summary; Tools stays last.
+export type HoldingsSectionId = 'holdings' | 'allocation' | 'dividends' | 'advisor';
+
+export const DEFAULT_HOLDINGS_ORDER: HoldingsSectionId[] = ['holdings', 'allocation', 'dividends', 'advisor'];
+
+// Keeps known ids once each, in order, and appends any missing ones.
+const normalizeHoldingsOrder = (ids: string[]): HoldingsSectionId[] => {
+    const known = ids.filter((id, i): id is HoldingsSectionId =>
+        (DEFAULT_HOLDINGS_ORDER as string[]).includes(id) && ids.indexOf(id) === i);
+    return [...known, ...DEFAULT_HOLDINGS_ORDER.filter(id => !known.includes(id))];
+};
+
+export const saveHoldingsOrder = async (order: HoldingsSectionId[]): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.HOLDINGS_ORDER, JSON.stringify(order));
+    } catch (error) {
+        console.error('Failed to save holdings order:', error);
+    }
+};
+
+export const getHoldingsOrder = async (): Promise<HoldingsSectionId[]> => {
+    try {
+        const data = await AsyncStorage.getItem(ASYNC_KEYS.HOME_SCREEN.HOLDINGS_ORDER);
+        return data ? normalizeHoldingsOrder(JSON.parse(data)) : DEFAULT_HOLDINGS_ORDER;
+    } catch (error) {
+        console.error('Failed to get holdings order:', error);
+        return DEFAULT_HOLDINGS_ORDER;
+    }
+};
+
 export const saveSnapshotRange = async (range: SnapshotRange): Promise<void> => {
     try {
         await AsyncStorage.setItem(ASYNC_KEYS.HOME_SCREEN.SNAPSHOT_RANGE, range);

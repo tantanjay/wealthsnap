@@ -27,6 +27,8 @@ interface HoldingsTabProps {
     onOpenSettings: () => void;
     onCloseSettings: () => void;
     onOpenRecord: () => void;
+    // Order of the sections below the summary (Home settings).
+    sectionOrder: Storage.HoldingsSectionId[];
 }
 
 type PortfolioStats = Awaited<ReturnType<typeof getPortfolioStats>>;
@@ -60,7 +62,7 @@ const typeLabel = (t?: string) => (t ? t.charAt(0) + t.slice(1).toLowerCase() : 
 // Allocation bar segments: domainInvest at 100 / 60 / 30% (docs/DESIGN.md); a 4th type onward folds into "Other".
 const SEGMENT_OPACITY = [1, 0.6, 0.3];
 
-const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settingsVisible, onOpenSettings, onCloseSettings, onOpenRecord }) => {
+const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settingsVisible, onOpenSettings, onCloseSettings, onOpenRecord, sectionOrder }) => {
     const { ds } = useTheme();
     const { checkConsent } = useAIConsent();
     const [stats, setStats] = useState<PortfolioStats | null>(null);
@@ -177,6 +179,48 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
 
     const isPrivacyEnabled = !f.isOpen;
 
+    const sections: Record<Storage.HoldingsSectionId, React.ReactNode> = {
+        holdings: (
+            <>
+                <SectionHeader title="Holdings" actionLabel={`${SORTS.find(s => s.key === sort)?.label} ⌄`} onAction={cycleSort} />
+                {sorted.map((h, i) => {
+                    const weight = formatPercent(weightOf(h.totalValue));
+                    const ret = h.gainLossPercent;
+                    return (
+                        <Row
+                            key={h.symbol}
+                            title={h.name || h.symbol}
+                            subtitle={`${h.name ? `${h.symbol} · ` : ''}${typeLabel(h.type)} · ${weight}`}
+                            value={f.show(f.money(h.totalValue), weight)}
+                            change={ret === null ? undefined : formatPercent(ret, { signed: true, decimals: 1 })}
+                            changeTone={ret === null || ret === 0 ? 'neutral' : ret > 0 ? 'good' : 'bad'}
+                            onPress={() => { setHistorySymbol(h.symbol); setIsHistoryVisible(true); }}
+                            last={i === sorted.length - 1}
+                        />
+                    );
+                })}
+            </>
+        ),
+        allocation: (
+            <>
+                <SectionHeader title="Allocation" actionLabel={`${ALLOCATION_TABS.find(t => t.key === allocationTab)?.label} ⌄`} onAction={cycleAllocationTab} />
+                <AllocationChart holdingsData={holdings} tab={allocationTab} isPrivacyEnabled={isPrivacyEnabled} />
+            </>
+        ),
+        dividends: (
+            <DividendChart
+                projectedDividends={projectedDividends}
+                actualDividends={actualDividends}
+                calendarData={calendarData}
+                currency={currency}
+                isPrivacyEnabled={isPrivacyEnabled}
+            />
+        ),
+        advisor: (
+            <SmartAdvisor suggestions={suggestions} activePriority={priority} onPriorityChange={changePriority} currency={currency} isPrivacyEnabled={isPrivacyEnabled} />
+        ),
+    };
+
     return (
         <>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -223,36 +267,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
                             </>
                         )}
 
-                        <SectionHeader title="Holdings" actionLabel={`${SORTS.find(s => s.key === sort)?.label} ⌄`} onAction={cycleSort} />
-                        {sorted.map((h, i) => {
-                            const weight = formatPercent(weightOf(h.totalValue));
-                            const ret = h.gainLossPercent;
-                            return (
-                                <Row
-                                    key={h.symbol}
-                                    title={h.name || h.symbol}
-                                    subtitle={`${h.name ? `${h.symbol} · ` : ''}${typeLabel(h.type)} · ${weight}`}
-                                    value={f.show(f.money(h.totalValue), weight)}
-                                    change={ret === null ? undefined : formatPercent(ret, { signed: true, decimals: 1 })}
-                                    changeTone={ret === null || ret === 0 ? 'neutral' : ret > 0 ? 'good' : 'bad'}
-                                    onPress={() => { setHistorySymbol(h.symbol); setIsHistoryVisible(true); }}
-                                    last={i === sorted.length - 1}
-                                />
-                            );
-                        })}
-
-                        <SectionHeader title="Allocation" actionLabel={`${ALLOCATION_TABS.find(t => t.key === allocationTab)?.label} ⌄`} onAction={cycleAllocationTab} />
-                        <AllocationChart holdingsData={holdings} tab={allocationTab} isPrivacyEnabled={isPrivacyEnabled} />
-
-                        <DividendChart
-                            projectedDividends={projectedDividends}
-                            actualDividends={actualDividends}
-                            calendarData={calendarData}
-                            currency={currency}
-                            isPrivacyEnabled={isPrivacyEnabled}
-                        />
-
-                        <SmartAdvisor suggestions={suggestions} activePriority={priority} onPriorityChange={changePriority} currency={currency} isPrivacyEnabled={isPrivacyEnabled} />
+                        {sectionOrder.map(id => <React.Fragment key={id}>{sections[id]}</React.Fragment>)}
 
                         <SectionHeader title="Tools" />
                         <Row icon="add-circle-outline" title="Add an investment" subtitle="Buy, sell or dividend, from Record" chevron onPress={onOpenRecord} />
