@@ -18,7 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - New bottom bar: Home · Insights · Record · Profile · Learn; the Investment and History tabs move into Home's Holdings and Ledger tabs.
   - Profile keeps only settings; guides, help and app info move to the new Learn tab, with new Runway, Privacy Modes and Goals guides and an FAQ.
 - Privacy modes: Open, Discreet (percentages, months and counts instead of amounts) and Hidden (the old privacy toggle).
-  - The floating gear's privacy item cycles Open → Discreet → Hidden.
+  - Pick the mode in Home settings.
+
+### Removed
+- Floating gear: the draggable settings button is now a plain settings icon on Home and Insights. Monthly summary and Reveal for screenshot move to Profile.
 
 ## [1.19.0] — 2026-09-29
 

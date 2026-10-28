@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Text, View, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 
-import DraggableIconButton from '@components/common/DraggableIconButton';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { EmptyState } from '@components/common/EmptyState';
 import { ReviewAppModal } from '@components/common/ReviewAppModal';
@@ -16,7 +15,6 @@ import GoalsTab from '@components/home/GoalsTab';
 import LoansTab from '@components/home/LoansTab';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
-import { useFloatingGear } from '@context/FloatingGearContext';
 import { useDataStatus } from '@context/DataStatusContext';
 import { usePrivacyFormat } from '@hooks/usePrivacyFormat';
 import { useReviewPrompt } from '@hooks/useReviewPrompt';
@@ -68,9 +66,7 @@ const greeting = () => {
 const HomeScreen = ({ navigation }: any) => {
     const { ds } = useTheme();
     const { mode } = usePrivacy();
-    const { isDocked, registerSecondAction } = useFloatingGear();
     const { isChecking: isStatusChecking, isNewUser, refresh: refreshDataStatus } = useDataStatus();
-    const routeName = useRoute().name;
 
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [snapshot, setSnapshot] = useState<SnapshotData | null>(null);
@@ -159,31 +155,6 @@ const HomeScreen = ({ navigation }: any) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tab]);
 
-    // The floating gear's screen action follows the tab: History's calendar switch on Ledger,
-    // the Investment screen's settings on Holdings, Home Settings everywhere else.
-    useEffect(() => {
-        if (tab === 'ledger') {
-            registerSecondAction(routeName, {
-                label: ledgerView === 'LIST' ? 'Switch to Calendar View' : 'Switch to List View',
-                icon: ledgerView === 'LIST' ? 'calendar-outline' : 'list-outline',
-                onPress: () => setLedgerView(ledgerView === 'LIST' ? 'CALENDAR' : 'LIST'),
-            });
-        } else if (tab === 'holdings') {
-            registerSecondAction(routeName, {
-                label: 'Holdings Settings',
-                icon: 'options-outline',
-                onPress: () => setIsHoldingsSettingsVisible(true),
-            });
-        } else {
-            registerSecondAction(routeName, {
-                label: 'Screen Settings',
-                icon: 'options-outline',
-                onPress: () => setIsSettingsVisible(true),
-            });
-        }
-        return () => registerSecondAction(routeName, null);
-    }, [registerSecondAction, routeName, tab, ledgerView]);
-
     const openRecord = (params?: object) => navigation.navigate('Record', params);
 
     const togglePeriod = () => {
@@ -229,15 +200,9 @@ const HomeScreen = ({ navigation }: any) => {
                             <Text style={[type.captionMedium, { color: ds.text2 }]}>{mode === 'discreet' ? 'Discreet' : 'Hidden'}</Text>
                         </View>
                     )}
-                    {isDocked ? (
-                        <DraggableIconButton onPress={() => setIsSettingsVisible(true)} style={styles.iconButton}>
-                            {settingsIcon}
-                        </DraggableIconButton>
-                    ) : (
-                        <Pressable onPress={() => setIsSettingsVisible(true)} style={styles.iconButton} accessibilityLabel="Home settings" hitSlop={space[2]}>
-                            {settingsIcon}
-                        </Pressable>
-                    )}
+                    <Pressable onPress={() => setIsSettingsVisible(true)} style={styles.iconButton} accessibilityLabel="Home settings" hitSlop={space[2]}>
+                        {settingsIcon}
+                    </Pressable>
                 </View>
             </View>
 

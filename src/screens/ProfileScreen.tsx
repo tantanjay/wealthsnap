@@ -9,6 +9,7 @@ import BottomModal from '@components/common/BottomModal';
 import { Row, SectionHeader } from '@components/ds';
 import SecurityCard from '@components/profile/SecurityCard';
 import BudgetManagementModal from '@components/profile/BudgetManagementModal';
+import MonthlySummaryModal from '@components/insights/modals/MonthlySummaryModal';
 import ProfileHeader from '@components/profile/ProfileHeader';
 import QuickActionsCard from '@components/profile/QuickActionsCard';
 import AppearanceCard from '@components/profile/AppearanceCard';
@@ -41,6 +42,7 @@ const ProfileScreen = ({ navigation }: any) => {
     const [showBudgetModal, setShowBudgetModal] = useState(false);
     const [showAssetsModal, setShowAssetsModal] = useState(false);
     const [showRemindersModal, setShowRemindersModal] = useState(false);
+    const [showSummaryModal, setShowSummaryModal] = useState(false);
     // Bumped when a Money setup modal closes so its row counts refresh.
     const [setupRefresh, setSetupRefresh] = useState(0);
 
@@ -197,6 +199,13 @@ const ProfileScreen = ({ navigation }: any) => {
                     subtitle="Backup files, CSV, Excel and device sync"
                     chevron
                     onPress={() => navigation.navigate('ImportExport')}
+                />
+                <Row
+                    icon="document-text-outline"
+                    title="Monthly summary"
+                    subtitle="A written recap of each month"
+                    chevron
+                    onPress={() => setShowSummaryModal(true)}
                     last
                 />
 
@@ -233,6 +242,8 @@ const ProfileScreen = ({ navigation }: any) => {
                 visible={showAssetsModal}
                 onClose={() => setShowAssetsModal(false)}
             />
+
+            <MonthlySummaryModal visible={showSummaryModal} onClose={() => setShowSummaryModal(false)} />
 
             <BottomModal
                 visible={showRemindersModal}

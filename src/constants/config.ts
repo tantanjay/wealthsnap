@@ -84,9 +84,6 @@ export const ASYNC_KEYS = {
         EXCLUDED_CATEGORIES: '@wealthsnap_chat_excluded_categories',
         DISCLOSE_DEBT_NAMES: '@wealthsnap_chat_disclose_debt_names',
     },
-    FLOATING_GEAR: {
-        DOCKED: '@wealthsnap_floating_gear_docked',
-    },
     CRASH_REPORT: '@wealthsnap_crash_report',
     DEVELOPER_MODE: '@wealthsnap_developer_mode',
     BACKUP_TIMESTAMP: '@wealthsnap_backup_timestamp',

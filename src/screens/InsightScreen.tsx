@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { BigNumber } from 'bignumber.js';
 import { View, ScrollView, TouchableOpacity, Text, RefreshControl, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 
 
 import IncomeAnalysis from '@components/insights/IncomeAnalysis';
@@ -19,10 +19,8 @@ import { buildHealthEntries, InsightsMonthData } from '@components/insights/fina
 import { Row, SectionHeader } from '@components/ds';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import BottomModal from '@components/common/BottomModal';
-import DraggableIconButton from '@components/common/DraggableIconButton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
-import { useFloatingGear } from '@context/FloatingGearContext';
 import { useAIConsent } from '@hooks/useAIConsent';
 import { useFinancialHealth } from '@hooks/useFinancialHealth';
 import { usePrivacyFormat } from '@hooks/usePrivacyFormat';
@@ -38,9 +36,7 @@ import { getCachedTransactions } from '@services/domain/transactionService';
 const InsightScreen = ({ navigation }: any) => {
     const { colors, ds } = useTheme();
     const { isPrivacyEnabled, mode } = usePrivacy();
-    const { isDocked, registerSecondAction } = useFloatingGear();
     const { checkConsent } = useAIConsent();
-    const routeName = useRoute().name;
     const [currency, setCurrency] = useState('PHP');
     const format = usePrivacyFormat(currency);
     const { data: health, load: loadHealth, scenario } = useFinancialHealth();
@@ -282,15 +278,6 @@ const InsightScreen = ({ navigation }: any) => {
         }, [fetchAllData])
     );
 
-    useEffect(() => {
-        registerSecondAction(routeName, {
-            label: 'Screen Settings',
-            icon: 'options-outline',
-            onPress: () => setIsSettingsModalVisible(true),
-        });
-        return () => registerSecondAction(routeName, null);
-    }, [registerSecondAction, routeName]);
-
     // Only re-calculate breakdown if grouping or date changes specifically
     useEffect(() => {
         if (transactions.length > 0) {
@@ -417,15 +404,9 @@ const InsightScreen = ({ navigation }: any) => {
                             <Text style={[type.captionMedium, { color: ds.text2 }]}>{mode === 'discreet' ? 'Discreet' : 'Hidden'}</Text>
                         </View>
                     )}
-                    {isDocked ? (
-                        <DraggableIconButton onPress={() => setIsSettingsModalVisible(true)} style={styles.iconButton}>
-                            {settingsIcon}
-                        </DraggableIconButton>
-                    ) : (
-                        <Pressable onPress={() => setIsSettingsModalVisible(true)} style={styles.iconButton} accessibilityLabel="Insights settings" hitSlop={space[2]}>
-                            {settingsIcon}
-                        </Pressable>
-                    )}
+                    <Pressable onPress={() => setIsSettingsModalVisible(true)} style={styles.iconButton} accessibilityLabel="Insights settings" hitSlop={space[2]}>
+                        {settingsIcon}
+                    </Pressable>
                 </View>
             </View>
 

@@ -103,7 +103,7 @@ export const HELP_TOPICS: HelpTopic[] = [
         type: 'document',
         content: [
             { type: 'heading1', text: 'Privacy Modes' },
-            { type: 'paragraph', text: 'Pick a mode in Home settings (the sliders button on Home). It applies everywhere as soon as you pick it. If you use the floating gear, its Privacy row steps through Open → Discreet → Hidden with each tap.' },
+            { type: 'paragraph', text: 'Pick a mode in Home settings (the sliders button on Home). It applies everywhere as soon as you pick it.' },
             { type: 'bullet', text: 'Open: every amount.' },
             { type: 'bullet', text: 'Discreet: only numbers that don\'t reveal how much money is involved: percentages, months, counts and progress bars. Transaction amounts are left out. Useful at a glance in public.' },
             { type: 'bullet', text: 'Hidden: every amount shows as ****, keeping a leading + or − sign.' },
@@ -113,7 +113,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Insights: each Financial Health number\'s scale-free version (see the Financial Insights guide). Investment boost shows "—".' },
             { type: 'alert', alertType: 'info', text: 'Screens that don\'t have a Discreet version yet show Hidden instead.' },
             { type: 'heading2', text: 'Screenshots' },
-            { type: 'paragraph', text: 'In Open, screenshots are blocked so real amounts can\'t be captured by accident. Discreet and Hidden allow them. To capture real numbers once, use the floating gear\'s "Reveal for screenshot".' },
+            { type: 'paragraph', text: 'In Open, screenshots are blocked so real amounts can\'t be captured by accident. Discreet and Hidden allow them. To capture real numbers once, use Profile → Security → "Reveal for screenshot".' },
         ]
     },
     {
@@ -704,7 +704,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'heading3', text: 'Can I change my currency or name?' },
             { type: 'paragraph', text: 'Not in this version. Both are set when you first open the app.' },
             { type: 'heading3', text: 'Why can\'t I take a screenshot?' },
-            { type: 'paragraph', text: 'In Open mode screenshots are blocked to protect your amounts. Switch to Discreet or Hidden, or use the floating gear\'s "Reveal for screenshot".' },
+            { type: 'paragraph', text: 'In Open mode screenshots are blocked to protect your amounts. Switch to Discreet or Hidden, or use Profile → Security → "Reveal for screenshot".' },
             { type: 'heading3', text: 'Do I need a Gemini API key?' },
             { type: 'paragraph', text: 'Only for the AI features. You bring your own key (Profile → Google Gemini), so you pay Google directly for what you use and WealthSnap stays free.' },
             { type: 'heading3', text: 'I\'m locked out of my PIN.' },

@@ -14,12 +14,10 @@ import { SecurityProvider, useSecurity } from '@context/SecurityContext';
 import { PrivacyProvider } from '@context/PrivacyContext';
 import { AlertProvider } from '@context/AlertContext';
 import { ThemeProvider } from '@context/ThemeContext';
-import { FloatingGearProvider } from '@context/FloatingGearContext';
 import { DataStatusProvider } from '@context/DataStatusContext';
 import { GlobalErrorBoundary } from '@components/common/GlobalErrorBoundary';
 import { PrivacyGuard } from '@components/common/PrivacyGuard';
 import { CustomAlert } from '@components/common/CustomAlert';
-import FloatingGearBubble from '@components/common/FloatingGearBubble';
 
 import { ReminderCatchupModal } from '@components/reminders/ReminderCatchupModal';
 import { Reminder } from '@types';
@@ -114,9 +112,7 @@ export default function App() {
                     <AlertProvider>
                       <PrivacyGuard />
                       <StatusBar style="auto" />
-                      <FloatingGearProvider>
-                        <AppContent initialRoute={initialRoute} />
-                      </FloatingGearProvider>
+                      <AppContent initialRoute={initialRoute} />
                     </AlertProvider>
                   </PrivacyProvider>
                 </SecurityProvider>
@@ -202,7 +198,6 @@ const AppContent = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'L
   return (
     <>
       <AppNavigator initialRoute={initialRoute} />
-      <FloatingGearBubble />
       <CustomAlert />
 
       <BottomModal
