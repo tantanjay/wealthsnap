@@ -130,7 +130,7 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                 icon={investment ? 'trending-up-outline' : 'card-outline'}
                 title={base}
                 subtitle={`${detail} · No cash entry`}
-                value={f.isDiscreet ? undefined : f.money(total)}
+                value={f.recordMoney(total)}
                 onPress={() => (investment ? setSelectedInvestment(item) : setSelectedDebt(item as Debt))}
                 last={last}
             />
@@ -148,8 +148,8 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                 icon={transactionIcon(item)}
                 title={title}
                 subtitle={subtitle}
-                // Discreet leaves transaction amounts out entirely.
-                value={f.isDiscreet ? undefined : f.money(amount, { signed: true })}
+                // Single transactions show in Discreet; only totals (day, month) are left out.
+                value={f.recordMoney(amount, { signed: true })}
                 valueTone={isTransfer(item) ? 'neutral' : item.type === 'INCOME' && !f.isHidden ? 'good' : undefined}
                 onPress={() => handlePress(item)}
                 last={index === section.data.length - 1}
@@ -233,17 +233,29 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                 })}
             </View>
             <View style={styles.flow}>
-                {/* Discreet has no scale-free In; Out shows as a share of In instead. */}
-                {!f.isDiscreet && (
-                    <Text style={[type.smallNum, { color: ds.text }]}>
-                        <Text style={{ color: ds.text2 }}>In · {shortMonth}</Text>{' '}
-                        <Text style={f.isOpen ? { color: ds.success } : undefined}>{f.money(monthFlow.moneyIn)}</Text>
+                {/* Discreet has no scale-free In, so Out reads as a share of In in one phrase. */}
+                {f.isDiscreet ? (
+                    <Text style={[type.smallNum, styles.flowText, { color: ds.text2 }]} numberOfLines={1}>
+                        {monthFlow.outPercentOfIn === null ? `${shortMonth} · nothing came in yet` : (
+                            <>
+                                {shortMonth} · out was{' '}
+                                <Text style={{ color: monthFlow.outPercentOfIn > 100 ? ds.danger : ds.text }}>{formatPercent(monthFlow.outPercentOfIn)}</Text>
+                                {' '}of in
+                            </>
+                        )}
                     </Text>
+                ) : (
+                    <>
+                        <Text style={[type.smallNum, { color: ds.text }]}>
+                            <Text style={{ color: ds.text2 }}>In · {shortMonth}</Text>{' '}
+                            <Text style={f.isOpen ? { color: ds.success } : undefined}>{f.money(monthFlow.moneyIn)}</Text>
+                        </Text>
+                        <Text style={[type.smallNum, { color: ds.text }]}>
+                            <Text style={{ color: ds.text2 }}>Out · {shortMonth}</Text>{' '}
+                            {f.money(monthFlow.moneyOut)}
+                        </Text>
+                    </>
                 )}
-                <Text style={[type.smallNum, { color: ds.text }]}>
-                    <Text style={{ color: ds.text2 }}>Out · {shortMonth}</Text>{' '}
-                    {f.show(f.money(monthFlow.moneyOut), `${formatPercent(monthFlow.outPercentOfIn)} of in`)}
-                </Text>
                 {viewLink('Calendar', 'calendar-outline', 'CALENDAR')}
             </View>
         </View>
@@ -394,6 +406,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: space[5],
         marginTop: space[4],
+    },
+    flowText: {
+        flexShrink: 1,
     },
     link: {
         marginLeft: 'auto',
