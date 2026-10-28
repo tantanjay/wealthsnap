@@ -29,7 +29,9 @@ interface ComparisonChartProps {
 
 const CHART_HEIGHT = 220;
 // Resting bars; the current or pressed period draws at full strength.
-const BAR_REST_OPACITY = 0.22;
+// Recorded amounts are solid; the projected rest of this month is a faint tint. Pressing dims a bar.
+const PROJECTED_OPACITY = 0.22;
+const PRESSED_OPACITY = 0.7;
 
 const VIEWS = [
     { key: 'COMPARISON', label: 'Compare' },
@@ -265,7 +267,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                 {format.isOpen && (
                     <View style={styles.yAxis}>
                         {yLabels.reverse().map((label, i) => (
-                            <Text key={i} style={[type.captionNum, { color: ds.text2 }]}>{label}</Text>
+                            <Text key={i} style={[type.captionNum, { color: ds.text2 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
                         ))}
                     </View>
                 )}
@@ -284,7 +286,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                         const projectedHeight = bar.isProjected ? Math.max(0, totalHeight - actualHeight) : 0;
 
                         const isSelected = selectedBarIndex === index;
-                        const barOpacity = isSelected || bar.isCurrent ? 1 : BAR_REST_OPACITY;
+                        const barOpacity = isSelected ? PRESSED_OPACITY : 1;
                         const actualPct = vsAverage(bar.actual);
                         const projectedPct = vsAverage(bar.value);
 
@@ -298,9 +300,9 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                     style={[styles.barTouch, { height: chartHeight }]}
                                 >
                                     {bar.isProjected ? (
-                                        // Stacked bar: actual (solid) + projected remainder (resting tint)
+                                        // Stacked bar: actual (solid) + projected remainder (faint)
                                         <View style={{ width: barWidth }}>
-                                            <View style={[styles.barTop, { height: projectedHeight, backgroundColor: ds.accent, opacity: BAR_REST_OPACITY }]} />
+                                            <View style={[styles.barTop, { height: projectedHeight, backgroundColor: ds.accent, opacity: PROJECTED_OPACITY * (isSelected ? PRESSED_OPACITY : 1) }]} />
                                             <View style={[
                                                 projectedHeight > 0 ? undefined : styles.barTop,
                                                 { height: Math.max(0, actualHeight), backgroundColor: ds.accent, opacity: barOpacity },
@@ -516,7 +518,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     yAxis: {
-        width: 48,
+        width: 56,
         justifyContent: 'space-between',
         alignItems: 'flex-end',
         paddingBottom: 25,

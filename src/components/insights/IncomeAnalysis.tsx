@@ -36,7 +36,9 @@ interface IncomeAnalysisProps {
 const TREND_HEIGHT = 220;
 const PIE_HEIGHT = 160;
 // Resting bars; the selected month or pressed bar draws at full strength.
-const BAR_REST_OPACITY = 0.22;
+// Recorded amounts are solid; the projected rest of this month is a faint tint. Pressing dims a bar.
+const PROJECTED_OPACITY = 0.22;
+const PRESSED_OPACITY = 0.7;
 // Hex alpha suffixes for source slices: 100%, 60%, 30%.
 const SOURCE_ALPHAS = ['FF', '99', '4D'];
 
@@ -284,7 +286,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                 {format.isOpen && (
                     <View style={styles.yAxis}>
                         {yLabels.reverse().map((label, i) => (
-                            <Text key={i} style={[type.captionNum, { color: ds.text2 }]}>{label}</Text>
+                            <Text key={i} style={[type.captionNum, { color: ds.text2 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
                         ))}
                     </View>
                 )}
@@ -297,7 +299,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                         // If projected < actual, prevent overflow
                         const projectedHeight = bar.isProjected ? Math.max(0, totalHeight - actualHeight) : 0;
                         const isSelected = selectedBarIndex === index;
-                        const barOpacity = isSelected || bar.isCurrent ? 1 : BAR_REST_OPACITY;
+                        const barOpacity = isSelected ? PRESSED_OPACITY : 1;
 
                         return (
                             <View key={index} style={[styles.barColumn, { zIndex: isSelected ? 100 : 0, elevation: isSelected ? 10 : 0 }]}>
@@ -308,9 +310,9 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                                     style={[styles.barTouch, { height: chartHeight }]}
                                 >
                                     {bar.isProjected ? (
-                                        // Stacked bar: actual (solid) + projected remainder (resting tint)
+                                        // Stacked bar: actual (solid) + projected remainder (faint)
                                         <View style={styles.barWidth}>
-                                            <View style={[styles.barTop, { height: projectedHeight, backgroundColor: ds.accent, opacity: BAR_REST_OPACITY }]} />
+                                            <View style={[styles.barTop, { height: projectedHeight, backgroundColor: ds.accent, opacity: PROJECTED_OPACITY * (isSelected ? PRESSED_OPACITY : 1) }]} />
                                             <View style={[
                                                 projectedHeight > 0 ? undefined : styles.barTop,
                                                 { height: Math.max(0, actualHeight), backgroundColor: ds.accent, opacity: barOpacity },
@@ -479,7 +481,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                         <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
                             <View style={modalStyles.scenarioBars}>
                                 <View style={[modalStyles.scenarioBar, modalStyles.split]}>
-                                    <View style={[modalStyles.flex, { backgroundColor: ds.accent, opacity: BAR_REST_OPACITY }]} />
+                                    <View style={[modalStyles.flex, { backgroundColor: ds.accent, opacity: PROJECTED_OPACITY }]} />
                                     <View style={[modalStyles.flex, { backgroundColor: ds.accent }]} />
                                 </View>
                             </View>
@@ -577,7 +579,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     yAxis: {
-        width: 48,
+        width: 56,
         justifyContent: 'space-between',
         alignItems: 'flex-end',
         paddingBottom: 25,

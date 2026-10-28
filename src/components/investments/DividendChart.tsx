@@ -131,7 +131,8 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                                     <View style={[styles.bar, {
                                         height: Math.max(2, barHeight),
                                         backgroundColor: ds.accent,
-                                        opacity: highlightIndex === index ? 1 : 0.22,
+                                        // Received dividends are solid, projected ones a faint tint; pressing dims a bar.
+                                        opacity: (activeTab === 'projected' ? 0.22 : 1) * (selectedBarIndex === index ? 0.7 : 1),
                                     }]} />
                                 </TouchableOpacity>
 
