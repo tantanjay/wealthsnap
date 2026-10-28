@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Linking } from 'react-native';
+import { Text, Pressable, Linking, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Button } from '@components/index';
+import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 
 interface ContactDeveloperModalProps {
     visible: boolean;
@@ -12,7 +13,7 @@ interface ContactDeveloperModalProps {
 }
 
 const ContactDeveloperModal: React.FC<ContactDeveloperModalProps> = ({ visible, onClose }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
 
     const handlePress = async (url: string) => {
         const supported = await Linking.canOpenURL(url);
@@ -26,47 +27,39 @@ const ContactDeveloperModal: React.FC<ContactDeveloperModalProps> = ({ visible, 
         <BottomModal
             visible={visible}
             onClose={onClose}
+            title="Contact developer"
             footer={
-                <Button
-                    variant="outline"
-                    title="Close"
-                    onPress={onClose}
-                />
+                <Pressable onPress={onClose} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Close</Text>
+                </Pressable>
             }
         >
-            <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 15 }}>
-                📡 Contact Developer
-            </Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
+            <Text style={[type.small, styles.intro, { color: ds.text2 }]}>
                 Have questions, feature ideas, or just want to say hi? Reach out directly.
             </Text>
 
-            {/* Twitter Support */}
-            <TouchableOpacity
+            <Row
+                icon="logo-twitter"
+                title="@WealthSnapApp"
+                subtitle="Ping me on Twitter"
+                trailing={<Ionicons name="open-outline" size={16} color={ds.text3} />}
                 onPress={() => handlePress('https://twitter.com/WealthSnapApp')}
-                style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: 16,
-                    backgroundColor: colors.surface,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    marginBottom: 12,
-                }}
-            >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="logo-twitter" size={24} color="#1DA1F2" />
-                    <View style={{ marginLeft: 12 }}>
-                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>@WealthSnapApp</Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Ping me on Twitter</Text>
-                    </View>
-                </View>
-                <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
+                last
+            />
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    intro: {
+        marginBottom: space[2],
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
 
 export default ContactDeveloperModal;

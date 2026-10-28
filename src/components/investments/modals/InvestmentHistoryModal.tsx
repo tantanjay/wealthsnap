@@ -1,20 +1,22 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Platform, ToastAndroid } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Pressable, Platform, ToastAndroid } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
+import { Disclaimer } from '@components/common/Disclaimer';
+import { IconName, Row, SegmentedControl, Tone } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
+import { type, space, radius } from '@styles/theme';
 import { getAllInvestments, deleteInvestment } from '@services/domain/investmentService';
 import { getAllTransactions, deleteTransaction } from '@services/domain/transactionService';
 import { getPriceHistory, deleteAllPriceHistory, addPriceHistory, deletePriceHistory } from '@services/domain/priceHistoryService';
 import { getDividendHistory, deleteAutoDividendHistory, deleteDividendHistory } from '@services/domain/dividendHistoryService';
 import { getAllAssets } from '@services/domain/assetService';
 import { AssetRequest } from '@services/integrations/geminiService';
-import { SEVERITY_ICON } from '@utils/severity';
 import { EmptyState } from '@components/common/EmptyState';
 import { refreshAssetPrices, refreshAssetDividends } from '@services/domain/marketDataService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
@@ -46,6 +48,22 @@ interface HistoryItem {
 
 type TabType = 'POSITIONS' | 'PRICES' | 'DIVIDENDS';
 
+const TABS: { key: TabType; label: string }[] = [
+    { key: 'POSITIONS', label: 'Positions' },
+    { key: 'PRICES', label: 'Prices' },
+    { key: 'DIVIDENDS', label: 'Dividends' },
+];
+
+const POSITION_LABELS: Record<HistoryItem['type'], string> = {
+    BUY: 'Buy',
+    SELL: 'Sell',
+    DIVIDEND: 'Dividend',
+    CAPITAL_GAIN: 'Realized gain',
+    CAPITAL_LOSS: 'Realized loss',
+};
+
+const MINUS = '\u2212';
+
 export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     visible,
     onClose,
@@ -53,7 +71,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     currency,
     onDataChange
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { isPrivacyEnabled } = usePrivacy();
     // Detail sheets follow the privacy mode too: Discreet and Hidden both mask amounts here.
     const money = (...args: Parameters<typeof formatCurrencyAmount>) => (isPrivacyEnabled ? '****' : formatCurrencyAmount(...args));
@@ -465,41 +483,42 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     const renderRightActions = (onDelete: () => void) => {
         return (
             <TouchableOpacity
-                style={styles.deleteAction}
+                style={[styles.deleteAction, { backgroundColor: ds.danger }]}
                 onPress={onDelete}
             >
-                <Ionicons name="trash-outline" size={24} color="#FFF" />
+                <Ionicons name="trash-outline" size={20} color={ds.onAccent} />
             </TouchableOpacity>
         );
     };
 
-    const renderPositionsItem = ({ item }: { item: HistoryItem }) => {
-        const isGain = item.type === 'CAPITAL_GAIN';
-        const isLoss = item.type === 'CAPITAL_LOSS';
+    const renderDeleteButton = (onDelete: () => void) => (
+        <TouchableOpacity hitSlop={space[2]} onPress={onDelete} accessibilityLabel="Delete">
+            <Ionicons name="trash-outline" size={20} color={ds.danger} />
+        </TouchableOpacity>
+    );
 
-        let iconName: any = "help-circle";
-        let color = colors.text;
+    const renderPositionsItem = ({ item, index }: { item: HistoryItem; index: number }) => {
+        let iconName: IconName = "help-circle-outline";
+        let tone: Tone | undefined;
         let sign = '';
 
         if (item.type === 'BUY') {
             iconName = "arrow-up-circle-outline";
-            color = colors.success;
         } else if (item.type === 'SELL') {
             iconName = "arrow-down-circle-outline";
-            color = colors.error;
-            sign = '-';
+            sign = MINUS;
         } else if (item.type === 'DIVIDEND') {
             iconName = "gift-outline";
-            color = colors.primary;
+            tone = 'good';
             sign = '+';
-        } else if (isGain) {
-            iconName = "trending-up";
-            color = colors.success;
+        } else if (item.type === 'CAPITAL_GAIN') {
+            iconName = "trending-up-outline";
+            tone = 'good';
             sign = '+';
-        } else if (isLoss) {
-            iconName = "trending-down";
-            color = colors.error;
-            sign = '-';
+        } else if (item.type === 'CAPITAL_LOSS') {
+            iconName = "trending-down-outline";
+            tone = 'bad';
+            sign = MINUS;
         }
 
 
@@ -520,52 +539,32 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         }
 
         const displayAmount = money(displayAmountValue, displayCurrency);
+        const sharesLine = (item.shares !== undefined) && item.originalInvestment
+            ? ` · ${item.shares} @ ${money(
+                item.price
+                    ? (isConverted ? new BigNumber(item.price).dividedBy(rate) : item.price)
+                    : 0,
+                displayCurrency
+            )}`
+            : '';
 
         return (
-            <TouchableOpacity
-                style={[styles.itemContainer, { backgroundColor: colors.surface, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.border }]}
-                onPress={() => handlePositionPress(item)}
-                disabled={!item.originalInvestment}
-            >
-                <View style={[styles.iconContainer, { backgroundColor: color + '15' }]}>
-                    <Ionicons name={iconName} size={20} color={color} />
-                </View>
-
-                <View style={styles.itemLeft}>
-                    <Text style={[styles.itemType, { color: colors.text }]}>
-                        {item.type === 'CAPITAL_GAIN' ? 'Realized Gain' :
-                            item.type === 'CAPITAL_LOSS' ? 'Realized Loss' :
-                                item.type.replace('_', ' ')}
-                    </Text>
-                    <Text style={[styles.itemDate, { color: colors.textSecondary }]}>
-                        {new Date(item.date).toLocaleDateString()}
-                        {(item.shares !== undefined) && item.originalInvestment && (
-                            <Text> • {item.shares} @ {money(
-                                item.price
-                                    ? (isConverted ? new BigNumber(item.price).dividedBy(rate) : item.price)
-                                    : 0,
-                                displayCurrency
-                            )}</Text>
-                        )}
-                    </Text>
-                </View>
-
-                <View style={styles.itemRight}>
-                    <Text style={[styles.itemAmount, { color: color }]}>
-                        {sign}{displayAmount}
-                    </Text>
-                </View>
-
-                {item.originalInvestment && (
-                    <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} style={{ marginLeft: 8 }} />
-                )}
-            </TouchableOpacity>
+            <Row
+                icon={iconName}
+                title={POSITION_LABELS[item.type]}
+                subtitle={`${new Date(item.date).toLocaleDateString()}${sharesLine}`}
+                value={`${sign}${displayAmount}`}
+                valueTone={tone}
+                chevron={!!item.originalInvestment}
+                onPress={item.originalInvestment ? () => handlePositionPress(item) : undefined}
+                last={index === transactions.length - 1}
+            />
         );
     };
 
 
 
-    const renderPriceItem = ({ item }: { item: PriceHistory }) => {
+    const renderPriceItem = ({ item, index }: { item: PriceHistory; index: number }) => {
         const isManual = item.source === 'MANUAL';
         const isAiFetch = item.source === 'AI_FETCH';
         const canDelete = isManual || isAiFetch;
@@ -575,12 +574,8 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         let displayCurrency = currency;
 
         if (asset && asset.currency && asset.currency !== currency) {
-            // Check if we have a valid exchange rate to convert back
+            // A rate of 1 carries no conversion info, so only convert back to native when it isn't 1.
             const rate = item.exchangeRate ? new BigNumber(item.exchangeRate) : new BigNumber(1);
-
-            // Only convert if rate is NOT 1 (implies conversion happened or explicit rate exists)
-            // If rate is 1, we assume parity or default (no conversion info), so likely safer to show stored info OR shows stored info is 1:1.
-            // But user requested "compute to native".
             if (!rate.isEqualTo(1)) {
                 displayPrice = item.price.dividedBy(rate);
                 displayCurrency = asset.currency;
@@ -588,39 +583,22 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         }
 
         const content = (
-            <TouchableOpacity
-                style={[styles.itemContainer, { backgroundColor: colors.surface, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.border }]}
+            // Long-press edits manual entries; the inner Row has no onPress, so it leaves touches to this.
+            <Pressable
+                style={{ backgroundColor: ds.sheet }}
                 disabled={!isManual}
                 onLongPress={() => isManual && handleEditPrice(item)}
                 delayLongPress={500}
             >
-                <View style={[styles.iconContainer, { backgroundColor: colors.primary + '15' }]}>
-                    {item.source === 'AI_FETCH' ? (
-                        <Ionicons name="sparkles" size={18} color={colors.primary} />
-                    ) : (
-                        <Ionicons name="pricetag-outline" size={18} color={colors.primary} />
-                    )}
-                </View>
-
-                <View style={styles.itemLeft}>
-                    <Text style={[styles.itemType, { color: colors.text }]}>
-                        {money(displayPrice.toNumber(), displayCurrency)}
-                    </Text>
-                    <Text style={[styles.itemDate, { color: colors.textSecondary }]}>
-                        {new Date(item.timestamp).toLocaleDateString()}
-                        {item.high && item.low && ` • H: ${item.high.toNumber()} L: ${item.low.toNumber()}`}
-                    </Text>
-                </View>
-
-                {canDelete && (
-                    <TouchableOpacity
-                        style={{ padding: 8, marginLeft: 8 }}
-                        onPress={() => handleDeletePrice(item.id)}
-                    >
-                        <Ionicons name="trash-outline" size={20} color={colors.error} />
-                    </TouchableOpacity>
-                )}
-            </TouchableOpacity>
+                <Row
+                    icon={isAiFetch ? 'sparkles-outline' : 'pricetag-outline'}
+                    title={new Date(item.timestamp).toLocaleDateString()}
+                    subtitle={item.high && item.low ? `H: ${item.high.toNumber()} L: ${item.low.toNumber()}` : undefined}
+                    value={money(displayPrice.toNumber(), displayCurrency)}
+                    trailing={canDelete ? renderDeleteButton(() => handleDeletePrice(item.id)) : undefined}
+                    last={index === filteredPrices.length - 1}
+                />
+            </Pressable>
         );
 
         if (canDelete) {
@@ -634,51 +612,28 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         return content;
     };
 
-    const renderDividendItem = ({ item }: { item: DividendHistory }) => {
+    const renderDividendItem = ({ item, index }: { item: DividendHistory; index: number }) => {
         const isManual = item.source === 'MANUAL';
         const isAiFetch = item.source === 'AI_FETCH';
         const canDelete = isManual || isAiFetch;
 
         const content = (
-            <TouchableOpacity
-                style={[styles.itemContainer, { backgroundColor: colors.surface, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.border }]}
+            <Pressable
+                style={{ backgroundColor: ds.sheet }}
                 disabled={!isManual}
                 onLongPress={() => isManual && handleEditDividend(item)}
                 delayLongPress={500}
             >
-                <View style={[styles.iconContainer, { backgroundColor: colors.success + '15' }]}>
-                    {item.source === 'AI_FETCH' ? (
-                        <Ionicons name="sparkles" size={18} color={colors.success} />
-                    ) : (
-                        <Ionicons name="cash-outline" size={18} color={colors.success} />
-                    )}
-                </View>
-
-                <View style={styles.itemLeft}>
-                    <Text style={[styles.itemType, { color: colors.text }]}>
-                        {money(item.amount.toNumber(), currency)}
-                    </Text>
-                    <Text style={[styles.itemDate, { color: colors.textSecondary }]}>
-                        Ex: {new Date(item.exDate).toLocaleDateString()}
-                        {item.paymentDate && ` • Pay: ${new Date(item.paymentDate).toLocaleDateString()}`}
-                    </Text>
-                </View>
-
-                <View style={styles.itemRight}>
-                    <View style={{ backgroundColor: colors.success + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
-                        <Text style={{ color: colors.success, fontSize: 10, fontWeight: 'bold' }}>{item.type}</Text>
-                    </View>
-                </View>
-
-                {canDelete && (
-                    <TouchableOpacity
-                        style={{ padding: 8, marginLeft: 8 }}
-                        onPress={() => handleDeleteDividend(item.id)}
-                    >
-                        <Ionicons name="trash-outline" size={20} color={colors.error} />
-                    </TouchableOpacity>
-                )}
-            </TouchableOpacity>
+                <Row
+                    icon={isAiFetch ? 'sparkles-outline' : 'cash-outline'}
+                    title={`Ex ${new Date(item.exDate).toLocaleDateString()}`}
+                    subtitle={item.paymentDate ? `Pay ${new Date(item.paymentDate).toLocaleDateString()}` : undefined}
+                    value={money(item.amount.toNumber(), currency)}
+                    change={item.type.charAt(0) + item.type.slice(1).toLowerCase()}
+                    trailing={canDelete ? renderDeleteButton(() => handleDeleteDividend(item.id)) : undefined}
+                    last={index === filteredDividends.length - 1}
+                />
+            </Pressable>
         );
 
         if (canDelete) {
@@ -692,22 +647,51 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         return content;
     };
 
-    const renderTabButton = (tab: TabType, label: string) => (
-        <TouchableOpacity
-            style={[
-                styles.tabButton,
-                activeTab === tab && { backgroundColor: colors.primary }
-            ]}
-            onPress={() => setActiveTab(tab)}
-        >
-            <Text style={[
-                styles.tabText,
-                { color: activeTab === tab ? '#FFF' : colors.text }
-            ]}>
-                {label}
-            </Text>
-        </TouchableOpacity>
+    // Manual-only chip, add, AI fetch and clear actions above the Prices / Dividends lists.
+    const renderActionRow = (mode: 'price' | 'dividend', onAdd: () => void, onClear: () => void) => (
+        <View style={styles.actionRow}>
+            <Pressable
+                style={[styles.chip, showManualOnly && { backgroundColor: ds.inset }]}
+                onPress={() => setShowManualOnly(!showManualOnly)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: showManualOnly }}
+            >
+                <Text style={[type.smallMedium, { color: showManualOnly ? ds.text : ds.text2 }]}>Manual only</Text>
+            </Pressable>
+
+            <View style={styles.actionIcons}>
+                <TouchableOpacity hitSlop={space[2]} onPress={onAdd} accessibilityLabel="Add entry">
+                    <Ionicons name="add" size={20} color={ds.text2} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    hitSlop={space[2]}
+                    onPress={() => openFetchMenu(mode)}
+                    disabled={isFetching}
+                    accessibilityLabel="Fetch with AI"
+                >
+                    {isFetching && activeFetchMode === mode ? (
+                        <ActivityIndicator size="small" color={ds.accent} />
+                    ) : (
+                        <Ionicons name="cloud-download-outline" size={20} color={ds.text2} />
+                    )}
+                </TouchableOpacity>
+
+                <TouchableOpacity hitSlop={space[2]} onPress={onClear} accessibilityLabel="Clear history">
+                    <Ionicons name="trash-outline" size={20} color={ds.danger} />
+                </TouchableOpacity>
+            </View>
+        </View>
     );
+
+    const filteredPrices = priceHistory.filter(p => !showManualOnly || p.source === 'MANUAL');
+    const filteredDividends = dividendHistory.filter(d => !showManualOnly || d.source === 'MANUAL');
+    const fetchOptions = activeFetchMode === 'price'
+        ? ['Today', 'Last 3 days', 'Last 7 days', 'Last 14 days', 'Last 31 days']
+        : Array.from({ length: 5 }, (_, i) => {
+            const currentYear = new Date().getFullYear();
+            return i === 0 ? 'This Year' : (currentYear - i).toString();
+        });
 
     return (
         <>
@@ -760,33 +744,25 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             <BottomModal
                 visible={visible}
                 onClose={onClose}
-                title={`${symbol} History`}
+                title={`${symbol} history`}
                 maxHeight="85%"
             >
                 <View style={styles.content}>
-
-                    <View style={[styles.tabContainer, { backgroundColor: 'rgba(0,0,0,0.05)' }]}>
-                        {renderTabButton('POSITIONS', 'Positions')}
-                        {renderTabButton('PRICES', 'Prices')}
-                        {renderTabButton('DIVIDENDS', 'Dividends')}
-                    </View>
+                    <SegmentedControl options={TABS} value={activeTab} onChange={setActiveTab} />
 
                     {activeTab === 'POSITIONS' && (
-                        <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
-                            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Realized P/L</Text>
-                            <Text style={[
-                                styles.summaryValue,
-                                { color: realizedPL >= 0 ? colors.success : colors.error }
-                            ]}>
+                        <View style={styles.summary}>
+                            <Text style={[type.small, { color: ds.text2 }]}>Realized P/L</Text>
+                            <Text style={[type.titleNum, { color: realizedPL >= 0 ? ds.success : ds.danger }]}>
                                 {realizedPL >= 0 ? '+' : ''}{money(realizedPL, currency)}
                             </Text>
                         </View>
                     )}
 
                     {isLoading ? (
-                        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+                        <ActivityIndicator size="large" color={ds.accent} style={styles.loading} />
                     ) : (
-                        <View style={{ flex: 1 }}>
+                        <View style={styles.fill}>
                             {activeTab === 'POSITIONS' && (
                                 <FlatList
                                     data={transactions}
@@ -799,47 +775,10 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                 />
                             )}
                             {activeTab === 'PRICES' && (
-                                <View style={{ flex: 1 }}>
-                                    <View style={styles.actionRow}>
-                                        <TouchableOpacity
-                                            style={styles.filterButton}
-                                            onPress={() => setShowManualOnly(!showManualOnly)}
-                                        >
-                                            <Ionicons
-                                                name={showManualOnly ? "checkbox" : "square-outline"}
-                                                size={20}
-                                                color={colors.primary}
-                                            />
-                                            <Text style={[styles.filterText, { color: colors.text }]}>Manual</Text>
-                                        </TouchableOpacity>
-
-                                        <View style={{ flexDirection: 'row', gap: 4 }}>
-                                            <TouchableOpacity
-                                                style={styles.actionBtn}
-                                                onPress={handleAddPrice}
-                                            >
-                                                <Ionicons name="add" size={18} color={colors.success} />
-                                            </TouchableOpacity>
-
-                                            <TouchableOpacity
-                                                style={styles.actionBtn}
-                                                onPress={() => openFetchMenu('price')}
-                                                disabled={isFetching}
-                                            >
-                                                {isFetching && activeFetchMode === 'price' ? (
-                                                    <ActivityIndicator size="small" color={colors.primary} />
-                                                ) : (
-                                                    <Ionicons name="cloud-download-outline" size={18} color={colors.primary} />
-                                                )}
-                                            </TouchableOpacity>
-
-                                            <TouchableOpacity style={styles.actionBtn} onPress={handleClearPrices}>
-                                                <Ionicons name="trash-outline" size={18} color={colors.error} />
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
+                                <View style={styles.fill}>
+                                    {renderActionRow('price', handleAddPrice, handleClearPrices)}
                                     <FlatList
-                                        data={priceHistory.filter(p => !showManualOnly || p.source === 'MANUAL')}
+                                        data={filteredPrices}
                                         renderItem={renderPriceItem}
                                         keyExtractor={item => item.id}
                                         contentContainerStyle={styles.listContent}
@@ -854,47 +793,10 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                 </View>
                             )}
                             {activeTab === 'DIVIDENDS' && (
-                                <View style={{ flex: 1 }}>
-                                    <View style={styles.actionRow}>
-                                        <TouchableOpacity
-                                            style={styles.filterButton}
-                                            onPress={() => setShowManualOnly(!showManualOnly)}
-                                        >
-                                            <Ionicons
-                                                name={showManualOnly ? "checkbox" : "square-outline"}
-                                                size={20}
-                                                color={colors.primary}
-                                            />
-                                            <Text style={[styles.filterText, { color: colors.text }]}>Manual</Text>
-                                        </TouchableOpacity>
-
-                                        <View style={{ flexDirection: 'row', gap: 4 }}>
-                                            <TouchableOpacity
-                                                style={styles.actionBtn}
-                                                onPress={handleAddDividend}
-                                            >
-                                                <Ionicons name="add" size={18} color={colors.success} />
-                                            </TouchableOpacity>
-
-                                            <TouchableOpacity
-                                                style={styles.actionBtn}
-                                                onPress={() => openFetchMenu('dividend')}
-                                                disabled={isFetching}
-                                            >
-                                                {isFetching && activeFetchMode === 'dividend' ? (
-                                                    <ActivityIndicator size="small" color={colors.primary} />
-                                                ) : (
-                                                    <Ionicons name="cloud-download-outline" size={18} color={colors.primary} />
-                                                )}
-                                            </TouchableOpacity>
-
-                                            <TouchableOpacity style={styles.actionBtn} onPress={handleClearAutoDividends}>
-                                                <Ionicons name="trash-outline" size={18} color={colors.error} />
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
+                                <View style={styles.fill}>
+                                    {renderActionRow('dividend', handleAddDividend, handleClearAutoDividends)}
                                     <FlatList
-                                        data={dividendHistory.filter(d => !showManualOnly || d.source === 'MANUAL')}
+                                        data={filteredDividends}
                                         renderItem={renderDividendItem}
                                         keyExtractor={item => item.id}
                                         contentContainerStyle={styles.listContent}
@@ -939,68 +841,21 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             <BottomModal
                 visible={isFetchMenuVisible}
                 onClose={() => setIsFetchMenuVisible(false)}
-                title={`Fetch ${activeFetchMode === 'price' ? 'Prices' : 'Dividends'}`}
+                title={`Fetch ${activeFetchMode === 'price' ? 'prices' : 'dividends'}`}
             >
-                <View>
-                    <View style={{ backgroundColor: colors.warning + '15', padding: 12, borderRadius: 8, marginBottom: 15, flexDirection: 'row' }}>
-                        <Ionicons name={SEVERITY_ICON.warning} size={20} color={colors.warning} style={{ marginRight: 8, marginTop: 2 }} />
-                        <Text style={{ color: colors.text, fontSize: 13, flex: 1, lineHeight: 18 }}>
-                            AI-fetched {activeFetchMode === 'price' ? 'prices' : 'dividends'} are estimates and may vary from real-time official records.
-                        </Text>
-                    </View>
-
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 12, overflow: 'hidden' }}>
-
-                        {activeFetchMode === 'price' ? (
-                            ['Today', 'Last 3 days', 'Last 7 days', 'Last 14 days', 'Last 31 days'].map((item, index, arr) => (
-                                <TouchableOpacity
-                                    key={item}
-                                    style={{
-                                        padding: 16,
-                                        flexDirection: 'row',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        borderBottomWidth: index < arr.length - 1 ? 1 : 0,
-                                        borderBottomColor: colors.border
-                                    }}
-                                    onPress={() => executeFetch(item)}
-                                >
-                                    <Text style={{ color: colors.text, fontSize: 16 }}>{item}</Text>
-                                    <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
-                                </TouchableOpacity>
-                            ))
-
-                        ) : (
-                            (() => {
-                                const currentYear = new Date().getFullYear();
-                                const years = [];
-                                for (let i = 0; i < 5; i++) {
-                                    years.push(currentYear - i);
-                                }
-
-                                return years.map((year, index, arr) => {
-                                    const label = year === currentYear ? 'This Year' : year.toString();
-                                    return (
-                                        <TouchableOpacity
-                                            key={year}
-                                            style={{
-                                                padding: 16,
-                                                flexDirection: 'row',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                borderBottomWidth: index < arr.length - 1 ? 1 : 0,
-                                                borderBottomColor: colors.border
-                                            }}
-                                            onPress={() => executeFetch(label)}
-                                        >
-                                            <Text style={{ color: colors.text, fontSize: 16 }}>{label}</Text>
-                                            <Ionicons name="cloud-download-outline" size={20} color={colors.primary} />
-                                        </TouchableOpacity>
-                                    );
-                                });
-                            })()
-                        )}
-                    </View>
+                <Disclaimer severity="warning">
+                    AI-fetched {activeFetchMode === 'price' ? 'prices' : 'dividends'} are estimates and may vary from real-time official records.
+                </Disclaimer>
+                <View style={styles.fetchList}>
+                    {fetchOptions.map((label, i) => (
+                        <Row
+                            key={label}
+                            icon="cloud-download-outline"
+                            title={label}
+                            onPress={() => executeFetch(label)}
+                            last={i === fetchOptions.length - 1}
+                        />
+                    ))}
                 </View>
             </BottomModal>
         </>
@@ -1012,121 +867,43 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '90%',
     },
-    tabContainer: {
-        flexDirection: 'row',
-        padding: 4,
-        borderRadius: 8,
-        marginBottom: 16,
+    summary: {
+        marginTop: space[4],
+        marginBottom: space[2],
     },
-    tabButton: {
+    loading: {
+        marginTop: space[5],
+    },
+    fill: {
         flex: 1,
-        paddingVertical: 8,
-        alignItems: 'center',
-        borderRadius: 6,
-    },
-    tabText: {
-        fontSize: 13,
-        fontWeight: '600',
-    },
-    summaryCard: {
-        padding: 16,
-        borderRadius: 12,
-        marginBottom: 16,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.05)'
-    },
-    summaryLabel: {
-        fontSize: 14,
-        marginBottom: 4,
-    },
-    summaryValue: {
-        fontSize: 24,
-        fontWeight: 'bold',
     },
     listContent: {
-        paddingBottom: 20
-    },
-    itemContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-    },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    itemLeft: {
-        flex: 1,
-    },
-    itemRight: {
-        alignItems: 'flex-end',
-        justifyContent: 'center'
-    },
-    itemType: {
-        fontSize: 16,
-        fontWeight: '600',
-        textTransform: 'capitalize',
-        marginBottom: 2,
-    },
-    itemDate: {
-        fontSize: 12,
-    },
-    itemDetails: {
-        fontSize: 12,
-        marginTop: 2
-    },
-    itemSubDetail: {
-        fontSize: 10,
-        marginTop: 2
-    },
-    itemAmount: {
-        fontSize: 15,
-        fontWeight: '700',
-    },
-    emptyText: {
-        textAlign: 'center',
-        marginTop: 20,
-        fontSize: 14
+        paddingBottom: space[5],
     },
     actionRow: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
-        gap: 8,
+        marginTop: space[4],
+        marginBottom: space[2],
     },
-    filterButton: {
+    chip: {
+        paddingVertical: 6,
+        paddingHorizontal: space[3],
+        borderRadius: radius.sm,
+    },
+    actionIcons: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        padding: 8,
-    },
-    filterText: {
-        fontSize: 14,
-        fontWeight: '500',
-    },
-    actionBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 8,
-        gap: 4
-    },
-    actionBtnText: {
-        fontSize: 14,
-        fontWeight: '600'
+        gap: space[5],
     },
     deleteAction: {
-        backgroundColor: '#FF3B30',
         justifyContent: 'center',
         alignItems: 'center',
         width: 80,
         height: '100%',
-    }
+    },
+    fetchList: {
+        marginTop: space[2],
+    },
 });

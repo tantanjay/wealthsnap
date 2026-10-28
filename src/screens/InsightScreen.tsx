@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, ScrollView, TouchableOpacity, Text, RefreshControl, StyleSheet, Pressable } from 'react-native';
+import { View, ScrollView, Text, RefreshControl, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -34,7 +34,7 @@ import * as Storage from '@services/core/storageService';
 import { getCachedTransactions } from '@services/domain/transactionService';
 
 const InsightScreen = ({ navigation }: any) => {
-    const { colors, ds } = useTheme();
+    const { ds } = useTheme();
     const { isPrivacyEnabled, mode } = usePrivacy();
     const { checkConsent } = useAIConsent();
     const [currency, setCurrency] = useState('PHP');
@@ -499,71 +499,54 @@ const InsightScreen = ({ navigation }: any) => {
             <BottomModal
                 visible={isDatePickerVisible}
                 onClose={() => setIsDatePickerVisible(false)}
-                title="Select Month & Year"
+                title="Select month and year"
                 maxHeight="60%"
             >
-                <View style={{ padding: 16 }}>
-                    {/* Year Selector */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                        <TouchableOpacity
-                            onPress={() => setPickerYear(prev => prev - 1)}
-                            disabled={pickerYear <= availableRange.minYear}
-                            style={{ padding: 10, opacity: pickerYear <= availableRange.minYear ? 0.2 : 1 }}
-                        >
-                            <Ionicons name="chevron-back" size={28} color={colors.primary} />
-                        </TouchableOpacity>
+                <View style={styles.yearRow}>
+                    <Pressable
+                        onPress={() => setPickerYear(prev => prev - 1)}
+                        disabled={pickerYear <= availableRange.minYear}
+                        accessibilityLabel="Previous year"
+                        hitSlop={space[2]}
+                        style={styles.monthArrow}
+                    >
+                        <Ionicons name="chevron-back" size={22} color={pickerYear <= availableRange.minYear ? ds.text3 : ds.accent} />
+                    </Pressable>
+                    <Text style={[type.titleNum, { color: ds.text }]}>{pickerYear}</Text>
+                    <Pressable
+                        onPress={() => setPickerYear(prev => prev + 1)}
+                        disabled={pickerYear >= availableRange.maxYear}
+                        accessibilityLabel="Next year"
+                        hitSlop={space[2]}
+                        style={styles.monthArrow}
+                    >
+                        <Ionicons name="chevron-forward" size={22} color={pickerYear >= availableRange.maxYear ? ds.text3 : ds.accent} />
+                    </Pressable>
+                </View>
 
-                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text }}>{pickerYear}</Text>
+                <View style={styles.monthGrid}>
+                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
+                        const isSelected = selectedDate.getMonth() === index && selectedDate.getFullYear() === pickerYear;
+                        const isFuture = pickerYear > availableRange.maxYear || (pickerYear === availableRange.maxYear && index > availableRange.maxMonth);
+                        const isBeforeStart = pickerYear < availableRange.minYear || (pickerYear === availableRange.minYear && index < availableRange.minMonth);
+                        const isDisabled = isFuture || isBeforeStart;
 
-                        <TouchableOpacity
-                            onPress={() => setPickerYear(prev => prev + 1)}
-                            disabled={pickerYear >= availableRange.maxYear}
-                            style={{ padding: 10, opacity: pickerYear >= availableRange.maxYear ? 0.2 : 1 }}
-                        >
-                            <Ionicons name="chevron-forward" size={28} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Months Grid */}
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-                        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
-                            const isSelected = selectedDate.getMonth() === index && selectedDate.getFullYear() === pickerYear;
-                            const isFuture = pickerYear > availableRange.maxYear || (pickerYear === availableRange.maxYear && index > availableRange.maxMonth);
-                            const isBeforeStart = pickerYear < availableRange.minYear || (pickerYear === availableRange.minYear && index < availableRange.minMonth);
-                            const isDisabled = isFuture || isBeforeStart;
-
-                            return (
-                                <TouchableOpacity
-                                    key={month}
-                                    onPress={() => {
-                                        setSelectedDate(new Date(pickerYear, index, 1));
-                                        setIsDatePickerVisible(false);
-                                    }}
-                                    disabled={isDisabled}
-                                    style={{
-                                        width: '22%',
-                                        paddingVertical: 14,
-                                        borderRadius: 12,
-                                        backgroundColor: isSelected ? colors.primary : colors.surface,
-                                        borderWidth: 1,
-                                        borderColor: isSelected ? colors.primary : colors.border,
-                                        alignItems: 'center',
-                                        opacity: isDisabled ? 0.15 : 1
-                                    }}
-                                >
-                                    <Text style={{
-                                        color: isSelected ? '#fff' : isDisabled ? colors.textSecondary : colors.text,
-                                        fontWeight: isSelected ? 'bold' : '500',
-                                        fontSize: 14
-                                    }}>
-                                        {month}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
-
-                    <View style={{ height: 20 }} />
+                        return (
+                            <Pressable
+                                key={month}
+                                onPress={() => {
+                                    setSelectedDate(new Date(pickerYear, index, 1));
+                                    setIsDatePickerVisible(false);
+                                }}
+                                disabled={isDisabled}
+                                style={[styles.monthCell, { backgroundColor: isSelected ? ds.accent : ds.inset }]}
+                            >
+                                <Text style={[isSelected ? type.bodyStrong : type.body, { color: isSelected ? ds.onAccent : isDisabled ? ds.text3 : ds.text }]}>
+                                    {month}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
                 </View>
             </BottomModal>
         </ScreenWrapper>
@@ -621,6 +604,24 @@ const styles = StyleSheet.create({
     },
     sections: {
         marginTop: space[6],
+    },
+    yearRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: space[4],
+    },
+    monthGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: space[3],
+        justifyContent: 'center',
+    },
+    monthCell: {
+        width: '22%',
+        paddingVertical: space[3],
+        borderRadius: radius.md,
+        alignItems: 'center',
     },
 });
 

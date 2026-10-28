@@ -1,12 +1,13 @@
 import React from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 
 import BottomModal from '@components/common/BottomModal';
+import { ProgressBar, Row, Tone, toneColor } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { Budget } from '@types';
 import { checkBudgetStatus } from '@services/domain/budgetService';
+import { type, space, radius } from '@styles/theme';
 import { formatCompactCurrency } from '@utils/currencyUtils';
 
 interface AllExpensesModalProps {
@@ -24,6 +25,15 @@ interface AllExpensesModalProps {
     onSelectCategory: (category: string) => void;
 }
 
+// Same slice colors as the spending pie in ExpenseAnalysis, so each dot maps to its slice.
+const CHART_COLORS = [
+    '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
+    '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50'
+];
+
+const budgetTone = (status: string): Exclude<Tone, 'neutral'> =>
+    status === 'over' ? 'bad' : status === 'warning' ? 'warning' : 'good';
+
 const AllExpensesModal: React.FC<AllExpensesModalProps> = ({
     visible,
     onClose,
@@ -33,95 +43,75 @@ const AllExpensesModal: React.FC<AllExpensesModalProps> = ({
     isPrivacyEnabled,
     onSelectCategory
 }) => {
-    const { colors } = useTheme();
-
-    // Fixed colors for categories to match main view
-    const CHART_COLORS = [
-        '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
-        '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50'
-    ];
+    const { ds } = useTheme();
 
     return (
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="All Spending Categories"
+            title="All spending categories"
             subtitle="Full breakdown of your expenses"
         >
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+            <ScrollView showsVerticalScrollIndicator={false}>
                 {categoryBreakdown.map((item, index) => {
                     const budget = budgets.find(b => b.category === item.name);
                     const budgetStatus = budget ? checkBudgetStatus(item.amount.minus(item.goalFundedAmount ?? 0), budget.amount) : null;
+                    const tone = budgetStatus ? budgetTone(budgetStatus.status) : 'good';
 
                     return (
-                        <View key={index} style={{ marginBottom: 16 }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: CHART_COLORS[index % CHART_COLORS.length], marginRight: 10 }} />
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ color: colors.text, fontSize: 14 }}>{item.name}</Text>
-                                        {item.goalFundedAmount?.isGreaterThan(0) && (
-                                            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>
-                                                {isPrivacyEnabled ? '***' : formatCompactCurrency(item.goalFundedAmount, currency)} from goals
-                                            </Text>
-                                        )}
-                                    </View>
-                                </View>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                                    <View style={{ alignItems: 'flex-end' }}>
-                                        <Text style={{ color: colors.text, fontWeight: 'bold' }}>
-                                            {isPrivacyEnabled ? '***' : formatCompactCurrency(item.amount, currency)}
+                        <Row
+                            key={index}
+                            leading={<View style={[styles.dot, { backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }]} />}
+                            title={item.name}
+                            subtitle={item.goalFundedAmount?.isGreaterThan(0)
+                                ? `${isPrivacyEnabled ? '***' : formatCompactCurrency(item.goalFundedAmount, currency)} from goals`
+                                : undefined}
+                            value={isPrivacyEnabled ? '***' : formatCompactCurrency(item.amount, currency)}
+                            change={`${item.percentage.toFixed(1)}%`}
+                            chevron={!isPrivacyEnabled}
+                            onPress={isPrivacyEnabled ? undefined : () => {
+                                onSelectCategory(item.name);
+                                onClose();
+                            }}
+                            last={index === categoryBreakdown.length - 1}
+                        >
+                            {budget && budgetStatus && !isPrivacyEnabled && (
+                                <View style={styles.budget}>
+                                    <View style={styles.budgetLine}>
+                                        <Text style={[type.captionNum, { color: ds.text2 }]}>
+                                            Budget {formatCompactCurrency(budget.amount, currency)}
                                         </Text>
-                                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{item.percentage.toFixed(1)}%</Text>
-                                    </View>
-                                    {!isPrivacyEnabled && (
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                onSelectCategory(item.name);
-                                                onClose();
-                                            }}
-                                            style={{
-                                                padding: 6,
-                                                backgroundColor: colors.primary + '20',
-                                                borderRadius: 6
-                                            }}
-                                        >
-                                            <Ionicons name="trending-up" size={16} color={colors.primary} />
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
-                            </View>
-
-                            {/* Budget Progress Bar */}
-                            {budget && !isPrivacyEnabled && (
-                                <View style={{ marginTop: 4, paddingLeft: 20 }}>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
-                                        <Text style={{ fontSize: 10, color: colors.textSecondary }}>
-                                            Budget: {formatCompactCurrency(budget.amount, currency)}
-                                        </Text>
-                                        <Text style={{
-                                            fontSize: 10,
-                                            color: budgetStatus!.status === 'over' ? '#F44336' : budgetStatus!.status === 'warning' ? '#FF9800' : '#4CAF50',
-                                            fontWeight: '600'
-                                        }}>
-                                            {budgetStatus!.percentage.toFixed(0)}%
+                                        <Text style={[type.captionNum, type.captionMedium,{ color: toneColor(ds, tone) }]}>
+                                            {budgetStatus.percentage.toFixed(0)}%
                                         </Text>
                                     </View>
-                                    <View style={{ height: 4, backgroundColor: colors.surface, borderRadius: 2, overflow: 'hidden' }}>
-                                        <View style={{
-                                            height: '100%',
-                                            width: `${Math.min(budgetStatus!.percentage, 100)}%`,
-                                            backgroundColor: budgetStatus!.status === 'over' ? '#F44336' : budgetStatus!.status === 'warning' ? '#FF9800' : '#4CAF50'
-                                        }} />
-                                    </View>
+                                    <ProgressBar percent={budgetStatus.percentage} tone={tone} style={styles.bar} />
                                 </View>
                             )}
-                        </View>
+                        </Row>
                     );
                 })}
             </ScrollView>
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: radius.full,
+    },
+    budget: {
+        marginTop: space[2],
+    },
+    budgetLine: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    bar: {
+        marginTop: space[1],
+    },
+});
 
 export default AllExpensesModal;

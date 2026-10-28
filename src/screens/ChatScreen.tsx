@@ -7,7 +7,9 @@ import * as Clipboard from 'expo-clipboard';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import BottomModal from '@components/common/BottomModal';
+import { Disclaimer } from '@components/common/Disclaimer';
 import MarkdownMessage from '@components/common/MarkdownMessage';
+import { type, space, radius } from '@styles/theme';
 import { generateUUID } from '@utils/uuid';
 import {
     fetchChatContextInputs,
@@ -86,7 +88,7 @@ const pickRandomPrompts = (pool: string[], count: number): string[] => {
 const DEBT_BEHAVIOR_PROMPT = "Looking at all my debts - paid off, forgiven, or still active - what does that say about how I handle debt?";
 
 const ChatScreen = ({ navigation }: any) => {
-    const { colors } = useTheme();
+    const { colors, ds } = useTheme();
     const { showAlert } = useAlert();
     const insets = useSafeAreaInsets();
 
@@ -612,51 +614,17 @@ const ChatScreen = ({ navigation }: any) => {
                 <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
                     <TouchableOpacity
                         onPress={handleCopyContext}
-                        style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            alignSelf: 'flex-start',
-                            backgroundColor: colors.primary + '15',
-                            borderRadius: 20,
-                            paddingVertical: 8,
-                            paddingHorizontal: 14,
-                            marginBottom: 12
-                        }}
+                        hitSlop={space[2]}
+                        style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: space[1] }}
                     >
-                        <Ionicons name="copy-outline" size={16} color={colors.primary} />
-                        <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600', marginLeft: 6 }}>
-                            Copy Context
-                        </Text>
+                        <Ionicons name="copy-outline" size={16} color={ds.accent} />
+                        <Text style={[type.smallMedium, { color: ds.accent }]}>Copy context</Text>
                     </TouchableOpacity>
-                    <View style={{
-                        flexDirection: 'row',
-                        backgroundColor: colors.warning + '20',
-                        borderRadius: 10,
-                        padding: 10,
-                        marginBottom: 12,
-                        gap: 8
-                    }}>
-                        <Ionicons name="shield-outline" size={16} color={colors.textSecondary} style={{ marginTop: 1 }} />
-                        <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17, flex: 1 }}>
-                            This is your raw financial data. If you copy it elsewhere, only paste it into an AI service whose privacy policy you trust - WealthSnap has no control over how a third party handles it once copied.
-                        </Text>
-                    </View>
-                    <View style={{
-                        backgroundColor: colors.surface,
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        padding: 14
-                    }}>
-                        <Text
-                            selectable
-                            style={{
-                                color: colors.text,
-                                fontSize: 12,
-                                lineHeight: 18,
-                                fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' })
-                            }}
-                        >
+                    <Disclaimer severity="warning" style={{ marginTop: space[4] }}>
+                        This is your raw financial data. If you copy it elsewhere, only paste it into an AI service whose privacy policy you trust - WealthSnap has no control over how a third party handles it once copied.
+                    </Disclaimer>
+                    <View style={{ backgroundColor: ds.inset, borderRadius: radius.sm, padding: space[3], marginTop: space[4] }}>
+                        <Text selectable style={[type.smallNum, { color: ds.text }]}>
                             {selectedRange.ctx.contextText}
                         </Text>
                     </View>

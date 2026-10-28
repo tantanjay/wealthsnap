@@ -8,6 +8,7 @@ import { Picker } from '@react-native-picker/picker';
 import BottomModal from '@components/common/BottomModal';
 import { CalculatorModal } from '@components/record/CalculatorModal';
 import { Button, Card } from '@components/index';
+import { Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Investment, InvestmentType, InvestmentAction, Transaction, TransactionType, Asset } from '@types';
@@ -19,6 +20,7 @@ import { addPriceHistory } from '@services/domain/priceHistoryService';
 import { saveTransaction, getAllTransactions } from '@services/domain/transactionService';
 import { calculatePortfolioMetrics } from '@utils/investmentMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { type, space, radius } from '@styles/theme';
 
 interface InvestmentFormProps {
     investmentType: InvestmentType;
@@ -35,7 +37,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     onSave,
     onCancel
 }) => {
-    const { colors } = useTheme();
+    const { colors, ds } = useTheme();
     const { showAlert } = useAlert();
 
     // Helper to get initial values (converting back to native if needed)
@@ -846,79 +848,51 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                 maxHeight="85%"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 22, marginBottom: 20 }}>
+                    <Text style={[type.small, { color: ds.text2 }]}>
                         WealthSnap treats your finances as a connected ecosystem. When you buy or sell assets, money doesn&apos;t disappear—it moves.
                     </Text>
 
-                    {/* Visual Flow Diagram */}
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: colors.border }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' }}>🔄 The Money Flow</Text>
-
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <View style={{ alignItems: 'center', flex: 1 }}>
-                                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                                    <Ionicons name="cash-outline" size={24} color={colors.primary} />
-                                </View>
-                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>Cash / Bank</Text>
-                            </View>
-
-                            <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Ionicons name="swap-horizontal" size={24} color={colors.textSecondary} />
-                                <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 4 }}>Transaction</Text>
-                            </View>
-
-                            <View style={{ alignItems: 'center', flex: 1 }}>
-                                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#FFD700' + '20', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                                    <Ionicons name="bar-chart" size={24} color="#F59E0B" />
-                                </View>
-                                <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>Portfolio</Text>
-                            </View>
+                    {/* Money flow: Cash ⇄ Portfolio */}
+                    <View style={[styles.flow, { backgroundColor: ds.inset }]}>
+                        <View style={styles.flowNode}>
+                            <Ionicons name="cash-outline" size={20} color={ds.text2} />
+                            <Text style={[type.smallMedium, { color: ds.text }]}>Cash / bank</Text>
+                        </View>
+                        <View style={styles.flowNode}>
+                            <Ionicons name="swap-horizontal-outline" size={20} color={ds.text3} />
+                            <Text style={[type.caption, { color: ds.text2 }]}>Transaction</Text>
+                        </View>
+                        <View style={styles.flowNode}>
+                            <Ionicons name="bar-chart-outline" size={20} color={ds.text2} />
+                            <Text style={[type.smallMedium, { color: ds.text }]}>Portfolio</Text>
                         </View>
                     </View>
 
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 12 }}>What happens if checked?</Text>
+                    <SectionHeader title="What happens if checked?" />
+                    <Row
+                        icon="log-out-outline"
+                        title="Buying (transfer out)"
+                        subtitle={`We deduct cash from your "Transfer Account" so you don't double-count your net worth (Cash + Asset).`}
+                    />
+                    <Row
+                        icon="log-in-outline"
+                        title="Selling (transfer in)"
+                        subtitle={`Proceeds are added back to your cash balance. If you don't record this, the money effectively vanishes!`}
+                    />
+                    <Row
+                        icon="add-circle-outline"
+                        title="Dividends (income)"
+                        subtitle={`"New money" entering your ecosystem. We record this as Income.`}
+                        last
+                    />
 
-                    {/* Scenario: BUY */}
-                    <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-                        <View style={{ width: 4, backgroundColor: colors.success, borderRadius: 2, marginRight: 12 }} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Buying (Transfer Out)</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
-                                We deduct cash from your &quot;Transfer Account&quot; so you don&apos;t double-count your net worth (Cash + Asset).
-                            </Text>
-                        </View>
-                    </View>
-
-                    {/* Scenario: SELL */}
-                    <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-                        <View style={{ width: 4, backgroundColor: colors.error, borderRadius: 2, marginRight: 12 }} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Selling (Transfer In)</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
-                                Proceeds are added back to your cash balance. If you don&apos;t record this, the money effectively vanishes!
-                            </Text>
-                        </View>
-                    </View>
-
-                    {/* Scenario: DIVIDEND */}
-                    <View style={{ flexDirection: 'row', marginBottom: 24 }}>
-                        <View style={{ width: 4, backgroundColor: colors.primary, borderRadius: 2, marginRight: 12 }} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Dividends (Income)</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
-                                &quot;New money&quot; entering your ecosystem. We record this as Income.
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={{ backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8, flexDirection: 'row' }}>
-                        <Ionicons name="bulb-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-                        <Text style={{ color: colors.primary, fontSize: 12, flex: 1, lineHeight: 18 }}>
-                            <Text style={{ fontWeight: 'bold' }}>Pro Tip:</Text> Uncheck this box only if you are manually correcting old data or if the transaction was already recorded separately.
+                    <View style={styles.tip}>
+                        <Ionicons name="bulb-outline" size={20} color={ds.text2} />
+                        <Text style={[type.small, styles.tipText, { color: ds.text2 }]}>
+                            <Text style={[type.smallStrong, { color: ds.text }]}>Pro tip: </Text>
+                            Uncheck this box only if you are manually correcting old data or if the transaction was already recorded separately.
                         </Text>
                     </View>
-
-                    <View style={{ height: 40 }} />
                 </ScrollView>
             </BottomModal>
 
@@ -960,5 +934,25 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         flexDirection: 'row',
         gap: 12
-    }
+    },
+    flow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        borderRadius: radius.md,
+        padding: space[4],
+        marginTop: space[4],
+    },
+    flowNode: {
+        flex: 1,
+        alignItems: 'center',
+        gap: space[1],
+    },
+    tip: {
+        flexDirection: 'row',
+        gap: space[3],
+        marginTop: space[4],
+    },
+    tipText: {
+        flex: 1,
+    },
 });

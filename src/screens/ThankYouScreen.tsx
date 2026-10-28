@@ -9,6 +9,7 @@ import { DONORS, NAME_STYLES } from '@constants/thankyou';
 import { FlashList } from '@shopify/flash-list';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, withSequence } from 'react-native-reanimated';
 import BottomModal from '@components/common/BottomModal';
+import { space } from '@styles/theme';
 
 const stylesKeys = Object.keys(NAME_STYLES);
 
@@ -173,7 +174,7 @@ const ThankYouScreen = ({ navigation }: any) => {
             <BottomModal
                 visible={showList}
                 onClose={() => setShowList(false)}
-                title="Our Supporters"
+                title="Our supporters"
                 maxHeight="85%"
             >
                 <View style={{ height: height * 0.6, width: '100%' }}>
@@ -187,7 +188,7 @@ const ThankYouScreen = ({ navigation }: any) => {
                         )}
                         // @ts-ignore: estimatedItemSize is required for FlashList performance despite the TS error
                         estimatedItemSize={80}
-                        contentContainerStyle={{ paddingVertical: 20 }}
+                        contentContainerStyle={{ paddingVertical: space[5] }}
                         showsVerticalScrollIndicator={false}
                     />
                 </View>
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     donorItem: {
-        marginBottom: 10,
+        marginBottom: space[2],
         height: 80,
         justifyContent: 'center',
         alignItems: 'center',

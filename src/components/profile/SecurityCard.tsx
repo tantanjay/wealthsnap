@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, Pressable, Modal, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
 import BottomModal from '@components/common/BottomModal';
@@ -13,9 +12,10 @@ import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
 import { getAIConfig } from '@services/core/storageService';
 import * as Security from '@services/core/securityService';
+import { type, space, radius } from '@styles/theme';
 
 const SecurityCard = () => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { mode: privacyMode, revealForScreenshot } = usePrivacy();
     const { showAlert } = useAlert();
     // Discreet and Hidden already allow screenshots.
@@ -117,11 +117,11 @@ const SecurityCard = () => {
 
             {/* PIN Modal */}
             <Modal visible={showPinModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPinModal(false)}>
-                <View style={{ flex: 1, backgroundColor: colors.background, paddingVertical: 40, paddingHorizontal: 20 }}>
-                    <View style={{ alignItems: 'flex-end', marginBottom: 20 }}>
-                        <TouchableOpacity onPress={() => setShowPinModal(false)} style={{ padding: 10 }}>
-                            <Text style={{ color: colors.primary, fontSize: 16, fontWeight: 'bold' }}>Close</Text>
-                        </TouchableOpacity>
+                <View style={[styles.pinPage, { backgroundColor: ds.bg }]}>
+                    <View style={styles.pinHeader}>
+                        <Pressable onPress={() => setShowPinModal(false)} hitSlop={space[2]} accessibilityRole="button">
+                            <Text style={[type.bodyStrong, { color: ds.accent }]}>Close</Text>
+                        </Pressable>
                     </View>
                     <PinCreationScreen
                         onSuccess={() => {
@@ -137,37 +137,25 @@ const SecurityCard = () => {
             <BottomModal
                 visible={showTimeoutModal}
                 onClose={() => setShowTimeoutModal(false)}
-                title="Auto-Lock Timeout"
+                title="Auto-lock timeout"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <View style={{ gap: 8 }}>
-                        {Security.TIMEOUT_OPTIONS.map(opt => (
-                            <TouchableOpacity
+                    {Security.TIMEOUT_OPTIONS.map((opt, i) => {
+                        const selected = timeoutSetting === opt.value;
+                        return (
+                            <Row
                                 key={opt.value}
+                                title={opt.label}
+                                leading={
+                                    <View style={[styles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
+                                        {selected && <View style={[styles.radioDot, { backgroundColor: ds.accent }]} />}
+                                    </View>
+                                }
                                 onPress={() => handleSetTimeout(opt.value)}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    paddingVertical: 14,
-                                    paddingHorizontal: 4,
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: colors.border
-                                }}
-                            >
-                                <Text style={{
-                                    color: colors.text,
-                                    fontSize: 16,
-                                    fontWeight: timeoutSetting === opt.value ? '600' : '400'
-                                }}>
-                                    {opt.label}
-                                </Text>
-                                {timeoutSetting === opt.value && (
-                                    <Ionicons name="checkmark" size={20} color={colors.primary} />
-                                )}
-                            </TouchableOpacity>
-                        ))}
-                    </View>
+                                last={i === Security.TIMEOUT_OPTIONS.length - 1}
+                            />
+                        );
+                    })}
                 </ScrollView>
             </BottomModal>
 
@@ -187,5 +175,30 @@ const SecurityCard = () => {
         </>
     );
 };
+
+const styles = StyleSheet.create({
+    pinPage: {
+        flex: 1,
+        paddingVertical: space[7],
+        paddingHorizontal: space[5],
+    },
+    pinHeader: {
+        alignItems: 'flex-end',
+        marginBottom: space[5],
+    },
+    radio: {
+        width: 20,
+        height: 20,
+        borderRadius: radius.full,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    radioDot: {
+        width: 10,
+        height: 10,
+        borderRadius: radius.full,
+    },
+});
 
 export default SecurityCard;

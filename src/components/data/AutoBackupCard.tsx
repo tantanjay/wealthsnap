@@ -1,13 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, StyleSheet, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Switch, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import BottomModal from '@components/common/BottomModal';
-import { Button } from '@components/index';
 import { Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
-import { type, space } from '@styles/theme';
+import { type, space, radius } from '@styles/theme';
 import { useAlert } from '@context/AlertContext';
 import { useSecurity } from '@context/SecurityContext';
 import * as Security from '@services/core/securityService';
@@ -43,7 +42,7 @@ interface AutoBackupCardProps {
 }
 
 const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
-    const { colors, ds } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const { temporarilyDisableLock } = useSecurity();
 
@@ -205,41 +204,21 @@ const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
                 </>
             )}
 
-            {/* Frequency Selection Modal */}
             <BottomModal
                 visible={showFrequencyModal}
                 onClose={() => setShowFrequencyModal(false)}
-                title="Backup Frequency"
+                title="Backup frequency"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <View style={{ gap: 8 }}>
-                        {FREQUENCY_OPTIONS.map(opt => (
-                            <TouchableOpacity
-                                key={opt.value}
-                                onPress={() => handleSelectFrequency(opt.value)}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    paddingVertical: 14,
-                                    paddingHorizontal: 4,
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: colors.border
-                                }}
-                            >
-                                <Text style={{
-                                    color: colors.text,
-                                    fontSize: 16,
-                                    fontWeight: frequency === opt.value ? '600' : '400'
-                                }}>
-                                    {opt.label}
-                                </Text>
-                                {frequency === opt.value && (
-                                    <Ionicons name="checkmark" size={20} color={colors.primary} />
-                                )}
-                            </TouchableOpacity>
-                        ))}
-                    </View>
+                    {FREQUENCY_OPTIONS.map((opt, i) => (
+                        <Row
+                            key={opt.value}
+                            title={opt.label}
+                            leading={<Radio selected={frequency === opt.value} />}
+                            onPress={() => handleSelectFrequency(opt.value)}
+                            last={i === FREQUENCY_OPTIONS.length - 1}
+                        />
+                    ))}
                 </ScrollView>
             </BottomModal>
 
@@ -261,8 +240,17 @@ interface PasswordModalProps {
     onSubmit: (password: string) => void;
 }
 
+const Radio: React.FC<{ selected: boolean }> = ({ selected }) => {
+    const { ds } = useTheme();
+    return (
+        <View style={[styles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
+            {selected && <View style={[styles.radioDot, { backgroundColor: ds.accent }]} />}
+        </View>
+    );
+};
+
 const PasswordModal: React.FC<PasswordModalProps> = ({ visible, mode, onClose, onSubmit }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -290,59 +278,55 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ visible, mode, onClose, o
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title={mode === 'set' ? 'Set Backup Password' : 'Change Backup Password'}
+            title={mode === 'set' ? 'Set backup password' : 'Change backup password'}
             subtitle="Stored securely on this device so auto-backups can run in the background without asking you each time."
             dismissable={false}
+            footer={
+                <>
+                    <Pressable
+                        onPress={handleSubmit}
+                        disabled={isPasswordTooShort}
+                        style={[styles.button, { backgroundColor: ds.accent }, isPasswordTooShort && styles.disabled]}
+                        accessibilityRole="button"
+                    >
+                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Save</Text>
+                    </Pressable>
+                    <Pressable onPress={onClose} style={styles.textButton} accessibilityRole="button">
+                        <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
+                    </Pressable>
+                </>
+            }
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: 8,
-                    marginBottom: 12,
-                    backgroundColor: colors.surface
-                }}>
+                <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                    <Ionicons name="key-outline" size={18} color={ds.text2} />
                     <TextInput
-                        style={{ flex: 1, padding: 12, color: colors.text }}
+                        style={[type.body, styles.input, { color: ds.text }]}
                         placeholder="New password"
-                        placeholderTextColor={colors.gray500}
+                        placeholderTextColor={ds.text3}
                         secureTextEntry={!showPassword}
                         value={password}
                         onChangeText={setPassword}
                     />
-                    <TouchableOpacity
+                    <Pressable
                         onPressIn={() => setShowPassword(true)}
                         onPressOut={() => setShowPassword(false)}
-                        style={{ padding: 10 }}
+                        hitSlop={space[2]}
                     >
-                        <Ionicons name={showPassword ? 'eye' : 'eye-off'} size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
+                        <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={ds.text2} />
+                    </Pressable>
                 </View>
 
-                <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: 8,
-                    marginBottom: 20,
-                    backgroundColor: colors.surface
-                }}>
+                <View style={[styles.field, styles.fieldGap, { backgroundColor: ds.inset }]}>
+                    <Ionicons name="key-outline" size={18} color={ds.text2} />
                     <TextInput
-                        style={{ flex: 1, padding: 12, color: colors.text }}
+                        style={[type.body, styles.input, { color: ds.text }]}
                         placeholder="Confirm password"
-                        placeholderTextColor={colors.gray500}
+                        placeholderTextColor={ds.text3}
                         secureTextEntry={!showPassword}
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                     />
-                </View>
-
-                <View style={{ gap: 10 }}>
-                    <Button title="Save" onPress={handleSubmit} disabled={isPasswordTooShort} />
-                    <Button variant="outline" title="Cancel" onPress={onClose} />
                 </View>
             </ScrollView>
         </BottomModal>
@@ -352,6 +336,48 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ visible, mode, onClose, o
 const styles = StyleSheet.create({
     note: {
         paddingTop: space[3],
+    },
+    radio: {
+        width: 20,
+        height: 20,
+        borderRadius: radius.full,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    radioDot: {
+        width: 10,
+        height: 10,
+        borderRadius: radius.full,
+    },
+    field: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        padding: space[3],
+        borderRadius: radius.md,
+    },
+    fieldGap: {
+        marginTop: space[3],
+    },
+    input: {
+        flex: 1,
+        padding: 0,
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    disabled: {
+        opacity: 0.4,
+    },
+    textButton: {
+        height: 44,
+        marginTop: space[1],
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });
 

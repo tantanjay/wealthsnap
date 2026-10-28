@@ -6,10 +6,12 @@ import { BigNumber } from 'bignumber.js';
 import * as Clipboard from 'expo-clipboard';
 
 import { Button, Card } from '@components/index';
+import { Row, SectionHeader } from '@components/ds';
 import BottomModal from '@components/common/BottomModal';
 import { CalculatorModal } from '@components/record/CalculatorModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { type, space, radius } from '@styles/theme';
 import { Debt, DebtType, DebtDirection, DebtInterestType, Transaction, TransactionType } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveDebt } from '@services/domain/debtService';
@@ -34,7 +36,7 @@ const getAutoDirection = (type: DebtType): DebtDirection => {
 };
 
 export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, initialDebt, defaultType }) => {
-    const { colors } = useTheme();
+    const { colors, ds } = useTheme();
     const { showAlert } = useAlert();
 
     // Form State
@@ -679,88 +681,50 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                 maxHeight="85%"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 22, marginBottom: 20 }}>
+                    <Text style={[type.small, { color: ds.text2 }]}>
                         WealthSnap treats your finances as a connected ecosystem. To keep your Cash Balance accurate, please clarify the cash flow.
                     </Text>
 
-                    {/* The Core Question */}
-                    <View style={{ backgroundColor: colors.primary + '10', padding: 20, borderRadius: 16, marginBottom: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.primary + '30' }}>
-                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.primary, textAlign: 'center', marginBottom: 8 }}>
+                    {/* The core question */}
+                    <View style={[styles.question, { backgroundColor: ds.inset }]}>
+                        <Text style={[type.body, styles.questionText, { color: ds.text }]}>
                             {direction === 'PAYABLE'
                                 ? '"Did this money actually enter my bank account or wallet?"'
                                 : '"Did this money actually leave your bank account or wallet?"'}
                         </Text>
                     </View>
 
-                    {/* Option 1: YES */}
-                    <TouchableOpacity
+                    <SectionHeader title="Choose one" />
+                    <Row
+                        icon="wallet-outline"
+                        title={direction === 'PAYABLE' ? 'Yes, I received the cash' : 'Yes, I sent the cash'}
+                        subtitle={`Debt created + cash balance updated ${direction === 'PAYABLE' ? '(income)' : '(expense)'}`}
+                        chevron
                         onPress={() => finalSave(true, true)}
-                        style={{ flexDirection: 'row', marginBottom: 16, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}
-                    >
-                        <View style={{ alignItems: 'center', marginRight: 16, width: 40, paddingTop: 4 }}>
-                            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.success + '20', alignItems: 'center', justifyContent: 'center' }}>
-                                <Ionicons name="checkmark" size={20} color={colors.success} />
-                            </View>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>
-                                {direction === 'PAYABLE' ? 'YES, I received the cash.' : 'YES, I sent the cash.'}
-                            </Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
-                                Result: Debt Created + Cash Balance Updated {direction === 'PAYABLE' ? '(Income)' : '(Expense)'}
-                            </Text>
-                            <Text style={{ color: colors.success, fontSize: 12, fontWeight: 'bold', marginTop: 6 }}>TAP TO CONFIRM</Text>
-                        </View>
-                    </TouchableOpacity>
-
-                    {/* Option 2: NO (Direct) */}
-                    <TouchableOpacity
+                    />
+                    <Row
+                        icon="storefront-outline"
+                        title="No, it went straight to payment"
+                        subtitle="Debt created. Any fees entered are recorded as an expense."
+                        chevron
                         onPress={() => finalSave(false, true)}
-                        style={{ flexDirection: 'row', marginBottom: 16, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}
                     >
-                        <View style={{ alignItems: 'center', marginRight: 16, width: 40, paddingTop: 4 }}>
-                            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.error + '20', alignItems: 'center', justifyContent: 'center' }}>
-                                <Ionicons name="close-circle" size={20} color={colors.error} />
-                            </View>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>NO, it went straight to payment.</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
-                                Result: Debt Created. Fees recorded as Expense.
-                            </Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>
-                                {direction === 'PAYABLE' ? 'e.g. Car Loan / Renovation paid to vendor.' : 'e.g. paid a vendor directly on their behalf.'}
-                            </Text>
-                            <View style={{ marginTop: 6, backgroundColor: colors.surface, padding: 6, borderRadius: 6, borderWidth: 1, borderColor: colors.border }}>
-                                <Text style={{ fontSize: 11, color: colors.text, fontStyle: 'italic' }}>
-                                    Note: Any fees entered will be recorded as an expense.
-                                </Text>
-                            </View>
-                            <Text style={{ color: colors.error, fontSize: 12, fontWeight: 'bold', marginTop: 8 }}>TAP TO CONFIRM</Text>
-                        </View>
-                    </TouchableOpacity>
-
-                    {/* Option 3: NO (Untracked) */}
-                    <TouchableOpacity
+                        <Text style={[type.caption, styles.example, { color: ds.text2 }]}>
+                            {direction === 'PAYABLE' ? 'e.g. Car loan / renovation paid to vendor.' : 'e.g. Paid a vendor directly on their behalf.'}
+                        </Text>
+                    </Row>
+                    <Row
+                        icon="eye-off-outline"
+                        title="No, it's an untracked expense"
+                        subtitle="Debt created only."
+                        chevron
                         onPress={() => finalSave(false, false)}
-                        style={{ flexDirection: 'row', marginBottom: 24, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}
+                        last
                     >
-                        <View style={{ alignItems: 'center', marginRight: 16, width: 40, paddingTop: 4 }}>
-                            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.error + '20', alignItems: 'center', justifyContent: 'center' }}>
-                                <Ionicons name="close-circle" size={20} color={colors.error} />
-                            </View>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>NO, it&apos;s a dedicated untracked expense.</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
-                                Result: Debt Created Only.
-                            </Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4, fontStyle: 'italic' }}>
-                                I don&apos;t want this specific expense in my transaction history.
-                            </Text>
-                            <Text style={{ color: colors.error, fontSize: 12, fontWeight: 'bold', marginTop: 6 }}>TAP TO CONFIRM</Text>
-                        </View>
-                    </TouchableOpacity>
+                        <Text style={[type.caption, styles.example, { color: ds.text2 }]}>
+                            I don&apos;t want this specific expense in my transaction history.
+                        </Text>
+                    </Row>
                 </ScrollView>
             </BottomModal>
 
@@ -768,40 +732,31 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
             <BottomModal
                 visible={showInterestTypeModal}
                 onClose={() => setShowInterestTypeModal(false)}
-                title="Interest Method"
+                title="Interest method"
                 subtitle="How is interest calculated?"
                 maxHeight="85%"
             >
-                <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-                    {interestTypesDetails.map((details) => (
-                        <TouchableOpacity
-                            key={details.type}
-                            onPress={() => {
-                                setInterestType(details.type);
-                                setShowInterestTypeModal(false);
-                            }}
-                            style={{
-                                padding: 16,
-                                borderBottomWidth: 1,
-                                borderBottomColor: colors.border,
-                                backgroundColor: interestType === details.type ? colors.primary + '10' : 'transparent',
-                                flexDirection: 'row',
-                                alignItems: 'center'
-                            }}
-                        >
-                            <View style={{ flex: 1 }}>
-                                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 4 }}>
-                                    {details.label}
-                                </Text>
-                                <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                                    {details.description}
-                                </Text>
-                            </View>
-                            {interestType === details.type && (
-                                <Ionicons name="radio-button-on" size={24} color={colors.primary} />
-                            )}
-                        </TouchableOpacity>
-                    ))}
+                <ScrollView>
+                    {interestTypesDetails.map((details, i) => {
+                        const selected = interestType === details.type;
+                        return (
+                            <Row
+                                key={details.type}
+                                leading={
+                                    <View style={[styles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
+                                        {selected && <View style={[styles.radioDot, { backgroundColor: ds.accent }]} />}
+                                    </View>
+                                }
+                                title={details.label}
+                                subtitle={details.description}
+                                onPress={() => {
+                                    setInterestType(details.type);
+                                    setShowInterestTypeModal(false);
+                                }}
+                                last={i === interestTypesDetails.length - 1}
+                            />
+                        );
+                    })}
                 </ScrollView>
             </BottomModal>
 
@@ -836,5 +791,29 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         flexDirection: 'row',
         gap: 12
-    }
+    },
+    question: {
+        borderRadius: radius.md,
+        padding: space[4],
+        marginTop: space[4],
+    },
+    questionText: {
+        textAlign: 'center',
+    },
+    example: {
+        marginTop: space[1],
+    },
+    radio: {
+        width: 20,
+        height: 20,
+        borderRadius: radius.full,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    radioDot: {
+        width: 10,
+        height: 10,
+        borderRadius: radius.full,
+    },
 });

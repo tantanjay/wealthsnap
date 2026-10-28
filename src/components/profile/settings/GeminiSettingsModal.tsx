@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Text, TextInput, View, TouchableOpacity, ScrollView, Linking } from 'react-native';
+import { Text, TextInput, View, Pressable, ScrollView, Linking, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Button } from '@components/index';
+import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { saveAIConfig } from '@services/core/storageService';
-import { SPACING } from '@styles/theme';
+import { type, space, radius } from '@styles/theme';
 
 interface GeminiSettingsModalProps {
     visible: boolean;
@@ -16,16 +16,25 @@ interface GeminiSettingsModalProps {
     onApiKeySaved: () => void;
 }
 
+const HELP_STEPS: { title: string; description: string }[] = [
+    { title: 'Sign in with Google', description: 'Use your Google account (the same one you use for Gmail or YouTube) to sign in.' },
+    { title: 'Click "Get API Key"', description: 'Look for a button that says "Get API Key" or "Create API Key". It\'s usually at the top or in the menu.' },
+    { title: 'Create a new key', description: 'Click "Create API Key in new project" or select an existing project. A long code will appear - this is your API key!' },
+    { title: 'Copy your key', description: 'Click the copy button next to your key. It looks like two overlapping squares.' },
+    { title: 'Paste in WealthSnap', description: 'Come back to this app, paste your key in the API key field above, and tap Save.' },
+];
+
 const GeminiSettingsModal: React.FC<GeminiSettingsModalProps> = ({
     visible,
     onClose,
     hasApiKey,
     onApiKeySaved
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const [apiKey, setApiKey] = useState('');
     const [showApiKey, setShowApiKey] = useState(false);
+    // Collapsible in place of a second modal on top of this sheet.
     const [showApiKeyHelp, setShowApiKeyHelp] = useState(false);
 
     const handleSaveKey = async () => {
@@ -40,272 +49,172 @@ const GeminiSettingsModal: React.FC<GeminiSettingsModalProps> = ({
         }
     };
 
+    const stepNumber = (n: number) => (
+        <Text style={[type.bodyNum, styles.stepNumber, { color: ds.text2 }]}>{n}</Text>
+    );
+
     return (
-        <>
-            <BottomModal
-                visible={visible}
-                onClose={onClose}
-                footer={
-                    <>
-                        <Button
-                            title="Save API Key"
-                            onPress={handleSaveKey}
-                            style={{ marginBottom: 10 }}
-                        />
-
-                        <Button
-                            variant="outline"
-                            title="Cancel"
-                            onPress={onClose}
-                        />
-                    </>
-                }
-            >
-                <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                    <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>
-                        🤖 Gemini AI Settings
-                    </Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
+        <BottomModal
+            visible={visible}
+            onClose={onClose}
+            title="Gemini AI settings"
+            maxHeight="85%"
+            footer={
+                <>
+                    <Pressable onPress={handleSaveKey} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
+                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Save API key</Text>
+                    </Pressable>
+                    <Pressable onPress={onClose} style={styles.textButton} accessibilityRole="button">
+                        <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
+                    </Pressable>
+                </>
+            }
+        >
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                <View style={styles.status}>
+                    {hasApiKey && <Ionicons name="checkmark-circle-outline" size={18} color={ds.success} />}
+                    <Text style={[type.small, styles.statusText, { color: ds.text2 }]}>
                         {hasApiKey
-                            ? "✅ Custom API Key is configured. Enter a new key to update it."
-                            : "Configure your own Google Gemini API key for AI-powered features."}
+                            ? 'Custom API key is configured. Enter a new key to update it.'
+                            : 'Configure your own Google Gemini API key for AI-powered features.'}
                     </Text>
+                </View>
 
-                    <View style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        borderRadius: 12,
-                        marginBottom: 15,
-                        backgroundColor: colors.surface
-                    }}>
-                        <TextInput
-                            style={{
-                                flex: 1,
-                                padding: 12,
-                                color: colors.text,
-                                fontSize: 14
-                            }}
-                            placeholder="Enter Gemini API Key"
-                            placeholderTextColor={colors.gray500}
-                            value={apiKey}
-                            onChangeText={setApiKey}
-                            secureTextEntry={!showApiKey}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                        />
-                        <TouchableOpacity
-                            onPressIn={() => setShowApiKey(true)}
-                            onPressOut={() => setShowApiKey(false)}
-                            style={{ padding: 10 }}
-                        >
-                            <Ionicons name={showApiKey ? "eye" : "eye-off"} size={20} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    </View>
-
-                    <TouchableOpacity
-                        onPress={() => setShowApiKeyHelp(true)}
-                        style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingVertical: 4 }}
+                <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                    <Ionicons name="key-outline" size={18} color={ds.text2} />
+                    <TextInput
+                        style={[type.body, styles.input, { color: ds.text }]}
+                        placeholder="Enter Gemini API key"
+                        placeholderTextColor={ds.text3}
+                        value={apiKey}
+                        onChangeText={setApiKey}
+                        secureTextEntry={!showApiKey}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                    />
+                    <Pressable
+                        onPressIn={() => setShowApiKey(true)}
+                        onPressOut={() => setShowApiKey(false)}
+                        hitSlop={space[2]}
                     >
-                        <Ionicons name="help-circle-outline" size={18} color={colors.primary} />
-                        <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '600', marginLeft: 6 }}>
-                            How to get an API key?
+                        <Ionicons name={showApiKey ? 'eye-outline' : 'eye-off-outline'} size={20} color={ds.text2} />
+                    </Pressable>
+                </View>
+
+                <Pressable
+                    onPress={() => setShowApiKeyHelp(v => !v)}
+                    style={styles.helpToggle}
+                    hitSlop={space[2]}
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: showApiKeyHelp }}
+                >
+                    <Ionicons name="help-circle-outline" size={16} color={ds.accent} />
+                    <Text style={[type.smallMedium, { color: ds.accent }]}>How to get an API key?</Text>
+                    <Ionicons name={showApiKeyHelp ? 'chevron-up' : 'chevron-down'} size={14} color={ds.accent} />
+                </Pressable>
+
+                {showApiKeyHelp && (
+                    <View>
+                        <Text style={[type.small, styles.helpIntro, { color: ds.text2 }]}>
+                            Follow these simple steps to get your free API key from Google:
                         </Text>
-                    </TouchableOpacity>
-                </ScrollView>
-            </BottomModal>
 
-            {/* API Key Help Modal */}
-            <BottomModal
-                visible={showApiKeyHelp}
-                onClose={() => setShowApiKeyHelp(false)}
-                title="How to Get Your API Key 🔑"
-                maxHeight="70%"
-            >
-                <ScrollView showsVerticalScrollIndicator={false}>
-                    <Text style={[styles.helpIntro, { color: colors.text }]}>
-                        Follow these simple steps to get your free API key from Google:
-                    </Text>
-
-                    <View style={[styles.helpStep, { backgroundColor: colors.background }]}>
-                        <View style={[styles.helpStepNumber, { backgroundColor: colors.primary }]}>
-                            <Text style={styles.helpStepNumberText}>1</Text>
-                        </View>
-                        <View style={styles.helpStepContent}>
-                            <Text style={[styles.helpStepTitle, { color: colors.text }]}>Open Google AI Studio</Text>
-                            <Text style={[styles.helpStepDesc, { color: colors.textSecondary }]}>
+                        <Row title="Open Google AI Studio" leading={stepNumber(1)}>
+                            <Text style={[type.small, { color: ds.text2 }]}>
                                 Go to{' '}
                                 <Text
-                                    style={{ color: colors.primary, fontWeight: 'bold', textDecorationLine: 'underline' }}
+                                    style={[type.smallMedium, { color: ds.accent }]}
                                     onPress={() => Linking.openURL('https://aistudio.google.com')}
                                 >
                                     aistudio.google.com
                                 </Text>
                                 {' '}in your web browser (Chrome, Safari, etc.)
                             </Text>
-                        </View>
-                    </View>
+                        </Row>
+                        {HELP_STEPS.map((step, i) => (
+                            <Row key={step.title} title={step.title} subtitle={step.description} leading={stepNumber(i + 2)} />
+                        ))}
+                        <Row
+                            icon="open-outline"
+                            title="Open Google AI Studio"
+                            subtitle="aistudio.google.com/apikey"
+                            chevron
+                            onPress={() => Linking.openURL('https://aistudio.google.com/apikey')}
+                            last
+                        />
 
-                    <View style={[styles.helpStep, { backgroundColor: colors.background }]}>
-                        <View style={[styles.helpStepNumber, { backgroundColor: colors.primary }]}>
-                            <Text style={styles.helpStepNumberText}>2</Text>
-                        </View>
-                        <View style={styles.helpStepContent}>
-                            <Text style={[styles.helpStepTitle, { color: colors.text }]}>Sign in with Google</Text>
-                            <Text style={[styles.helpStepDesc, { color: colors.textSecondary }]}>
-                                Use your Google account (the same one you use for Gmail or YouTube) to sign in.
+                        <View style={[styles.tip, { backgroundColor: ds.inset }]}>
+                            <Text style={[type.small, { color: ds.text2 }]}>
+                                <Text style={[type.smallStrong, { color: ds.text }]}>Tip: </Text>
+                                The API has a generous free tier! You can make many requests per day at no cost. Check Google&apos;s pricing page for current limits.
+                            </Text>
+                            <Text style={[type.small, styles.tipLine, { color: ds.text2 }]}>
+                                <Text style={[type.smallStrong, { color: ds.text }]}>Reminder: </Text>
+                                If prompted, you may need to create a Google Cloud project first — just follow the on-screen instructions, it only takes a few clicks!
                             </Text>
                         </View>
                     </View>
-
-                    <View style={[styles.helpStep, { backgroundColor: colors.background }]}>
-                        <View style={[styles.helpStepNumber, { backgroundColor: colors.primary }]}>
-                            <Text style={styles.helpStepNumberText}>3</Text>
-                        </View>
-                        <View style={styles.helpStepContent}>
-                            <Text style={[styles.helpStepTitle, { color: colors.text }]}>Click &quot;Get API Key&quot;</Text>
-                            <Text style={[styles.helpStepDesc, { color: colors.textSecondary }]}>
-                                Look for a button that says &quot;Get API Key&quot; or &quot;Create API Key&quot;. It&apos;s usually at the top or in the menu.
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={[styles.helpStep, { backgroundColor: colors.background }]}>
-                        <View style={[styles.helpStepNumber, { backgroundColor: colors.primary }]}>
-                            <Text style={styles.helpStepNumberText}>4</Text>
-                        </View>
-                        <View style={styles.helpStepContent}>
-                            <Text style={[styles.helpStepTitle, { color: colors.text }]}>Create a New Key</Text>
-                            <Text style={[styles.helpStepDesc, { color: colors.textSecondary }]}>
-                                Click &quot;Create API Key in new project&quot; or select an existing project. A long code will appear - this is your API key!
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={[styles.helpStep, { backgroundColor: colors.background }]}>
-                        <View style={[styles.helpStepNumber, { backgroundColor: colors.primary }]}>
-                            <Text style={styles.helpStepNumberText}>5</Text>
-                        </View>
-                        <View style={styles.helpStepContent}>
-                            <Text style={[styles.helpStepTitle, { color: colors.text }]}>Copy Your Key</Text>
-                            <Text style={[styles.helpStepDesc, { color: colors.textSecondary }]}>
-                                Click the copy button next to your key. It looks like two overlapping squares 📋
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={[styles.helpStep, { backgroundColor: colors.background }]}>
-                        <View style={[styles.helpStepNumber, { backgroundColor: colors.success }]}>
-                            <Text style={styles.helpStepNumberText}>✓</Text>
-                        </View>
-                        <View style={styles.helpStepContent}>
-                            <Text style={[styles.helpStepTitle, { color: colors.text }]}>Paste in WealthSnap</Text>
-                            <Text style={[styles.helpStepDesc, { color: colors.textSecondary }]}>
-                                Come back to this app, tap the Save button, and paste your key in the API Key field above!
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={[styles.helpTip, { backgroundColor: colors.info + '15', borderColor: colors.info }]}>
-                        <Ionicons name="bulb-outline" size={20} color={colors.info} />
-                        <Text style={[styles.helpTipText, { color: colors.text }]}>
-                            <Text style={{ fontWeight: 'bold' }}>Tip:</Text> The API has a generous free tier! You can make many requests per day at no cost. Check Google&apos;s pricing page for current limits.
-                        </Text>
-                    </View>
-
-                    <Text style={[styles.helpReminder, { color: colors.textSecondary }]}>
-                        📌 <Text style={{ fontWeight: '600' }}>Reminder:</Text> If prompted, you may need to create a Google Cloud project first — just follow the on-screen instructions, it only takes a few clicks!
-                    </Text>
-
-                    <TouchableOpacity
-                        style={[styles.openLinkButton, { backgroundColor: colors.primary }]}
-                        onPress={() => {
-                            Linking.openURL('https://aistudio.google.com/apikey');
-                        }}
-                    >
-                        <Ionicons name="open-outline" size={20} color="#FFF" />
-                        <Text style={styles.openLinkButtonText}>Open Google AI Studio</Text>
-                    </TouchableOpacity>
-
-                    <View style={{ height: SPACING.xl }} />
-                </ScrollView>
-            </BottomModal>
-        </>
+                )}
+            </ScrollView>
+        </BottomModal>
     );
 };
 
-const styles = {
+const styles = StyleSheet.create({
+    status: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: space[2],
+        marginBottom: space[4],
+    },
+    statusText: {
+        flex: 1,
+    },
+    field: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        padding: space[3],
+        borderRadius: radius.md,
+    },
+    input: {
+        flex: 1,
+        padding: 0,
+    },
+    helpToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        gap: space[1],
+        marginTop: space[4],
+    },
     helpIntro: {
-        fontSize: 15,
-        marginBottom: SPACING.md,
-        lineHeight: 22,
+        marginTop: space[3],
     },
-    helpStep: {
-        flexDirection: 'row' as const,
-        padding: SPACING.md,
-        borderRadius: 12,
-        marginBottom: SPACING.sm,
+    stepNumber: {
+        width: 20,
+        textAlign: 'center',
     },
-    helpStepNumber: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        alignItems: 'center' as const,
-        justifyContent: 'center' as const,
-        marginRight: SPACING.sm,
+    tip: {
+        borderRadius: radius.sm,
+        padding: space[3],
+        marginTop: space[3],
     },
-    helpStepNumberText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold' as const,
+    tipLine: {
+        marginTop: space[2],
     },
-    helpStepContent: {
-        flex: 1,
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    helpStepTitle: {
-        fontSize: 16,
-        fontWeight: '600' as const,
-        marginBottom: 4,
+    textButton: {
+        height: 44,
+        marginTop: space[1],
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    helpStepDesc: {
-        fontSize: 14,
-        lineHeight: 20,
-    },
-    helpTip: {
-        flexDirection: 'row' as const,
-        padding: SPACING.md,
-        borderRadius: 12,
-        borderWidth: 1,
-        marginVertical: SPACING.md,
-        alignItems: 'flex-start' as const,
-    },
-    helpTipText: {
-        flex: 1,
-        fontSize: 14,
-        lineHeight: 20,
-        marginLeft: SPACING.sm,
-    },
-    helpReminder: {
-        fontSize: 13,
-        lineHeight: 19,
-        marginBottom: SPACING.md,
-        fontStyle: 'italic' as const,
-    },
-    openLinkButton: {
-        flexDirection: 'row' as const,
-        alignItems: 'center' as const,
-        justifyContent: 'center' as const,
-        padding: SPACING.md,
-        borderRadius: 12,
-        marginTop: SPACING.sm,
-    },
-    openLinkButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600' as const,
-        marginLeft: SPACING.sm,
-    },
-};
+});
 
 export default GeminiSettingsModal;

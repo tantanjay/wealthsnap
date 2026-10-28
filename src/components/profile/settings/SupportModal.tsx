@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Linking } from 'react-native';
+import { Text, Pressable, Linking, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Button } from '@components/index';
+import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 import { CONFIG } from '@constants/config';
 
 interface SupportModalProps {
@@ -13,7 +14,7 @@ interface SupportModalProps {
 }
 
 const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
 
     const handlePress = async (url: string) => {
         const supported = await Linking.canOpenURL(url);
@@ -23,80 +24,58 @@ const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
         onClose();
     };
 
+    const openIcon = <Ionicons name="open-outline" size={16} color={ds.text3} />;
+
     return (
         <BottomModal
             visible={visible}
             onClose={onClose}
+            title="Back the human layer"
             footer={
-                <Button
-                    variant="outline"
-                    title="Close"
-                    onPress={onClose}
-                />
+                <Pressable onPress={onClose} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Close</Text>
+                </Pressable>
             }
         >
-            <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 15 }}>
-                🧠 Back the Human Layer
-            </Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 20, lineHeight: 20 }}>
+            <Text style={[type.small, styles.intro, { color: ds.text2 }]}>
                 WealthSnap is free because its architecture costs nothing to run.
                 {'\n\n'}
                 The logic, design, and decisions still come from one person. Supporting the project helps keep that human layer focused, motivated, and able to keep improving the app long-term.
             </Text>
 
-            {/* Support Developer (Ko-fi) */}
-            <TouchableOpacity
+            <Row
+                icon="cafe-outline"
+                title="Ko-fi"
+                subtitle="Buy me a coffee"
+                trailing={openIcon}
                 onPress={() => handlePress('https://ko-fi.com/christianjay66500')}
-                style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: 16,
-                    backgroundColor: colors.surface,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    marginBottom: 12,
-                }}
-            >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Ionicons name="cafe" size={24} color="#FF5E5B" />
-                    <View style={{ marginLeft: 12 }}>
-                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>Ko-fi</Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Buy me a coffee</Text>
-                    </View>
-                </View>
-                <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
+                last={!CONFIG.SHOW_PAYPAL_SUPPORT}
+            />
 
-            {/* PayPal Option */}
             {CONFIG.SHOW_PAYPAL_SUPPORT && (
-                <TouchableOpacity
+                <Row
+                    icon="logo-paypal"
+                    title="PayPal"
+                    subtitle="One-time donation"
+                    trailing={openIcon}
                     onPress={() => handlePress('https://paypal.me/hansoctantan')}
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: 16,
-                        backgroundColor: colors.surface,
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: colors.border,
-                        marginBottom: 12,
-                    }}
-                >
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Ionicons name="logo-paypal" size={24} color="#00457C" />
-                        <View style={{ marginLeft: 12 }}>
-                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>PayPal</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>One-time donation</Text>
-                        </View>
-                    </View>
-                    <Ionicons name="open-outline" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
+                    last
+                />
             )}
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    intro: {
+        marginBottom: space[2],
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
 
 export default SupportModal;

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TextInput, ActivityIndicator, Pressable } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
@@ -9,11 +9,10 @@ import { Disclaimer } from '@components/common/Disclaimer';
 import { EmptyState } from '@components/common/EmptyState';
 import DebtStatusModal from '@components/debts/DebtStatusModal';
 import { Hero, ProgressBar, Row, SectionHeader, SegmentedControl, Tone } from '@components/ds';
-import { Button } from '@components/index';
 import { useAlert } from '@context/AlertContext';
 import { useTheme } from '@context/ThemeContext';
 import { DASH, PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
-import { type, space } from '@styles/theme';
+import { type, space, radius } from '@styles/theme';
 import { Debt, DebtStatus, Transaction } from '@types';
 import * as Storage from '@services/core/storageService';
 import { getAllDebts, saveDebt, deleteDebt } from '@services/domain/debtService';
@@ -23,6 +22,7 @@ import * as DebtMetrics from '@utils/debtMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { calculateLoansSnapshot } from '@utils/snapshotMetrics';
 import { generateUUID } from '@utils/uuid';
+import { SEVERITY_ICON } from '@utils/severity';
 
 type LoanSide = 'owe' | 'owed';
 type Strategy = 'SNOWBALL' | 'AVALANCHE';
@@ -408,7 +408,7 @@ interface PaymentSheetProps {
 
 // The Debts screen's "Record Payment" sheet: principal / interest / fee legs, pre-split from the minimum payment.
 const PaymentSheet: React.FC<PaymentSheetProps> = ({ debt, balance, currency, onClose, onSaved }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const [principalAmount, setPrincipalAmount] = useState('');
     const [interestAmount, setInterestAmount] = useState('');
@@ -492,15 +492,14 @@ const PaymentSheet: React.FC<PaymentSheetProps> = ({ debt, balance, currency, on
     };
 
     const total = new BigNumber(principalAmount || 0).plus(interestAmount || 0).plus(feeAmount || 0);
-    const inputStyle = [styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }];
     const field = (label: string, help: string, value: string, onChange: (v: string) => void) => (
         <View>
-            <Text style={{ color: colors.text, marginBottom: 8, fontWeight: '600' }}>{label}</Text>
-            <Text style={{ color: colors.textSecondary, marginBottom: 8, fontSize: 12 }}>{help}</Text>
+            <Text style={[type.body, { color: ds.text }]}>{label}</Text>
+            <Text style={[type.small, styles.fieldHelp, { color: ds.text2 }]}>{help}</Text>
             <TextInput
-                style={inputStyle}
+                style={[type.bodyNum, styles.input, { color: ds.text, backgroundColor: ds.inset }]}
                 placeholder="0.00"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={ds.text3}
                 keyboardType="numeric"
                 value={value}
                 onChangeText={onChange}
@@ -512,33 +511,40 @@ const PaymentSheet: React.FC<PaymentSheetProps> = ({ debt, balance, currency, on
         <BottomModal
             visible={!!debt}
             onClose={onClose}
-            title={debt && !isPayable(debt) ? 'Record Repayment' : 'Record Payment'}
+            title={debt && !isPayable(debt) ? 'Record repayment' : 'Record payment'}
             subtitle={debt ? `For ${debt.name}` : ''}
+            footer={
+                <Pressable
+                    onPress={handleSubmit}
+                    disabled={isSubmitting}
+                    style={[styles.button, { backgroundColor: ds.accent }]}
+                    accessibilityRole="button"
+                >
+                    {isSubmitting
+                        ? <ActivityIndicator color={ds.onAccent} />
+                        : <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Confirm payment</Text>}
+                </Pressable>
+            }
         >
-            <ScrollView>
-                <View style={{ gap: 16 }}>
-                    {field('Principal Payment', 'Reduces the balance.', principalAmount, setPrincipalAmount)}
-                    {field('Interest Payment', 'Cost of borrowing. Does not reduce the balance.', interestAmount, setInterestAmount)}
-                    {field('Fee / Insurance Payment', "Mandatory add-ons like mortgage or fire insurance. Fees don't reduce the principal.", feeAmount, setFeeAmount)}
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold' }}>Total Payment</Text>
-                        <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 18 }}>{formatCurrencyAmount(total, currency)}</Text>
-                    </View>
-
-                    {debt && total.minus(debt.minPayment).abs().gt(0.01) && (
-                        <View style={[styles.note, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                            <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 1 }}>
-                                {total.lt(debt.minPayment)
-                                    ? 'Payment adjusted to clear likely remaining balance.'
-                                    : 'This amount differs from your standard minimum payment.'}
-                            </Text>
-                        </View>
-                    )}
-
-                    <Button title={isSubmitting ? 'Recording...' : 'Confirm Payment'} onPress={handleSubmit} loading={isSubmitting} style={{ marginTop: 8 }} />
+            <ScrollView keyboardShouldPersistTaps="handled">
+                <View style={styles.fields}>
+                    {field('Principal payment', 'Reduces the balance.', principalAmount, setPrincipalAmount)}
+                    {field('Interest payment', 'Cost of borrowing. Does not reduce the balance.', interestAmount, setInterestAmount)}
+                    {field('Fee / insurance payment', "Mandatory add-ons like mortgage or fire insurance. Fees don't reduce the principal.", feeAmount, setFeeAmount)}
                 </View>
+
+                <Row title="Total payment" value={formatCurrencyAmount(total, currency)} last />
+
+                {debt && total.minus(debt.minPayment).abs().gt(0.01) && (
+                    <View style={styles.note}>
+                        <Ionicons name={SEVERITY_ICON.info} size={18} color={ds.text2} />
+                        <Text style={[type.small, styles.noteText, { color: ds.text2 }]}>
+                            {total.lt(debt.minPayment)
+                                ? 'Payment adjusted to clear likely remaining balance.'
+                                : 'This amount differs from your standard minimum payment.'}
+                        </Text>
+                    </View>
+                )}
             </ScrollView>
         </BottomModal>
     );
@@ -571,19 +577,31 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: space[7] * 2,
     },
+    fields: {
+        gap: space[4],
+        marginBottom: space[2],
+    },
+    fieldHelp: {
+        marginBottom: space[2],
+    },
     input: {
-        borderWidth: 1,
-        borderRadius: 12,
-        padding: 12,
-        fontSize: 16,
+        borderRadius: radius.md,
+        padding: space[3],
     },
     note: {
-        borderWidth: 1,
-        padding: 12,
-        borderRadius: 8,
         flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: space[2],
+        marginTop: space[2],
+    },
+    noteText: {
+        flex: 1,
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
         alignItems: 'center',
-        marginTop: 4,
+        justifyContent: 'center',
     },
 });
 

@@ -248,7 +248,7 @@ const ProfileScreen = ({ navigation }: any) => {
             <BottomModal
                 visible={showRemindersModal}
                 onClose={closeSetupModal(() => setShowRemindersModal(false))}
-                title="Reminders ⏰"
+                title="Reminders"
                 maxHeight="85%"
                 style={{ height: '85%' }}
                 contentStyle={{ flex: 1 }}

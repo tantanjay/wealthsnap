@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Switch, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, FlatList, Switch, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 
-import { Card } from '@components/index';
+import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 import { useAlert } from '@context/AlertContext';
 import { Reminder } from '@types';
 import * as ReminderService from '@services/domain/reminderService';
@@ -16,7 +17,7 @@ interface ReminderListProps {
 }
 
 export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const [reminders, setReminders] = useState<Reminder[]>([]);
     const [loading, setLoading] = useState(true);
@@ -137,73 +138,63 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
         return formatDate(next?.toISOString());
     };
 
-    const renderItem = ({ item }: { item: Reminder }) => (
-        <Card style={styles.card}>
-            <View style={styles.cardHeader}>
-                <View style={styles.titleContainer}>
-                    <Text style={[styles.cardTitle, { color: colors.text }, !item.isActive && styles.disabledText]}>
-                        {item.title}
-                    </Text>
-                    <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-                        {item.frequency.charAt(0) + item.frequency.slice(1).toLowerCase()} • {formatTimes(item.times)}
-                    </Text>
-                </View>
-                <Switch
-                    value={item.isActive}
-                    onValueChange={() => handleToggleActive(item)}
-                    trackColor={{ false: colors.gray300, true: colors.primary + '80' }}
-                    thumbColor={item.isActive ? colors.primary : colors.gray300}
-                />
-            </View>
-
-            <View style={[styles.cardFooter, { borderTopColor: colors.border }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    {scheduledIds.has(item.id) && (
-                        <Ionicons name="checkmark-circle" size={16} color={colors.success} style={{ marginRight: 4 }} />
-                    )}
-                    <Text style={[styles.triggerText, { color: colors.textSecondary }]}>
-                        N: {getNextTrigger(item)} • L: {formatDate(item.lastTriggered)}
-                    </Text>
-                </View>
+    const renderItem = ({ item, index }: { item: Reminder; index: number }) => (
+        <Row
+            icon={item.isActive ? 'notifications-outline' : 'notifications-off-outline'}
+            title={item.title}
+            subtitle={`${item.frequency.charAt(0) + item.frequency.slice(1).toLowerCase()} · ${formatTimes(item.times)}`}
+            onPress={() => onEdit(item)}
+            last={index === reminders.length - 1}
+            trailing={
                 <View style={styles.actions}>
-                    <TouchableOpacity onPress={() => onEdit(item)} style={styles.actionButton}>
-                        <Ionicons name="create-outline" size={20} color={colors.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.actionButton}>
-                        <Ionicons name="trash-outline" size={20} color={colors.error} />
-                    </TouchableOpacity>
+                    <Switch
+                        value={item.isActive}
+                        onValueChange={() => handleToggleActive(item)}
+                        trackColor={{ false: ds.hairline, true: ds.accentSoft }}
+                        thumbColor={item.isActive ? ds.accent : ds.text3}
+                    />
+                    <Pressable onPress={() => handleDelete(item.id)} hitSlop={space[2]} accessibilityLabel="Delete reminder">
+                        <Ionicons name="trash-outline" size={20} color={ds.danger} />
+                    </Pressable>
                 </View>
+            }
+        >
+            <View style={styles.trigger}>
+                {scheduledIds.has(item.id) && (
+                    <Ionicons name="checkmark-circle-outline" size={14} color={ds.success} />
+                )}
+                <Text style={[type.captionNum, { color: ds.text2 }]}>
+                    Next {getNextTrigger(item)} · Last {formatDate(item.lastTriggered)}
+                </Text>
             </View>
-        </Card>
+        </Row>
     );
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.container}>
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color={colors.primary} />
-                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Fetching...</Text>
+                    <ActivityIndicator size="small" color={ds.accent} />
+                    <Text style={[type.small, { color: ds.text2 }]}>Fetching…</Text>
                 </View>
             ) : (
                 <FlatList
                     data={reminders}
                     keyExtractor={item => item.id}
                     renderItem={renderItem}
-                    contentContainerStyle={styles.listContent}
+                    style={styles.list}
                     ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <EmptyState size="compact" icon="notifications-off-outline" title="No reminders set yet" />
-                        </View>
+                        <EmptyState size="compact" icon="notifications-off-outline" title="No reminders set yet" />
                     }
                 />
             )}
-            <TouchableOpacity
-                style={[styles.fab, { backgroundColor: colors.primary }]}
+            <Pressable
+                style={[styles.button, { backgroundColor: ds.accent }]}
                 onPress={onAdd}
-                activeOpacity={0.8}
+                accessibilityRole="button"
             >
-                <Ionicons name="add" size={30} color={colors.white} />
-            </TouchableOpacity>
+                <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Add reminder</Text>
+            </Pressable>
         </View>
     );
 };
@@ -212,85 +203,31 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    listContent: {
-        padding: 16,
-        paddingBottom: 80,
-    },
-    card: {
-        marginBottom: 12,
-        padding: 16,
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    titleContainer: {
+    list: {
         flex: 1,
-        marginRight: 8,
-    },
-    cardTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    cardSubtitle: {
-        fontSize: 14,
-        marginTop: 2,
-    },
-    disabledText: {
-        opacity: 0.5,
-    },
-    cardFooter: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderTopWidth: 1,
-        paddingTop: 8,
-    },
-    triggerText: {
-        fontSize: 12,
-        fontWeight: '500',
     },
     actions: {
         flexDirection: 'row',
-    },
-    actionButton: {
-        marginLeft: 16,
-        padding: 4,
-    },
-    fab: {
-        position: 'absolute',
-        right: 20,
-        bottom: 20,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        justifyContent: 'center',
         alignItems: 'center',
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
+        gap: space[2],
     },
-    emptyContainer: {
+    trigger: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: 100,
-    },
-    emptyText: {
-        marginTop: 12,
-        fontSize: 16,
+        gap: space[1],
+        marginTop: 2,
     },
     loadingContainer: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
+        gap: space[2],
     },
-    loadingText: {
-        fontSize: 14,
-        fontWeight: '500',
+    button: {
+        height: 48,
+        marginTop: space[4],
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });

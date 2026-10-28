@@ -13,6 +13,7 @@ import TermsContent from '@components/onboarding/TermsContent';
 import OnboardingGuide from '@screens/onboarding/OnboardingGuideScreen';
 import { Button, Card } from '@components/index';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { UserProfile } from '@types';
@@ -21,12 +22,12 @@ import { restoreFromBackup, generateDummyData, BackupProgress } from '@services/
 import { saveUserProfile, setOnboardingComplete, saveAcceptedTermsVersion, saveLastBackupDate } from '@services/core/storageService';
 import { CURRENCIES, getCurrencyInfo } from '@utils/currencyData';
 import { CONFIG } from '@constants/config';
-import { SPACING } from '@styles/theme';
+import { SPACING, type, space, radius } from '@styles/theme';
 
 const { height } = Dimensions.get('window');
 
 const SetupScreen = ({ navigation }: any) => {
-    const { colors } = useTheme();
+    const { colors, ds } = useTheme();
     const { showAlert } = useAlert();
     const [step, setStep] = useState(0);
     const [hasAgreed, setHasAgreed] = useState(false);
@@ -639,32 +640,23 @@ const SetupScreen = ({ navigation }: any) => {
             <BottomModal
                 visible={currencyModalVisible}
                 onClose={() => setCurrencyModalVisible(false)}
-                title="Select Currency"
+                title="Select currency"
                 maxHeight="85%"
             >
-                <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-                    <View style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        borderRadius: 12,
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        marginBottom: 16,
-                        borderWidth: 1,
-                        borderColor: colors.border
-                    }}>
-                        <Ionicons name="search" size={20} color={colors.textSecondary} />
+                <View style={currencyStyles.body}>
+                    <View style={[currencyStyles.search, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="search-outline" size={18} color={ds.text2} />
                         <TextInput
-                            style={{ flex: 1, marginLeft: 8, fontSize: 16, color: colors.text }}
+                            style={[type.body, currencyStyles.searchInput, { color: ds.text }]}
                             placeholder="Search currency..."
-                            placeholderTextColor={colors.textSecondary}
+                            placeholderTextColor={ds.text3}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                             autoCorrect={false}
                         />
                         {searchQuery.length > 0 && (
-                            <TouchableOpacity onPress={() => setSearchQuery('')}>
-                                <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+                            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={space[2]} accessibilityLabel="Clear search">
+                                <Ionicons name="close-circle" size={18} color={ds.text3} />
                             </TouchableOpacity>
                         )}
                     </View>
@@ -675,49 +667,24 @@ const SetupScreen = ({ navigation }: any) => {
                             c.code.toLowerCase().includes(searchQuery.toLowerCase())
                         )}
                         keyExtractor={item => item.code}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={{
-                                    paddingVertical: 12,
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: colors.border,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between'
-                                }}
-                                onPress={() => {
-                                    setCurrency(item.code);
-                                    setCurrencyModalVisible(false);
-                                }}
-                            >
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 20,
-                                        backgroundColor: colors.primary + '10',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginRight: 12
-                                    }}>
-                                        <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text }}>{item.symbol}</Text>
-                                    </View>
-                                    <View>
-                                        <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                                            {item.name}
-                                        </Text>
-                                        <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-                                            {item.code}
-                                        </Text>
-                                    </View>
-                                </View>
-                                {currency === item.code && (
-                                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
-                                )}
-                            </TouchableOpacity>
-                        )}
-                        style={{ height: '100%' }}
-                        contentContainerStyle={{ paddingBottom: 40 }}
+                        renderItem={({ item }) => {
+                            const selected = currency === item.code;
+                            return (
+                                <Row
+                                    title={item.name}
+                                    subtitle={`${item.code} · ${item.symbol}`}
+                                    leading={
+                                        <View style={[currencyStyles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
+                                            {selected && <View style={[currencyStyles.radioDot, { backgroundColor: ds.accent }]} />}
+                                        </View>
+                                    }
+                                    onPress={() => {
+                                        setCurrency(item.code);
+                                        setCurrencyModalVisible(false);
+                                    }}
+                                />
+                            );
+                        }}
                         keyboardShouldPersistTaps="handled"
                     />
                 </View>
@@ -726,4 +693,36 @@ const SetupScreen = ({ navigation }: any) => {
         </ScreenWrapper >
     );
 };
+
+const currencyStyles = StyleSheet.create({
+    body: {
+        flexShrink: 1,
+    },
+    search: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        padding: space[3],
+        borderRadius: radius.md,
+        marginBottom: space[1],
+    },
+    searchInput: {
+        flex: 1,
+        padding: 0,
+    },
+    radio: {
+        width: 20,
+        height: 20,
+        borderRadius: radius.full,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    radioDot: {
+        width: 10,
+        height: 10,
+        borderRadius: radius.full,
+    },
+});
+
 export default SetupScreen;

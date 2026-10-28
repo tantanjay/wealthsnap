@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
 import BottomModal from '@components/common/BottomModal';
-import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 import { SEVERITY_ICON } from '@utils/severity';
 
 interface SavingsGoalAmountModalProps {
@@ -16,15 +16,11 @@ interface SavingsGoalAmountModalProps {
     onSubmit: (amount: BigNumber) => void;
 }
 
-/**
- * Shared amount-entry prompt for Manual Top-Up ("Add Funds") and Withdraw - both actions
- * only ever need a single amount input, so one modal serves both rather than two
- * near-identical files.
- */
+// One amount prompt shared by Add Funds and Withdraw, since both only need a single input.
 const SavingsGoalAmountModal: React.FC<SavingsGoalAmountModalProps> = ({
     visible, onClose, mode, goalName, maxAmount, onSubmit
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const [amount, setAmount] = useState('');
     const [error, setError] = useState('');
 
@@ -56,44 +52,63 @@ const SavingsGoalAmountModal: React.FC<SavingsGoalAmountModalProps> = ({
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title={isWithdraw ? 'Withdraw to Cash' : 'Add Funds'}
+            title={isWithdraw ? 'Withdraw to cash' : 'Add funds'}
             subtitle={goalName}
             maxHeight="60%"
             footer={
-                <Button title={isWithdraw ? 'Withdraw' : 'Add Funds'} onPress={handleSubmit} />
+                <Pressable onPress={handleSubmit} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>{isWithdraw ? 'Withdraw' : 'Add funds'}</Text>
+                </Pressable>
             }
         >
-            <View style={{ gap: 12, paddingBottom: 20 }}>
-                <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                    {isWithdraw
-                        ? 'This moves money out of the goal and back into your general cash.'
-                        : 'This adds money to the goal right now, separate from its recurring schedule.'}
-                </Text>
-                <TextInput
-                    style={{
-                        color: colors.text,
-                        fontSize: 28,
-                        fontWeight: 'bold',
-                        borderBottomWidth: 1,
-                        borderBottomColor: colors.border,
-                        padding: 8,
-                    }}
-                    value={amount}
-                    onChangeText={(v) => { setAmount(v); setError(''); }}
-                    keyboardType="numeric"
-                    placeholder="0.00"
-                    placeholderTextColor={colors.gray300}
-                    autoFocus
-                />
-                {!!error && (
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
-                        <Ionicons name={SEVERITY_ICON.error} size={16} color={colors.error} style={{ marginTop: 1 }} />
-                        <Text style={{ color: colors.error, fontSize: 13, flexShrink: 1 }}>{error}</Text>
-                    </View>
-                )}
-            </View>
+            <Text style={[type.small, { color: ds.text2 }]}>
+                {isWithdraw
+                    ? 'This moves money out of the goal and back into your general cash.'
+                    : 'This adds money to the goal right now, separate from its recurring schedule.'}
+            </Text>
+            <TextInput
+                style={[type.display, styles.input, { color: ds.text, backgroundColor: ds.inset }]}
+                value={amount}
+                onChangeText={(v) => { setAmount(v); setError(''); }}
+                keyboardType="numeric"
+                placeholder="0.00"
+                placeholderTextColor={ds.text3}
+                autoFocus
+            />
+            {!!error && (
+                <View style={styles.error}>
+                    <Ionicons name={SEVERITY_ICON.error} size={16} color={ds.danger} style={styles.errorIcon} />
+                    <Text style={[type.small, styles.errorText, { color: ds.danger }]}>{error}</Text>
+                </View>
+            )}
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    input: {
+        marginTop: space[3],
+        borderRadius: radius.md,
+        padding: space[3],
+    },
+    error: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: space[2],
+        marginTop: space[3],
+    },
+    errorIcon: {
+        marginTop: 1,
+    },
+    errorText: {
+        flexShrink: 1,
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
 
 export default SavingsGoalAmountModal;

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 import { useAlert } from '@context/AlertContext';
 import { Reminder, ReminderFrequency } from '@types';
 import { generateUUID } from '@utils/uuid';
@@ -30,7 +32,7 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
     onSave,
     onCancel
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const [title, setTitle] = useState(initialReminder?.title || '');
     const [frequency, setFrequency] = useState<ReminderFrequency>(initialReminder?.frequency || 'DAILY');
@@ -94,86 +96,77 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={[styles.header, { borderBottomColor: colors.border }]}>
-                <TouchableOpacity onPress={onCancel}>
-                    <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
-                </TouchableOpacity>
-                <Text style={[styles.title, { color: colors.text }]}>{initialReminder ? 'Edit Reminder' : 'New Reminder'}</Text>
-                <TouchableOpacity onPress={handleSave}>
-                    <Text style={[styles.saveText, { color: colors.primary }]}>Save</Text>
-                </TouchableOpacity>
-            </View>
+        <View style={styles.container}>
+            <ScrollView style={styles.form} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                <SectionHeader
+                    title={initialReminder ? 'Edit reminder' : 'New reminder'}
+                    actionLabel="Cancel"
+                    onAction={onCancel}
+                    style={styles.firstHeader}
+                />
 
-            <ScrollView style={styles.form}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Title</Text>
+                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Title</Text>
                 <TextInput
-                    style={[styles.input, { color: colors.text, borderBottomColor: colors.border }]}
+                    style={[type.body, styles.field, { backgroundColor: ds.inset, color: ds.text }]}
                     placeholder="e.g., Pay Rent, Utility Bill"
-                    placeholderTextColor={colors.gray500}
+                    placeholderTextColor={ds.text3}
                     value={title}
                     onChangeText={setTitle}
                 />
 
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Frequency</Text>
+                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Frequency</Text>
                 <View style={styles.frequencyGrid}>
-                    {FREQUENCIES.map((freq) => (
-                        <TouchableOpacity
-                            key={freq.value}
-                            style={[
-                                styles.frequencyChip,
-                                { backgroundColor: colors.surface },
-                                frequency === freq.value && { backgroundColor: colors.primary }
-                            ]}
-                            onPress={() => setFrequency(freq.value)}
-                        >
-                            <Text style={[
-                                styles.frequencyText,
-                                { color: colors.textSecondary },
-                                frequency === freq.value && { color: colors.white }
-                            ]}>
-                                {freq.label}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
+                    {FREQUENCIES.map((freq) => {
+                        const selected = frequency === freq.value;
+                        return (
+                            <Pressable
+                                key={freq.value}
+                                style={[styles.frequencyChip, selected && { backgroundColor: ds.inset }]}
+                                onPress={() => setFrequency(freq.value)}
+                                accessibilityState={{ selected }}
+                            >
+                                <Text style={[type.smallMedium, { color: selected ? ds.text : ds.text2 }]}>
+                                    {freq.label}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
                 </View>
 
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Start Date</Text>
-                <TouchableOpacity
-                    style={[styles.datePickerButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Start date</Text>
+                <Pressable
+                    style={[styles.field, styles.fieldRow, { backgroundColor: ds.inset }]}
                     onPress={() => setShowDatePicker(true)}
                 >
-                    <Ionicons name="calendar-outline" size={20} color={colors.text} />
-                    <Text style={[styles.dateText, { color: colors.text }]}>{startDate.toLocaleDateString()}</Text>
-                </TouchableOpacity>
+                    <Ionicons name="calendar-outline" size={18} color={ds.text2} />
+                    <Text style={[type.bodyNum, { color: ds.text }]}>{startDate.toLocaleDateString()}</Text>
+                </Pressable>
 
-                <View style={styles.sectionHeader}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>Times</Text>
-                    <TouchableOpacity onPress={addTime}>
-                        <Ionicons name="add-circle" size={24} color={colors.primary} />
-                    </TouchableOpacity>
-                </View>
-
+                <SectionHeader title="Times" actionLabel="Add time" onAction={addTime} />
                 {times.map((time, index) => (
                     <View key={index} style={styles.timeRow}>
-                        <TouchableOpacity
-                            style={[styles.timePickerButton, { backgroundColor: colors.surface }]}
+                        <Pressable
+                            style={[styles.field, styles.fieldRow, styles.timeField, { backgroundColor: ds.inset }]}
                             onPress={() => {
                                 setSelectedTimeIndex(index);
                                 setShowTimePicker(true);
                             }}
                         >
-                            <Ionicons name="time-outline" size={20} color={colors.text} />
-                            <Text style={[styles.timeText, { color: colors.text }]}>{formatTime(time)}</Text>
-                        </TouchableOpacity>
+                            <Ionicons name="time-outline" size={18} color={ds.text2} />
+                            <Text style={[type.bodyNum, { color: ds.text }]}>{formatTime(time)}</Text>
+                        </Pressable>
                         {times.length > 1 && (
-                            <TouchableOpacity onPress={() => removeTime(index)}>
-                                <Ionicons name="trash-outline" size={20} color={colors.error} />
-                            </TouchableOpacity>
+                            <Pressable onPress={() => removeTime(index)} hitSlop={space[2]} accessibilityLabel="Remove time">
+                                <Ionicons name="trash-outline" size={20} color={ds.danger} />
+                            </Pressable>
                         )}
                     </View>
                 ))}
             </ScrollView>
+
+            <Pressable onPress={handleSave} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
+                <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Save reminder</Text>
+            </Pressable>
 
             {showDatePicker && (
                 <DateTimePicker
@@ -218,86 +211,49 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 16,
-        borderBottomWidth: 1,
-    },
-    title: {
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    cancelText: {
-        fontSize: 16,
-    },
-    saveText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
     form: {
-        padding: 16,
+        flex: 1,
+    },
+    firstHeader: {
+        marginTop: 0,
     },
     label: {
-        fontSize: 14,
-        fontWeight: '600',
-        marginTop: 16,
-        marginBottom: 8,
+        marginTop: space[4],
+        marginBottom: space[2],
     },
-    input: {
-        fontSize: 16,
-        borderBottomWidth: 1,
-        paddingVertical: 8,
+    field: {
+        padding: space[3],
+        borderRadius: radius.md,
+    },
+    fieldRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
     },
     frequencyGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        marginHorizontal: -4,
+        gap: space[1],
     },
     frequencyChip: {
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 20,
-        margin: 4,
-    },
-    frequencyText: {
-        fontSize: 14,
-    },
-    datePickerButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderStyle: 'dashed',
-    },
-    dateText: {
-        marginLeft: 8,
-        fontSize: 16,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 16,
+        paddingVertical: space[2],
+        paddingHorizontal: space[3],
+        borderRadius: radius.sm,
     },
     timeRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
+        gap: space[3],
+        marginTop: space[2],
     },
-    timePickerButton: {
+    timeField: {
         flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        borderRadius: 8,
-        marginRight: 8,
     },
-    timeText: {
-        marginLeft: 8,
-        fontSize: 16,
-        color: '#333',
+    button: {
+        height: 48,
+        marginTop: space[4],
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });

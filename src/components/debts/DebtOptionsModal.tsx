@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
+import { type, space } from '@styles/theme';
 import { Debt, Transaction } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { getDebtResolution, DEBT_RESOLUTION_LABELS } from '@utils/debtMetrics';
@@ -29,7 +31,7 @@ const DebtOptionsModal: React.FC<DebtOptionsModalProps> = ({
     onEdit,
     currency = 'PHP'
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { isPrivacyEnabled } = usePrivacy();
     // Detail sheets follow the privacy mode too: Discreet and Hidden both mask amounts here.
     const money = (...args: Parameters<typeof formatCurrencyAmount>) => (isPrivacyEnabled ? '****' : formatCurrencyAmount(...args));
@@ -43,8 +45,6 @@ const DebtOptionsModal: React.FC<DebtOptionsModalProps> = ({
     // is needed here - PAID (real-payment) never applies to a still-ACTIVE record.
     const resolution = getDebtResolution(debt);
     const isPayable = debt.direction === 'PAYABLE';
-    const iconColor = isPayable ? colors.error : colors.success;
-    const iconName = isPayable ? "arrow-down-circle-outline" : "arrow-up-circle-outline";
 
     // Format currency if debt has specific currency
     const displayCurrency = debt.currency || currency;
@@ -53,173 +53,49 @@ const DebtOptionsModal: React.FC<DebtOptionsModalProps> = ({
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Debt Options"
+            title="Debt options"
             maxHeight="auto"
         >
-            <View style={styles.container}>
-                {/* Debt Preview */}
-                <View style={[styles.previewCard, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border || '#e0e0e0' }]}>
-                    <View style={styles.previewHeader}>
-                        <View style={[
-                            styles.iconContainer,
-                            { backgroundColor: iconColor + '20' }
-                        ]}>
-                            <Ionicons
-                                name={iconName}
-                                size={20}
-                                color={iconColor}
-                            />
-                        </View>
-                        <View style={styles.details}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                <Text style={[styles.category, { color: colors.text }]}>{debt.name}</Text>
-                                {resolution && (
-                                    <View style={{
-                                        paddingHorizontal: 6,
-                                        paddingVertical: 1,
-                                        borderRadius: 4,
-                                        backgroundColor: (resolution === 'FORGIVEN' ? colors.textSecondary : colors.success) + '20'
-                                    }}>
-                                        <Text style={{
-                                            fontSize: 10,
-                                            fontWeight: 'bold',
-                                            color: resolution === 'FORGIVEN' ? colors.textSecondary : colors.success
-                                        }}>
-                                            {DEBT_RESOLUTION_LABELS[resolution]}
-                                        </Text>
-                                    </View>
-                                )}
-                            </View>
-                            <Text style={[styles.note, { color: colors.textSecondary }]}>
-                                {debt.type.replace(/_/g, ' ')} • {debt.interestRate.toString()}% {debt.interestType}
-                            </Text>
-                        </View>
-                        <Text style={[
-                            styles.amount,
-                            { color: colors.text }
-                        ]}>
-                            {money(debt.initialAmount, displayCurrency)}
-                        </Text>
-                    </View>
+            <Row
+                icon={isPayable ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'}
+                title={debt.name}
+                subtitle={`${debt.type.replace(/_/g, ' ')} · ${debt.interestRate.toString()}% ${debt.interestType}`}
+                value={money(debt.initialAmount, displayCurrency)}
+                change={resolution ? DEBT_RESOLUTION_LABELS[resolution] : undefined}
+                changeTone={resolution === 'FORGIVEN' ? 'neutral' : 'good'}
+            />
+            {linkedTransaction && (
+                <Row
+                    icon="link-outline"
+                    title="Linked transaction"
+                    value={money(linkedTransaction.amount, displayCurrency)}
+                />
+            )}
+            <Row
+                icon="create-outline"
+                title="Edit debt"
+                onPress={() => {
+                    onEdit(debt);
+                    onClose();
+                }}
+            />
+            <Row
+                leading={<Ionicons name="trash-outline" size={20} color={ds.danger} />}
+                title="Delete debt"
+                onPress={handleDeletePress}
+                last
+            />
 
-                    {/* Linked Transaction Indicator */}
-                    {linkedTransaction && (
-                        <View style={[styles.linkedInfo, { backgroundColor: colors.background }]}>
-                            <Ionicons name="link-outline" size={14} color={colors.primary} />
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 6 }}>
-                                Linked to Transaction • {money(linkedTransaction.amount, displayCurrency)}
-                            </Text>
-                        </View>
-                    )}
-                </View>
-
-                {/* Actions */}
-                <View style={styles.actions}>
-                    <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: colors.surface }]}
-                        onPress={() => {
-                            if (debt) {
-                                onEdit(debt);
-                                onClose();
-                            }
-                        }}
-                    >
-                        <Ionicons name="create-outline" size={24} color={colors.primary} />
-                        <Text style={[styles.actionText, { color: colors.primary }]}>Edit Debt</Text>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-
-                    <View style={[styles.separator, { backgroundColor: colors.border }]} />
-
-                    <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: colors.surface }]}
-                        onPress={handleDeletePress}
-                    >
-                        <Ionicons name="trash-outline" size={24} color={colors.error} />
-                        <Text style={[styles.actionText, { color: colors.error }]}>Delete Debt</Text>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Subtle ID */}
-                <Text style={[styles.transactionId, { color: colors.textSecondary }]}>
-                    ID: {debt.id}
-                </Text>
-            </View>
+            <Text style={[type.caption, styles.id, { color: ds.text3 }]}>ID: {debt.id}</Text>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        paddingBottom: 20
-    },
-    previewCard: {
-        padding: 16,
-        borderRadius: 16,
-        marginBottom: 24,
-    },
-    previewHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    details: {
-        flex: 1,
-    },
-    category: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 2,
-    },
-    note: {
-        fontSize: 14,
-    },
-    amount: {
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    linkedInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 12,
-        padding: 8,
-        borderRadius: 8,
-    },
-    actions: {
-        borderRadius: 16,
-        overflow: 'hidden',
-    },
-    actionButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        justifyContent: 'space-between',
-    },
-    actionText: {
-        flex: 1,
-        fontSize: 16,
-        fontWeight: '600',
-        marginLeft: 12,
-    },
-    separator: {
-        height: 1,
-        width: '100%',
-    },
-    transactionId: {
-        fontSize: 10,
-        opacity: 0.8,
+    id: {
         textAlign: 'center',
-        marginTop: 12,
-        fontFamily: 'monospace',
-    }
+        marginTop: space[3],
+    },
 });
 
 export default DebtOptionsModal;

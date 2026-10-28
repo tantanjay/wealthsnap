@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Dimensions, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,9 +8,11 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
 import { Card } from '@components/index';
+import { Row, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
+import { type, space, radius } from '@styles/theme';
 import { getSavingsRateTrend } from '@utils/financialMetrics';
 import { formatCompactCurrency } from '@utils/currencyUtils';
 import { saveInsightsSavingsTab, getInsightsSavingsTab, saveInsightsSavingsTimeRange, getInsightsSavingsTimeRange } from '@services/core/storageService';
@@ -55,8 +57,31 @@ const getNiceCurrencyBoundary = (value: number): number => {
     return niceNormalized * magnitude;
 };
 
+// Sample stat tile for the info sheet; colored like the real tile under the chart.
+const ExampleTile: React.FC<{ label: string; value: string; color: string }> = ({ label, value, color }) => {
+    const { ds } = useTheme();
+    return (
+        <View style={[modalStyles.tile, { backgroundColor: ds.inset }]}>
+            <Text style={[type.small, { color: ds.text2 }]}>{label}</Text>
+            <Text style={[type.titleNum, { color }]}>{value}</Text>
+        </View>
+    );
+};
+
+const LegendLine: React.FC<{ label: string; meaning: string; color: string }> = ({ label, meaning, color }) => {
+    const { ds } = useTheme();
+    return (
+        <View style={modalStyles.legendRow}>
+            <View style={[modalStyles.dot, modalStyles.legendDot, { backgroundColor: color }]} />
+            <Text style={[type.small, modalStyles.flex, { color: ds.text2 }]}>
+                <Text style={{ color: ds.text }}>{label}: </Text>{meaning}
+            </Text>
+        </View>
+    );
+};
+
 const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, privacyMode, isLoading = false, currency, selectedDate = new Date() }) => {
-    const { colors } = useTheme();
+    const { colors, ds } = useTheme();
     const screenWidth = Dimensions.get('window').width;
 
     const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
@@ -368,287 +393,152 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
 
     const exampleValue = isPercent ? '25%' : formatCompactCurrency(25000, currency, 0);
 
+    const ratesActive = activeTab === 'RATE' || activeTab === 'AMOUNT';
+
     const renderInfoModal = () => (
         <BottomModal
             visible={showInfoModal}
             onClose={() => setShowInfoModal(false)}
-            title="Understanding Your Chart"
+            title="Understanding your chart"
             maxHeight="85%"
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Visual Metrics Example */}
-                <View style={{ marginBottom: 20 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 12 }}>
-                        {/* Current Example */}
-                        <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Current</Text>
-                            <Text style={{ color: colors.success, fontSize: 18, fontWeight: 'bold' }}>{exampleValue}</Text>
-                        </View>
-
-                        {/* Streak Example */}
-                        <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Streak</Text>
-                            <Text style={{ color: colors.success, fontSize: 18, fontWeight: 'bold' }}>5📈</Text>
-                        </View>
-                    </View>
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-                        {/* Positive Example */}
-                        <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Positive</Text>
-                            <Text style={{ color: colors.success, fontSize: 16, fontWeight: 'bold' }}>8 / 5</Text>
-                        </View>
-
-                        {/* Negative Example */}
-                        <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Negative</Text>
-                            <Text style={{ color: colors.error, fontSize: 16, fontWeight: 'bold' }}>3 / 2</Text>
-                        </View>
-                    </View>
+                {/* Mirrors the stat tiles under the chart */}
+                <View style={modalStyles.grid}>
+                    <ExampleTile label="Current" value={exampleValue} color={ds.success} />
+                    <ExampleTile label="Streak" value="5📈" color={ds.success} />
+                    <ExampleTile label="Positive" value="8 / 5" color={ds.success} />
+                    <ExampleTile label="Negative" value="3 / 2" color={ds.danger} />
                 </View>
 
-                {/* Tab Explanation */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>🎛️ Rate, Saved &amp; Cash Flow</Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, gap: 8 }}>
-                        <View>
-                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Rate</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                The % of your income you kept each month. Debt principal payments count as spending here; money moved into a savings goal counts as kept.
-                            </Text>
-                        </View>
-                        <View style={{ height: 1, backgroundColor: colors.border }} />
-                        <View>
-                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Saved</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                The raw amount you kept, including money moved into investments.
-                            </Text>
-                        </View>
-                        <View style={{ height: 1, backgroundColor: colors.border }} />
-                        <View>
-                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Cash Flow</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                What&apos;s actually left in cash after everything - including investments and other transfers out.
-                            </Text>
-                        </View>
+                <SectionHeader title="Rate, saved & cash flow" />
+                <Row
+                    title="Rate"
+                    subtitle="The % of your income you kept each month. Debt principal payments count as spending here; money moved into a savings goal counts as kept."
+                />
+                <Row title="Saved" subtitle="The raw amount you kept, including money moved into investments." />
+                <Row
+                    title="Cash flow"
+                    subtitle="What's actually left in cash after everything, including investments and other transfers out."
+                    last
+                />
+
+                <SectionHeader title="How they relate" />
+                <Text style={[type.small, { color: ds.text2 }]}>
+                    Every month, your income splits into three pieces. Each tab measures a different slice:
+                </Text>
+                <View style={[modalStyles.block, { backgroundColor: ds.inset }]}>
+                    <Text style={[type.caption, modalStyles.center, { color: ds.text2 }]}>Monthly income</Text>
+
+                    <View style={modalStyles.stack}>
+                        <View style={{ flex: 5, backgroundColor: ds.danger }} />
+                        <View style={{ flex: 2, backgroundColor: ds.domainInvest }} />
+                        <View style={{ flex: 3, backgroundColor: ds.success }} />
                     </View>
-                </View>
 
-                {/* How the 3 metrics relate - visual income breakdown */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>🔀 How They Relate</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 10 }}>
-                        Every month, your income splits into three pieces. Each tab measures a different slice:
-                    </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 6, textAlign: 'center' }}>Monthly Income</Text>
-
-                        {/* Stacked bar: Expenses / Invested / Cash Left */}
-                        <View style={{ flexDirection: 'row', height: 28, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>
-                            <View style={{ flex: 5, backgroundColor: colors.error }} />
-                            <View style={{ flex: 2, backgroundColor: '#2196F3' }} />
-                            <View style={{ flex: 3, backgroundColor: colors.success }} />
-                        </View>
-
-                        {/* Legend */}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error }} />
-                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Expenses</Text>
+                    <View style={modalStyles.stackLegend}>
+                        {([['Expenses', ds.danger], ['Invested', ds.domainInvest], ['Cash left', ds.success]] as const).map(([label, color]) => (
+                            <View key={label} style={modalStyles.legendItem}>
+                                <View style={[modalStyles.dot, { backgroundColor: color }]} />
+                                <Text style={[type.caption, { color: ds.text2 }]}>{label}</Text>
                             </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#2196F3' }} />
-                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Invested</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
-                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Cash Left</Text>
-                            </View>
-                        </View>
-
-                        {/* Bracket: Rate & Saved = Invested + Cash Left (right 70%) */}
-                        <View style={{ flexDirection: 'row', marginBottom: 6 }}>
-                            <View style={{ flex: 5 }} />
-                            <View style={{
-                                flex: 5,
-                                borderTopWidth: 2,
-                                borderColor: (activeTab === 'RATE' || activeTab === 'AMOUNT') ? colors.primary : colors.border,
-                                paddingTop: 3
-                            }}>
-                                <Text style={{
-                                    color: (activeTab === 'RATE' || activeTab === 'AMOUNT') ? colors.primary : colors.textSecondary,
-                                    fontSize: 10,
-                                    fontWeight: '700',
-                                    textAlign: 'center'
-                                }}>Rate & Saved</Text>
-                            </View>
-                        </View>
-
-                        {/* Bracket: Cash Flow = Cash Left only (right 30%) */}
-                        <View style={{ flexDirection: 'row' }}>
-                            <View style={{ flex: 7 }} />
-                            <View style={{
-                                flex: 3,
-                                borderTopWidth: 2,
-                                borderColor: activeTab === 'CASH' ? colors.success : colors.border,
-                                paddingTop: 3
-                            }}>
-                                <Text style={{
-                                    color: activeTab === 'CASH' ? colors.success : colors.textSecondary,
-                                    fontSize: 10,
-                                    fontWeight: '700',
-                                    textAlign: 'center'
-                                }}>Cash Flow</Text>
-                            </View>
-                        </View>
-                    </View>
-                    <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 18, marginTop: 8 }}>
-                        <Text style={{ fontWeight: 'bold' }}>Rate</Text> and <Text style={{ fontWeight: 'bold' }}>Saved</Text> count money moved into investments as kept.{"\n"}
-                        <Text style={{ fontWeight: 'bold' }}>Cash Flow</Text> only counts what&apos;s actually left in your wallet.
-                    </Text>
-                </View>
-
-                {/* Chart Explanation */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📈 Reading the Chart</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 12 }}>
-                        The line chart shows your {activeMeta.metricLabel.toLowerCase()} trend over time. Here&apos;s what it means:
-                    </Text>
-
-                    {/* Visual examples side by side */}
-                    <View style={{ flexDirection: 'row', marginBottom: 12, gap: 8 }}>
-                        {/* Saving Example */}
-                        <View style={{ flex: 1, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
-                            <View style={{ alignItems: 'center', marginBottom: 8 }}>
-                                <View style={{ width: '100%', height: 60, backgroundColor: colors.background, borderRadius: 6, position: 'relative', overflow: 'hidden' }}>
-                                    {/* Zero line */}
-                                    <View style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: colors.border }} />
-                                    {/* Upward trend line */}
-                                    <View style={{ position: 'absolute', bottom: 10, left: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
-                                    <View style={{ position: 'absolute', bottom: 18, left: '40%', width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
-                                    <View style={{ position: 'absolute', bottom: 25, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
-                                </View>
-                            </View>
-                            <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 13, marginBottom: 2, textAlign: 'center' }}>Saving Money</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, textAlign: 'center' }}>Line above zero (green)</Text>
-                        </View>
-
-                        {/* Overspending Example */}
-                        <View style={{ flex: 1, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
-                            <View style={{ alignItems: 'center', marginBottom: 8 }}>
-                                <View style={{ width: '100%', height: 60, backgroundColor: colors.background, borderRadius: 6, position: 'relative', overflow: 'hidden' }}>
-                                    {/* Zero line */}
-                                    <View style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: colors.border }} />
-                                    {/* Downward trend line */}
-                                    <View style={{ position: 'absolute', top: 35, left: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error }} />
-                                    <View style={{ position: 'absolute', top: 40, left: '40%', width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error }} />
-                                    <View style={{ position: 'absolute', top: 43, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error }} />
-                                </View>
-                            </View>
-                            <Text style={{ color: colors.error, fontWeight: 'bold', fontSize: 13, marginBottom: 2, textAlign: 'center' }}>Overspending</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, textAlign: 'center' }}>Line below zero (red)</Text>
-                        </View>
+                        ))}
                     </View>
 
-                    {/* Key Points */}
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
-                            • <Text style={{ fontWeight: 'bold' }}>Zero Line:</Text> The horizontal line in the middle{"\n"}
-                            • <Text style={{ color: colors.success, fontWeight: 'bold' }}>Green Line:</Text> Above zero = You&apos;re saving{"\n"}
-                            • <Text style={{ color: colors.error, fontWeight: 'bold' }}>Red Line:</Text> Below zero = Spending more than earning{"\n"}
-                            • <Text style={{ fontWeight: 'bold' }}>Dots:</Text> Each represents one month{"\n"}
-                            • <Text style={{ fontWeight: 'bold' }}>Higher is Better:</Text> More savings = further above zero
-                        </Text>
-                    </View>
-                </View>
-
-                {/* Current Value Explanation */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📊 Current {activeMeta.metricLabel}</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 8 }}>
-                        Your {activeMeta.metricLabel.toLowerCase()} for the most recent month:
-                    </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                            • <Text style={{ color: colors.success, fontWeight: 'bold' }}>{isPercent ? 'Positive %' : 'Positive amount'}</Text>: You saved money 💰{"\n"}
-                            • <Text style={{ color: colors.error, fontWeight: 'bold' }}>{isPercent ? 'Negative %' : 'Negative amount'}</Text>: You overspent 📉
-                        </Text>
-                    </View>
-                </View>
-
-                {/* Streak Explanation */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>🔥 Streak</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 8 }}>
-                        Consecutive months with the same trend. Higher streaks show consistency!
-                    </Text>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <View style={{ flex: 1, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
-                            <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 13, marginBottom: 4 }}>5📈</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>5 months of saving</Text>
+                    {/* Rate & Saved = Invested + Cash left (right 50%); Cash flow = Cash left only (right 30%) */}
+                    <View style={modalStyles.bracketRow}>
+                        <View style={{ flex: 5 }} />
+                        <View style={[modalStyles.bracket, { flex: 5, borderColor: ratesActive ? ds.accent : ds.hairline }]}>
+                            <Text style={[type.captionMedium, modalStyles.center, { color: ratesActive ? ds.accent : ds.text2 }]}>Rate & saved</Text>
                         </View>
-                        <View style={{ flex: 1, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
-                            <Text style={{ color: colors.error, fontWeight: 'bold', fontSize: 13, marginBottom: 4 }}>2📉</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>2 months overspending</Text>
+                    </View>
+                    <View style={modalStyles.bracketRow}>
+                        <View style={{ flex: 7 }} />
+                        <View style={[modalStyles.bracket, { flex: 3, borderColor: activeTab === 'CASH' ? ds.accent : ds.hairline }]}>
+                            <Text style={[type.captionMedium, modalStyles.center, { color: activeTab === 'CASH' ? ds.accent : ds.text2 }]}>Cash flow</Text>
                         </View>
                     </View>
                 </View>
+                <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
+                    <Text style={{ color: ds.text }}>Rate</Text> and <Text style={{ color: ds.text }}>Saved</Text> count money moved into investments as kept.{"\n"}
+                    <Text style={{ color: ds.text }}>Cash flow</Text> only counts what&apos;s actually left in your wallet.
+                </Text>
 
-                {/* Positive/Negative Format Explanation */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📈 Understanding &quot;8 / 5&quot; Format</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 8 }}>
-                        This shows <Text style={{ fontWeight: 'bold' }}>two separate numbers</Text>, not division:
-                    </Text>
-
-                    {/* Positive Visual Example */}
-                    <View style={{ backgroundColor: colors.success + '20', padding: 12, borderRadius: 8, marginBottom: 8, borderLeftWidth: 4, borderLeftColor: colors.success }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 6 }}>Positive: 8 / 5</Text>
-                        <View style={{ marginLeft: 8 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 3 }}>
-                                <Text style={{ color: colors.success, fontWeight: 'bold' }}>8</Text> = Total positive months
-                            </Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                                <Text style={{ color: colors.success, fontWeight: 'bold' }}>5</Text> = Best consecutive streak
-                            </Text>
+                <SectionHeader title="Reading the chart" />
+                <Text style={[type.small, { color: ds.text2 }]}>
+                    The line chart shows your {activeMeta.metricLabel.toLowerCase()} trend over time. Here&apos;s what it means:
+                </Text>
+                <View style={modalStyles.pair}>
+                    <View style={[modalStyles.tile, { backgroundColor: ds.inset }]}>
+                        <View style={[modalStyles.miniChart, { backgroundColor: ds.raised }]}>
+                            <View style={[modalStyles.zeroLine, { backgroundColor: ds.hairline }]} />
+                            <View style={[modalStyles.point, { bottom: 10, left: 10, backgroundColor: ds.success }]} />
+                            <View style={[modalStyles.point, { bottom: 18, left: '40%', backgroundColor: ds.success }]} />
+                            <View style={[modalStyles.point, { bottom: 25, right: 10, backgroundColor: ds.success }]} />
                         </View>
+                        <Text style={[type.smallMedium, modalStyles.center, { color: ds.success }]}>Saving money</Text>
+                        <Text style={[type.caption, modalStyles.center, { color: ds.text2 }]}>Line above zero (green)</Text>
                     </View>
-
-                    {/* Negative Visual Example */}
-                    <View style={{ backgroundColor: colors.error + '20', padding: 12, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: colors.error }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 6 }}>Negative: 3 / 2</Text>
-                        <View style={{ marginLeft: 8 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 3 }}>
-                                <Text style={{ color: colors.error, fontWeight: 'bold' }}>3</Text> = Total negative months
-                            </Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                                <Text style={{ color: colors.error, fontWeight: 'bold' }}>2</Text> = Worst consecutive streak
-                            </Text>
+                    <View style={[modalStyles.tile, { backgroundColor: ds.inset }]}>
+                        <View style={[modalStyles.miniChart, { backgroundColor: ds.raised }]}>
+                            <View style={[modalStyles.zeroLine, { backgroundColor: ds.hairline }]} />
+                            <View style={[modalStyles.point, { top: 35, left: 10, backgroundColor: ds.danger }]} />
+                            <View style={[modalStyles.point, { top: 40, left: '40%', backgroundColor: ds.danger }]} />
+                            <View style={[modalStyles.point, { top: 43, right: 10, backgroundColor: ds.danger }]} />
                         </View>
+                        <Text style={[type.smallMedium, modalStyles.center, { color: ds.danger }]}>Overspending</Text>
+                        <Text style={[type.caption, modalStyles.center, { color: ds.text2 }]}>Line below zero (red)</Text>
                     </View>
                 </View>
-
-                {/* Other Metrics */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📉 Other Metrics</Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, gap: 8 }}>
-                        <View>
-                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Average</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                Average {activeMeta.metricLabel.toLowerCase()} across all months
-                            </Text>
-                        </View>
-                        <View style={{ height: 1, backgroundColor: colors.border }} />
-                        <View>
-                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Best & Worst Month</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                Highest and lowest values in the period
-                            </Text>
-                        </View>
-                    </View>
+                <View style={modalStyles.legend}>
+                    {([
+                        ['Zero line', 'The horizontal line in the middle', ds.hairline],
+                        ['Green line', "Above zero = You're saving", ds.success],
+                        ['Red line', 'Below zero = Spending more than earning', ds.danger],
+                        ['Dots', 'Each represents one month', ds.text2],
+                        ['Higher is better', 'More savings = further above zero', ds.text2],
+                    ] as const).map(([label, meaning, color]) => (
+                        <LegendLine key={label} label={label} meaning={meaning} color={color} />
+                    ))}
                 </View>
 
-                <View style={{ height: 20 }} />
+                <SectionHeader title={`Current ${activeMeta.metricLabel.toLowerCase()}`} />
+                <Text style={[type.small, { color: ds.text2 }]}>
+                    Your {activeMeta.metricLabel.toLowerCase()} for the most recent month:
+                </Text>
+                <View style={modalStyles.legend}>
+                    <LegendLine label={isPercent ? 'Positive %' : 'Positive amount'} meaning="You saved money" color={ds.success} />
+                    <LegendLine label={isPercent ? 'Negative %' : 'Negative amount'} meaning="You overspent" color={ds.danger} />
+                </View>
+
+                <SectionHeader title="Streak" />
+                <Text style={[type.small, { color: ds.text2 }]}>
+                    Consecutive months with the same trend. Higher streaks show consistency.
+                </Text>
+                <View style={modalStyles.pair}>
+                    <ExampleTile label="5 months of saving" value="5📈" color={ds.success} />
+                    <ExampleTile label="2 months overspending" value="2📉" color={ds.danger} />
+                </View>
+
+                <SectionHeader title="Understanding the “8 / 5” format" />
+                <Text style={[type.small, { color: ds.text2 }]}>
+                    This shows <Text style={{ color: ds.text }}>two separate numbers</Text>, not division:
+                </Text>
+                <Row
+                    leading={<View style={[modalStyles.dot, { backgroundColor: ds.success }]} />}
+                    title="Positive: 8 / 5"
+                    subtitle={'8 = Total positive months\n5 = Best consecutive streak'}
+                />
+                <Row
+                    leading={<View style={[modalStyles.dot, { backgroundColor: ds.danger }]} />}
+                    title="Negative: 3 / 2"
+                    subtitle={'3 = Total negative months\n2 = Worst consecutive streak'}
+                    last
+                />
+
+                <SectionHeader title="Other metrics" />
+                <Row title="Average" subtitle={`Average ${activeMeta.metricLabel.toLowerCase()} across all months`} />
+                <Row title="Best & worst month" subtitle="Highest and lowest values in the period" last />
             </ScrollView>
         </BottomModal>
     );
@@ -937,5 +827,100 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         </View>
     );
 };
+
+const modalStyles = StyleSheet.create({
+    grid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: space[3],
+    },
+    tile: {
+        flexGrow: 1,
+        flexBasis: '40%',
+        gap: space[1],
+        padding: space[4],
+        borderRadius: radius.md,
+    },
+    pair: {
+        flexDirection: 'row',
+        gap: space[3],
+        marginTop: space[3],
+    },
+    block: {
+        padding: space[3],
+        borderRadius: radius.sm,
+        marginTop: space[3],
+    },
+    stack: {
+        flexDirection: 'row',
+        height: 24,
+        borderRadius: radius.sm,
+        overflow: 'hidden',
+        marginVertical: space[2],
+    },
+    stackLegend: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: space[3],
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[1],
+    },
+    bracketRow: {
+        flexDirection: 'row',
+        marginBottom: space[1],
+    },
+    bracket: {
+        borderTopWidth: 2,
+        paddingTop: space[1],
+    },
+    miniChart: {
+        height: 60,
+        borderRadius: radius.sm,
+        overflow: 'hidden',
+        marginBottom: space[1],
+    },
+    zeroLine: {
+        position: 'absolute',
+        top: '50%',
+        left: 0,
+        right: 0,
+        height: 1,
+    },
+    point: {
+        position: 'absolute',
+        width: 8,
+        height: 8,
+        borderRadius: radius.full,
+    },
+    legend: {
+        gap: space[2],
+        marginTop: space[3],
+    },
+    legendRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: space[2],
+    },
+    legendDot: {
+        marginTop: 5,
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: radius.full,
+    },
+    flex: {
+        flex: 1,
+    },
+    center: {
+        textAlign: 'center',
+    },
+    paragraph: {
+        marginTop: space[2],
+    },
+});
 
 export default SavingsRateTrend;

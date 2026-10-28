@@ -5,6 +5,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator,
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { type, space, radius } from '@styles/theme';
 import { PriceHistory } from '@types';
 import { addPriceHistory, updatePriceHistory } from '@services/domain/priceHistoryService';
 
@@ -23,7 +24,7 @@ const PriceHistoryFormModal: React.FC<PriceHistoryFormModalProps> = ({
     existingItem,
     onSuccess
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -85,90 +86,73 @@ const PriceHistoryFormModal: React.FC<PriceHistoryFormModalProps> = ({
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title={existingItem ? "Edit Price" : "Add Price"}
+            title={existingItem ? "Edit price" : "Add price"}
             maxHeight="60%"
             footer={
                 <TouchableOpacity
-                    style={[styles.saveButton, { backgroundColor: colors.primary }]}
+                    style={[styles.saveButton, { backgroundColor: ds.accent }]}
                     onPress={handleSave}
                     disabled={isLoading}
                 >
                     {isLoading ? (
-                        <ActivityIndicator color="#FFF" />
+                        <ActivityIndicator color={ds.onAccent} />
                     ) : (
-                        <Text style={styles.saveButtonText}>Save</Text>
+                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Save</Text>
                     )}
                 </TouchableOpacity>
             }
         >
-            <View style={styles.content}>
-                {/* Date Input */}
-                <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>Date</Text>
-                    <TouchableOpacity
-                        style={[styles.input, { borderColor: colors.border, backgroundColor: colors.surface }]}
-                        onPress={() => setShowDatePicker(true)}
-                    >
-                        <Text style={{ color: colors.text }}>{date.toLocaleDateString()}</Text>
-                    </TouchableOpacity>
-                    {showDatePicker && (
-                        <DateTimePicker
-                            value={date}
-                            mode="date"
-                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                            onChange={onDateChange}
-                            maximumDate={new Date()}
-                        />
-                    )}
-                </View>
-
-                {/* Price Input */}
-                <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>Price</Text>
-                    <TextInput
-                        style={[styles.input, { borderColor: colors.border, backgroundColor: colors.surface, color: colors.text }]}
-                        value={price}
-                        onChangeText={setPrice}
-                        placeholder="0.00"
-                        placeholderTextColor={colors.textSecondary}
-                        keyboardType="numeric"
+            <View style={styles.inputGroup}>
+                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Date</Text>
+                <TouchableOpacity
+                    style={[styles.input, { backgroundColor: ds.inset }]}
+                    onPress={() => setShowDatePicker(true)}
+                >
+                    <Text style={[type.bodyNum, { color: ds.text }]}>{date.toLocaleDateString()}</Text>
+                </TouchableOpacity>
+                {showDatePicker && (
+                    <DateTimePicker
+                        value={date}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={onDateChange}
+                        maximumDate={new Date()}
                     />
-                </View>
+                )}
+            </View>
+
+            <View style={styles.inputGroup}>
+                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Price</Text>
+                <TextInput
+                    style={[type.bodyNum, styles.input, { backgroundColor: ds.inset, color: ds.text }]}
+                    value={price}
+                    onChangeText={setPrice}
+                    placeholder="0.00"
+                    placeholderTextColor={ds.text3}
+                    keyboardType="numeric"
+                />
             </View>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
-    content: {
-        paddingVertical: 10
-    },
     inputGroup: {
-        marginBottom: 16
+        marginBottom: space[4],
     },
     label: {
-        fontSize: 12,
-        marginBottom: 8,
-        fontWeight: '600'
+        marginBottom: space[2],
     },
     input: {
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        fontSize: 16
+        borderRadius: radius.md,
+        padding: space[3],
     },
     saveButton: {
-        marginTop: 10,
-        paddingVertical: 14,
-        borderRadius: 12,
-        alignItems: 'center'
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    saveButtonText: {
-        color: '#FFF',
-        fontSize: 16,
-        fontWeight: 'bold'
-    }
 });
 
 export default PriceHistoryFormModal;

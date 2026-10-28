@@ -4,10 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { Card } from '@components/index';
+import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Anomaly } from '@utils/financialMetrics';
 import { getPermissionStatus, openSettings } from '@services/background';
+import { type as typeScale } from '@styles/theme';
 
 interface SmartAlertsProps {
     anomalies: Anomaly[];
@@ -15,7 +17,7 @@ interface SmartAlertsProps {
 }
 
 const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
-    const { colors } = useTheme();
+    const { colors, ds } = useTheme();
     const { showAlert } = useAlert();
     const [showInfo, setShowInfo] = useState(false);
     const [hasPermission, setHasPermission] = useState(true);
@@ -139,81 +141,38 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
             <BottomModal
                 visible={showInfo}
                 onClose={() => setShowInfo(false)}
-                title="How Smart Alerts Work"
+                title="How Smart Alerts work"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <View>
-                        <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                            WealthSnap helps you stay on top of your finances by detecting four types of events:
-                        </Text>
-
-                        <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5 }}>
-                            {/* Budget Exceeded */}
-                            <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-                                <View style={{ width: 32, alignItems: 'center', marginRight: 12 }}>
-                                    <Ionicons name="wallet-outline" size={24} color="#F44336" />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>Budget Limit</Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
-                                        Triggered when your current spending exceeds the monthly budget you set for a category.
-                                    </Text>
-                                </View>
-                            </View>
-
-                            {/* Spending Spike */}
-                            <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-                                <View style={{ width: 32, alignItems: 'center', marginRight: 12 }}>
-                                    <Ionicons name="trending-up-outline" size={24} color="#FF9800" />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>Spending Spike</Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
-                                        Triggered when spending is significantly higher (&gt;50%) than your average monthly spending for that category.
-                                    </Text>
-                                </View>
-                            </View>
-
-                            {/* Runway Drop */}
-                            <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-                                <View style={{ width: 32, alignItems: 'center', marginRight: 12 }}>
-                                    <Ionicons name="trending-down-outline" size={24} color="#F44336" />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>Runway Drop</Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
-                                        Triggered when your financial runway drops by 25% or more compared to last month (e.g. 8 months → 6 months).
-                                    </Text>
-                                </View>
-                            </View>
-
-                            {/* Out of Cash */}
-                            <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-                                <View style={{ width: 32, alignItems: 'center', marginRight: 12 }}>
-                                    <Ionicons name="battery-dead-outline" size={24} color="#F44336" />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>Out of Cash</Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
-                                        Shown every month your tracked cash balance is at or below zero. It replaces Runway Drop while it applies, so you don&apos;t get both.
-                                    </Text>
-                                </View>
-                            </View>
-
-                            <View style={{ flexDirection: 'row' }}>
-                                <View style={{ width: 32, alignItems: 'center', marginRight: 12 }}>
-                                    <Ionicons name="notifications-off-outline" size={24} color={colors.textSecondary} />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>Smart Suppression</Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
-                                        To avoid spam, we only send one push notification per category each month, even if multiple alerts are detected.
-                                    </Text>
-                                </View>
-                            </View>
-                        </View>
-                        <View style={{ height: 20 }} />
-                    </View>
+                    <Text style={[typeScale.small, { color: ds.text2 }]}>
+                        WealthSnap helps you stay on top of your finances by detecting four types of events:
+                    </Text>
+                    <Row
+                        icon="wallet-outline"
+                        title="Budget limit"
+                        subtitle="Triggered when your current spending exceeds the monthly budget you set for a category."
+                    />
+                    <Row
+                        icon="trending-up-outline"
+                        title="Spending spike"
+                        subtitle="Triggered when spending is significantly higher (>50%) than your average monthly spending for that category."
+                    />
+                    <Row
+                        icon="trending-down-outline"
+                        title="Runway drop"
+                        subtitle="Triggered when your financial runway drops by 25% or more compared to last month (e.g. 8 months → 6 months)."
+                    />
+                    <Row
+                        icon="battery-dead-outline"
+                        title="Out of cash"
+                        subtitle="Shown every month your tracked cash balance is at or below zero. It replaces Runway Drop while it applies, so you don't get both."
+                    />
+                    <Row
+                        icon="notifications-off-outline"
+                        title="Smart suppression"
+                        subtitle="To avoid spam, we only send one push notification per category each month, even if multiple alerts are detected."
+                        last
+                    />
                 </ScrollView>
             </BottomModal>
         </View>

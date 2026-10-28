@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Switch, ScrollView } from 'react-native';
+import { View, Text, Pressable, Switch, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Card } from '@components/index';
+import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { type, space } from '@styles/theme';
 import { RecurrenceRule } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { EmptyState } from '@components/common/EmptyState';
@@ -26,7 +27,7 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
     onDeleteRule,
     currency
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
 
     const sortedRules = useMemo(() => {
         return [...rules].sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime());
@@ -36,66 +37,62 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Recurring Transactions"
+            title="Recurring transactions"
             maxHeight="85%"
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 10, paddingHorizontal: 20 }}>
-                    Your Recurring Expenses ({sortedRules.length})
+                <Text style={[type.smallStrong, styles.heading, { color: ds.text }]}>
+                    Your recurring expenses ({sortedRules.length})
                 </Text>
 
                 {sortedRules.length === 0 ? (
                     <EmptyState size="compact" icon="repeat-outline" title="No recurring rules found." />
                 ) : (
-                    <FlatList
-                        scrollEnabled={false}
-                        data={sortedRules}
-                        keyExtractor={item => item.id}
-                        renderItem={({ item }) => (
-                            <Card style={{ marginBottom: 10 }}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <View style={{ flex: 1, paddingRight: 10 }}>
-                                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 4 }}>
-                                            {item.name || item.transactionTemplate.category}
-                                        </Text>
-                                        <Text style={{ color: colors.textSecondary }}>
-                                            {item.frequency} • <Text style={{ color: item.transactionTemplate.type === 'EXPENSE' ? colors.error : colors.success }}>
-                                                {formatCurrencyAmount(item.transactionTemplate.amount, currency)}
-                                            </Text>
-                                        </Text>
-                                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
-                                            Next due: {new Date(item.nextDueDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
-                                        </Text>
-                                    </View>
-
-                                    <View style={{ alignItems: 'center', gap: 15 }}>
-                                        <View style={{ alignItems: 'center' }}>
-                                            <Text style={{ color: colors.textSecondary, fontSize: 10, marginBottom: 2 }}>
-                                                {item.isActive ? 'Active' : 'Paused'}
-                                            </Text>
-                                            <Switch
-                                                value={item.isActive}
-                                                onValueChange={() => onToggleRule(item)}
-                                                trackColor={{ false: colors.border, true: colors.primary }}
-                                                thumbColor={item.isActive ? '#fff' : '#f4f3f4'}
-                                                style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
-                                            />
-                                        </View>
-
-                                        <TouchableOpacity
+                    sortedRules.map((item, i) => {
+                        const nextDue = new Date(item.nextDueDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                        return (
+                            <Row
+                                key={item.id}
+                                icon="repeat-outline"
+                                title={item.name || item.transactionTemplate.category}
+                                subtitle={`${item.frequency} · Next due ${nextDue}`}
+                                value={formatCurrencyAmount(item.transactionTemplate.amount, currency)}
+                                valueTone={item.transactionTemplate.type === 'EXPENSE' ? 'bad' : 'good'}
+                                change={item.isActive ? 'Active' : 'Paused'}
+                                last={i === sortedRules.length - 1}
+                                trailing={
+                                    <View style={styles.actions}>
+                                        <Switch
+                                            value={item.isActive}
+                                            onValueChange={() => onToggleRule(item)}
+                                            trackColor={{ false: ds.hairline, true: ds.accentSoft }}
+                                            thumbColor={item.isActive ? ds.accent : ds.text3}
+                                        />
+                                        <Pressable
                                             onPress={() => onDeleteRule(item.id)}
-                                            style={{ padding: 5 }}
+                                            hitSlop={space[2]}
+                                            accessibilityLabel="Delete recurring rule"
                                         >
-                                            <Ionicons name="trash-outline" size={24} color={colors.error} />
-                                        </TouchableOpacity>
+                                            <Ionicons name="trash-outline" size={20} color={ds.danger} />
+                                        </Pressable>
                                     </View>
-                                </View>
-                            </Card>
-                        )}
-                        showsVerticalScrollIndicator={false}
-                    />
+                                }
+                            />
+                        );
+                    })
                 )}
             </ScrollView>
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    heading: {
+        marginBottom: space[1],
+    },
+    actions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+    },
+});

@@ -1,15 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, Dimensions, ScrollView } from 'react-native';
+import { View, Text, Dimensions, ScrollView, StyleSheet } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
+import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
 import { getCategoryGroup } from '@constants/categories';
 import { getCategoryTrend } from '@utils/financialMetrics';
+import { type, space, radius } from '@styles/theme';
 import { formatCurrencyAmount, formatCompactCurrency } from '@utils/currencyUtils';
 import { SEVERITY_ICON } from '@utils/severity';
 
@@ -32,7 +34,7 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
     grouping = 'GROUP',
     selectedDate = new Date()
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const screenWidth = Dimensions.get('window').width;
     const [timeRange, setTimeRange] = useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
 
@@ -84,81 +86,50 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
     // Pointer Config for Tap & Drag
     const pointerConfig = useMemo(() => ({
         pointerStripHeight: 160,
-        pointerStripColor: colors.border,
-        pointerStripWidth: 2,
-        pointerColor: colors.primary,
+        pointerStripColor: ds.hairline,
+        pointerStripWidth: 1,
+        pointerColor: ds.accent,
         radius: 6,
         pointerLabelWidth: 100,
         pointerLabelHeight: 90,
         activatePointersOnLongPress: true,
         autoAdjustPointerLabelPosition: true,
-        pointerComponent: () => {
-            return (
-                <View style={{
-                    height: 10,
-                    width: 10,
-                    borderRadius: 5,
-                    backgroundColor: colors.primary,
-                    borderWidth: 2,
-                    borderColor: colors.surface
-                }} />
-            );
-        },
+        pointerComponent: () => (
+            <View style={[styles.pointer, { backgroundColor: ds.accent, borderColor: ds.sheet }]} />
+        ),
         pointerLabelComponent: (items: any) => {
             const item = items[0];
             if (!item) return null;
 
             return (
-                <View style={{
-                    height: 90,
-                    width: 100,
-                    justifyContent: 'center',
-                    marginTop: -30,
-                    marginLeft: -40,
-                }}>
-                    <View style={{
-                        paddingHorizontal: 10,
-                        paddingVertical: 8,
-                        borderRadius: 12,
-                        backgroundColor: colors.surface,
-                        elevation: 5,
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 3.84,
-                        borderWidth: 1,
-                        borderColor: colors.border + '20'
-                    }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 10, marginBottom: 2, textAlign: 'center' }}>
-                            {item.label}
-                        </Text>
-                        <Text style={{ color: colors.text, fontSize: 13, fontWeight: 'bold', textAlign: 'center' }}>
+                <View style={styles.pointerLabelWrap}>
+                    <View style={[styles.pointerLabel, { backgroundColor: ds.raised, borderColor: ds.hairline }]}>
+                        <Text style={[type.caption, styles.center, { color: ds.text2 }]}>{item.label}</Text>
+                        <Text style={[type.smallMediumNum, styles.center, { color: ds.text }]}>
                             {formatCurrencyAmount(new BigNumber(item.value), currency)}
                         </Text>
                     </View>
                 </View>
             );
         },
-    }), [colors, currency]);
+    }), [ds, currency]);
+
+    const axisText = [type.caption, { color: ds.text2 }];
 
     return (
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title={`${category} Trend`}
+            title={`${category} trend`}
             subtitle={`Last ${monthsToLoad} months`}
         >
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 20 }}
-            >
-                <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 20 }}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.range}>
                     <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
                 </View>
 
-                {/* Chart */}
                 {trendData.data.length > 0 && (
-                    <View style={{ height: 240, paddingVertical: 10, overflow: 'hidden', marginLeft: -20 }}>
+                    <View style={styles.chart}>
                         <LineChart
                             data={trendData.data.map((val, index) => ({
                                 value: val.toNumber(),
@@ -169,16 +140,15 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
                             maxValue={max.multipliedBy(1.2).toNumber()}
                             spacing={(screenWidth - 150) / Math.max(trendData.data.length - 1, 1)}
                             initialSpacing={20}
-                            thickness={3}
-                            color={colors.primary}
-                            hideRules={false}
-                            rulesColor={colors.border + '40'}
+                            thickness={1.5}
+                            color={ds.accent}
+                            hideRules
                             yAxisColor="transparent"
                             xAxisColor="transparent"
-                            yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
-                            xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
-                            hideDataPoints={false}
-                            dataPointsColor={colors.primary}
+                            yAxisTextStyle={axisText}
+                            xAxisLabelTextStyle={axisText}
+                            dataPointsColor={ds.accent}
+                            dataPointsRadius={3}
                             curved
                             curveType={0}
                             yAxisLabelWidth={90}
@@ -189,49 +159,14 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
                     </View>
                 )}
 
-                {/* Stats */}
-                <View style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-around',
-                    marginTop: 20,
-                    padding: 15,
-                    backgroundColor: colors.surface,
-                    borderRadius: 12
-                }}>
-                    <View style={{ alignItems: 'center' }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Total</Text>
-                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
-                            {formatCurrencyAmount(total, currency)}
-                        </Text>
-                    </View>
-                    <View style={{ width: 1, backgroundColor: colors.border }} />
-                    <View style={{ alignItems: 'center' }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Average</Text>
-                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>
-                            {formatCurrencyAmount(average, currency)}
-                        </Text>
-                    </View>
-                    <View style={{ width: 1, backgroundColor: colors.border }} />
-                    <View style={{ alignItems: 'center' }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Highest</Text>
-                        <Text style={{ color: '#F44336', fontSize: 16, fontWeight: 'bold' }}>
-                            {formatCurrencyAmount(max, currency)}
-                        </Text>
-                    </View>
-                </View>
+                <Row title="Total" value={formatCurrencyAmount(total, currency)} />
+                <Row title="Average" value={formatCurrencyAmount(average, currency)} />
+                <Row title="Highest" value={formatCurrencyAmount(max, currency)} last />
 
-                {/* Insight */}
                 {trendData.data.length > 1 && (
-                    <View style={{
-                        marginTop: 15,
-                        padding: 12,
-                        backgroundColor: colors.primary + '10',
-                        borderRadius: 8,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                    }}>
-                        <Ionicons name={SEVERITY_ICON.info} size={20} color={colors.info} style={{ marginRight: 8 }} />
-                        <Text style={{ color: colors.text, fontSize: 12, flex: 1 }}>
+                    <View style={styles.insight}>
+                        <Ionicons name={SEVERITY_ICON.info} size={20} color={ds.text2} />
+                        <Text style={[type.small, styles.insightText, { color: ds.text2 }]}>
                             {trendData.data[trendData.data.length - 1].isGreaterThan(average)
                                 ? `Your ${category} spending this month is above average.`
                                 : `Your ${category} spending this month is below average. Great job! 🎉`
@@ -243,5 +178,51 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    pointer: {
+        height: 10,
+        width: 10,
+        borderRadius: radius.full,
+        borderWidth: 2,
+    },
+    pointerLabelWrap: {
+        height: 90,
+        width: 100,
+        justifyContent: 'center',
+        marginTop: -30,
+        marginLeft: -40,
+    },
+    pointerLabel: {
+        paddingHorizontal: space[3],
+        paddingVertical: space[2],
+        borderRadius: radius.sm,
+        borderWidth: 1,
+    },
+    center: {
+        textAlign: 'center',
+    },
+    range: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginBottom: space[5],
+    },
+    chart: {
+        height: 240,
+        paddingVertical: space[2],
+        overflow: 'hidden',
+        marginLeft: -space[5],
+        marginBottom: space[4],
+    },
+    insight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        marginTop: space[4],
+    },
+    insightText: {
+        flex: 1,
+    },
+});
 
 export default CategoryTrendModal;
