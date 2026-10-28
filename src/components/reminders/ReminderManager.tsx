@@ -49,6 +49,5 @@ export const ReminderManager: React.FC<ReminderManagerProps> = ({ onClose }) => 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
     },
 });

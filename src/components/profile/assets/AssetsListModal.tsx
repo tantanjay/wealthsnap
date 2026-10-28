@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, FlatList, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { type, space, radius } from '@styles/theme';
 import { Asset } from '@types';
 import { getAllAssets, deleteAsset } from '@services/domain/assetService';
 import { AssetForm } from '@components/profile/assets/AssetForm';
@@ -16,7 +18,7 @@ interface AssetsListModalProps {
 }
 
 export const AssetsListModal: React.FC<AssetsListModalProps> = ({ visible, onClose }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
 
     const [assets, setAssets] = useState<Asset[]>([]);
@@ -88,71 +90,62 @@ export const AssetsListModal: React.FC<AssetsListModalProps> = ({ visible, onClo
         (a.name && a.name.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
-    const renderItem = ({ item }: { item: Asset }) => (
-        <TouchableOpacity
-            style={[styles.itemContainer, { borderBottomColor: colors.border }]}
+    const renderItem = ({ item, index }: { item: Asset; index: number }) => (
+        <Row
+            icon="pricetag-outline"
+            title={item.symbol}
+            subtitle={[item.name, item.type].filter(Boolean).join(' · ')}
             onPress={() => handleEdit(item)}
-        >
-            <View style={[styles.iconContainer, { backgroundColor: colors.surface }]}>
-                <Ionicons name="pricetag-outline" size={20} color={colors.primary} />
-            </View>
-            <View style={styles.itemContent}>
-                <Text style={[styles.inputSymbol, { color: colors.text }]}>{item.symbol}</Text>
-                <Text style={[styles.itemName, { color: colors.textSecondary }]}>{item.name}</Text>
-                {item.type && <Text style={[styles.itemType, { color: colors.textSecondary }]}>{item.type}</Text>}
-            </View>
-            <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDelete(item.symbol)}
-            >
-                <Ionicons name="trash-outline" size={20} color={colors.error} />
-            </TouchableOpacity>
-        </TouchableOpacity>
+            last={index === filteredAssets.length - 1}
+            trailing={
+                <Pressable onPress={() => handleDelete(item.symbol)} hitSlop={space[2]} accessibilityLabel={`Delete ${item.symbol}`}>
+                    <Ionicons name="trash-outline" size={20} color={ds.danger} />
+                </Pressable>
+            }
+        />
     );
+
+    const isList = view === 'LIST';
 
     return (
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title={view === 'LIST' ? "Manage Assets" : undefined}
+            title={isList ? 'Manage assets' : undefined}
             maxHeight="85%"
+            footer={isList ? (
+                <Pressable onPress={handleAdd} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Add asset</Text>
+                </Pressable>
+            ) : undefined}
         >
-            <View style={{ height: '100%', backgroundColor: colors.background }}>
-                {view === 'LIST' ? (
+            <View style={styles.body}>
+                {isList ? (
                     <>
-                        <View style={[styles.searchContainer, { borderBottomColor: colors.border }]}>
-                            <Ionicons name="search" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
+                        <View style={[styles.search, { backgroundColor: ds.inset }]}>
+                            <Ionicons name="search-outline" size={18} color={ds.text2} />
                             <TextInput
-                                style={[styles.searchInput, { color: colors.text }]}
-                                placeholder="Search by Symbol or Name"
-                                placeholderTextColor={colors.gray300}
+                                style={[type.body, styles.searchInput, { color: ds.text }]}
+                                placeholder="Search by symbol or name"
+                                placeholderTextColor={ds.text3}
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                             />
                         </View>
 
                         {loading ? (
-                            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+                            <ActivityIndicator color={ds.accent} style={styles.loading} />
                         ) : (
                             <FlatList
                                 data={filteredAssets}
                                 keyExtractor={item => item.symbol}
                                 renderItem={renderItem}
+                                keyboardShouldPersistTaps="handled"
                                 ListEmptyComponent={
-                                    <View style={styles.emptyContainer}>
-                                        <EmptyState size="compact" icon="list-outline" title="No assets found." />
-                                    </View>
+                                    <EmptyState size="compact" icon="list-outline" title="No assets found." />
                                 }
-                                contentContainerStyle={{ paddingBottom: 80 }}
                             />
                         )}
-
-                        <TouchableOpacity
-                            style={[styles.fab, { backgroundColor: colors.primary }]}
-                            onPress={handleAdd}
-                        >
-                            <Ionicons name="add" size={30} color="#fff" />
-                        </TouchableOpacity>
                     </>
                 ) : (
                     <AssetForm
@@ -167,64 +160,28 @@ export const AssetsListModal: React.FC<AssetsListModalProps> = ({ visible, onClo
 };
 
 const styles = StyleSheet.create({
-    searchContainer: {
+    body: {
+        flexShrink: 1,
+    },
+    search: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 12,
-        borderBottomWidth: 1,
+        gap: space[3],
+        padding: space[3],
+        borderRadius: radius.md,
+        marginBottom: space[1],
     },
     searchInput: {
         flex: 1,
-        fontSize: 16,
+        padding: 0,
     },
-    itemContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderBottomWidth: 1,
+    loading: {
+        marginTop: space[5],
     },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+    button: {
+        height: 48,
+        borderRadius: radius.md,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
-    },
-    itemContent: {
-        flex: 1,
-    },
-    inputSymbol: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    itemName: {
-        fontSize: 14,
-    },
-    itemType: {
-        fontSize: 12,
-        opacity: 0.8,
-    },
-    deleteButton: {
-        padding: 8,
-    },
-    fab: {
-        position: 'absolute',
-        bottom: 20,
-        right: 20,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        alignItems: 'center',
-        justifyContent: 'center',
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-    },
-    emptyContainer: {
-        padding: 40,
-        alignItems: 'center',
     },
 });

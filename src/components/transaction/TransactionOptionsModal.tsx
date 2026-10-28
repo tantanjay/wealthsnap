@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import { Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
+import { type, space } from '@styles/theme';
 import { Transaction } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 
@@ -26,7 +28,7 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
     onDelete,
     currency = 'PHP'
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { isPrivacyEnabled } = usePrivacy();
     // Detail sheets follow the privacy mode too: Discreet and Hidden both mask amounts here.
     const money = (...args: Parameters<typeof formatCurrencyAmount>) => (isPrivacyEnabled ? '****' : formatCurrencyAmount(...args));
@@ -81,147 +83,44 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Transaction Options"
+            title="Transaction options"
             maxHeight="auto"
         >
-            <View style={styles.container}>
-                {/* Transaction Preview */}
-                <View style={[styles.previewCard, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border || '#e0e0e0' }]}>
-                    <View style={styles.previewHeader}>
-                        <View style={[
-                            styles.iconContainer,
-                            { backgroundColor: isExpense ? colors.error + '20' : colors.success + '20' }
-                        ]}>
-                            <Ionicons
-                                name={isExpense ? "remove" : "add"}
-                                size={20}
-                                color={isExpense ? colors.error : colors.success}
-                            />
-                        </View>
-                        <View style={styles.details}>
-                            <Text style={[styles.category, { color: colors.text }]}>{transaction.category}</Text>
-                            <Text style={[styles.note, { color: colors.textSecondary }]}>
-                                {transaction.note || (transaction.subCategory ? transaction.subCategory : transaction.type)}
-                            </Text>
-                        </View>
-                        <Text style={[
-                            styles.amount,
-                            { color: isExpense ? colors.error : colors.success }
-                        ]}>
-                            {isExpense ? '-' : '+'}{money(transaction.amount, currency)}
-                        </Text>
-                    </View>
-                </View>
+            <Row
+                icon={isExpense ? 'remove' : 'add'}
+                title={transaction.category}
+                subtitle={transaction.note || (transaction.subCategory ? transaction.subCategory : transaction.type)}
+                value={`${isExpense ? '\u2212' : '+'}${money(transaction.amount, currency)}`}
+                valueTone={isExpense ? 'bad' : 'good'}
+            />
+            {/* Stays tappable when locked so the alert can explain why */}
+            <Row
+                icon="create-outline"
+                title={canEdit ? "Edit transaction" : "Cannot edit transaction"}
+                subtitle={canEdit ? undefined : editDisabledReason}
+                onPress={handleEditPress}
+                style={canEdit ? undefined : styles.locked}
+            />
+            <Row
+                leading={<Ionicons name="trash-outline" size={20} color={ds.danger} />}
+                title="Delete transaction"
+                onPress={handleDeletePress}
+                last
+            />
 
-                {/* Actions */}
-                <View style={styles.actions}>
-                    <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: colors.surface, opacity: canEdit ? 1 : 0.6 }]}
-                        onPress={handleEditPress}
-                        disabled={!canEdit && false}
-                    >
-                        <View style={{ width: 24, alignItems: 'center' }}>
-                            <Ionicons name="create-outline" size={24} color={canEdit ? colors.primary : colors.textSecondary} />
-                        </View>
-                        <View style={{ flex: 1, marginLeft: 16 }}>
-                            <Text style={{ fontSize: 16, fontWeight: '600', color: canEdit ? colors.primary : colors.textSecondary }}>
-                                {canEdit ? "Edit Transaction" : "Cannot Edit Transaction"}
-                            </Text>
-                            {!canEdit && (
-                                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, lineHeight: 16 }}>
-                                    {editDisabledReason}
-                                </Text>
-                            )}
-                        </View>
-                        <View style={{ width: 24, alignItems: 'center' }}>
-                            {canEdit && <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />}
-                        </View>
-                    </TouchableOpacity>
-
-                    <View style={[styles.separator, { backgroundColor: colors.border }]} />
-
-                    <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: colors.surface }]}
-                        onPress={handleDeletePress}
-                    >
-                        <Ionicons name="trash-outline" size={24} color={colors.error} />
-                        <Text style={[styles.actionText, { color: colors.error }]}>Delete Transaction</Text>
-                        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Subtle ID */}
-                <Text style={[styles.transactionId, { color: colors.textSecondary }]}>
-                    ID: {transaction.id}
-                </Text>
-            </View>
+            <Text style={[type.caption, styles.id, { color: ds.text3 }]}>ID: {transaction.id}</Text>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        paddingBottom: 20
+    locked: {
+        opacity: 0.6,
     },
-    previewCard: {
-        padding: 16,
-        borderRadius: 16,
-        marginBottom: 24,
-    },
-    previewHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    details: {
-        flex: 1,
-    },
-    category: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 2,
-    },
-    note: {
-        fontSize: 14,
-    },
-    amount: {
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    actions: {
-        borderRadius: 16,
-        overflow: 'hidden',
-    },
-    actionButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        justifyContent: 'space-between',
-    },
-    actionText: {
-        flex: 1,
-        fontSize: 16,
-        fontWeight: '600',
-        marginLeft: 12,
-    },
-    separator: {
-        height: 1,
-        width: '100%',
-    },
-    transactionId: {
-        fontSize: 10,
-        opacity: 0.8,
+    id: {
         textAlign: 'center',
-        marginTop: 12,
-        fontFamily: 'monospace',
-    }
+        marginTop: space[3],
+    },
 });
 
 export default TransactionOptionsModal;

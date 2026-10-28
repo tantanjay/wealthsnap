@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import { Hero, ProgressBar, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
+import { type, space } from '@styles/theme';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { getMonthEndProjection } from '@utils/financialMetrics';
 import { SEVERITY_ICON } from '@utils/severity';
@@ -23,7 +25,7 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
     transactions,
     currency
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
 
     const projection = useMemo(() => {
         return getMonthEndProjection(transactions);
@@ -35,141 +37,71 @@ const MonthEndProjectionModal: React.FC<MonthEndProjectionProps> = ({
             .times(100)
         : new BigNumber(0);
 
+    const savingsTone = projection.projectedSavings.isGreaterThanOrEqualTo(0) ? 'good' : 'bad';
+
     return (
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Month-End Projection"
+            title="Month-end projection"
             subtitle={`${projection.daysRemaining} days remaining`}
         >
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 20 }}
-            >
-                {/* Progress Bar */}
-                <View style={{ marginBottom: 20 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Month Progress</Text>
-                        <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>
-                            {Math.round(projection.progress)}%
-                        </Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <Hero
+                    label="Projected savings"
+                    value={formatCurrencyAmount(projection.projectedSavings, currency)}
+                    change={`${savingsRate.toFixed(1)}% savings rate`}
+                    changeTone={savingsRate.isGreaterThanOrEqualTo(0) ? savingsTone : 'bad'}
+                    stats={projection.debtPrincipalRepaid.isGreaterThan(0)
+                        ? [{ label: 'After debt principal repaid', value: formatCurrencyAmount(projection.debtPrincipalRepaid, currency) }]
+                        : undefined}
+                />
+
+                <View style={styles.progress}>
+                    <View style={styles.progressLine}>
+                        <Text style={[type.small, { color: ds.text2 }]}>Month progress</Text>
+                        <Text style={[type.smallMediumNum, { color: ds.text }]}>{Math.round(projection.progress)}%</Text>
                     </View>
-                    <View style={{ height: 8, backgroundColor: colors.surface, borderRadius: 4, overflow: 'hidden' }}>
-                        <View style={{
-                            height: '100%',
-                            width: `${projection.progress}%`,
-                            backgroundColor: colors.primary
-                        }} />
-                    </View>
+                    <ProgressBar percent={projection.progress} />
                 </View>
 
-                {/* Income Projection */}
-                <View style={{
-                    backgroundColor: colors.success + '10',
-                    padding: 15,
-                    borderRadius: 12,
-                    marginBottom: 12
-                }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                        <Ionicons name="trending-up" size={20} color={colors.success} style={{ marginRight: 8 }} />
-                        <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Income</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Current</Text>
-                        <Text style={{ color: colors.text, fontSize: 14 }}>
-                            {formatCurrencyAmount(projection.currentIncome, currency)}
-                        </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Projected</Text>
-                        <Text style={{ color: colors.success, fontSize: 18, fontWeight: 'bold' }}>
-                            {formatCurrencyAmount(projection.projectedIncome, currency)}
-                        </Text>
-                    </View>
-                </View>
+                <SectionHeader title="Income" />
+                <Row title="Current" value={formatCurrencyAmount(projection.currentIncome, currency)} />
+                <Row title="Projected" value={formatCurrencyAmount(projection.projectedIncome, currency)} valueTone="good" last />
 
-                {/* Expense Projection */}
-                <View style={{
-                    backgroundColor: colors.error + '10',
-                    padding: 15,
-                    borderRadius: 12,
-                    marginBottom: 12
-                }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                        <Ionicons name="trending-down" size={20} color={colors.error} style={{ marginRight: 8 }} />
-                        <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Expenses</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Current</Text>
-                        <Text style={{ color: colors.text, fontSize: 14 }}>
-                            {formatCurrencyAmount(projection.currentExpense, currency)}
-                        </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Projected</Text>
-                        <Text style={{ color: colors.error, fontSize: 18, fontWeight: 'bold' }}>
-                            {formatCurrencyAmount(projection.projectedExpense, currency)}
-                        </Text>
-                    </View>
-                </View>
+                <SectionHeader title="Expenses" />
+                <Row title="Current" value={formatCurrencyAmount(projection.currentExpense, currency)} />
+                <Row title="Projected" value={formatCurrencyAmount(projection.projectedExpense, currency)} valueTone="bad" last />
 
-                {/* Projected Savings */}
-                <View style={{
-                    backgroundColor: colors.primary + '10',
-                    padding: 15,
-                    borderRadius: 12,
-                    marginBottom: 15
-                }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 4 }}>
-                                Projected Savings
-                            </Text>
-                            <Text style={{
-                                color: projection.projectedSavings.isGreaterThanOrEqualTo(0) ? colors.success : colors.error,
-                                fontSize: 24,
-                                fontWeight: 'bold'
-                            }}>
-                                {formatCurrencyAmount(projection.projectedSavings, currency)}
-                            </Text>
-                            {projection.debtPrincipalRepaid.isGreaterThan(0) && (
-                                <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4 }}>
-                                    After {formatCurrencyAmount(projection.debtPrincipalRepaid, currency)} debt principal repaid
-                                </Text>
-                            )}
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>
-                                Savings Rate
-                            </Text>
-                            <Text style={{
-                                color: savingsRate.isGreaterThanOrEqualTo(0) ? colors.success : colors.error,
-                                fontSize: 20,
-                                fontWeight: 'bold'
-                            }}>
-                                {savingsRate.toFixed(1)}%
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Insight */}
-                <View style={{
-                    flexDirection: 'row',
-                    backgroundColor: colors.primary + '15',
-                    padding: 12,
-                    borderRadius: 8,
-                    marginTop: 5,
-                    alignItems: 'center'
-                }}>
-                    <Ionicons name={SEVERITY_ICON.info} size={20} color={colors.info} style={{ marginRight: 10 }} />
-                    <Text style={{ color: colors.text, flex: 1, fontSize: 13, lineHeight: 18 }}>
-                        <Text style={{ fontWeight: 'bold' }}>New Account?</Text> If you have less than 1 month of history, this uses a simple daily average. Once you track more months, it switches to Smart Projection based on your historical patterns!
+                <View style={styles.insight}>
+                    <Ionicons name={SEVERITY_ICON.info} size={20} color={ds.text2} />
+                    <Text style={[type.small, styles.insightText, { color: ds.text2 }]}>
+                        <Text style={[type.smallMedium, { color: ds.text }]}>New account? </Text>
+                        If you have less than 1 month of history, this uses a simple daily average. Once you track more months, it switches to Smart Projection based on your historical patterns.
                     </Text>
                 </View>
             </ScrollView>
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    progress: {
+        marginTop: space[5],
+    },
+    progressLine: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    insight: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: space[3],
+        marginTop: space[6],
+    },
+    insightText: {
+        flex: 1,
+    },
+});
 
 export default MonthEndProjectionModal;

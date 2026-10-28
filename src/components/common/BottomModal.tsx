@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@context/ThemeContext';
 import { useSecurity } from '@context/SecurityContext';
+import { type, space, radius } from '@styles/theme';
 
 interface BottomModalProps {
     visible: boolean;
@@ -21,6 +22,7 @@ interface BottomModalProps {
     footer?: React.ReactNode;
 }
 
+// Older sheet API, drawn with the Refined Minimal sheet recipe (docs/DESIGN.md, Bottom sheet) so it matches ds/Sheet.
 const BottomModal: React.FC<BottomModalProps> = ({
     visible,
     onClose,
@@ -35,7 +37,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
     headerRight,
     footer
 }) => {
-    const { colors } = useTheme();
+    const { ds, elevation } = useTheme();
     const insets = useSafeAreaInsets();
     const [keyboardVisible, setKeyboardVisible] = useState(false);
 
@@ -83,7 +85,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
             <KeyboardAvoidingView
                 behavior="padding"
                 keyboardVerticalOffset={Platform.OS === 'android' ? -insets.bottom : 0}
-                style={styles.overlay}
+                style={[styles.overlay, { backgroundColor: ds.scrim }]}
             >
                 {/* Backdrop - handles closing */}
                 <TouchableOpacity
@@ -96,25 +98,28 @@ const BottomModal: React.FC<BottomModalProps> = ({
                 <View
                     style={[
                         styles.container,
+                        elevation.sheet,
                         {
-                            backgroundColor: colors.background,
+                            backgroundColor: ds.sheet,
                             maxHeight: keyboardVisible ? '95%' : maxHeight,
-                            paddingBottom: footer ? 0 : Math.max(insets.bottom, 20)
+                            paddingBottom: footer ? 0 : Math.max(insets.bottom, space[5])
                         },
                         style
                     ]}
                 >
+                    <View style={[styles.grabber, { backgroundColor: ds.hairline }]} />
+
                     {/* Header */}
                     {(title || subtitle) && (
                         <View style={styles.header}>
                             <View style={styles.headerTextContainer}>
                                 {title && (
-                                    <Text style={[styles.title, { color: colors.text }]}>
+                                    <Text style={[type.title, { color: ds.text }]}>
                                         {title}
                                     </Text>
                                 )}
                                 {subtitle && (
-                                    <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                                    <Text style={[type.small, styles.subtitle, { color: ds.text2 }]}>
                                         {subtitle}
                                     </Text>
                                 )}
@@ -122,8 +127,8 @@ const BottomModal: React.FC<BottomModalProps> = ({
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 {headerRight}
                                 {dismissable && (
-                                    <TouchableOpacity onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                                        <Ionicons name="close" size={24} color={colors.text} />
+                                    <TouchableOpacity onPress={handleClose} hitSlop={space[2]} accessibilityLabel="Close">
+                                        <Ionicons name="close" size={22} color={ds.text2} />
                                     </TouchableOpacity>
                                 )}
                             </View>
@@ -141,9 +146,9 @@ const BottomModal: React.FC<BottomModalProps> = ({
                             style={[
                                 styles.footer,
                                 {
-                                    backgroundColor: colors.surface,
-                                    borderTopColor: colors.border,
-                                    paddingBottom: Math.max(insets.bottom, 20)
+                                    backgroundColor: ds.inset,
+                                    borderTopColor: ds.hairline,
+                                    paddingBottom: Math.max(insets.bottom, space[6])
                                 }
                             ]}
                         >
@@ -160,7 +165,6 @@ const styles = StyleSheet.create({
     overlay: {
         flex: 1,
         justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0,0,0,0.5)',
     },
     backdrop: {
         position: 'absolute',
@@ -170,49 +174,42 @@ const styles = StyleSheet.create({
         right: 0,
     },
     container: {
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        padding: 20,
+        borderTopLeftRadius: radius.lg,
+        borderTopRightRadius: radius.lg,
+        paddingTop: space[3],
+        paddingHorizontal: space[5],
         width: '100%',
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: -2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
+    },
+    grabber: {
+        width: 36,
+        height: 4,
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginBottom: space[4],
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: space[4],
     },
     headerTextContainer: {
         flex: 1,
-        marginRight: 10,
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: 'bold',
+        marginRight: space[3],
     },
     subtitle: {
-        fontSize: 12,
         marginTop: 2,
     },
     content: {
         flexShrink: 1,
     },
     footer: {
-        marginHorizontal: -20,
-        marginTop: 16,
-        paddingHorizontal: 20,
-        paddingTop: 16,
+        marginHorizontal: -space[5],
+        marginTop: space[4],
+        paddingHorizontal: space[5],
+        paddingTop: space[3],
         borderTopWidth: 1,
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
-    }
+    },
 });
 
 export default BottomModal;

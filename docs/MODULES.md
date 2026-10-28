@@ -75,7 +75,7 @@ Home → Holdings tab (`src/components/home/HoldingsTab.tsx`). Holdings, price/d
 - `src/components/investments/modals/DividendHistoryFormModal.tsx`
 - `src/components/investments/modals/InvestmentHistoryModal.tsx`
 - `src/components/investments/modals/InvestmentOptionsModal.tsx`
-- `src/components/investments/modals/InvestmentSettingsModal.tsx`
+- `src/components/investments/FetchPriceListSheet.tsx`
 - `src/components/investments/modals/PriceHistoryFormModal.tsx`
 - `src/services/domain/investmentService.ts`
 - `src/services/domain/priceHistoryService.ts`

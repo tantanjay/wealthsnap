@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 
 import BottomModal from '@components/common/BottomModal';
-import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 import { getAllMonthlySummaries, syncMonthlySummaries, MonthlySummaryRow } from '@services/domain/monthlySummaryService';
 
 interface MonthlySummaryModalProps {
@@ -17,7 +17,7 @@ const formatMonthLabel = (yearMonth: string): string => {
 };
 
 const MonthlySummaryModal: React.FC<MonthlySummaryModalProps> = ({ visible, onClose }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const [summaries, setSummaries] = useState<MonthlySummaryRow[]>([]);
     const [selectedYearMonth, setSelectedYearMonth] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -53,109 +53,133 @@ const MonthlySummaryModal: React.FC<MonthlySummaryModalProps> = ({ visible, onCl
 
     const selected = summaries.find(s => s.yearMonth === selectedYearMonth) ?? null;
 
+    const footer = loading ? undefined : (
+        <Pressable
+            onPress={handleReprocess}
+            disabled={reprocessing}
+            style={[styles.button, { backgroundColor: ds.accent, opacity: reprocessing ? 0.6 : 1 }]}
+            accessibilityRole="button"
+        >
+            {reprocessing
+                ? <ActivityIndicator color={ds.onAccent} />
+                : <Text style={[type.bodyStrong, { color: ds.onAccent }]}>
+                    {summaries.length === 0 ? 'Generate summaries' : 'Reprocess all months'}
+                </Text>}
+        </Pressable>
+    );
+
     return (
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Monthly Summary"
+            title="Monthly summary"
             maxHeight="85%"
             style={{ height: '85%' }}
             contentStyle={{ flex: 1 }}
+            footer={footer}
         >
             {loading ? (
-                <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-                    <ActivityIndicator color={colors.primary} />
+                <View style={styles.loading}>
+                    <ActivityIndicator color={ds.accent} />
                 </View>
             ) : summaries.length === 0 ? (
-                <View style={{ paddingVertical: 20 }}>
-                    <Text style={{ color: colors.textSecondary, fontStyle: 'italic', marginBottom: 16 }}>
-                        No summary data yet. Add some transactions, then reprocess.
-                    </Text>
-                    <Button title="Generate Summaries" onPress={handleReprocess} loading={reprocessing} />
-                </View>
+                <Text style={[type.small, styles.empty, { color: ds.text2 }]}>
+                    No summary data yet. Add some transactions, then reprocess.
+                </Text>
             ) : (
                 <>
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        style={{ flexGrow: 0, marginBottom: 12 }}
-                        contentContainerStyle={{ gap: 8 }}
+                        style={styles.chips}
+                        contentContainerStyle={styles.chipsContent}
                     >
                         {[...summaries].reverse().map(s => {
                             const isSelected = s.yearMonth === selectedYearMonth;
                             return (
-                                <TouchableOpacity
+                                <Pressable
                                     key={s.yearMonth}
                                     onPress={() => setSelectedYearMonth(s.yearMonth)}
-                                    style={{
-                                        paddingVertical: 8,
-                                        paddingHorizontal: 14,
-                                        borderRadius: 16,
-                                        backgroundColor: isSelected ? colors.primary : colors.surface,
-                                        borderWidth: 1,
-                                        borderColor: isSelected ? colors.primary : colors.border,
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        gap: 6
-                                    }}
+                                    style={[styles.chip, isSelected && { backgroundColor: ds.inset }]}
                                 >
-                                    <Text style={{ color: isSelected ? colors.textLight : colors.text, fontWeight: '600', fontSize: 13 }}>
+                                    <Text style={[type.smallMedium, { color: isSelected ? ds.text : ds.text2 }]}>
                                         {formatMonthLabel(s.yearMonth)}
                                     </Text>
-                                    {!s.isFinal && (
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isSelected ? colors.textLight : colors.accent }} />
-                                    )}
-                                </TouchableOpacity>
+                                    {!s.isFinal && <View style={[styles.dot, { backgroundColor: ds.text2 }]} />}
+                                </Pressable>
                             );
                         })}
                     </ScrollView>
 
-                    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+                    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
                         {selected && (
                             <>
                                 {!selected.isFinal && (
-                                    <Text style={{ color: colors.accent, fontSize: 12, marginBottom: 8 }}>
-                                        In progress - this month is still being tracked
+                                    <Text style={[type.small, styles.note, { color: ds.text2 }]}>
+                                        In progress: this month is still being tracked
                                     </Text>
                                 )}
-                                <View style={{
-                                    backgroundColor: colors.surface,
-                                    borderRadius: 12,
-                                    borderWidth: 1,
-                                    borderColor: colors.border,
-                                    padding: 14,
-                                    marginBottom: 16
-                                }}>
-                                    <Text
-                                        selectable
-                                        style={{
-                                            color: colors.text,
-                                            fontSize: 13,
-                                            lineHeight: 20,
-                                            fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' })
-                                        }}
-                                    >
+                                <View style={[styles.block, { backgroundColor: ds.inset }]}>
+                                    <Text selectable style={[type.smallNum, { color: ds.text }]}>
                                         {selected.summaryText}
                                     </Text>
                                 </View>
-                                <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 16 }}>
+                                <Text style={[type.caption, styles.generated, { color: ds.text2 }]}>
                                     Last generated {new Date(selected.updatedAt).toLocaleString()}
                                 </Text>
                             </>
                         )}
-
-                        <Button
-                            title={reprocessing ? 'Reprocessing...' : 'Reprocess All Months'}
-                            variant="outline"
-                            onPress={handleReprocess}
-                            loading={reprocessing}
-                            icon="refresh-outline"
-                        />
                     </ScrollView>
                 </>
             )}
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    loading: {
+        paddingVertical: space[7],
+        alignItems: 'center',
+    },
+    empty: {
+        paddingVertical: space[4],
+    },
+    chips: {
+        flexGrow: 0,
+        marginBottom: space[3],
+    },
+    chipsContent: {
+        gap: space[1],
+    },
+    chip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[1],
+        paddingVertical: space[2],
+        paddingHorizontal: space[3],
+        borderRadius: radius.sm,
+    },
+    dot: {
+        width: 6,
+        height: 6,
+        borderRadius: radius.full,
+    },
+    note: {
+        marginBottom: space[2],
+    },
+    block: {
+        borderRadius: radius.sm,
+        padding: space[3],
+    },
+    generated: {
+        marginTop: space[2],
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
 
 export default MonthlySummaryModal;

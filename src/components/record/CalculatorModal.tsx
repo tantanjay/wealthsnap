@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { TransactionType } from '@types';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 
 interface CalculatorModalProps {
     visible: boolean;
@@ -16,16 +17,36 @@ interface CalculatorModalProps {
     allowZero?: boolean;
 }
 
+type KeyTone = 'digit' | 'op' | 'equals';
+
+// Grid key: inset for digits and operators, accent only for equals. Pass `label` or an icon child.
+const CalcKey: React.FC<{ onPress: () => void; flex?: number; tone?: KeyTone; label?: string; children?: React.ReactNode }> = ({ onPress, flex = 1, tone = 'digit', label, children }) => {
+    const { ds } = useTheme();
+    return (
+        <Pressable
+            onPress={onPress}
+            style={({ pressed }) => [
+                styles.key,
+                { flex, backgroundColor: tone === 'equals' ? ds.accent : ds.inset, opacity: pressed ? 0.7 : 1 }
+            ]}
+        >
+            {label ? (
+                <Text style={[type.titleNum, { color: tone === 'equals' ? ds.onAccent : tone === 'op' ? ds.text2 : ds.text }]}>{label}</Text>
+            ) : children}
+        </Pressable>
+    );
+};
+
 export const CalculatorModal: React.FC<CalculatorModalProps> = ({
     visible,
     onClose,
     initialValue,
     onApply,
-    type,
+    type: transactionType,
     allowNegative = false,
     allowZero = false
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { height } = useWindowDimensions();
     const modalHeight = height < 800 ? '85%' : '70%';
 
@@ -130,142 +151,89 @@ export const CalculatorModal: React.FC<CalculatorModalProps> = ({
             onClose={onClose}
             title="Calculator"
             maxHeight={modalHeight}
+            footer={
+                <Pressable onPress={handleCalcApply} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Apply</Text>
+                </Pressable>
+            }
         >
             {/* Display */}
-            <View style={{
-                backgroundColor: colors.background,
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 16,
-                minHeight: 70,
-                justifyContent: 'center',
-                alignItems: 'flex-end'
-            }}>
-                <Text style={{
-                    color: type === 'EXPENSE' ? colors.error : colors.success,
-                    fontSize: 36,
-                    fontWeight: 'bold'
-                }}>
+            <View style={[styles.display, { backgroundColor: ds.inset }]}>
+                <Text
+                    style={[type.display, { color: transactionType === 'EXPENSE' ? ds.danger : ds.success }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                >
                     {calcDisplay}
                 </Text>
                 {calcOperator && (
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4 }}>
+                    <Text style={[type.smallNum, styles.pending, { color: ds.text2 }]}>
                         {calcPrevValue} {calcOperator}
                     </Text>
                 )}
             </View>
 
-            {/* Calculator Buttons */}
             <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={{ gap: 8 }}>
-                    {/* Row 1 */}
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <TouchableOpacity
-                            onPress={handleCalcClear}
-                            style={{ flex: 1, backgroundColor: colors.error + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                        >
-                            <Text style={{ color: colors.error, fontSize: 20, fontWeight: 'bold' }}>C</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => setCalcDisplay(calcDisplay.slice(0, -1) || '0')}
-                            style={{ flex: 1, backgroundColor: colors.warning + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                        >
-                            <Ionicons name="backspace-outline" size={24} color={colors.warning} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => handleCalcOperator('÷')}
-                            style={{ flex: 1, backgroundColor: colors.primary + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                        >
-                            <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>÷</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => handleCalcOperator('×')}
-                            style={{ flex: 1, backgroundColor: colors.primary + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                        >
-                            <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>×</Text>
-                        </TouchableOpacity>
+                <View style={styles.grid}>
+                    <View style={styles.row}>
+                        <CalcKey onPress={handleCalcClear} tone="op" label="C" />
+                        <CalcKey onPress={() => setCalcDisplay(calcDisplay.slice(0, -1) || '0')} tone="op">
+                            <Ionicons name="backspace-outline" size={22} color={ds.text2} />
+                        </CalcKey>
+                        <CalcKey onPress={() => handleCalcOperator('÷')} tone="op" label="÷" />
+                        <CalcKey onPress={() => handleCalcOperator('×')} tone="op" label="×" />
                     </View>
-
-                    {/* Row 2 */}
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                        {['7', '8', '9'].map(d => (
-                            <TouchableOpacity
-                                key={d}
-                                onPress={() => handleCalcDigit(d)}
-                                style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                            >
-                                <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>{d}</Text>
-                            </TouchableOpacity>
-                        ))}
-                        <TouchableOpacity
-                            onPress={() => handleCalcOperator('-')}
-                            style={{ flex: 1, backgroundColor: colors.primary + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                        >
-                            <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>−</Text>
-                        </TouchableOpacity>
+                    <View style={styles.row}>
+                        {['7', '8', '9'].map(d => <CalcKey key={d} onPress={() => handleCalcDigit(d)} label={d} />)}
+                        <CalcKey onPress={() => handleCalcOperator('-')} tone="op" label="−" />
                     </View>
-
-                    {/* Row 3 */}
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                        {['4', '5', '6'].map(d => (
-                            <TouchableOpacity
-                                key={d}
-                                onPress={() => handleCalcDigit(d)}
-                                style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                            >
-                                <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>{d}</Text>
-                            </TouchableOpacity>
-                        ))}
-                        <TouchableOpacity
-                            onPress={() => handleCalcOperator('+')}
-                            style={{ flex: 1, backgroundColor: colors.primary + '30', borderRadius: 12, padding: 16, alignItems: 'center' }}
-                        >
-                            <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>+</Text>
-                        </TouchableOpacity>
+                    <View style={styles.row}>
+                        {['4', '5', '6'].map(d => <CalcKey key={d} onPress={() => handleCalcDigit(d)} label={d} />)}
+                        <CalcKey onPress={() => handleCalcOperator('+')} tone="op" label="+" />
                     </View>
-
-                    {/* Row 4 */}
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                        {['1', '2', '3'].map(d => (
-                            <TouchableOpacity
-                                key={d}
-                                onPress={() => handleCalcDigit(d)}
-                                style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                            >
-                                <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>{d}</Text>
-                            </TouchableOpacity>
-                        ))}
-                        <TouchableOpacity
-                            onPress={handleCalcEquals}
-                            style={{ flex: 1, backgroundColor: colors.success, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                        >
-                            <Text style={{ color: '#FFF', fontSize: 20, fontWeight: 'bold' }}>=</Text>
-                        </TouchableOpacity>
+                    <View style={styles.row}>
+                        {['1', '2', '3'].map(d => <CalcKey key={d} onPress={() => handleCalcDigit(d)} label={d} />)}
+                        <CalcKey onPress={handleCalcEquals} tone="equals" label="=" />
                     </View>
-
-                    {/* Row 5 */}
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <TouchableOpacity
-                            onPress={() => handleCalcDigit('0')}
-                            style={{ flex: 2, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                        >
-                            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>0</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={handleCalcDecimal}
-                            style={{ flex: 1, backgroundColor: colors.background, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                        >
-                            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>.</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={handleCalcApply}
-                            style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 12, padding: 16, alignItems: 'center' }}
-                        >
-                            <Ionicons name="checkmark" size={24} color="#FFF" />
-                        </TouchableOpacity>
+                    <View style={styles.row}>
+                        <CalcKey onPress={() => handleCalcDigit('0')} flex={3} label="0" />
+                        <CalcKey onPress={handleCalcDecimal} label="." />
                     </View>
                 </View>
             </ScrollView>
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    display: {
+        borderRadius: radius.md,
+        padding: space[4],
+        marginBottom: space[4],
+        minHeight: 72,
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+    },
+    pending: {
+        marginTop: space[1],
+    },
+    grid: {
+        gap: space[2],
+    },
+    row: {
+        flexDirection: 'row',
+        gap: space[2],
+    },
+    key: {
+        borderRadius: radius.md,
+        paddingVertical: space[3],
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});

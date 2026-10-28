@@ -8,7 +8,7 @@ import { SmartAdvisor, Suggestion } from '@components/investments/SmartAdvisor';
 import { AllocationChart, AllocationTab } from '@components/investments/AllocationChart';
 import { DividendChart } from '@components/investments/DividendChart';
 import { InvestmentHistoryModal } from '@components/investments/modals/InvestmentHistoryModal';
-import InvestmentSettingsModal from '@components/investments/modals/InvestmentSettingsModal';
+import FetchPriceListSheet from '@components/investments/FetchPriceListSheet';
 import { useTheme } from '@context/ThemeContext';
 import { useAIConsent } from '@hooks/useAIConsent';
 import { PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
@@ -282,7 +282,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
                 onDataChange={loadData}
             />
 
-            <InvestmentSettingsModal visible={settingsVisible} onClose={onCloseSettings} onFetchPriceList={handleFetchPrices} />
+            <FetchPriceListSheet visible={settingsVisible} onClose={onCloseSettings} onFetch={handleFetchPrices} />
         </>
     );
 };

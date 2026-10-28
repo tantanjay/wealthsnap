@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { Disclaimer } from '@components/common/Disclaimer';
+import { Hero, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { AIUsageLog } from '@types';
 import { getAIUsageLogs } from '@services/domain/logService';
-import { SPACING, FONT_SIZES } from '@styles/theme';
+import { type, space } from '@styles/theme';
 
 interface GeminiUsageModalProps {
     visible: boolean;
@@ -16,14 +17,7 @@ interface GeminiUsageModalProps {
 }
 
 const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose }) => {
-    const { colors, mode } = useTheme();
-    const systemScheme = useColorScheme();
-    const isDark = mode === 'dark' || (mode === 'system' && systemScheme === 'dark');
-
-    const COLORS = {
-        success: '#34C759',
-        error: '#FF3B30'
-    };
+    const { ds } = useTheme();
 
     const [logs, setLogs] = useState<AIUsageLog[]>([]);
     const [refreshing, setRefreshing] = useState(false);
@@ -67,14 +61,7 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
             style={{ height: '85%' }}
             contentStyle={{ flex: 1 }}
         >
-            <View style={styles.header}>
-                <View>
-                    <Text style={[styles.title, { color: colors.text }]}>API Usage History</Text>
-                    <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                        Total Est. Cost: <Text style={{ color: colors.primary, fontWeight: 'bold' }}>${totalCost.toFixed(4)}</Text>
-                    </Text>
-                </View>
-            </View>
+            <Hero label="API usage · total est. cost" value={`$${totalCost.toFixed(4)}`} />
 
             <Disclaimer style={styles.disclaimer}>
                 Costs shown are internal estimates for tracking purposes. Actual billing is subject to your dashboard.
@@ -83,61 +70,36 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ds.accent} />}
             >
-                <View style={[styles.tableHeader, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                    <Text style={[styles.hCol1, { color: colors.textSecondary }]}>Type/Time</Text>
-                    <Text style={[styles.hCol2, { color: colors.textSecondary }]}>Tokens (In/Out)</Text>
-                    <Text style={[styles.hCol3, { color: colors.textSecondary }]}>Cost</Text>
-                </View>
-
-                {logs.map((log) => (
-                    <View key={log.id} style={[
-                        styles.row,
-                        { borderBottomColor: colors.border },
-                        log.status === 'error' && { backgroundColor: isDark ? 'rgba(255, 59, 48, 0.1)' : 'rgba(255, 59, 48, 0.05)' }
-                    ]}>
-                        <View style={styles.col1}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {logs.map((log, i) => {
+                    const isError = log.status === 'error';
+                    const time = new Date(log.timestamp).toLocaleString(undefined, {
+                        month: 'short', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                    return (
+                        <Row
+                            key={log.id}
+                            leading={
                                 <Ionicons
-                                    name={log.status === 'error' ? "alert-circle" : "checkmark-circle"}
-                                    size={16}
-                                    color={log.status === 'error' ? COLORS.error : COLORS.success}
-                                    style={{ marginRight: 4 }}
+                                    name={isError ? 'alert-circle-outline' : 'checkmark-circle-outline'}
+                                    size={20}
+                                    color={isError ? ds.danger : ds.success}
                                 />
-                                <Text style={[styles.endpoint, { color: colors.text }]}>
-                                    {log.endpoint.replace('analyze', '').replace('Screenshot', '').replace('Image', '').replace('generate', '')}
-                                </Text>
-                            </View>
-                            {log.model && (
-                                <Text style={{ fontSize: 10, color: colors.primary, marginBottom: 2 }}>
-                                    {log.model}
-                                </Text>
-                            )}
-                            <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
-                                {new Date(log.timestamp).toLocaleString(undefined, {
-                                    month: 'short', day: 'numeric',
-                                    hour: '2-digit', minute: '2-digit'
-                                })} ({(log.durationMs / 1000).toFixed(2)}s)
-                            </Text>
-                        </View>
-                        <View style={styles.col2}>
-                            <Text style={[styles.tokens, { color: colors.text }]}>
-                                In: {log.inputTokens} {log.imageCount > 0 ? `(${log.imageCount} img)` : ''}
-                            </Text>
-                            <Text style={[styles.tokens, { color: colors.textSecondary }]}>
-                                Out: {log.outputTokens}
-                            </Text>
-                        </View>
-                        <View style={styles.col3}>
-                            <Text style={[styles.cost, { color: colors.text }]}>${new BigNumber(log.costUSD || 0).toFixed(5)}</Text>
-                        </View>
-                    </View>
-                ))}
+                            }
+                            title={log.endpoint.replace('analyze', '').replace('Screenshot', '').replace('Image', '').replace('generate', '')}
+                            subtitle={[log.model, `${time} (${(log.durationMs / 1000).toFixed(2)}s)`].filter(Boolean).join(' · ')}
+                            value={`$${new BigNumber(log.costUSD || 0).toFixed(5)}`}
+                            change={`In ${log.inputTokens}${log.imageCount > 0 ? ` (${log.imageCount} img)` : ''} · Out ${log.outputTokens}`}
+                            last={i === logs.length - 1}
+                        />
+                    );
+                })}
 
                 {logs.length === 0 && (
                     <View style={styles.empty}>
-                        <Text style={{ color: colors.textSecondary }}>No usage logs yet.</Text>
+                        <Text style={[type.small, { color: ds.text2 }]}>No usage logs yet.</Text>
                     </View>
                 )}
             </ScrollView>
@@ -146,65 +108,18 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
 };
 
 const styles = StyleSheet.create({
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: SPACING.md,
-    },
-    title: {
-        fontSize: FONT_SIZES.lg,
-        fontWeight: 'bold',
-    },
-    subtitle: {
-        fontSize: FONT_SIZES.sm,
-        marginTop: 4,
-    },
     disclaimer: {
-        marginTop: 0,
-        marginBottom: SPACING.md,
+        marginTop: space[4],
+        marginBottom: space[2],
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
-        paddingBottom: SPACING.xl,
-    },
-    tableHeader: {
-        flexDirection: 'row',
-        padding: SPACING.sm,
-        borderBottomWidth: 1,
-        marginBottom: SPACING.xs,
-    },
-    hCol1: { flex: 2, fontSize: 12, fontWeight: 'bold' },
-    hCol2: { flex: 2, fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
-    hCol3: { flex: 1, fontSize: 12, fontWeight: 'bold', textAlign: 'right' },
-    row: {
-        flexDirection: 'row',
-        paddingVertical: SPACING.sm,
-        paddingHorizontal: SPACING.sm,
-        borderBottomWidth: 1,
-        alignItems: 'center',
-    },
-    col1: { flex: 2 },
-    col2: { flex: 2, alignItems: 'center' },
-    col3: { flex: 1, alignItems: 'flex-end' },
-    endpoint: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    timestamp: {
-        fontSize: 10,
-    },
-    tokens: {
-        fontSize: 12,
-    },
-    cost: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        fontFamily: 'monospace',
+        paddingBottom: space[6],
     },
     empty: {
-        padding: SPACING.xl,
+        padding: space[7],
         alignItems: 'center',
     }
 });

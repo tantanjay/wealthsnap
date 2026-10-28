@@ -9,6 +9,30 @@ import { getInvestmentCount, getLatestInvestmentDate } from '@services/domain/in
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+const PLAY_STORE_APP = 'market://details?id=com.christian.soyosa.WealthSnap';
+const PLAY_STORE_WEB = 'https://play.google.com/store/apps/details?id=com.christian.soyosa.WealthSnap';
+
+// A "Rate" button opens the store listing: Play's in-app review is quota-limited, silent
+// outside Play installs, and Google advises against calling it from a button. False if nothing opened.
+export const openStoreListing = async (): Promise<boolean> => {
+    try {
+        if (Platform.OS === 'android') {
+            if (await Linking.canOpenURL(PLAY_STORE_APP)) {
+                await Linking.openURL(PLAY_STORE_APP);
+            } else {
+                await Linking.openURL(PLAY_STORE_WEB);
+            }
+            return true;
+        }
+        if (await StoreReview.hasAction()) {
+            await StoreReview.requestReview();
+            return true;
+        }
+    } catch (error) {
+        console.warn('Opening the store listing failed', error);
+    }
+    return false;
+};
 
 export const useReviewPrompt = () => {
     const [isVisible, setIsVisible] = useState(false);

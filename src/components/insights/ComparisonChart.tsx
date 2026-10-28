@@ -1,14 +1,17 @@
 import React, { useEffect, useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
 import { Card } from '@components/index';
+import { SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
+import { type, space, radius } from '@styles/theme';
+import { Formula } from './FinancialHealthDetails';
 import { getMonthlyTrends, getMonthlyTrendsForYear } from '@utils/financialMetrics';
 import { CURRENCY_SYMBOLS, formatCurrencyAmount } from '@utils/currencyUtils';
 import { saveInsightsComparisonView, getInsightsComparisonView, saveInsightsComparisonTimeRange, getInsightsComparisonTimeRange } from '@services/core/storageService';
@@ -85,7 +88,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
         return years.sort((a, b) => b - a);
     }, [transactions]);
 
-    const { colors } = useTheme();
+    const { colors, ds } = useTheme();
 
     // Calculate how many months of data to load based on selection
     const monthsToLoad = useMemo(() => {
@@ -159,29 +162,13 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
     };
 
 
-    const renderVisualScenario = (type: 'OVER' | 'UNDER', label: string) => {
-        return (
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 60, width: 80, justifyContent: 'center', marginBottom: 5 }}>
-                {/* User Bar */}
-                <View style={{
-                    width: 20,
-                    height: type === 'OVER' ? '100%' : '50%',
-                    backgroundColor: type === 'OVER' ? '#FF5252' : '#4CAF50',
-                    marginRight: 8,
-                    borderTopLeftRadius: 4,
-                    borderTopRightRadius: 4
-                }} />
-                {/* Average Bar */}
-                <View style={{
-                    width: 20,
-                    height: '75%',
-                    backgroundColor: colors.textSecondary + '50',
-                    borderTopLeftRadius: 4,
-                    borderTopRightRadius: 4
-                }} />
-            </View>
-        );
-    };
+    const renderVisualScenario = (scenario: 'OVER' | 'UNDER') => (
+        <View style={modalStyles.scenarioBars}>
+            {/* User bar vs average bar */}
+            <View style={[modalStyles.scenarioBar, { height: scenario === 'OVER' ? '100%' : '50%', backgroundColor: scenario === 'OVER' ? ds.danger : ds.success }]} />
+            <View style={[modalStyles.scenarioBar, { height: '75%', backgroundColor: ds.hairline }]} />
+        </View>
+    );
 
     return (
         <View>
@@ -479,46 +466,50 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
             <BottomModal
                 visible={showInfoModal}
                 onClose={() => setShowInfoModal(false)}
-                title="Understanding Your Chart"
+                title="Understanding your chart"
                 maxHeight="85%"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <Text style={{ color: colors.text, marginBottom: 15, lineHeight: 22 }}>
+                    <Text style={[type.small, { color: ds.text2 }]}>
                         This chart compares your current spending against your past habits.
                     </Text>
 
-                    <View style={{ flexDirection: 'row', marginBottom: 20 }}>
-                        <View style={{ flex: 1, alignItems: 'center', padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginRight: 8 }}>
-                            {renderVisualScenario('OVER', 'Higher')}
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 4 }}>Spending More</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
+                    <View style={modalStyles.scenarios}>
+                        <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
+                            {renderVisualScenario('OVER')}
+                            <Text style={[type.body, { color: ds.text }]}>Spending more</Text>
+                            <Text style={[type.small, modalStyles.center, { color: ds.text2 }]}>
                                 When the orange bar is taller, you are spending above your average.
                             </Text>
                         </View>
-
-                        <View style={{ flex: 1, alignItems: 'center', padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginLeft: 8 }}>
-                            {renderVisualScenario('UNDER', 'Lower')}
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 4 }}>Spending Less</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
-                                When the colored bar is shorter, you are saving money!
+                        <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
+                            {renderVisualScenario('UNDER')}
+                            <Text style={[type.body, { color: ds.text }]}>Spending less</Text>
+                            <Text style={[type.small, modalStyles.center, { color: ds.text2 }]}>
+                                When the colored bar is shorter, you are saving money.
                             </Text>
                         </View>
                     </View>
 
-                    <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 8, marginTop: 5 }}>What do the labels mean?</Text>
-                    <View style={{ marginLeft: 8 }}>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.text, fontWeight: 'bold' }}>This M*:</Text> Projected full month spending.{'\n'}<Text style={{ color: 'rgba(255, 152, 0, 1)', fontWeight: 'bold' }}>Solid color</Text> = actual spending so far.{'\n'}<Text style={{ color: 'rgba(255, 152, 0, 0.5)' }}>Lighter color</Text> = projected remaining.</Text>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.text, fontWeight: 'bold' }}>Avg 3M/6M/1Y:</Text> Your average monthly spending over the last 3 months, 6 months, and 1 year, counting full months only.</Text>
-                    </View>
+                    <SectionHeader title="What do the labels mean?" />
+                    <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
+                        <Text style={[type.smallMedium, { color: ds.text }]}>This M*: </Text>
+                        Projected full month spending.{'\n'}
+                        <Text style={[type.smallMedium, { color: 'rgba(255, 152, 0, 1)' }]}>Solid color</Text> = actual spending so far.{'\n'}
+                        <Text style={{ color: 'rgba(255, 152, 0, 0.5)' }}>Lighter color</Text> = projected remaining.
+                    </Text>
+                    <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
+                        <Text style={[type.smallMedium, { color: ds.text }]}>Avg 3M/6M/1Y: </Text>
+                        Your average monthly spending over the last 3 months, 6 months, and 1 year, counting full months only.
+                    </Text>
 
-                    <View style={{ flexDirection: 'row', backgroundColor: colors.primary + '15', padding: 12, borderRadius: 8, marginTop: 15, alignItems: 'center' }}>
-                        <Ionicons name="information-circle" size={20} color={colors.primary} style={{ marginRight: 10 }} />
-                        <Text style={{ color: colors.text, flex: 1, fontSize: 13 }}>
-                            <Text style={{ fontWeight: 'bold' }}>New Account?</Text> If you just started using WealthSnap, these bars might look identical. As you track more months, they will start to show different trends!
+                    <View style={modalStyles.note}>
+                        <Ionicons name="information-circle-outline" size={20} color={ds.text2} />
+                        <Text style={[type.small, modalStyles.noteText, { color: ds.text2 }]}>
+                            <Text style={[type.smallMedium, { color: ds.text }]}>New account? </Text>
+                            If you just started using WealthSnap, these bars might look identical. As you track more months, they will start to show different trends.
                         </Text>
                     </View>
-
-                    <View style={{ height: 20 }} />
                 </ScrollView>
             </BottomModal>
 
@@ -529,28 +520,92 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                 maxHeight="55%"
             >
                 <View>
-                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 10, lineHeight: 22 }}>
-                        This smart insight compares your <Text style={{ fontWeight: 'bold' }}>projected spending</Text> for this month against your <Text style={{ fontWeight: 'bold' }}>3-month average</Text>.
+                    <Text style={[type.small, modalStyles.lead, { color: ds.text2 }]}>
+                        This smart insight compares your <Text style={{ color: ds.text }}>projected spending</Text> for this month against your <Text style={{ color: ds.text }}>3-month average</Text>.
                     </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5, marginBottom: 10 }}>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 6, fontSize: 12, textTransform: 'uppercase' }}>Formula</Text>
-                        <Text style={{ color: colors.text, fontFamily: 'monospace', fontSize: 13 }}>
-                            Projected = (Spent So Far ÷ Days Elapsed) × Days in Month
-                        </Text>
+                    <Formula formula="Projected = (Spent so far ÷ Days elapsed) × Days in month" />
+                    <View style={modalStyles.legend}>
+                        <View style={modalStyles.legendRow}>
+                            <View style={[modalStyles.legendDot, { backgroundColor: ds.success }]} />
+                            <Text style={[type.small, modalStyles.noteText, { color: ds.text2 }]}>
+                                <Text style={{ color: ds.text }}>Less than average: </Text>
+                                You&apos;re on track to spend less than your 3-month average.
+                            </Text>
+                        </View>
+                        <View style={modalStyles.legendRow}>
+                            <View style={[modalStyles.legendDot, { backgroundColor: ds.danger }]} />
+                            <Text style={[type.small, modalStyles.noteText, { color: ds.text2 }]}>
+                                <Text style={{ color: ds.text }}>More than average: </Text>
+                                You&apos;re on track to spend more than your 3-month average.
+                            </Text>
+                        </View>
                     </View>
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            • <Text style={{ color: '#4CAF50', fontWeight: 'bold' }}>Less than average:</Text> You&apos;re on track to spend less than your 3-month average.
-                        </Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4 }}>
-                            • <Text style={{ color: '#FF5252', fontWeight: 'bold' }}>More than average:</Text> You&apos;re on track to spend more than your 3-month average.
-                        </Text>
-                    </View>
-                    <View style={{ height: 20 }} />
                 </View>
             </BottomModal>
         </View >
     );
 };
+
+const modalStyles = StyleSheet.create({
+    scenarios: {
+        flexDirection: 'row',
+        gap: space[3],
+        marginTop: space[4],
+    },
+    scenario: {
+        flex: 1,
+        alignItems: 'center',
+        gap: space[1],
+        padding: space[4],
+        borderRadius: radius.md,
+    },
+    scenarioBars: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        gap: space[2],
+        height: 60,
+        width: 80,
+        marginBottom: space[2],
+    },
+    scenarioBar: {
+        width: 20,
+        borderTopLeftRadius: 4,
+        borderTopRightRadius: 4,
+    },
+    center: {
+        textAlign: 'center',
+    },
+    paragraph: {
+        marginTop: space[2],
+    },
+    lead: {
+        marginBottom: space[3],
+    },
+    note: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: space[3],
+        marginTop: space[6],
+    },
+    noteText: {
+        flex: 1,
+    },
+    legend: {
+        gap: space[2],
+        marginTop: space[4],
+    },
+    legendRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: space[2],
+    },
+    legendDot: {
+        width: 8,
+        height: 8,
+        borderRadius: radius.full,
+        marginTop: 5,
+    },
+});
 
 export default ComparisonChart;

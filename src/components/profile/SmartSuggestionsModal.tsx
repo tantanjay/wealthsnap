@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, TextInput, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, TextInput, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import { EmptyState } from '@components/common/EmptyState';
+import { ChangeLine, IconName, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { getAllBudgets, setBudget } from '@services/domain/budgetService';
@@ -11,7 +13,7 @@ import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
 import { getCategoryAverages } from '@utils/financialMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { EXPENSE_CATEGORY_GROUPS } from '@constants/categories';
-import { SEVERITY_ICON } from '@utils/severity';
+import { type, space, radius } from '@styles/theme';
 
 // Below this, a gap isn't worth surfacing - keeps the list to the categories that matter
 const SYNC_THRESHOLD_PCT = 15;
@@ -52,7 +54,7 @@ interface SmartSuggestionsModalProps {
 }
 
 const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, onClose, currency, onApplied }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const [loading, setLoading] = useState(false);
     const [applying, setApplying] = useState(false);
@@ -63,10 +65,10 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
     // so an empty `averages` result there means no data, not a genuine match.
     const [hasHistory, setHasHistory] = useState(true);
 
-    const getCategoryIcon = (categoryValue: string): string => {
+    const getCategoryIcon = (categoryValue: string): IconName => {
         for (const group of EXPENSE_CATEGORY_GROUPS) {
             const cat = group.items.find(c => c.value === categoryValue);
-            if (cat) return cat.icon;
+            if (cat) return cat.icon as IconName;
         }
         return 'ellipsis-horizontal';
     };
@@ -183,134 +185,94 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Smart Suggestions"
+            title="Smart suggestions"
             subtitle={`Based on your last ${HISTORY_MONTHS} months of spending`}
             maxHeight="85%"
             style={{ height: '85%' }}
             contentStyle={{ flex: 1 }}
             footer={rows.length > 0 ? (
-                <TouchableOpacity
+                <Pressable
                     onPress={handleApply}
                     disabled={applying}
-                    style={{
-                        backgroundColor: colors.primary,
-                        borderRadius: 8,
-                        paddingVertical: 14,
-                        alignItems: 'center',
-                        opacity: applying ? 0.7 : 1
-                    }}
+                    style={[styles.button, { backgroundColor: ds.accent }, applying && styles.disabled]}
+                    accessibilityRole="button"
                 >
                     {applying ? (
-                        <ActivityIndicator color="#fff" size="small" />
+                        <ActivityIndicator color={ds.onAccent} size="small" />
                     ) : (
-                        <Text style={{ color: '#fff', fontSize: 15, fontWeight: 'bold' }}>
-                            Update {rows.length} Budget{rows.length === 1 ? '' : 's'}
+                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>
+                            Update {rows.length} budget{rows.length === 1 ? '' : 's'}
                         </Text>
                     )}
-                </TouchableOpacity>
+                </Pressable>
             ) : undefined}
         >
             {loading ? (
-                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 40 }}>
-                    <ActivityIndicator color={colors.primary} />
+                <View style={styles.loading}>
+                    <ActivityIndicator color={ds.accent} />
                 </View>
             ) : (
-                <View style={{ flex: 1 }}>
+                <View style={styles.body}>
                     {rows.length > 0 && (
-                        <View style={{
-                            flexDirection: 'row',
-                            alignItems: 'flex-start',
-                            backgroundColor: colors.info + '15',
-                            borderColor: colors.info,
-                            borderWidth: 1,
-                            borderRadius: 12,
-                            padding: 10,
-                            marginBottom: 10
-                        }}>
-                            <Ionicons name={SEVERITY_ICON.info} size={18} color={colors.info} />
-                            <Text style={{ flex: 1, color: colors.text, fontSize: 12, lineHeight: 16, marginLeft: 8 }}>
-                                Removing a suggestion just skips it — your saved budget won&apos;t change until you tap Update.
-                            </Text>
-                        </View>
+                        <Text style={[type.small, styles.helper, { color: ds.text2 }]}>
+                            Removing a suggestion just skips it — your saved budget won&apos;t change until you tap Update.
+                        </Text>
                     )}
                     <FlatList
                         data={rows}
                         keyExtractor={item => item.category}
-                        contentContainerStyle={{ paddingBottom: 10 }}
+                        keyboardShouldPersistTaps="handled"
                         ListEmptyComponent={
-                            <View style={{ alignItems: 'center', marginTop: 40 }}>
-                                <Ionicons name="checkmark-circle-outline" size={48} color={colors.textSecondary} />
-                                <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 10 }}>
-                                    {hasHistory
-                                        ? 'Your budgets already match your spending'
-                                        : "Not enough spending history yet - check back after your first full month"}
-                                </Text>
-                            </View>
+                            <EmptyState
+                                size="compact"
+                                icon="checkmark-circle-outline"
+                                title={hasHistory
+                                    ? 'Your budgets already match your spending'
+                                    : 'Not enough spending history yet - check back after your first full month'}
+                            />
                         }
-                        renderItem={({ item }) => {
+                        renderItem={({ item, index }) => {
                             const isNew = item.currentBudget === null;
                             const isUp = !isNew && item.suggestedAmount > item.currentBudget!;
                             const delta = isNew ? 0 : Math.abs(item.suggestedAmount - item.currentBudget!);
 
                             return (
-                                <View style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    paddingVertical: 10,
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: colors.border,
-                                }}>
-                                    <View style={{
-                                        width: 36,
-                                        height: 36,
-                                        borderRadius: 18,
-                                        backgroundColor: colors.primary + '20',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginRight: 12
-                                    }}>
-                                        <Ionicons name={getCategoryIcon(item.category) as any} size={18} color={colors.primary} />
-                                    </View>
-
-                                    <View style={{ flex: 1, marginRight: 10 }}>
-                                        <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>{item.category}</Text>
-                                        {isNew ? (
-                                            <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '600', marginTop: 2 }}>
-                                                Not budgeted yet
-                                            </Text>
-                                        ) : (
-                                            <Text style={{ color: isUp ? colors.warning : colors.success, fontSize: 11, fontWeight: '600', marginTop: 2 }}>
-                                                {isUp ? '▲' : '▼'} {formatCurrencyAmount(delta, currency)} vs current
-                                            </Text>
-                                        )}
-                                        {item.isInfrequent && (
-                                            <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 2, fontStyle: 'italic' }}>
-                                                Occasional ({item.activeMonths}/{item.totalMonths} months) — smoothed average, not a recurring cost
-                                            </Text>
-                                        )}
-                                    </View>
-
-                                    <TextInput
-                                        value={item.amountText}
-                                        onChangeText={(text) => handleAmountChange(item.category, text)}
-                                        keyboardType="numeric"
-                                        style={{
-                                            width: 90,
-                                            backgroundColor: colors.background,
-                                            color: colors.text,
-                                            padding: 8,
-                                            borderRadius: 8,
-                                            borderWidth: 1,
-                                            borderColor: colors.border,
-                                            textAlign: 'right',
-                                            fontSize: 13
-                                        }}
-                                    />
-
-                                    <TouchableOpacity onPress={() => handleRemoveRow(item.category)} style={{ padding: 8, marginLeft: 4 }}>
-                                        <Ionicons name="trash-outline" size={20} color={colors.error} />
-                                    </TouchableOpacity>
-                                </View>
+                                <Row
+                                    icon={getCategoryIcon(item.category)}
+                                    title={item.category}
+                                    last={index === rows.length - 1}
+                                    trailing={
+                                        <View style={styles.trailing}>
+                                            <TextInput
+                                                value={item.amountText}
+                                                onChangeText={(text) => handleAmountChange(item.category, text)}
+                                                keyboardType="numeric"
+                                                style={[type.smallNum, styles.amountInput, { backgroundColor: ds.inset, color: ds.text }]}
+                                            />
+                                            <Pressable
+                                                onPress={() => handleRemoveRow(item.category)}
+                                                hitSlop={space[2]}
+                                                accessibilityLabel={`Skip ${item.category}`}
+                                            >
+                                                <Ionicons name="trash-outline" size={20} color={ds.danger} />
+                                            </Pressable>
+                                        </View>
+                                    }
+                                >
+                                    {isNew ? (
+                                        <Text style={[type.caption, { color: ds.text2 }]}>Not budgeted yet</Text>
+                                    ) : (
+                                        <ChangeLine
+                                            text={`${isUp ? '+' : '−'}${formatCurrencyAmount(delta, currency)} vs current`}
+                                            tone={isUp ? 'warning' : 'good'}
+                                        />
+                                    )}
+                                    {item.isInfrequent && (
+                                        <Text style={[type.caption, styles.footnote, { color: ds.text2 }]}>
+                                            Occasional ({item.activeMonths}/{item.totalMonths} months) — smoothed average, not a recurring cost
+                                        </Text>
+                                    )}
+                                </Row>
                             );
                         }}
                     />
@@ -319,5 +281,44 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    loading: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: space[7],
+    },
+    body: {
+        flex: 1,
+    },
+    helper: {
+        marginBottom: space[1],
+    },
+    trailing: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+    },
+    amountInput: {
+        width: 90,
+        paddingVertical: space[2],
+        paddingHorizontal: space[3],
+        borderRadius: radius.sm,
+        textAlign: 'right',
+    },
+    footnote: {
+        marginTop: 2,
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    disabled: {
+        opacity: 0.4,
+    },
+});
 
 export default SmartSuggestionsModal;

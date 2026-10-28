@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Text, ScrollView, StyleSheet } from 'react-native';
 
 import BottomModal from '@components/common/BottomModal';
+import { Hero, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { RecurrenceRule } from '@types';
+import { type, space } from '@styles/theme';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 
 interface RecurringExpensesSummaryProps {
@@ -21,7 +22,7 @@ const RecurringExpensesSummaryModal: React.FC<RecurringExpensesSummaryProps> = (
     recurrences = [],
     currency
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
 
     const totalMonthly = useMemo(() => {
         return recurrences
@@ -77,73 +78,45 @@ const RecurringExpensesSummaryModal: React.FC<RecurringExpensesSummaryProps> = (
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title="Recurring Expenses"
+            title="Recurring expenses"
             subtitle="Monthly commitments"
         >
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-                {/* Total Section */}
-                <View style={{ alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 5 }}>Total Monthly Commitment</Text>
-                    <Text style={{ color: colors.text, fontSize: 28, fontWeight: 'bold' }}>
-                        {formatCurrencyAmount(totalMonthly, currency)}
-                    </Text>
-                </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <Hero label="Total monthly commitment" value={formatCurrencyAmount(totalMonthly, currency)} />
 
-                {/* Upcoming Due */}
-                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 10 }}>Upcoming Due</Text>
-                <View style={{ marginBottom: 20 }}>
-                    {upcoming.map(item => (
-                        <View key={item.id} style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: 12,
-                            backgroundColor: colors.surface,
-                            marginBottom: 8,
-                            borderRadius: 12
-                        }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <View style={{
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: 20,
-                                    backgroundColor: colors.primary + '20',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    marginRight: 12
-                                }}>
-                                    <Ionicons name="calendar-outline" size={20} color={colors.primary} />
-                                </View>
-                                <View>
-                                    <Text style={{ color: colors.text, fontWeight: '600' }}>{item.transactionTemplate.category}</Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                        Due {new Date(item.nextDueDate).toLocaleDateString()}
-                                    </Text>
-                                </View>
-                            </View>
-                            <Text style={{ color: colors.text, fontWeight: '600' }}>
-                                {formatCurrencyAmount(item.transactionTemplate.amount, currency)}
-                            </Text>
-                        </View>
-                    ))}
-                    {upcoming.length === 0 && (
-                        <Text style={{ color: colors.textSecondary, fontStyle: 'italic' }}>No active recurring expenses.</Text>
-                    )}
-                </View>
+                <SectionHeader title="Upcoming due" />
+                {upcoming.map((item, i) => (
+                    <Row
+                        key={item.id}
+                        icon="calendar-outline"
+                        title={item.transactionTemplate.category}
+                        subtitle={`Due ${new Date(item.nextDueDate).toLocaleDateString()}`}
+                        value={formatCurrencyAmount(item.transactionTemplate.amount, currency)}
+                        last={i === upcoming.length - 1}
+                    />
+                ))}
+                {upcoming.length === 0 && (
+                    <Text style={[type.small, styles.empty, { color: ds.text2 }]}>No active recurring expenses.</Text>
+                )}
 
-                {/* Breakdown */}
-                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginBottom: 10 }}>By Category</Text>
-                <View style={{ marginBottom: 20 }}>
-                    {categoryBreakdown.map(([cat, amount]) => (
-                        <View key={cat} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <Text style={{ color: colors.textSecondary }}>{cat}</Text>
-                            <Text style={{ color: colors.text, fontWeight: '500' }}>{formatCurrencyAmount(amount, currency)}</Text>
-                        </View>
-                    ))}
-                </View>
+                <SectionHeader title="By category" />
+                {categoryBreakdown.map(([cat, amount], i) => (
+                    <Row
+                        key={cat}
+                        title={cat}
+                        value={formatCurrencyAmount(amount, currency)}
+                        last={i === categoryBreakdown.length - 1}
+                    />
+                ))}
             </ScrollView>
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    empty: {
+        paddingVertical: space[3],
+    },
+});
 
 export default RecurringExpensesSummaryModal;

@@ -1,13 +1,15 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Dimensions, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { Card } from '@components/index';
+import { Row } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
+import { type, space } from '@styles/theme';
 import { formatCompactCurrency } from '@utils/currencyUtils';
 import { getCumulativeSpendingCurve, getCurrentMonthCumulative, getTransactionsByMonth } from '@utils/financialMetrics';
 import { saveInsightsPulsePeriod, getInsightsPulsePeriod } from '@services/core/storageService';
@@ -27,7 +29,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     isLoading = false,
     selectedDate = new Date()
 }) => {
-    const { colors } = useTheme();
+    const { colors, ds } = useTheme();
     const screenWidth = Dimensions.get('window').width;
     const [period, setPeriod] = useState<3 | 6 | 12>(3);
     const [showInfo, setShowInfo] = useState(false);
@@ -433,43 +435,37 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
             <BottomModal
                 visible={showInfo}
                 onClose={() => setShowInfo(false)}
-                title="Understanding Your Chart"
+                title="Understanding your chart"
                 maxHeight="85%"
             >
-                <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 15, lineHeight: 22 }}>
-                        This chart shows your <Text style={{ fontWeight: 'bold' }}>spending speed</Text> throughout the month. It adds up your expenses day by day.
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <Text style={[type.small, modalStyles.lead, { color: ds.text2 }]}>
+                        This chart shows your <Text style={{ color: ds.text }}>spending speed</Text> throughout the month. It adds up your expenses day by day.
                     </Text>
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                        <View style={{ width: 24, height: 4, backgroundColor: colors.primary, marginRight: 12, borderRadius: 2 }} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>Solid Line (Current)</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Your actual spending so far this month.</Text>
-                        </View>
-                    </View>
+                    <Row
+                        leading={<View style={[modalStyles.swatch, { backgroundColor: ds.accent }]} />}
+                        title="Solid line (current)"
+                        subtitle="Your actual spending so far this month."
+                    />
+                    <Row
+                        leading={<View style={[modalStyles.swatch, modalStyles.dashed, { borderColor: ds.accent }]} />}
+                        title="Dotted line (projection)"
+                        subtitle="Where you're headed based on your historical spending pattern."
+                    />
+                    <Row
+                        leading={<View style={[modalStyles.swatch, modalStyles.dashed, { borderColor: ds.text3 }]} />}
+                        title="Dashed line (average)"
+                        subtitle="How you usually spend by this time of the month."
+                        last
+                    />
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                        <View style={{ width: 24, height: 4, backgroundColor: colors.primary, marginRight: 12, borderRadius: 2, borderStyle: 'dashed', borderWidth: 2, borderColor: colors.primary }} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>Dotted Line (Projection)</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Where you&apos;re headed based on your historical spending pattern.</Text>
-                        </View>
-                    </View>
-
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
-                        <View style={{ width: 24, height: 4, backgroundColor: '#A0A0A0', marginRight: 12, borderRadius: 2, borderStyle: 'dashed', borderWidth: 1, borderColor: '#A0A0A0' }} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ color: colors.text, fontWeight: 'bold' }}>Dashed Line (Average)</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>How you usually spend by this time of the month.</Text>
-                        </View>
-                    </View>
-
-                    <View style={{ backgroundColor: colors.primary + '15', padding: 15, borderRadius: 12 }}>
-                        <Text style={{ color: colors.primary, fontWeight: 'bold', marginBottom: 5 }}>🏁 The Goal</Text>
-                        <Text style={{ color: colors.text, fontSize: 13 }}>
-                            Try to keep your Solid Line <Text style={{ fontWeight: 'bold' }}>below</Text> the Dashed Line.
-                            If it goes above, you are spending faster than your historical average!
+                    <View style={modalStyles.note}>
+                        <Ionicons name="flag-outline" size={20} color={ds.text2} />
+                        <Text style={[type.small, modalStyles.noteText, { color: ds.text2 }]}>
+                            <Text style={[type.smallMedium, { color: ds.text }]}>The goal: </Text>
+                            Try to keep your solid line <Text style={{ color: ds.text }}>below</Text> the dashed line.
+                            If it goes above, you are spending faster than your historical average.
                         </Text>
                     </View>
                 </ScrollView>
@@ -477,5 +473,30 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
         </View>
     );
 };
+
+const modalStyles = StyleSheet.create({
+    lead: {
+        marginBottom: space[2],
+    },
+    swatch: {
+        width: 20,
+        height: 4,
+        borderRadius: 2,
+    },
+    dashed: {
+        height: 0,
+        borderTopWidth: 2,
+        borderStyle: 'dashed',
+    },
+    note: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: space[3],
+        marginTop: space[6],
+    },
+    noteText: {
+        flex: 1,
+    },
+});
 
 export default CumulativeSpendingChart;

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-gifted-charts';
 
@@ -8,9 +8,11 @@ import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
 import MonthEndProjectionModal from '@components/insights/modals/MonthEndProjectionModal';
 import { Card } from '@components/index';
+import { SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { Transaction } from '@types';
+import { type, space, radius } from '@styles/theme';
 import { getMonthlyTrends, getMonthlyTrendsForYear } from '@utils/financialMetrics';
 import { CURRENCY_SYMBOLS, formatCompactCurrency } from '@utils/currencyUtils';
 import { saveInsightsIncomeTab, getInsightsIncomeTab, saveInsightsIncomeTimeRange, getInsightsIncomeTimeRange } from '@services/core/storageService';
@@ -34,7 +36,7 @@ interface IncomeAnalysisProps {
 }
 
 const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialTrends, categoryBreakdown, currency, isPrivacyEnabled, transactions, isLoading = false, selectedDate = new Date() }) => {
-    const { colors } = useTheme();
+    const { colors, ds } = useTheme();
     const [showProjectionModal, setShowProjectionModal] = React.useState(false);
     const [showInfoModal, setShowInfoModal] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState<'TREND' | 'SOURCES'>('TREND');
@@ -541,47 +543,51 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
             <BottomModal
                 visible={showInfoModal}
                 onClose={() => setShowInfoModal(false)}
-                title="Understanding Your Chart"
+                title="Understanding your chart"
                 maxHeight="85%"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <Text style={{ color: colors.text, marginBottom: 15, lineHeight: 22 }}>
+                    <Text style={[type.small, { color: ds.text2 }]}>
                         This chart compares your current income against your past months.
                     </Text>
 
-                    <View style={{ flexDirection: 'row', marginBottom: 20 }}>
-                        <View style={{ flex: 1, alignItems: 'center', padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginRight: 8 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 60, width: 80, justifyContent: 'center', marginBottom: 5 }}>
-                                <View style={{ width: 30, height: '80%', backgroundColor: colors.primary, borderRadius: 4 }} />
+                    <View style={modalStyles.scenarios}>
+                        <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
+                            <View style={modalStyles.scenarioBars}>
+                                <View style={[modalStyles.scenarioBar, { backgroundColor: ds.accent }]} />
                             </View>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 4 }}>Actual</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
+                            <Text style={[type.body, { color: ds.text }]}>Actual</Text>
+                            <Text style={[type.small, modalStyles.center, { color: ds.text2 }]}>
                                 The solid bar shows income you have already received.
                             </Text>
                         </View>
-
-                        <View style={{ flex: 1, alignItems: 'center', padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginLeft: 8 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 60, width: 80, justifyContent: 'center', marginBottom: 5 }}>
-                                <View style={{ width: 30, borderRadius: 4, overflow: 'hidden', height: '80%' }}>
-                                    <View style={{ flex: 1, backgroundColor: colors.primary + '50' }} />
-                                    <View style={{ flex: 1, backgroundColor: colors.primary }} />
+                        <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
+                            <View style={modalStyles.scenarioBars}>
+                                <View style={[modalStyles.scenarioBar, modalStyles.split]}>
+                                    <View style={[modalStyles.flex, { backgroundColor: ds.accent, opacity: 0.3 }]} />
+                                    <View style={[modalStyles.flex, { backgroundColor: ds.accent }]} />
                                 </View>
                             </View>
-                            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 4 }}>Projected</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
+                            <Text style={[type.body, { color: ds.text }]}>Projected</Text>
+                            <Text style={[type.small, modalStyles.center, { color: ds.text2 }]}>
                                 The lighter top part is what you&apos;re projected to earn by month end.
                             </Text>
                         </View>
                     </View>
 
-                    <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 8, marginTop: 5 }}>What do the labels mean?</Text>
-                    <View style={{ marginLeft: 8 }}>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.text, fontWeight: 'bold' }}>Current Month*:</Text> The asterisk (*) indicates this is a projection.</Text>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Solid Color:</Text> Actual income recorded.</Text>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 6 }}>• <Text style={{ color: colors.primary + '80', fontWeight: 'bold' }}>Lighter Color:</Text> Projecting you will match your historical average.</Text>
-                    </View>
-
-                    <View style={{ height: 20 }} />
+                    <SectionHeader title="What do the labels mean?" />
+                    <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
+                        <Text style={[type.smallMedium, { color: ds.text }]}>Current month*: </Text>
+                        The asterisk (*) indicates this is a projection.
+                    </Text>
+                    <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
+                        <Text style={[type.smallMedium, { color: ds.accent }]}>Solid color: </Text>
+                        Actual income recorded.
+                    </Text>
+                    <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
+                        <Text style={[type.smallMedium, { color: ds.accent, opacity: 0.6 }]}>Lighter color: </Text>
+                        Projecting you will match your historical average.
+                    </Text>
                 </ScrollView>
             </BottomModal>
             <BottomModal
@@ -591,25 +597,83 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                 maxHeight="40%"
             >
                 <View>
-                    <Text style={{ color: colors.text, fontSize: 16, marginBottom: 10, lineHeight: 22 }}>
-                        This smart insight compares the <Text style={{ fontWeight: 'bold' }}>income actually recorded</Text> in the latest month shown (not the projected part of its bar) against the <Text style={{ fontWeight: 'bold' }}>month before it</Text>.
+                    <Text style={[type.small, { color: ds.text2 }]}>
+                        This smart insight compares the <Text style={{ color: ds.text }}>income actually recorded</Text> in the latest month shown (not the projected part of its bar) against the <Text style={{ color: ds.text }}>month before it</Text>.
                     </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, marginTop: 5 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                            • <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Growth:</Text> You earned more than last month.
-                        </Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4 }}>
-                            • <Text style={{ color: '#FF5252', fontWeight: 'bold' }}>Decline:</Text> Income is lower than last month.
-                        </Text>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4 }}>
-                            • <Text style={{ color: colors.text, fontWeight: 'bold' }}>Stable:</Text> Income is exactly the same as last month.
-                        </Text>
+                    <View style={modalStyles.legend}>
+                        {([
+                            ['Growth', 'You earned more than last month.', ds.success],
+                            ['Decline', 'Income is lower than last month.', ds.danger],
+                            ['Stable', 'Income is exactly the same as last month.', ds.text2],
+                        ] as const).map(([label, meaning, color]) => (
+                            <View key={label} style={modalStyles.legendRow}>
+                                <View style={[modalStyles.legendDot, { backgroundColor: color }]} />
+                                <Text style={[type.small, modalStyles.flex, { color: ds.text2 }]}>
+                                    <Text style={{ color: ds.text }}>{label}: </Text>{meaning}
+                                </Text>
+                            </View>
+                        ))}
                     </View>
-                    <View style={{ height: 20 }} />
                 </View>
             </BottomModal>
         </View >
     );
 };
+
+const modalStyles = StyleSheet.create({
+    scenarios: {
+        flexDirection: 'row',
+        gap: space[3],
+        marginTop: space[4],
+    },
+    scenario: {
+        flex: 1,
+        alignItems: 'center',
+        gap: space[1],
+        padding: space[4],
+        borderRadius: radius.md,
+    },
+    scenarioBars: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        height: 60,
+        width: 80,
+        marginBottom: space[2],
+    },
+    scenarioBar: {
+        width: 30,
+        height: '80%',
+        borderTopLeftRadius: 4,
+        borderTopRightRadius: 4,
+    },
+    split: {
+        overflow: 'hidden',
+    },
+    flex: {
+        flex: 1,
+    },
+    center: {
+        textAlign: 'center',
+    },
+    paragraph: {
+        marginTop: space[2],
+    },
+    legend: {
+        gap: space[2],
+        marginTop: space[4],
+    },
+    legendRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: space[2],
+    },
+    legendDot: {
+        width: 8,
+        height: 8,
+        borderRadius: radius.full,
+        marginTop: 5,
+    },
+});
 
 export default IncomeAnalysis;

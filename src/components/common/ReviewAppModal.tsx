@@ -1,9 +1,10 @@
 import React, { FC } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, StyleSheet, Pressable } from 'react-native';
 import BottomModal from '@components/common/BottomModal';
-import { Ionicons } from '@expo/vector-icons';
 import { ScrollView } from 'react-native-gesture-handler';
 
+import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 
 interface ReviewAppModalProps {
     isVisible: boolean;
@@ -13,6 +14,8 @@ interface ReviewAppModalProps {
 }
 
 export const ReviewAppModal: FC<ReviewAppModalProps> = ({ isVisible, onRate, onLater, onDecline }) => {
+    const { ds } = useTheme();
+
     return (
         <BottomModal
             visible={isVisible}
@@ -20,99 +23,44 @@ export const ReviewAppModal: FC<ReviewAppModalProps> = ({ isVisible, onRate, onL
             title="Enjoying WealthSnap?"
             maxHeight="60%"
             footer={
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={[styles.button, styles.rateButton]}
-                        onPress={onRate}
-                    >
-                        <Text style={styles.rateButtonText}>Rate WealthSnap</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.button, styles.laterButton]}
-                        onPress={onLater}
-                    >
-                        <Text style={styles.laterButtonText}>Remind Me Later</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.button, styles.declineButton]}
-                        onPress={onDecline}
-                    >
-                        <Text style={styles.declineButtonText}>Do Not Show Again</Text>
-                    </TouchableOpacity>
-                </View>
+                <>
+                    <Pressable style={[styles.button, { backgroundColor: ds.accent }]} onPress={onRate} accessibilityRole="button">
+                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Rate WealthSnap</Text>
+                    </Pressable>
+                    <Pressable style={styles.textButton} onPress={onLater} accessibilityRole="button">
+                        <Text style={[type.body, { color: ds.accent }]}>Remind me later</Text>
+                    </Pressable>
+                    <Pressable style={styles.textButton} onPress={onDecline} accessibilityRole="button">
+                        <Text style={[type.small, { color: ds.text2 }]}>Do not show again</Text>
+                    </Pressable>
+                </>
             }
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.container}>
-                    <View style={styles.iconContainer}>
-                        <Ionicons name="heart" size={48} color="#ff6b6b" />
-                    </View>
-
-                    <Text style={styles.description}>
-                        If you enjoy using WealthSnap, would you mind taking a moment to rate it?
-                        It won&apos;t take more than a minute. Thanks for your support!
-                    </Text>
-
-                    <Text style={{ fontSize: 12, color: '#8E8E93', textAlign: 'center' }}>Thank you for using WealthSnap!</Text>
-                </View>
+                <Text style={[type.body, { color: ds.text }]}>
+                    If you enjoy using WealthSnap, would you mind taking a moment to rate it?
+                    It won&apos;t take more than a minute. Thanks for your support!
+                </Text>
+                <Text style={[type.small, styles.thanks, { color: ds.text2 }]}>Thank you for using WealthSnap!</Text>
             </ScrollView>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        alignItems: 'center',
-    },
-    iconContainer: {
-        marginBottom: 20,
-        padding: 15,
-        backgroundColor: '#fff0f0',
-        borderRadius: 50,
-    },
-    description: {
-        fontSize: 16,
-        color: '#444',
-        textAlign: 'center',
-        lineHeight: 24,
-        marginBottom: 30,
-    },
-    buttonContainer: {
-        width: '100%',
-        gap: 12,
+    thanks: {
+        marginTop: space[3],
     },
     button: {
-        width: '100%',
-        paddingVertical: 14,
-        borderRadius: 12,
+        height: 48,
+        borderRadius: radius.md,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    rateButton: {
-        backgroundColor: '#007AFF',
-    },
-    rateButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    laterButton: {
-        backgroundColor: '#F2F2F7',
-    },
-    laterButtonText: {
-        color: '#007AFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    declineButton: {
-        backgroundColor: 'transparent',
-        paddingVertical: 10,
-    },
-    declineButtonText: {
-        color: '#8E8E93',
-        fontSize: 14,
-        fontWeight: '500',
+    textButton: {
+        height: 44,
+        marginTop: space[1],
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });

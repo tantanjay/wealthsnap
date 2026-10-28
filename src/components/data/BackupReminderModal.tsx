@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Text, Pressable, StyleSheet } from 'react-native';
 
 import BottomModal from '@components/common/BottomModal';
-import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 
 interface BackupReminderModalProps {
     visible: boolean;
@@ -19,79 +18,43 @@ const BackupReminderModal: React.FC<BackupReminderModalProps> = ({
     onCreateBackup,
     onRemindLater
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
 
     return (
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title=""
+            title="Backup reminder"
             footer={
-                <View style={styles.buttonContainer}>
-                    <Button
-                        title="Create Backup"
-                        onPress={onCreateBackup}
-                        style={styles.primaryButton}
-                    />
-                    <Button
-                        title="Remind me in 7 days"
-                        onPress={onRemindLater}
-                        variant="outline"
-                        style={styles.secondaryButton}
-                    />
-                </View>
+                <>
+                    <Pressable onPress={onCreateBackup} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
+                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Create backup</Text>
+                    </Pressable>
+                    <Pressable onPress={onRemindLater} style={styles.textButton} accessibilityRole="button">
+                        <Text style={[type.body, { color: ds.text2 }]}>Remind me in 7 days</Text>
+                    </Pressable>
+                </>
             }
         >
-            <View style={styles.container}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.warning + '20' }]}>
-                    <Ionicons name="cloud-offline" size={32} color={colors.warning} />
-                </View>
-
-                <Text style={[styles.title, { color: colors.text }]}>Backup Reminder</Text>
-
-                <Text style={[styles.message, { color: colors.textSecondary }]}>
-                    You haven&apos;t backed up your data yet. Do it now?
-                </Text>
-            </View>
+            <Text style={[type.body, { color: ds.text2 }]}>
+                You haven&apos;t backed up your data yet. Do it now?
+            </Text>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    button: {
+        height: 48,
+        borderRadius: radius.md,
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingBottom: 24,
-    },
-    iconContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
         justifyContent: 'center',
+    },
+    textButton: {
+        height: 44,
+        marginTop: space[1],
         alignItems: 'center',
-        marginBottom: 16,
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    message: {
-        fontSize: 16,
-        textAlign: 'center',
-        marginBottom: 24,
-        lineHeight: 22,
-    },
-    buttonContainer: {
-        width: '100%',
-        gap: 12,
-    },
-    primaryButton: {
-        width: '100%',
-    },
-    secondaryButton: {
-        width: '100%',
+        justifyContent: 'center',
     },
 });
 
