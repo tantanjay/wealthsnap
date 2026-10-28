@@ -160,8 +160,7 @@ const HomeScreen = ({ navigation }: any) => {
 
     const openRecord = (params?: object) => navigation.navigate('Record', params);
 
-    const togglePeriod = () => {
-        const next = period === 'overall' ? 'month' : 'overall';
+    const changePeriod = (next: Storage.SnapshotPeriod) => {
         setPeriod(next);
         Storage.saveSnapshotPeriod(next);
     };
@@ -239,7 +238,7 @@ const HomeScreen = ({ navigation }: any) => {
                                         format={format}
                                         order={order}
                                         period={period}
-                                        onTogglePeriod={togglePeriod}
+                                        onChangePeriod={changePeriod}
                                         onDetails={() => navigation.navigate('Insights')}
                                         onRowPress={id => setTab(ROW_DESTINATION[id])}
                                         onSeeAllRecent={() => setTab('ledger')}

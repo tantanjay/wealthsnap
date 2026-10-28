@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useContext } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius } from '@styles/theme';
 import { Domain, domainColor } from '@components/ds';
+import { SheetScrollContext } from '@components/ds/Sheet';
 import { SnapshotRowId } from '@services/core/storageService';
 
 const ROW_HEIGHT = 56;
@@ -33,27 +34,52 @@ interface DragRowProps {
 const DragRow: React.FC<DragRowProps> = ({ meta, index, count, onDrop }) => {
     const { ds, elevation } = useTheme();
     const offset = useSharedValue(0);
-    const [dragging, setDragging] = useState(false);
+    // A shared value, not state: re-rendering mid-drag would rebuild the gesture and cancel it.
+    const lifted = useSharedValue(false);
+    const sheet = useContext(SheetScrollContext);
+    const lockScroll = (locked: boolean) => sheet?.setScrollLocked(locked);
+    const shadow = elevation.sheet;
+    const liftedShadowOpacity = shadow.shadowOpacity ?? 0;
+    const liftedElevation = shadow.elevation ?? 0;
 
-    const pan = Gesture.Pan()
+    // The sheet's ScrollView would otherwise claim the vertical touch and cancel the drag:
+    // it waits for this gesture, and scrolling is switched off while the handle is held.
+    let pan = Gesture.Pan()
+        .activeOffsetY([-3, 3])
+        .shouldCancelWhenOutside(false)
+        .onTouchesDown(() => {
+            runOnJS(lockScroll)(true);
+        })
         .onStart(() => {
-            runOnJS(setDragging)(true);
+            lifted.value = true;
         })
         .onUpdate(e => {
             // Keep the row within the list.
             offset.value = Math.max(-index * ROW_HEIGHT, Math.min((count - 1 - index) * ROW_HEIGHT, e.translationY));
         })
-        .onEnd(() => {
+        .onEnd((_e, success) => {
+            if (!success) {
+                offset.value = withSpring(0);
+                return;
+            }
             const to = Math.max(0, Math.min(count - 1, index + Math.round(offset.value / ROW_HEIGHT)));
             offset.value = 0;
             runOnJS(onDrop)(index, to);
         })
         .onFinalize(() => {
-            runOnJS(setDragging)(false);
+            lifted.value = false;
+            runOnJS(lockScroll)(false);
         });
+    if (sheet) pan = pan.blocksExternalGesture(sheet.scrollRef);
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{ translateY: offset.value }],
+        // Every key is set in both states: Reanimated keeps the last value of a key that stops being returned.
+        backgroundColor: lifted.value ? ds.sheet : 'transparent',
+        borderRadius: lifted.value ? radius.md : 0,
+        zIndex: lifted.value ? 1 : 0,
+        shadowOpacity: lifted.value ? liftedShadowOpacity : 0,
+        elevation: lifted.value ? liftedElevation : 0,
     }));
 
     return (
@@ -61,13 +87,13 @@ const DragRow: React.FC<DragRowProps> = ({ meta, index, count, onDrop }) => {
             style={[
                 styles.row,
                 { borderBottomColor: ds.hairline, borderBottomWidth: index === count - 1 ? 0 : 1 },
-                dragging && [styles.lifted, elevation.sheet, { backgroundColor: ds.sheet }],
+                { shadowColor: shadow.shadowColor, shadowOffset: shadow.shadowOffset, shadowRadius: shadow.shadowRadius },
                 animatedStyle,
             ]}
         >
             <GestureDetector gesture={pan}>
-                <View hitSlop={space[2]} accessibilityLabel={`Drag to move ${meta.label}`}>
-                    <Ionicons name="reorder-two-outline" size={20} color={ds.text2} />
+                <View style={styles.handle} accessibilityLabel={`Drag to move ${meta.label}`}>
+                    <Ionicons name="reorder-two-outline" size={22} color={ds.text2} />
                 </View>
             </GestureDetector>
             {meta.domain && <View style={[styles.dot, { backgroundColor: domainColor(ds, meta.domain) }]} />}
@@ -92,13 +118,13 @@ function SnapshotOrderList<K extends string>({ order, meta, onChange }: Snapshot
         onChange(next);
     };
 
-    // Sheet renders in its own Modal, which needs its own gesture root on Android.
+    // Used inside a Sheet, which provides the gesture root.
     return (
-        <GestureHandlerRootView>
+        <>
             {order.map((id, index) => (
                 <DragRow key={id} meta={meta[id]} index={index} count={order.length} onDrop={handleDrop} />
             ))}
-        </GestureHandlerRootView>
+        </>
     );
 }
 
@@ -109,9 +135,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: space[3],
     },
-    lifted: {
-        zIndex: 1,
-        borderRadius: radius.md,
+    // A thumb-sized grab area around the icon.
+    handle: {
+        width: 44,
+        height: ROW_HEIGHT,
+        marginHorizontal: -space[2],
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     dot: {
         width: 8,

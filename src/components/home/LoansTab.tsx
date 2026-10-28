@@ -34,6 +34,11 @@ interface LoansTabProps {
     onOpenRecord: (params?: object) => void;
 }
 
+const STRATEGIES: { key: Strategy; label: string }[] = [
+    { key: 'AVALANCHE', label: 'Avalanche' },
+    { key: 'SNOWBALL', label: 'Snowball' },
+];
+
 const SIDES = [{ key: 'owe' as const, label: 'You owe' }, { key: 'owed' as const, label: 'Owed to you' }];
 
 const isPayable = (d: Debt) => (d.direction || 'PAYABLE') === 'PAYABLE';
@@ -86,8 +91,7 @@ const LoansTab: React.FC<LoansTabProps> = ({ format: f, currency, onOpenRecord }
         });
     }, []);
 
-    const toggleStrategy = () => {
-        const next = strategy === 'AVALANCHE' ? 'SNOWBALL' : 'AVALANCHE';
+    const changeStrategy = (next: Strategy) => {
         setStrategy(next);
         if (!isInitialStrategyLoad.current) Storage.saveDebtStrategy(next);
     };
@@ -302,7 +306,7 @@ const LoansTab: React.FC<LoansTabProps> = ({ format: f, currency, onOpenRecord }
 
                 {side === 'owe' && data.owe.length > 0 && (
                     <>
-                        <SectionHeader title="Payoff plan" actionLabel={`${strategy === 'AVALANCHE' ? 'Avalanche' : 'Snowball'} ⌄`} onAction={toggleStrategy} />
+                        <SectionHeader title="Payoff plan" menu={{ options: STRATEGIES, value: strategy, onSelect: key => changeStrategy(key as Strategy) }} />
                         <Text style={[type.small, { color: ds.text2 }]}>
                             {strategy === 'AVALANCHE' ? 'Highest interest rate first: the least interest overall.' : 'Smallest balance first: quick wins.'}
                         </Text>

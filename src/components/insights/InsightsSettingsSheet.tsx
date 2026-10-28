@@ -98,7 +98,7 @@ const InsightsSettingsSheet: React.FC<InsightsSettingsSheetProps> = ({ visible, 
             })}
 
             <SectionHeader title="Section order" />
-            <Text style={[type.small, { color: ds.text2 }]}>Drag to reorder the sections below the grid.</Text>
+            <Text style={[type.small, { color: ds.text2 }]}>Hold the handle and drag to reorder the sections below the grid.</Text>
             <SnapshotOrderList order={sectionOrder} meta={INSIGHTS_SECTION_META} onChange={onChangeSectionOrder} />
         </Sheet>
     );

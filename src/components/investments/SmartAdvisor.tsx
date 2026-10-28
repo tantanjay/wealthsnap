@@ -25,11 +25,11 @@ interface SmartAdvisorProps {
     isPrivacyEnabled?: boolean;
 }
 
-const PRIORITIES: { label: string; value: Priority }[] = [
-    { label: 'All', value: 'all' },
-    { label: 'Dividends', value: 'div' },
-    { label: 'Dips', value: 'crash' },
-    { label: 'Balance', value: 'balance' },
+const PRIORITIES: { key: Priority; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'div', label: 'Dividends' },
+    { key: 'crash', label: 'Dips' },
+    { key: 'balance', label: 'Balance' },
 ];
 
 const suggestionLook = (item: Suggestion): { icon: IconName; tone: Tone } => {
@@ -43,10 +43,6 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
     const { colors, ds } = useTheme();
     const [showInfoModal, setShowInfoModal] = useState(false);
 
-    const cyclePriority = () => {
-        const next = PRIORITIES[(PRIORITIES.findIndex(p => p.value === activePriority) + 1) % PRIORITIES.length].value;
-        onPriorityChange(next);
-    };
 
     const renderInfoModal = () => (
         <BottomModal
@@ -154,8 +150,7 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
         <>
             <SectionHeader
                 title="Smart advisor"
-                actionLabel={`${PRIORITIES.find(p => p.value === activePriority)?.label ?? 'All'} ⌄`}
-                onAction={cyclePriority}
+                menu={{ options: PRIORITIES, value: activePriority, onSelect: key => onPriorityChange(key as Priority) }}
             />
             {(!suggestions || suggestions.length === 0) ? (
                 <Text style={[type.small, { color: ds.text2, paddingVertical: space[3] }]}>No suggestions for this priority.</Text>
@@ -179,6 +174,7 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
                 onPress={() => setShowInfoModal(true)}
             />
             {renderInfoModal()}
+
         </>
     );
 };

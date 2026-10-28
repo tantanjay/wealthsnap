@@ -39,7 +39,7 @@ const ALLOCATION_TABS: { key: AllocationTab; label: string }[] = [
     { key: 'type', label: 'Type' },
 ];
 
-// Same sort keys the Investment screen saves, cycled from the section header.
+// Same sort keys the Investment screen saves, picked from the section header.
 const SORTS: { key: SortOption; label: string }[] = [
     { key: 'ALLOCATION', label: 'By value' },
     { key: 'PL_PERCENT', label: 'By return' },
@@ -113,14 +113,12 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
         });
     }, []);
 
-    const cycleSort = () => {
-        const next = SORTS[(SORTS.findIndex(s => s.key === sort) + 1) % SORTS.length].key;
+    const changeSort = (next: SortOption) => {
         setSort(next);
         Storage.saveInvestmentHoldingsSort({ option: next, direction: next === 'ALPHABETICAL' ? 'ASC' : 'DESC' });
     };
 
-    const cycleAllocationTab = () => {
-        const next = ALLOCATION_TABS[(ALLOCATION_TABS.findIndex(t => t.key === allocationTab) + 1) % ALLOCATION_TABS.length].key;
+    const changeAllocationTab = (next: AllocationTab) => {
         setAllocationTab(next);
         Storage.saveInvestmentAllocationTab(next);
     };
@@ -182,7 +180,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
     const sections: Record<Storage.HoldingsSectionId, React.ReactNode> = {
         holdings: (
             <>
-                <SectionHeader title="Holdings" actionLabel={`${SORTS.find(s => s.key === sort)?.label} ⌄`} onAction={cycleSort} />
+                <SectionHeader title="Holdings" menu={{ options: SORTS, value: sort, onSelect: key => changeSort(key as SortOption) }} />
                 {sorted.map((h, i) => {
                     const weight = formatPercent(weightOf(h.totalValue));
                     const ret = h.gainLossPercent;
@@ -203,7 +201,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
         ),
         allocation: (
             <>
-                <SectionHeader title="Allocation" actionLabel={`${ALLOCATION_TABS.find(t => t.key === allocationTab)?.label} ⌄`} onAction={cycleAllocationTab} />
+                <SectionHeader title="Allocation" menu={{ options: ALLOCATION_TABS, value: allocationTab, onSelect: key => changeAllocationTab(key as AllocationTab) }} />
                 <AllocationChart holdingsData={holdings} tab={allocationTab} isPrivacyEnabled={isPrivacyEnabled} />
             </>
         ),
