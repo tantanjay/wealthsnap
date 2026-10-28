@@ -5,15 +5,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@context/ThemeContext';
 import { useSecurity } from '@context/SecurityContext';
 import { useAlert } from '@context/AlertContext';
-import { SEVERITY_ICON, getSeverityColor } from '@utils/severity';
+import { SEVERITY_ICON } from '@utils/severity';
+import { type, space, radius, severityColor as toSeverityColor } from '@styles/theme';
 
 const { width, height } = Dimensions.get('window');
 
 export const CustomAlert: React.FC = () => {
-    const { colors } = useTheme();
+    const { ds, elevation } = useTheme();
     const { alertState, hideAlert } = useAlert();
     const { visible, title, message, details, buttons, options, severity } = alertState;
-    const severityColor = getSeverityColor(colors, severity);
+    const severityColor = toSeverityColor(ds, severity);
     const severityIcon = SEVERITY_ICON[severity];
 
     // Safety check for SecurityContext
@@ -58,35 +59,36 @@ export const CustomAlert: React.FC = () => {
             onRequestClose={handleBackgroundPress}
         >
             <TouchableOpacity
-                style={styles.overlay}
+                style={[styles.overlay, { backgroundColor: ds.scrim }]}
                 activeOpacity={1}
                 onPress={handleBackgroundPress}
             >
                 <View
                     style={[
                         styles.alertContainer,
-                        { backgroundColor: colors.surface, maxHeight: height * 0.6 }
+                        elevation.sheet,
+                        { backgroundColor: ds.sheet, maxHeight: height * 0.6 }
                     ]}
                     onStartShouldSetResponder={() => true}
                 >
                     <View style={styles.contentContainer}>
-                        <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+                        <Text style={[type.bodyStrong, styles.title, { color: ds.text }]}>{title}</Text>
                         <View style={styles.messageRow}>
-                            <Ionicons name={severityIcon} size={24} color={severityColor} style={styles.severityIcon} />
+                            <Ionicons name={severityIcon} size={20} color={severityColor} style={styles.severityIcon} />
                             {message ? (
-                                <Text style={[styles.message, styles.messageText, { color: colors.textSecondary }]}>
+                                <Text style={[type.small, styles.messageText, { color: ds.text2 }]}>
                                     {message}
                                 </Text>
                             ) : null}
                         </View>
                         {details && (
-                            <View style={[styles.detailsContainer, { borderColor: colors.border }]}>
+                            <View style={[styles.detailsContainer, { backgroundColor: ds.inset }]}>
                                 <ScrollView
                                     style={styles.detailsScroll}
                                     showsVerticalScrollIndicator={true}
                                     nestedScrollEnabled={true}
                                 >
-                                    <Text style={[styles.detailsText, { color: colors.textSecondary }]}>
+                                    <Text style={[type.caption, { color: ds.text2 }]}>
                                         {details}
                                     </Text>
                                 </ScrollView>
@@ -94,16 +96,16 @@ export const CustomAlert: React.FC = () => {
                         )}
                     </View>
 
-                    <View style={[styles.buttonContainer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+                    <View style={[styles.buttonContainer, { backgroundColor: ds.inset, borderTopColor: ds.hairline }]}>
                         {buttons?.map((button, index) => {
                             const isLast = index === (buttons.length || 0) - 1;
                             const isCancel = button.style === 'cancel';
                             const isDestructive = button.style === 'destructive';
 
                             // Default text color based on style
-                            let textColor = colors.primary;
-                            if (isCancel) textColor = colors.textSecondary;
-                            if (isDestructive) textColor = colors.error;
+                            let textColor = ds.accent;
+                            if (isCancel) textColor = ds.text2;
+                            if (isDestructive) textColor = ds.danger;
 
                             return (
                                 <TouchableOpacity
@@ -111,7 +113,7 @@ export const CustomAlert: React.FC = () => {
                                     style={[
                                         styles.button,
                                         !isLast && styles.buttonBorder,
-                                        !isLast && { borderRightColor: colors.border }
+                                        !isLast && { borderRightColor: ds.hairline }
                                     ]}
                                     onPress={() => {
                                         // Execute callback then close
@@ -124,7 +126,7 @@ export const CustomAlert: React.FC = () => {
                                         hideAlert();
                                     }}
                                 >
-                                    <Text style={[styles.buttonText, { color: textColor, fontWeight: isCancel ? '400' : '600' }]}>
+                                    <Text style={[isCancel ? type.body : type.bodyStrong, { color: textColor }]}>
                                         {button.text}
                                     </Text>
                                 </TouchableOpacity>
@@ -140,77 +142,56 @@ export const CustomAlert: React.FC = () => {
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     alertContainer: {
         width: Math.min(width * 0.85, 340),
-        borderRadius: 14,
+        borderRadius: radius.lg,
         overflow: 'hidden',
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
     },
     contentContainer: {
-        padding: 20,
+        padding: space[5],
         alignItems: 'center',
     },
     title: {
-        fontSize: 17,
-        fontWeight: '600',
         textAlign: 'center',
-        marginBottom: 8,
+        marginBottom: space[2],
     },
     messageRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
+        gap: space[2],
     },
     severityIcon: {
         flexShrink: 0,
-    },
-    message: {
-        fontSize: 13,
-        lineHeight: 18,
     },
     messageText: {
         flexShrink: 1,
         textAlign: 'left',
     },
     detailsContainer: {
-        marginTop: 12,
-        borderWidth: 1,
-        borderRadius: 8,
+        marginTop: space[3],
+        borderRadius: radius.sm,
         width: '100%',
         maxHeight: 200,
     },
     detailsScroll: {
-        padding: 10,
-    },
-    detailsText: {
-        fontSize: 12,
-        lineHeight: 18,
-        fontFamily: 'monospace',
+        padding: space[3],
     },
     buttonContainer: {
         flexDirection: 'row',
-        borderTopWidth: 0.5,
+        borderTopWidth: StyleSheet.hairlineWidth,
     },
     button: {
         flex: 1,
-        paddingVertical: 12,
+        minHeight: 48,
+        paddingVertical: space[3],
         alignItems: 'center',
         justifyContent: 'center',
     },
     buttonBorder: {
-        borderRightWidth: 0.5,
-    },
-    buttonText: {
-        fontSize: 17,
+        borderRightWidth: StyleSheet.hairlineWidth,
     },
 });
-

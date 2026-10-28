@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, AppState, StyleSheet } from 'react-native';
 
 import { usePrivacy } from '@context/PrivacyContext';
+import { useTheme } from '@context/ThemeContext';
 import { useScreenshotProtection } from '@hooks/useScreenshotProtection';
 
 export const PrivacyGuard: React.FC = () => {
     const { mode } = usePrivacy();
+    const { ds } = useTheme();
     const [isAppActive, setIsAppActive] = useState(true);
 
     // 1. Activate OS-Level Protection (FLAG_SECURE)
@@ -30,13 +32,12 @@ export const PrivacyGuard: React.FC = () => {
     }
 
     return (
-        <View style={[StyleSheet.absoluteFill, styles.overlay]} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, styles.overlay, { backgroundColor: ds.bg }]} pointerEvents="none" />
     );
 };
 
 const styles = StyleSheet.create({
     overlay: {
-        backgroundColor: '#FFFFFF', // White overlay to mask content
         zIndex: 99999, // Ensure it sits on top of everything
         elevation: 99999, // Android elevation
     },

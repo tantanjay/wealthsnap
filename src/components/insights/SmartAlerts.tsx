@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Card } from '@components/index';
-import { Row } from '@components/ds';
+import { Row, SectionHeader, Tone, toneColor } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Anomaly } from '@utils/financialMetrics';
 import { getPermissionStatus, openSettings } from '@services/background';
-import { type as typeScale } from '@styles/theme';
+import { type as typeScale, space } from '@styles/theme';
 
 interface SmartAlertsProps {
     anomalies: Anomaly[];
@@ -17,7 +16,7 @@ interface SmartAlertsProps {
 }
 
 const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
-    const { colors, ds } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const [showInfo, setShowInfo] = useState(false);
     const [hasPermission, setHasPermission] = useState(true);
@@ -46,97 +45,57 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
         );
     };
 
-    const getAnomalyConfig = (type: Anomaly['type']) => {
+    const getAnomalyConfig = (type: Anomaly['type']): { icon: React.ComponentProps<typeof Ionicons>['name']; tone: Tone; title: string } => {
         switch (type) {
             case 'BUDGET_EXCEEDED':
-                return {
-                    icon: 'wallet-outline' as const,
-                    color: '#F44336', // Red
-                    title: 'Budget Exceeded'
-                };
+                return { icon: 'wallet-outline', tone: 'bad', title: 'Budget exceeded' };
             case 'RUNWAY_DROP':
-                return {
-                    icon: 'trending-down-outline' as const,
-                    color: '#F44336', // Red
-                    title: 'Runway Drop'
-                };
+                return { icon: 'trending-down-outline', tone: 'bad', title: 'Runway drop' };
             case 'OUT_OF_CASH':
-                return {
-                    icon: 'battery-dead-outline' as const,
-                    color: '#F44336', // Red
-                    title: 'Out of Cash'
-                };
+                return { icon: 'battery-dead-outline', tone: 'bad', title: 'Out of cash' };
             case 'SPIKE':
-                return {
-                    icon: 'trending-up-outline' as const,
-                    color: '#FF9800', // Orange
-                    title: 'Spending Spike'
-                };
+                return { icon: 'trending-up-outline', tone: 'warning', title: 'Spending spike' };
             case 'NEW_CATEGORY':
-                return {
-                    icon: 'pricetag-outline' as const,
-                    color: '#2196F3', // Blue
-                    title: 'New Category'
-                };
+                return { icon: 'pricetag-outline', tone: 'neutral', title: 'New category' };
             default:
-                return {
-                    icon: 'alert-circle-outline' as const,
-                    color: colors.textSecondary,
-                    title: 'Alert'
-                };
+                return { icon: 'alert-circle-outline', tone: 'neutral', title: 'Alert' };
         }
     };
 
     return (
-        <View style={{ marginTop: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginRight: 8 }}>Smart Alerts</Text>
-
-                <TouchableOpacity onPress={() => setShowInfo(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
-
-                {!hasPermission && (
-                    <TouchableOpacity
-                        onPress={handlePermissionPress}
-                        style={{ marginLeft: 12 }}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                        <Ionicons name="warning-outline" size={20} color={colors.warning || '#FF9800'} />
-                    </TouchableOpacity>
-                )}
-            </View>
-
-            {anomalies.length === 0 ? (
-                <Card>
-                    <Text style={{ color: colors.textSecondary, textAlign: 'center', padding: 10 }}>
-                        {hasHistory
+        <View>
+            <SectionHeader title="Smart alerts" />
+            <View style={styles.subline}>
+                <Text style={[typeScale.small, styles.flex, { color: ds.text2 }]}>
+                    {anomalies.length > 0
+                        ? `${anomalies.length} ${anomalies.length === 1 ? 'alert' : 'alerts'} found.`
+                        : hasHistory
                             ? "No anomalies detected. Your spending looks normal."
                             : "We are learning your spending patterns. Alerts will appear here soon!"}
-                    </Text>
-                </Card>
-            ) : (
-                anomalies.map((anomaly, index) => {
-                    const config = getAnomalyConfig(anomaly.type);
-                    return (
-                        <Card key={index} style={{ marginBottom: 10, borderLeftWidth: 4, borderLeftColor: config.color }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <View style={{
-                                    width: 40, height: 40, borderRadius: 20,
-                                    backgroundColor: config.color + '15', // 15% opacity hex
-                                    alignItems: 'center', justifyContent: 'center', marginRight: 15
-                                }}>
-                                    <Ionicons name={config.icon} size={24} color={config.color} />
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{config.title}</Text>
-                                    <Text style={{ color: colors.textSecondary, marginTop: 4 }}>{anomaly.message}</Text>
-                                </View>
-                            </View>
-                        </Card>
-                    );
-                })
-            )}
+                </Text>
+                {!hasPermission && (
+                    <Pressable onPress={handlePermissionPress} hitSlop={space[2]} accessibilityLabel="Enable notifications">
+                        <Ionicons name="warning-outline" size={18} color={ds.warning} />
+                    </Pressable>
+                )}
+                <Pressable onPress={() => setShowInfo(true)} hitSlop={space[2]} accessibilityLabel="How Smart Alerts work">
+                    <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
+                </Pressable>
+            </View>
+
+            {anomalies.map((anomaly, index) => {
+                const config = getAnomalyConfig(anomaly.type);
+                return (
+                    <Row
+                        key={index}
+                        // Tone-colored icon carries severity; no filled icon circle (DESIGN.md §7).
+                        leading={<Ionicons name={config.icon} size={20} color={toneColor(ds, config.tone)} />}
+                        title={config.title}
+                        subtitle={anomaly.message}
+                        last={index === anomalies.length - 1}
+                    />
+                );
+            })}
 
             <BottomModal
                 visible={showInfo}
@@ -178,5 +137,16 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({ anomalies, hasHistory }) => {
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    subline: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+    },
+    flex: {
+        flex: 1,
+    },
+});
 
 export default SmartAlerts;

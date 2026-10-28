@@ -6,6 +6,9 @@ import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
 import { ImportSummary } from '@services/integrations';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
+import { SEVERITY_ICON } from '@utils/severity';
+import { Row } from '@components/ds';
+import { type, space } from '@styles/theme';
 
 interface ImportProcessScreenProps {
     isProcessing: boolean;
@@ -24,18 +27,18 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
     onConfirm,
     onCancel
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
 
     // Loading state
     if (isProcessing) {
         return (
-            <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <View style={[styles.container, { backgroundColor: ds.bg }]}>
                 <View style={styles.centerContent}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={[styles.loadingText, { color: colors.text }]}>
+                    <ActivityIndicator size="large" color={ds.accent} />
+                    <Text style={[type.body, styles.loadingText, { color: ds.text }]}>
                         Validating file...
                     </Text>
-                    <Text style={[styles.subText, { color: colors.textSecondary }]}>
+                    <Text style={[type.small, styles.subText, { color: ds.text2 }]}>
                         Please wait while we check your data
                     </Text>
                 </View>
@@ -43,16 +46,16 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
         );
     }
 
-    // Saving state 
+    // Saving state
     if (isSaving) {
         return (
-            <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <View style={[styles.container, { backgroundColor: ds.bg }]}>
                 <View style={styles.centerContent}>
-                    <ActivityIndicator size="large" color={colors.success} />
-                    <Text style={[styles.loadingText, { color: colors.text }]}>
+                    <ActivityIndicator size="large" color={ds.accent} />
+                    <Text style={[type.body, styles.loadingText, { color: ds.text }]}>
                         Importing transactions...
                     </Text>
-                    <Text style={[styles.subText, { color: colors.textSecondary }]}>
+                    <Text style={[type.small, styles.subText, { color: ds.text2 }]}>
                         Please do not close the app
                     </Text>
                 </View>
@@ -60,60 +63,39 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
         );
     }
 
-    // Summary state  
+    // Summary state
     if (summary) {
         const isPositive = summary.netBalance.isGreaterThanOrEqualTo(0);
 
         return (
-            <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <View style={[styles.container, { backgroundColor: ds.bg }]}>
                 <View style={styles.summaryContent}>
-                    {/* Success Icon */}
-                    <View style={[styles.iconCircle, { backgroundColor: colors.success + '20' }]}>
-                        <Ionicons name="checkmark-circle" size={48} color={colors.success} />
-                    </View>
+                    <Ionicons name={SEVERITY_ICON.success} size={48} color={ds.success} style={styles.icon} />
 
-                    <Text style={[styles.title, { color: colors.text }]}>
+                    <Text style={[type.title, { color: ds.text, marginBottom: space[1] }]}>
                         Ready to Import
                     </Text>
 
-                    <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                    <Text style={[type.small, styles.subtitle, { color: ds.text2 }]}>
                         All data validated successfully
                     </Text>
 
-                    {/* Stats */}
-                    <View style={[styles.statsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <StatRow
-                            label="Total Transactions"
-                            value={summary.totalTransactions.toString()}
-                            colors={colors}
-                        />
-                        <StatRow
-                            label="Total Income"
-                            value={formatCurrencyAmount(summary.totalIncome, currency)}
-                            valueColor={colors.success}
-                            colors={colors}
-                        />
-                        <StatRow
-                            label="Total Expense"
-                            value={formatCurrencyAmount(summary.totalExpense, currency)}
-                            valueColor={colors.error}
-                            colors={colors}
-                        />
-                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                        <StatRow
-                            label="Net Balance"
+                    <View style={styles.stats}>
+                        <Row title="Total Transactions" value={summary.totalTransactions.toString()} />
+                        <Row title="Total Income" value={formatCurrencyAmount(summary.totalIncome, currency)} valueTone="good" />
+                        <Row title="Total Expense" value={formatCurrencyAmount(summary.totalExpense, currency)} valueTone="bad" />
+                        <Row
+                            title="Net Balance"
                             value={formatCurrencyAmount(summary.netBalance, currency)}
-                            valueColor={isPositive ? colors.success : colors.error}
-                            isBold
-                            colors={colors}
+                            valueTone={isPositive ? 'good' : 'bad'}
+                            last
                         />
                     </View>
 
-                    <Text style={[styles.confirmText, { color: colors.textSecondary }]}>
+                    <Text style={[type.small, styles.confirmText, { color: ds.text2 }]}>
                         Do you want to import these transactions?
                     </Text>
 
-                    {/* Actions */}
                     <View style={styles.actions}>
                         <Button
                             title="Yes, Import"
@@ -123,7 +105,7 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
                             variant="outline"
                             title="No, Cancel"
                             onPress={onCancel}
-                            style={{ marginTop: 10 }}
+                            style={{ marginTop: space[3] }}
                         />
                     </View>
                 </View>
@@ -134,35 +116,10 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
     return null;
 };
 
-const StatRow = ({
-    label,
-    value,
-    valueColor,
-    isBold,
-    colors
-}: {
-    label: string;
-    value: string;
-    valueColor?: string;
-    isBold?: boolean;
-    colors: any;
-}) => (
-    <View style={styles.statRow}>
-        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{label}</Text>
-        <Text style={[
-            styles.statValue,
-            { color: valueColor || colors.text },
-            isBold && { fontWeight: '700', fontSize: 18 }
-        ]}>
-            {value}
-        </Text>
-    </View>
-);
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
+        padding: space[5],
     },
     centerContent: {
         flex: 1,
@@ -170,65 +127,29 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     loadingText: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginTop: 20,
+        marginTop: space[5],
     },
     subText: {
-        fontSize: 14,
-        marginTop: 8,
+        marginTop: space[2],
     },
     summaryContent: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 10,
     },
-    iconCircle: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: '700',
-        marginBottom: 4,
+    icon: {
+        marginBottom: space[4],
     },
     subtitle: {
-        fontSize: 14,
-        marginBottom: 24,
+        marginBottom: space[6],
     },
-    statsCard: {
+    stats: {
         width: '100%',
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        marginBottom: 20,
-    },
-    statRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: 8,
-    },
-    statLabel: {
-        fontSize: 14,
-    },
-    statValue: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    divider: {
-        height: 1,
-        marginVertical: 8,
+        marginBottom: space[5],
     },
     confirmText: {
-        fontSize: 14,
         textAlign: 'center',
-        marginBottom: 20,
+        marginBottom: space[5],
     },
     actions: {
         width: '100%',

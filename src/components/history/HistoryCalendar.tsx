@@ -7,6 +7,7 @@ import { useTheme } from '@context/ThemeContext';
 import { Transaction, RecurrenceRule, Investment } from '@types';
 import { formatCompactCurrency } from '@utils/currencyUtils';
 import { addMonthsAnchored, getRecurrenceAnchorDay } from '@services/domain/recurrenceService';
+import { type, space, radius, fontFamily } from '@styles/theme';
 
 interface HistoryCalendarProps {
     currentDate: Date;
@@ -32,7 +33,7 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
     currency = 'PHP',
     hideAmounts = false,
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
 
     const calendarData = useMemo(() => {
         const year = currentDate.getFullYear();
@@ -161,43 +162,38 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
         const isSelected = selectedDate?.toDateString() === dateKey;
         const isCurrentMonth = date.getMonth() === currentDate.getMonth();
 
-        // Heatmap Logic
-        let backgroundColor = isCurrentMonth ? colors.surface : 'transparent';
+        // Heatmap: discretionary spend tints the cell danger, scaled 0.05–0.5 opacity.
+        let heatOpacity = 0;
         if (stat && stat.discretionaryExpense.isGreaterThan(0) && maxDiscretionaryExpense.isGreaterThan(0)) {
-            // Calculate ratio (0 to 1)
             const ratio = stat.discretionaryExpense.div(maxDiscretionaryExpense).toNumber();
-            // Start transparent, go up to 0.5 opacity red
-            // Min opacity 0.05 so even small spends are visible if they are non-zero
-            const opacity = Math.max(0.05, Math.min(ratio * 0.5, 0.5));
-            backgroundColor = `${colors.error}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
+            heatOpacity = Math.max(0.05, Math.min(ratio * 0.5, 0.5));
         }
 
         return (
             <TouchableOpacity
                 key={date.toISOString()}
-                style={[styles.dayCell, { backgroundColor }]}
+                style={[styles.dayCell, isToday && { borderColor: ds.hairline }]}
                 onPress={() => onSelectDate(date)}
             >
-                {isSelected && <View style={[styles.selectionOverlay, { borderColor: colors.primary, backgroundColor: colors.primary + '15' }]} />}
+                {heatOpacity > 0 && <View style={[StyleSheet.absoluteFill, { backgroundColor: ds.danger, opacity: heatOpacity }]} />}
+                {isSelected && <View style={[styles.selectionOverlay, { borderColor: ds.accent, backgroundColor: ds.accentSoft }]} />}
                 <View style={styles.cellTop}>
-                    <View style={[isToday && { backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 4 }]}>
-                        <Text style={[styles.dateText, { color: isToday ? '#FFF' : (isCurrentMonth ? colors.text : colors.textSecondary + '40') }]}>
-                            {date.getDate()}
-                        </Text>
-                    </View>
+                    <Text style={[styles.dateText, { color: isSelected ? ds.accent : (isCurrentMonth ? ds.text : ds.text3) }]}>
+                        {date.getDate()}
+                    </Text>
                     <View style={styles.indicatorGroup}>
-                        {stat?.hasBuy && <Ionicons name="caret-up" size={10} color={colors.success} />}
+                        {stat?.hasBuy && <Ionicons name="caret-up" size={10} color={ds.domainInvest} />}
                         {stat?.hasSell && (
                             <Ionicons
                                 name="caret-down"
                                 size={10}
-                                color={stat.sellProfitability === 'PROFIT' ? '#FFD700' : stat.sellProfitability === 'LOSS' ? colors.error : '#FFA500'}
+                                color={stat.sellProfitability === 'PROFIT' ? ds.success : stat.sellProfitability === 'LOSS' ? ds.danger : ds.domainInvest}
                             />
                         )}
                         {/* Show Recurring Amount for Past, Badge for Count is replaced by Amount */}
                         {stat?.recurringCount > 0 && date <= new Date() && (
-                            <View style={[styles.miniBadge, { backgroundColor: colors.primary }]}>
-                                <Text style={styles.miniBadgeText}>{stat.recurringCount}</Text>
+                            <View style={[styles.miniBadge, { backgroundColor: ds.inset }]}>
+                                <Text style={[styles.miniBadgeText, { color: ds.text2 }]}>{stat.recurringCount}</Text>
                             </View>
                         )}
                     </View>
@@ -205,20 +201,20 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                 <View style={styles.centerContent}>
                     {!hideAmounts && date > new Date() && stat && (stat.futureIncomeAmount.isGreaterThan(0) || stat.futureExpenseAmount.isGreaterThan(0)) && (
                         <View style={styles.ghostStack}>
-                            {stat.futureIncomeAmount.isGreaterThan(0) && <Text style={[styles.ghostText, { color: colors.success }]}>{formatCompactCurrency(stat.futureIncomeAmount, currency)}</Text>}
-                            {stat.futureExpenseAmount.isGreaterThan(0) && <Text style={[styles.ghostText, { color: colors.error }]}>{formatCompactCurrency(stat.futureExpenseAmount, currency)}</Text>}
+                            {stat.futureIncomeAmount.isGreaterThan(0) && <Text style={[styles.ghostText, { color: ds.success }]}>{formatCompactCurrency(stat.futureIncomeAmount, currency)}</Text>}
+                            {stat.futureExpenseAmount.isGreaterThan(0) && <Text style={[styles.ghostText, { color: ds.danger }]}>{formatCompactCurrency(stat.futureExpenseAmount, currency)}</Text>}
                         </View>
                     )}
                     {/* Past Recurring Expenses/Income - Displayed in Center */}
                     {!hideAmounts && date <= new Date() && stat && (stat.recurringExpense.isGreaterThan(0) || stat.recurringIncome.isGreaterThan(0)) && (
                         <View style={styles.ghostStack}>
                             {stat.recurringIncome.isGreaterThan(0) && (
-                                <Text style={[styles.ghostText, { color: colors.success }]}>
+                                <Text style={[styles.ghostText, { color: ds.success }]}>
                                     {formatCompactCurrency(stat.recurringIncome, currency)}
                                 </Text>
                             )}
                             {stat.recurringExpense.isGreaterThan(0) && (
-                                <Text style={[styles.ghostText, { color: colors.error }]}>
+                                <Text style={[styles.ghostText, { color: ds.danger }]}>
                                     {formatCompactCurrency(stat.recurringExpense, currency)}
                                 </Text>
                             )}
@@ -228,10 +224,10 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                 <View style={styles.statsStripContainer}>
                     {stat?.totalVol.isGreaterThan(0) ? (
                         <View style={styles.statsStripInner}>
-                            {stat.income.isGreaterThan(0) && <View style={{ flex: 1, backgroundColor: colors.success }} />}
-                            {stat.expense.isGreaterThan(0) && <View style={{ flex: 1, backgroundColor: colors.error }} />}
+                            {stat.income.isGreaterThan(0) && <View style={{ flex: 1, backgroundColor: ds.success }} />}
+                            {stat.expense.isGreaterThan(0) && <View style={{ flex: 1, backgroundColor: ds.danger }} />}
                         </View>
-                    ) : <View style={[styles.emptyStrip, { backgroundColor: colors.border + '20' }]} />}
+                    ) : <View style={[styles.emptyStrip, { backgroundColor: isCurrentMonth ? ds.hairline : 'transparent' }]} />}
                 </View>
             </TouchableOpacity>
         );
@@ -239,16 +235,14 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
 
     return (
         <View style={styles.container}>
-            {/* WEEKDAY LABELS (Restored) */}
             <View style={styles.weekdayRow}>
                 {DAYS_OF_WEEK.map(day => (
-                    <Text key={day} style={[styles.weekdayText, { color: colors.textSecondary }]}>
-                        {day.toUpperCase()}
+                    <Text key={day} style={[type.caption, styles.weekdayText, { color: ds.text2 }]}>
+                        {day}
                     </Text>
                 ))}
             </View>
 
-            {/* GRID */}
             <View style={styles.grid}>
                 {calendarData.map(renderDay)}
             </View>
@@ -259,19 +253,15 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
 const styles = StyleSheet.create({
     container: {
         width: '100%',
-        paddingBottom: 16,
+        paddingBottom: space[4],
     },
     weekdayRow: {
         flexDirection: 'row',
-        marginBottom: 8,
-        paddingHorizontal: 0,
+        marginBottom: space[2],
     },
     weekdayText: {
         flex: 1,
         textAlign: 'center',
-        fontSize: 10,
-        fontWeight: 'bold',
-        letterSpacing: 1,
     },
     grid: {
         flexDirection: 'row',
@@ -280,7 +270,7 @@ const styles = StyleSheet.create({
     dayCell: {
         width: '14.28%',
         aspectRatio: 1,
-        borderRadius: 8,
+        borderRadius: radius.sm,
         padding: 2,
         justifyContent: 'space-between',
         position: 'relative',
@@ -290,13 +280,14 @@ const styles = StyleSheet.create({
     },
     cellTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     indicatorGroup: { flexDirection: 'row', alignItems: 'center', gap: 1 },
-    dateText: { fontSize: 11, fontWeight: '600' },
-    selectionOverlay: { ...StyleSheet.absoluteFill, borderWidth: 2, borderRadius: 8, zIndex: 1 },
+    dateText: { ...type.captionNum, fontFamily: fontFamily.semibold, paddingHorizontal: 2 },
+    selectionOverlay: { ...StyleSheet.absoluteFill, borderWidth: 2, borderRadius: radius.sm, zIndex: 1 },
     centerContent: { flex: 1, justifyContent: 'center' },
     ghostStack: { alignItems: 'center' },
-    ghostText: { fontSize: 7, fontWeight: 'bold', lineHeight: 8 },
+    // Below the type scale on purpose: a day cell is ~1/7 of the screen width.
+    ghostText: { fontFamily: fontFamily.semibold, fontSize: 7, lineHeight: 8, fontVariant: ['tabular-nums'] },
     miniBadge: { paddingHorizontal: 2, borderRadius: 4, minWidth: 10, alignItems: 'center' },
-    miniBadgeText: { color: 'white', fontSize: 7, fontWeight: 'bold' },
+    miniBadgeText: { fontFamily: fontFamily.semibold, fontSize: 7, fontVariant: ['tabular-nums'] },
     statsStripContainer: { height: 3, width: '100%', borderRadius: 2, overflow: 'hidden' },
     statsStripInner: { flex: 1, flexDirection: 'row' },
     emptyStrip: { flex: 1 }

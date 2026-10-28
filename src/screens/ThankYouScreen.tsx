@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@context/ThemeContext';
-import { Button } from '@components/index';
 import { Ionicons } from '@expo/vector-icons';
 import { StyledDonorName } from '@components/thankyou/StyledDonorName';
 import { DONORS, NAME_STYLES } from '@constants/thankyou';
 import { FlashList } from '@shopify/flash-list';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, withSequence } from 'react-native-reanimated';
 import BottomModal from '@components/common/BottomModal';
-import { space } from '@styles/theme';
+import { type, space, radius } from '@styles/theme';
 
 const stylesKeys = Object.keys(NAME_STYLES);
 
@@ -84,7 +83,7 @@ const FloatingName = ({ name, styleConfig }: { name: string, styleConfig: any })
 };
 
 const ThankYouScreen = ({ navigation }: any) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const insets = useSafeAreaInsets();
     const [showList, setShowList] = useState(false);
 
@@ -122,21 +121,21 @@ const ThankYouScreen = ({ navigation }: any) => {
         <View style={[
             styles.container,
             {
-                backgroundColor: colors.background,
+                backgroundColor: ds.bg,
                 paddingTop: insets.top,
                 paddingBottom: insets.bottom
             }
         ]}>
             {/* Header */}
-            <View style={[styles.header, { borderBottomColor: colors.border, zIndex: 10 }]}>
-                <Ionicons
-                    name="chevron-back"
-                    size={24}
-                    color={colors.text}
-                    onPress={() => navigation.goBack()}
-                />
-                <Text style={[styles.headerTitle, { color: colors.text }]}>Back</Text>
-            </View>
+            <Pressable
+                style={styles.header}
+                onPress={() => navigation.goBack()}
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+            >
+                <Ionicons name="chevron-back" size={24} color={ds.text2} />
+                <Text style={[type.body, { color: ds.text }]}>Back</Text>
+            </Pressable>
 
             {/* Floating Background */}
             <View style={[StyleSheet.absoluteFill, { zIndex: 0, overflow: 'hidden' }]} pointerEvents="none">
@@ -151,23 +150,23 @@ const ThankYouScreen = ({ navigation }: any) => {
 
             {/* Center Content */}
             <View style={styles.centerContent} pointerEvents="box-none">
-                <View style={[styles.bigIconContainer, { backgroundColor: colors.primary + '20' }]}>
-                    <Ionicons name="heart" size={80} color={colors.primary} />
+                <View style={[styles.bigIconContainer, { backgroundColor: ds.accentSoft }]}>
+                    <Ionicons name="heart-outline" size={56} color={ds.accent} />
                 </View>
-                <Text style={[styles.bigTitle, { color: colors.text }]}>
-                    Thank You!
+                <Text style={[type.title, styles.center, { color: ds.text }]}>
+                    Thank you!
                 </Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                <Text style={[type.body, styles.center, styles.subtitle, { color: ds.text2 }]}>
                     Special thanks to the supporter whose generosity and encouragement are deeply appreciated.
                 </Text>
 
-                <View style={styles.buttonWrapper}>
-                    <Button
-                        title="View Supporters"
-                        onPress={() => setShowList(true)}
-                        style={styles.button}
-                    />
-                </View>
+                <Pressable
+                    onPress={() => setShowList(true)}
+                    style={[styles.button, { backgroundColor: ds.accent }]}
+                    accessibilityRole="button"
+                >
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>View supporters</Text>
+                </Pressable>
             </View>
 
             {/* Bottom Modal for List */}
@@ -204,48 +203,41 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 15,
-        backgroundColor: 'transparent',
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginLeft: 10,
+        alignSelf: 'flex-start',
+        gap: space[2],
+        paddingHorizontal: space[4],
+        paddingVertical: space[4],
+        zIndex: 10,
     },
     centerContent: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 30,
+        paddingHorizontal: space[5],
         zIndex: 5,
     },
+    center: {
+        textAlign: 'center',
+    },
     bigIconContainer: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
+        width: 112,
+        height: 112,
+        borderRadius: radius.full,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 24,
-    },
-    bigTitle: {
-        fontSize: 36,
-        fontWeight: 'bold',
-        marginBottom: 16,
-        textAlign: 'center',
+        marginBottom: space[6],
     },
     subtitle: {
-        fontSize: 18,
-        lineHeight: 26,
-        textAlign: 'center',
-        marginBottom: 40,
-    },
-    buttonWrapper: {
-        width: '100%',
-        marginTop: 20,
+        marginTop: space[3],
+        marginBottom: space[7],
     },
     button: {
         width: '100%',
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: space[5],
     },
     donorItem: {
         marginBottom: space[2],

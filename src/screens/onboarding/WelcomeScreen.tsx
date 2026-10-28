@@ -1,88 +1,84 @@
 import React from 'react';
-import { Text, View, StyleSheet, useWindowDimensions } from 'react-native';
+import { Text, View, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 
-import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 
-const FeatureItem = ({ icon, text, color, scale }: { icon: string; text: string; color: string; scale: number }) => (
-    <View style={[styles.featureItem, { padding: 16 * scale, borderRadius: 16 * scale }]}>
-        <View
-            style={[
-                styles.iconContainer,
-                {
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    width: 40 * scale,
-                    height: 40 * scale,
-                    borderRadius: 20 * scale,
-                    marginRight: 16 * scale,
-                },
-            ]}
-        >
-            <MaterialCommunityIcons name={icon as any} size={22 * scale} color={color} />
-        </View>
-        <Text style={[styles.featureText, { fontSize: Math.max(14, 18 * scale) }]}>{text}</Text>
-    </View>
-);
+const FEATURES: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
+    { icon: 'shield-checkmark-outline', text: 'Private by design' },
+    { icon: 'speedometer-outline', text: 'Your whole financial life, one app' },
+    { icon: 'flash-outline', text: 'Log a transaction in seconds' },
+];
 
 const WelcomeScreen = ({ navigation }: any) => {
-    const { colors } = useTheme();
+    const { ds, theme } = useTheme();
     const insets = useSafeAreaInsets();
     const { height: screenHeight } = useWindowDimensions();
 
-    // Compress spacing/icon sizes on short screens so "Get Started" never
+    // Compress spacing/icon sizes on short screens so "Get started" never
     // crowds the bottom system bar and content never overflows.
     const scale = Math.min(1, Math.max(0.65, screenHeight / 750));
+    const heroSize = 96 * scale;
 
     return (
-        <LinearGradient
-            colors={[colors.primaryDark, colors.primary, colors.primaryLight]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.container}
-        >
-            <View style={[styles.content, { paddingTop: insets.top + 24 * scale }]}>
+        <View style={[styles.container, { backgroundColor: ds.bg }]}>
+            <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
+            <View style={[styles.content, { paddingTop: insets.top + space[6] * scale }]}>
                 <View
                     style={[
-                        styles.heroIconContainer,
+                        styles.hero,
                         {
-                            backgroundColor: 'rgba(255,255,255,0.15)',
-                            width: 96 * scale,
-                            height: 96 * scale,
-                            borderRadius: 48 * scale,
-                            marginBottom: 16 * scale,
+                            backgroundColor: ds.accentSoft,
+                            width: heroSize,
+                            height: heroSize,
+                            marginBottom: space[4] * scale,
                         },
                     ]}
                 >
-                    <MaterialCommunityIcons name="wallet-outline" size={44 * scale} color={colors.white} />
+                    <Ionicons name="wallet-outline" size={44 * scale} color={ds.accent} />
                 </View>
 
-                <Text style={[styles.title, { fontSize: Math.max(24, 30 * scale), marginBottom: 6 * scale }]}>
+                <Text style={[type.display, styles.center, { color: ds.text, marginBottom: space[2] * scale }]}>
                     WealthSnap
                 </Text>
 
-                <Text style={[styles.subtitle, { marginBottom: 28 * scale }]}>
+                <Text style={[type.body, styles.center, { color: ds.text2, marginBottom: space[7] * scale }]}>
                     Master your finances with smart insights and secure tracking.
                 </Text>
 
-                <View style={[styles.featuresContainer, { gap: 12 * scale }]}>
-                    <FeatureItem icon="shield-check" text="Private by design" color={colors.white} scale={scale} />
-                    <FeatureItem icon="speedometer" text="Your whole financial life, one app" color={colors.white} scale={scale} />
-                    <FeatureItem icon="lightning-bolt" text="Log a transaction in seconds" color={colors.white} scale={scale} />
+                <View style={styles.features}>
+                    {FEATURES.map((f, i) => (
+                        <View
+                            key={f.text}
+                            style={[
+                                styles.featureRow,
+                                {
+                                    borderBottomColor: ds.hairline,
+                                    borderBottomWidth: i === FEATURES.length - 1 ? 0 : 1,
+                                    paddingVertical: space[3] * scale,
+                                },
+                            ]}
+                        >
+                            <Ionicons name={f.icon} size={20} color={ds.text2} />
+                            <Text style={[type.body, styles.featureText, { color: ds.text }]}>{f.text}</Text>
+                        </View>
+                    ))}
                 </View>
             </View>
 
-            <View style={[styles.footer, { paddingBottom: insets.bottom + 16 * scale }]}>
-                <Button
-                    title="Get Started"
+            <View style={[styles.footer, { paddingBottom: insets.bottom + space[4] * scale }]}>
+                <Pressable
                     onPress={() => navigation.navigate('Setup')}
-                    variant="outline"
-                    style={{ backgroundColor: colors.white, borderWidth: 0, width: '100%' }}
-                />
+                    style={[styles.button, { backgroundColor: ds.accent }]}
+                    accessibilityRole="button"
+                >
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Get started</Text>
+                </Pressable>
             </View>
-        </LinearGradient>
+        </View>
     );
 };
 
@@ -95,62 +91,37 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 30,
-        paddingTop: 60,
+        paddingHorizontal: space[5],
     },
-    heroIconContainer: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
+    hero: {
+        borderRadius: radius.full,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 30,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.3)',
     },
-    title: {
-        fontSize: 42,
-        fontWeight: 'bold',
-        color: '#FFFFFF',
-        marginBottom: 12,
+    center: {
         textAlign: 'center',
     },
-    subtitle: {
-        fontSize: 18,
-        color: 'rgba(255,255,255,0.9)',
-        textAlign: 'center',
-        marginBottom: 48,
-        lineHeight: 26,
-    },
-    featuresContainer: {
+    features: {
         width: '100%',
-        gap: 20,
     },
-    featureItem: {
+    featureRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        padding: 16,
-        borderRadius: 16,
-    },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
+        gap: space[3],
     },
     featureText: {
         flex: 1,
-        fontSize: 18,
-        color: '#FFFFFF',
-        fontWeight: '600',
     },
     footer: {
-        padding: 30,
-        paddingBottom: 50,
-    }
+        paddingHorizontal: space[5],
+        paddingTop: space[4],
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 });
 
 export default WelcomeScreen;

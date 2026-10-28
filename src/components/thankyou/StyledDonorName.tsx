@@ -26,10 +26,11 @@ export const StyledDonorName = ({ name, styleConfig }: { name: string, styleConf
     // (see NAME_STYLES in @constants/thankyou) so colors are always chosen to
     // contrast with the current theme's background, rather than relying on a
     // single fixed palette plus a generic backlight.
-    const { theme } = useTheme();
+    const { theme, ds } = useTheme();
     const isDark = theme.mode === 'dark';
     const variant = isDark ? styleConfig.dark : styleConfig.light;
-    const backlightColor = isDark ? '#FFFFFF' : '#000000';
+    // Primary text tone contrasts with the page in both themes.
+    const backlightColor = ds.text;
 
     if (!font) return null;
 

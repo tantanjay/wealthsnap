@@ -11,7 +11,6 @@ type ThemeMode = 'light' | 'dark' | 'system';
 interface ThemeContextType {
     theme: ThemeType;
     mode: ThemeMode;
-    colors: ThemeType['colors'];
     ds: ThemeType['ds'];
     elevation: ThemeType['elevation'];
     setMode: (mode: ThemeMode) => void;
@@ -21,7 +20,6 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType>({
     theme: lightTheme,
     mode: 'system',
-    colors: lightTheme.colors,
     ds: lightTheme.ds,
     elevation: lightTheme.elevation,
     setMode: () => { },
@@ -76,7 +74,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         <ThemeContext.Provider value={{
             theme,
             mode,
-            colors: theme.colors,
             ds: theme.ds,
             elevation: theme.elevation,
             setMode,

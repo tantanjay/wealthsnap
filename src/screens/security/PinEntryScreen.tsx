@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 import { authenticateBiometrics, getBiometricType, getPinLockoutRemainingMs, hasBiometrics, verifyPin } from '@services/core/securityService';
 
 interface PinEntryScreenProps {
@@ -13,7 +14,7 @@ interface PinEntryScreenProps {
 const PIN_LENGTH = 6;
 
 const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const insets = useSafeAreaInsets();
     const [pin, setPinState] = useState('');
     const [error, setError] = useState(false);
@@ -121,6 +122,7 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
     }, [pin, checkPin, isLockedOut]);
 
     const renderDots = () => {
+        const tone = error ? ds.danger : ds.accent;
         return (
             <View style={styles.dotsContainer}>
                 {[...Array(PIN_LENGTH)].map((_, i) => (
@@ -129,8 +131,8 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
                         style={[
                             styles.dot,
                             {
-                                borderColor: error ? 'red' : colors.primary,
-                                backgroundColor: pin.length > i ? (error ? 'red' : colors.primary) : 'transparent',
+                                borderColor: tone,
+                                backgroundColor: pin.length > i ? tone : 'transparent',
                             }
                         ]}
                     />
@@ -151,7 +153,7 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
                                     <Ionicons
                                         name={biometricType === 'FACIAL_RECOGNITION' ? "scan" : "finger-print"}
                                         size={32}
-                                        color={colors.primary}
+                                        color={ds.accent}
                                     />
                                 </TouchableOpacity>
                             );
@@ -161,13 +163,13 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
                     if (key === 'del') {
                         return (
                             <TouchableOpacity key={index} style={styles.key} onPress={handleDelete}>
-                                <Ionicons name="backspace-outline" size={28} color={colors.text} />
+                                <Ionicons name="backspace-outline" size={28} color={ds.text2} />
                             </TouchableOpacity>
                         );
                     }
                     return (
                         <TouchableOpacity key={index} style={styles.key} disabled={isLockedOut} onPress={() => handlePress(key)}>
-                            <Text style={[styles.keyText, { color: isLockedOut ? colors.textSecondary : colors.text }]}>{key}</Text>
+                            <Text style={[type.titleNum, { color: isLockedOut ? ds.text3 : ds.text }]}>{key}</Text>
                         </TouchableOpacity>
                     );
                 })}
@@ -175,82 +177,88 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
         );
     };
 
-    const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-            backgroundColor: colors.background,
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-            paddingTop: Math.max(insets.top, 20),
-            paddingBottom: Math.max(insets.bottom, 20),
-        },
-        title: {
-            fontSize: 24,
-            fontWeight: 'bold',
-            marginBottom: 10,
-            textAlign: 'center',
-            color: colors.text
-        },
-        subtitle: {
-            fontSize: 16,
-            textAlign: 'center',
-            marginBottom: 50,
-            color: colors.textSecondary
-        },
-        dotsContainer: {
-            flexDirection: 'row',
-            justifyContent: 'center',
-            marginBottom: 50,
-        },
-        dot: {
-            width: 20,
-            height: 20,
-            borderRadius: 10,
-            borderWidth: 2,
-            marginHorizontal: 10,
-        },
-        keypad: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            width: '100%',
-            maxWidth: 300,
-        },
-        key: {
-            width: '30%',
-            height: 60,
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: 20,
-        },
-        keyText: {
-            fontSize: 28,
-            fontWeight: '600',
-        },
-        errorText: {
-            color: 'red',
-            marginTop: 20,
-            minHeight: 20,
-            textAlign: 'center',
-            paddingHorizontal: 20,
-        }
-    });
-
     return (
-        <View style={styles.container}>
-            <View style={{ marginBottom: 40 }}>
-                <Ionicons name="lock-closed" size={50} color={colors.primary} style={{ alignSelf: 'center', marginBottom: 20 }} />
-                <Text style={styles.title}>WealthSnap Locked</Text>
-                <Text style={styles.subtitle}>Enter your PIN to access</Text>
+        <View
+            style={[
+                styles.container,
+                {
+                    backgroundColor: ds.bg,
+                    paddingTop: Math.max(insets.top, space[5]),
+                    paddingBottom: Math.max(insets.bottom, space[5]),
+                },
+            ]}
+        >
+            <View style={styles.header}>
+                <View style={[styles.lockIcon, { backgroundColor: ds.accentSoft }]}>
+                    <Ionicons name="lock-closed-outline" size={32} color={ds.accent} />
+                </View>
+                <Text style={[type.title, styles.center, { color: ds.text }]}>WealthSnap Locked</Text>
+                <Text style={[type.small, styles.center, { color: ds.text2 }]}>Enter your PIN to access</Text>
             </View>
 
             {renderDots()}
             {renderKeypad()}
 
-            <Text style={styles.errorText}>{error || message ? (message || 'Incorrect PIN') : ''}</Text>
+            <Text style={[type.small, styles.errorText, { color: ds.danger }]}>{error || message ? (message || 'Incorrect PIN') : ''}</Text>
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: space[5],
+    },
+    header: {
+        alignItems: 'center',
+        gap: space[2],
+        marginBottom: space[7],
+    },
+    lockIcon: {
+        width: 72,
+        height: 72,
+        borderRadius: radius.full,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: space[2],
+    },
+    center: {
+        textAlign: 'center',
+    },
+    dotsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: space[4],
+        marginBottom: space[7] + space[4],
+    },
+    dot: {
+        width: 16,
+        height: 16,
+        borderRadius: radius.full,
+        borderWidth: 2,
+    },
+    keypad: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        width: '100%',
+        maxWidth: 300,
+    },
+    key: {
+        width: '30%',
+        height: 60,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: space[5],
+    },
+    errorText: {
+        marginTop: space[5],
+        minHeight: 18,
+        textAlign: 'center',
+        paddingHorizontal: space[5],
+    },
+});
 
 export default PinEntryScreen;

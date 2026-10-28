@@ -1,34 +1,34 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, fontFamily } from '@styles/theme';
 
 const TermsContent: React.FC = () => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
 
     const styles = React.useMemo(() => StyleSheet.create({
         container: {
-            padding: 20,
+            padding: space[5],
         },
         termsHeading: {
-            fontSize: 16,
-            fontWeight: 'bold',
-            marginTop: 20,
-            marginBottom: 10,
-            color: colors.primary,
+            ...type.bodyStrong,
+            marginTop: space[5],
+            marginBottom: space[2],
+            color: ds.text,
         },
         termsText: {
-            fontSize: 14,
-            marginBottom: 12,
-            lineHeight: 22,
-            color: colors.text,
+            ...type.body,
+            marginBottom: space[3],
+            color: ds.text2,
         },
         bold: {
-            fontWeight: 'bold',
+            fontFamily: fontFamily.semibold,
+            color: ds.text,
         },
         bullet: {
-            marginLeft: 10,
+            marginLeft: space[2],
         },
-    }), [colors]);
+    }), [ds]);
 
     return (
         <View style={styles.container}>

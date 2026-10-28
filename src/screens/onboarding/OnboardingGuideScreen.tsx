@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, BackHandler, useWindowDimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, BackHandler, useWindowDimensions, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Line } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
 
-import { Button } from '@components/index';
 import { useTheme } from '@context/ThemeContext';
-import { SPACING } from '@styles/theme';
+import { type, space, radius, fontFamily } from '@styles/theme';
 
 interface OnboardingGuideProps {
     onFinish: () => void;
@@ -26,7 +25,6 @@ interface OrbitSatellite {
 
 interface OrbitConfig {
     hubIcon: keyof typeof Ionicons.glyphMap;
-    hubColor: string;
     hubSize?: number;
     hubLabel?: string;
     satellites: OrbitSatellite[];
@@ -34,7 +32,6 @@ interface OrbitConfig {
 
 interface RecapItem {
     icon: keyof typeof Ionicons.glyphMap;
-    color: string;
     text: string;
 }
 
@@ -47,14 +44,14 @@ const SATELLITE_SIZE = 58;
 const ICON_CONTAINER_SIZE = 110;
 
 const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onboarding' }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const insets = useSafeAreaInsets();
     const [currentSlide, setCurrentSlide] = useState(0);
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
     // Scale the visuals to the available width so they don't overflow on small phones
     // or look tiny/oversized on larger ones.
-    const availableWidth = screenWidth - (SPACING.lg + SPACING.md) * 2;
+    const availableWidth = screenWidth - (space[5] + space[4]) * 2;
     const visualScale = Math.min(1.1, Math.max(0.65, availableWidth / ORBIT_WIDTH));
 
     // Compress vertical whitespace on short screens so the footer button never
@@ -64,64 +61,57 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
     const slides = [
         {
             id: 'security',
-            title: 'Private by Design',
+            title: 'Private by design',
             description: 'Your financial data is encrypted and stored only on this device.\n\nNo cloud sync, no account required — nobody but you can ever see it.',
-            color: '#4CAF50',
             isNotice: true,
             orbit: {
-                hubIcon: 'shield-checkmark',
-                hubColor: '#4CAF50',
+                hubIcon: 'shield-checkmark-outline',
                 hubSize: 110,
                 satellites: [
-                    { icon: 'cloud-offline-outline', color: '#9E9E9E', x: 205, y: 45, dashed: true }
+                    { icon: 'cloud-offline-outline', color: ds.text3, x: 205, y: 45, dashed: true }
                 ]
             } as OrbitConfig
         },
         {
             id: 'allinone',
-            title: 'Your Whole Financial Life, One App',
+            title: 'Your whole financial life, one app',
             description: 'Spending, debts, investments, goals and budgets — tracked together, so nothing falls through the cracks.',
-            color: '#1976D2',
             orbit: {
                 hubIcon: 'speedometer-outline',
-                hubColor: '#1976D2',
                 hubSize: 88,
                 hubLabel: 'Health score',
                 satellites: [
-                    { icon: 'trending-up-outline', label: 'Invest', color: '#00897B', x: 60, y: 40 },
-                    { icon: 'card-outline', label: 'Debts', color: '#C2185B', x: 200, y: 40 },
-                    { icon: 'flag-outline', label: 'Goals', color: '#FF8F00', x: 45, y: 150 },
-                    { icon: 'wallet-outline', label: 'Budgets', color: '#7B1FA2', x: 215, y: 150 }
+                    { icon: 'trending-up-outline', label: 'Invest', color: ds.domainInvest, x: 60, y: 40 },
+                    { icon: 'card-outline', label: 'Debts', color: ds.domainLoans, x: 200, y: 40 },
+                    { icon: 'flag-outline', label: 'Goals', color: ds.domainGoals, x: 45, y: 150 },
+                    { icon: 'wallet-outline', label: 'Budgets', color: ds.domainCash, x: 215, y: 150 }
                 ]
             } as OrbitConfig
         },
         {
             id: 'quickadd',
-            title: 'Log It in Seconds',
+            title: 'Log it in seconds',
             description: 'Snap a receipt, type it in, or set it to repeat automatically — the big "+" button is always one tap away.',
-            color: '#1976D2',
             orbit: {
                 hubIcon: 'add',
-                hubColor: '#1976D2',
                 hubSize: 96,
                 satellites: [
-                    { icon: 'camera-outline', label: 'Scan', color: '#EF6C00', x: 55, y: 55 },
-                    { icon: 'calculator-outline', label: 'Type', color: '#00897B', x: 130, y: 30 },
-                    { icon: 'repeat-outline', label: 'Repeat', color: '#7B1FA2', x: 205, y: 55 }
+                    { icon: 'camera-outline', label: 'Scan', color: ds.text2, x: 55, y: 55 },
+                    { icon: 'calculator-outline', label: 'Type', color: ds.text2, x: 130, y: 30 },
+                    { icon: 'repeat-outline', label: 'Repeat', color: ds.text2, x: 205, y: 55 }
                 ]
             } as OrbitConfig
         },
         {
             id: 'ready',
             icon: 'rocket-outline',
-            title: "You're All Set",
+            title: "You're all set",
             description: 'Take control of your wealth today.',
-            color: colors.primary,
             isLast: true,
             recap: [
-                { icon: 'shield-checkmark', color: '#4CAF50', text: 'Your data stays on your phone' },
-                { icon: 'speedometer-outline', color: '#1976D2', text: 'Everything tracked in one place' },
-                { icon: 'flash-outline', color: '#FF9800', text: 'Logging a transaction takes seconds' }
+                { icon: 'shield-checkmark-outline', text: 'Your data stays on your phone' },
+                { icon: 'speedometer-outline', text: 'Everything tracked in one place' },
+                { icon: 'flash-outline', text: 'Logging a transaction takes seconds' }
             ] as RecapItem[]
         }
     ];
@@ -207,7 +197,7 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
             <View
                 style={[
                     styles.orbitContainer,
-                    { width: canvasWidth, height: canvasHeight, marginBottom: SPACING.md * verticalScale },
+                    { width: canvasWidth, height: canvasHeight, marginBottom: space[4] * verticalScale },
                 ]}
             >
                 <Svg width={canvasWidth} height={canvasHeight} style={StyleSheet.absoluteFill}>
@@ -218,7 +208,7 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
                             y1={hubY}
                             x2={sat.x * s}
                             y2={sat.y * s}
-                            stroke={colors.border}
+                            stroke={ds.hairline}
                             strokeWidth={2}
                             strokeDasharray={sat.dashed ? '4,4' : undefined}
                         />
@@ -231,17 +221,16 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
                         {
                             width: hubSize,
                             height: hubSize,
-                            borderRadius: hubSize / 2,
-                            backgroundColor: orbit.hubColor + '20',
-                            borderColor: orbit.hubColor,
+                            backgroundColor: ds.accentSoft,
+                            borderColor: ds.accent,
                             left: hubX - hubSize / 2,
                             top: hubY - hubSize / 2,
                         },
                     ]}
                 >
-                    <Ionicons name={orbit.hubIcon} size={hubSize * 0.4} color={orbit.hubColor} />
+                    <Ionicons name={orbit.hubIcon} size={hubSize * 0.4} color={ds.accent} />
                     {orbit.hubLabel && (
-                        <Text style={[styles.orbitHubLabel, { color: orbit.hubColor, fontSize: hubLabelSize }]}>
+                        <Text style={[styles.orbitHubLabel, { color: ds.accent, fontSize: hubLabelSize }]}>
                             {orbit.hubLabel}
                         </Text>
                     )}
@@ -255,8 +244,7 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
                             {
                                 width: satelliteSize,
                                 height: satelliteSize,
-                                borderRadius: satelliteSize / 2,
-                                backgroundColor: sat.color + '20',
+                                backgroundColor: ds.inset,
                                 left: sat.x * s - satelliteSize / 2,
                                 top: sat.y * s - satelliteSize / 2,
                             },
@@ -277,12 +265,16 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
     const renderRecap = (items: RecapItem[]) => (
         <View style={styles.recapList}>
             {items.map((item, index) => (
-                <View key={index} style={[styles.recapRow, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-                    <View style={[styles.recapIconBadge, { backgroundColor: item.color + '20' }]}>
-                        <Ionicons name={item.icon} size={14} color={item.color} />
-                    </View>
-                    <Text style={[styles.recapText, { color: colors.text }]}>{item.text}</Text>
-                    <Ionicons name="checkmark" size={16} color="#4CAF50" />
+                <View
+                    key={index}
+                    style={[
+                        styles.recapRow,
+                        { borderBottomColor: ds.hairline, borderBottomWidth: index === items.length - 1 ? 0 : 1 },
+                    ]}
+                >
+                    <Ionicons name={item.icon} size={20} color={ds.text2} />
+                    <Text style={[type.small, styles.recapText, { color: ds.text }]}>{item.text}</Text>
+                    <Ionicons name="checkmark" size={16} color={ds.success} />
                 </View>
             ))}
         </View>
@@ -302,31 +294,31 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
                             {
                                 width: iconContainerSize,
                                 height: iconContainerSize,
-                                borderRadius: iconContainerSize / 2,
-                                backgroundColor: slide.color + '20',
-                                marginBottom: SPACING.lg * verticalScale,
+                                backgroundColor: ds.accentSoft,
+                                marginBottom: space[6] * verticalScale,
                             },
                         ]}
                     >
-                        <Ionicons name={slide.icon as any} size={iconContainerSize * 0.4} color={slide.color} />
+                        <Ionicons name={slide.icon as any} size={iconContainerSize * 0.4} color={ds.accent} />
                     </View>
                 )}
 
-                <Text style={[styles.title, { color: colors.text, marginBottom: SPACING.md * verticalScale }]}>
+                <Text style={[type.title, styles.center, { color: ds.text, marginBottom: space[4] * verticalScale }]}>
                     {slide.title}
                 </Text>
 
                 {slide.isNotice && (
-                    <View style={[styles.noticeBox, { marginBottom: SPACING.md * verticalScale }]}>
-                        <Text style={[styles.noticeText, { color: colors.textSecondary }]}>
-                            IMPORTANT NOTICE
+                    <View style={[styles.noticeBox, { backgroundColor: ds.inset, marginBottom: space[4] * verticalScale }]}>
+                        <Ionicons name="alert-circle-outline" size={14} color={ds.warning} />
+                        <Text style={[type.captionMedium, { color: ds.warning }]}>
+                            Important notice
                         </Text>
                     </View>
                 )}
 
                 {slide.recap && renderRecap(slide.recap)}
 
-                <Text style={[styles.description, { color: colors.textSecondary }]}>
+                <Text style={[type.body, styles.center, { color: ds.text2 }]}>
                     {slide.description}
                 </Text>
 
@@ -334,7 +326,7 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
                 <View
                     style={[
                         styles.pagination,
-                        { marginTop: SPACING.xxl * verticalScale, marginBottom: SPACING.xl * verticalScale },
+                        { marginTop: space[7] * 1.5 * verticalScale, marginBottom: space[7] * verticalScale },
                     ]}
                 >
                     {slides.map((_, index) => (
@@ -343,7 +335,7 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
                             style={[
                                 styles.dot,
                                 {
-                                    backgroundColor: index === currentSlide ? colors.primary : colors.border,
+                                    backgroundColor: index === currentSlide ? ds.accent : ds.hairline,
                                     width: index === currentSlide ? 24 : 8
                                 }
                             ]}
@@ -354,135 +346,16 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
         );
     };
 
-    const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-            backgroundColor: colors.background,
-            justifyContent: 'space-between',
-            padding: SPACING.lg,
-        },
-        slideContainer: {
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingHorizontal: SPACING.md,
-        },
-        iconContainer: {
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: SPACING.lg,
-        },
-        orbitContainer: {
-            width: ORBIT_WIDTH,
-            height: ORBIT_HEIGHT,
-            marginBottom: SPACING.md,
-        },
-        orbitHub: {
-            position: 'absolute',
-            borderWidth: 3,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        orbitHubLabel: {
-            fontSize: 11,
-            fontWeight: 'bold',
-            marginTop: 2,
-        },
-        orbitSatellite: {
-            position: 'absolute',
-            width: SATELLITE_SIZE,
-            height: SATELLITE_SIZE,
-            borderRadius: SATELLITE_SIZE / 2,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        orbitSatelliteLabel: {
-            fontSize: 9,
-            fontWeight: 'bold',
-            marginTop: 1,
-        },
-        recapList: {
-            width: '100%',
-            marginBottom: SPACING.md,
-        },
-        recapRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            borderWidth: 1,
-            borderRadius: 10,
-            paddingVertical: SPACING.sm,
-            paddingHorizontal: SPACING.sm,
-            marginBottom: SPACING.xs,
-        },
-        recapIconBadge: {
-            width: 26,
-            height: 26,
-            borderRadius: 13,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: SPACING.sm,
-        },
-        recapText: {
-            flex: 1,
-            fontSize: 13,
-        },
-        title: {
-            fontSize: 28,
-            fontWeight: 'bold',
-            textAlign: 'center',
-            marginBottom: SPACING.md,
-        },
-        description: {
-            fontSize: 16,
-            textAlign: 'center',
-            lineHeight: 24,
-        },
-        noticeBox: {
-            borderWidth: 1,
-            borderColor: '#FFC107',
-            backgroundColor: '#FFC10710',
-            paddingHorizontal: 12,
-            paddingVertical: 4,
-            borderRadius: 4,
-            marginBottom: SPACING.md
-        },
-        noticeText: {
-            fontSize: 12,
-            fontWeight: 'bold',
-            letterSpacing: 1
-        },
-        pagination: {
-            flexDirection: 'row',
-            marginTop: SPACING.xxl,
-            marginBottom: SPACING.xl,
-        },
-        dot: {
-            height: 8,
-            borderRadius: 4,
-            marginHorizontal: 4,
-        },
-        footer: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-        },
-        skipButton: {
-            padding: SPACING.md,
-        },
-        skipText: {
-            color: colors.textSecondary,
-            fontSize: 16,
-        }
-    });
+    const isLastSlide = currentSlide === slides.length - 1;
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: ds.bg }]}>
             {/* Header / Skip */}
-            <View style={{ alignItems: 'flex-end', paddingTop: SPACING.lg }}>
+            <View style={styles.header}>
                 {mode === 'view' && (
-                    <TouchableOpacity onPress={onFinish} style={styles.skipButton}>
-                        <Ionicons name="close" size={24} color={colors.text} />
-                    </TouchableOpacity>
+                    <Pressable onPress={onFinish} style={styles.iconButton} hitSlop={space[2]} accessibilityLabel="Close guide">
+                        <Ionicons name="close" size={24} color={ds.text2} />
+                    </Pressable>
                 )}
             </View>
 
@@ -500,23 +373,123 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
             </GestureDetector>
 
             {/* Footer Controls */}
-            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, SPACING.lg) }]}>
-                <TouchableOpacity
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, space[6]) }]}>
+                <Pressable
                     onPress={handlePrev}
                     disabled={currentSlide === 0}
-                    style={{ opacity: currentSlide === 0 ? 0 : 1, padding: 10 }}
+                    style={[styles.iconButton, { opacity: currentSlide === 0 ? 0 : 1 }]}
+                    accessibilityLabel="Previous slide"
                 >
-                    <Ionicons name="arrow-back" size={24} color={colors.text} />
-                </TouchableOpacity>
+                    <Ionicons name="arrow-back" size={24} color={ds.text2} />
+                </Pressable>
 
-                <Button
-                    title={currentSlide === slides.length - 1 ? (mode === 'onboarding' ? "Start App" : "Close") : "Next"}
+                <Pressable
                     onPress={handleNext}
-                    style={{ width: 140 }}
-                />
+                    style={[styles.button, { backgroundColor: ds.accent }]}
+                    accessibilityRole="button"
+                >
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>
+                        {isLastSlide ? (mode === 'onboarding' ? 'Start app' : 'Close') : 'Next'}
+                    </Text>
+                </Pressable>
             </View>
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'space-between',
+        padding: space[5],
+    },
+    header: {
+        alignItems: 'flex-end',
+        paddingTop: space[6],
+    },
+    slideContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: space[4],
+    },
+    center: {
+        textAlign: 'center',
+    },
+    iconContainer: {
+        borderRadius: radius.full,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    orbitContainer: {
+        width: ORBIT_WIDTH,
+        height: ORBIT_HEIGHT,
+    },
+    orbitHub: {
+        position: 'absolute',
+        borderWidth: 2,
+        borderRadius: radius.full,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    orbitHubLabel: {
+        fontFamily: fontFamily.semibold,
+        marginTop: 2,
+    },
+    orbitSatellite: {
+        position: 'absolute',
+        borderRadius: radius.full,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    orbitSatelliteLabel: {
+        fontFamily: fontFamily.semibold,
+        marginTop: 1,
+    },
+    recapList: {
+        width: '100%',
+        marginBottom: space[4],
+    },
+    recapRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        paddingVertical: space[3],
+    },
+    recapText: {
+        flex: 1,
+    },
+    noticeBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[1],
+        paddingHorizontal: space[2],
+        paddingVertical: space[1],
+        borderRadius: radius.sm,
+    },
+    pagination: {
+        flexDirection: 'row',
+        gap: space[2],
+    },
+    dot: {
+        height: 8,
+        borderRadius: radius.full,
+    },
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    iconButton: {
+        padding: space[3],
+    },
+    button: {
+        width: 140,
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
 
 export default OnboardingGuide;

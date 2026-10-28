@@ -10,11 +10,6 @@ export const SEVERITY_ICON: Record<Severity, React.ComponentProps<typeof Ionicon
     info: 'information-circle',
 };
 
-// colors.error/warning/success/info match the Severity union exactly.
-export function getSeverityColor(colors: Record<Severity, string>, severity: Severity): string {
-    return colors[severity];
-}
-
 export function inferSeverity(title: string, hasDestructiveButton: boolean): Severity {
     const normalized = title.trim().toLowerCase();
     if (normalized === 'error' || normalized === 'failed') return 'error';

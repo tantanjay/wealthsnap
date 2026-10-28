@@ -24,12 +24,6 @@ interface AllExpensesModalProps {
     onSelectCategory: (category: string) => void;
 }
 
-// Same slice colors as the spending pie in ExpenseAnalysis, so each dot maps to its slice.
-const CHART_COLORS = [
-    '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
-    '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50'
-];
-
 const budgetTone = (status: string): Exclude<Tone, 'neutral'> =>
     status === 'over' ? 'bad' : status === 'warning' ? 'warning' : 'good';
 
@@ -65,7 +59,8 @@ const AllExpensesModal: React.FC<AllExpensesModalProps> = ({
                     return (
                         <Row
                             key={index}
-                            leading={<View style={[styles.dot, { backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }]} />}
+                            // Same indexing as the ExpenseAnalysis pie, so each dot maps to its slice.
+                            leading={<View style={[styles.dot, { backgroundColor: ds.chart[index % ds.chart.length] }]} />}
                             title={item.name}
                             subtitle={item.goalFundedAmount?.isGreaterThan(0)
                                 ? `${format.show(format.money(item.goalFundedAmount, { compact: true }), formatPercent(goalShare))} from goals`
@@ -85,7 +80,7 @@ const AllExpensesModal: React.FC<AllExpensesModalProps> = ({
                                         <Text style={[type.captionNum, { color: ds.text2 }]}>
                                             {format.show(`Budget ${format.money(budget.amount, { compact: true })}`, 'Budget')}
                                         </Text>
-                                        <Text style={[type.captionNum, type.captionMedium,{ color: toneColor(ds, tone) }]}>
+                                        <Text style={[type.captionNum, type.captionMedium, { color: toneColor(ds, tone) }]}>
                                             {budgetStatus.percentage.toFixed(0)}%
                                         </Text>
                                     </View>

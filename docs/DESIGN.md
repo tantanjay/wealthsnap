@@ -39,8 +39,13 @@ The visual rules for every WealthSnap screen. Read this before building or resty
 | `domainLoans` | `#B0896B` | `#C4A288` | Loans dot and progress |
 | `domainGoals` | `#3AA39A` | `#5CBDB3` | Goals dot and progress |
 | `scrim` | black @ 40% | black @ 60% | Behind sheets |
+| `qrSurface` | `#FFFFFF` | `#FFFFFF` | Behind a QR code (scanners need dark on light) |
+| `onMedia` | `#FFFFFF` | `#FFFFFF` | Marks drawn over a camera feed or photo |
+| `chart` | `#3A8FA6` `#C25A7C` `#84923A` `#A05FA8` `#A8862A` `#5D7F5B` `#C27A4E` `#6B6F7A` | `#5FB0C6` `#E07F9E` `#AEBB62` `#C084C7` `#D6B45A` `#8EB08A` `#DE9A70` `#8B92A3` | Categorical chart palette: pies and their legends only (slice *i* = `chart[i % 8]`, its legend/row dot the same). Never for status, domain identity or interaction |
 
-Domain colors are deliberately muted and never reuse a semantic or accent hue.
+Domain colors are deliberately muted and never reuse a semantic or accent hue. The `chart` hues are muted the same way and ordered so neighbouring slices differ in both hue and lightness.
+
+Severity in dialogs and notices (icon + color, see `src/utils/severity.ts` for icons): error `danger`, warning `warning`, success `success`, info `text2`.
 
 ### Type
 

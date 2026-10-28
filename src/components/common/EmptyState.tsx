@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 
 interface EmptyStateProps {
     icon: React.ComponentProps<typeof Ionicons>['name'];
@@ -25,33 +26,32 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     onCtaPress,
     size = 'full',
 }) => {
-    const { colors } = useTheme();
-    const resolvedIconColor = iconColor ?? colors.primary;
+    const { ds } = useTheme();
     const isCompact = size === 'compact';
 
     return (
         <View style={isCompact ? styles.compactContainer : styles.container}>
             {isCompact ? (
-                <Ionicons name={icon} size={40} color={colors.gray300} style={styles.compactIcon} />
+                <Ionicons name={icon} size={40} color={ds.text3} style={styles.compactIcon} />
             ) : (
-                <View style={[styles.iconCircle, { backgroundColor: resolvedIconColor + '15' }]}>
-                    <Ionicons name={icon} size={34} color={resolvedIconColor} />
+                <View style={[styles.iconCircle, { backgroundColor: ds.inset }]}>
+                    <Ionicons name={icon} size={32} color={iconColor ?? ds.text2} />
                 </View>
             )}
-            <Text style={[isCompact ? styles.compactTitle : styles.title, { color: colors.text }]}>
+            <Text style={[isCompact ? type.smallStrong : type.title, styles.centered, { color: ds.text }]}>
                 {title}
             </Text>
             {subtitle && (
-                <Text style={[isCompact ? styles.compactSubtitle : styles.subtitle, { color: colors.textSecondary }]}>
+                <Text style={[type.small, styles.centered, isCompact ? styles.compactSubtitle : styles.subtitle, { color: ds.text2 }]}>
                     {subtitle}
                 </Text>
             )}
             {ctaLabel && onCtaPress && (
                 <TouchableOpacity
-                    style={[styles.cta, { backgroundColor: colors.primary }]}
+                    style={[styles.cta, { backgroundColor: ds.accent }]}
                     onPress={onCtaPress}
                 >
-                    <Text style={styles.ctaText}>{ctaLabel}</Text>
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>{ctaLabel}</Text>
                 </TouchableOpacity>
             )}
         </View>
@@ -61,55 +61,42 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 const styles = StyleSheet.create({
     container: {
         alignItems: 'center',
-        paddingTop: 40,
-        paddingHorizontal: 24,
+        paddingTop: space[7],
+        paddingHorizontal: space[6],
     },
     iconCircle: {
-        width: 76,
-        height: 76,
-        borderRadius: 38,
+        width: 72,
+        height: 72,
+        borderRadius: radius.full,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: space[5],
     },
-    title: {
-        fontSize: 18,
-        fontWeight: '700',
-        marginBottom: 8,
+    centered: {
+        textAlign: 'center',
     },
     subtitle: {
-        fontSize: 14,
-        lineHeight: 20,
-        textAlign: 'center',
         maxWidth: 280,
-        marginBottom: 24,
+        marginTop: space[2],
+        marginBottom: space[6],
     },
     cta: {
-        paddingVertical: 13,
-        paddingHorizontal: 28,
-        borderRadius: 12,
-    },
-    ctaText: {
-        color: '#FFFFFF',
-        fontSize: 15,
-        fontWeight: '700',
+        alignSelf: 'stretch',
+        height: 48,
+        borderRadius: radius.md,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: space[6],
     },
     compactContainer: {
         alignItems: 'center',
-        paddingVertical: 32,
-        paddingHorizontal: 20,
+        paddingVertical: space[7],
+        paddingHorizontal: space[5],
     },
     compactIcon: {
-        marginBottom: 10,
-    },
-    compactTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        textAlign: 'center',
+        marginBottom: space[3],
     },
     compactSubtitle: {
-        fontSize: 12,
-        textAlign: 'center',
-        marginTop: 4,
+        marginTop: space[1],
     },
 });
