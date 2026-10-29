@@ -3,7 +3,7 @@ import { View, Text, Pressable, TextInput, ScrollView, StyleSheet } from 'react-
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { CategorySelectModal } from '@components/record/CategorySelectModal';
+import { CategoryPicker } from '@components/record/CategorySelectModal';
 import SmartSuggestionsModal from '@components/profile/SmartSuggestionsModal';
 import { Group, Row, SectionHeader, IconName } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
@@ -33,7 +33,8 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
     const [budgets, setBudgetsList] = useState<Budget[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [budgetAmount, setBudgetAmount] = useState<string>('');
-    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    // Picking a category expands inline: a second modal on top of this sheet isn't allowed.
+    const [isPickingCategory, setIsPickingCategory] = useState(false);
     const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
     const [view, setView] = useState<'LIST' | 'FORM'>('LIST');
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -82,6 +83,7 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
         setBudgetAmount(budget.amount.toString());
         setEditingBudget(budget);
         setView('FORM');
+        setIsPickingCategory(false);
     };
 
     const handleAddBudget = () => {
@@ -89,6 +91,7 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
         setBudgetAmount('');
         setEditingBudget(null);
         setView('FORM');
+        setIsPickingCategory(false);
     };
 
     const handleCancelEdit = () => {
@@ -129,8 +132,10 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
     const isList = view === 'LIST';
 
     return (
+        <>
+        {/* Suggestions swap in for this sheet (one sheet on screen at a time); closing them brings it back. */}
         <BottomModal
-            visible={visible}
+            visible={visible && !showSuggestions}
             onClose={onClose}
             title={isList ? 'Manage budgets' : editingBudget ? 'Edit budget' : 'New budget'}
             maxHeight="85%"
@@ -218,11 +223,23 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
                                 icon={selectedCategory ? getCategoryIcon(selectedCategory) : 'pricetag-outline'}
                                 title={selectedCategory || 'Select a category'}
                                 subtitle={selectedCategory ? getCategoryGroup(selectedCategory, 'EXPENSE') : undefined}
-                                chevron
-                                onPress={() => setShowCategoryModal(true)}
+                                trailing={<Ionicons name={isPickingCategory ? 'chevron-up' : 'chevron-down'} size={16} color={ds.text3} />}
+                                onPress={() => setIsPickingCategory(v => !v)}
                                 last
                             />
                         </Group>
+                        {isPickingCategory && (
+                            <View style={styles.picker}>
+                                <CategoryPicker
+                                    scroll={false}
+                                    categoryGroups={EXPENSE_CATEGORY_GROUPS}
+                                    onSelect={(cat) => {
+                                        setSelectedCategory(cat);
+                                        setIsPickingCategory(false);
+                                    }}
+                                />
+                            </View>
+                        )}
 
                         <SectionHeader grouped title="Monthly limit" />
                         <Group padded>
@@ -241,29 +258,23 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
                     </ScrollView>
                 )}
 
-                {/* Category Select Modal */}
-                <CategorySelectModal
-                    visible={showCategoryModal}
-                    onClose={() => setShowCategoryModal(false)}
-                    onSelect={(cat) => {
-                        setSelectedCategory(cat);
-                        setShowCategoryModal(false);
-                    }}
-                    categoryGroups={EXPENSE_CATEGORY_GROUPS}
-                />
-
-                <SmartSuggestionsModal
-                    visible={showSuggestions}
-                    onClose={() => setShowSuggestions(false)}
-                    currency={currency}
-                    onApplied={loadBudgets}
-                />
             </View>
         </BottomModal>
+
+        <SmartSuggestionsModal
+            visible={visible && showSuggestions}
+            onClose={() => setShowSuggestions(false)}
+            currency={currency}
+            onApplied={loadBudgets}
+        />
+        </>
     );
 };
 
 const styles = StyleSheet.create({
+    picker: {
+        marginTop: space[2],
+    },
     body: {
         flexShrink: 1,
     },

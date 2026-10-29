@@ -4,10 +4,11 @@ import { BigNumber } from 'bignumber.js';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Group, Row, SectionHeader } from '@components/ds';
-import { CategorySelectModal } from '@components/record/CategorySelectModal';
+import BottomModal from '@components/common/BottomModal';
+import { CategoryPicker } from '@components/record/CategorySelectModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
-import { type, space, radius, layout } from '@styles/theme';
+import { type, space, radius } from '@styles/theme';
 import { SavingsGoal, Transaction, RecurrenceRule, RecurrenceFrequency } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { EXPENSE_CATEGORY_GROUPS, RECURRENCE_OPTIONS } from '@constants/categories';
@@ -15,6 +16,7 @@ import { saveSavingsGoal, contributeToGoal } from '@services/domain/savingsGoalS
 import { saveRecurrenceRule, deleteRecurrenceRule, calculateNextDueDate } from '@services/domain/recurrenceService';
 
 interface SavingsGoalFormProps {
+    visible: boolean;
     initialGoal?: SavingsGoal;
     existingRule?: RecurrenceRule; // the goal's current auto-contribution rule, if any - lets
     // save() tell "still the same schedule" apart from "just turned recurring on/changed it"
@@ -23,7 +25,7 @@ interface SavingsGoalFormProps {
     onCancel: () => void;
 }
 
-export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, existingRule, existingTransactions, onSave, onCancel }) => {
+export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ visible, initialGoal, existingRule, existingTransactions, onSave, onCancel }) => {
     const { ds } = useTheme();
     const { showAlert } = useAlert();
 
@@ -31,7 +33,8 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
     const [targetAmount, setTargetAmount] = useState(initialGoal?.targetAmount?.toString() || '');
     const [category, setCategory] = useState(initialGoal?.category || '');
     const [subCategory, setSubCategory] = useState(initialGoal?.subCategory || '');
-    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    // Picking a category expands inline: a second modal on top of this sheet isn't allowed.
+    const [isPickingCategory, setIsPickingCategory] = useState(false);
     const [notes, setNotes] = useState(initialGoal?.notes || '');
 
     const [recurringAmount, setRecurringAmount] = useState(initialGoal?.recurringAmount?.toString() || '');
@@ -156,18 +159,32 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
     const fieldInput: TextStyle[] = [type.body, styles.fieldInput, { color: ds.text }];
     const numInput: TextStyle[] = [type.bodyNum, styles.fieldInput, { color: ds.text }];
 
-    return (
-        // height: '100%' (not flex: 1) - this form is hosted inside BottomModal, which sizes
-        // itself to content rather than providing a bounded flex context, so a flex:1 root
-        // here collapses to ~0 height instead of expanding. See BudgetManagementModal.tsx for
-        // the same pattern.
-        <View style={{ height: '100%' }}>
-            <View style={{ flex: 1 }}>
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: space[7] }}>
-                <Text style={[type.title, styles.title, { color: ds.text }]}>
-                    {initialGoal ? 'Edit savings goal' : 'New savings goal'}
-                </Text>
+    const footer = (
+        <View style={styles.actions}>
+            <Pressable onPress={onCancel} style={styles.cancelButton}>
+                <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
+            </Pressable>
+            <Pressable
+                onPress={handleSave}
+                disabled={isSaving}
+                style={[styles.primaryButton, { backgroundColor: ds.accent }]}
+            >
+                {isSaving
+                    ? <ActivityIndicator color={ds.onAccent} />
+                    : <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Save goal</Text>}
+            </Pressable>
+        </View>
+    );
 
+    return (
+        <BottomModal
+            visible={visible}
+            onClose={onCancel}
+            title={initialGoal ? 'Edit savings goal' : 'New savings goal'}
+            maxHeight="90%"
+            footer={footer}
+        >
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 <Group padded>
                     <Text style={[type.small, { color: ds.text2 }]}>Target amount</Text>
                     <TextInput
@@ -213,11 +230,24 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
                         icon="grid-outline"
                         title={category || 'Select a category'}
                         subtitle="Pre-fills onto any expense you fund from this goal (still editable per-expense)."
-                        chevron
-                        onPress={() => setShowCategoryModal(true)}
+                        trailing={<Ionicons name={isPickingCategory ? 'chevron-up' : 'chevron-down'} size={16} color={ds.text3} />}
+                        onPress={() => setIsPickingCategory(v => !v)}
                         last
                     />
                 </Group>
+                {isPickingCategory && (
+                    <View style={styles.picker}>
+                        <CategoryPicker
+                            scroll={false}
+                            categoryGroups={EXPENSE_CATEGORY_GROUPS}
+                            onSelect={(cat: string) => {
+                                setCategory(cat);
+                                setSubCategory('');
+                                setIsPickingCategory(false);
+                            }}
+                        />
+                    </View>
+                )}
 
                 <SectionHeader title="Auto-contribution (optional)" grouped />
                 <Group padded>
@@ -274,43 +304,14 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
                     </>
                 )}
 
-                <CategorySelectModal
-                    visible={showCategoryModal}
-                    onClose={() => setShowCategoryModal(false)}
-                    onSelect={(cat: string) => {
-                        setCategory(cat);
-                        setSubCategory('');
-                        setShowCategoryModal(false);
-                    }}
-                    categoryGroups={EXPENSE_CATEGORY_GROUPS}
-                />
-                </ScrollView>
-
-                {/* Inline actions: the host BottomModal doesn't pass a footer. */}
-                <View style={[styles.actions, { borderTopColor: ds.hairline }]}>
-                    <Pressable onPress={onCancel} style={styles.cancelButton}>
-                        <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
-                    </Pressable>
-                    <Pressable
-                        onPress={handleSave}
-                        disabled={isSaving}
-                        style={[styles.primaryButton, { backgroundColor: ds.accent }]}
-                    >
-                        {isSaving
-                            ? <ActivityIndicator color={ds.onAccent} />
-                            : <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Save goal</Text>}
-                    </Pressable>
-                </View>
-            </View>
-        </View>
+            </ScrollView>
+        </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
-    // Lines up with group content, like the sheet's own title.
-    title: {
-        marginBottom: space[4],
-        paddingHorizontal: layout.groupPadding,
+    picker: {
+        marginTop: space[2],
     },
     amountInput: {
         paddingTop: space[1],
@@ -351,8 +352,6 @@ const styles = StyleSheet.create({
     actions: {
         flexDirection: 'row',
         gap: space[3],
-        paddingTop: space[3],
-        borderTopWidth: 1,
     },
     cancelButton: {
         flex: 1,

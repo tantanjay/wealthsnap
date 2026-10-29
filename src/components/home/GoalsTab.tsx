@@ -3,7 +3,6 @@ import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { BigNumber } from 'bignumber.js';
 
-import BottomModal from '@components/common/BottomModal';
 import { EmptyState } from '@components/common/EmptyState';
 import { Group, Hero, ProgressBar, Row, SectionHeader, Tone } from '@components/ds';
 import { SavingsGoalForm } from '@components/savingsGoals/SavingsGoalForm';
@@ -50,6 +49,7 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ format: f }) => {
     const [hasLoaded, setHasLoaded] = useState(false);
 
     const [formModalVisible, setFormModalVisible] = useState(false);
+    const [formKey, setFormKey] = useState(0);
     const [editingGoal, setEditingGoal] = useState<SavingsGoal | undefined>(undefined);
     const [optionsGoal, setOptionsGoal] = useState<SavingsGoal | null>(null);
     const [amountModal, setAmountModal] = useState<{ mode: 'CONTRIBUTE' | 'WITHDRAW'; goal: SavingsGoal } | null>(null);
@@ -80,8 +80,8 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ format: f }) => {
         })
         .sort((a, b) => BUCKET_ORDER.indexOf(a.bucket) - BUCKET_ORDER.indexOf(b.bucket)), [goals, transactions]);
 
-    const handleAddNew = () => { setEditingGoal(undefined); setFormModalVisible(true); };
-    const handleEdit = (goal: SavingsGoal) => { setEditingGoal(goal); setFormModalVisible(true); };
+    const handleAddNew = () => { setEditingGoal(undefined); setFormKey(k => k + 1); setFormModalVisible(true); };
+    const handleEdit = (goal: SavingsGoal) => { setEditingGoal(goal); setFormKey(k => k + 1); setFormModalVisible(true); };
     const handleFormSaved = () => { setFormModalVisible(false); loadData(); };
 
     const handleDelete = async (id: string) => {
@@ -191,15 +191,16 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ format: f }) => {
                 )}
             </ScrollView>
 
-            <BottomModal visible={formModalVisible} onClose={() => setFormModalVisible(false)} maxHeight="90%">
-                <SavingsGoalForm
-                    initialGoal={editingGoal}
-                    existingRule={editingGoal?.recurrenceId ? recurrenceRulesById.get(editingGoal.recurrenceId) : undefined}
-                    existingTransactions={transactions}
-                    onSave={handleFormSaved}
-                    onCancel={() => setFormModalVisible(false)}
-                />
-            </BottomModal>
+            {/* Keyed per opening so the form starts from the goal being edited (or blank) each time. */}
+            <SavingsGoalForm
+                key={formKey}
+                visible={formModalVisible}
+                initialGoal={editingGoal}
+                existingRule={editingGoal?.recurrenceId ? recurrenceRulesById.get(editingGoal.recurrenceId) : undefined}
+                existingTransactions={transactions}
+                onSave={handleFormSaved}
+                onCancel={() => setFormModalVisible(false)}
+            />
 
             <SavingsGoalOptionsModal
                 visible={!!optionsGoal}
