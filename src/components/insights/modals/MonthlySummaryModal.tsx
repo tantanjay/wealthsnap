@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 
 import BottomModal from '@components/common/BottomModal';
+import { Group } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { getAllMonthlySummaries, syncMonthlySummaries, MonthlySummaryRow } from '@services/domain/monthlySummaryService';
 
 interface MonthlySummaryModalProps {
@@ -86,9 +87,11 @@ const MonthlySummaryModal: React.FC<MonthlySummaryModalProps> = ({ visible, onCl
                     <ActivityIndicator color={ds.accent} />
                 </View>
             ) : summaries.length === 0 ? (
-                <Text style={[type.small, styles.empty, { color: ds.text2 }]}>
-                    No summary data yet. Add some transactions, then reprocess.
-                </Text>
+                <Group padded>
+                    <Text style={[type.small, { color: ds.text2 }]}>
+                        No summary data yet. Add some transactions, then reprocess.
+                    </Text>
+                </Group>
             ) : (
                 <>
                     <ScrollView
@@ -103,7 +106,7 @@ const MonthlySummaryModal: React.FC<MonthlySummaryModalProps> = ({ visible, onCl
                                 <Pressable
                                     key={s.yearMonth}
                                     onPress={() => setSelectedYearMonth(s.yearMonth)}
-                                    style={[styles.chip, isSelected && { backgroundColor: ds.inset }]}
+                                    style={[styles.chip, isSelected && { backgroundColor: ds.group }]}
                                 >
                                     <Text style={[type.smallMedium, { color: isSelected ? ds.text : ds.text2 }]}>
                                         {formatMonthLabel(s.yearMonth)}
@@ -122,7 +125,7 @@ const MonthlySummaryModal: React.FC<MonthlySummaryModalProps> = ({ visible, onCl
                                         In progress: this month is still being tracked
                                     </Text>
                                 )}
-                                <View style={[styles.block, { backgroundColor: ds.inset }]}>
+                                <Group padded>
                                     {isPrivacyEnabled ? (
                                         <Text style={[type.small, { color: ds.text2 }]}>
                                             Hidden while privacy is on. Switch to Open in Home settings to read this summary.
@@ -132,7 +135,7 @@ const MonthlySummaryModal: React.FC<MonthlySummaryModalProps> = ({ visible, onCl
                                             {selected.summaryText}
                                         </Text>
                                     )}
-                                </View>
+                                </Group>
                                 <Text style={[type.caption, styles.generated, { color: ds.text2 }]}>
                                     Last generated {new Date(selected.updatedAt).toLocaleString()}
                                 </Text>
@@ -149,9 +152,6 @@ const styles = StyleSheet.create({
     loading: {
         paddingVertical: space[7],
         alignItems: 'center',
-    },
-    empty: {
-        paddingVertical: space[4],
     },
     chips: {
         flexGrow: 0,
@@ -175,13 +175,11 @@ const styles = StyleSheet.create({
     },
     note: {
         marginBottom: space[2],
-    },
-    block: {
-        borderRadius: radius.sm,
-        padding: space[3],
+        paddingHorizontal: layout.groupPadding,
     },
     generated: {
         marginTop: space[2],
+        paddingHorizontal: layout.groupPadding,
     },
     button: {
         height: 48,

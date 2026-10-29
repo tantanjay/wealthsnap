@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { Disclaimer } from '@components/common/Disclaimer';
-import { IconName, Row, SectionHeader, Tone, toneColor } from '@components/ds';
+import { Group, IconName, Row, SectionHeader, Tone, toneColor } from '@components/ds';
 import { Priority } from '@services/domain/smartAdvisorService';
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius } from '@styles/theme';
@@ -61,46 +61,53 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
             maxHeight="85%"
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={[type.small, { color: ds.text2 }]}>
-                    Smart Alerts continuously analyze market data and your portfolio to highlight significant market movements.
-                </Text>
+                <Group>
+                    <Text style={[type.small, styles.intro, { color: ds.text2 }]}>
+                        Smart Alerts continuously analyze market data and your portfolio to highlight significant market movements.
+                    </Text>
 
-                {/* Icons and tones match the alert rows above */}
-                {ALERT_KINDS.map((kind, i) => (
-                    <Row
-                        key={kind.title}
-                        leading={<Ionicons name={kind.icon} size={20} color={toneColor(ds, kind.tone)} />}
-                        title={kind.title}
-                        subtitle={kind.body}
-                        last={i === ALERT_KINDS.length - 1}
-                    />
-                ))}
+                    {/* Icons and tones match the alert rows above */}
+                    {ALERT_KINDS.map((kind, i) => (
+                        <Row
+                            key={kind.title}
+                            leading={<Ionicons name={kind.icon} size={20} color={toneColor(ds, kind.tone)} />}
+                            title={kind.title}
+                            subtitle={kind.body}
+                            last={i === ALERT_KINDS.length - 1}
+                        />
+                    ))}
+                </Group>
 
-                <SectionHeader title="Detection logic" />
-                <View style={styles.peakHeader}>
-                    <Text style={[type.smallStrong, styles.flex, { color: ds.text }]}>30-day peak comparison</Text>
-                    <Text style={[type.caption, { color: ds.text2 }]}>30D high vs current</Text>
-                </View>
-                <View style={[styles.peakChart, { backgroundColor: ds.inset }]}>
-                    {/* Simplified visual for a drop from the 30-day high */}
-                    <View style={[styles.peakDot, { backgroundColor: ds.text2 }]} />
-                    <View style={[styles.peakLine, { backgroundColor: ds.hairline }]} />
-                    <View style={[styles.currentDot, { backgroundColor: ds.accent }]} />
-                    <Ionicons name="arrow-down" size={16} color={ds.danger} style={styles.dropArrow} />
-                </View>
-                <Text style={[type.small, styles.peakNote, { color: ds.text2 }]}>
-                    We identify the highest price in the last 30 days and compare it to the current price to detect significant drops (&gt;5% or &gt;15%).
-                </Text>
+                <SectionHeader grouped title="Detection logic" />
+                <Group padded>
+                    <View style={styles.peakHeader}>
+                        <Text style={[type.smallStrong, styles.flex, { color: ds.text }]}>30-day peak comparison</Text>
+                        <Text style={[type.caption, { color: ds.text2 }]}>30D high vs current</Text>
+                    </View>
+                    <View style={[styles.peakChart, { backgroundColor: ds.inset }]}>
+                        {/* Simplified visual for a drop from the 30-day high */}
+                        <View style={[styles.peakDot, { backgroundColor: ds.text2 }]} />
+                        <View style={[styles.peakLine, { backgroundColor: ds.hairline }]} />
+                        <View style={[styles.currentDot, { backgroundColor: ds.accent }]} />
+                        <Ionicons name="arrow-down" size={16} color={ds.danger} style={styles.dropArrow} />
+                    </View>
+                    <Text style={[type.small, styles.peakNote, { color: ds.text2 }]}>
+                        We identify the highest price in the last 30 days and compare it to the current price to detect significant drops (&gt;5% or &gt;15%).
+                    </Text>
+                </Group>
 
-                <Disclaimer>
+                {/* A notice block of its own, so it stays on the canvas rather than nesting in the group. */}
+                <Disclaimer style={styles.notice}>
                     This feature requires at least <Text style={type.smallStrong}>30 days of price history</Text> to work accurately.
                 </Disclaimer>
 
-                <SectionHeader title="Alert hierarchy" />
-                <Text style={[type.small, styles.hierarchy, { color: ds.text2 }]}>
-                    In the <Text style={[type.smallStrong, { color: ds.text }]}>All</Text> view, alerts are ranked by urgency: <Text style={[type.smallStrong, { color: ds.text }]}>Crash</Text> → <Text style={[type.smallStrong, { color: ds.text }]}>Dividend</Text> → <Text style={[type.smallStrong, { color: ds.text }]}>Dip</Text> → <Text style={[type.smallStrong, { color: ds.text }]}>Balance</Text>.
-                    {"\n\n"}A <Text style={[type.smallStrong, { color: ds.text }]}>Balance</Text> note gets merged onto a stock&apos;s existing alert instead of listing it twice (e.g., DIP + BAL). Crash, Dividend, and Dip alerts each show as their own entry. Specific tabs show all alerts for that category.
-                </Text>
+                <SectionHeader grouped title="Alert hierarchy" />
+                <Group padded style={styles.hierarchy}>
+                    <Text style={[type.small, { color: ds.text2 }]}>
+                        In the <Text style={[type.smallStrong, { color: ds.text }]}>All</Text> view, alerts are ranked by urgency: <Text style={[type.smallStrong, { color: ds.text }]}>Crash</Text> → <Text style={[type.smallStrong, { color: ds.text }]}>Dividend</Text> → <Text style={[type.smallStrong, { color: ds.text }]}>Dip</Text> → <Text style={[type.smallStrong, { color: ds.text }]}>Balance</Text>.
+                        {"\n\n"}A <Text style={[type.smallStrong, { color: ds.text }]}>Balance</Text> note gets merged onto a stock&apos;s existing alert instead of listing it twice (e.g., DIP + BAL). Crash, Dividend, and Dip alerts each show as their own entry. Specific tabs show all alerts for that category.
+                    </Text>
+                </Group>
             </ScrollView>
         </BottomModal>
     );
@@ -108,30 +115,33 @@ export const SmartAdvisor: React.FC<SmartAdvisorProps> = ({ suggestions, onPrior
     return (
         <>
             <SectionHeader
+                grouped
                 title="Smart advisor"
                 menu={{ options: PRIORITIES, value: activePriority, onSelect: key => onPriorityChange(key as Priority) }}
             />
-            {(!suggestions || suggestions.length === 0) ? (
-                <Text style={[type.small, { color: ds.text2, paddingVertical: space[3] }]}>No suggestions for this priority.</Text>
-            ) : suggestions.map((item, i) => {
-                const { icon, tone } = suggestionLook(item);
-                return (
-                    <Row
-                        key={item.ticker + i}
-                        leading={<Ionicons name={icon} size={20} color={toneColor(ds, tone)} />}
-                        title={item.ticker}
-                        subtitle={`${item.reason}${item.hasDivSoon ? ' · Dividend soon' : ''}`}
-                        value={isPrivacyEnabled ? '****' : formatCurrencyAmount(item.price, currency)}
-                    />
-                );
-            })}
-            <Row
-                icon="information-circle-outline"
-                title="How Smart Alerts work"
-                chevron
-                last
-                onPress={() => setShowInfoModal(true)}
-            />
+            <Group>
+                {(!suggestions || suggestions.length === 0) ? (
+                    <Text style={[type.small, styles.empty, { color: ds.text2 }]}>No suggestions for this priority.</Text>
+                ) : suggestions.map((item, i) => {
+                    const { icon, tone } = suggestionLook(item);
+                    return (
+                        <Row
+                            key={item.ticker + i}
+                            leading={<Ionicons name={icon} size={20} color={toneColor(ds, tone)} />}
+                            title={item.ticker}
+                            subtitle={`${item.reason}${item.hasDivSoon ? ' · Dividend soon' : ''}`}
+                            value={isPrivacyEnabled ? '****' : formatCurrencyAmount(item.price, currency)}
+                        />
+                    );
+                })}
+                <Row
+                    icon="information-circle-outline"
+                    title="How Smart Alerts work"
+                    chevron
+                    last
+                    onPress={() => setShowInfoModal(true)}
+                />
+            </Group>
             {renderInfoModal()}
 
         </>
@@ -145,7 +155,6 @@ const styles = StyleSheet.create({
     peakHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: space[2],
         marginBottom: space[2],
     },
     peakChart: {
@@ -185,6 +194,15 @@ const styles = StyleSheet.create({
         marginTop: space[2],
     },
     hierarchy: {
-        paddingBottom: space[4],
+        marginBottom: space[4],
+    },
+    notice: {
+        marginTop: space[4],
+    },
+    intro: {
+        paddingTop: space[3],
+    },
+    empty: {
+        paddingVertical: space[3],
     },
 });

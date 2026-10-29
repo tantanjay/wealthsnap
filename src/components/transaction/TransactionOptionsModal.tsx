@@ -1,9 +1,9 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row } from '@components/ds';
+import { Group, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
@@ -86,27 +86,32 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
             title="Transaction options"
             maxHeight="auto"
         >
-            <Row
-                icon={isExpense ? 'remove' : 'add'}
-                title={transaction.category}
-                subtitle={transaction.note || (transaction.subCategory ? transaction.subCategory : transaction.type)}
-                value={`${isExpense ? '\u2212' : '+'}${money(transaction.amount, currency)}`}
-                valueTone={isExpense ? 'bad' : 'good'}
-            />
-            {/* Stays tappable when locked so the alert can explain why */}
-            <Row
-                icon="create-outline"
-                title={canEdit ? "Edit transaction" : "Cannot edit transaction"}
-                subtitle={canEdit ? undefined : editDisabledReason}
-                onPress={handleEditPress}
-                style={canEdit ? undefined : styles.locked}
-            />
-            <Row
-                leading={<Ionicons name="trash-outline" size={20} color={ds.danger} />}
-                title="Delete transaction"
-                onPress={handleDeletePress}
-                last
-            />
+            <Group>
+                <Row
+                    icon={isExpense ? 'remove' : 'add'}
+                    title={transaction.category}
+                    subtitle={transaction.note || (transaction.subCategory ? transaction.subCategory : transaction.type)}
+                    value={`${isExpense ? '\u2212' : '+'}${money(transaction.amount, currency)}`}
+                    valueTone={isExpense ? 'bad' : 'good'}
+                    last
+                />
+            </Group>
+            <Group style={styles.actions}>
+                {/* Stays tappable when locked so the alert can explain why */}
+                <Row
+                    icon="create-outline"
+                    title={canEdit ? "Edit transaction" : "Cannot edit transaction"}
+                    subtitle={canEdit ? undefined : editDisabledReason}
+                    onPress={handleEditPress}
+                    style={canEdit ? undefined : styles.locked}
+                />
+                <Row
+                    leading={<View style={styles.leadingIcon}><Ionicons name="trash-outline" size={20} color={ds.danger} /></View>}
+                    title="Delete transaction"
+                    onPress={handleDeletePress}
+                    last
+                />
+            </Group>
 
             <Text style={[type.caption, styles.id, { color: ds.text3 }]}>ID: {transaction.id}</Text>
         </BottomModal>
@@ -114,6 +119,14 @@ const TransactionOptionsModal: React.FC<TransactionOptionsModalProps> = ({
 };
 
 const styles = StyleSheet.create({
+    actions: {
+        marginTop: space[4],
+    },
+    // Same width as a Row icon tile, so the danger icon lines up with the tiled row above.
+    leadingIcon: {
+        width: 32,
+        alignItems: 'center',
+    },
     locked: {
         opacity: 0.6,
     },

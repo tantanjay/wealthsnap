@@ -3,6 +3,7 @@ import { View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } fr
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import { Group } from '@components/ds';
 import { TransactionType } from '@types';
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius } from '@styles/theme';
@@ -19,7 +20,7 @@ interface CalculatorModalProps {
 
 type KeyTone = 'digit' | 'op' | 'equals';
 
-// Grid key: inset for digits and operators, accent only for equals. Pass `label` or an icon child.
+// Grid key (inside the group): inset for digits and operators, accent only for equals. Pass `label` or an icon child.
 const CalcKey: React.FC<{ onPress: () => void; flex?: number; tone?: KeyTone; label?: string; children?: React.ReactNode }> = ({ onPress, flex = 1, tone = 'digit', label, children }) => {
     const { ds } = useTheme();
     return (
@@ -157,55 +158,61 @@ export const CalculatorModal: React.FC<CalculatorModalProps> = ({
                 </Pressable>
             }
         >
-            {/* Display */}
-            <View style={[styles.display, { backgroundColor: ds.inset }]}>
-                <Text
-                    style={[type.display, { color: transactionType === 'EXPENSE' ? ds.danger : ds.success }]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                >
-                    {calcDisplay}
-                </Text>
-                {calcOperator && (
-                    <Text style={[type.smallNum, styles.pending, { color: ds.text2 }]}>
-                        {calcPrevValue} {calcOperator}
+            <Group padded style={styles.group}>
+                {/* Display */}
+                <View style={[styles.display, { backgroundColor: ds.inset }]}>
+                    <Text
+                        style={[type.display, { color: transactionType === 'EXPENSE' ? ds.danger : ds.success }]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                    >
+                        {calcDisplay}
                     </Text>
-                )}
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.grid}>
-                    <View style={styles.row}>
-                        <CalcKey onPress={handleCalcClear} tone="op" label="C" />
-                        <CalcKey onPress={() => setCalcDisplay(calcDisplay.slice(0, -1) || '0')} tone="op">
-                            <Ionicons name="backspace-outline" size={22} color={ds.text2} />
-                        </CalcKey>
-                        <CalcKey onPress={() => handleCalcOperator('÷')} tone="op" label="÷" />
-                        <CalcKey onPress={() => handleCalcOperator('×')} tone="op" label="×" />
-                    </View>
-                    <View style={styles.row}>
-                        {['7', '8', '9'].map(d => <CalcKey key={d} onPress={() => handleCalcDigit(d)} label={d} />)}
-                        <CalcKey onPress={() => handleCalcOperator('-')} tone="op" label="−" />
-                    </View>
-                    <View style={styles.row}>
-                        {['4', '5', '6'].map(d => <CalcKey key={d} onPress={() => handleCalcDigit(d)} label={d} />)}
-                        <CalcKey onPress={() => handleCalcOperator('+')} tone="op" label="+" />
-                    </View>
-                    <View style={styles.row}>
-                        {['1', '2', '3'].map(d => <CalcKey key={d} onPress={() => handleCalcDigit(d)} label={d} />)}
-                        <CalcKey onPress={handleCalcEquals} tone="equals" label="=" />
-                    </View>
-                    <View style={styles.row}>
-                        <CalcKey onPress={() => handleCalcDigit('0')} flex={3} label="0" />
-                        <CalcKey onPress={handleCalcDecimal} label="." />
-                    </View>
+                    {calcOperator && (
+                        <Text style={[type.smallNum, styles.pending, { color: ds.text2 }]}>
+                            {calcPrevValue} {calcOperator}
+                        </Text>
+                    )}
                 </View>
-            </ScrollView>
+
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <View style={styles.grid}>
+                        <View style={styles.row}>
+                            <CalcKey onPress={handleCalcClear} tone="op" label="C" />
+                            <CalcKey onPress={() => setCalcDisplay(calcDisplay.slice(0, -1) || '0')} tone="op">
+                                <Ionicons name="backspace-outline" size={22} color={ds.text2} />
+                            </CalcKey>
+                            <CalcKey onPress={() => handleCalcOperator('÷')} tone="op" label="÷" />
+                            <CalcKey onPress={() => handleCalcOperator('×')} tone="op" label="×" />
+                        </View>
+                        <View style={styles.row}>
+                            {['7', '8', '9'].map(d => <CalcKey key={d} onPress={() => handleCalcDigit(d)} label={d} />)}
+                            <CalcKey onPress={() => handleCalcOperator('-')} tone="op" label="−" />
+                        </View>
+                        <View style={styles.row}>
+                            {['4', '5', '6'].map(d => <CalcKey key={d} onPress={() => handleCalcDigit(d)} label={d} />)}
+                            <CalcKey onPress={() => handleCalcOperator('+')} tone="op" label="+" />
+                        </View>
+                        <View style={styles.row}>
+                            {['1', '2', '3'].map(d => <CalcKey key={d} onPress={() => handleCalcDigit(d)} label={d} />)}
+                            <CalcKey onPress={handleCalcEquals} tone="equals" label="=" />
+                        </View>
+                        <View style={styles.row}>
+                            <CalcKey onPress={() => handleCalcDigit('0')} flex={3} label="0" />
+                            <CalcKey onPress={handleCalcDecimal} label="." />
+                        </View>
+                    </View>
+                </ScrollView>
+            </Group>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
+    // Lets the keypad scroll inside the group on short screens.
+    group: {
+        flexShrink: 1,
+    },
     display: {
         borderRadius: radius.md,
         padding: space[4],

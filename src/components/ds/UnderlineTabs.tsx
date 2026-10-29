@@ -24,7 +24,7 @@ function UnderlineTabs<K extends string>({ tabs, value, onChange, style }: Under
         <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={[{ backgroundColor: ds.bg, borderBottomColor: ds.hairline }, styles.strip, style]}
+            style={[{ backgroundColor: ds.canvas, borderBottomColor: ds.hairline }, styles.strip, style]}
             contentContainerStyle={styles.content}
         >
             {tabs.map(tab => {

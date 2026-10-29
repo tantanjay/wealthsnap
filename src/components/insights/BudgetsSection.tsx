@@ -3,10 +3,10 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
-import { ProgressBar, SectionHeader, toneColor } from '@components/ds';
+import { Group, ProgressBar, SectionHeader, toneColor } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { PrivacyFormat } from '@hooks/usePrivacyFormat';
-import { type, space } from '@styles/theme';
+import { type, space, layout } from '@styles/theme';
 import { budgetTone } from './financialHealthPool';
 
 export interface BudgetLine {
@@ -69,16 +69,17 @@ const BudgetsSection: React.FC<BudgetsSectionProps> = ({ lines, monthLabel, form
     return (
         <View>
             <SectionHeader
+                grouped
                 title={title}
                 actionLabel={hasMore ? `Show all (${lines.length})` : undefined}
                 onAction={hasMore ? () => setShowAll(true) : undefined}
             />
             <Text style={[type.small, styles.summary, { color: ds.text2 }]}>{countSummary(lines)}</Text>
-            {renderRows(lines.slice(0, COLLAPSED_COUNT))}
+            <Group>{renderRows(lines.slice(0, COLLAPSED_COUNT))}</Group>
 
             <BottomModal visible={showAll} onClose={() => setShowAll(false)} title={title} subtitle={countSummary(lines)} maxHeight="85%">
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    {renderRows(lines)}
+                    <Group>{renderRows(lines)}</Group>
                 </ScrollView>
             </BottomModal>
         </View>
@@ -87,10 +88,11 @@ const BudgetsSection: React.FC<BudgetsSectionProps> = ({ lines, monthLabel, form
 
 const styles = StyleSheet.create({
     summary: {
-        marginBottom: space[1],
+        marginBottom: space[2],
+        paddingHorizontal: layout.groupPadding,
     },
     row: {
-        paddingVertical: space[2],
+        paddingVertical: space[3],
     },
     top: {
         flexDirection: 'row',

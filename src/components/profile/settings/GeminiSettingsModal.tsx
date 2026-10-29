@@ -3,11 +3,11 @@ import { Text, TextInput, View, Pressable, ScrollView, Linking, StyleSheet } fro
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row } from '@components/ds';
+import { Group, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { saveAIConfig } from '@services/core/storageService';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 
 interface GeminiSettingsModalProps {
     visible: boolean;
@@ -80,81 +80,85 @@ const GeminiSettingsModal: React.FC<GeminiSettingsModalProps> = ({
                     </Text>
                 </View>
 
-                <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                    <Ionicons name="key-outline" size={18} color={ds.text2} />
-                    <TextInput
-                        style={[type.body, styles.input, { color: ds.text }]}
-                        placeholder="Enter Gemini API key"
-                        placeholderTextColor={ds.text3}
-                        value={apiKey}
-                        onChangeText={setApiKey}
-                        secureTextEntry={!showApiKey}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                    />
-                    <Pressable
-                        onPressIn={() => setShowApiKey(true)}
-                        onPressOut={() => setShowApiKey(false)}
-                        hitSlop={space[2]}
-                    >
-                        <Ionicons name={showApiKey ? 'eye-outline' : 'eye-off-outline'} size={20} color={ds.text2} />
-                    </Pressable>
-                </View>
-
-                <Pressable
-                    onPress={() => setShowApiKeyHelp(v => !v)}
-                    style={styles.helpToggle}
-                    hitSlop={space[2]}
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: showApiKeyHelp }}
-                >
-                    <Ionicons name="help-circle-outline" size={16} color={ds.accent} />
-                    <Text style={[type.smallMedium, { color: ds.accent }]}>How to get an API key?</Text>
-                    <Ionicons name={showApiKeyHelp ? 'chevron-up' : 'chevron-down'} size={14} color={ds.accent} />
-                </Pressable>
-
-                {showApiKeyHelp && (
-                    <View>
-                        <Text style={[type.small, styles.helpIntro, { color: ds.text2 }]}>
-                            Follow these simple steps to get your free API key from Google:
-                        </Text>
-
-                        <Row title="Open Google AI Studio" leading={stepNumber(1)}>
-                            <Text style={[type.small, { color: ds.text2 }]}>
-                                Go to{' '}
-                                <Text
-                                    style={[type.smallMedium, { color: ds.accent }]}
-                                    onPress={() => Linking.openURL('https://aistudio.google.com')}
-                                >
-                                    aistudio.google.com
-                                </Text>
-                                {' '}in your web browser (Chrome, Safari, etc.)
-                            </Text>
-                        </Row>
-                        {HELP_STEPS.map((step, i) => (
-                            <Row key={step.title} title={step.title} subtitle={step.description} leading={stepNumber(i + 2)} />
-                        ))}
-                        <Row
-                            icon="open-outline"
-                            title="Open Google AI Studio"
-                            subtitle="aistudio.google.com/apikey"
-                            chevron
-                            onPress={() => Linking.openURL('https://aistudio.google.com/apikey')}
-                            last
+                <Group padded>
+                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="key-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={[type.body, styles.input, { color: ds.text }]}
+                            placeholder="Enter Gemini API key"
+                            placeholderTextColor={ds.text3}
+                            value={apiKey}
+                            onChangeText={setApiKey}
+                            secureTextEntry={!showApiKey}
+                            autoCapitalize="none"
+                            autoCorrect={false}
                         />
-
-                        <View style={[styles.tip, { backgroundColor: ds.inset }]}>
-                            <Text style={[type.small, { color: ds.text2 }]}>
-                                <Text style={[type.smallStrong, { color: ds.text }]}>Tip: </Text>
-                                The API has a generous free tier! You can make many requests per day at no cost. Check Google&apos;s pricing page for current limits.
-                            </Text>
-                            <Text style={[type.small, styles.tipLine, { color: ds.text2 }]}>
-                                <Text style={[type.smallStrong, { color: ds.text }]}>Reminder: </Text>
-                                If prompted, you may need to create a Google Cloud project first — just follow the on-screen instructions, it only takes a few clicks!
-                            </Text>
-                        </View>
+                        <Pressable
+                            onPressIn={() => setShowApiKey(true)}
+                            onPressOut={() => setShowApiKey(false)}
+                            hitSlop={space[2]}
+                        >
+                            <Ionicons name={showApiKey ? 'eye-outline' : 'eye-off-outline'} size={20} color={ds.text2} />
+                        </Pressable>
                     </View>
-                )}
+                </Group>
+
+                <Group padded style={styles.help}>
+                    <Pressable
+                        onPress={() => setShowApiKeyHelp(v => !v)}
+                        style={styles.helpToggle}
+                        hitSlop={space[2]}
+                        accessibilityRole="button"
+                        accessibilityState={{ expanded: showApiKeyHelp }}
+                    >
+                        <Ionicons name="help-circle-outline" size={16} color={ds.accent} />
+                        <Text style={[type.smallMedium, { color: ds.accent }]}>How to get an API key?</Text>
+                        <Ionicons name={showApiKeyHelp ? 'chevron-up' : 'chevron-down'} size={14} color={ds.accent} />
+                    </Pressable>
+
+                    {showApiKeyHelp && (
+                        <View>
+                            <Text style={[type.small, styles.helpIntro, { color: ds.text2 }]}>
+                                Follow these simple steps to get your free API key from Google:
+                            </Text>
+
+                            <Row title="Open Google AI Studio" leading={stepNumber(1)}>
+                                <Text style={[type.small, { color: ds.text2 }]}>
+                                    Go to{' '}
+                                    <Text
+                                        style={[type.smallMedium, { color: ds.accent }]}
+                                        onPress={() => Linking.openURL('https://aistudio.google.com')}
+                                    >
+                                        aistudio.google.com
+                                    </Text>
+                                    {' '}in your web browser (Chrome, Safari, etc.)
+                                </Text>
+                            </Row>
+                            {HELP_STEPS.map((step, i) => (
+                                <Row key={step.title} title={step.title} subtitle={step.description} leading={stepNumber(i + 2)} />
+                            ))}
+                            <Row
+                                icon="open-outline"
+                                title="Open Google AI Studio"
+                                subtitle="aistudio.google.com/apikey"
+                                chevron
+                                onPress={() => Linking.openURL('https://aistudio.google.com/apikey')}
+                                last
+                            />
+
+                            <View style={[styles.tip, { backgroundColor: ds.inset }]}>
+                                <Text style={[type.small, { color: ds.text2 }]}>
+                                    <Text style={[type.smallStrong, { color: ds.text }]}>Tip: </Text>
+                                    The API has a generous free tier! You can make many requests per day at no cost. Check Google&apos;s pricing page for current limits.
+                                </Text>
+                                <Text style={[type.small, styles.tipLine, { color: ds.text2 }]}>
+                                    <Text style={[type.smallStrong, { color: ds.text }]}>Reminder: </Text>
+                                    If prompted, you may need to create a Google Cloud project first — just follow the on-screen instructions, it only takes a few clicks!
+                                </Text>
+                            </View>
+                        </View>
+                    )}
+                </Group>
             </ScrollView>
         </BottomModal>
     );
@@ -165,7 +169,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: space[2],
-        marginBottom: space[4],
+        marginBottom: space[3],
+        paddingHorizontal: layout.groupPadding,
     },
     statusText: {
         flex: 1,
@@ -186,6 +191,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         alignSelf: 'flex-start',
         gap: space[1],
+    },
+    help: {
         marginTop: space[4],
     },
     helpIntro: {

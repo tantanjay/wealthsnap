@@ -3,7 +3,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { View, Text, StyleSheet, Pressable, TextInput, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { SectionHeader } from '@components/ds';
+import { Group, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius } from '@styles/theme';
 import { useAlert } from '@context/AlertContext';
@@ -99,69 +99,74 @@ export const ReminderForm: React.FC<ReminderFormProps> = ({
         <View style={styles.container}>
             <ScrollView style={styles.form} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <SectionHeader
+                    grouped
                     title={initialReminder ? 'Edit reminder' : 'New reminder'}
                     actionLabel="Cancel"
                     onAction={onCancel}
                     style={styles.firstHeader}
                 />
 
-                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Title</Text>
-                <TextInput
-                    style={[type.body, styles.field, { backgroundColor: ds.inset, color: ds.text }]}
-                    placeholder="e.g., Pay Rent, Utility Bill"
-                    placeholderTextColor={ds.text3}
-                    value={title}
-                    onChangeText={setTitle}
-                />
+                <Group padded>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Title</Text>
+                    <TextInput
+                        style={[type.body, styles.field, { backgroundColor: ds.inset, color: ds.text }]}
+                        placeholder="e.g., Pay Rent, Utility Bill"
+                        placeholderTextColor={ds.text3}
+                        value={title}
+                        onChangeText={setTitle}
+                    />
 
-                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Frequency</Text>
-                <View style={styles.frequencyGrid}>
-                    {FREQUENCIES.map((freq) => {
-                        const selected = frequency === freq.value;
-                        return (
-                            <Pressable
-                                key={freq.value}
-                                style={[styles.frequencyChip, selected && { backgroundColor: ds.inset }]}
-                                onPress={() => setFrequency(freq.value)}
-                                accessibilityState={{ selected }}
-                            >
-                                <Text style={[type.smallMedium, { color: selected ? ds.text : ds.text2 }]}>
-                                    {freq.label}
-                                </Text>
-                            </Pressable>
-                        );
-                    })}
-                </View>
-
-                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Start date</Text>
-                <Pressable
-                    style={[styles.field, styles.fieldRow, { backgroundColor: ds.inset }]}
-                    onPress={() => setShowDatePicker(true)}
-                >
-                    <Ionicons name="calendar-outline" size={18} color={ds.text2} />
-                    <Text style={[type.bodyNum, { color: ds.text }]}>{startDate.toLocaleDateString()}</Text>
-                </Pressable>
-
-                <SectionHeader title="Times" actionLabel="Add time" onAction={addTime} />
-                {times.map((time, index) => (
-                    <View key={index} style={styles.timeRow}>
-                        <Pressable
-                            style={[styles.field, styles.fieldRow, styles.timeField, { backgroundColor: ds.inset }]}
-                            onPress={() => {
-                                setSelectedTimeIndex(index);
-                                setShowTimePicker(true);
-                            }}
-                        >
-                            <Ionicons name="time-outline" size={18} color={ds.text2} />
-                            <Text style={[type.bodyNum, { color: ds.text }]}>{formatTime(time)}</Text>
-                        </Pressable>
-                        {times.length > 1 && (
-                            <Pressable onPress={() => removeTime(index)} hitSlop={space[2]} accessibilityLabel="Remove time">
-                                <Ionicons name="trash-outline" size={20} color={ds.danger} />
-                            </Pressable>
-                        )}
+                    <Text style={[type.small, styles.label, styles.labelGap, { color: ds.text2 }]}>Frequency</Text>
+                    <View style={styles.frequencyGrid}>
+                        {FREQUENCIES.map((freq) => {
+                            const selected = frequency === freq.value;
+                            return (
+                                <Pressable
+                                    key={freq.value}
+                                    style={[styles.frequencyChip, selected && { backgroundColor: ds.inset }]}
+                                    onPress={() => setFrequency(freq.value)}
+                                    accessibilityState={{ selected }}
+                                >
+                                    <Text style={[type.smallMedium, { color: selected ? ds.text : ds.text2 }]}>
+                                        {freq.label}
+                                    </Text>
+                                </Pressable>
+                            );
+                        })}
                     </View>
-                ))}
+
+                    <Text style={[type.small, styles.label, styles.labelGap, { color: ds.text2 }]}>Start date</Text>
+                    <Pressable
+                        style={[styles.field, styles.fieldRow, { backgroundColor: ds.inset }]}
+                        onPress={() => setShowDatePicker(true)}
+                    >
+                        <Ionicons name="calendar-outline" size={18} color={ds.text2} />
+                        <Text style={[type.bodyNum, { color: ds.text }]}>{startDate.toLocaleDateString()}</Text>
+                    </Pressable>
+                </Group>
+
+                <SectionHeader grouped title="Times" actionLabel="Add time" onAction={addTime} />
+                <Group padded>
+                    {times.map((time, index) => (
+                        <View key={index} style={[styles.timeRow, index > 0 && styles.timeGap]}>
+                            <Pressable
+                                style={[styles.field, styles.fieldRow, styles.timeField, { backgroundColor: ds.inset }]}
+                                onPress={() => {
+                                    setSelectedTimeIndex(index);
+                                    setShowTimePicker(true);
+                                }}
+                            >
+                                <Ionicons name="time-outline" size={18} color={ds.text2} />
+                                <Text style={[type.bodyNum, { color: ds.text }]}>{formatTime(time)}</Text>
+                            </Pressable>
+                            {times.length > 1 && (
+                                <Pressable onPress={() => removeTime(index)} hitSlop={space[2]} accessibilityLabel="Remove time">
+                                    <Ionicons name="trash-outline" size={20} color={ds.danger} />
+                                </Pressable>
+                            )}
+                        </View>
+                    ))}
+                </Group>
             </ScrollView>
 
             <Pressable onPress={handleSave} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
@@ -218,8 +223,10 @@ const styles = StyleSheet.create({
         marginTop: 0,
     },
     label: {
-        marginTop: space[4],
         marginBottom: space[2],
+    },
+    labelGap: {
+        marginTop: space[3],
     },
     field: {
         padding: space[3],
@@ -244,7 +251,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: space[3],
-        marginTop: space[2],
+    },
+    timeGap: {
+        marginTop: space[3],
     },
     timeField: {
         flex: 1,

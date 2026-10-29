@@ -6,7 +6,7 @@ import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 
 
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius } from '@styles/theme';
-import { Domain, domainColor } from '@components/ds';
+import { DOMAIN_ICONS, Domain, domainColor, domainSoftColor } from '@components/ds';
 import { SheetScrollContext } from '@components/ds/Sheet';
 import { SnapshotRowId } from '@services/core/storageService';
 
@@ -75,7 +75,7 @@ const DragRow: React.FC<DragRowProps> = ({ meta, index, count, onDrop }) => {
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{ translateY: offset.value }],
         // Every key is set in both states: Reanimated keeps the last value of a key that stops being returned.
-        backgroundColor: lifted.value ? ds.sheet : 'transparent',
+        backgroundColor: lifted.value ? ds.raised : 'transparent',
         borderRadius: lifted.value ? radius.md : 0,
         zIndex: lifted.value ? 1 : 0,
         shadowOpacity: lifted.value ? liftedShadowOpacity : 0,
@@ -96,7 +96,11 @@ const DragRow: React.FC<DragRowProps> = ({ meta, index, count, onDrop }) => {
                     <Ionicons name="reorder-two-outline" size={22} color={ds.text2} />
                 </View>
             </GestureDetector>
-            {meta.domain && <View style={[styles.dot, { backgroundColor: domainColor(ds, meta.domain) }]} />}
+            {meta.domain && (
+                <View style={[styles.tile, { backgroundColor: domainSoftColor(ds, meta.domain) }]}>
+                    <Ionicons name={DOMAIN_ICONS[meta.domain]} size={18} color={domainColor(ds, meta.domain)} />
+                </View>
+            )}
             <Text style={[type.body, styles.label, { color: ds.text }]}>{meta.label}</Text>
         </Animated.View>
     );
@@ -143,11 +147,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    dot: {
-        width: 8,
-        height: 8,
-        borderRadius: radius.full,
+    // Same 32px domain tile as Row.
+    tile: {
+        width: 32,
+        height: 32,
+        borderRadius: 9,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
+
     label: {
         flex: 1,
     },

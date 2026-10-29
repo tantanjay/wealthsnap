@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, FlatList, TextInput, ActivityIndicat
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row } from '@components/ds';
+import { Group, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { type, space, radius } from '@styles/theme';
@@ -122,7 +122,7 @@ export const AssetsListModal: React.FC<AssetsListModalProps> = ({ visible, onClo
             <View style={styles.body}>
                 {isList ? (
                     <>
-                        <View style={[styles.search, { backgroundColor: ds.inset }]}>
+                        <View style={[styles.search, { backgroundColor: ds.group }]}>
                             <Ionicons name="search-outline" size={18} color={ds.text2} />
                             <TextInput
                                 style={[type.body, styles.searchInput, { color: ds.text }]}
@@ -135,16 +135,18 @@ export const AssetsListModal: React.FC<AssetsListModalProps> = ({ visible, onClo
 
                         {loading ? (
                             <ActivityIndicator color={ds.accent} style={styles.loading} />
+                        ) : filteredAssets.length === 0 ? (
+                            <EmptyState size="compact" icon="list-outline" title="No assets found." />
                         ) : (
-                            <FlatList
-                                data={filteredAssets}
-                                keyExtractor={item => item.symbol}
-                                renderItem={renderItem}
-                                keyboardShouldPersistTaps="handled"
-                                ListEmptyComponent={
-                                    <EmptyState size="compact" icon="list-outline" title="No assets found." />
-                                }
-                            />
+                            // `padded` puts the list straight in the Group (no clip wrapper), so it can still shrink and scroll.
+                            <Group padded style={styles.list}>
+                                <FlatList
+                                    data={filteredAssets}
+                                    keyExtractor={item => item.symbol}
+                                    renderItem={renderItem}
+                                    keyboardShouldPersistTaps="handled"
+                                />
+                            </Group>
                         )}
                     </>
                 ) : (
@@ -169,7 +171,11 @@ const styles = StyleSheet.create({
         gap: space[3],
         padding: space[3],
         borderRadius: radius.md,
-        marginBottom: space[1],
+        marginBottom: space[3],
+    },
+    list: {
+        flexShrink: 1,
+        paddingVertical: 0,
     },
     searchInput: {
         flex: 1,

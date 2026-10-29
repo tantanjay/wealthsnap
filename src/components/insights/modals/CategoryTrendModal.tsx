@@ -6,13 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
-import { Row } from '@components/ds';
+import { Group, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { Transaction } from '@types';
 import { getCategoryGroup } from '@constants/categories';
 import { getCategoryTrend } from '@utils/financialMetrics';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { SEVERITY_ICON } from '@utils/severity';
 
 interface CategoryTrendModalProps {
@@ -26,6 +26,8 @@ interface CategoryTrendModalProps {
 }
 
 const CHART_HEIGHT = 220;
+// Group content runs 28 from each screen edge, so it is 16 narrower than the old 20 sheet gutter.
+const GROUP_NARROWING = (layout.groupInset + layout.groupPadding - space[5]) * 2;
 
 // Discreet: a month's signed % change vs the period average.
 const changeVs = (value: BigNumber, average: BigNumber): number | null =>
@@ -116,7 +118,7 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
         activatePointersOnLongPress: true,
         autoAdjustPointerLabelPosition: true,
         pointerComponent: () => (
-            <View style={[styles.pointer, { backgroundColor: ds.accent, borderColor: ds.sheet }]} />
+            <View style={[styles.pointer, { backgroundColor: ds.accent, borderColor: ds.group }]} />
         ),
         pointerLabelComponent: (items: any) => {
             const item = items[0];
@@ -152,63 +154,67 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
                 </View>
 
                 {trendData.data.length > 0 && format.isHidden && (
-                    <View style={styles.hiddenWrap}>
+                    <Group padded style={styles.chartGroup}>
                         <HiddenChart height={CHART_HEIGHT} />
-                    </View>
+                    </Group>
                 )}
 
                 {trendData.data.length > 0 && !format.isHidden && (
-                    <View style={styles.chart}>
-                        <LineChart
-                            data={trendData.data.map((val, index) => ({
-                                value: val.toNumber(),
-                                label: trendData.labels[index],
-                            }))}
-                            height={CHART_HEIGHT}
-                            width={screenWidth - 40}
-                            maxValue={max.multipliedBy(1.2).toNumber()}
-                            spacing={(screenWidth - 150) / Math.max(trendData.data.length - 1, 1)}
-                            initialSpacing={20}
-                            thickness={1.5}
-                            color={ds.accent}
-                            hideRules
-                            yAxisColor="transparent"
-                            xAxisColor="transparent"
-                            yAxisTextStyle={axisText}
-                            xAxisLabelTextStyle={axisText}
-                            dataPointsColor={ds.accent}
-                            dataPointsRadius={3}
-                            curved
-                            curveType={0}
-                            hideYAxisText={!format.isOpen}
-                            yAxisLabelWidth={format.isOpen ? 90 : space[5]}
-                            xAxisLabelTexts={trendData.labels}
-                            formatYLabel={(value: string) => format.money(Number(value) || 0, { compact: true })}
-                            pointerConfig={pointerConfig}
-                        />
-                    </View>
+                    <Group padded style={styles.chartGroup}>
+                        <View style={styles.chart}>
+                            <LineChart
+                                data={trendData.data.map((val, index) => ({
+                                    value: val.toNumber(),
+                                    label: trendData.labels[index],
+                                }))}
+                                height={CHART_HEIGHT}
+                                width={screenWidth - 40 - GROUP_NARROWING}
+                                maxValue={max.multipliedBy(1.2).toNumber()}
+                                spacing={(screenWidth - 150 - GROUP_NARROWING) / Math.max(trendData.data.length - 1, 1)}
+                                initialSpacing={20}
+                                thickness={1.5}
+                                color={ds.accent}
+                                hideRules
+                                yAxisColor="transparent"
+                                xAxisColor="transparent"
+                                yAxisTextStyle={axisText}
+                                xAxisLabelTextStyle={axisText}
+                                dataPointsColor={ds.accent}
+                                dataPointsRadius={3}
+                                curved
+                                curveType={0}
+                                hideYAxisText={!format.isOpen}
+                                yAxisLabelWidth={format.isOpen ? 90 : space[5]}
+                                xAxisLabelTexts={trendData.labels}
+                                formatYLabel={(value: string) => format.money(Number(value) || 0, { compact: true })}
+                                pointerConfig={pointerConfig}
+                            />
+                        </View>
+                    </Group>
                 )}
 
-                {format.isDiscreet ? (
-                    // No scale-free total or average; the peak month and its gap to the average stand in.
-                    highestIndex >= 0 && (
-                        <Row
-                            title="Highest"
-                            value={trendData.labels[highestIndex]}
-                            change={`${formatPercent(changeVs(max, average), { signed: true })} vs avg`}
-                            last
-                        />
-                    )
-                ) : (
-                    <>
-                        <Row title="Total" value={format.money(total)} />
-                        <Row title="Average" value={format.money(average)} />
-                        <Row title="Highest" value={format.money(max)} last />
-                    </>
-                )}
+                <Group>
+                    {format.isDiscreet ? (
+                        // No scale-free total or average; the peak month and its gap to the average stand in.
+                        highestIndex >= 0 && (
+                            <Row
+                                title="Highest"
+                                value={trendData.labels[highestIndex]}
+                                change={`${formatPercent(changeVs(max, average), { signed: true })} vs avg`}
+                                last
+                            />
+                        )
+                    ) : (
+                        <>
+                            <Row title="Total" value={format.money(total)} />
+                            <Row title="Average" value={format.money(average)} />
+                            <Row title="Highest" value={format.money(max)} last />
+                        </>
+                    )}
+                </Group>
 
                 {trendData.data.length > 1 && (
-                    <View style={styles.insight}>
+                    <Group padded style={styles.insight}>
                         <Ionicons name={SEVERITY_ICON.info} size={20} color={ds.text2} />
                         <Text style={[type.small, styles.insightText, { color: ds.text2 }]}>
                             {trendData.data[trendData.data.length - 1].isGreaterThan(average)
@@ -216,7 +222,7 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
                                 : `Your ${category} spending this month is below average. Great job! 🎉`
                             }
                         </Text>
-                    </View>
+                    </Group>
                 )}
             </ScrollView>
         </BottomModal>
@@ -230,7 +236,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: space[2],
     },
-    hiddenWrap: {
+    chartGroup: {
         marginBottom: space[4],
     },
     pointer: {
@@ -264,8 +270,7 @@ const styles = StyleSheet.create({
         height: 240,
         paddingVertical: space[2],
         overflow: 'hidden',
-        marginLeft: -space[5],
-        marginBottom: space[4],
+        marginLeft: -layout.groupPadding,
     },
     insight: {
         flexDirection: 'row',

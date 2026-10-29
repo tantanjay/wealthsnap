@@ -7,7 +7,7 @@ import BottomModal from '@components/common/BottomModal';
 import PinCreationScreen from '@screens/security/PinCreationScreen';
 import GeminiSettingsModal from '@components/profile/settings/GeminiSettingsModal';
 import GeminiUsageModal from '@components/profile/settings/GeminiUsageModal';
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
@@ -71,54 +71,56 @@ const SecurityCard = () => {
 
     return (
         <>
-            <SectionHeader title="Security and intelligence" />
-            <Row
-                icon="lock-closed-outline"
-                title="App lock"
-                subtitle={hasPin ? 'PIN on · tap to change' : 'Off · secure the app with a PIN'}
-                chevron
-                onPress={() => setShowPinModal(true)}
-            />
-            {hasPin && (
+            <SectionHeader grouped title="Security and intelligence" />
+            <Group>
                 <Row
-                    icon="timer-outline"
-                    title="Auto-lock timeout"
-                    subtitle={getTimeoutLabel(timeoutSetting)}
+                    icon="lock-closed-outline"
+                    title="App lock"
+                    subtitle={hasPin ? 'PIN on · tap to change' : 'Off · secure the app with a PIN'}
                     chevron
-                    onPress={() => setShowTimeoutModal(true)}
+                    onPress={() => setShowPinModal(true)}
                 />
-            )}
-            <Row
-                icon="sparkles-outline"
-                title="Google Gemini"
-                subtitle={hasApiKey ? 'API key configured' : 'Configure AI provider'}
-                chevron
-                onPress={() => setShowGeminiSettings(true)}
-                last={!hasApiKey && !showReveal}
-            />
-            {hasApiKey && (
+                {hasPin && (
+                    <Row
+                        icon="timer-outline"
+                        title="Auto-lock timeout"
+                        subtitle={getTimeoutLabel(timeoutSetting)}
+                        chevron
+                        onPress={() => setShowTimeoutModal(true)}
+                    />
+                )}
                 <Row
-                    icon="bar-chart-outline"
-                    title="Usage statistics"
-                    subtitle="Track token usage and costs"
+                    icon="sparkles-outline"
+                    title="Google Gemini"
+                    subtitle={hasApiKey ? 'API key configured' : 'Configure AI provider'}
                     chevron
-                    onPress={() => setShowGeminiUsage(true)}
-                    last={!showReveal}
+                    onPress={() => setShowGeminiSettings(true)}
+                    last={!hasApiKey && !showReveal}
                 />
-            )}
-            {showReveal && (
-                <Row
-                    icon="camera-outline"
-                    title="Reveal for screenshot"
-                    subtitle="Allow screenshots for 15 seconds"
-                    onPress={handleRevealForScreenshot}
-                    last
-                />
-            )}
+                {hasApiKey && (
+                    <Row
+                        icon="bar-chart-outline"
+                        title="Usage statistics"
+                        subtitle="Track token usage and costs"
+                        chevron
+                        onPress={() => setShowGeminiUsage(true)}
+                        last={!showReveal}
+                    />
+                )}
+                {showReveal && (
+                    <Row
+                        icon="camera-outline"
+                        title="Reveal for screenshot"
+                        subtitle="Allow screenshots for 15 seconds"
+                        onPress={handleRevealForScreenshot}
+                        last
+                    />
+                )}
+            </Group>
 
             {/* PIN Modal */}
             <Modal visible={showPinModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPinModal(false)}>
-                <View style={[styles.pinPage, { backgroundColor: ds.bg }]}>
+                <View style={[styles.pinPage, { backgroundColor: ds.canvas }]}>
                     <View style={styles.pinHeader}>
                         <Pressable onPress={() => setShowPinModal(false)} hitSlop={space[2]} accessibilityRole="button" accessibilityLabel="Close">
                             <Ionicons name="close" size={22} color={ds.text2} />
@@ -141,22 +143,24 @@ const SecurityCard = () => {
                 title="Auto-lock timeout"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    {Security.TIMEOUT_OPTIONS.map((opt, i) => {
-                        const selected = timeoutSetting === opt.value;
-                        return (
-                            <Row
-                                key={opt.value}
-                                title={opt.label}
-                                leading={
-                                    <View style={[styles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
-                                        {selected && <View style={[styles.radioDot, { backgroundColor: ds.accent }]} />}
-                                    </View>
-                                }
-                                onPress={() => handleSetTimeout(opt.value)}
-                                last={i === Security.TIMEOUT_OPTIONS.length - 1}
-                            />
-                        );
-                    })}
+                    <Group>
+                        {Security.TIMEOUT_OPTIONS.map((opt, i) => {
+                            const selected = timeoutSetting === opt.value;
+                            return (
+                                <Row
+                                    key={opt.value}
+                                    title={opt.label}
+                                    leading={
+                                        <View style={[styles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
+                                            {selected && <View style={[styles.radioDot, { backgroundColor: ds.accent }]} />}
+                                        </View>
+                                    }
+                                    onPress={() => handleSetTimeout(opt.value)}
+                                    last={i === Security.TIMEOUT_OPTIONS.length - 1}
+                                />
+                            );
+                        })}
+                    </Group>
                 </ScrollView>
             </BottomModal>
 

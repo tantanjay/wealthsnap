@@ -1,8 +1,9 @@
 import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { Debt, DebtStatus, Transaction } from '@types';
 import { useConfirmDeleteDebt } from '@hooks/useConfirmDeleteDebt';
@@ -55,51 +56,71 @@ const DebtStatusModal: React.FC<DebtStatusModalProps> = ({ visible, onClose, deb
             subtitle="Manage debt"
             maxHeight="85%"
         >
-            {onRecordPayment && debt.status === 'ACTIVE' && (
-                <Row
-                    icon="cash-outline"
-                    title={isReceivable ? 'Record repayment' : 'Record payment'}
-                    onPress={handlePaymentPress}
-                />
-            )}
-            <Row icon="create-outline" title="Edit debt" onPress={handleEditPress} />
-            <Row
-                leading={<Ionicons name="trash-outline" size={20} color={ds.danger} />}
-                title="Delete debt"
-                onPress={handleDeletePress}
-                last
-            />
-
-            <SectionHeader title="Status" />
-            {debt.status === 'ACTIVE' ? (
-                <>
+            <Group>
+                {onRecordPayment && debt.status === 'ACTIVE' && (
                     <Row
-                        icon="checkmark-circle-outline"
-                        title="Mark as paid off"
-                        subtitle="Use this when this debt is actually settled but the payment never passed through WealthSnap - for example, someone paid it off on your behalf. It'll move to your Paid Off list and stop counting toward your totals."
-                        onPress={() => handleSelect('PAID_OFF')}
+                        domain="loans"
+                        icon="cash-outline"
+                        title={isReceivable ? 'Record repayment' : 'Record payment'}
+                        onPress={handlePaymentPress}
                     />
-                    <Row
-                        icon="hand-left-outline"
-                        title="Mark as forgiven"
-                        subtitle={isReceivable
-                            ? "Use this if you're writing this off - you no longer expect to be repaid. It'll move to your Paid Off list, labeled Forgiven, and stop counting as money owed to you."
-                            : "Use this if the other side forgave what you owed them. It'll move to your Paid Off list, labeled Forgiven, and stop counting toward your debt totals."}
-                        onPress={() => handleSelect('FORGIVEN')}
-                        last
-                    />
-                </>
-            ) : (
+                )}
+                <Row icon="create-outline" title="Edit debt" onPress={handleEditPress} />
                 <Row
-                    icon="refresh-outline"
-                    title={`Reactivate (${debt.status === 'PAID_OFF' ? 'Paid Off' : 'Forgiven'})`}
-                    subtitle="Moves this debt back to active - it'll count toward your totals again and reappear in the payoff list."
-                    onPress={() => handleSelect('ACTIVE')}
+                    leading={
+                        <View style={[styles.tile, { backgroundColor: ds.tileNeutral }]}>
+                            <Ionicons name="trash-outline" size={18} color={ds.danger} />
+                        </View>
+                    }
+                    title="Delete debt"
+                    onPress={handleDeletePress}
                     last
                 />
-            )}
+            </Group>
+
+            <SectionHeader grouped title="Status" />
+            <Group>
+                {debt.status === 'ACTIVE' ? (
+                    <>
+                        <Row
+                            icon="checkmark-circle-outline"
+                            title="Mark as paid off"
+                            subtitle="Use this when this debt is actually settled but the payment never passed through WealthSnap - for example, someone paid it off on your behalf. It'll move to your Paid Off list and stop counting toward your totals."
+                            onPress={() => handleSelect('PAID_OFF')}
+                        />
+                        <Row
+                            icon="hand-left-outline"
+                            title="Mark as forgiven"
+                            subtitle={isReceivable
+                                ? "Use this if you're writing this off - you no longer expect to be repaid. It'll move to your Paid Off list, labeled Forgiven, and stop counting as money owed to you."
+                                : "Use this if the other side forgave what you owed them. It'll move to your Paid Off list, labeled Forgiven, and stop counting toward your debt totals."}
+                            onPress={() => handleSelect('FORGIVEN')}
+                            last
+                        />
+                    </>
+                ) : (
+                    <Row
+                        icon="refresh-outline"
+                        title={`Reactivate (${debt.status === 'PAID_OFF' ? 'Paid Off' : 'Forgiven'})`}
+                        subtitle="Moves this debt back to active - it'll count toward your totals again and reappear in the payoff list."
+                        onPress={() => handleSelect('ACTIVE')}
+                        last
+                    />
+                )}
+            </Group>
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    // Matches Row's neutral icon tile; only the icon carries the danger tone.
+    tile: {
+        width: 32,
+        height: 32,
+        borderRadius: 9,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
 
 export default DebtStatusModal;

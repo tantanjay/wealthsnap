@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - Bottom sheets, pop-ups and Record forms restyled to match the new design.
+- Screens use a grey canvas with grouped white sections, a tinted panel behind the main number, and colour-tinted row icons.
 - Info sheets close with an X in the header instead of Close / Got it buttons.
 - Time range selector on Insights charts opens as a dropdown under its button.
 - Fetch price list opens its date options directly.

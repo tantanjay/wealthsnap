@@ -5,7 +5,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView, Dimensions } from 'react
 import * as ImagePicker from 'expo-image-picker';
 
 import BottomModal from '@components/common/BottomModal';
-import { IconName, SectionHeader } from '@components/ds';
+import { Group, IconName, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useSecurity } from '@context/SecurityContext';
 import { useAlert } from '@context/AlertContext';
@@ -13,7 +13,7 @@ import { DebtType, InvestmentType, TransactionType } from '@types';
 import { useAIConsent } from '@hooks/useAIConsent';
 import { getAllAssets } from '@services/domain/assetService';
 import { navigationRef } from '@navigation/navigationRef';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 
 export interface RecordMenuModalProps {
     visible: boolean;
@@ -169,33 +169,36 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
             <ScrollView showsVerticalScrollIndicator={false}>
                 {sections.map((section, i) => (
                     <View key={section.title}>
-                        <SectionHeader title={section.title} style={[styles.sectionHeader, i === 0 && styles.firstHeader]} />
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.shelf}
-                            decelerationRate="fast"
-                        >
-                            {section.items.map((item) => (
-                                <Pressable
-                                    key={item.id}
-                                    style={({ pressed }) => [
-                                        styles.tile,
-                                        { backgroundColor: ds.inset, width: ITEM_WIDTH, opacity: pressed ? 0.7 : 1 }
-                                    ]}
-                                    onPress={item.onPress}
-                                >
-                                    <Ionicons name={item.icon} size={20} color={ds.text2} />
-                                    <Text
-                                        style={[type.small, styles.tileLabel, { color: ds.text }]}
-                                        numberOfLines={1}
-                                        adjustsFontSizeToFit
+                        <SectionHeader title={section.title} grouped style={i === 0 && styles.firstHeader} />
+                        <Group padded>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                style={styles.bleed}
+                                contentContainerStyle={styles.shelf}
+                                decelerationRate="fast"
+                            >
+                                {section.items.map((item) => (
+                                    <Pressable
+                                        key={item.id}
+                                        style={({ pressed }) => [
+                                            styles.tile,
+                                            { backgroundColor: ds.inset, width: ITEM_WIDTH, opacity: pressed ? 0.7 : 1 }
+                                        ]}
+                                        onPress={item.onPress}
                                     >
-                                        {item.label}
-                                    </Text>
-                                </Pressable>
-                            ))}
-                        </ScrollView>
+                                        <Ionicons name={item.icon} size={20} color={ds.text2} />
+                                        <Text
+                                            style={[type.small, styles.tileLabel, { color: ds.text }]}
+                                            numberOfLines={1}
+                                            adjustsFontSizeToFit
+                                        >
+                                            {item.label}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </ScrollView>
+                        </Group>
                     </View>
                 ))}
             </ScrollView>
@@ -204,17 +207,18 @@ const RecordMenuModal: React.FC<RecordMenuModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-    sectionHeader: {
-        marginTop: space[5],
-        marginBottom: space[2],
-    },
     firstHeader: {
         marginTop: 0,
     },
+    // The shelf scrolls to the group's edges; inner padding keeps the first tile aligned.
+    bleed: {
+        marginHorizontal: -layout.groupPadding,
+    },
     shelf: {
         gap: space[2],
+        paddingHorizontal: layout.groupPadding,
     },
-    // Tile recipe (inset, radius md); padding tightened so five fit a phone width.
+    // Tile recipe inside a group (inset, radius md); padding tightened so five fit a phone width.
     tile: {
         aspectRatio: 1,
         padding: space[2],

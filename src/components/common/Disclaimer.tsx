@@ -10,10 +10,12 @@ interface DisclaimerProps {
     children: React.ReactNode;
     // 'warning' for disclaimers about real risk (e.g. data loss), 'info' for caveats on numbers.
     severity?: 'info' | 'warning';
+    // Inside a Group: `inset` fill instead of the on-canvas `group` fill.
+    inGroup?: boolean;
     style?: StyleProp<ViewStyle>;
 }
 
-export const Disclaimer: React.FC<DisclaimerProps> = ({ children, severity = 'info', style }) => {
+export const Disclaimer: React.FC<DisclaimerProps> = ({ children, severity = 'info', inGroup, style }) => {
     const { ds } = useTheme();
     const severityColor = toSeverityColor(ds, severity);
     const isWarning = severity === 'warning';
@@ -22,7 +24,7 @@ export const Disclaimer: React.FC<DisclaimerProps> = ({ children, severity = 'in
         <View
             style={[
                 styles.container,
-                { backgroundColor: ds.inset, borderColor: isWarning ? ds.warning : 'transparent' },
+                { backgroundColor: inGroup ? ds.inset : ds.group, borderColor: isWarning ? ds.warning : 'transparent' },
                 style,
             ]}
         >

@@ -6,7 +6,7 @@ import * as Sharing from 'expo-sharing';
 
 import BackupRestoreModal from '@components/data/BackupRestoreModal';
 import CsvImportFlow from '@components/data/CsvImportFlow';
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { useSecurity } from '@context/SecurityContext';
@@ -202,23 +202,29 @@ const DataManagementCard: React.FC<DataManagementCardProps> = ({ navigation }) =
 
     return (
         <>
-            <SectionHeader title="Backup" />
-            <Row icon="cloud-upload-outline" title="Backup data" subtitle="Create an encrypted backup file" chevron onPress={() => setModalMode('backup')} />
-            <Row icon="cloud-download-outline" title="Restore data" subtitle="Load from a backup file" chevron onPress={handleSelectRestoreFile} last />
+            <SectionHeader grouped title="Backup" />
+            <Group>
+                <Row icon="cloud-upload-outline" title="Backup data" subtitle="Create an encrypted backup file" chevron onPress={() => setModalMode('backup')} />
+                <Row icon="cloud-download-outline" title="Restore data" subtitle="Load from a backup file" chevron onPress={handleSelectRestoreFile} last />
+            </Group>
 
-            <SectionHeader title="Import and export" />
-            <Row icon="download-outline" title="Import transactions" subtitle="Load from a CSV or TSV file" chevron onPress={() => setShowImportFlow(true)} />
-            <Row
-                icon="grid-outline"
-                title="Export to Excel"
-                subtitle="Transactions, investments and debts as .xlsx"
-                onPress={isExporting ? undefined : handleExport}
-                trailing={isExporting ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
-            />
-            <Row icon="sync-outline" title="Sync from device" subtitle="Merge data with a nearby device over WiFi" chevron onPress={() => navigation.navigate('LiveSync')} last />
+            <SectionHeader grouped title="Import and export" />
+            <Group>
+                <Row icon="download-outline" title="Import transactions" subtitle="Load from a CSV or TSV file" chevron onPress={() => setShowImportFlow(true)} />
+                <Row
+                    icon="grid-outline"
+                    title="Export to Excel"
+                    subtitle="Transactions, investments and debts as .xlsx"
+                    onPress={isExporting ? undefined : handleExport}
+                    trailing={isExporting ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
+                />
+                <Row icon="sync-outline" title="Sync from device" subtitle="Merge data with a nearby device over WiFi" chevron onPress={() => navigation.navigate('LiveSync')} last />
+            </Group>
 
-            <SectionHeader title="Reset" />
-            <Row icon="trash-outline" title="Clear all data" subtitle="Delete everything and restart" onPress={handleClearData} last />
+            <SectionHeader grouped title="Reset" />
+            <Group>
+                <Row icon="trash-outline" title="Clear all data" subtitle="Delete everything and restart" onPress={handleClearData} last />
+            </Group>
 
             <CsvImportFlow
                 visible={showImportFlow}

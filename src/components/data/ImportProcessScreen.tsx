@@ -7,8 +7,8 @@ import { useTheme } from '@context/ThemeContext';
 import { ImportSummary } from '@services/integrations';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { SEVERITY_ICON } from '@utils/severity';
-import { Row } from '@components/ds';
-import { type, space } from '@styles/theme';
+import { Group, Row } from '@components/ds';
+import { type, space, layout } from '@styles/theme';
 
 interface ImportProcessScreenProps {
     isProcessing: boolean;
@@ -32,7 +32,7 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
     // Loading state
     if (isProcessing) {
         return (
-            <View style={[styles.container, { backgroundColor: ds.bg }]}>
+            <View style={[styles.container, { backgroundColor: ds.canvas }]}>
                 <View style={styles.centerContent}>
                     <ActivityIndicator size="large" color={ds.accent} />
                     <Text style={[type.body, styles.loadingText, { color: ds.text }]}>
@@ -49,7 +49,7 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
     // Saving state
     if (isSaving) {
         return (
-            <View style={[styles.container, { backgroundColor: ds.bg }]}>
+            <View style={[styles.container, { backgroundColor: ds.canvas }]}>
                 <View style={styles.centerContent}>
                     <ActivityIndicator size="large" color={ds.accent} />
                     <Text style={[type.body, styles.loadingText, { color: ds.text }]}>
@@ -68,7 +68,7 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
         const isPositive = summary.netBalance.isGreaterThanOrEqualTo(0);
 
         return (
-            <View style={[styles.container, { backgroundColor: ds.bg }]}>
+            <View style={[styles.container, { backgroundColor: ds.canvas }]}>
                 <View style={styles.summaryContent}>
                     <Ionicons name={SEVERITY_ICON.success} size={48} color={ds.success} style={styles.icon} />
 
@@ -80,7 +80,7 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
                         All data validated successfully
                     </Text>
 
-                    <View style={styles.stats}>
+                    <Group style={styles.stats}>
                         <Row title="Total Transactions" value={summary.totalTransactions.toString()} />
                         <Row title="Total Income" value={formatCurrencyAmount(summary.totalIncome, currency)} valueTone="good" />
                         <Row title="Total Expense" value={formatCurrencyAmount(summary.totalExpense, currency)} valueTone="bad" />
@@ -90,7 +90,7 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
                             valueTone={isPositive ? 'good' : 'bad'}
                             last
                         />
-                    </View>
+                    </Group>
 
                     <Text style={[type.small, styles.confirmText, { color: ds.text2 }]}>
                         Do you want to import these transactions?
@@ -119,7 +119,7 @@ const ImportProcessScreen: React.FC<ImportProcessScreenProps> = ({
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: space[5],
+        padding: layout.groupInset,
     },
     centerContent: {
         flex: 1,

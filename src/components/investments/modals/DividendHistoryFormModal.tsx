@@ -5,6 +5,7 @@ import { Picker } from '@react-native-picker/picker';
 import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
+import { Group } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { type, space, radius } from '@styles/theme';
@@ -126,95 +127,97 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
                 </TouchableOpacity>
             }
         >
-            <View style={styles.inputGroup}>
-                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Ex-date</Text>
-                <TouchableOpacity
-                    style={[styles.input, { backgroundColor: ds.inset }]}
-                    onPress={() => setShowExDatePicker(true)}
-                >
-                    <Text style={[type.bodyNum, { color: ds.text }]}>{exDate.toLocaleDateString()}</Text>
-                </TouchableOpacity>
-                {showExDatePicker && (
-                    <DateTimePicker
-                        value={exDate}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={onExDateChange}
-                    />
-                )}
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Payment date</Text>
-                <TouchableOpacity
-                    style={[styles.input, { backgroundColor: ds.inset }]}
-                    onPress={() => setShowPaymentDatePicker(true)}
-                >
-                    <Text style={[type.bodyNum, { color: paymentDate ? ds.text : ds.text3 }]}>{paymentDate ? paymentDate.toLocaleDateString() : 'Select date'}</Text>
-                </TouchableOpacity>
-                {showPaymentDatePicker && (
-                    <DateTimePicker
-                        value={paymentDate || new Date()}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={onPaymentDateChange}
-                    />
-                )}
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Amount</Text>
-                <TextInput
-                    style={[type.bodyNum, styles.input, { backgroundColor: ds.inset, color: ds.text }]}
-                    value={amount}
-                    onChangeText={setAmount}
-                    placeholder="0.00"
-                    placeholderTextColor={ds.text3}
-                    keyboardType="numeric"
-                />
-            </View>
-
-            <View style={styles.pickerRow}>
-                <View style={[styles.inputGroup, styles.pickerGroup]}>
-                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Type</Text>
-                    <View style={[styles.pickerContainer, { backgroundColor: ds.inset }]}>
-                        <Picker
-                            selectedValue={divType}
-                            onValueChange={(itemValue) => setDivType(itemValue)}
-                            style={{ color: ds.text }}
-                            dropdownIconColor={ds.text2}
-                        >
-                            <Picker.Item label="Cash" value="CASH" />
-                            <Picker.Item label="Stock" value="STOCK" />
-                            <Picker.Item label="Special" value="SPECIAL" />
-                            <Picker.Item label="Property" value="PROPERTY" />
-                        </Picker>
-                    </View>
+            <Group padded>
+                <View style={styles.inputGroup}>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Ex-date</Text>
+                    <TouchableOpacity
+                        style={[styles.input, { backgroundColor: ds.inset }]}
+                        onPress={() => setShowExDatePicker(true)}
+                    >
+                        <Text style={[type.bodyNum, { color: ds.text }]}>{exDate.toLocaleDateString()}</Text>
+                    </TouchableOpacity>
+                    {showExDatePicker && (
+                        <DateTimePicker
+                            value={exDate}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={onExDateChange}
+                        />
+                    )}
                 </View>
 
-                <View style={[styles.inputGroup, styles.pickerGroup]}>
-                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Status</Text>
-                    <View style={[styles.pickerContainer, { backgroundColor: ds.inset }]}>
-                        <Picker
-                            selectedValue={status}
-                            onValueChange={(itemValue) => setStatus(itemValue)}
-                            style={{ color: ds.text }}
-                            dropdownIconColor={ds.text2}
-                        >
-                            <Picker.Item label="Paid" value="PAID" />
-                            <Picker.Item label="Declared" value="DECLARED" />
-                            <Picker.Item label="Projected" value="PROJECTED" />
-                        </Picker>
+                <View style={styles.inputGroup}>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Payment date</Text>
+                    <TouchableOpacity
+                        style={[styles.input, { backgroundColor: ds.inset }]}
+                        onPress={() => setShowPaymentDatePicker(true)}
+                    >
+                        <Text style={[type.bodyNum, { color: paymentDate ? ds.text : ds.text3 }]}>{paymentDate ? paymentDate.toLocaleDateString() : 'Select date'}</Text>
+                    </TouchableOpacity>
+                    {showPaymentDatePicker && (
+                        <DateTimePicker
+                            value={paymentDate || new Date()}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={onPaymentDateChange}
+                        />
+                    )}
+                </View>
+
+                <View style={styles.inputGroup}>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Amount</Text>
+                    <TextInput
+                        style={[type.bodyNum, styles.input, { backgroundColor: ds.inset, color: ds.text }]}
+                        value={amount}
+                        onChangeText={setAmount}
+                        placeholder="0.00"
+                        placeholderTextColor={ds.text3}
+                        keyboardType="numeric"
+                    />
+                </View>
+
+                <View style={styles.pickerRow}>
+                    <View style={styles.pickerGroup}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Type</Text>
+                        <View style={[styles.pickerContainer, { backgroundColor: ds.inset }]}>
+                            <Picker
+                                selectedValue={divType}
+                                onValueChange={(itemValue) => setDivType(itemValue)}
+                                style={{ color: ds.text }}
+                                dropdownIconColor={ds.text2}
+                            >
+                                <Picker.Item label="Cash" value="CASH" />
+                                <Picker.Item label="Stock" value="STOCK" />
+                                <Picker.Item label="Special" value="SPECIAL" />
+                                <Picker.Item label="Property" value="PROPERTY" />
+                            </Picker>
+                        </View>
+                    </View>
+
+                    <View style={styles.pickerGroup}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Status</Text>
+                        <View style={[styles.pickerContainer, { backgroundColor: ds.inset }]}>
+                            <Picker
+                                selectedValue={status}
+                                onValueChange={(itemValue) => setStatus(itemValue)}
+                                style={{ color: ds.text }}
+                                dropdownIconColor={ds.text2}
+                            >
+                                <Picker.Item label="Paid" value="PAID" />
+                                <Picker.Item label="Declared" value="DECLARED" />
+                                <Picker.Item label="Projected" value="PROJECTED" />
+                            </Picker>
+                        </View>
                     </View>
                 </View>
-            </View>
+            </Group>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
     inputGroup: {
-        marginBottom: space[4],
+        marginBottom: space[3],
     },
     label: {
         marginBottom: space[2],
@@ -231,7 +234,7 @@ const styles = StyleSheet.create({
     },
     pickerRow: {
         flexDirection: 'row',
-        gap: space[4],
+        gap: space[3],
     },
     pickerGroup: {
         flex: 1,

@@ -1,5 +1,6 @@
 export { default as ChangeLine } from './ChangeLine';
 export { default as DropdownMenu } from './DropdownMenu';
+export { default as Group } from './Group';
 export { default as Hero } from './Hero';
 export { default as ProgressBar } from './ProgressBar';
 export { default as Row } from './Row';
@@ -11,6 +12,7 @@ export { default as UnderlineTabs } from './UnderlineTabs';
 export * from './tone';
 export type { ChangeLineProps } from './ChangeLine';
 export type { DropdownAnchor, DropdownMenuProps, DropdownOption } from './DropdownMenu';
+export type { GroupProps } from './Group';
 export type { HeroProps, HeroStat } from './Hero';
 export type { ProgressBarProps } from './ProgressBar';
 export type { RowProps } from './Row';

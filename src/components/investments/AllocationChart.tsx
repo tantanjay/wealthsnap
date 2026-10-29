@@ -270,7 +270,7 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                                                 width: item.width,
                                                 height: item.height,
                                                 backgroundColor: item.color,
-                                                borderColor: ds.bg,
+                                                borderColor: ds.group,
                                             }
                                         ]}
                                     >

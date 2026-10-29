@@ -27,7 +27,7 @@ const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ text, color }) => {
             {parseInlineMarkdown(line).map((token, i) => {
                 if (token.code) {
                     return (
-                        <Text key={i} style={{ fontFamily: MONOSPACE, backgroundColor: ds.raised, fontSize: type.small.fontSize }}>
+                        <Text key={i} style={{ fontFamily: MONOSPACE, backgroundColor: ds.inset, fontSize: type.small.fontSize }}>
                             {token.text}
                         </Text>
                     );

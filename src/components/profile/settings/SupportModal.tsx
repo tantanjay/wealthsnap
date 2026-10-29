@@ -3,9 +3,9 @@ import { Text, Linking, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row } from '@components/ds';
+import { Group, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
-import { type, space } from '@styles/theme';
+import { type, space, layout } from '@styles/theme';
 import { CONFIG } from '@constants/config';
 
 interface SupportModalProps {
@@ -38,32 +38,35 @@ const SupportModal: React.FC<SupportModalProps> = ({ visible, onClose }) => {
                 The logic, design, and decisions still come from one person. Supporting the project helps keep that human layer focused, motivated, and able to keep improving the app long-term.
             </Text>
 
-            <Row
-                icon="cafe-outline"
-                title="Ko-fi"
-                subtitle="Buy me a coffee"
-                trailing={openIcon}
-                onPress={() => handlePress('https://ko-fi.com/christianjay66500')}
-                last={!CONFIG.SHOW_PAYPAL_SUPPORT}
-            />
-
-            {CONFIG.SHOW_PAYPAL_SUPPORT && (
+            <Group>
                 <Row
-                    icon="logo-paypal"
-                    title="PayPal"
-                    subtitle="One-time donation"
+                    icon="cafe-outline"
+                    title="Ko-fi"
+                    subtitle="Buy me a coffee"
                     trailing={openIcon}
-                    onPress={() => handlePress('https://paypal.me/hansoctantan')}
-                    last
+                    onPress={() => handlePress('https://ko-fi.com/christianjay66500')}
+                    last={!CONFIG.SHOW_PAYPAL_SUPPORT}
                 />
-            )}
+
+                {CONFIG.SHOW_PAYPAL_SUPPORT && (
+                    <Row
+                        icon="logo-paypal"
+                        title="PayPal"
+                        subtitle="One-time donation"
+                        trailing={openIcon}
+                        onPress={() => handlePress('https://paypal.me/hansoctantan')}
+                        last
+                    />
+                )}
+            </Group>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
     intro: {
-        marginBottom: space[2],
+        marginBottom: space[3],
+        paddingHorizontal: layout.groupPadding,
     },
 });
 

@@ -1,6 +1,7 @@
 import React, { FC } from 'react';
 import { Text, StyleSheet, Pressable } from 'react-native';
 import BottomModal from '@components/common/BottomModal';
+import { Group } from '@components/ds';
 import { ScrollView } from 'react-native-gesture-handler';
 
 import { useTheme } from '@context/ThemeContext';
@@ -37,11 +38,13 @@ export const ReviewAppModal: FC<ReviewAppModalProps> = ({ isVisible, onRate, onL
             }
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={[type.body, { color: ds.text }]}>
-                    If you enjoy using WealthSnap, would you mind taking a moment to rate it?
-                    It won&apos;t take more than a minute. Thanks for your support!
-                </Text>
-                <Text style={[type.small, styles.thanks, { color: ds.text2 }]}>Thank you for using WealthSnap!</Text>
+                <Group padded>
+                    <Text style={[type.body, { color: ds.text }]}>
+                        If you enjoy using WealthSnap, would you mind taking a moment to rate it?
+                        It won&apos;t take more than a minute. Thanks for your support!
+                    </Text>
+                    <Text style={[type.small, styles.thanks, { color: ds.text2 }]}>Thank you for using WealthSnap!</Text>
+                </Group>
             </ScrollView>
         </BottomModal>
     );

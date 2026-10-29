@@ -9,8 +9,8 @@ import { useAlert } from '@context/AlertContext';
 import BottomModal from '@components/common/BottomModal';
 import { Disclaimer } from '@components/common/Disclaimer';
 import MarkdownMessage from '@components/common/MarkdownMessage';
-import { Row, SegmentedControl } from '@components/ds';
-import { type, space, radius } from '@styles/theme';
+import { Group, Row, SegmentedControl } from '@components/ds';
+import { type, space, radius, layout } from '@styles/theme';
 import { generateUUID } from '@utils/uuid';
 import {
     fetchChatContextInputs,
@@ -322,17 +322,17 @@ const ChatScreen = ({ navigation }: any) => {
     // --- Phase 0: sensitive-category exclusion ---
     if (!categoriesConfirmed) {
         return (
-            <View style={{ flex: 1, backgroundColor: ds.bg }}>
+            <View style={{ flex: 1, backgroundColor: ds.canvas }}>
                 {renderHeader('Chat')}
                 <View style={styles.page}>
-                    <Text style={[type.body, { color: ds.text, marginBottom: space[1] }]}>
+                    <Text style={[type.body, styles.intro, { color: ds.text, marginBottom: space[1] }]}>
                         Anything you&apos;d rather keep out of this?
                     </Text>
-                    <Text style={[type.small, { color: ds.text2, marginBottom: space[3] }]}>
+                    <Text style={[type.small, styles.intro, { color: ds.text2, marginBottom: space[3] }]}>
                         Tap a category to exclude it from the data sent to the AI (e.g. Credit Payment). Everything else is included by default.
                     </Text>
 
-                    <View style={[styles.note, { backgroundColor: ds.inset }]}>
+                    <View style={[styles.note, { backgroundColor: ds.group }]}>
                         <Ionicons name="information-circle-outline" size={16} color={ds.text2} style={{ marginTop: 1 }} />
                         <Text style={[type.small, { color: ds.text2, flex: 1 }]}>
                             Excluding a category, or keeping your debt names private below, only hides the label - the amounts still count in every total sent to the AI.
@@ -345,38 +345,40 @@ const ChatScreen = ({ navigation }: any) => {
                         </View>
                     ) : (
                         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: space[3] }} showsVerticalScrollIndicator={false}>
-                            {availableCategories.map((category, index) => {
-                                const isExcluded = excludedCategories.has(category);
-                                const last = index === availableCategories.length - 1;
-                                return (
-                                    <Pressable
-                                        key={category}
-                                        onPress={() => toggleCategoryExclusion(category)}
-                                        style={[styles.row, { borderBottomColor: ds.hairline, borderBottomWidth: last ? 0 : 1 }]}
-                                    >
-                                        <Text style={[
-                                            type.body,
-                                            { flex: 1, color: isExcluded ? ds.text2 : ds.text, textDecorationLine: isExcluded ? 'line-through' : 'none' }
-                                        ]}>
-                                            {category}
-                                        </Text>
-                                        <Ionicons
-                                            name={isExcluded ? 'eye-off-outline' : 'eye-outline'}
-                                            size={20}
-                                            color={isExcluded ? ds.text2 : ds.accent}
-                                        />
-                                    </Pressable>
-                                );
-                            })}
+                            <Group>
+                                {availableCategories.map((category, index) => {
+                                    const isExcluded = excludedCategories.has(category);
+                                    const last = index === availableCategories.length - 1;
+                                    return (
+                                        <Pressable
+                                            key={category}
+                                            onPress={() => toggleCategoryExclusion(category)}
+                                            style={[styles.row, { borderBottomColor: ds.hairline, borderBottomWidth: last ? 0 : 1 }]}
+                                        >
+                                            <Text style={[
+                                                type.body,
+                                                { flex: 1, color: isExcluded ? ds.text2 : ds.text, textDecorationLine: isExcluded ? 'line-through' : 'none' }
+                                            ]}>
+                                                {category}
+                                            </Text>
+                                            <Ionicons
+                                                name={isExcluded ? 'eye-off-outline' : 'eye-outline'}
+                                                size={20}
+                                                color={isExcluded ? ds.text2 : ds.accent}
+                                            />
+                                        </Pressable>
+                                    );
+                                })}
+                            </Group>
                         </ScrollView>
                     )}
 
                     {hasDebts && (
                         <View style={{ marginTop: space[4] }}>
-                            <Text style={[type.smallStrong, { color: ds.text, marginBottom: space[1] }]}>
+                            <Text style={[type.smallStrong, styles.intro, { color: ds.text, marginBottom: space[1] }]}>
                                 Include your debt names?
                             </Text>
-                            <Text style={[type.small, { color: ds.text2, marginBottom: space[3] }]}>
+                            <Text style={[type.small, styles.intro, { color: ds.text2, marginBottom: space[3] }]}>
                                 Debt amounts, types, and status are included either way - this only decides whether the AI sees the real names (e.g. &quot;Mom&apos;s Loan&quot;) or just &quot;Debt 1&quot;, &quot;Debt 2&quot;, etc.
                             </Text>
                             <SegmentedControl
@@ -405,13 +407,13 @@ const ChatScreen = ({ navigation }: any) => {
     // --- Phase A: range picker ---
     if (!selectedRange) {
         return (
-            <View style={{ flex: 1, backgroundColor: ds.bg }}>
+            <View style={{ flex: 1, backgroundColor: ds.canvas }}>
                 {renderHeader('Chat')}
                 <View style={styles.page}>
-                    <Text style={[type.body, { color: ds.text, marginBottom: space[1] }]}>
+                    <Text style={[type.body, styles.intro, { color: ds.text, marginBottom: space[1] }]}>
                         How much history do you want to use?
                     </Text>
-                    <Text style={[type.small, { color: ds.text2, marginBottom: space[2] }]}>
+                    <Text style={[type.small, styles.intro, { color: ds.text2, marginBottom: space[3] }]}>
                         This grounds the conversation in your actual data. More history means better context, but a larger prompt sent with every message.
                     </Text>
 
@@ -420,20 +422,20 @@ const ChatScreen = ({ navigation }: any) => {
                             <ActivityIndicator color={ds.accent} />
                         </View>
                     ) : (
-                        <View>
-                            {RANGE_OPTIONS.map((opt, index) => {
-                                const estimate = contextInputs ? assembleContextForRange(contextInputs, opt.value).estimatedTokens : 0;
-                                return (
-                                    <Row
-                                        key={opt.value}
-                                        title={opt.label}
-                                        trailing={<Text style={[type.smallNum, { color: ds.text2 }]}>~{formatTokens(estimate)} tokens</Text>}
-                                        last={index === RANGE_OPTIONS.length - 1}
-                                        onPress={() => handleSelectRange(opt.value, opt.label)}
-                                    />
-                                );
-                            })}
-                        </View>
+                        <Group>
+                                {RANGE_OPTIONS.map((opt, index) => {
+                                    const estimate = contextInputs ? assembleContextForRange(contextInputs, opt.value).estimatedTokens : 0;
+                                    return (
+                                        <Row
+                                            key={opt.value}
+                                            title={opt.label}
+                                            trailing={<Text style={[type.smallNum, { color: ds.text2 }]}>~{formatTokens(estimate)} tokens</Text>}
+                                            last={index === RANGE_OPTIONS.length - 1}
+                                            onPress={() => handleSelectRange(opt.value, opt.label)}
+                                        />
+                                    );
+                                })}
+                        </Group>
                     )}
                 </View>
             </View>
@@ -445,7 +447,7 @@ const ChatScreen = ({ navigation }: any) => {
     // --- Phase B: conversation ---
     return (
         <KeyboardAvoidingView
-            style={{ flex: 1, backgroundColor: ds.bg }}
+            style={{ flex: 1, backgroundColor: ds.canvas }}
             behavior="padding"
             keyboardVerticalOffset={Platform.OS === 'android' ? -insets.bottom : 0}
         >
@@ -478,7 +480,7 @@ const ChatScreen = ({ navigation }: any) => {
                                         key={idx}
                                         onPress={() => handleSend(prompt)}
                                         disabled={sending}
-                                        style={[styles.prompt, { backgroundColor: ds.inset }]}
+                                        style={[styles.prompt, { backgroundColor: ds.group }]}
                                     >
                                         <Ionicons name="sparkles-outline" size={16} color={ds.accent} />
                                         <Text style={[type.small, { color: ds.text, flex: 1 }]}>{prompt}</Text>
@@ -495,7 +497,7 @@ const ChatScreen = ({ navigation }: any) => {
                             styles.bubble,
                             m.role === 'user'
                                 ? { alignSelf: 'flex-end', backgroundColor: ds.accent }
-                                : { alignSelf: 'flex-start', backgroundColor: ds.inset }
+                                : { alignSelf: 'flex-start', backgroundColor: ds.group }
                         ]}
                     >
                         {m.role === 'user' ? (
@@ -513,8 +515,9 @@ const ChatScreen = ({ navigation }: any) => {
             </ScrollView>
 
             <View style={[styles.inputBar, { borderTopColor: ds.hairline, paddingBottom: Math.max(insets.bottom, space[3]) }]}>
+                {/* The field sits on the canvas, so it takes the group fill. */}
                 <TextInput
-                    style={[styles.field, type.body, { backgroundColor: ds.inset, color: ds.text }]}
+                    style={[styles.field, type.body, { backgroundColor: ds.group, color: ds.text }]}
                     placeholder="Ask a question..."
                     placeholderTextColor={ds.text3}
                     value={inputText}
@@ -526,7 +529,7 @@ const ChatScreen = ({ navigation }: any) => {
                     onPress={() => handleSend()}
                     disabled={sendDisabled}
                     accessibilityLabel="Send"
-                    style={[styles.sendButton, { backgroundColor: sendDisabled ? ds.inset : ds.accent }]}
+                    style={[styles.sendButton, { backgroundColor: sendDisabled ? ds.group : ds.accent }]}
                 >
                     {sending ? (
                         <ActivityIndicator color={ds.text3} size="small" />
@@ -549,7 +552,7 @@ const ChatScreen = ({ navigation }: any) => {
                     <TouchableOpacity
                         onPress={handleCopyContext}
                         hitSlop={space[2]}
-                        style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: space[1] }}
+                        style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: space[1], paddingHorizontal: layout.groupPadding }}
                     >
                         <Ionicons name="copy-outline" size={16} color={ds.accent} />
                         <Text style={[type.smallMedium, { color: ds.accent }]}>Copy context</Text>
@@ -557,11 +560,11 @@ const ChatScreen = ({ navigation }: any) => {
                     <Disclaimer severity="warning" style={{ marginTop: space[4] }}>
                         This is your raw financial data. If you copy it elsewhere, only paste it into an AI service whose privacy policy you trust - WealthSnap has no control over how a third party handles it once copied.
                     </Disclaimer>
-                    <View style={{ backgroundColor: ds.inset, borderRadius: radius.sm, padding: space[3], marginTop: space[4] }}>
+                    <Group padded style={{ marginTop: space[4] }}>
                         <Text selectable style={[type.smallNum, { color: ds.text }]}>
                             {selectedRange.ctx.contextText}
                         </Text>
-                    </View>
+                    </Group>
                 </ScrollView>
             </BottomModal>
         </KeyboardAvoidingView>
@@ -579,7 +582,11 @@ const styles = StyleSheet.create({
     },
     page: {
         flex: 1,
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
+    },
+    // Text on the canvas lines up with group content.
+    intro: {
+        paddingHorizontal: layout.groupPadding,
     },
     note: {
         flexDirection: 'row',
@@ -608,11 +615,11 @@ const styles = StyleSheet.create({
     metaLine: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: space[2],
     },
     thread: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingVertical: space[2],
     },
     prompt: {
@@ -632,7 +639,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-end',
         gap: space[2],
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingTop: space[2],
         borderTopWidth: 1,
     },

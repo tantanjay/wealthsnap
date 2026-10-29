@@ -4,7 +4,8 @@ import { Picker } from '@react-native-picker/picker';
 
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
-import { type, space, radius } from '@styles/theme';
+import { Group, SectionHeader } from '@components/ds';
+import { type, space, radius, layout } from '@styles/theme';
 import { Asset, AssetType } from '@types';
 import { createAsset, updateAsset } from '@services/domain/assetService';
 
@@ -104,67 +105,71 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSave, onCancel })
             </Text>
 
             <ScrollView style={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                <FieldRow
-                    label="Symbol / ID"
-                    style={isEditing ? { color: ds.text3 } : undefined}
-                    value={symbol}
-                    onChangeText={(text) => setSymbol(text.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())}
-                    placeholder="e.g. BDO, BTC"
-                    autoCapitalize="characters"
-                    editable={!isEditing}
-                    maxLength={7}
-                />
-                <FieldRow
-                    label="Name"
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="e.g. BDO Unibank, Bitcoin"
-                />
-                <View style={[styles.fieldRow, { borderBottomColor: ds.hairline, borderBottomWidth: 1 }]}>
-                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Type</Text>
-                    <View style={styles.picker}>
-                        <Picker
-                            selectedValue={assetType}
-                            onValueChange={(itemValue) => setAssetType(itemValue as AssetType)}
-                            style={{ color: ds.text }}
-                            dropdownIconColor={ds.text2}
-                        >
-                            {ASSET_TYPES.map((t) => (
-                                <Picker.Item key={t} label={t} value={t} />
-                            ))}
-                        </Picker>
+                <Group>
+                    <FieldRow
+                        label="Symbol / ID"
+                        style={isEditing ? { color: ds.text3 } : undefined}
+                        value={symbol}
+                        onChangeText={(text) => setSymbol(text.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())}
+                        placeholder="e.g. BDO, BTC"
+                        autoCapitalize="characters"
+                        editable={!isEditing}
+                        maxLength={7}
+                    />
+                    <FieldRow
+                        label="Name"
+                        value={name}
+                        onChangeText={setName}
+                        placeholder="e.g. BDO Unibank, Bitcoin"
+                    />
+                    <View style={[styles.fieldRow, { borderBottomColor: ds.hairline, borderBottomWidth: 1 }]}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Type</Text>
+                        <View style={styles.picker}>
+                            <Picker
+                                selectedValue={assetType}
+                                onValueChange={(itemValue) => setAssetType(itemValue as AssetType)}
+                                style={{ color: ds.text }}
+                                dropdownIconColor={ds.text2}
+                            >
+                                {ASSET_TYPES.map((t) => (
+                                    <Picker.Item key={t} label={t} value={t} />
+                                ))}
+                            </Picker>
+                        </View>
                     </View>
-                </View>
-                <FieldRow
-                    label="Sector (optional)"
-                    value={sector}
-                    onChangeText={setSector}
-                    placeholder="e.g. Technology, Finance"
-                />
-                <FieldRow
-                    label="Exchange (optional)"
-                    value={exchange}
-                    onChangeText={setExchange}
-                    placeholder="e.g. PSE, NYSE"
-                />
-                <FieldRow
-                    label="Currency"
-                    value={currency}
-                    onChangeText={setCurrency}
-                    placeholder="e.g. PHP, USD"
-                    autoCapitalize="characters"
-                    last
-                />
+                    <FieldRow
+                        label="Sector (optional)"
+                        value={sector}
+                        onChangeText={setSector}
+                        placeholder="e.g. Technology, Finance"
+                    />
+                    <FieldRow
+                        label="Exchange (optional)"
+                        value={exchange}
+                        onChangeText={setExchange}
+                        placeholder="e.g. PSE, NYSE"
+                    />
+                    <FieldRow
+                        label="Currency"
+                        value={currency}
+                        onChangeText={setCurrency}
+                        placeholder="e.g. PHP, USD"
+                        autoCapitalize="characters"
+                        last
+                    />
+                </Group>
 
-                <Text style={[type.small, styles.descriptionLabel, { color: ds.text2 }]}>Description</Text>
-                <TextInput
-                    style={[type.body, styles.description, { backgroundColor: ds.inset, color: ds.text }]}
-                    value={description}
-                    onChangeText={setDescription}
-                    placeholder="Additional notes..."
-                    placeholderTextColor={ds.text3}
-                    multiline
-                />
+                <SectionHeader grouped title="Description" />
+                <Group padded>
+                    <TextInput
+                        style={[type.body, styles.description, { backgroundColor: ds.inset, color: ds.text }]}
+                        value={description}
+                        onChangeText={setDescription}
+                        placeholder="Additional notes..."
+                        placeholderTextColor={ds.text3}
+                        multiline
+                    />
+                </Group>
 
                 <Pressable
                     onPress={handleSave}
@@ -187,7 +192,8 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     title: {
-        marginBottom: space[2],
+        marginBottom: space[4],
+        paddingHorizontal: layout.groupPadding,
     },
     content: {
         flexShrink: 1,
@@ -209,10 +215,6 @@ const styles = StyleSheet.create({
     picker: {
         flex: 1,
         marginHorizontal: -space[3],
-    },
-    descriptionLabel: {
-        marginTop: space[4],
-        marginBottom: space[2],
     },
     description: {
         height: 96,

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@context/ThemeContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { authenticateBiometrics, getBiometricType, getPinLockoutRemainingMs, hasBiometrics, verifyPin } from '@services/core/securityService';
 
 interface PinEntryScreenProps {
@@ -182,7 +182,7 @@ const PinEntryScreen: React.FC<PinEntryScreenProps> = ({ onSuccess }) => {
             style={[
                 styles.container,
                 {
-                    backgroundColor: ds.bg,
+                    backgroundColor: ds.canvas,
                     paddingTop: Math.max(insets.top, space[5]),
                     paddingBottom: Math.max(insets.bottom, space[5]),
                 },
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
     },
     header: {
         alignItems: 'center',

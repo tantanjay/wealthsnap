@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, ToastA
 import { useFocusEffect } from '@react-navigation/native';
 
 import { EmptyState } from '@components/common/EmptyState';
-import { Hero, Row, SectionHeader, Tone } from '@components/ds';
+import { Group, Hero, Row, SectionHeader, Tone } from '@components/ds';
 import { SmartAdvisor, Suggestion } from '@components/investments/SmartAdvisor';
 import { AllocationChart, AllocationTab } from '@components/investments/AllocationChart';
 import { DividendChart } from '@components/investments/DividendChart';
@@ -12,7 +12,7 @@ import FetchPriceListSheet from '@components/investments/FetchPriceListSheet';
 import { useTheme } from '@context/ThemeContext';
 import { useAIConsent } from '@hooks/useAIConsent';
 import { PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
-import { type, space } from '@styles/theme';
+import { type, space, layout } from '@styles/theme';
 import * as Storage from '@services/core/storageService';
 import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding, getActualDividendsGrouped, MonthlyDividend } from '@services/domain/investmentService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
@@ -180,29 +180,34 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
     const sections: Record<Storage.HoldingsSectionId, React.ReactNode> = {
         holdings: (
             <>
-                <SectionHeader title="Holdings" menu={{ options: SORTS, value: sort, onSelect: key => changeSort(key as SortOption) }} />
-                {sorted.map((h, i) => {
-                    const weight = formatPercent(weightOf(h.totalValue));
-                    const ret = h.gainLossPercent;
-                    return (
-                        <Row
-                            key={h.symbol}
-                            title={h.name || h.symbol}
-                            subtitle={`${h.name ? `${h.symbol} · ` : ''}${typeLabel(h.type)} · ${weight}`}
-                            value={f.show(f.money(h.totalValue), weight)}
-                            change={ret === null ? undefined : formatPercent(ret, { signed: true, decimals: 1 })}
-                            changeTone={ret === null || ret === 0 ? 'neutral' : ret > 0 ? 'good' : 'bad'}
-                            onPress={() => { setHistorySymbol(h.symbol); setIsHistoryVisible(true); }}
-                            last={i === sorted.length - 1}
-                        />
-                    );
-                })}
+                <SectionHeader grouped title="Holdings" menu={{ options: SORTS, value: sort, onSelect: key => changeSort(key as SortOption) }} />
+                <Group>
+                    {sorted.map((h, i) => {
+                        const weight = formatPercent(weightOf(h.totalValue));
+                        const ret = h.gainLossPercent;
+                        return (
+                            <Row
+                                key={h.symbol}
+                                domain="invest"
+                                title={h.name || h.symbol}
+                                subtitle={`${h.name ? `${h.symbol} · ` : ''}${typeLabel(h.type)} · ${weight}`}
+                                value={f.show(f.money(h.totalValue), weight)}
+                                change={ret === null ? undefined : formatPercent(ret, { signed: true, decimals: 1 })}
+                                changeTone={ret === null || ret === 0 ? 'neutral' : ret > 0 ? 'good' : 'bad'}
+                                onPress={() => { setHistorySymbol(h.symbol); setIsHistoryVisible(true); }}
+                                last={i === sorted.length - 1}
+                            />
+                        );
+                    })}
+                </Group>
             </>
         ),
         allocation: (
             <>
-                <SectionHeader title="Allocation" menu={{ options: ALLOCATION_TABS, value: allocationTab, onSelect: key => changeAllocationTab(key as AllocationTab) }} />
-                <AllocationChart holdingsData={holdings} tab={allocationTab} />
+                <SectionHeader grouped title="Allocation" menu={{ options: ALLOCATION_TABS, value: allocationTab, onSelect: key => changeAllocationTab(key as AllocationTab) }} />
+                <Group padded>
+                    <AllocationChart holdingsData={holdings} tab={allocationTab} />
+                </Group>
             </>
         ),
         dividends: (
@@ -246,11 +251,12 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
                                     value: f.show(f.money(stats.totalDividends, { compact: true }), formatPercent(stats.dividendsPercent, { decimals: 1 })),
                                 },
                             ]}
+                            panel
                             style={styles.hero}
                         />
 
                         {allocation.length > 0 && (
-                            <>
+                            <View style={styles.allocation}>
                                 <View style={styles.allocationBar}>
                                     {allocation.map((a, i) => (
                                         <View key={a.label} style={[styles.segment, { flex: a.percent, backgroundColor: ds.domainInvest, opacity: SEGMENT_OPACITY[i] }]} />
@@ -261,14 +267,17 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
                                         <Text key={a.label} style={[type.captionNum, { color: ds.text2 }]}>{a.label} {formatPercent(a.percent)}</Text>
                                     ))}
                                 </View>
-                            </>
+                            </View>
                         )}
+
 
                         {sectionOrder.map(id => <React.Fragment key={id}>{sections[id]}</React.Fragment>)}
 
-                        <SectionHeader title="Tools" />
-                        <Row icon="add-circle-outline" title="Add an investment" subtitle="Buy, sell or dividend, from Record" chevron onPress={onOpenRecord} />
-                        <Row icon="cloud-download-outline" title="Fetch price list" subtitle="AI estimates for your stocks" chevron last onPress={onOpenSettings} />
+                        <SectionHeader grouped title="Tools" />
+                        <Group>
+                            <Row icon="add-circle-outline" title="Add an investment" subtitle="Buy, sell or dividend, from Record" chevron onPress={onOpenRecord} />
+                            <Row icon="cloud-download-outline" title="Fetch price list" subtitle="AI estimates for your stocks" chevron last onPress={onOpenSettings} />
+                        </Group>
                     </>
                 )}
             </ScrollView>
@@ -288,17 +297,21 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
 
 const styles = StyleSheet.create({
     content: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: space[7],
     },
     hero: {
-        paddingTop: space[5],
+        marginTop: space[3],
+    },
+    // The type bar sits on the canvas under the hero panel, lined up with group content.
+    allocation: {
+        paddingHorizontal: layout.groupPadding,
     },
     allocationBar: {
         flexDirection: 'row',
         height: 6,
         gap: 2,
-        marginTop: space[5],
+        marginTop: space[4],
     },
     segment: {
         height: '100%',

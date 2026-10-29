@@ -1,9 +1,9 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row } from '@components/ds';
+import { Group, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { type, space } from '@styles/theme';
@@ -56,35 +56,42 @@ const DebtOptionsModal: React.FC<DebtOptionsModalProps> = ({
             title="Debt options"
             maxHeight="auto"
         >
-            <Row
-                icon={isPayable ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'}
-                title={debt.name}
-                subtitle={`${debt.type.replace(/_/g, ' ')} · ${debt.interestRate.toString()}% ${debt.interestType}`}
-                value={money(debt.initialAmount, displayCurrency)}
-                change={resolution ? DEBT_RESOLUTION_LABELS[resolution] : undefined}
-                changeTone={resolution === 'FORGIVEN' ? 'neutral' : 'good'}
-            />
-            {linkedTransaction && (
+            <Group>
                 <Row
-                    icon="link-outline"
-                    title="Linked transaction"
-                    value={money(linkedTransaction.amount, displayCurrency)}
+                    domain="loans"
+                    icon={isPayable ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'}
+                    title={debt.name}
+                    subtitle={`${debt.type.replace(/_/g, ' ')} · ${debt.interestRate.toString()}% ${debt.interestType}`}
+                    value={money(debt.initialAmount, displayCurrency)}
+                    change={resolution ? DEBT_RESOLUTION_LABELS[resolution] : undefined}
+                    changeTone={resolution === 'FORGIVEN' ? 'neutral' : 'good'}
                 />
-            )}
-            <Row
-                icon="create-outline"
-                title="Edit debt"
-                onPress={() => {
-                    onEdit(debt);
-                    onClose();
-                }}
-            />
-            <Row
-                leading={<Ionicons name="trash-outline" size={20} color={ds.danger} />}
-                title="Delete debt"
-                onPress={handleDeletePress}
-                last
-            />
+                {linkedTransaction && (
+                    <Row
+                        icon="link-outline"
+                        title="Linked transaction"
+                        value={money(linkedTransaction.amount, displayCurrency)}
+                    />
+                )}
+                <Row
+                    icon="create-outline"
+                    title="Edit debt"
+                    onPress={() => {
+                        onEdit(debt);
+                        onClose();
+                    }}
+                />
+                <Row
+                    leading={
+                        <View style={[styles.tile, { backgroundColor: ds.tileNeutral }]}>
+                            <Ionicons name="trash-outline" size={18} color={ds.danger} />
+                        </View>
+                    }
+                    title="Delete debt"
+                    onPress={handleDeletePress}
+                    last
+                />
+            </Group>
 
             <Text style={[type.caption, styles.id, { color: ds.text3 }]}>ID: {debt.id}</Text>
         </BottomModal>
@@ -92,6 +99,14 @@ const DebtOptionsModal: React.FC<DebtOptionsModalProps> = ({
 };
 
 const styles = StyleSheet.create({
+    // Matches Row's neutral icon tile; only the icon carries the danger tone.
+    tile: {
+        width: 32,
+        height: 32,
+        borderRadius: 9,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     id: {
         textAlign: 'center',
         marginTop: space[3],

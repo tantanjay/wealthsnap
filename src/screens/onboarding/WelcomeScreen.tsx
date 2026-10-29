@@ -5,7 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
-import { type, space, radius } from '@styles/theme';
+import { Group, Row } from '@components/ds';
+import { type, space, radius, layout } from '@styles/theme';
 
 const FEATURES: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
     { icon: 'shield-checkmark-outline', text: 'Private by design' },
@@ -24,7 +25,7 @@ const WelcomeScreen = ({ navigation }: any) => {
     const heroSize = 96 * scale;
 
     return (
-        <View style={[styles.container, { backgroundColor: ds.bg }]}>
+        <View style={[styles.container, { backgroundColor: ds.canvas }]}>
             <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
             <View style={[styles.content, { paddingTop: insets.top + space[6] * scale }]}>
                 <View
@@ -49,24 +50,17 @@ const WelcomeScreen = ({ navigation }: any) => {
                     Master your finances with smart insights and secure tracking.
                 </Text>
 
-                <View style={styles.features}>
+                <Group style={styles.features}>
                     {FEATURES.map((f, i) => (
-                        <View
+                        <Row
                             key={f.text}
-                            style={[
-                                styles.featureRow,
-                                {
-                                    borderBottomColor: ds.hairline,
-                                    borderBottomWidth: i === FEATURES.length - 1 ? 0 : 1,
-                                    paddingVertical: space[3] * scale,
-                                },
-                            ]}
-                        >
-                            <Ionicons name={f.icon} size={20} color={ds.text2} />
-                            <Text style={[type.body, styles.featureText, { color: ds.text }]}>{f.text}</Text>
-                        </View>
+                            icon={f.icon}
+                            title={f.text}
+                            last={i === FEATURES.length - 1}
+                            style={{ paddingVertical: space[3] * scale, minHeight: 56 * scale }}
+                        />
                     ))}
-                </View>
+                </Group>
             </View>
 
             <View style={[styles.footer, { paddingBottom: insets.bottom + space[4] * scale }]}>
@@ -91,7 +85,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
     },
     hero: {
         borderRadius: radius.full,
@@ -104,16 +98,8 @@ const styles = StyleSheet.create({
     features: {
         width: '100%',
     },
-    featureRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: space[3],
-    },
-    featureText: {
-        flex: 1,
-    },
     footer: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingTop: space[4],
     },
     button: {

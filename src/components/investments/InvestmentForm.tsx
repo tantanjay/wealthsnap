@@ -7,7 +7,7 @@ import { Picker } from '@react-native-picker/picker';
 
 import BottomModal from '@components/common/BottomModal';
 import { CalculatorModal } from '@components/record/CalculatorModal';
-import { Row, SectionHeader, SegmentedControl, SegmentOption } from '@components/ds';
+import { Group, Row, SectionHeader, SegmentedControl, SegmentOption } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Investment, InvestmentType, InvestmentAction, Transaction, TransactionType, Asset } from '@types';
@@ -19,7 +19,7 @@ import { addPriceHistory } from '@services/domain/priceHistoryService';
 import { saveTransaction, getAllTransactions } from '@services/domain/transactionService';
 import { calculatePortfolioMetrics } from '@utils/investmentMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 
 interface InvestmentFormProps {
     investmentType: InvestmentType;
@@ -425,312 +425,322 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
     const inputStyle = [type.bodyNum, styles.input, { color: ds.text }];
 
     return (
-        <View style={[styles.page, { backgroundColor: ds.bg }]}>
+        <View style={[styles.page, { backgroundColor: ds.canvas }]}>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
                 <Text style={[type.title, styles.title, { color: ds.text }]}>{title}</Text>
 
                 <SegmentedControl options={actions} value={action} onChange={setAction} />
 
                 {/* Asset */}
-                <Text style={[type.small, styles.label, styles.groupLabel, { color: ds.text2 }]}>
-                    {investmentType === 'FUNDS' ? 'Fund' : investmentType === 'CRYPTO' ? 'Coin' : 'Symbol'}
-                </Text>
-                <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                    <Ionicons name="pricetag-outline" size={18} color={ds.text2} />
-                    {loadingAssets ? (
-                        <ActivityIndicator color={ds.text2} style={styles.input} />
-                    ) : (
-                        <Picker
-                            selectedValue={symbol}
-                            onValueChange={(itemValue) => setSymbol(itemValue)}
-                            style={[styles.picker, { color: ds.text }]}
-                            dropdownIconColor={ds.text3}
-                        >
-                            <Picker.Item label="Select asset..." value="" enabled={false} />
-                            {assets.map((asset) => (
-                                <Picker.Item
-                                    key={asset.symbol}
-                                    label={`${asset.symbol} - ${asset.name || 'Unnamed'}`}
-                                    value={asset.symbol}
-                                />
-                            ))}
-                        </Picker>
-                    )}
-                </View>
-                {assets.length === 0 && !loadingAssets && (
-                    <Text style={[type.small, styles.hint, { color: ds.text2 }]}>
-                        No assets found. Add one in Profile settings.
+                <Group padded style={styles.firstGroup}>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>
+                        {investmentType === 'FUNDS' ? 'Fund' : investmentType === 'CRYPTO' ? 'Coin' : 'Symbol'}
                     </Text>
-                )}
+                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="pricetag-outline" size={18} color={ds.text2} />
+                        {loadingAssets ? (
+                            <ActivityIndicator color={ds.text2} style={styles.input} />
+                        ) : (
+                            <Picker
+                                selectedValue={symbol}
+                                onValueChange={(itemValue) => setSymbol(itemValue)}
+                                style={[styles.picker, { color: ds.text }]}
+                                dropdownIconColor={ds.text3}
+                            >
+                                <Picker.Item label="Select asset..." value="" enabled={false} />
+                                {assets.map((asset) => (
+                                    <Picker.Item
+                                        key={asset.symbol}
+                                        label={`${asset.symbol} - ${asset.name || 'Unnamed'}`}
+                                        value={asset.symbol}
+                                    />
+                                ))}
+                            </Picker>
+                        )}
+                    </View>
+                    {assets.length === 0 && !loadingAssets && (
+                        <Text style={[type.small, styles.hint, { color: ds.text2 }]}>
+                            No assets found. Add one in Profile settings.
+                        </Text>
+                    )}
+                </Group>
 
                 {/* Native currency */}
                 {showCurrencyCheckbox && (
                     <>
-                        <Row
-                            title={useNativeCurrency ? `Using native currency (${assetCurrency})` : `Use native currency (${assetCurrency})`}
-                            subtitle={useNativeCurrency
-                                ? 'Investment kept in native. Transferred value converted using the rate below.'
-                                : 'Save this investment in its original currency.'}
-                            trailing={
-                                <Switch
-                                    value={useNativeCurrency}
-                                    onValueChange={setUseNativeCurrency}
-                                    trackColor={{ true: ds.accent }}
-                                />
-                            }
-                            last
-                        />
-                        {useNativeCurrency && (
-                            <>
-                                <Text style={[type.small, styles.label, { color: ds.text2 }]}>
-                                    Exchange rate (1 {assetCurrency} in {currency})
-                                </Text>
-                                <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                                    <Ionicons name="swap-horizontal-outline" size={18} color={ds.text2} />
-                                    <TextInput
-                                        style={inputStyle}
-                                        value={exchangeRate}
-                                        onChangeText={setExchangeRate}
-                                        keyboardType="numeric"
-                                        placeholder="1.0"
-                                        placeholderTextColor={ds.text3}
+                        <SectionHeader title="Currency" grouped />
+                        <Group>
+                            <Row
+                                title={useNativeCurrency ? `Using native currency (${assetCurrency})` : `Use native currency (${assetCurrency})`}
+                                subtitle={useNativeCurrency
+                                    ? 'Investment kept in native. Transferred value converted using the rate below.'
+                                    : 'Save this investment in its original currency.'}
+                                trailing={
+                                    <Switch
+                                        value={useNativeCurrency}
+                                        onValueChange={setUseNativeCurrency}
+                                        trackColor={{ true: ds.accent }}
                                     />
-                                    {isFetchingRate && <ActivityIndicator size="small" color={ds.text2} />}
-                                    <Text style={[type.body, { color: ds.text2 }]}>{currency}</Text>
+                                }
+                                last={!useNativeCurrency}
+                            />
+                            {useNativeCurrency && (
+                                <View style={styles.rowFields}>
+                                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>
+                                        Exchange rate (1 {assetCurrency} in {currency})
+                                    </Text>
+                                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                                        <Ionicons name="swap-horizontal-outline" size={18} color={ds.text2} />
+                                        <TextInput
+                                            style={inputStyle}
+                                            value={exchangeRate}
+                                            onChangeText={setExchangeRate}
+                                            keyboardType="numeric"
+                                            placeholder="1.0"
+                                            placeholderTextColor={ds.text3}
+                                        />
+                                        {isFetchingRate && <ActivityIndicator size="small" color={ds.text2} />}
+                                        <Text style={[type.body, { color: ds.text2 }]}>{currency}</Text>
+                                    </View>
                                 </View>
-                            </>
-                        )}
+                            )}
+                        </Group>
                     </>
                 )}
 
-                {/* Date and time */}
-                <View style={styles.pair}>
-                    <View style={styles.pairItem}>
-                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Date</Text>
-                        <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
-                            <Ionicons name="calendar-outline" size={18} color={ds.text2} />
-                            <Text style={[type.bodyNum, { color: ds.text }]}>
-                                {investmentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.pairItem}>
-                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Time</Text>
-                        <TouchableOpacity onPress={() => setShowTimePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
-                            <Ionicons name="time-outline" size={18} color={ds.text2} />
-                            <Text style={[type.bodyNum, { color: ds.text }]}>
-                                {investmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                {showDatePicker && (
-                    <DateTimePicker
-                        value={investmentDate}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={(event: DateTimePickerEvent, date?: Date) => {
-                            setShowDatePicker(Platform.OS === 'ios');
-                            if (date) {
-                                const newDate = new Date(investmentDate);
-                                newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
-                                setInvestmentDate(newDate);
-                            }
-                        }}
-                    />
-                )}
-
-                {showTimePicker && (
-                    <DateTimePicker
-                        value={investmentDate}
-                        mode="time"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={(event: DateTimePickerEvent, date?: Date) => {
-                            setShowTimePicker(Platform.OS === 'ios');
-                            if (date) {
-                                const newDate = new Date(investmentDate);
-                                newDate.setHours(date.getHours(), date.getMinutes());
-                                setInvestmentDate(newDate);
-                            }
-                        }}
-                    />
-                )}
-
-                <SectionHeader title="Amounts" />
-
-                {/* Quantity and price */}
-                <View style={styles.pair}>
-                    <View style={styles.pairItem}>
-                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Quantity</Text>
-                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                            <Ionicons name="layers-outline" size={18} color={ds.text2} />
-                            <TextInput
-                                style={inputStyle}
-                                value={quantity}
-                                onChangeText={setQuantity}
-                                keyboardType="numeric"
-                                placeholder="0.00"
-                                placeholderTextColor={ds.text3}
-                            />
-                        </View>
-                    </View>
-                    <View style={styles.pairItem}>
-                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Price</Text>
-                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                            <Ionicons name="pricetags-outline" size={18} color={ds.text2} />
-                            <TextInput
-                                style={inputStyle}
-                                value={price}
-                                onChangeText={setPrice}
-                                keyboardType="numeric"
-                                placeholder="0.00"
-                                placeholderTextColor={ds.text3}
-                            />
-                            <TouchableOpacity onPress={() => setShowPriceCalculator(true)} hitSlop={space[2]}>
-                                <Ionicons name="calculator-outline" size={18} color={ds.text2} />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Fees and total (auto-calculated) */}
-                <View style={styles.pair}>
-                    <View style={styles.pairItem}>
-                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Fees</Text>
-                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                            <Ionicons name="receipt-outline" size={18} color={ds.text2} />
-                            <TextInput
-                                style={inputStyle}
-                                value={fees}
-                                onChangeText={setFees}
-                                keyboardType="numeric"
-                                placeholder="0.00"
-                                placeholderTextColor={ds.text3}
-                            />
-                            <TouchableOpacity onPress={() => setShowFeesCalculator(true)} hitSlop={space[2]}>
-                                <Ionicons name="calculator-outline" size={18} color={ds.text2} />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                    <View style={styles.pairItem}>
-                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Total</Text>
-                        <Text style={[type.bodyNum, styles.readOnly, { color: ds.text }]} numberOfLines={1}>
-                            {(() => {
-                                const qty = new BigNumber(quantity || 0);
-                                const prc = new BigNumber(price || 0);
-                                const f = new BigNumber(fees || 0);
-                                const total = qty.multipliedBy(prc).plus(f);
-
-                                const displayCurrency = (useNativeCurrency && assetCurrency) ? assetCurrency : currency;
-
-                                return total.isNaN()
-                                    ? formatCurrencyAmount(0, displayCurrency)
-                                    : formatCurrencyAmount(total, displayCurrency);
-                            })()}
-                        </Text>
-                    </View>
-                </View>
-
-                {/* Realized P/L (sell only) */}
-                {action === 'SELL' && (
-                    <>
-                        <Text style={[type.small, styles.label, styles.groupLabel, { color: ds.text2 }]}>Realized P/L</Text>
-                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                            <Ionicons name="trending-up-outline" size={18} color={ds.text2} />
-                            <TextInput
-                                style={[type.bodyNum, styles.input, { color: pl >= 0 ? ds.success : ds.danger }]}
-                                value={realizedPL}
-                                onChangeText={setRealizedPL}
-                                keyboardType="numeric" // Note: iOS numeric keyboard doesn't always have minus sign!
-                                placeholder="0.00"
-                                placeholderTextColor={ds.text3}
-                            />
-                            <TouchableOpacity onPress={() => setShowPLCalculator(true)} hitSlop={space[2]}>
-                                <Ionicons name="calculator-outline" size={18} color={ds.text2} />
-                            </TouchableOpacity>
-                        </View>
-
-                        {quantity && price && (
-                            <View style={styles.hint}>
-                                {(() => {
-                                    const qty = new BigNumber(quantity);
-                                    const prc = new BigNumber(price);
-                                    const f = new BigNumber(fees || 0);
-                                    const proceeds = qty.multipliedBy(prc).minus(f);
-
-                                    return (
-                                        <View style={styles.hintRow}>
-                                            <Text style={[type.smallNum, { color: ds.text2 }]}>
-                                                Avg cost: {formatCurrencyAmount(averageCost)}
-                                            </Text>
-                                            <Text style={[type.smallNum, { color: ds.text2 }]}>
-                                                Proceeds: {formatCurrencyAmount(proceeds)}
-                                            </Text>
-                                        </View>
-                                    );
-                                })()}
-                                <Text style={[type.small, { color: ds.text2 }]}>
-                                    Auto-calculated. Edit if needed.
-                                </Text>
-                                {pl < 0 && (
-                                    <Text style={[type.small, { color: ds.text2 }]}>
-                                        Loss includes {formatCurrencyAmount(new BigNumber(fees || 0))} fees + price difference.
-                                    </Text>
-                                )}
-                                {(pl > 0 && (parseFloat(fees) || 0) > 0) && (
-                                    <Text style={[type.small, { color: ds.text2 }]}>
-                                        Net gain after deducting {formatCurrencyAmount(new BigNumber(fees || 0))} fees.
-                                    </Text>
-                                )}
+                <SectionHeader title="Amounts" grouped />
+                <Group padded>
+                    {/* Quantity and price */}
+                    <View style={styles.pair}>
+                        <View style={styles.pairItem}>
+                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Quantity</Text>
+                            <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="layers-outline" size={18} color={ds.text2} />
+                                <TextInput
+                                    style={inputStyle}
+                                    value={quantity}
+                                    onChangeText={setQuantity}
+                                    keyboardType="numeric"
+                                    placeholder="0.00"
+                                    placeholderTextColor={ds.text3}
+                                />
                             </View>
-                        )}
-                    </>
-                )}
+                        </View>
+                        <View style={styles.pairItem}>
+                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Price</Text>
+                            <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="pricetags-outline" size={18} color={ds.text2} />
+                                <TextInput
+                                    style={inputStyle}
+                                    value={price}
+                                    onChangeText={setPrice}
+                                    keyboardType="numeric"
+                                    placeholder="0.00"
+                                    placeholderTextColor={ds.text3}
+                                />
+                                <TouchableOpacity onPress={() => setShowPriceCalculator(true)} hitSlop={space[2]}>
+                                    <Ionicons name="calculator-outline" size={18} color={ds.text2} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
 
-                {/* Note */}
-                <Text style={[type.small, styles.label, styles.groupLabel, { color: ds.text2 }]}>Note</Text>
-                <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                    <Ionicons name="create-outline" size={18} color={ds.text2} />
-                    <TextInput
-                        style={[type.body, styles.input, { color: ds.text }]}
-                        value={notes}
-                        onChangeText={setNotes}
-                        placeholder="Optional"
-                        placeholderTextColor={ds.text3}
-                    />
-                </View>
+                    {/* Fees and total (auto-calculated) */}
+                    <View style={[styles.pair, styles.fieldGap]}>
+                        <View style={styles.pairItem}>
+                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Fees</Text>
+                            <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="receipt-outline" size={18} color={ds.text2} />
+                                <TextInput
+                                    style={inputStyle}
+                                    value={fees}
+                                    onChangeText={setFees}
+                                    keyboardType="numeric"
+                                    placeholder="0.00"
+                                    placeholderTextColor={ds.text3}
+                                />
+                                <TouchableOpacity onPress={() => setShowFeesCalculator(true)} hitSlop={space[2]}>
+                                    <Ionicons name="calculator-outline" size={18} color={ds.text2} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        <View style={styles.pairItem}>
+                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Total</Text>
+                            <Text style={[type.bodyNum, styles.readOnly, { color: ds.text }]} numberOfLines={1}>
+                                {(() => {
+                                    const qty = new BigNumber(quantity || 0);
+                                    const prc = new BigNumber(price || 0);
+                                    const f = new BigNumber(fees || 0);
+                                    const total = qty.multipliedBy(prc).plus(f);
+
+                                    const displayCurrency = (useNativeCurrency && assetCurrency) ? assetCurrency : currency;
+
+                                    return total.isNaN()
+                                        ? formatCurrencyAmount(0, displayCurrency)
+                                        : formatCurrencyAmount(total, displayCurrency);
+                                })()}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Realized P/L (sell only) */}
+                    {action === 'SELL' && (
+                        <>
+                            <Text style={[type.small, styles.label, styles.fieldGap, { color: ds.text2 }]}>Realized P/L</Text>
+                            <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="trending-up-outline" size={18} color={ds.text2} />
+                                <TextInput
+                                    style={[type.bodyNum, styles.input, { color: pl >= 0 ? ds.success : ds.danger }]}
+                                    value={realizedPL}
+                                    onChangeText={setRealizedPL}
+                                    keyboardType="numeric" // Note: iOS numeric keyboard doesn't always have minus sign!
+                                    placeholder="0.00"
+                                    placeholderTextColor={ds.text3}
+                                />
+                                <TouchableOpacity onPress={() => setShowPLCalculator(true)} hitSlop={space[2]}>
+                                    <Ionicons name="calculator-outline" size={18} color={ds.text2} />
+                                </TouchableOpacity>
+                            </View>
+
+                            {quantity && price && (
+                                <View style={styles.hint}>
+                                    {(() => {
+                                        const qty = new BigNumber(quantity);
+                                        const prc = new BigNumber(price);
+                                        const f = new BigNumber(fees || 0);
+                                        const proceeds = qty.multipliedBy(prc).minus(f);
+
+                                        return (
+                                            <View style={styles.hintRow}>
+                                                <Text style={[type.smallNum, { color: ds.text2 }]}>
+                                                    Avg cost: {formatCurrencyAmount(averageCost)}
+                                                </Text>
+                                                <Text style={[type.smallNum, { color: ds.text2 }]}>
+                                                    Proceeds: {formatCurrencyAmount(proceeds)}
+                                                </Text>
+                                            </View>
+                                        );
+                                    })()}
+                                    <Text style={[type.small, { color: ds.text2 }]}>
+                                        Auto-calculated. Edit if needed.
+                                    </Text>
+                                    {pl < 0 && (
+                                        <Text style={[type.small, { color: ds.text2 }]}>
+                                            Loss includes {formatCurrencyAmount(new BigNumber(fees || 0))} fees + price difference.
+                                        </Text>
+                                    )}
+                                    {(pl > 0 && (parseFloat(fees) || 0) > 0) && (
+                                        <Text style={[type.small, { color: ds.text2 }]}>
+                                            Net gain after deducting {formatCurrencyAmount(new BigNumber(fees || 0))} fees.
+                                        </Text>
+                                    )}
+                                </View>
+                            )}
+                        </>
+                    )}
+                </Group>
+
+                {/* Date, time and note */}
+                <SectionHeader title="Details" grouped />
+                <Group padded>
+                    <View style={styles.pair}>
+                        <View style={styles.pairItem}>
+                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Date</Text>
+                            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="calendar-outline" size={18} color={ds.text2} />
+                                <Text style={[type.bodyNum, { color: ds.text }]}>
+                                    {investmentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.pairItem}>
+                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Time</Text>
+                            <TouchableOpacity onPress={() => setShowTimePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="time-outline" size={18} color={ds.text2} />
+                                <Text style={[type.bodyNum, { color: ds.text }]}>
+                                    {investmentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {showDatePicker && (
+                        <DateTimePicker
+                            value={investmentDate}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={(event: DateTimePickerEvent, date?: Date) => {
+                                setShowDatePicker(Platform.OS === 'ios');
+                                if (date) {
+                                    const newDate = new Date(investmentDate);
+                                    newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+                                    setInvestmentDate(newDate);
+                                }
+                            }}
+                        />
+                    )}
+
+                    {showTimePicker && (
+                        <DateTimePicker
+                            value={investmentDate}
+                            mode="time"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={(event: DateTimePickerEvent, date?: Date) => {
+                                setShowTimePicker(Platform.OS === 'ios');
+                                if (date) {
+                                    const newDate = new Date(investmentDate);
+                                    newDate.setHours(date.getHours(), date.getMinutes());
+                                    setInvestmentDate(newDate);
+                                }
+                            }}
+                        />
+                    )}
+
+                    <Text style={[type.small, styles.label, styles.fieldGap, { color: ds.text2 }]}>Note</Text>
+                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="create-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={[type.body, styles.input, { color: ds.text }]}
+                            value={notes}
+                            onChangeText={setNotes}
+                            placeholder="Optional"
+                            placeholderTextColor={ds.text3}
+                        />
+                    </View>
+                </Group>
 
                 {/* Linked transaction */}
-                <SectionHeader title="Cash flow" />
-                <Row
-                    title={initialInvestment ? 'Linked transaction' : 'Record a transaction'}
-                    subtitle={(() => {
-                        if (initialInvestment) return 'Auto-updated with investment changes';
-                        if (!createTransaction) return 'No transaction will be recorded';
+                <SectionHeader title="Cash flow" grouped />
+                <Group>
+                    <Row
+                        title={initialInvestment ? 'Linked transaction' : 'Record a transaction'}
+                        subtitle={(() => {
+                            if (initialInvestment) return 'Auto-updated with investment changes';
+                            if (!createTransaction) return 'No transaction will be recorded';
 
-                        switch (action) {
-                            case 'BUY': return 'Will record as Transfer Out (cash out)';
-                            case 'SELL': return 'Will record as Transfer In (cash in)';
-                            case 'DIVIDEND': return 'Will record as Income';
-                            default: return 'Will record a transaction';
+                            switch (action) {
+                                case 'BUY': return 'Will record as Transfer Out (cash out)';
+                                case 'SELL': return 'Will record as Transfer In (cash in)';
+                                case 'DIVIDEND': return 'Will record as Income';
+                                default: return 'Will record a transaction';
+                            }
+                        })()}
+                        trailing={
+                            <View style={styles.trailing}>
+                                <TouchableOpacity onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
+                                    <Ionicons name="information-circle-outline" size={20} color={ds.text2} />
+                                </TouchableOpacity>
+                                <Switch
+                                    value={createTransaction}
+                                    onValueChange={toggleCreateTransaction}
+                                    disabled={!!initialInvestment}
+                                    trackColor={{ true: ds.accent }}
+                                />
+                            </View>
                         }
-                    })()}
-                    trailing={
-                        <View style={styles.trailing}>
-                            <TouchableOpacity onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
-                                <Ionicons name="information-circle-outline" size={20} color={ds.text2} />
-                            </TouchableOpacity>
-                            <Switch
-                                value={createTransaction}
-                                onValueChange={toggleCreateTransaction}
-                                disabled={!!initialInvestment}
-                                trackColor={{ true: ds.accent }}
-                            />
-                        </View>
-                    }
-                    last
-                />
+                        last
+                    />
+                </Group>
 
                 {/* Price Calculator */}
                 <CalculatorModal
@@ -769,56 +779,62 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                 maxHeight="85%"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <Text style={[type.small, { color: ds.text2 }]}>
-                        WealthSnap treats your finances as a connected ecosystem. When you buy or sell assets, money doesn&apos;t disappear—it moves.
-                    </Text>
-
-                    {/* Money flow: Cash ⇄ Portfolio */}
-                    <View style={[styles.flow, { backgroundColor: ds.inset }]}>
-                        <View style={styles.flowNode}>
-                            <Ionicons name="cash-outline" size={20} color={ds.text2} />
-                            <Text style={[type.smallMedium, { color: ds.text }]}>Cash / bank</Text>
-                        </View>
-                        <View style={styles.flowNode}>
-                            <Ionicons name="swap-horizontal-outline" size={20} color={ds.text3} />
-                            <Text style={[type.caption, { color: ds.text2 }]}>Transaction</Text>
-                        </View>
-                        <View style={styles.flowNode}>
-                            <Ionicons name="bar-chart-outline" size={20} color={ds.text2} />
-                            <Text style={[type.smallMedium, { color: ds.text }]}>Portfolio</Text>
-                        </View>
-                    </View>
-
-                    <SectionHeader title="What happens if checked?" />
-                    <Row
-                        icon="log-out-outline"
-                        title="Buying (transfer out)"
-                        subtitle={`We deduct cash from your "Transfer Account" so you don't double-count your net worth (Cash + Asset).`}
-                    />
-                    <Row
-                        icon="log-in-outline"
-                        title="Selling (transfer in)"
-                        subtitle={`Proceeds are added back to your cash balance. If you don't record this, the money effectively vanishes!`}
-                    />
-                    <Row
-                        icon="add-circle-outline"
-                        title="Dividends (income)"
-                        subtitle={`"New money" entering your ecosystem. We record this as Income.`}
-                        last
-                    />
-
-                    <View style={styles.tip}>
-                        <Ionicons name="bulb-outline" size={20} color={ds.text2} />
-                        <Text style={[type.small, styles.tipText, { color: ds.text2 }]}>
-                            <Text style={[type.smallStrong, { color: ds.text }]}>Pro tip: </Text>
-                            Uncheck this box only if you are manually correcting old data or if the transaction was already recorded separately.
+                    <Group padded>
+                        <Text style={[type.small, { color: ds.text2 }]}>
+                            WealthSnap treats your finances as a connected ecosystem. When you buy or sell assets, money doesn&apos;t disappear—it moves.
                         </Text>
-                    </View>
+
+                        {/* Money flow: Cash ⇄ Portfolio */}
+                        <View style={[styles.flow, { backgroundColor: ds.inset }]}>
+                            <View style={styles.flowNode}>
+                                <Ionicons name="cash-outline" size={20} color={ds.text2} />
+                                <Text style={[type.smallMedium, { color: ds.text }]}>Cash / bank</Text>
+                            </View>
+                            <View style={styles.flowNode}>
+                                <Ionicons name="swap-horizontal-outline" size={20} color={ds.text3} />
+                                <Text style={[type.caption, { color: ds.text2 }]}>Transaction</Text>
+                            </View>
+                            <View style={styles.flowNode}>
+                                <Ionicons name="bar-chart-outline" size={20} color={ds.text2} />
+                                <Text style={[type.smallMedium, { color: ds.text }]}>Portfolio</Text>
+                            </View>
+                        </View>
+                    </Group>
+
+                    <SectionHeader title="What happens if checked?" grouped />
+                    <Group>
+                        <Row
+                            icon="log-out-outline"
+                            title="Buying (transfer out)"
+                            subtitle={`We deduct cash from your "Transfer Account" so you don't double-count your net worth (Cash + Asset).`}
+                        />
+                        <Row
+                            icon="log-in-outline"
+                            title="Selling (transfer in)"
+                            subtitle={`Proceeds are added back to your cash balance. If you don't record this, the money effectively vanishes!`}
+                        />
+                        <Row
+                            icon="add-circle-outline"
+                            title="Dividends (income)"
+                            subtitle={`"New money" entering your ecosystem. We record this as Income.`}
+                            last
+                        />
+                    </Group>
+
+                    <Group padded style={styles.tipGroup}>
+                        <View style={styles.tip}>
+                            <Ionicons name="bulb-outline" size={20} color={ds.text2} />
+                            <Text style={[type.small, styles.tipText, { color: ds.text2 }]}>
+                                <Text style={[type.smallStrong, { color: ds.text }]}>Pro tip: </Text>
+                                Uncheck this box only if you are manually correcting old data or if the transaction was already recorded separately.
+                            </Text>
+                        </View>
+                    </Group>
                 </ScrollView>
             </BottomModal>
 
             {/* Fixed Footer Actions */}
-            <View style={[styles.footer, { backgroundColor: ds.inset, borderTopColor: ds.hairline }]}>
+            <View style={[styles.footer, { backgroundColor: ds.group, borderTopColor: ds.hairline }]}>
                 <TouchableOpacity onPress={onCancel} style={styles.cancelButton}>
                     <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
                 </TouchableOpacity>
@@ -833,24 +849,32 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
 const FOOTER_HEIGHT = space[3] + 48 + space[4] + 1;
 
 const styles = StyleSheet.create({
-    // RecordScreen adds no padding, so the page color and footer run edge to edge.
+    // RecordScreen adds no padding, so the canvas and footer band run edge to edge.
     page: {
         flex: 1,
     },
     content: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: FOOTER_HEIGHT + space[6],
     },
     title: {
         marginTop: space[4],
         marginBottom: space[4],
+        paddingHorizontal: layout.groupPadding,
+    },
+    firstGroup: {
+        marginTop: space[4],
     },
     label: {
-        marginTop: space[3],
         marginBottom: space[1],
     },
-    groupLabel: {
-        marginTop: space[6],
+    fieldGap: {
+        marginTop: space[3],
+    },
+    // Fields under a switch row in a row group.
+    rowFields: {
+        paddingTop: space[3],
+        paddingBottom: layout.groupPadding,
     },
     field: {
         flexDirection: 'row',
@@ -901,7 +925,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: space[3],
         paddingTop: space[3],
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: space[4],
         borderTopWidth: 1,
     },
@@ -930,10 +954,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: space[1],
     },
+    tipGroup: {
+        marginTop: space[4],
+    },
     tip: {
         flexDirection: 'row',
         gap: space[3],
-        marginTop: space[4],
     },
     tipText: {
         flex: 1,

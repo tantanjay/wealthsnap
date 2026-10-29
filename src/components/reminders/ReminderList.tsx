@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, FlatList, Switch, ActivityIndicator 
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 
-import { Row } from '@components/ds';
+import { Group, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius } from '@styles/theme';
 import { useAlert } from '@context/AlertContext';
@@ -177,16 +177,21 @@ export const ReminderList: React.FC<ReminderListProps> = ({ onEdit, onAdd }) => 
                     <ActivityIndicator size="small" color={ds.accent} />
                     <Text style={[type.small, { color: ds.text2 }]}>Fetching…</Text>
                 </View>
+            ) : reminders.length === 0 ? (
+                <View style={styles.list}>
+                    <EmptyState size="compact" icon="notifications-off-outline" title="No reminders set yet" />
+                </View>
             ) : (
-                <FlatList
-                    data={reminders}
-                    keyExtractor={item => item.id}
-                    renderItem={renderItem}
-                    style={styles.list}
-                    ListEmptyComponent={
-                        <EmptyState size="compact" icon="notifications-off-outline" title="No reminders set yet" />
-                    }
-                />
+                <View style={styles.list}>
+                    {/* `padded` puts the list straight in the Group (no clip wrapper), so it can still shrink and scroll. */}
+                    <Group padded style={styles.group}>
+                        <FlatList
+                            data={reminders}
+                            keyExtractor={item => item.id}
+                            renderItem={renderItem}
+                        />
+                    </Group>
+                </View>
             )}
             <Pressable
                 style={[styles.button, { backgroundColor: ds.accent }]}
@@ -205,6 +210,10 @@ const styles = StyleSheet.create({
     },
     list: {
         flex: 1,
+    },
+    group: {
+        flexShrink: 1,
+        paddingVertical: 0,
     },
     actions: {
         flexDirection: 'row',

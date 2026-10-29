@@ -7,12 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacyFormat, formatMoney, formatPercent } from '@hooks/usePrivacyFormat';
 import { Transaction } from '@types';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { getSavingsRateTrend } from '@utils/financialMetrics';
 import { saveInsightsSavingsTab, getInsightsSavingsTab, saveInsightsSavingsTimeRange, getInsightsSavingsTimeRange } from '@services/core/storageService';
 
@@ -215,7 +215,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
             if (!item) return <View />;
 
             return (
-                <View style={[styles.pointer, { backgroundColor: item.originalValue >= 0 ? ds.success : ds.danger, borderColor: ds.bg }]} />
+                <View style={[styles.pointer, { backgroundColor: item.originalValue >= 0 ? ds.success : ds.danger, borderColor: ds.group }]} />
             );
         },
         pointerLabelComponent: (items: any) => {
@@ -373,141 +373,157 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
         >
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Mirrors the stat tiles under the chart */}
-                <View style={modalStyles.grid}>
-                    <ExampleTile label="Current" value={exampleValue} color={ds.success} />
-                    <ExampleTile label="Streak" value="5📈" color={ds.success} />
-                    <ExampleTile label="Positive" value="8 / 5" color={ds.success} />
-                    <ExampleTile label="Negative" value="3 / 2" color={ds.danger} />
-                </View>
-
-                <SectionHeader title="Rate, saved & cash flow" />
-                <Row
-                    title="Rate"
-                    subtitle="The % of your income you kept each month. Debt principal payments count as spending here; money moved into a savings goal counts as kept."
-                />
-                <Row title="Saved" subtitle="The raw amount you kept, including money moved into investments." />
-                <Row
-                    title="Cash flow"
-                    subtitle="What's actually left in cash after everything, including investments and other transfers out."
-                    last
-                />
-
-                <SectionHeader title="How they relate" />
-                <Text style={[type.small, { color: ds.text2 }]}>
-                    Every month, your income splits into three pieces. Each tab measures a different slice:
-                </Text>
-                <View style={[modalStyles.block, { backgroundColor: ds.inset }]}>
-                    <Text style={[type.caption, modalStyles.center, { color: ds.text2 }]}>Monthly income</Text>
-
-                    <View style={modalStyles.stack}>
-                        <View style={{ flex: 5, backgroundColor: ds.danger }} />
-                        <View style={{ flex: 2, backgroundColor: ds.domainInvest }} />
-                        <View style={{ flex: 3, backgroundColor: ds.success }} />
+                <Group padded>
+                    <View style={modalStyles.grid}>
+                        <ExampleTile label="Current" value={exampleValue} color={ds.success} />
+                        <ExampleTile label="Streak" value="5📈" color={ds.success} />
+                        <ExampleTile label="Positive" value="8 / 5" color={ds.success} />
+                        <ExampleTile label="Negative" value="3 / 2" color={ds.danger} />
                     </View>
+                </Group>
 
-                    <View style={modalStyles.stackLegend}>
-                        {([['Expenses', ds.danger], ['Invested', ds.domainInvest], ['Cash left', ds.success]] as const).map(([label, color]) => (
-                            <View key={label} style={modalStyles.legendItem}>
-                                <View style={[modalStyles.dot, { backgroundColor: color }]} />
-                                <Text style={[type.caption, { color: ds.text2 }]}>{label}</Text>
+                <SectionHeader grouped title="Rate, saved & cash flow" />
+                <Group>
+                    <Row
+                        title="Rate"
+                        subtitle="The % of your income you kept each month. Debt principal payments count as spending here; money moved into a savings goal counts as kept."
+                    />
+                    <Row title="Saved" subtitle="The raw amount you kept, including money moved into investments." />
+                    <Row
+                        title="Cash flow"
+                        subtitle="What's actually left in cash after everything, including investments and other transfers out."
+                        last
+                    />
+                </Group>
+
+                <SectionHeader grouped title="How they relate" />
+                <Group padded>
+                    <Text style={[type.small, { color: ds.text2 }]}>
+                        Every month, your income splits into three pieces. Each tab measures a different slice:
+                    </Text>
+                    <View style={[modalStyles.block, { backgroundColor: ds.inset }]}>
+                        <Text style={[type.caption, modalStyles.center, { color: ds.text2 }]}>Monthly income</Text>
+
+                        <View style={modalStyles.stack}>
+                            <View style={{ flex: 5, backgroundColor: ds.danger }} />
+                            <View style={{ flex: 2, backgroundColor: ds.domainInvest }} />
+                            <View style={{ flex: 3, backgroundColor: ds.success }} />
+                        </View>
+
+                        <View style={modalStyles.stackLegend}>
+                            {([['Expenses', ds.danger], ['Invested', ds.domainInvest], ['Cash left', ds.success]] as const).map(([label, color]) => (
+                                <View key={label} style={modalStyles.legendItem}>
+                                    <View style={[modalStyles.dot, { backgroundColor: color }]} />
+                                    <Text style={[type.caption, { color: ds.text2 }]}>{label}</Text>
+                                </View>
+                            ))}
+                        </View>
+
+                        {/* Rate & Saved = Invested + Cash left (right 50%); Cash flow = Cash left only (right 30%) */}
+                        <View style={modalStyles.bracketRow}>
+                            <View style={{ flex: 5 }} />
+                            <View style={[modalStyles.bracket, { flex: 5, borderColor: ratesActive ? ds.accent : ds.hairline }]}>
+                                <Text style={[type.captionMedium, modalStyles.center, { color: ratesActive ? ds.accent : ds.text2 }]}>Rate & saved</Text>
                             </View>
+                        </View>
+                        <View style={modalStyles.bracketRow}>
+                            <View style={{ flex: 7 }} />
+                            <View style={[modalStyles.bracket, { flex: 3, borderColor: activeTab === 'CASH' ? ds.accent : ds.hairline }]}>
+                                <Text style={[type.captionMedium, modalStyles.center, { color: activeTab === 'CASH' ? ds.accent : ds.text2 }]}>Cash flow</Text>
+                            </View>
+                        </View>
+                    </View>
+                    <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
+                        <Text style={{ color: ds.text }}>Rate</Text> and <Text style={{ color: ds.text }}>Saved</Text> count money moved into investments as kept.{"\n"}
+                        <Text style={{ color: ds.text }}>Cash flow</Text> only counts what&apos;s actually left in your wallet.
+                    </Text>
+                </Group>
+
+                <SectionHeader grouped title="Reading the chart" />
+                <Group padded>
+                    <Text style={[type.small, { color: ds.text2 }]}>
+                        The line chart shows your {activeMeta.metricLabel.toLowerCase()} trend over time. Here&apos;s what it means:
+                    </Text>
+                    <View style={modalStyles.pair}>
+                        <View style={[modalStyles.tile, { backgroundColor: ds.inset }]}>
+                            <View style={[modalStyles.miniChart, { backgroundColor: ds.raised }]}>
+                                <View style={[modalStyles.zeroLine, { backgroundColor: ds.hairline }]} />
+                                <View style={[modalStyles.point, { bottom: 10, left: 10, backgroundColor: ds.success }]} />
+                                <View style={[modalStyles.point, { bottom: 18, left: '40%', backgroundColor: ds.success }]} />
+                                <View style={[modalStyles.point, { bottom: 25, right: 10, backgroundColor: ds.success }]} />
+                            </View>
+                            <Text style={[type.smallMedium, modalStyles.center, { color: ds.success }]}>Saving money</Text>
+                            <Text style={[type.caption, modalStyles.center, { color: ds.text2 }]}>Line above zero (green)</Text>
+                        </View>
+                        <View style={[modalStyles.tile, { backgroundColor: ds.inset }]}>
+                            <View style={[modalStyles.miniChart, { backgroundColor: ds.raised }]}>
+                                <View style={[modalStyles.zeroLine, { backgroundColor: ds.hairline }]} />
+                                <View style={[modalStyles.point, { top: 35, left: 10, backgroundColor: ds.danger }]} />
+                                <View style={[modalStyles.point, { top: 40, left: '40%', backgroundColor: ds.danger }]} />
+                                <View style={[modalStyles.point, { top: 43, right: 10, backgroundColor: ds.danger }]} />
+                            </View>
+                            <Text style={[type.smallMedium, modalStyles.center, { color: ds.danger }]}>Overspending</Text>
+                            <Text style={[type.caption, modalStyles.center, { color: ds.text2 }]}>Line below zero (red)</Text>
+                        </View>
+                    </View>
+                    <View style={modalStyles.legend}>
+                        {([
+                            ['Zero line', 'The horizontal line in the middle', ds.hairline],
+                            ['Green line', "Above zero = You're saving", ds.success],
+                            ['Red line', 'Below zero = Spending more than earning', ds.danger],
+                            ['Dots', 'Each represents one month', ds.text2],
+                            ['Higher is better', 'More savings = further above zero', ds.text2],
+                        ] as const).map(([label, meaning, color]) => (
+                            <LegendLine key={label} label={label} meaning={meaning} color={color} />
                         ))}
                     </View>
+                </Group>
 
-                    {/* Rate & Saved = Invested + Cash left (right 50%); Cash flow = Cash left only (right 30%) */}
-                    <View style={modalStyles.bracketRow}>
-                        <View style={{ flex: 5 }} />
-                        <View style={[modalStyles.bracket, { flex: 5, borderColor: ratesActive ? ds.accent : ds.hairline }]}>
-                            <Text style={[type.captionMedium, modalStyles.center, { color: ratesActive ? ds.accent : ds.text2 }]}>Rate & saved</Text>
-                        </View>
+                <SectionHeader grouped title={`Current ${activeMeta.metricLabel.toLowerCase()}`} />
+                <Group padded>
+                    <Text style={[type.small, { color: ds.text2 }]}>
+                        Your {activeMeta.metricLabel.toLowerCase()} for the most recent month:
+                    </Text>
+                    <View style={modalStyles.legend}>
+                        <LegendLine label={isPercent ? 'Positive %' : 'Positive amount'} meaning="You saved money" color={ds.success} />
+                        <LegendLine label={isPercent ? 'Negative %' : 'Negative amount'} meaning="You overspent" color={ds.danger} />
                     </View>
-                    <View style={modalStyles.bracketRow}>
-                        <View style={{ flex: 7 }} />
-                        <View style={[modalStyles.bracket, { flex: 3, borderColor: activeTab === 'CASH' ? ds.accent : ds.hairline }]}>
-                            <Text style={[type.captionMedium, modalStyles.center, { color: activeTab === 'CASH' ? ds.accent : ds.text2 }]}>Cash flow</Text>
-                        </View>
+                </Group>
+
+                <SectionHeader grouped title="Streak" />
+                <Group padded>
+                    <Text style={[type.small, { color: ds.text2 }]}>
+                        Consecutive months with the same trend. Higher streaks show consistency.
+                    </Text>
+                    <View style={modalStyles.pair}>
+                        <ExampleTile label="5 months of saving" value="5📈" color={ds.success} />
+                        <ExampleTile label="2 months overspending" value="2📉" color={ds.danger} />
                     </View>
-                </View>
-                <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
-                    <Text style={{ color: ds.text }}>Rate</Text> and <Text style={{ color: ds.text }}>Saved</Text> count money moved into investments as kept.{"\n"}
-                    <Text style={{ color: ds.text }}>Cash flow</Text> only counts what&apos;s actually left in your wallet.
-                </Text>
+                </Group>
 
-                <SectionHeader title="Reading the chart" />
-                <Text style={[type.small, { color: ds.text2 }]}>
-                    The line chart shows your {activeMeta.metricLabel.toLowerCase()} trend over time. Here&apos;s what it means:
-                </Text>
-                <View style={modalStyles.pair}>
-                    <View style={[modalStyles.tile, { backgroundColor: ds.inset }]}>
-                        <View style={[modalStyles.miniChart, { backgroundColor: ds.raised }]}>
-                            <View style={[modalStyles.zeroLine, { backgroundColor: ds.hairline }]} />
-                            <View style={[modalStyles.point, { bottom: 10, left: 10, backgroundColor: ds.success }]} />
-                            <View style={[modalStyles.point, { bottom: 18, left: '40%', backgroundColor: ds.success }]} />
-                            <View style={[modalStyles.point, { bottom: 25, right: 10, backgroundColor: ds.success }]} />
-                        </View>
-                        <Text style={[type.smallMedium, modalStyles.center, { color: ds.success }]}>Saving money</Text>
-                        <Text style={[type.caption, modalStyles.center, { color: ds.text2 }]}>Line above zero (green)</Text>
-                    </View>
-                    <View style={[modalStyles.tile, { backgroundColor: ds.inset }]}>
-                        <View style={[modalStyles.miniChart, { backgroundColor: ds.raised }]}>
-                            <View style={[modalStyles.zeroLine, { backgroundColor: ds.hairline }]} />
-                            <View style={[modalStyles.point, { top: 35, left: 10, backgroundColor: ds.danger }]} />
-                            <View style={[modalStyles.point, { top: 40, left: '40%', backgroundColor: ds.danger }]} />
-                            <View style={[modalStyles.point, { top: 43, right: 10, backgroundColor: ds.danger }]} />
-                        </View>
-                        <Text style={[type.smallMedium, modalStyles.center, { color: ds.danger }]}>Overspending</Text>
-                        <Text style={[type.caption, modalStyles.center, { color: ds.text2 }]}>Line below zero (red)</Text>
-                    </View>
-                </View>
-                <View style={modalStyles.legend}>
-                    {([
-                        ['Zero line', 'The horizontal line in the middle', ds.hairline],
-                        ['Green line', "Above zero = You're saving", ds.success],
-                        ['Red line', 'Below zero = Spending more than earning', ds.danger],
-                        ['Dots', 'Each represents one month', ds.text2],
-                        ['Higher is better', 'More savings = further above zero', ds.text2],
-                    ] as const).map(([label, meaning, color]) => (
-                        <LegendLine key={label} label={label} meaning={meaning} color={color} />
-                    ))}
-                </View>
+                <SectionHeader grouped title="Understanding the “8 / 5” format" />
+                <Group>
+                    <Text style={[type.small, modalStyles.groupIntro, { color: ds.text2 }]}>
+                        This shows <Text style={{ color: ds.text }}>two separate numbers</Text>, not division:
+                    </Text>
+                    <Row
+                        leading={<View style={[modalStyles.dot, { backgroundColor: ds.success }]} />}
+                        title="Positive: 8 / 5"
+                        subtitle={'8 = Total positive months\n5 = Best consecutive streak'}
+                    />
+                    <Row
+                        leading={<View style={[modalStyles.dot, { backgroundColor: ds.danger }]} />}
+                        title="Negative: 3 / 2"
+                        subtitle={'3 = Total negative months\n2 = Worst consecutive streak'}
+                        last
+                    />
+                </Group>
 
-                <SectionHeader title={`Current ${activeMeta.metricLabel.toLowerCase()}`} />
-                <Text style={[type.small, { color: ds.text2 }]}>
-                    Your {activeMeta.metricLabel.toLowerCase()} for the most recent month:
-                </Text>
-                <View style={modalStyles.legend}>
-                    <LegendLine label={isPercent ? 'Positive %' : 'Positive amount'} meaning="You saved money" color={ds.success} />
-                    <LegendLine label={isPercent ? 'Negative %' : 'Negative amount'} meaning="You overspent" color={ds.danger} />
-                </View>
-
-                <SectionHeader title="Streak" />
-                <Text style={[type.small, { color: ds.text2 }]}>
-                    Consecutive months with the same trend. Higher streaks show consistency.
-                </Text>
-                <View style={modalStyles.pair}>
-                    <ExampleTile label="5 months of saving" value="5📈" color={ds.success} />
-                    <ExampleTile label="2 months overspending" value="2📉" color={ds.danger} />
-                </View>
-
-                <SectionHeader title="Understanding the “8 / 5” format" />
-                <Text style={[type.small, { color: ds.text2 }]}>
-                    This shows <Text style={{ color: ds.text }}>two separate numbers</Text>, not division:
-                </Text>
-                <Row
-                    leading={<View style={[modalStyles.dot, { backgroundColor: ds.success }]} />}
-                    title="Positive: 8 / 5"
-                    subtitle={'8 = Total positive months\n5 = Best consecutive streak'}
-                />
-                <Row
-                    leading={<View style={[modalStyles.dot, { backgroundColor: ds.danger }]} />}
-                    title="Negative: 3 / 2"
-                    subtitle={'3 = Total negative months\n2 = Worst consecutive streak'}
-                    last
-                />
-
-                <SectionHeader title="Other metrics" />
-                <Row title="Average" subtitle={`Average ${activeMeta.metricLabel.toLowerCase()} across all months`} />
-                <Row title="Best & worst month" subtitle="Highest and lowest values in the period" last />
+                <SectionHeader grouped title="Other metrics" />
+                <Group>
+                    <Row title="Average" subtitle={`Average ${activeMeta.metricLabel.toLowerCase()} across all months`} />
+                    <Row title="Best & worst month" subtitle="Highest and lowest values in the period" last />
+                </Group>
             </ScrollView>
         </BottomModal>
     );
@@ -535,30 +551,37 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
     const worstText = asShareOfIncome ? rawData[worstIndex]?.month ?? '—' : formatValue(Math.min(...activeValues));
 
     const showYAxis = isPercent || format.isOpen;
+    // Group content runs 28 from each screen edge, 8 narrower per side than the old 20 gutter.
+    const chartWidth = screenWidth - 80 - (layout.groupInset + layout.groupPadding - space[5]) * 2;
     const axisText = [type.caption, { color: ds.text2 }];
 
     const header = (
-        <>
-            <SectionHeader
-                title="Savings trend"
-                menu={{ options: TAB_OPTIONS, value: activeTab, onSelect: key => handleTabChange(key as SavingsTab) }}
-            />
-            <View style={styles.toolbar}>
-                <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
-                <Pressable onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
-                    <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
-                </Pressable>
-            </View>
-        </>
+        <SectionHeader
+            grouped
+            title="Savings trend"
+            menu={{ options: TAB_OPTIONS, value: activeTab, onSelect: key => handleTabChange(key as SavingsTab) }}
+        />
+    );
+
+    const toolbar = (
+        <View style={styles.toolbar}>
+            <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
+            <Pressable onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
+                <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
+            </Pressable>
+        </View>
     );
 
     if (!isLoading && savingsData.rawData.length === 0) {
         return (
             <View>
                 {header}
-                <Text style={[type.small, styles.empty, { color: ds.text2 }]}>
-                    No data yet. Start tracking income and expenses!
-                </Text>
+                <Group padded>
+                    {toolbar}
+                    <Text style={[type.small, styles.empty, { color: ds.text2 }]}>
+                        No data yet. Start tracking income and expenses!
+                    </Text>
+                </Group>
                 {renderInfoModal()}
             </View>
         );
@@ -579,100 +602,104 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
         <View>
             {header}
 
-            {/* Counts and % read the same in every mode */}
-            <View style={styles.stats}>
-                <View style={styles.statGroup}>
-                    {renderStat('Streak', `${streak.count}${streak.type === 'positive' ? '📈' : '📉'}`, streak.type === 'positive' ? ds.success : ds.danger)}
-                    {renderStat('Positive', `${historicalStats.positiveCount} / ${historicalStats.longestPositiveStreak}`, ds.success)}
-                    {renderStat('Negative', `${historicalStats.negativeCount} / ${historicalStats.longestNegativeStreak}`, ds.danger)}
+            <Group padded>
+                {toolbar}
+
+                {/* Counts and % read the same in every mode */}
+                <View style={styles.stats}>
+                    <View style={styles.statGroup}>
+                        {renderStat('Streak', `${streak.count}${streak.type === 'positive' ? '📈' : '📉'}`, streak.type === 'positive' ? ds.success : ds.danger)}
+                        {renderStat('Positive', `${historicalStats.positiveCount} / ${historicalStats.longestPositiveStreak}`, ds.success)}
+                        {renderStat('Negative', `${historicalStats.negativeCount} / ${historicalStats.longestNegativeStreak}`, ds.danger)}
+                    </View>
+                    {renderStat(asShareOfIncome ? 'Of income' : 'Current', currentText, latestValue >= 0 ? ds.success : ds.danger, 'flex-end')}
                 </View>
-                {renderStat(asShareOfIncome ? 'Of income' : 'Current', currentText, latestValue >= 0 ? ds.success : ds.danger, 'flex-end')}
-            </View>
 
-            {isLoading ? (
-                <Skeleton height={CHART_HEIGHT} width="100%" borderRadius={radius.md} />
-            ) : format.isHidden ? (
-                <HiddenChart height={CHART_HEIGHT} />
-            ) : (
-                <View style={styles.chart}>
-                    {/* MANUAL REFERENCE LINE (0%) - Rendered BEHIND chart to avoid tooltip overlap */}
-                    <View style={[styles.zeroLine, {
-                        left: showYAxis ? 50 : space[5],
-                        top: CHART_HEIGHT * (1 - (yOffset / (yBoundary * 2))),
-                        borderColor: ds.text3,
-                    }]} />
+                {isLoading ? (
+                    <Skeleton height={CHART_HEIGHT} width="100%" borderRadius={radius.md} />
+                ) : format.isHidden ? (
+                    <HiddenChart height={CHART_HEIGHT} />
+                ) : (
+                    <View style={styles.chart}>
+                        {/* MANUAL REFERENCE LINE (0%) - Rendered BEHIND chart to avoid tooltip overlap */}
+                        <View style={[styles.zeroLine, {
+                            left: showYAxis ? 50 : space[5],
+                            top: CHART_HEIGHT * (1 - (yOffset / (yBoundary * 2))),
+                            borderColor: ds.text3,
+                        }]} />
 
-                    <LineChart
-                        data={shiftedChartData.map((d, index) => ({
-                            value: d.value,
-                            dataPointColor: d.dataPointColor,
-                            label: savingsData.labels[index],
-                            // Metadata for tooltip
-                            originalValue: d.originalValue,
-                            month: savingsData.rawData[index].month,
-                            income: savingsData.rawData[index].income.toString(),
-                            expense: savingsData.rawData[index].expense.toString(),
-                            index: index,
-                        }))}
+                        <LineChart
+                            data={shiftedChartData.map((d, index) => ({
+                                value: d.value,
+                                dataPointColor: d.dataPointColor,
+                                label: savingsData.labels[index],
+                                // Metadata for tooltip
+                                originalValue: d.originalValue,
+                                month: savingsData.rawData[index].month,
+                                income: savingsData.rawData[index].income.toString(),
+                                expense: savingsData.rawData[index].expense.toString(),
+                                index: index,
+                            }))}
 
-                        height={200}
-                        width={screenWidth - 80}
-                        spacing={(screenWidth - 80) / Math.max(shiftedChartData.length, 1)}
-                        initialSpacing={20}
-                        thickness={1.5}
-                        curved
-                        curveType={0}
+                            height={200}
+                            width={chartWidth}
+                            spacing={chartWidth / Math.max(shiftedChartData.length, 1)}
+                            initialSpacing={20}
+                            thickness={1.5}
+                            curved
+                            curveType={0}
 
-                        /* ---- SCALE (IMPORTANT) ---- */
-                        maxValue={yBoundary * 2}
-                        noOfSections={4}
+                            /* ---- SCALE (IMPORTANT) ---- */
+                            maxValue={yBoundary * 2}
+                            noOfSections={4}
 
-                        hideRules
+                            hideRules
 
-                        /* ---- AXIS ---- */
-                        yAxisColor="transparent"
-                        xAxisColor="transparent"
-                        yAxisLabelWidth={showYAxis ? 45 : space[5]}
-                        hideYAxisText={!showYAxis}
+                            /* ---- AXIS ---- */
+                            yAxisColor="transparent"
+                            xAxisColor="transparent"
+                            yAxisLabelWidth={showYAxis ? 45 : space[5]}
+                            hideYAxisText={!showYAxis}
 
-                        yAxisTextStyle={axisText}
-                        xAxisLabelTextStyle={[axisText, styles.xLabel]}
+                            yAxisTextStyle={axisText}
+                            xAxisLabelTextStyle={[axisText, styles.xLabel]}
 
-                        /* ---- LINE GRADIENT: above zero is good, below is bad ---- */
-                        lineGradient
-                        lineGradientId="g_savings"
-                        lineGradientComponent={() => (
-                            <LinearGradient id="g_savings" x1="0" y1="0" x2="0" y2="1">
-                                <Stop offset="0%" stopColor={ds.success} stopOpacity="1" />
-                                <Stop offset="50%" stopColor={ds.success} stopOpacity="1" />
-                                <Stop offset="50%" stopColor={ds.danger} stopOpacity="1" />
-                                <Stop offset="100%" stopColor={ds.danger} stopOpacity="1" />
-                            </LinearGradient>
-                        )}
+                            /* ---- LINE GRADIENT: above zero is good, below is bad ---- */
+                            lineGradient
+                            lineGradientId="g_savings"
+                            lineGradientComponent={() => (
+                                <LinearGradient id="g_savings" x1="0" y1="0" x2="0" y2="1">
+                                    <Stop offset="0%" stopColor={ds.success} stopOpacity="1" />
+                                    <Stop offset="50%" stopColor={ds.success} stopOpacity="1" />
+                                    <Stop offset="50%" stopColor={ds.danger} stopOpacity="1" />
+                                    <Stop offset="100%" stopColor={ds.danger} stopOpacity="1" />
+                                </LinearGradient>
+                            )}
 
-                        /* ---- LABEL FIX (UNSHIFT VALUES) ---- */
-                        formatYLabel={(value: string) => {
-                            const realValue = Number(value) - yOffset;
-                            return isPercent ? `${realValue.toFixed(0)}%` : format.money(realValue, { compact: true });
-                        }}
-                        pointerConfig={pointerConfig}
-                    />
-                </View>
-            )}
+                            /* ---- LABEL FIX (UNSHIFT VALUES) ---- */
+                            formatYLabel={(value: string) => {
+                                const realValue = Number(value) - yOffset;
+                                return isPercent ? `${realValue.toFixed(0)}%` : format.money(realValue, { compact: true });
+                            }}
+                            pointerConfig={pointerConfig}
+                        />
+                    </View>
+                )}
 
-            {savingsData.rawData.length > 1 ? (
-                <View style={[styles.summary, { borderTopColor: ds.hairline }]}>
-                    {renderStat('Average', averageText, avgValue >= 0 ? ds.success : ds.danger, 'center')}
-                    {renderStat('Best month', bestText, ds.success, 'center')}
-                    {renderStat('Worst month', worstText, ds.danger, 'center')}
-                </View>
-            ) : (
-                <View style={[styles.summary, { borderTopColor: ds.hairline }]}>
-                    <Text style={[type.small, styles.center, styles.flex, { color: ds.text2 }]}>
-                        Track more months to see your best and worst ratios!
-                    </Text>
-                </View>
-            )}
+                {savingsData.rawData.length > 1 ? (
+                    <View style={[styles.summary, { borderTopColor: ds.hairline }]}>
+                        {renderStat('Average', averageText, avgValue >= 0 ? ds.success : ds.danger, 'center')}
+                        {renderStat('Best month', bestText, ds.success, 'center')}
+                        {renderStat('Worst month', worstText, ds.danger, 'center')}
+                    </View>
+                ) : (
+                    <View style={[styles.summary, { borderTopColor: ds.hairline }]}>
+                        <Text style={[type.small, styles.center, styles.flex, { color: ds.text2 }]}>
+                            Track more months to see your best and worst ratios!
+                        </Text>
+                    </View>
+                )}
+            </Group>
             {renderInfoModal()}
         </View>
     );
@@ -683,7 +710,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: space[2],
         marginBottom: space[3],
     },
     empty: {
@@ -858,6 +884,9 @@ const modalStyles = StyleSheet.create({
     },
     paragraph: {
         marginTop: space[2],
+    },
+    groupIntro: {
+        paddingTop: space[3],
     },
 });
 

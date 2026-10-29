@@ -3,18 +3,18 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
 
-import { Hero, Tone, toneColor } from '@components/ds';
+import { Group, Hero, Tone, toneColor } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { DASH, PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { DebtScenario, FinancialHealthData } from '@hooks/useFinancialHealth';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { calculateLiquidityDate } from '@utils/insightMetrics';
 import { formatMonths, formatMonthsLost, formatSignedMonths, paceText } from './financialHealthPool';
 
 // ---------- Shared sheet pieces ----------
 
 export const SheetHero: React.FC<{ label: string; value: string; change?: string; changeTone?: Tone }> = props => (
-    <Hero {...props} style={styles.hero} />
+    <Hero {...props} panel style={styles.hero} />
 );
 
 // Label on the left, value on the right; for the figures inside a detail sheet.
@@ -51,7 +51,7 @@ export const HowCalculated: React.FC<{ children: React.ReactNode }> = ({ childre
     const { ds } = useTheme();
     const [open, setOpen] = useState(false);
     return (
-        <View style={styles.how}>
+        <Group padded style={styles.how}>
             <Pressable
                 onPress={() => setOpen(o => !o)}
                 style={styles.howSummary}
@@ -64,7 +64,7 @@ export const HowCalculated: React.FC<{ children: React.ReactNode }> = ({ childre
                 <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={ds.accent} />
             </Pressable>
             {open ? children : null}
-        </View>
+        </Group>
     );
 };
 
@@ -118,27 +118,29 @@ export const RunwayDetail: React.FC<DetailProps> = ({ data, format: f }) => {
                 ) : 'No spending tracked yet, so your cash has no end date.'}
             </Text>
 
-            {!f.isDiscreet && <StatLine label="Cash" value={f.money(runway.cash)} />}
-            {!f.isDiscreet && <StatLine label="Monthly costs" value={f.money(runway.monthlyBurn)} />}
-            <StatLine
-                label="Spending"
-                value={spending.hasBaseline ? paceVsAverage(spending.paceDiffPercent) : 'Not enough history'}
-                tone={spending.hasBaseline ? pace.tone : undefined}
-            />
-            <StatLine
-                label="Debt drag"
-                value={debt.isDebtFree ? 'No debt' : formatMonthsLost(debt.dragMonths, 'months')}
-                tone={debt.isDebtFree ? 'good' : debt.dragMonths > 0 ? 'bad' : undefined}
-                last={f.isDiscreet}
-            />
-            {!f.isDiscreet && (
+            <Group>
+                {!f.isDiscreet && <StatLine label="Cash" value={f.money(runway.cash)} />}
+                {!f.isDiscreet && <StatLine label="Monthly costs" value={f.money(runway.monthlyBurn)} />}
                 <StatLine
-                    label="Investments boost"
-                    value={wealth.hasInvestments ? formatSignedMonths(wealth.boostMonths, 'months') : 'None'}
-                    tone={wealth.hasInvestments ? 'good' : undefined}
-                    last
+                    label="Spending"
+                    value={spending.hasBaseline ? paceVsAverage(spending.paceDiffPercent) : 'Not enough history'}
+                    tone={spending.hasBaseline ? pace.tone : undefined}
                 />
-            )}
+                <StatLine
+                    label="Debt drag"
+                    value={debt.isDebtFree ? 'No debt' : formatMonthsLost(debt.dragMonths, 'months')}
+                    tone={debt.isDebtFree ? 'good' : debt.dragMonths > 0 ? 'bad' : undefined}
+                    last={f.isDiscreet}
+                />
+                {!f.isDiscreet && (
+                    <StatLine
+                        label="Investments boost"
+                        value={wealth.hasInvestments ? formatSignedMonths(wealth.boostMonths, 'months') : 'None'}
+                        tone={wealth.hasInvestments ? 'good' : undefined}
+                        last
+                    />
+                )}
+            </Group>
 
             <HowCalculated>
                 <Formula
@@ -188,22 +190,24 @@ export const SpendingDetail: React.FC<DetailProps> = ({ data, format: f }) => {
                 change={spending.hasBaseline ? 'than your 3-month average at this point of the month' : 'Not enough history for a 3-month average yet'}
                 changeTone={spending.hasBaseline ? pace.tone : 'neutral'}
             />
-            <StatLine
-                label="Net flow this month"
-                value={f.show(f.money(spending.netFlow, { signed: true }), kept)}
-                tone={f.isHidden ? undefined : signedMoneyTone(spending.netFlow)}
-            />
-            <StatLine
-                label="Spending trend"
-                value={spending.hasBaseline ? `${Math.abs(trend)}% ${trend > 0 ? 'above' : 'below'} baseline` : DASH}
-                tone={spending.hasBaseline ? pace.tone : undefined}
-            />
-            <StatLine
-                label="Impact on self-sustain"
-                value={`${formatSignedMonths(spending.freedomImpactMonths, 'months')} per year`}
-                tone={impactTone}
-                last
-            />
+            <Group>
+                <StatLine
+                    label="Net flow this month"
+                    value={f.show(f.money(spending.netFlow, { signed: true }), kept)}
+                    tone={f.isHidden ? undefined : signedMoneyTone(spending.netFlow)}
+                />
+                <StatLine
+                    label="Spending trend"
+                    value={spending.hasBaseline ? `${Math.abs(trend)}% ${trend > 0 ? 'above' : 'below'} baseline` : DASH}
+                    tone={spending.hasBaseline ? pace.tone : undefined}
+                />
+                <StatLine
+                    label="Impact on self-sustain"
+                    value={`${formatSignedMonths(spending.freedomImpactMonths, 'months')} per year`}
+                    tone={impactTone}
+                    last
+                />
+            </Group>
 
             <HowCalculated>
                 <Formula
@@ -284,29 +288,33 @@ export const DebtDetail: React.FC<DetailProps & { scenario: DebtScenario }> = ({
                 change="of runway your minimum payments cost you"
                 changeTone="bad"
             />
-            <StatLine
-                label="Mandatory payments"
-                value={f.show(`${f.money(debt.monthlyPayments)}/mo`, pluralize(debt.count, 'loan'))}
-            />
-            <StatLine
-                label="Interest cost"
-                value={f.show(`${f.money(debt.interestCost)}/mo`, `${formatPercent(interestShare)} of payments`)}
-                tone="bad"
-                note={interestShare !== null && interestShare > 50 ? 'Early loan payments are mostly interest.' : undefined}
-            />
-            <StatLine
-                label="Self-sustain impact"
-                value={debt.freedomDelayYears > 50 ? 'Delayed indefinitely' : `Delayed ${debt.freedomDelayYears.toFixed(1)} years`}
-                tone="bad"
-                note="This shrinks as you pay down principal."
-                last
-            />
+            <Group>
+                <StatLine
+                    label="Mandatory payments"
+                    value={f.show(`${f.money(debt.monthlyPayments)}/mo`, pluralize(debt.count, 'loan'))}
+                />
+                <StatLine
+                    label="Interest cost"
+                    value={f.show(`${f.money(debt.interestCost)}/mo`, `${formatPercent(interestShare)} of payments`)}
+                    tone="bad"
+                    note={interestShare !== null && interestShare > 50 ? 'Early loan payments are mostly interest.' : undefined}
+                />
+                <StatLine
+                    label="Self-sustain impact"
+                    value={debt.freedomDelayYears > 50 ? 'Delayed indefinitely' : `Delayed ${debt.freedomDelayYears.toFixed(1)} years`}
+                    tone="bad"
+                    note="This shrinks as you pay down principal."
+                    last
+                />
+            </Group>
 
-            <Text style={[type.smallStrong, styles.stepperLabel, { color: ds.text }]}>If you add extra per month</Text>
-            <Stepper value={stepperValue} onStep={scenario.step} canDecrease={scenario.amount > 0} />
-            <Text style={[type.smallStrong, styles.stepperResult, { color: scenario.monthsSaved > 0 ? ds.success : ds.text2 }]}>
-                {scenario.monthsSaved > 0 ? `Debt-free ${pluralize(scenario.monthsSaved, 'month')} sooner` : 'Add an amount to see the impact'}
-            </Text>
+            <Group padded style={styles.block}>
+                <Text style={[type.smallStrong, { color: ds.text }]}>If you add extra per month</Text>
+                <Stepper value={stepperValue} onStep={scenario.step} canDecrease={scenario.amount > 0} />
+                <Text style={[type.smallStrong, styles.stepperResult, { color: scenario.monthsSaved > 0 ? ds.success : ds.text2 }]}>
+                    {scenario.monthsSaved > 0 ? `Debt-free ${pluralize(scenario.monthsSaved, 'month')} sooner` : 'Add an amount to see the impact'}
+                </Text>
+            </Group>
 
             <HowCalculated>
                 <Formula
@@ -380,32 +388,34 @@ export const WealthDetail: React.FC<DetailProps> = ({ data, format: f }) => {
     return (
         <>
             {hero}
-            {wealth.hasInvestments && !f.isDiscreet && <StatLine label="Portfolio value" value={f.money(wealth.portfolioValue)} />}
             {wealth.hasInvestments && (
-                <StatLine
-                    label={rateLabel}
-                    value={formatPercent(wealth.annualReturnPercent, { signed: true, decimals: 1 })}
-                    tone={wealth.annualReturnPercent >= 0 ? 'good' : 'bad'}
-                    last={f.isDiscreet}
-                />
-            )}
-            {wealth.hasInvestments && !f.isDiscreet && (
-                <StatLine
-                    label="Annual dividend impact"
-                    value={`${formatSignedMonths(dividendMonths, 'months')} / year`}
-                    tone="good"
-                    note={wealth.scenarioInvestAmount > 0 ? `${formatSignedMonths(projectedMonths, 'months')} / year more if investing` : undefined}
-                    last
-                />
+                <Group>
+                    {!f.isDiscreet && <StatLine label="Portfolio value" value={f.money(wealth.portfolioValue)} />}
+                    <StatLine
+                        label={rateLabel}
+                        value={formatPercent(wealth.annualReturnPercent, { signed: true, decimals: 1 })}
+                        tone={wealth.annualReturnPercent >= 0 ? 'good' : 'bad'}
+                        last={f.isDiscreet}
+                    />
+                    {!f.isDiscreet && (
+                        <StatLine
+                            label="Annual dividend impact"
+                            value={`${formatSignedMonths(dividendMonths, 'months')} / year`}
+                            tone="good"
+                            note={wealth.scenarioInvestAmount > 0 ? `${formatSignedMonths(projectedMonths, 'months')} / year more if investing` : undefined}
+                            last
+                        />
+                    )}
+                </Group>
             )}
 
-            <View style={[styles.scenario, { backgroundColor: ds.inset }]}>
+            <Group padded style={wealth.hasInvestments && styles.block}>
                 <Text style={[type.small, { color: scenarioResult ? ds.text2 : ds.success }]}>{scenarioTitle}</Text>
                 {scenarioResult ? <Text style={[type.body, styles.scenarioResult, { color: ds.success }]}>{scenarioResult}</Text> : null}
                 {wealth.isDefaultReturnRate && scenarioResult ? (
                     <Text style={[type.caption, styles.scenarioResult, { color: ds.text2 }]}>No dividend data found, so this assumes {rate} a year.</Text>
                 ) : null}
-            </View>
+            </Group>
 
             <HowCalculated>
                 {!f.isDiscreet && (
@@ -436,10 +446,12 @@ export const WealthDetail: React.FC<DetailProps> = ({ data, format: f }) => {
 
 const styles = StyleSheet.create({
     hero: {
-        marginBottom: space[3],
+        marginBottom: space[4],
     },
+    // Text on the sheet canvas, lined up with group content.
     paragraph: {
-        marginBottom: space[2],
+        marginBottom: space[3],
+        paddingHorizontal: layout.groupPadding,
     },
     stat: {
         flexDirection: 'row',
@@ -478,7 +490,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 6,
     },
-    stepperLabel: {
+    block: {
         marginTop: space[4],
     },
     stepper: {
@@ -500,11 +512,6 @@ const styles = StyleSheet.create({
     stepperResult: {
         textAlign: 'center',
         marginTop: space[2],
-    },
-    scenario: {
-        borderRadius: radius.md,
-        padding: space[4],
-        marginTop: space[3],
     },
     scenarioResult: {
         marginTop: space[1],

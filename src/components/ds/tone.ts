@@ -26,3 +26,21 @@ export const domainColor = (ds: DsColors, domain: Domain): string => {
         case 'goals': return ds.domainGoals;
     }
 };
+
+// Icon-tile fill for domain rows: the domain color softened over `group`.
+export const domainSoftColor = (ds: DsColors, domain: Domain): string => {
+    switch (domain) {
+        case 'cash': return ds.domainCashSoft;
+        case 'invest': return ds.domainInvestSoft;
+        case 'loans': return ds.domainLoansSoft;
+        case 'goals': return ds.domainGoalsSoft;
+    }
+};
+
+// Tile icon for a domain row that doesn't pass its own `icon`.
+export const DOMAIN_ICONS: Record<Domain, IconName> = {
+    cash: 'wallet-outline',
+    invest: 'trending-up-outline',
+    loans: 'card-outline',
+    goals: 'flag-outline',
+};

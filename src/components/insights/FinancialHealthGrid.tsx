@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-import { SectionHeader, Tile } from '@components/ds';
+import { Group, SectionHeader, Tile } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { HealthMetricId } from '@services/core/storageService';
-import { type, space } from '@styles/theme';
+import { type, space, layout } from '@styles/theme';
 import { HEALTH_METRIC_META, HealthEntry } from './financialHealthPool';
 
 interface FinancialHealthGridProps {
@@ -23,11 +23,13 @@ const FinancialHealthGrid: React.FC<FinancialHealthGridProps> = ({ grid, entries
 
     return (
         <View>
-            <SectionHeader title="Financial health" actionLabel="Show all" onAction={onShowAll} />
+            <SectionHeader grouped title="Financial health" actionLabel="Show all" onAction={onShowAll} />
             {grid.length === 0 ? (
-                <Text style={[type.small, styles.empty, { color: ds.text2 }]} onPress={onOpenSettings}>
-                    No numbers picked. <Text style={{ color: ds.accent }}>Choose up to 4 in Insights settings.</Text>
-                </Text>
+                <Group padded>
+                    <Text style={[type.small, { color: ds.text2 }]} onPress={onOpenSettings}>
+                        No numbers picked. <Text style={{ color: ds.accent }}>Choose up to 4 in Insights settings.</Text>
+                    </Text>
+                </Group>
             ) : (
                 <View style={styles.grid}>
                     {rows.map((row, r) => (
@@ -61,7 +63,6 @@ const FinancialHealthGrid: React.FC<FinancialHealthGridProps> = ({ grid, entries
 
 const styles = StyleSheet.create({
     grid: {
-        marginTop: space[2],
         gap: space[2],
     },
     gridRow: {
@@ -72,11 +73,9 @@ const styles = StyleSheet.create({
         flex: 1,
         minWidth: 0,
     },
-    empty: {
-        marginTop: space[2],
-    },
     disclaimer: {
         marginTop: space[2],
+        paddingHorizontal: layout.groupPadding,
     },
 });
 

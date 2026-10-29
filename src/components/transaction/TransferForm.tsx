@@ -4,14 +4,14 @@ import { BigNumber } from 'bignumber.js';
 import { View, Text, TextInput, ScrollView, Pressable, Platform, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { SectionHeader, SegmentedControl } from '@components/ds';
+import { Group, SectionHeader, SegmentedControl } from '@components/ds';
 import { CalculatorModal } from '@components/record/CalculatorModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { DebtType, Transaction, TransferAccount } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { saveTransaction } from '@services/domain/transactionService';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 
 interface TransferFormProps {
     onSave: () => void;
@@ -132,7 +132,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({
                 />
 
                 {/* Amount */}
-                <View style={styles.amountBlock}>
+                <Group padded style={styles.firstGroup}>
                     <View style={styles.amountLabelRow}>
                         <Text style={[type.small, { color: ds.text2 }]}>Amount</Text>
                         <Pressable onPress={() => setShowCalculator(true)} hitSlop={space[2]} accessibilityRole="button" accessibilityLabel="Open calculator">
@@ -140,105 +140,109 @@ export const TransferForm: React.FC<TransferFormProps> = ({
                         </Pressable>
                     </View>
                     <TextInput
-                        style={[type.recordAmount, styles.amountInput, { color: ds.text, borderBottomColor: ds.hairline }]}
+                        style={[type.recordAmount, styles.amountInput, { color: ds.text }]}
                         value={amount}
                         onChangeText={setAmount}
                         keyboardType="numeric"
                         placeholder="0"
                         placeholderTextColor={ds.text3}
                     />
-                </View>
+                </Group>
 
-                <SectionHeader title="Transfer destination" />
-                <View style={styles.tileGrid}>
-                    {(Object.keys(DEST_CONFIG) as Exclude<TransferAccount, 'SAVINGS_GOAL'>[]).map((opt) => {
-                        const isActive = selectedDestOption === opt;
-                        const config = DEST_CONFIG[opt];
+                <SectionHeader title="Transfer destination" grouped />
+                <Group padded>
+                    <View style={styles.tileGrid}>
+                        {(Object.keys(DEST_CONFIG) as Exclude<TransferAccount, 'SAVINGS_GOAL'>[]).map((opt) => {
+                            const isActive = selectedDestOption === opt;
+                            const config = DEST_CONFIG[opt];
 
-                        return (
-                            <Pressable
-                                key={opt}
-                                onPress={() => {
-                                    setSelectedDestOption(opt);
-                                    setDestination(opt);
-                                }}
-                                style={[styles.tile, { backgroundColor: isActive ? ds.accentSoft : ds.inset }]}
-                            >
-                                <Ionicons name={config.icon as any} size={20} color={isActive ? ds.accent : ds.text2} />
-                                <Text style={[type.small, { color: isActive ? ds.accent : ds.text }]} numberOfLines={1}>
-                                    {config.label}
-                                </Text>
-                            </Pressable>
-                        );
-                    })}
-                </View>
+                            return (
+                                <Pressable
+                                    key={opt}
+                                    onPress={() => {
+                                        setSelectedDestOption(opt);
+                                        setDestination(opt);
+                                    }}
+                                    style={[styles.tile, { backgroundColor: isActive ? ds.accentSoft : ds.inset }]}
+                                >
+                                    <Ionicons name={config.icon as any} size={20} color={isActive ? ds.accent : ds.text2} />
+                                    <Text style={[type.small, { color: isActive ? ds.accent : ds.text }]} numberOfLines={1}>
+                                        {config.label}
+                                    </Text>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
+                </Group>
 
                 {/* Date, Time and Note */}
-                <SectionHeader title="Details" />
-                <View style={styles.dateRow}>
-                    <View style={styles.dateCol}>
-                        <Text style={fieldLabel}>Date</Text>
-                        <Pressable onPress={() => setShowTransactionDatePicker(true)} style={fieldBox}>
-                            <Ionicons name="calendar-outline" size={18} color={ds.text2} />
-                            <Text style={[type.body, { color: ds.text }]} numberOfLines={1}>
-                                {transactionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </Text>
-                        </Pressable>
+                <SectionHeader title="Details" grouped />
+                <Group padded>
+                    <View style={styles.dateRow}>
+                        <View style={styles.dateCol}>
+                            <Text style={fieldLabel}>Date</Text>
+                            <Pressable onPress={() => setShowTransactionDatePicker(true)} style={fieldBox}>
+                                <Ionicons name="calendar-outline" size={18} color={ds.text2} />
+                                <Text style={[type.body, { color: ds.text }]} numberOfLines={1}>
+                                    {transactionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </Text>
+                            </Pressable>
+                        </View>
+                        <View style={styles.dateCol}>
+                            <Text style={fieldLabel}>Time</Text>
+                            <Pressable onPress={() => setShowTransactionTimePicker(true)} style={fieldBox}>
+                                <Ionicons name="time-outline" size={18} color={ds.text2} />
+                                <Text style={[type.body, { color: ds.text }]} numberOfLines={1}>
+                                    {transactionDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                </Text>
+                            </Pressable>
+                        </View>
                     </View>
-                    <View style={styles.dateCol}>
-                        <Text style={fieldLabel}>Time</Text>
-                        <Pressable onPress={() => setShowTransactionTimePicker(true)} style={fieldBox}>
-                            <Ionicons name="time-outline" size={18} color={ds.text2} />
-                            <Text style={[type.body, { color: ds.text }]} numberOfLines={1}>
-                                {transactionDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                            </Text>
-                        </Pressable>
+
+                    {showTransactionDatePicker && (
+                        <DateTimePicker
+                            value={transactionDate}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={(event: DateTimePickerEvent, date?: Date) => {
+                                setShowTransactionDatePicker(Platform.OS === 'ios');
+                                if (date) {
+                                    const newDate = new Date(transactionDate);
+                                    newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+                                    setTransactionDate(newDate);
+                                }
+                            }}
+                        />
+                    )}
+
+                    {showTransactionTimePicker && (
+                        <DateTimePicker
+                            value={transactionDate}
+                            mode="time"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={(event: DateTimePickerEvent, date?: Date) => {
+                                setShowTransactionTimePicker(Platform.OS === 'ios');
+                                if (date) {
+                                    const newDate = new Date(transactionDate);
+                                    newDate.setHours(date.getHours(), date.getMinutes());
+                                    setTransactionDate(newDate);
+                                }
+                            }}
+                        />
+                    )}
+
+                    <Text style={[fieldLabel, styles.fieldGap]}>Note (optional)</Text>
+                    <View style={fieldBox}>
+                        <Ionicons name="create-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={[type.body, styles.fieldInput, { color: ds.text }]}
+                            value={note}
+                            onChangeText={setNote}
+                            placeholder="Check reference, bank transfer ID, etc."
+                            placeholderTextColor={ds.text3}
+                        />
                     </View>
-                </View>
-
-                {showTransactionDatePicker && (
-                    <DateTimePicker
-                        value={transactionDate}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={(event: DateTimePickerEvent, date?: Date) => {
-                            setShowTransactionDatePicker(Platform.OS === 'ios');
-                            if (date) {
-                                const newDate = new Date(transactionDate);
-                                newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
-                                setTransactionDate(newDate);
-                            }
-                        }}
-                    />
-                )}
-
-                {showTransactionTimePicker && (
-                    <DateTimePicker
-                        value={transactionDate}
-                        mode="time"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={(event: DateTimePickerEvent, date?: Date) => {
-                            setShowTransactionTimePicker(Platform.OS === 'ios');
-                            if (date) {
-                                const newDate = new Date(transactionDate);
-                                newDate.setHours(date.getHours(), date.getMinutes());
-                                setTransactionDate(newDate);
-                            }
-                        }}
-                    />
-                )}
-
-                <Text style={[fieldLabel, styles.fieldGap]}>Note (optional)</Text>
-                <View style={fieldBox}>
-                    <Ionicons name="create-outline" size={18} color={ds.text2} />
-                    <TextInput
-                        style={[type.body, styles.fieldInput, { color: ds.text }]}
-                        value={note}
-                        onChangeText={setNote}
-                        placeholder="Check reference, bank transfer ID, etc."
-                        placeholderTextColor={ds.text3}
-                    />
-                </View>
+                </Group>
 
                 {/* Modals */}
                 <CalculatorModal
@@ -251,7 +255,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({
             </ScrollView>
 
             {/* Fixed Footer Actions */}
-            <View style={[styles.footer, { backgroundColor: ds.inset, borderTopColor: ds.hairline }]}>
+            <View style={[styles.footer, { backgroundColor: ds.group, borderTopColor: ds.hairline }]}>
                 <Pressable onPress={onCancel} style={styles.cancelButton} accessibilityRole="button">
                     <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
                 </Pressable>
@@ -263,18 +267,21 @@ export const TransferForm: React.FC<TransferFormProps> = ({
     );
 };
 
+const FOOTER_HEIGHT = space[3] + 48 + space[4] + 1;
+
 const styles = StyleSheet.create({
     // Bottom padding clears the fixed footer.
     content: {
-        paddingHorizontal: space[5],
-        paddingBottom: 120,
+        paddingHorizontal: layout.groupInset,
+        paddingBottom: FOOTER_HEIGHT + space[6],
     },
     title: {
         marginTop: space[4],
-        marginBottom: space[5],
+        marginBottom: space[4],
+        paddingHorizontal: layout.groupPadding,
     },
-    amountBlock: {
-        marginTop: space[6],
+    firstGroup: {
+        marginTop: space[4],
     },
     amountLabelRow: {
         flexDirection: 'row',
@@ -282,8 +289,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     amountInput: {
-        borderBottomWidth: 1,
-        paddingVertical: space[2],
+        paddingTop: space[1],
+        paddingBottom: 0,
         paddingHorizontal: 0,
     },
     // 4 columns; '23%' + space-between leaves the gutters between tiles.
@@ -292,7 +299,6 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         rowGap: space[2],
-        paddingTop: space[2],
     },
     tile: {
         width: '23%',
@@ -306,7 +312,6 @@ const styles = StyleSheet.create({
     dateRow: {
         flexDirection: 'row',
         gap: space[3],
-        paddingTop: space[2],
     },
     dateCol: {
         flex: 1,
@@ -315,7 +320,7 @@ const styles = StyleSheet.create({
         marginBottom: space[1],
     },
     fieldGap: {
-        marginTop: space[4],
+        marginTop: space[3],
     },
     field: {
         flexDirection: 'row',
@@ -337,7 +342,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: space[3],
         paddingTop: space[3],
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: space[4],
         borderTopWidth: 1,
     },

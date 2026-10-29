@@ -52,7 +52,7 @@ const CrashBackupAction: React.FC = () => {
 
     return (
         <>
-            <TouchableOpacity style={[styles.button, styles.secondaryButton, { backgroundColor: ds.inset }]} onPress={() => setVisible(true)}>
+            <TouchableOpacity style={[styles.button, styles.secondaryButton, { backgroundColor: ds.group }]} onPress={() => setVisible(true)}>
                 <Text style={[type.bodyStrong, { color: ds.text }]}>Back up data</Text>
             </TouchableOpacity>
             {failure ? <Text style={[type.small, styles.backupMessage, { color: ds.danger }]}>{failure}</Text> : null}
@@ -75,7 +75,7 @@ const CrashBackupAction: React.FC = () => {
 const CrashScreen: React.FC<{ error: Error | null; onRestart: () => void }> = ({ error, onRestart }) => {
     const { ds } = useTheme();
     return (
-        <View style={[styles.container, { backgroundColor: ds.bg }]}>
+        <View style={[styles.container, { backgroundColor: ds.canvas }]}>
             <View style={styles.content}>
                 <Ionicons name="alert-circle-outline" size={56} color={ds.danger} />
                 <Text style={[type.title, styles.title, { color: ds.text }]}>Something went wrong</Text>
@@ -83,7 +83,7 @@ const CrashScreen: React.FC<{ error: Error | null; onRestart: () => void }> = ({
                     We&apos;re sorry, but the app has encountered an unexpected error.
                 </Text>
 
-                <ScrollView style={[styles.errorContainer, { backgroundColor: ds.inset }]}>
+                <ScrollView style={[styles.errorContainer, { backgroundColor: ds.group }]}>
                     <Text style={[type.caption, { color: ds.danger }]}>
                         {error && error.toString()}
                     </Text>

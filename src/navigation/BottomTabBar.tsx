@@ -23,13 +23,13 @@ const FAB_RAISE = 10;
 // Items other than Record start below the raised area, so the button sits inside the bar's (and its own item's) touch bounds on Android.
 const ITEM_TOP = FAB_RAISE + space[2];
 
-// Refined Minimal bottom tab bar (docs/DESIGN.md, "Bottom tab bar"); Record is the raised center action.
+// Bottom tab bar on the `group` surface (docs/DESIGN.md, "Bottom tab bar"); Record is the raised center action.
 const BottomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
     const { ds, elevation } = useTheme();
     const insets = useSafeAreaInsets();
 
     return (
-        <View style={[styles.bar, { backgroundColor: ds.bg, paddingBottom: Math.max(insets.bottom, space[2]) }]}>
+        <View style={[styles.bar, { backgroundColor: ds.group, paddingBottom: Math.max(insets.bottom, space[2]) }]}>
             <View pointerEvents="none" style={[styles.line, { backgroundColor: ds.hairline }]} />
             {state.routes.map((route, index) => {
                 const focused = state.index === index;

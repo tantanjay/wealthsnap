@@ -6,11 +6,11 @@ import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
 import { Disclaimer } from '@components/common/Disclaimer';
-import { IconName, Row, SegmentedControl, Tone } from '@components/ds';
+import { Group, IconName, Row, SegmentedControl, Tone } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { getAllInvestments, deleteInvestment } from '@services/domain/investmentService';
 import { getAllTransactions, deleteTransaction } from '@services/domain/transactionService';
 import { getPriceHistory, deleteAllPriceHistory, addPriceHistory, deletePriceHistory } from '@services/domain/priceHistoryService';
@@ -550,6 +550,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
         return (
             <Row
+                domain="invest"
                 icon={iconName}
                 title={POSITION_LABELS[item.type]}
                 subtitle={`${new Date(item.date).toLocaleDateString()}${sharesLine}`}
@@ -585,12 +586,13 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
         const content = (
             // Long-press edits manual entries; the inner Row has no onPress, so it leaves touches to this.
             <Pressable
-                style={{ backgroundColor: ds.sheet }}
+                style={{ backgroundColor: ds.group }}
                 disabled={!isManual}
                 onLongPress={() => isManual && handleEditPrice(item)}
                 delayLongPress={500}
             >
                 <Row
+                    domain="invest"
                     icon={isAiFetch ? 'sparkles-outline' : 'pricetag-outline'}
                     title={new Date(item.timestamp).toLocaleDateString()}
                     subtitle={item.high && item.low ? `H: ${item.high.toNumber()} L: ${item.low.toNumber()}` : undefined}
@@ -619,12 +621,13 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
         const content = (
             <Pressable
-                style={{ backgroundColor: ds.sheet }}
+                style={{ backgroundColor: ds.group }}
                 disabled={!isManual}
                 onLongPress={() => isManual && handleEditDividend(item)}
                 delayLongPress={500}
             >
                 <Row
+                    domain="invest"
                     icon={isAiFetch ? 'sparkles-outline' : 'cash-outline'}
                     title={`Ex ${new Date(item.exDate).toLocaleDateString()}`}
                     subtitle={item.paymentDate ? `Pay ${new Date(item.paymentDate).toLocaleDateString()}` : undefined}
@@ -651,7 +654,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     const renderActionRow = (mode: 'price' | 'dividend', onAdd: () => void, onClear: () => void) => (
         <View style={styles.actionRow}>
             <Pressable
-                style={[styles.chip, showManualOnly && { backgroundColor: ds.inset }]}
+                style={[styles.chip, showManualOnly && { backgroundColor: ds.group }]}
                 onPress={() => setShowManualOnly(!showManualOnly)}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: showManualOnly }}
@@ -692,6 +695,9 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
             const currentYear = new Date().getFullYear();
             return i === 0 ? 'This Year' : (currentYear - i).toString();
         });
+
+    // A Group can't bound a FlatList's height, so the list itself draws the group surface.
+    const listSurface = [styles.list, { backgroundColor: ds.group }];
 
     return (
         <>
@@ -751,12 +757,12 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                     <SegmentedControl options={TABS} value={activeTab} onChange={setActiveTab} />
 
                     {activeTab === 'POSITIONS' && (
-                        <View style={styles.summary}>
+                        <Group padded style={styles.summary}>
                             <Text style={[type.small, { color: ds.text2 }]}>Realized P/L</Text>
                             <Text style={[type.titleNum, { color: realizedPL >= 0 ? ds.success : ds.danger }]}>
                                 {realizedPL >= 0 ? '+' : ''}{money(realizedPL, currency)}
                             </Text>
-                        </View>
+                        </Group>
                     )}
 
                     {isLoading ? (
@@ -768,6 +774,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                     data={transactions}
                                     renderItem={renderPositionsItem}
                                     keyExtractor={item => item.id}
+                                    style={transactions.length > 0 && listSurface}
                                     contentContainerStyle={styles.listContent}
                                     ListEmptyComponent={
                                         <EmptyState size="compact" icon="swap-vertical-outline" title="No position history found." />
@@ -781,6 +788,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                         data={filteredPrices}
                                         renderItem={renderPriceItem}
                                         keyExtractor={item => item.id}
+                                        style={filteredPrices.length > 0 && listSurface}
                                         contentContainerStyle={styles.listContent}
                                         ListEmptyComponent={
                                             <EmptyState
@@ -799,6 +807,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                                         data={filteredDividends}
                                         renderItem={renderDividendItem}
                                         keyExtractor={item => item.id}
+                                        style={filteredDividends.length > 0 && listSurface}
                                         contentContainerStyle={styles.listContent}
                                         ListEmptyComponent={
                                             <EmptyState
@@ -846,7 +855,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                 <Disclaimer severity="warning">
                     AI-fetched {activeFetchMode === 'price' ? 'prices' : 'dividends'} are estimates and may vary from real-time official records.
                 </Disclaimer>
-                <View style={styles.fetchList}>
+                <Group style={styles.fetchList}>
                     {fetchOptions.map((label, i) => (
                         <Row
                             key={label}
@@ -856,7 +865,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                             last={i === fetchOptions.length - 1}
                         />
                     ))}
-                </View>
+                </Group>
             </BottomModal>
         </>
     );
@@ -869,7 +878,7 @@ const styles = StyleSheet.create({
     },
     summary: {
         marginTop: space[4],
-        marginBottom: space[2],
+        marginBottom: space[3],
     },
     loading: {
         marginTop: space[5],
@@ -877,8 +886,14 @@ const styles = StyleSheet.create({
     fill: {
         flex: 1,
     },
+    list: {
+        flexGrow: 0,
+        borderRadius: radius.group,
+        overflow: 'hidden',
+        marginBottom: space[4],
+    },
     listContent: {
-        paddingBottom: space[5],
+        paddingHorizontal: layout.groupPadding,
     },
     actionRow: {
         flexDirection: 'row',
@@ -886,6 +901,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: space[4],
         marginBottom: space[2],
+        paddingHorizontal: layout.groupPadding,
     },
     chip: {
         paddingVertical: 6,
@@ -904,6 +920,6 @@ const styles = StyleSheet.create({
         height: '100%',
     },
     fetchList: {
-        marginTop: space[2],
+        marginTop: space[3],
     },
 });

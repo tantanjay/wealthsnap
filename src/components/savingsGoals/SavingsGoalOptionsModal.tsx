@@ -1,10 +1,10 @@
 import React from 'react';
-import { ScrollView } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { SavingsGoal } from '@types';
 import { useConfirmDeleteSavingsGoal } from '@hooks/useConfirmDeleteSavingsGoal';
@@ -48,42 +48,63 @@ const SavingsGoalOptionsModal: React.FC<SavingsGoalOptionsModalProps> = ({
             maxHeight="85%"
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                <Row icon="create-outline" title="Edit goal" onPress={handleEditPress} />
-                <Row
-                    leading={<Ionicons name="trash-outline" size={20} color={ds.danger} />}
-                    title="Delete goal"
-                    onPress={handleDeletePress}
-                    last
-                />
-
-                <SectionHeader title="Money" />
-                <Row
-                    icon="add-circle-outline"
-                    title="Add funds"
-                    subtitle="Manually top up this goal right now, separate from its recurring schedule. Always available, even while paused."
-                    onPress={handleAddFundsPress}
-                />
-                <Row
-                    icon="arrow-undo-outline"
-                    title="Withdraw to cash"
-                    subtitle="Need emergency cash? Move money out of this goal and back into your general funds."
-                    onPress={handleWithdrawPress}
-                    last={!hasRecurrence}
-                />
-                {hasRecurrence && (
+                <Group>
+                    <Row icon="create-outline" title="Edit goal" onPress={handleEditPress} />
                     <Row
-                        icon={goal.isPaused ? 'play-circle-outline' : 'pause-circle-outline'}
-                        title={goal.isPaused ? 'Resume auto-contribution' : 'Pause auto-contribution'}
-                        subtitle={goal.isPaused
-                            ? "Resumes the recurring contribution on its normal schedule."
-                            : "Only stops the recurring auto-contribution - the goal keeps its balance, and you can still Add Funds manually."}
-                        onPress={handleTogglePausePress}
+                        leading={
+                            <View style={[styles.tile, { backgroundColor: ds.tileNeutral }]}>
+                                <Ionicons name="trash-outline" size={18} color={ds.danger} />
+                            </View>
+                        }
+                        title="Delete goal"
+                        onPress={handleDeletePress}
                         last
                     />
-                )}
+                </Group>
+
+                <SectionHeader grouped title="Money" />
+                <Group>
+                    <Row
+                        domain="goals"
+                        icon="add-circle-outline"
+                        title="Add funds"
+                        subtitle="Manually top up this goal right now, separate from its recurring schedule. Always available, even while paused."
+                        onPress={handleAddFundsPress}
+                    />
+                    <Row
+                        domain="goals"
+                        icon="arrow-undo-outline"
+                        title="Withdraw to cash"
+                        subtitle="Need emergency cash? Move money out of this goal and back into your general funds."
+                        onPress={handleWithdrawPress}
+                        last={!hasRecurrence}
+                    />
+                    {hasRecurrence && (
+                        <Row
+                            icon={goal.isPaused ? 'play-circle-outline' : 'pause-circle-outline'}
+                            title={goal.isPaused ? 'Resume auto-contribution' : 'Pause auto-contribution'}
+                            subtitle={goal.isPaused
+                                ? "Resumes the recurring contribution on its normal schedule."
+                                : "Only stops the recurring auto-contribution - the goal keeps its balance, and you can still Add Funds manually."}
+                            onPress={handleTogglePausePress}
+                            last
+                        />
+                    )}
+                </Group>
             </ScrollView>
         </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    // Matches Row's neutral icon tile; only the icon carries the danger tone.
+    tile: {
+        width: 32,
+        height: 32,
+        borderRadius: 9,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
 
 export default SavingsGoalOptionsModal;

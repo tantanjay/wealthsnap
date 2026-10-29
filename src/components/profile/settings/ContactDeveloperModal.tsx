@@ -3,9 +3,9 @@ import { Text, Linking, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row } from '@components/ds';
+import { Group, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
-import { type, space } from '@styles/theme';
+import { type, space, layout } from '@styles/theme';
 
 interface ContactDeveloperModalProps {
     visible: boolean;
@@ -33,21 +33,24 @@ const ContactDeveloperModal: React.FC<ContactDeveloperModalProps> = ({ visible, 
                 Have questions, feature ideas, or just want to say hi? Reach out directly.
             </Text>
 
-            <Row
-                icon="logo-twitter"
-                title="@WealthSnapApp"
-                subtitle="Ping me on Twitter"
-                trailing={<Ionicons name="open-outline" size={16} color={ds.text3} />}
-                onPress={() => handlePress('https://twitter.com/WealthSnapApp')}
-                last
-            />
+            <Group>
+                <Row
+                    icon="logo-twitter"
+                    title="@WealthSnapApp"
+                    subtitle="Ping me on Twitter"
+                    trailing={<Ionicons name="open-outline" size={16} color={ds.text3} />}
+                    onPress={() => handlePress('https://twitter.com/WealthSnapApp')}
+                    last
+                />
+            </Group>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
     intro: {
-        marginBottom: space[2],
+        marginBottom: space[3],
+        paddingHorizontal: layout.groupPadding,
     },
 });
 

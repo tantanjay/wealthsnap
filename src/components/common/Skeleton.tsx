@@ -40,7 +40,8 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         return () => animation.stop();
     }, [opacity]);
 
-    const baseColor = ds.hairline;
+    // `track` reads on both the canvas and a group; `hairline` vanishes on the canvas.
+    const baseColor = ds.track;
 
     return (
         <Animated.View

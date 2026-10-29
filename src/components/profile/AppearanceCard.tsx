@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 
-import { Row, SectionHeader, Sheet } from '@components/ds';
+import { Group, Row, SectionHeader, Sheet } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { radius } from '@styles/theme';
 
@@ -26,31 +26,35 @@ const AppearanceCard: React.FC<AppearanceCardProps> = ({ mode, setMode }) => {
 
     return (
         <>
-            <SectionHeader title="Appearance" />
-            <Row icon="contrast-outline" title="Theme" subtitle={current} chevron last onPress={() => setVisible(true)} />
+            <SectionHeader grouped title="Appearance" />
+            <Group>
+                <Row icon="contrast-outline" title="Theme" subtitle={current} chevron last onPress={() => setVisible(true)} />
+            </Group>
 
             <Sheet
                 visible={visible}
                 onClose={() => setVisible(false)}
                 title="Theme"
             >
-                {THEME_OPTIONS.map((option, i) => {
-                    const selected = mode === option.value;
-                    return (
-                        <Row
-                            key={option.value}
-                            title={option.label}
-                            subtitle={option.value === 'system' ? 'Follows your device setting' : undefined}
-                            leading={
-                                <View style={[styles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
-                                    {selected && <View style={[styles.radioDot, { backgroundColor: ds.accent }]} />}
-                                </View>
-                            }
-                            onPress={() => setMode(option.value)}
-                            last={i === THEME_OPTIONS.length - 1}
-                        />
-                    );
-                })}
+                <Group>
+                    {THEME_OPTIONS.map((option, i) => {
+                        const selected = mode === option.value;
+                        return (
+                            <Row
+                                key={option.value}
+                                title={option.label}
+                                subtitle={option.value === 'system' ? 'Follows your device setting' : undefined}
+                                leading={
+                                    <View style={[styles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
+                                        {selected && <View style={[styles.radioDot, { backgroundColor: ds.accent }]} />}
+                                    </View>
+                                }
+                                onPress={() => setMode(option.value)}
+                                last={i === THEME_OPTIONS.length - 1}
+                            />
+                        );
+                    })}
+                </Group>
             </Sheet>
         </>
     );

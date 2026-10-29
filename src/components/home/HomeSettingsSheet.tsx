@@ -3,8 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 
 import { useTheme } from '@context/ThemeContext';
 import { PrivacyMode, usePrivacy } from '@context/PrivacyContext';
-import { type, radius } from '@styles/theme';
-import { Row, SectionHeader, Sheet } from '@components/ds';
+import { type, space, radius } from '@styles/theme';
+import { Group, Row, SectionHeader, Sheet } from '@components/ds';
 import { HoldingsSectionId, SNAPSHOT_RANGES, SnapshotRange, SnapshotRowId } from '@services/core/storageService';
 import SnapshotOrderList, { OrderItemMeta, SNAPSHOT_ROW_META } from './SnapshotOrderList';
 
@@ -63,44 +63,52 @@ const HomeSettingsSheet: React.FC<HomeSettingsSheetProps> = ({ visible, onClose,
             onClose={onClose}
             title={`${TAB_LABEL[tab]} settings`}
         >
-            <SectionHeader title="Privacy" />
-            <Text style={[type.small, { color: ds.text2 }]}>Applies everywhere as soon as you pick one.</Text>
-            {PRIVACY_OPTIONS.map((option, i) => (
-                <Row
-                    key={option.mode}
-                    title={option.label}
-                    subtitle={option.description}
-                    leading={<Radio selected={mode === option.mode} />}
-                    onPress={() => setMode(option.mode)}
-                    last={i === PRIVACY_OPTIONS.length - 1}
-                />
-            ))}
+            <SectionHeader grouped title="Privacy" />
+            <Group>
+                <Text style={[type.small, styles.note, { color: ds.text2 }]}>Applies everywhere as soon as you pick one.</Text>
+                {PRIVACY_OPTIONS.map((option, i) => (
+                    <Row
+                        key={option.mode}
+                        title={option.label}
+                        subtitle={option.description}
+                        leading={<Radio selected={mode === option.mode} />}
+                        onPress={() => setMode(option.mode)}
+                        last={i === PRIVACY_OPTIONS.length - 1}
+                    />
+                ))}
+            </Group>
 
             {tab === 'snapshot' && (
                 <>
-                    <SectionHeader title="Net worth graph" />
-                    <Text style={[type.small, { color: ds.text2 }]}>How far back the line under your net worth reaches.</Text>
-                    {SNAPSHOT_RANGES.map((option, i) => (
-                        <Row
-                            key={option.key}
-                            title={option.label}
-                            leading={<Radio selected={range === option.key} />}
-                            onPress={() => onChangeRange(option.key)}
-                            last={i === SNAPSHOT_RANGES.length - 1}
-                        />
-                    ))}
+                    <SectionHeader grouped title="Net worth graph" />
+                    <Group>
+                        <Text style={[type.small, styles.note, { color: ds.text2 }]}>How far back the line under your net worth reaches.</Text>
+                        {SNAPSHOT_RANGES.map((option, i) => (
+                            <Row
+                                key={option.key}
+                                title={option.label}
+                                leading={<Radio selected={range === option.key} />}
+                                onPress={() => onChangeRange(option.key)}
+                                last={i === SNAPSHOT_RANGES.length - 1}
+                            />
+                        ))}
+                    </Group>
 
-                    <SectionHeader title="Snapshot order" />
-                    <Text style={[type.small, { color: ds.text2 }]}>Hold the handle and drag to reorder the Overview rows. Net worth stays on top.</Text>
-                    <SnapshotOrderList order={order} meta={SNAPSHOT_ROW_META} onChange={onChangeOrder} />
+                    <SectionHeader grouped title="Snapshot order" />
+                    <Group style={styles.orderGroup}>
+                        <Text style={[type.small, styles.note, { color: ds.text2 }]}>Hold the handle and drag to reorder the Overview rows. Net worth stays on top.</Text>
+                        <SnapshotOrderList order={order} meta={SNAPSHOT_ROW_META} onChange={onChangeOrder} />
+                    </Group>
                 </>
             )}
 
             {tab === 'holdings' && (
                 <>
-                    <SectionHeader title="Section order" />
-                    <Text style={[type.small, { color: ds.text2 }]}>Hold the handle and drag to reorder the sections under your portfolio summary.</Text>
-                    <SnapshotOrderList order={holdingsOrder} meta={HOLDINGS_SECTION_META} onChange={onChangeHoldingsOrder} />
+                    <SectionHeader grouped title="Section order" />
+                    <Group style={styles.orderGroup}>
+                        <Text style={[type.small, styles.note, { color: ds.text2 }]}>Hold the handle and drag to reorder the sections under your portfolio summary.</Text>
+                        <SnapshotOrderList order={holdingsOrder} meta={HOLDINGS_SECTION_META} onChange={onChangeHoldingsOrder} />
+                    </Group>
                 </>
             )}
         </Sheet>
@@ -108,7 +116,15 @@ const HomeSettingsSheet: React.FC<HomeSettingsSheetProps> = ({ visible, onClose,
 };
 
 const styles = StyleSheet.create({
+    note: {
+        paddingTop: space[3],
+    },
+    // Lets the dragged row's shadow show past the group edge; the list drops the last hairline itself.
+    orderGroup: {
+        overflow: 'visible',
+    },
     radio: {
+
         width: 20,
         height: 20,
         borderRadius: radius.full,

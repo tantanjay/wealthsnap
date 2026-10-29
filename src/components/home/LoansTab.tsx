@@ -8,11 +8,11 @@ import BottomModal from '@components/common/BottomModal';
 import { Disclaimer } from '@components/common/Disclaimer';
 import { EmptyState } from '@components/common/EmptyState';
 import DebtStatusModal from '@components/debts/DebtStatusModal';
-import { Hero, ProgressBar, Row, SectionHeader, SegmentedControl, Tone } from '@components/ds';
+import { Group, Hero, ProgressBar, Row, SectionHeader, SegmentedControl, Tone } from '@components/ds';
 import { useAlert } from '@context/AlertContext';
 import { useTheme } from '@context/ThemeContext';
 import { DASH, PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { Debt, DebtStatus, Transaction } from '@types';
 import * as Storage from '@services/core/storageService';
 import { getAllDebts, saveDebt, deleteDebt } from '@services/domain/debtService';
@@ -211,6 +211,7 @@ const LoansTab: React.FC<LoansTabProps> = ({ format: f, currency, onOpenRecord }
         return (
             <Row
                 key={r.debt.id}
+                domain="loans"
                 title={r.debt.name}
                 subtitle={subtitle}
                 value={f.show(f.money(r.balance), repaid)}
@@ -286,7 +287,7 @@ const LoansTab: React.FC<LoansTabProps> = ({ format: f, currency, onOpenRecord }
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
                 <SegmentedControl options={SIDES} value={side} onChange={setSide} style={styles.segment} />
 
-                <Hero label={hero.label} value={hero.value} change={hero.change} changeTone={hero.changeTone} style={styles.hero} />
+                <Hero label={hero.label} value={hero.value} change={hero.change} changeTone={hero.changeTone} panel style={styles.hero} />
 
                 {side === 'owe' && data.unpayableNames.length > 0 && (
                     <View style={styles.warning}>
@@ -297,79 +298,86 @@ const LoansTab: React.FC<LoansTabProps> = ({ format: f, currency, onOpenRecord }
                     </View>
                 )}
 
-                <SectionHeader title="Active" actionLabel="New loan" onAction={() => onOpenRecord()} />
-                {list.length === 0 ? (
-                    <Text style={[type.small, styles.empty, { color: ds.text2 }]}>
-                        {side === 'owe' ? 'Nothing you owe right now.' : 'Nobody owes you right now.'}
-                    </Text>
-                ) : list.map(renderLoanRow)}
+                <SectionHeader grouped title="Active" actionLabel="New loan" onAction={() => onOpenRecord()} />
+                <Group>
+                    {list.length === 0 ? (
+                        <Text style={[type.small, styles.empty, { color: ds.text2 }]}>
+                            {side === 'owe' ? 'Nothing you owe right now.' : 'Nobody owes you right now.'}
+                        </Text>
+                    ) : list.map(renderLoanRow)}
+                </Group>
 
                 {side === 'owe' && data.owe.length > 0 && (
                     <>
-                        <SectionHeader title="Payoff plan" menu={{ options: STRATEGIES, value: strategy, onSelect: key => changeStrategy(key as Strategy) }} />
-                        <Text style={[type.small, { color: ds.text2 }]}>
-                            {strategy === 'AVALANCHE' ? 'Highest interest rate first: the least interest overall.' : 'Smallest balance first: quick wins.'}
-                        </Text>
-                        <Row
-                            icon="calendar-outline"
-                            title="Debt-free by"
-                            subtitle="At minimum payments"
-                            value={data.debtFreeDate ? monthYear(data.debtFreeDate) : DASH}
-                            change={data.monthsToGo !== null ? `${data.monthsToGo} months to go` : undefined}
-                        />
-                        <Row
-                            icon="trending-down-outline"
-                            title="Interest still to pay"
-                            subtitle={f.show(undefined, 'On top of what you owe')}
-                            value={f.show(f.money(data.totalInterest), formatPercent(data.interestSharePercent, { signed: true }))}
-                        />
-                        <Row
-                            icon="water-outline"
-                            title="Interest cost"
-                            subtitle={f.show("Every hour, at today's rates", 'A year, across what you owe')}
-                            value={f.show(leak, formatPercent(data.blendedRatePercent, { decimals: 1 }))}
-                        />
-                        <Row
-                            icon="hourglass-outline"
-                            title="Time cost"
-                            subtitle="Months of self-sustain borrowed"
-                            value={`${data.timeCostMonths.toFixed(1)} mo`}
-                            last
-                        />
+                        <SectionHeader grouped title="Payoff plan" menu={{ options: STRATEGIES, value: strategy, onSelect: key => changeStrategy(key as Strategy) }} />
+                        <Group>
+                            <Text style={[type.small, styles.planNote, { color: ds.text2 }]}>
+                                {strategy === 'AVALANCHE' ? 'Highest interest rate first: the least interest overall.' : 'Smallest balance first: quick wins.'}
+                            </Text>
+                            <Row
+                                icon="calendar-outline"
+                                title="Debt-free by"
+                                subtitle="At minimum payments"
+                                value={data.debtFreeDate ? monthYear(data.debtFreeDate) : DASH}
+                                change={data.monthsToGo !== null ? `${data.monthsToGo} months to go` : undefined}
+                            />
+                            <Row
+                                icon="trending-down-outline"
+                                title="Interest still to pay"
+                                subtitle={f.show(undefined, 'On top of what you owe')}
+                                value={f.show(f.money(data.totalInterest), formatPercent(data.interestSharePercent, { signed: true }))}
+                            />
+                            <Row
+                                icon="water-outline"
+                                title="Interest cost"
+                                subtitle={f.show("Every hour, at today's rates", 'A year, across what you owe')}
+                                value={f.show(leak, formatPercent(data.blendedRatePercent, { decimals: 1 }))}
+                            />
+                            <Row
+                                icon="hourglass-outline"
+                                title="Time cost"
+                                subtitle="Months of self-sustain borrowed"
+                                value={`${data.timeCostMonths.toFixed(1)} mo`}
+                                last
+                            />
+                        </Group>
                     </>
                 )}
 
                 {resolved.length > 0 && (
                     <>
-                        <SectionHeader title="Paid off" />
-                        {resolved.map((r, i) => {
-                            const lastPayment = transactions
-                                .filter(t => t.debtId === r.debt.id && (t.type === 'TRANSFER_OUT' || t.type === 'EXPENSE' || t.type === 'TRANSFER_IN'))
-                                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-                            const taken = new Date(r.debt.startDate || r.debt.createdAt);
-                            const resolution = DebtMetrics.getDebtResolution(r.debt, r.balance) ?? 'PAID';
-                            const interestType = isPayable(r.debt) ? 'EXPENSE' : 'INCOME';
-                            const interestPaid = transactions
-                                .filter(t => t.debtId === r.debt.id && t.type === interestType && (t.category === 'Interest' || t.subCategory === 'INTEREST'))
-                                .reduce((sum, t) => sum.plus(t.amount), new BigNumber(0));
-                            const interestPct = r.debt.initialAmount.gt(0) ? interestPaid.div(r.debt.initialAmount).times(100).toNumber() : null;
-                            return (
-                                <Row
-                                    key={r.debt.id}
-                                    title={r.debt.name}
-                                    subtitle={`${DebtMetrics.DEBT_RESOLUTION_LABELS[resolution]} · ${monthYear(taken)} → ${monthYear(lastPayment ? new Date(lastPayment.date) : new Date())}`}
-                                    value={f.isDiscreet ? undefined : f.money(r.debt.initialAmount)}
-                                    change={interestPaid.isZero() ? undefined : `${f.show(f.money(interestPaid, { signed: true }), formatPercent(interestPct, { signed: true }))} interest`}
-                                    onPress={() => setStatusModalDebt(r.debt)}
-                                    last={i === resolved.length - 1}
-                                />
-                            );
-                        })}
+                        <SectionHeader grouped title="Paid off" />
+                        <Group>
+                            {resolved.map((r, i) => {
+                                const lastPayment = transactions
+                                    .filter(t => t.debtId === r.debt.id && (t.type === 'TRANSFER_OUT' || t.type === 'EXPENSE' || t.type === 'TRANSFER_IN'))
+                                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                                const taken = new Date(r.debt.startDate || r.debt.createdAt);
+                                const resolution = DebtMetrics.getDebtResolution(r.debt, r.balance) ?? 'PAID';
+                                const interestType = isPayable(r.debt) ? 'EXPENSE' : 'INCOME';
+                                const interestPaid = transactions
+                                    .filter(t => t.debtId === r.debt.id && t.type === interestType && (t.category === 'Interest' || t.subCategory === 'INTEREST'))
+                                    .reduce((sum, t) => sum.plus(t.amount), new BigNumber(0));
+                                const interestPct = r.debt.initialAmount.gt(0) ? interestPaid.div(r.debt.initialAmount).times(100).toNumber() : null;
+                                return (
+                                    <Row
+                                        key={r.debt.id}
+                                        domain="loans"
+                                        title={r.debt.name}
+                                        subtitle={`${DebtMetrics.DEBT_RESOLUTION_LABELS[resolution]} · ${monthYear(taken)} → ${monthYear(lastPayment ? new Date(lastPayment.date) : new Date())}`}
+                                        value={f.isDiscreet ? undefined : f.money(r.debt.initialAmount)}
+                                        change={interestPaid.isZero() ? undefined : `${f.show(f.money(interestPaid, { signed: true }), formatPercent(interestPct, { signed: true }))} interest`}
+                                        onPress={() => setStatusModalDebt(r.debt)}
+                                        last={i === resolved.length - 1}
+                                    />
+                                );
+                            })}
+                        </Group>
                     </>
                 )}
 
                 {side === 'owe' && (
-                    <Disclaimer>
+                    <Disclaimer style={styles.disclaimer}>
                         This math exposes the raw cost of your debt. It doesn&apos;t account for bank re-pricing or hidden fees. Use this to plan your attack, but verify the final numbers with your lender.
                     </Disclaimer>
                 )}
@@ -527,16 +535,18 @@ const PaymentSheet: React.FC<PaymentSheetProps> = ({ debt, balance, currency, on
             }
         >
             <ScrollView keyboardShouldPersistTaps="handled">
-                <View style={styles.fields}>
+                <Group padded style={styles.fields}>
                     {field('Principal payment', 'Reduces the balance.', principalAmount, setPrincipalAmount)}
                     {field('Interest payment', 'Cost of borrowing. Does not reduce the balance.', interestAmount, setInterestAmount)}
                     {field('Fee / insurance payment', "Mandatory add-ons like mortgage or fire insurance. Fees don't reduce the principal.", feeAmount, setFeeAmount)}
-                </View>
+                </Group>
 
-                <Row title="Total payment" value={formatCurrencyAmount(total, currency)} last />
+                <Group style={styles.totalGroup}>
+                    <Row title="Total payment" value={formatCurrencyAmount(total, currency)} last />
+                </Group>
 
                 {debt && total.minus(debt.minPayment).abs().gt(0.01) && (
-                    <View style={styles.note}>
+                    <View style={[styles.note, styles.alignGroup]}>
                         <Ionicons name={SEVERITY_ICON.info} size={18} color={ds.text2} />
                         <Text style={[type.small, styles.noteText, { color: ds.text2 }]}>
                             {total.lt(debt.minPayment)
@@ -552,18 +562,29 @@ const PaymentSheet: React.FC<PaymentSheetProps> = ({ debt, balance, currency, on
 
 const styles = StyleSheet.create({
     content: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: space[7],
     },
     segment: {
         marginTop: space[4],
     },
     hero: {
-        paddingTop: space[5],
+        marginTop: space[3],
+    },
+    // Canvas text lines up with group content.
+    alignGroup: {
+        paddingHorizontal: layout.groupPadding,
     },
     warning: {
         flexDirection: 'row',
         gap: space[2],
+        marginTop: space[4],
+        paddingHorizontal: layout.groupPadding,
+    },
+    planNote: {
+        paddingTop: space[3],
+    },
+    disclaimer: {
         marginTop: space[4],
     },
     warningText: {
@@ -578,9 +599,12 @@ const styles = StyleSheet.create({
         paddingVertical: space[7] * 2,
     },
     fields: {
-        gap: space[4],
-        marginBottom: space[2],
+        gap: space[3],
     },
+    totalGroup: {
+        marginTop: space[3],
+    },
+
     fieldHelp: {
         marginBottom: space[2],
     },

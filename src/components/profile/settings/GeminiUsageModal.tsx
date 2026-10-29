@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { Disclaimer } from '@components/common/Disclaimer';
-import { Hero, Row } from '@components/ds';
+import { Group, Hero, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { AIUsageLog } from '@types';
 import { getAIUsageLogs } from '@services/domain/logService';
@@ -61,7 +61,7 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
             style={{ height: '85%' }}
             contentStyle={{ flex: 1 }}
         >
-            <Hero label="API usage · total est. cost" value={`$${totalCost.toFixed(4)}`} />
+            <Hero label="API usage · total est. cost" value={`$${totalCost.toFixed(4)}`} panel />
 
             <Disclaimer style={styles.disclaimer}>
                 Costs shown are internal estimates for tracking purposes. Actual billing is subject to your dashboard.
@@ -72,35 +72,39 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
                 contentContainerStyle={styles.scrollContent}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ds.accent} />}
             >
-                {logs.map((log, i) => {
-                    const isError = log.status === 'error';
-                    const time = new Date(log.timestamp).toLocaleString(undefined, {
-                        month: 'short', day: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                    });
-                    return (
-                        <Row
-                            key={log.id}
-                            leading={
-                                <Ionicons
-                                    name={isError ? 'alert-circle-outline' : 'checkmark-circle-outline'}
-                                    size={20}
-                                    color={isError ? ds.danger : ds.success}
+                {logs.length > 0 && (
+                    <Group>
+                        {logs.map((log, i) => {
+                            const isError = log.status === 'error';
+                            const time = new Date(log.timestamp).toLocaleString(undefined, {
+                                month: 'short', day: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                            });
+                            return (
+                                <Row
+                                    key={log.id}
+                                    leading={
+                                        <Ionicons
+                                            name={isError ? 'alert-circle-outline' : 'checkmark-circle-outline'}
+                                            size={20}
+                                            color={isError ? ds.danger : ds.success}
+                                        />
+                                    }
+                                    title={log.endpoint.replace('analyze', '').replace('Screenshot', '').replace('Image', '').replace('generate', '')}
+                                    subtitle={[log.model, `${time} (${(log.durationMs / 1000).toFixed(2)}s)`].filter(Boolean).join(' · ')}
+                                    value={`$${new BigNumber(log.costUSD || 0).toFixed(5)}`}
+                                    change={`In ${log.inputTokens}${log.imageCount > 0 ? ` (${log.imageCount} img)` : ''} · Out ${log.outputTokens}`}
+                                    last={i === logs.length - 1}
                                 />
-                            }
-                            title={log.endpoint.replace('analyze', '').replace('Screenshot', '').replace('Image', '').replace('generate', '')}
-                            subtitle={[log.model, `${time} (${(log.durationMs / 1000).toFixed(2)}s)`].filter(Boolean).join(' · ')}
-                            value={`$${new BigNumber(log.costUSD || 0).toFixed(5)}`}
-                            change={`In ${log.inputTokens}${log.imageCount > 0 ? ` (${log.imageCount} img)` : ''} · Out ${log.outputTokens}`}
-                            last={i === logs.length - 1}
-                        />
-                    );
-                })}
+                            );
+                        })}
+                    </Group>
+                )}
 
                 {logs.length === 0 && (
-                    <View style={styles.empty}>
+                    <Group padded style={styles.empty}>
                         <Text style={[type.small, { color: ds.text2 }]}>No usage logs yet.</Text>
-                    </View>
+                    </Group>
                 )}
             </ScrollView>
         </BottomModal>
@@ -119,7 +123,6 @@ const styles = StyleSheet.create({
         paddingBottom: space[6],
     },
     empty: {
-        padding: space[7],
         alignItems: 'center',
     }
 });

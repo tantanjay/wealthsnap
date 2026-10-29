@@ -4,12 +4,12 @@ import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { Transaction } from '@types';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { getCumulativeSpendingCurve, getCurrentMonthCumulative, getTransactionsByMonth } from '@utils/financialMetrics';
 import { saveInsightsPulsePeriod, getInsightsPulsePeriod } from '@services/core/storageService';
 
@@ -223,7 +223,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
             const isProjected = safeItems.some((i: any) => i?.type === 'Projected');
 
             if (isProjected) {
-                return <View style={[styles.pointer, { backgroundColor: ds.accent, borderColor: ds.bg }]} />;
+                return <View style={[styles.pointer, { backgroundColor: ds.accent, borderColor: ds.group }]} />;
             }
             return <View />;
         },
@@ -298,81 +298,85 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     // The chart box is the page width minus its right gutter (it bleeds into the left one), so day 31's
     // label must fit inside that box: spacing comes from what's left after the y-axis and edge room.
     const yAxisWidth = format.isOpen ? 56 : space[5];
-    const plotWidth = screenWidth - space[5] - yAxisWidth;
+    // The chart bleeds into the group's left padding, so it spans group edge → content edge.
+    const plotWidth = screenWidth - layout.groupInset * 2 - layout.groupPadding - yAxisWidth;
     const pointSpacing = (plotWidth - X_START - X_END) / 30;
 
     return (
         <View>
             <SectionHeader
+                grouped
                 title="Monthly pulse"
                 menu={avgData.length > 0
                     ? { options: PERIODS, value: String(period), onSelect: key => handlePeriodChange(Number(key) as 3 | 6 | 12) }
                     : undefined}
             />
-            <View style={styles.subline}>
-                <Text style={[type.small, styles.flex, { color: ds.text2 }]}>{insight || "Cumulative spending"}</Text>
-                <Pressable onPress={() => setShowInfo(true)} hitSlop={space[2]}>
-                    <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
-                </Pressable>
-            </View>
-
-            {isLoading ? (
-                <Skeleton height={CHART_HEIGHT} width="100%" borderRadius={radius.md} />
-            ) : format.isHidden ? (
-                <HiddenChart height={CHART_HEIGHT} />
-            ) : (
-                <View style={styles.chart}>
-                    <LineChart
-                        dataSet={dataSet}
-                        height={CHART_HEIGHT}
-                        width={plotWidth}
-                        spacing={pointSpacing}
-                        initialSpacing={X_START}
-                        endSpacing={X_END}
-                        thickness={1.5}
-                        hideRules
-                        yAxisColor="transparent"
-                        xAxisColor="transparent"
-                        yAxisTextStyle={axisText}
-                        xAxisLabelTextStyle={[axisText, styles.xLabel]}
-                        hideYAxisText={!format.isOpen}
-                        hideDataPoints
-                        curved
-                        curveType={0}
-                        xAxisIndicesHeight={2}
-                        xAxisIndicesWidth={2}
-                        noOfSections={4}
-                        xAxisLabelTexts={Array.from({ length: 31 }, (_, i) => (i + 1) % 5 === 0 ? (i + 1).toString() : "")}
-                        formatYLabel={(value: string) => {
-                            const num = parseFloat(value);
-                            return format.money(isNaN(num) ? 0 : num, { compact: true });
-                        }}
-                        yAxisLabelWidth={yAxisWidth}
-                        animationDuration={1000}
-                        pointerConfig={pointerConfig}
-                    />
+            <Group padded>
+                <View style={styles.subline}>
+                    <Text style={[type.small, styles.flex, { color: ds.text2 }]}>{insight || "Cumulative spending"}</Text>
+                    <Pressable onPress={() => setShowInfo(true)} hitSlop={space[2]}>
+                        <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
+                    </Pressable>
                 </View>
-            )}
 
-            {/* Legend */}
-            {!isLoading && !format.isHidden && avgData.length > 0 && (
-                <View style={styles.legend}>
-                    <View style={styles.legendItem}>
-                        <View style={[styles.swatch, { backgroundColor: ds.accent }]} />
-                        <Text style={[type.caption, { color: ds.text2 }]}>Current</Text>
+                {isLoading ? (
+                    <Skeleton height={CHART_HEIGHT} width="100%" borderRadius={radius.md} />
+                ) : format.isHidden ? (
+                    <HiddenChart height={CHART_HEIGHT} />
+                ) : (
+                    <View style={styles.chart}>
+                        <LineChart
+                            dataSet={dataSet}
+                            height={CHART_HEIGHT}
+                            width={plotWidth}
+                            spacing={pointSpacing}
+                            initialSpacing={X_START}
+                            endSpacing={X_END}
+                            thickness={1.5}
+                            hideRules
+                            yAxisColor="transparent"
+                            xAxisColor="transparent"
+                            yAxisTextStyle={axisText}
+                            xAxisLabelTextStyle={[axisText, styles.xLabel]}
+                            hideYAxisText={!format.isOpen}
+                            hideDataPoints
+                            curved
+                            curveType={0}
+                            xAxisIndicesHeight={2}
+                            xAxisIndicesWidth={2}
+                            noOfSections={4}
+                            xAxisLabelTexts={Array.from({ length: 31 }, (_, i) => (i + 1) % 5 === 0 ? (i + 1).toString() : "")}
+                            formatYLabel={(value: string) => {
+                                const num = parseFloat(value);
+                                return format.money(isNaN(num) ? 0 : num, { compact: true });
+                            }}
+                            yAxisLabelWidth={yAxisWidth}
+                            animationDuration={1000}
+                            pointerConfig={pointerConfig}
+                        />
                     </View>
-                    {projectionData.length > 0 && (
+                )}
+
+                {/* Legend */}
+                {!isLoading && !format.isHidden && avgData.length > 0 && (
+                    <View style={styles.legend}>
                         <View style={styles.legendItem}>
-                            <View style={[styles.swatch, styles.dashed, { borderColor: ds.accent }]} />
-                            <Text style={[type.caption, { color: ds.text2 }]}>Projected</Text>
+                            <View style={[styles.swatch, { backgroundColor: ds.accent }]} />
+                            <Text style={[type.caption, { color: ds.text2 }]}>Current</Text>
                         </View>
-                    )}
-                    <View style={styles.legendItem}>
-                        <View style={[styles.swatch, styles.dashed, { borderColor: ds.text2 }]} />
-                        <Text style={[type.caption, { color: ds.text2 }]}>{period}M average</Text>
+                        {projectionData.length > 0 && (
+                            <View style={styles.legendItem}>
+                                <View style={[styles.swatch, styles.dashed, { borderColor: ds.accent }]} />
+                                <Text style={[type.caption, { color: ds.text2 }]}>Projected</Text>
+                            </View>
+                        )}
+                        <View style={styles.legendItem}>
+                            <View style={[styles.swatch, styles.dashed, { borderColor: ds.text2 }]} />
+                            <Text style={[type.caption, { color: ds.text2 }]}>{period}M average</Text>
+                        </View>
                     </View>
-                </View>
-            )}
+                )}
+            </Group>
 
             <BottomModal
                 visible={showInfo}
@@ -385,31 +389,35 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                         This chart shows your <Text style={{ color: ds.text }}>spending speed</Text> throughout the month. It adds up your expenses day by day.
                     </Text>
 
-                    <Row
-                        leading={<View style={[modalStyles.swatch, { backgroundColor: ds.accent }]} />}
-                        title="Solid line (current)"
-                        subtitle="Your actual spending so far this month."
-                    />
-                    <Row
-                        leading={<View style={[modalStyles.swatch, modalStyles.dashed, { borderColor: ds.accent }]} />}
-                        title="Dotted line (projection)"
-                        subtitle="Where you're headed based on your historical spending pattern."
-                    />
-                    <Row
-                        leading={<View style={[modalStyles.swatch, modalStyles.dashed, { borderColor: ds.text2 }]} />}
-                        title="Dashed line (average)"
-                        subtitle="How you usually spend by this time of the month."
-                        last
-                    />
+                    <Group>
+                        <Row
+                            leading={<View style={[modalStyles.swatch, { backgroundColor: ds.accent }]} />}
+                            title="Solid line (current)"
+                            subtitle="Your actual spending so far this month."
+                        />
+                        <Row
+                            leading={<View style={[modalStyles.swatch, modalStyles.dashed, { borderColor: ds.accent }]} />}
+                            title="Dotted line (projection)"
+                            subtitle="Where you're headed based on your historical spending pattern."
+                        />
+                        <Row
+                            leading={<View style={[modalStyles.swatch, modalStyles.dashed, { borderColor: ds.text2 }]} />}
+                            title="Dashed line (average)"
+                            subtitle="How you usually spend by this time of the month."
+                            last
+                        />
+                    </Group>
 
-                    <View style={modalStyles.note}>
-                        <Ionicons name="flag-outline" size={20} color={ds.text2} />
-                        <Text style={[type.small, modalStyles.noteText, { color: ds.text2 }]}>
-                            <Text style={[type.smallMedium, { color: ds.text }]}>The goal: </Text>
-                            Try to keep your solid line <Text style={{ color: ds.text }}>below</Text> the dashed line.
-                            If it goes above, you are spending faster than your historical average.
-                        </Text>
-                    </View>
+                    <Group padded style={modalStyles.noteGroup}>
+                        <View style={modalStyles.note}>
+                            <Ionicons name="flag-outline" size={20} color={ds.text2} />
+                            <Text style={[type.small, modalStyles.noteText, { color: ds.text2 }]}>
+                                <Text style={[type.smallMedium, { color: ds.text }]}>The goal: </Text>
+                                Try to keep your solid line <Text style={{ color: ds.text }}>below</Text> the dashed line.
+                                If it goes above, you are spending faster than your historical average.
+                            </Text>
+                        </View>
+                    </Group>
                 </ScrollView>
             </BottomModal>
         </View>
@@ -436,7 +444,7 @@ const styles = StyleSheet.create({
     },
     chart: {
         overflow: 'hidden',
-        marginLeft: -space[5],
+        marginLeft: -layout.groupPadding,
     },
     xLabel: {
         width: 30,
@@ -510,7 +518,8 @@ const styles = StyleSheet.create({
 
 const modalStyles = StyleSheet.create({
     lead: {
-        marginBottom: space[2],
+        marginBottom: space[3],
+        paddingHorizontal: layout.groupPadding,
     },
     swatch: {
         width: 20,
@@ -526,7 +535,9 @@ const modalStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: space[3],
-        marginTop: space[6],
+    },
+    noteGroup: {
+        marginTop: space[4],
     },
     noteText: {
         flex: 1,

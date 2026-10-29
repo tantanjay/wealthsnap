@@ -3,7 +3,7 @@ import { TouchableOpacity, Text, ViewStyle, StyleProp, ActivityIndicator, View, 
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 
 interface ButtonProps {
     title: string;
@@ -19,10 +19,11 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, variant = 'prima
     const { ds } = useTheme();
 
     const getBackgroundColor = () => {
-        if (disabled) return ds.inset;
+        // Buttons sit on the canvas, where `inset` would vanish.
+        if (disabled) return ds.group;
         switch (variant) {
             case 'primary': return ds.accent;
-            case 'secondary': return ds.inset;
+            case 'secondary': return ds.group;
             default: return 'transparent';
         }
     };
@@ -75,11 +76,11 @@ interface CardProps {
     children: React.ReactNode;
     style?: StyleProp<ViewStyle>;
     onLayout?: (event: LayoutChangeEvent) => void;
-    // Hairline-bordered on the page instead of the inset tile fill, for repeated list rows.
+    // Adds a hairline border, for repeated list rows.
     flat?: boolean;
 }
 
-// Legacy container drawn as a DESIGN.md tile; no shadow, since it's in-flow content.
+// Legacy container drawn as the `group` surface (docs/DESIGN.md, Group); no shadow.
 export const Card: React.FC<CardProps> = ({ children, style, onLayout, flat }) => {
     const { ds } = useTheme();
     return (
@@ -87,13 +88,12 @@ export const Card: React.FC<CardProps> = ({ children, style, onLayout, flat }) =
             onLayout={onLayout}
             style={[
                 {
-                    borderRadius: radius.md,
-                    padding: space[4],
+                    backgroundColor: ds.group,
+                    borderRadius: radius.group,
+                    padding: layout.groupPadding,
                     marginBottom: space[4],
                 },
-                flat
-                    ? { backgroundColor: ds.bg, borderWidth: 1, borderColor: ds.hairline }
-                    : { backgroundColor: ds.inset },
+                flat && { borderWidth: 1, borderColor: ds.hairline },
                 style
             ]}>
             {children}

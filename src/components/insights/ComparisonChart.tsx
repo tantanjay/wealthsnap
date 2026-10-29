@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
-import { SectionHeader } from '@components/ds';
+import { Group, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
@@ -360,39 +360,42 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
     return (
         <View>
             <SectionHeader
+                grouped
                 title={activeView === 'COMPARISON' ? 'Spending comparison' : 'Monthly spending'}
                 menu={{ options: VIEWS, value: activeView, onSelect: key => handleViewChange(key as 'COMPARISON' | 'MONTHLY') }}
             />
 
-            <View style={styles.subline}>
-                <Text style={[type.small, styles.flex, { color: ds.text2 }]}>{isLoading ? "Analyzing spending habits..." : getComparisonInsight()}</Text>
-                <Pressable onPress={() => setShowInsightInfo(true)} hitSlop={space[2]}>
-                    <Ionicons name="calculator-outline" size={18} color={ds.text2} />
-                </Pressable>
-            </View>
-            <Text style={[type.caption, styles.footnote, { color: ds.text2 }]}>
-                *Projection assumes even spending throughout month
-            </Text>
-
-            <View style={styles.toolbar}>
-                {activeView === 'MONTHLY' ? (
-                    <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
-                ) : <View />}
-                <Pressable onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
-                    <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
-                </Pressable>
-            </View>
-
-            {isLoading ? (
-                <Skeleton height={CHART_HEIGHT} width="100%" borderRadius={radius.md} />
-            ) : format.isHidden ? (
-                <HiddenChart height={CHART_HEIGHT} />
-            ) : (
-                <View style={styles.chartArea}>
-                    {activeView === 'MONTHLY' && timeRange === '1Y' && renderYearSelector()}
-                    {renderChart()}
+            <Group padded>
+                <View style={styles.subline}>
+                    <Text style={[type.small, styles.flex, { color: ds.text2 }]}>{isLoading ? "Analyzing spending habits..." : getComparisonInsight()}</Text>
+                    <Pressable onPress={() => setShowInsightInfo(true)} hitSlop={space[2]}>
+                        <Ionicons name="calculator-outline" size={18} color={ds.text2} />
+                    </Pressable>
                 </View>
-            )}
+                <Text style={[type.caption, styles.footnote, { color: ds.text2 }]}>
+                    *Projection assumes even spending throughout month
+                </Text>
+
+                <View style={styles.toolbar}>
+                    {activeView === 'MONTHLY' ? (
+                        <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
+                    ) : <View />}
+                    <Pressable onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
+                        <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
+                    </Pressable>
+                </View>
+
+                {isLoading ? (
+                    <Skeleton height={CHART_HEIGHT} width="100%" borderRadius={radius.md} />
+                ) : format.isHidden ? (
+                    <HiddenChart height={CHART_HEIGHT} />
+                ) : (
+                    <View style={styles.chartArea}>
+                        {activeView === 'MONTHLY' && timeRange === '1Y' && renderYearSelector()}
+                        {renderChart()}
+                    </View>
+                )}
+            </Group>
 
             <BottomModal
                 visible={showInfoModal}
@@ -401,46 +404,50 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                 maxHeight="85%"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <Text style={[type.small, { color: ds.text2 }]}>
-                        This chart compares your current spending against your past habits.
-                    </Text>
-
-                    <View style={modalStyles.scenarios}>
-                        <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
-                            {renderVisualScenario('OVER')}
-                            <Text style={[type.body, { color: ds.text }]}>Spending more</Text>
-                            <Text style={[type.small, modalStyles.center, { color: ds.text2 }]}>
-                                When this month&apos;s bar is taller than the average bars, you are spending above your average.
-                            </Text>
-                        </View>
-                        <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
-                            {renderVisualScenario('UNDER')}
-                            <Text style={[type.body, { color: ds.text }]}>Spending less</Text>
-                            <Text style={[type.small, modalStyles.center, { color: ds.text2 }]}>
-                                When this month&apos;s bar is shorter, you are saving money.
-                            </Text>
-                        </View>
-                    </View>
-
-                    <SectionHeader title="What do the labels mean?" />
-                    <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
-                        <Text style={[type.smallMedium, { color: ds.text }]}>This M*: </Text>
-                        Projected full month spending.{'\n'}
-                        <Text style={[type.smallMedium, { color: ds.accent }]}>Solid color</Text> = actual spending so far.{'\n'}
-                        <Text style={{ color: ds.accent, opacity: 0.5 }}>Lighter color</Text> = projected remaining.
-                    </Text>
-                    <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
-                        <Text style={[type.smallMedium, { color: ds.text }]}>Avg 3M/6M/1Y: </Text>
-                        Your average monthly spending over the last 3 months, 6 months, and 1 year, counting full months only.
-                    </Text>
-
-                    <View style={modalStyles.note}>
-                        <Ionicons name="information-circle-outline" size={20} color={ds.text2} />
-                        <Text style={[type.small, modalStyles.noteText, { color: ds.text2 }]}>
-                            <Text style={[type.smallMedium, { color: ds.text }]}>New account? </Text>
-                            If you just started using WealthSnap, these bars might look identical. As you track more months, they will start to show different trends.
+                    <Group padded>
+                        <Text style={[type.small, { color: ds.text2 }]}>
+                            This chart compares your current spending against your past habits.
                         </Text>
-                    </View>
+
+                        <View style={modalStyles.scenarios}>
+                            <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
+                                {renderVisualScenario('OVER')}
+                                <Text style={[type.body, { color: ds.text }]}>Spending more</Text>
+                                <Text style={[type.small, modalStyles.center, { color: ds.text2 }]}>
+                                    When this month&apos;s bar is taller than the average bars, you are spending above your average.
+                                </Text>
+                            </View>
+                            <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
+                                {renderVisualScenario('UNDER')}
+                                <Text style={[type.body, { color: ds.text }]}>Spending less</Text>
+                                <Text style={[type.small, modalStyles.center, { color: ds.text2 }]}>
+                                    When this month&apos;s bar is shorter, you are saving money.
+                                </Text>
+                            </View>
+                        </View>
+                    </Group>
+
+                    <SectionHeader grouped title="What do the labels mean?" />
+                    <Group padded>
+                        <Text style={[type.small, { color: ds.text2 }]}>
+                            <Text style={[type.smallMedium, { color: ds.text }]}>This M*: </Text>
+                            Projected full month spending.{'\n'}
+                            <Text style={[type.smallMedium, { color: ds.accent }]}>Solid color</Text> = actual spending so far.{'\n'}
+                            <Text style={{ color: ds.accent, opacity: 0.5 }}>Lighter color</Text> = projected remaining.
+                        </Text>
+                        <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
+                            <Text style={[type.smallMedium, { color: ds.text }]}>Avg 3M/6M/1Y: </Text>
+                            Your average monthly spending over the last 3 months, 6 months, and 1 year, counting full months only.
+                        </Text>
+
+                        <View style={modalStyles.note}>
+                            <Ionicons name="information-circle-outline" size={20} color={ds.text2} />
+                            <Text style={[type.small, modalStyles.noteText, { color: ds.text2 }]}>
+                                <Text style={[type.smallMedium, { color: ds.text }]}>New account? </Text>
+                                If you just started using WealthSnap, these bars might look identical. As you track more months, they will start to show different trends.
+                            </Text>
+                        </View>
+                    </Group>
                 </ScrollView>
             </BottomModal>
 
@@ -450,7 +457,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                 title="How is this calculated?"
                 maxHeight="55%"
             >
-                <View>
+                <Group padded>
                     <Text style={[type.small, modalStyles.lead, { color: ds.text2 }]}>
                         This smart insight compares your <Text style={{ color: ds.text }}>projected spending</Text> for this month against your <Text style={{ color: ds.text }}>3-month average</Text>.
                     </Text>
@@ -471,7 +478,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                             </Text>
                         </View>
                     </View>
-                </View>
+                </Group>
             </BottomModal>
         </View>
     );
@@ -608,7 +615,7 @@ const modalStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: space[3],
-        marginTop: space[6],
+        marginTop: space[4],
     },
     noteText: {
         flex: 1,
