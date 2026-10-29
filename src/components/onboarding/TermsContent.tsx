@@ -1,14 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@context/ThemeContext';
-import { type, space, fontFamily } from '@styles/theme';
+import { type, space, fontFamily, layout } from '@styles/theme';
 
 const TermsContent: React.FC = () => {
     const { ds } = useTheme();
 
     const styles = React.useMemo(() => StyleSheet.create({
+        // Vertical only: the Group or card around it supplies the side padding.
         container: {
-            padding: space[5],
+            paddingVertical: layout.groupPadding,
         },
         termsHeading: {
             ...type.bodyStrong,

@@ -3,6 +3,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 
 import BottomModal from '@components/common/BottomModal';
+import { Group } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { type, space, radius } from '@styles/theme';
@@ -102,43 +103,45 @@ const PriceHistoryFormModal: React.FC<PriceHistoryFormModalProps> = ({
                 </TouchableOpacity>
             }
         >
-            <View style={styles.inputGroup}>
-                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Date</Text>
-                <TouchableOpacity
-                    style={[styles.input, { backgroundColor: ds.inset }]}
-                    onPress={() => setShowDatePicker(true)}
-                >
-                    <Text style={[type.bodyNum, { color: ds.text }]}>{date.toLocaleDateString()}</Text>
-                </TouchableOpacity>
-                {showDatePicker && (
-                    <DateTimePicker
-                        value={date}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={onDateChange}
-                        maximumDate={new Date()}
-                    />
-                )}
-            </View>
+            <Group padded>
+                <View style={styles.inputGroup}>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Date</Text>
+                    <TouchableOpacity
+                        style={[styles.input, { backgroundColor: ds.inset }]}
+                        onPress={() => setShowDatePicker(true)}
+                    >
+                        <Text style={[type.bodyNum, { color: ds.text }]}>{date.toLocaleDateString()}</Text>
+                    </TouchableOpacity>
+                    {showDatePicker && (
+                        <DateTimePicker
+                            value={date}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={onDateChange}
+                            maximumDate={new Date()}
+                        />
+                    )}
+                </View>
 
-            <View style={styles.inputGroup}>
-                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Price</Text>
-                <TextInput
-                    style={[type.bodyNum, styles.input, { backgroundColor: ds.inset, color: ds.text }]}
-                    value={price}
-                    onChangeText={setPrice}
-                    placeholder="0.00"
-                    placeholderTextColor={ds.text3}
-                    keyboardType="numeric"
-                />
-            </View>
+                <View>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Price</Text>
+                    <TextInput
+                        style={[type.bodyNum, styles.input, { backgroundColor: ds.inset, color: ds.text }]}
+                        value={price}
+                        onChangeText={setPrice}
+                        placeholder="0.00"
+                        placeholderTextColor={ds.text3}
+                        keyboardType="numeric"
+                    />
+                </View>
+            </Group>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
     inputGroup: {
-        marginBottom: space[4],
+        marginBottom: space[3],
     },
     label: {
         marginBottom: space[2],

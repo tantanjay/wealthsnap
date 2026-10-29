@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-import { Row, SectionHeader, Sheet } from '@components/ds';
+import { Group, Row, SectionHeader, Sheet } from '@components/ds';
 import SnapshotOrderList, { OrderItemMeta } from '@components/home/SnapshotOrderList';
 import { useTheme } from '@context/ThemeContext';
 import { HEALTH_GRID_SIZE, HEALTH_METRIC_IDS, HealthMetricId } from '@services/core/storageService';
-import { type, space } from '@styles/theme';
+import { type, space, layout } from '@styles/theme';
 import { HEALTH_METRIC_META } from './financialHealthPool';
 
 // Sections below the grid, in their default order. 'budgets' is new with the redesign.
@@ -65,36 +65,40 @@ const InsightsSettingsSheet: React.FC<InsightsSettingsSheetProps> = ({ visible, 
             onClose={onClose}
             title="Insights settings"
         >
-            {/* SectionHeader's spacing, with a counter instead of a link on the right. */}
+            {/* A grouped SectionHeader's spacing, with a counter instead of a link on the right. */}
             <View style={styles.headerRow}>
                 <Text style={[type.smallStrong, { color: ds.text }]}>Financial health grid</Text>
                 <Text style={[type.smallMediumNum, { color: full ? ds.accent : ds.text2 }]}>
                     {grid.length} of {HEALTH_GRID_SIZE}
                 </Text>
             </View>
-            <Text style={[type.small, { color: ds.text2 }]}>
+            <Text style={[type.small, styles.hint, { color: ds.text2 }]}>
                 Checked numbers move to the top in the order you check them; that&apos;s their order on the grid.
             </Text>
-            {ids.map((id, i) => {
-                const position = grid.indexOf(id) + 1;
-                const locked = !position && full;
-                const isLastPicked = position > 0 && position === grid.length && i < ids.length - 1;
-                return (
-                    <Row
-                        key={id}
-                        title={HEALTH_METRIC_META[id].label}
-                        subtitle={position ? `Card ${position}` : undefined}
-                        leading={<NumberedCheck position={position} />}
-                        onPress={locked ? undefined : () => onChangeGrid(toggleGridPick(grid, id))}
-                        last={i === ids.length - 1}
-                        style={[locked && styles.locked, isLastPicked && styles.lastPicked]}
-                    />
-                );
-            })}
+            <Group>
+                {ids.map((id, i) => {
+                    const position = grid.indexOf(id) + 1;
+                    const locked = !position && full;
+                    const isLastPicked = position > 0 && position === grid.length && i < ids.length - 1;
+                    return (
+                        <Row
+                            key={id}
+                            title={HEALTH_METRIC_META[id].label}
+                            subtitle={position ? `Card ${position}` : undefined}
+                            leading={<NumberedCheck position={position} />}
+                            onPress={locked ? undefined : () => onChangeGrid(toggleGridPick(grid, id))}
+                            last={i === ids.length - 1}
+                            style={[locked && styles.locked, isLastPicked && styles.lastPicked]}
+                        />
+                    );
+                })}
+            </Group>
 
-            <SectionHeader title="Section order" />
-            <Text style={[type.small, { color: ds.text2 }]}>Hold the handle and drag to reorder the sections below the grid.</Text>
-            <SnapshotOrderList order={sectionOrder} meta={INSIGHTS_SECTION_META} onChange={onChangeSectionOrder} />
+            <SectionHeader grouped title="Section order" />
+            <Text style={[type.small, styles.hint, { color: ds.text2 }]}>Hold the handle and drag to reorder the sections below the grid.</Text>
+            <Group>
+                <SnapshotOrderList order={sectionOrder} meta={INSIGHTS_SECTION_META} onChange={onChangeSectionOrder} />
+            </Group>
         </Sheet>
     );
 };
@@ -105,6 +109,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginTop: space[6],
         marginBottom: space[1],
+        paddingHorizontal: layout.groupPadding,
+    },
+    hint: {
+        paddingHorizontal: layout.groupPadding,
+        marginBottom: space[2],
     },
     check: {
         width: 22,

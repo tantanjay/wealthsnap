@@ -21,7 +21,7 @@ function SegmentedControl<K extends string>({ options, value, onChange, style }:
     const { ds } = useTheme();
 
     return (
-        <View style={[styles.track, { backgroundColor: ds.inset }, style]} accessibilityRole="tablist">
+        <View style={[styles.track, { backgroundColor: ds.track }, style]} accessibilityRole="tablist">
             {options.map(option => {
                 const selected = option.key === value;
                 return (

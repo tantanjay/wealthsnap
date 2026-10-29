@@ -16,7 +16,7 @@ import FinancialHealthSheet, { HealthSheetTarget } from '@components/insights/Fi
 import InsightsSettingsSheet, { InsightsSectionId, normalizeSectionOrder, DEFAULT_SECTION_ORDER } from '@components/insights/InsightsSettingsSheet';
 import BudgetsSection, { BudgetLine } from '@components/insights/BudgetsSection';
 import { buildHealthEntries, InsightsMonthData } from '@components/insights/financialHealthPool';
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
@@ -24,7 +24,7 @@ import { usePrivacy } from '@context/PrivacyContext';
 import { useAIConsent } from '@hooks/useAIConsent';
 import { useFinancialHealth } from '@hooks/useFinancialHealth';
 import { usePrivacyFormat } from '@hooks/usePrivacyFormat';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { Transaction } from '@types';
 import { getAllBudgets } from '@services/domain/budgetService';
 import { getAllDebts } from '@services/domain/debtService';
@@ -383,12 +383,12 @@ const InsightScreen = ({ navigation }: any) => {
     const settingsIcon = <Ionicons name="options-outline" size={22} color={ds.text2} />;
 
     return (
-        <ScreenWrapper scrollable={false} noPadding style={{ backgroundColor: ds.bg }}>
+        <ScreenWrapper scrollable={false} noPadding>
             <View style={styles.topBar}>
                 <Text style={[type.title, styles.title, { color: ds.text }]} numberOfLines={1}>Insights</Text>
                 <View style={styles.actions}>
                     {mode !== 'open' && (
-                        <View style={[styles.chip, { backgroundColor: ds.inset }]}>
+                        <View style={[styles.chip, { backgroundColor: ds.group }]}>
                             <Text style={[type.captionMedium, { color: ds.text2 }]}>{mode === 'discreet' ? 'Discreet' : 'Hidden'}</Text>
                         </View>
                     )}
@@ -450,15 +450,17 @@ const InsightScreen = ({ navigation }: any) => {
                     {sectionOrder.map(id => <React.Fragment key={id}>{sections[id]}</React.Fragment>)}
                 </View>
 
-                <SectionHeader title="Ask" />
-                <Row
-                    title="Ask about your money"
-                    subtitle="Chat with WealthSnap AI"
-                    leading={<Ionicons name="sparkles-outline" size={20} color={ds.accent} />}
-                    chevron
-                    last
-                    onPress={openChat}
-                />
+                <SectionHeader grouped title="Ask" />
+                <Group>
+                    <Row
+                        title="Ask about your money"
+                        subtitle="Chat with WealthSnap AI"
+                        icon="sparkles-outline"
+                        chevron
+                        last
+                        onPress={openChat}
+                    />
+                </Group>
             </ScrollView>
 
             <FinancialHealthSheet
@@ -487,52 +489,54 @@ const InsightScreen = ({ navigation }: any) => {
                 title="Select month and year"
                 maxHeight="60%"
             >
-                <View style={styles.yearRow}>
-                    <Pressable
-                        onPress={() => setPickerYear(prev => prev - 1)}
-                        disabled={pickerYear <= availableRange.minYear}
-                        accessibilityLabel="Previous year"
-                        hitSlop={space[2]}
-                        style={styles.monthArrow}
-                    >
-                        <Ionicons name="chevron-back" size={22} color={pickerYear <= availableRange.minYear ? ds.text3 : ds.accent} />
-                    </Pressable>
-                    <Text style={[type.titleNum, { color: ds.text }]}>{pickerYear}</Text>
-                    <Pressable
-                        onPress={() => setPickerYear(prev => prev + 1)}
-                        disabled={pickerYear >= availableRange.maxYear}
-                        accessibilityLabel="Next year"
-                        hitSlop={space[2]}
-                        style={styles.monthArrow}
-                    >
-                        <Ionicons name="chevron-forward" size={22} color={pickerYear >= availableRange.maxYear ? ds.text3 : ds.accent} />
-                    </Pressable>
-                </View>
+                <Group padded>
+                    <View style={styles.yearRow}>
+                        <Pressable
+                            onPress={() => setPickerYear(prev => prev - 1)}
+                            disabled={pickerYear <= availableRange.minYear}
+                            accessibilityLabel="Previous year"
+                            hitSlop={space[2]}
+                            style={styles.monthArrow}
+                        >
+                            <Ionicons name="chevron-back" size={22} color={pickerYear <= availableRange.minYear ? ds.text3 : ds.accent} />
+                        </Pressable>
+                        <Text style={[type.titleNum, { color: ds.text }]}>{pickerYear}</Text>
+                        <Pressable
+                            onPress={() => setPickerYear(prev => prev + 1)}
+                            disabled={pickerYear >= availableRange.maxYear}
+                            accessibilityLabel="Next year"
+                            hitSlop={space[2]}
+                            style={styles.monthArrow}
+                        >
+                            <Ionicons name="chevron-forward" size={22} color={pickerYear >= availableRange.maxYear ? ds.text3 : ds.accent} />
+                        </Pressable>
+                    </View>
 
-                <View style={styles.monthGrid}>
-                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
-                        const isSelected = selectedDate.getMonth() === index && selectedDate.getFullYear() === pickerYear;
-                        const isFuture = pickerYear > availableRange.maxYear || (pickerYear === availableRange.maxYear && index > availableRange.maxMonth);
-                        const isBeforeStart = pickerYear < availableRange.minYear || (pickerYear === availableRange.minYear && index < availableRange.minMonth);
-                        const isDisabled = isFuture || isBeforeStart;
+                    <View style={styles.monthGrid}>
+                        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
+                            const isSelected = selectedDate.getMonth() === index && selectedDate.getFullYear() === pickerYear;
+                            const isFuture = pickerYear > availableRange.maxYear || (pickerYear === availableRange.maxYear && index > availableRange.maxMonth);
+                            const isBeforeStart = pickerYear < availableRange.minYear || (pickerYear === availableRange.minYear && index < availableRange.minMonth);
+                            const isDisabled = isFuture || isBeforeStart;
 
-                        return (
-                            <Pressable
-                                key={month}
-                                onPress={() => {
-                                    setSelectedDate(new Date(pickerYear, index, 1));
-                                    setIsDatePickerVisible(false);
-                                }}
-                                disabled={isDisabled}
-                                style={[styles.monthCell, { backgroundColor: isSelected ? ds.accent : ds.inset }]}
-                            >
-                                <Text style={[isSelected ? type.bodyStrong : type.body, { color: isSelected ? ds.onAccent : isDisabled ? ds.text3 : ds.text }]}>
-                                    {month}
-                                </Text>
-                            </Pressable>
-                        );
-                    })}
-                </View>
+                            return (
+                                <Pressable
+                                    key={month}
+                                    onPress={() => {
+                                        setSelectedDate(new Date(pickerYear, index, 1));
+                                        setIsDatePickerVisible(false);
+                                    }}
+                                    disabled={isDisabled}
+                                    style={[styles.monthCell, { backgroundColor: isSelected ? ds.accent : ds.inset }]}
+                                >
+                                    <Text style={[isSelected ? type.bodyStrong : type.body, { color: isSelected ? ds.onAccent : isDisabled ? ds.text3 : ds.text }]}>
+                                        {month}
+                                    </Text>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
+                </Group>
             </BottomModal>
         </ScreenWrapper>
     );
@@ -584,7 +588,7 @@ const styles = StyleSheet.create({
         opacity: 0.3,
     },
     content: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: space[7],
     },
     sections: {

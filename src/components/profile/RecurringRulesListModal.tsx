@@ -3,10 +3,10 @@ import { View, Text, Pressable, Switch, ScrollView, StyleSheet } from 'react-nat
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row } from '@components/ds';
+import { Group, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
-import { type, space } from '@styles/theme';
+import { type, space, layout } from '@styles/theme';
 import { RecurrenceRule } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { EmptyState } from '@components/common/EmptyState';
@@ -51,38 +51,40 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
                 {sortedRules.length === 0 ? (
                     <EmptyState size="compact" icon="repeat-outline" title="No recurring rules found." />
                 ) : (
-                    sortedRules.map((item, i) => {
-                        const nextDue = new Date(item.nextDueDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
-                        return (
-                            <Row
-                                key={item.id}
-                                icon="repeat-outline"
-                                title={item.name || item.transactionTemplate.category}
-                                subtitle={`${item.frequency} · Next due ${nextDue}`}
-                                value={isPrivacyEnabled ? '****' : formatCurrencyAmount(item.transactionTemplate.amount, currency)}
-                                valueTone={item.transactionTemplate.type === 'EXPENSE' ? 'bad' : 'good'}
-                                change={item.isActive ? 'Active' : 'Paused'}
-                                last={i === sortedRules.length - 1}
-                                trailing={
-                                    <View style={styles.actions}>
-                                        <Switch
-                                            value={item.isActive}
-                                            onValueChange={() => onToggleRule(item)}
-                                            trackColor={{ false: ds.hairline, true: ds.accentSoft }}
-                                            thumbColor={item.isActive ? ds.accent : ds.text3}
-                                        />
-                                        <Pressable
-                                            onPress={() => onDeleteRule(item.id)}
-                                            hitSlop={space[2]}
-                                            accessibilityLabel="Delete recurring rule"
-                                        >
-                                            <Ionicons name="trash-outline" size={20} color={ds.danger} />
-                                        </Pressable>
-                                    </View>
-                                }
-                            />
-                        );
-                    })
+                    <Group>
+                        {sortedRules.map((item, i) => {
+                            const nextDue = new Date(item.nextDueDate).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                            return (
+                                <Row
+                                    key={item.id}
+                                    icon="repeat-outline"
+                                    title={item.name || item.transactionTemplate.category}
+                                    subtitle={`${item.frequency} · Next due ${nextDue}`}
+                                    value={isPrivacyEnabled ? '****' : formatCurrencyAmount(item.transactionTemplate.amount, currency)}
+                                    valueTone={item.transactionTemplate.type === 'EXPENSE' ? 'bad' : 'good'}
+                                    change={item.isActive ? 'Active' : 'Paused'}
+                                    last={i === sortedRules.length - 1}
+                                    trailing={
+                                        <View style={styles.actions}>
+                                            <Switch
+                                                value={item.isActive}
+                                                onValueChange={() => onToggleRule(item)}
+                                                trackColor={{ false: ds.hairline, true: ds.accentSoft }}
+                                                thumbColor={item.isActive ? ds.accent : ds.text3}
+                                            />
+                                            <Pressable
+                                                onPress={() => onDeleteRule(item.id)}
+                                                hitSlop={space[2]}
+                                                accessibilityLabel="Delete recurring rule"
+                                            >
+                                                <Ionicons name="trash-outline" size={20} color={ds.danger} />
+                                            </Pressable>
+                                        </View>
+                                    }
+                                />
+                            );
+                        })}
+                    </Group>
                 )}
             </ScrollView>
         </BottomModal>
@@ -91,7 +93,8 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
 
 const styles = StyleSheet.create({
     heading: {
-        marginBottom: space[1],
+        marginBottom: space[2],
+        paddingHorizontal: layout.groupPadding,
     },
     actions: {
         flexDirection: 'row',

@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@context/ThemeContext';
 import { useSecurity } from '@context/SecurityContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 
 interface BottomModalProps {
     visible: boolean;
@@ -22,7 +22,7 @@ interface BottomModalProps {
     footer?: React.ReactNode;
 }
 
-// Older sheet API, drawn with the Refined Minimal sheet recipe (docs/DESIGN.md, Bottom sheet) so it matches ds/Sheet.
+// Older sheet API, drawn with the same canvas-toned sheet recipe as ds/Sheet (docs/DESIGN.md, Bottom sheet).
 const BottomModal: React.FC<BottomModalProps> = ({
     visible,
     onClose,
@@ -100,7 +100,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
                         styles.container,
                         elevation.sheet,
                         {
-                            backgroundColor: ds.sheet,
+                            backgroundColor: ds.canvas,
                             maxHeight: keyboardVisible ? '95%' : maxHeight,
                             paddingBottom: footer ? 0 : Math.max(insets.bottom, space[5])
                         },
@@ -146,7 +146,7 @@ const BottomModal: React.FC<BottomModalProps> = ({
                             style={[
                                 styles.footer,
                                 {
-                                    backgroundColor: ds.inset,
+                                    backgroundColor: ds.group,
                                     borderTopColor: ds.hairline,
                                     paddingBottom: Math.max(insets.bottom, space[6])
                                 }
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: radius.lg,
         borderTopRightRadius: radius.lg,
         paddingTop: space[3],
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         width: '100%',
     },
     grabber: {
@@ -192,6 +192,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: space[4],
+        paddingHorizontal: layout.groupPadding,
     },
     headerTextContainer: {
         flex: 1,
@@ -204,9 +205,9 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     footer: {
-        marginHorizontal: -space[5],
+        marginHorizontal: -layout.groupInset,
         marginTop: space[4],
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingTop: space[3],
         borderTopWidth: 1,
     },

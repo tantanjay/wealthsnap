@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, StyleS
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import { Group } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius } from '@styles/theme';
 import { BackupProgress } from '@services/integrations/backupService';
@@ -84,24 +85,26 @@ const BackupRestoreModal: React.FC<BackupRestoreModalProps> = ({
             }
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                    <Ionicons name="key-outline" size={18} color={ds.text2} />
-                    <TextInput
-                        style={[type.body, styles.input, { color: ds.text }]}
-                        placeholder="Password"
-                        placeholderTextColor={ds.text3}
-                        secureTextEntry={!showPassword}
-                        value={password}
-                        onChangeText={setPassword}
-                    />
-                    <Pressable
-                        onPressIn={() => setShowPassword(true)}
-                        onPressOut={() => setShowPassword(false)}
-                        hitSlop={space[2]}
-                    >
-                        <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={ds.text2} />
-                    </Pressable>
-                </View>
+                <Group padded>
+                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="key-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={[type.body, styles.input, { color: ds.text }]}
+                            placeholder="Password"
+                            placeholderTextColor={ds.text3}
+                            secureTextEntry={!showPassword}
+                            value={password}
+                            onChangeText={setPassword}
+                        />
+                        <Pressable
+                            onPressIn={() => setShowPassword(true)}
+                            onPressOut={() => setShowPassword(false)}
+                            hitSlop={space[2]}
+                        >
+                            <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={ds.text2} />
+                        </Pressable>
+                    </View>
+                </Group>
             </ScrollView>
         </BottomModal>
     );

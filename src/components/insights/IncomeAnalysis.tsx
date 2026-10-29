@@ -7,7 +7,7 @@ import { PieChart } from 'react-native-gifted-charts';
 import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
 import MonthEndProjectionModal from '@components/insights/modals/MonthEndProjectionModal';
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
@@ -375,7 +375,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                         data={pieData.map(d => ({ value: d.population.toNumber(), color: d.color, text: '' }))}
                         radius={70}
                         donut
-                        innerCircleColor={ds.bg}
+                        innerCircleColor={ds.group}
                         innerRadius={40}
                         centerLabelComponent={() => (
                             <View style={styles.pieCenter}>
@@ -406,48 +406,52 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
     return (
         <View>
             <SectionHeader
+                grouped
                 title="Income analytics"
                 menu={{ options: TABS, value: activeTab, onSelect: key => handleTabChange(key as 'TREND' | 'SOURCES') }}
             />
 
-            <View style={styles.subline}>
-                <Text style={[type.small, styles.flex, { color: ds.text2 }]}>{isLoading ? "Analyzing income trends..." : getInsight()}</Text>
-                <Pressable onPress={() => setShowInsightInfo(true)} hitSlop={space[2]}>
-                    <Ionicons name="calculator-outline" size={18} color={ds.text2} />
-                </Pressable>
-            </View>
-
-            <View style={styles.toolbar}>
-                {/* Time Range Filter - Only show for TREND tab */}
-                {activeTab === 'TREND' ? (
-                    <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
-                ) : <View />}
-                <Pressable onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
-                    <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
-                </Pressable>
-            </View>
-
-            {isLoading ? (
-                <Skeleton width="100%" height={chartHeight} borderRadius={radius.md} />
-            ) : format.isHidden ? (
-                <HiddenChart height={chartHeight} />
-            ) : activeTab === 'TREND' ? (
-                <View style={styles.trendArea}>
-                    {timeRange === '1Y' && renderYearSelector()}
-                    {renderTrend()}
+            <Group padded>
+                <View style={styles.subline}>
+                    <Text style={[type.small, styles.flex, { color: ds.text2 }]}>{isLoading ? "Analyzing income trends..." : getInsight()}</Text>
+                    <Pressable onPress={() => setShowInsightInfo(true)} hitSlop={space[2]}>
+                        <Ionicons name="calculator-outline" size={18} color={ds.text2} />
+                    </Pressable>
                 </View>
-            ) : renderSources()}
+
+                <View style={styles.toolbar}>
+                    {/* Time Range Filter - Only show for TREND tab */}
+                    {activeTab === 'TREND' ? (
+                        <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
+                    ) : <View />}
+                    <Pressable onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
+                        <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
+                    </Pressable>
+                </View>
+
+                {isLoading ? (
+                    <Skeleton width="100%" height={chartHeight} borderRadius={radius.md} />
+                ) : format.isHidden ? (
+                    <HiddenChart height={chartHeight} />
+                ) : activeTab === 'TREND' ? (
+                    <View style={styles.trendArea}>
+                        {timeRange === '1Y' && renderYearSelector()}
+                        {renderTrend()}
+                    </View>
+                ) : renderSources()}
+            </Group>
 
             {/* The projection sheet lists amounts and isn't privacy-aware yet */}
             {format.isOpen && (
-                <Row
-                    icon="trending-up-outline"
-                    title="Month-end projection"
-                    chevron
-                    onPress={() => setShowProjectionModal(true)}
-                    style={styles.projection}
-                    last
-                />
+                <Group style={styles.projection}>
+                    <Row
+                        icon="trending-up-outline"
+                        title="Month-end projection"
+                        chevron
+                        onPress={() => setShowProjectionModal(true)}
+                        last
+                    />
+                </Group>
             )}
 
             <MonthEndProjectionModal
@@ -464,47 +468,51 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                 maxHeight="85%"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <Text style={[type.small, { color: ds.text2 }]}>
-                        This chart compares your current income against your past months.
-                    </Text>
+                    <Group padded>
+                        <Text style={[type.small, { color: ds.text2 }]}>
+                            This chart compares your current income against your past months.
+                        </Text>
 
-                    <View style={modalStyles.scenarios}>
-                        <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
-                            <View style={modalStyles.scenarioBars}>
-                                <View style={[modalStyles.scenarioBar, { backgroundColor: ds.accent }]} />
-                            </View>
-                            <Text style={[type.body, { color: ds.text }]}>Actual</Text>
-                            <Text style={[type.small, modalStyles.center, { color: ds.text2 }]}>
-                                The solid bar shows income you have already received.
-                            </Text>
-                        </View>
-                        <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
-                            <View style={modalStyles.scenarioBars}>
-                                <View style={[modalStyles.scenarioBar, modalStyles.split]}>
-                                    <View style={[modalStyles.flex, { backgroundColor: ds.accent, opacity: PROJECTED_OPACITY }]} />
-                                    <View style={[modalStyles.flex, { backgroundColor: ds.accent }]} />
+                        <View style={modalStyles.scenarios}>
+                            <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
+                                <View style={modalStyles.scenarioBars}>
+                                    <View style={[modalStyles.scenarioBar, { backgroundColor: ds.accent }]} />
                                 </View>
+                                <Text style={[type.body, { color: ds.text }]}>Actual</Text>
+                                <Text style={[type.small, modalStyles.center, { color: ds.text2 }]}>
+                                    The solid bar shows income you have already received.
+                                </Text>
                             </View>
-                            <Text style={[type.body, { color: ds.text }]}>Projected</Text>
-                            <Text style={[type.small, modalStyles.center, { color: ds.text2 }]}>
-                                The lighter top part is what you&apos;re projected to earn by month end.
-                            </Text>
+                            <View style={[modalStyles.scenario, { backgroundColor: ds.inset }]}>
+                                <View style={modalStyles.scenarioBars}>
+                                    <View style={[modalStyles.scenarioBar, modalStyles.split]}>
+                                        <View style={[modalStyles.flex, { backgroundColor: ds.accent, opacity: PROJECTED_OPACITY }]} />
+                                        <View style={[modalStyles.flex, { backgroundColor: ds.accent }]} />
+                                    </View>
+                                </View>
+                                <Text style={[type.body, { color: ds.text }]}>Projected</Text>
+                                <Text style={[type.small, modalStyles.center, { color: ds.text2 }]}>
+                                    The lighter top part is what you&apos;re projected to earn by month end.
+                                </Text>
+                            </View>
                         </View>
-                    </View>
+                    </Group>
 
-                    <SectionHeader title="What do the labels mean?" />
-                    <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
-                        <Text style={[type.smallMedium, { color: ds.text }]}>Current month*: </Text>
-                        The asterisk (*) indicates this is a projection.
-                    </Text>
-                    <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
-                        <Text style={[type.smallMedium, { color: ds.accent }]}>Solid color: </Text>
-                        Actual income recorded.
-                    </Text>
-                    <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
-                        <Text style={[type.smallMedium, { color: ds.accent, opacity: 0.6 }]}>Lighter color: </Text>
-                        Projecting you will match your historical average.
-                    </Text>
+                    <SectionHeader grouped title="What do the labels mean?" />
+                    <Group padded>
+                        <Text style={[type.small, { color: ds.text2 }]}>
+                            <Text style={[type.smallMedium, { color: ds.text }]}>Current month*: </Text>
+                            The asterisk (*) indicates this is a projection.
+                        </Text>
+                        <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
+                            <Text style={[type.smallMedium, { color: ds.accent }]}>Solid color: </Text>
+                            Actual income recorded.
+                        </Text>
+                        <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
+                            <Text style={[type.smallMedium, { color: ds.accent, opacity: 0.6 }]}>Lighter color: </Text>
+                            Projecting you will match your historical average.
+                        </Text>
+                    </Group>
                 </ScrollView>
             </BottomModal>
             <BottomModal
@@ -513,7 +521,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                 title="How is this calculated?"
                 maxHeight="40%"
             >
-                <View>
+                <Group padded>
                     <Text style={[type.small, { color: ds.text2 }]}>
                         This smart insight compares the <Text style={{ color: ds.text }}>income actually recorded</Text> in the latest month shown (not the projected part of its bar) against the <Text style={{ color: ds.text }}>month before it</Text>.
                     </Text>
@@ -531,7 +539,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                             </View>
                         ))}
                     </View>
-                </View>
+                </Group>
             </BottomModal>
         </View>
     );

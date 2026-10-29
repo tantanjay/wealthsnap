@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator } from 'react-native';
 
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 
 interface DeveloperToolsCardProps {
@@ -16,15 +16,17 @@ const DeveloperToolsCard: React.FC<DeveloperToolsCardProps> = ({ onShareLogs, on
 
     return (
         <>
-            <SectionHeader title="Developer options" />
-            <Row icon="share-social-outline" title="Share crash log" onPress={onShareLogs} />
-            <Row
-                icon="cloud-upload-outline"
-                title={isRunningAutoBackup ? 'Running auto backup…' : 'Run auto backup now'}
-                onPress={isRunningAutoBackup ? undefined : onRunAutoBackup}
-                trailing={isRunningAutoBackup ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
-            />
-            <Row icon="warning-outline" title="Simulate crash" onPress={onSimulateCrash} last />
+            <SectionHeader grouped title="Developer options" />
+            <Group>
+                <Row icon="share-social-outline" title="Share crash log" onPress={onShareLogs} />
+                <Row
+                    icon="cloud-upload-outline"
+                    title={isRunningAutoBackup ? 'Running auto backup…' : 'Run auto backup now'}
+                    onPress={isRunningAutoBackup ? undefined : onRunAutoBackup}
+                    trailing={isRunningAutoBackup ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
+                />
+                <Row icon="warning-outline" title="Simulate crash" onPress={onSimulateCrash} last />
+            </Group>
         </>
     );
 };

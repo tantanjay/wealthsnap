@@ -4,8 +4,8 @@ import { Text, View, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
-import { Domain, domainColor } from '@components/ds';
-import { type, space, radius } from '@styles/theme';
+import { DOMAIN_ICONS, Domain, domainColor, domainSoftColor } from '@components/ds';
+import { type, space } from '@styles/theme';
 import { Transaction, Investment, Debt } from '@types';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 
@@ -63,9 +63,11 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
 }) => {
     const { ds } = useTheme();
 
-    // Row recipe (docs/DESIGN.md §3): domain dot or outline icon, title + secondary, trailing value.
-    const leadingDot = (domain: Domain) => (
-        <View style={[styles.dot, { backgroundColor: domainColor(ds, domain) }]} />
+    // Row recipe (docs/DESIGN.md §3): domain-tinted or neutral icon tile, title + secondary, trailing value.
+    const leadingTile = (domain: Domain) => (
+        <View style={[styles.tile, { backgroundColor: domainSoftColor(ds, domain) }]}>
+            <Ionicons name={DOMAIN_ICONS[domain]} size={18} color={domainColor(ds, domain)} />
+        </View>
     );
 
     if (isInvestment(item)) {
@@ -100,7 +102,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
 
         return (
             <Pressable onPress={() => onSelectInvestment(inv)} style={[styles.row, { borderBottomColor: ds.hairline }]}>
-                {leadingDot('invest')}
+                {leadingTile('invest')}
                 <View style={styles.main}>
                     <Text style={[type.body, { color: ds.text }]}>
                         {inv.symbol} <Text style={[type.small, { color: ds.text2 }]}>({inv.action})</Text>
@@ -127,7 +129,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
 
         return (
             <Pressable onPress={() => onSelectDebt(debt)} style={[styles.row, { borderBottomColor: ds.hairline }]}>
-                {leadingDot('loans')}
+                {leadingTile('loans')}
                 <View style={styles.main}>
                     <Text style={[type.body, { color: ds.text }]}>
                         {debt.name}
@@ -259,10 +261,14 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
             style={[styles.row, { borderBottomColor: ds.hairline }]}
         >
             {t.savingsGoalId
-                ? leadingDot('goals')
+                ? leadingTile('goals')
                 : t.debtId
-                    ? leadingDot('loans')
-                    : <Ionicons name={iconName} size={20} color={ds.text2} />}
+                    ? leadingTile('loans')
+                    : (
+                        <View style={[styles.tile, { backgroundColor: ds.tileNeutral }]}>
+                            <Ionicons name={iconName} size={18} color={ds.text2} />
+                        </View>
+                    )}
             <View style={styles.main}>
                 <Text style={[type.body, { color: ds.text }]}>
                     {getDisplayName()}
@@ -316,10 +322,12 @@ const styles = StyleSheet.create({
         minHeight: 56,
         borderBottomWidth: 1,
     },
-    dot: {
-        width: 8,
-        height: 8,
-        borderRadius: radius.full,
+    tile: {
+        width: 32,
+        height: 32,
+        borderRadius: 9,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     main: {
         flex: 1,

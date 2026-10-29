@@ -5,11 +5,11 @@ import { View, Text, ScrollView, Pressable, BackHandler, TextInput, ActivityIndi
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { Disclaimer } from '@components/common/Disclaimer';
 import { useAlert } from '@context/AlertContext';
 import { useTheme } from '@context/ThemeContext';
-import { type, space, radius, fontFamily } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { analyzeReceiptImage } from '@services/integrations';
 import { getUserProfile } from '@services/core/storageService';
 import { ReceiptAnalysisResult, ReceiptItem } from '@types';
@@ -227,7 +227,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                     ]);
                 }}
             >
-                <View style={[styles.loading, { backgroundColor: ds.bg }]}>
+                <View style={[styles.loading, { backgroundColor: ds.canvas }]}>
                     <ActivityIndicator size="large" color={ds.accent} />
                     <Text style={[type.body, { marginTop: space[5], color: ds.text2 }]}>{processingStep}</Text>
                 </View>
@@ -250,48 +250,49 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                 ]);
             }}
         >
-            <View style={{ flex: 1, backgroundColor: ds.bg, paddingTop: insets.top }}>
+            <View style={{ flex: 1, backgroundColor: ds.canvas, paddingTop: insets.top }}>
                 <View style={styles.topBar}>
-                    <Text style={[type.title, { color: ds.text }]}>Review receipt</Text>
+                    <Text style={[type.title, styles.title, { color: ds.text }]}>Review receipt</Text>
                 </View>
 
-                <ScrollView contentContainerStyle={{ paddingHorizontal: space[5], paddingBottom: 150 }}>
+                <ScrollView contentContainerStyle={styles.content}>
                     <Disclaimer severity="warning" style={{ marginTop: 0 }}>
                         AI analysis may contain errors. Please verify all details before saving.
                     </Disclaimer>
 
                     {/* Total is derived from the items below, so it reads like the amount input but isn't editable */}
-                    <View style={styles.amountBlock}>
+                    <Group padded style={styles.firstGroup}>
                         <Text style={[type.small, { color: ds.text2 }]}>Total estimate</Text>
-                        <Text style={[styles.amount, { color: ds.text, borderBottomColor: ds.hairline }]} numberOfLines={1} adjustsFontSizeToFit>
+                        <Text style={[type.recordAmount, styles.amount, { color: ds.text }]} numberOfLines={1} adjustsFontSizeToFit>
                             {formatCurrencyAmount(totalAmount, currency)}
                         </Text>
-                    </View>
+                    </Group>
 
-                    {/* Date & Time Selection */}
-                    <View style={[styles.group, styles.dateRow]}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Date</Text>
-                            <Pressable onPress={() => setShowDatePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
-                                <Ionicons name="calendar-outline" size={18} color={ds.text2} />
-                                <Text style={[type.bodyNum, styles.fieldValue, { color: ds.text }]} numberOfLines={1}>
-                                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </Text>
-                            </Pressable>
+                    {/* Date, time, merchant and note */}
+                    <SectionHeader title="Details" grouped />
+                    <Group padded>
+                        <View style={styles.dateRow}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Date</Text>
+                                <Pressable onPress={() => setShowDatePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
+                                    <Ionicons name="calendar-outline" size={18} color={ds.text2} />
+                                    <Text style={[type.bodyNum, styles.fieldValue, { color: ds.text }]} numberOfLines={1}>
+                                        {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </Text>
+                                </Pressable>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[type.small, styles.label, { color: ds.text2 }]}>Time</Text>
+                                <Pressable onPress={() => setShowTimePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
+                                    <Ionicons name="time-outline" size={18} color={ds.text2} />
+                                    <Text style={[type.bodyNum, styles.fieldValue, { color: ds.text }]} numberOfLines={1}>
+                                        {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                    </Text>
+                                </Pressable>
+                            </View>
                         </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Time</Text>
-                            <Pressable onPress={() => setShowTimePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
-                                <Ionicons name="time-outline" size={18} color={ds.text2} />
-                                <Text style={[type.bodyNum, styles.fieldValue, { color: ds.text }]} numberOfLines={1}>
-                                    {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                                </Text>
-                            </Pressable>
-                        </View>
-                    </View>
 
-                    <View style={styles.group}>
-                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Merchant</Text>
+                        <Text style={[type.small, styles.label, styles.fieldGap, { color: ds.text2 }]}>Merchant</Text>
                         <View style={[styles.field, { backgroundColor: ds.inset }]}>
                             <Ionicons name="storefront-outline" size={18} color={ds.text2} />
                             <TextInput
@@ -300,10 +301,8 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                                 style={[type.body, styles.fieldValue, { color: ds.text }]}
                             />
                         </View>
-                    </View>
 
-                    <View style={styles.group}>
-                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Note</Text>
+                        <Text style={[type.small, styles.label, styles.fieldGap, { color: ds.text2 }]}>Note</Text>
                         <View style={[styles.field, { backgroundColor: ds.inset }]}>
                             <Ionicons name="document-text-outline" size={18} color={ds.text2} />
                             <TextInput
@@ -314,152 +313,151 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                                 placeholderTextColor={ds.text3}
                             />
                         </View>
-                    </View>
+                    </Group>
 
-                    {/* Main Category Selection (Only if NOT splitting) */}
-                    {!splitByCategory && (
-                        <View style={styles.group}>
-                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Main category</Text>
-                            <Pressable
+                    {/* Main category (only when not splitting) and the split toggle */}
+                    <SectionHeader title="Category" grouped />
+                    <Group>
+                        {!splitByCategory && (
+                            <Row
+                                icon="folder-open-outline"
+                                title={mainCategory}
+                                subtitle="Main category"
                                 onPress={() => {
                                     setActiveEditingItemIndex(null); // Null implies Main Category
                                     setCategoryModalVisible(true);
                                 }}
-                                style={[styles.field, { backgroundColor: ds.inset }]}
-                            >
-                                <Ionicons name="folder-open-outline" size={18} color={ds.text2} />
-                                <Text style={[type.body, styles.fieldValue, { color: ds.text }]} numberOfLines={1}>{mainCategory}</Text>
-                                <Ionicons name="chevron-down" size={16} color={ds.text3} />
-                            </Pressable>
-                        </View>
-                    )}
-
-                    <Row
-                        title="Save as items"
-                        subtitle="One expense per category instead of one total"
-                        trailing={
-                            <Switch
-                                value={splitByCategory}
-                                onValueChange={setSplitByCategory}
-                                trackColor={{ false: ds.hairline, true: ds.accent }}
+                                trailing={<Ionicons name="chevron-down" size={16} color={ds.text3} />}
                             />
-                        }
-                        last
-                        style={{ marginTop: space[3] }}
-                    />
+                        )}
+                        <Row
+                            icon="albums-outline"
+                            title="Save as items"
+                            subtitle="One expense per category instead of one total"
+                            trailing={
+                                <Switch
+                                    value={splitByCategory}
+                                    onValueChange={setSplitByCategory}
+                                    trackColor={{ false: ds.hairline, true: ds.accent }}
+                                />
+                            }
+                            last
+                        />
+                    </Group>
 
                     {/* Categories & Items */}
-                    <SectionHeader title="Items by category" />
+                    <SectionHeader title="Items by category" grouped />
+                    <Group>
+                        {groupEntries.map(([category, data], groupIndex) => {
+                            const isExpanded = expandedCategory === category;
+                            return (
+                                <View key={category}>
+                                    <Row
+                                        title={category}
+                                        subtitle={`${data.count} items`}
+                                        value={formatCurrencyAmount(data.total, currency)}
+                                        trailing={<Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color={ds.text3} />}
+                                        onPress={() => setExpandedCategory(isExpanded ? null : category)}
+                                        last={groupIndex === groupEntries.length - 1 && !isExpanded}
+                                    />
 
-                    {groupEntries.map(([category, data], groupIndex) => {
-                        const isExpanded = expandedCategory === category;
-                        return (
-                            <View key={category}>
-                                <Row
-                                    title={category}
-                                    subtitle={`${data.count} items`}
-                                    value={formatCurrencyAmount(data.total, currency)}
-                                    trailing={<Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color={ds.text3} />}
-                                    onPress={() => setExpandedCategory(isExpanded ? null : category)}
-                                    last={groupIndex === groupEntries.length - 1 && !isExpanded}
-                                />
-
-                                {/* Expanded Items List */}
-                                {isExpanded && (
-                                    <View style={[styles.itemList, { borderBottomColor: ds.hairline }]}>
-                                        {data.items.map((item, idx) => {
-                                            const realIndex = items.indexOf(item);
-                                            return (
-                                                <View key={idx} style={[styles.itemRow, { borderBottomColor: ds.hairline }]}>
-                                                    <Pressable
-                                                        onPress={() => {
-                                                            setActiveEditingItemIndex(realIndex);
-                                                            setCategoryModalVisible(true);
-                                                        }}
-                                                        hitSlop={space[2]}
-                                                        accessibilityLabel="Change item category"
-                                                    >
-                                                        <Ionicons name="folder-open-outline" size={20} color={ds.text2} />
-                                                    </Pressable>
-                                                    <View style={{ flex: 1 }}>
-                                                        <TextInput
-                                                            value={item.description}
-                                                            onChangeText={(txt) => {
-                                                                const newItems = [...items];
-                                                                newItems[realIndex].description = txt;
-                                                                setItems(newItems);
-                                                            }}
-                                                            style={[type.body, styles.inlineInput, { color: ds.text }]}
-                                                        />
-                                                        <View style={styles.qtyRow}>
-                                                            <Text style={[type.small, { color: ds.text2 }]}>Qty</Text>
-                                                            <TextInput
-                                                                value={item.quantity.toString()}
-                                                                keyboardType="numeric"
-                                                                onChangeText={(txt) => {
-                                                                    const qty = parseFloat(txt) || 0;
-                                                                    const newItems = [...items];
-                                                                    newItems[realIndex].quantity = qty;
-                                                                    newItems[realIndex].amount = newItems[realIndex].unitPrice.multipliedBy(qty);
-                                                                    setItems(newItems);
-                                                                }}
-                                                                style={[type.smallNum, styles.qtyInput, { color: ds.text, backgroundColor: ds.inset }]}
-                                                            />
-                                                        </View>
-                                                    </View>
-                                                    <View style={styles.itemEnd}>
-                                                        <TextInput
-                                                            value={item.amount.toString()}
-                                                            keyboardType="numeric"
-                                                            onChangeText={(txt) => {
-                                                                const rawBn = new BigNumber(txt);
-                                                                const amt = rawBn.isNaN() ? new BigNumber(0) : rawBn;
-                                                                const newItems = [...items];
-                                                                newItems[realIndex].amount = amt;
-                                                                if (newItems[realIndex].quantity > 0)
-                                                                    newItems[realIndex].unitPrice = amt.dividedBy(newItems[realIndex].quantity);
-                                                                setItems(newItems);
-                                                            }}
-                                                            style={[type.bodyNum, styles.amountField, { color: ds.text, backgroundColor: ds.inset }]}
-                                                        />
+                                    {/* Expanded Items List */}
+                                    {isExpanded && (
+                                        <View style={[styles.itemList, { borderBottomColor: ds.hairline }]}>
+                                            {data.items.map((item, idx) => {
+                                                const realIndex = items.indexOf(item);
+                                                return (
+                                                    <View key={idx} style={[styles.itemRow, { borderBottomColor: ds.hairline }]}>
                                                         <Pressable
                                                             onPress={() => {
-                                                                const newItems = items.filter((_, i) => i !== realIndex);
-                                                                setItems(newItems);
+                                                                setActiveEditingItemIndex(realIndex);
+                                                                setCategoryModalVisible(true);
                                                             }}
                                                             hitSlop={space[2]}
+                                                            accessibilityLabel="Change item category"
                                                         >
-                                                            <Text style={[type.smallMedium, { color: ds.danger }]}>Remove</Text>
+                                                            <Ionicons name="folder-open-outline" size={20} color={ds.text2} />
                                                         </Pressable>
+                                                        <View style={{ flex: 1 }}>
+                                                            <TextInput
+                                                                value={item.description}
+                                                                onChangeText={(txt) => {
+                                                                    const newItems = [...items];
+                                                                    newItems[realIndex].description = txt;
+                                                                    setItems(newItems);
+                                                                }}
+                                                                style={[type.body, styles.inlineInput, { color: ds.text }]}
+                                                            />
+                                                            <View style={styles.qtyRow}>
+                                                                <Text style={[type.small, { color: ds.text2 }]}>Qty</Text>
+                                                                <TextInput
+                                                                    value={item.quantity.toString()}
+                                                                    keyboardType="numeric"
+                                                                    onChangeText={(txt) => {
+                                                                        const qty = parseFloat(txt) || 0;
+                                                                        const newItems = [...items];
+                                                                        newItems[realIndex].quantity = qty;
+                                                                        newItems[realIndex].amount = newItems[realIndex].unitPrice.multipliedBy(qty);
+                                                                        setItems(newItems);
+                                                                    }}
+                                                                    style={[type.smallNum, styles.qtyInput, { color: ds.text, backgroundColor: ds.inset }]}
+                                                                />
+                                                            </View>
+                                                        </View>
+                                                        <View style={styles.itemEnd}>
+                                                            <TextInput
+                                                                value={item.amount.toString()}
+                                                                keyboardType="numeric"
+                                                                onChangeText={(txt) => {
+                                                                    const rawBn = new BigNumber(txt);
+                                                                    const amt = rawBn.isNaN() ? new BigNumber(0) : rawBn;
+                                                                    const newItems = [...items];
+                                                                    newItems[realIndex].amount = amt;
+                                                                    if (newItems[realIndex].quantity > 0)
+                                                                        newItems[realIndex].unitPrice = amt.dividedBy(newItems[realIndex].quantity);
+                                                                    setItems(newItems);
+                                                                }}
+                                                                style={[type.bodyNum, styles.amountField, { color: ds.text, backgroundColor: ds.inset }]}
+                                                            />
+                                                            <Pressable
+                                                                onPress={() => {
+                                                                    const newItems = items.filter((_, i) => i !== realIndex);
+                                                                    setItems(newItems);
+                                                                }}
+                                                                hitSlop={space[2]}
+                                                            >
+                                                                <Text style={[type.smallMedium, { color: ds.danger }]}>Remove</Text>
+                                                            </Pressable>
+                                                        </View>
                                                     </View>
-                                                </View>
-                                            );
-                                        })}
-                                        <Pressable
-                                            onPress={() => {
-                                                const newItem: ReceiptItem = {
-                                                    description: "New Item",
-                                                    quantity: 1,
-                                                    unitPrice: new BigNumber(0),
-                                                    amount: new BigNumber(0),
-                                                    category: category
-                                                };
-                                                setItems([...items, newItem]);
-                                            }}
-                                            style={styles.addItem}
-                                        >
-                                            <Ionicons name="add-outline" size={18} color={ds.accent} />
-                                            <Text style={[type.smallMedium, { color: ds.accent }]}>Add item</Text>
-                                        </Pressable>
-                                    </View>
-                                )}
-                            </View>
-                        );
-                    })}
+                                                );
+                                            })}
+                                            <Pressable
+                                                onPress={() => {
+                                                    const newItem: ReceiptItem = {
+                                                        description: "New Item",
+                                                        quantity: 1,
+                                                        unitPrice: new BigNumber(0),
+                                                        amount: new BigNumber(0),
+                                                        category: category
+                                                    };
+                                                    setItems([...items, newItem]);
+                                                }}
+                                                style={styles.addItem}
+                                            >
+                                                <Ionicons name="add-outline" size={18} color={ds.accent} />
+                                                <Text style={[type.smallMedium, { color: ds.accent }]}>Add item</Text>
+                                            </Pressable>
+                                        </View>
+                                    )}
+                                </View>
+                            );
+                        })}
+                    </Group>
                 </ScrollView>
 
                 {/* Footer Actions */}
-                <View style={[styles.footer, { paddingBottom: space[4] + insets.bottom, backgroundColor: ds.inset, borderTopColor: ds.hairline }]}>
+                <View style={[styles.footer, { paddingBottom: space[4] + insets.bottom, backgroundColor: ds.group, borderTopColor: ds.hairline }]}>
                     <Pressable onPress={onCancel} style={styles.cancelButton}>
                         <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
                     </Pressable>
@@ -520,23 +518,23 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     topBar: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingTop: space[3],
         paddingBottom: space[4],
     },
-    amountBlock: {
-        marginTop: space[5],
+    title: {
+        paddingHorizontal: layout.groupPadding,
+    },
+    // Bottom padding clears the fixed footer.
+    content: {
+        paddingHorizontal: layout.groupInset,
+        paddingBottom: 150,
+    },
+    firstGroup: {
+        marginTop: space[4],
     },
     amount: {
-        fontFamily: fontFamily.semibold,
-        fontSize: 44,
-        lineHeight: 52,
-        fontVariant: ['tabular-nums'],
-        borderBottomWidth: 1,
-        paddingVertical: space[1],
-    },
-    group: {
-        marginTop: space[5],
+        paddingTop: space[1],
     },
     dateRow: {
         flexDirection: 'row',
@@ -545,10 +543,13 @@ const styles = StyleSheet.create({
     label: {
         marginBottom: space[1],
     },
+    fieldGap: {
+        marginTop: space[3],
+    },
     field: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: space[3],
+        gap: space[2],
         padding: space[3],
         borderRadius: radius.md,
     },
@@ -609,7 +610,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: space[3],
         paddingTop: space[3],
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         borderTopWidth: 1,
     },
     cancelButton: {

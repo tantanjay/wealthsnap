@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Skeleton } from '@components/common/Skeleton';
-import { SectionHeader } from '@components/ds';
+import { Group, SectionHeader } from '@components/ds';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useTheme } from '@context/ThemeContext';
 import { formatPercent } from '@hooks/usePrivacyFormat';
@@ -271,30 +271,36 @@ export const DividendChart: React.FC<DividendChartProps> = ({
 
     return (
         <View>
-            <SectionHeader title="Dividends" menu={{ options: TABS, value: activeTab, onSelect: key => setActiveTab(key as TabType) }} />
-            {/* Discreet leaves the year's total out; it has no scale-free version here. */}
-            {activeTab !== 'calendar' && !isDiscreet && (
-                <Text style={[type.titleNum, styles.total, { color: ds.text }]}>
-                    {isHidden ? '****' : formatCurrencyAmount(displayTotal, currency)}
-                </Text>
-            )}
+            <SectionHeader grouped title="Dividends" menu={{ options: TABS, value: activeTab, onSelect: key => setActiveTab(key as TabType) }} />
+            {/* Visible overflow so a tall bar's tooltip isn't clipped by the group's top edge. */}
+            <Group padded style={styles.group}>
+                {/* Discreet leaves the year's total out; it has no scale-free version here. */}
+                {activeTab !== 'calendar' && !isDiscreet && (
+                    <Text style={[type.titleNum, styles.total, { color: ds.text }]}>
+                        {isHidden ? '****' : formatCurrencyAmount(displayTotal, currency)}
+                    </Text>
+                )}
 
-            {isLoading ? (
-                <Skeleton width="100%" height={CHART_HEIGHT} borderRadius={radius.md} />
-            ) : (
-                // key={activeTab} forces a clean remount per tab instead of reusing the same
-                // native node across drastically different content shapes (fixed-height bar
-                // chart vs. content-sized calendar grid), which was leaving stale layout
-                // sizing behind when switching back from Calendar to Actual/Projected.
-                <View key={activeTab} style={activeTab === 'calendar' && !isHidden ? undefined : { height: CHART_HEIGHT }}>
-                    {renderContent()}
-                </View>
-            )}
+                {isLoading ? (
+                    <Skeleton width="100%" height={CHART_HEIGHT} borderRadius={radius.md} />
+                ) : (
+                    // key={activeTab} forces a clean remount per tab instead of reusing the same
+                    // native node across drastically different content shapes (fixed-height bar
+                    // chart vs. content-sized calendar grid), which was leaving stale layout
+                    // sizing behind when switching back from Calendar to Actual/Projected.
+                    <View key={activeTab} style={activeTab === 'calendar' && !isHidden ? undefined : { height: CHART_HEIGHT }}>
+                        {renderContent()}
+                    </View>
+                )}
+            </Group>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
+    group: {
+        overflow: 'visible',
+    },
     total: {
         marginBottom: space[2],
     },

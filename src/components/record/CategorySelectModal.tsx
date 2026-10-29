@@ -3,9 +3,9 @@ import { View, Text, Pressable, TextInput, ScrollView, StyleSheet } from 'react-
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { IconName, Row, SectionHeader } from '@components/ds';
+import { Group, IconName, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 
 interface CategoryItem {
     label: string;
@@ -75,8 +75,8 @@ export const CategorySelectModal: React.FC<CategorySelectModalProps> = ({
             onClose={handleClose}
             title="Select category"
         >
-            {/* Search field */}
-            <View style={[styles.field, { backgroundColor: ds.inset }]}>
+            {/* Search field: sits on the sheet's canvas, so it takes the group fill */}
+            <View style={[styles.field, { backgroundColor: ds.group }]}>
                 <Ionicons name="search-outline" size={18} color={ds.text2} />
                 <TextInput
                     style={[type.body, styles.input, { color: ds.text }]}
@@ -95,11 +95,13 @@ export const CategorySelectModal: React.FC<CategorySelectModalProps> = ({
             <ScrollView showsVerticalScrollIndicator={false}>
                 {categorySearch ? (
                     <View>
-                        <SectionHeader title="Search results" style={styles.header} />
+                        <SectionHeader title="Search results" grouped style={styles.header} />
                         {filteredCategories.length === 0 ? (
-                            <Text style={[type.small, styles.empty, { color: ds.text2 }]}>No categories found.</Text>
+                            <Group padded>
+                                <Text style={[type.small, styles.empty, { color: ds.text2 }]}>No categories found.</Text>
+                            </Group>
                         ) : (
-                            renderItems(filteredCategories)
+                            <Group>{renderItems(filteredCategories)}</Group>
                         )}
                     </View>
                 ) : group ? (
@@ -108,21 +110,23 @@ export const CategorySelectModal: React.FC<CategorySelectModalProps> = ({
                             <Ionicons name="chevron-back" size={16} color={ds.accent} />
                             <Text style={[type.smallMedium, { color: ds.accent }]}>Back to groups</Text>
                         </Pressable>
-                        <SectionHeader title={group.group} style={styles.header} />
-                        {renderItems(group.items)}
+                        <SectionHeader title={group.group} grouped style={styles.header} />
+                        <Group>{renderItems(group.items)}</Group>
                     </View>
                 ) : (
-                    categoryGroups.map((g, i) => (
-                        <Row
-                            key={g.group}
-                            icon={(g.icon || 'folder-open-outline') as IconName}
-                            title={g.group}
-                            subtitle={`${g.items.length} items`}
-                            chevron
-                            onPress={() => setSelectedGroup(g.group)}
-                            last={i === categoryGroups.length - 1}
-                        />
-                    ))
+                    <Group style={styles.firstGroup}>
+                        {categoryGroups.map((g, i) => (
+                            <Row
+                                key={g.group}
+                                icon={(g.icon || 'folder-open-outline') as IconName}
+                                title={g.group}
+                                subtitle={`${g.items.length} items`}
+                                chevron
+                                onPress={() => setSelectedGroup(g.group)}
+                                last={i === categoryGroups.length - 1}
+                            />
+                        ))}
+                    </Group>
                 )}
             </ScrollView>
         </BottomModal>
@@ -136,7 +140,6 @@ const styles = StyleSheet.create({
         gap: space[2],
         borderRadius: radius.md,
         paddingHorizontal: space[3],
-        marginBottom: space[2],
     },
     input: {
         flex: 1,
@@ -145,9 +148,11 @@ const styles = StyleSheet.create({
     header: {
         marginTop: space[4],
     },
+    firstGroup: {
+        marginTop: space[3],
+    },
     empty: {
         textAlign: 'center',
-        marginTop: space[5],
     },
     back: {
         flexDirection: 'row',
@@ -155,5 +160,6 @@ const styles = StyleSheet.create({
         gap: space[1],
         alignSelf: 'flex-start',
         marginTop: space[4],
+        paddingHorizontal: layout.groupPadding,
     },
 });

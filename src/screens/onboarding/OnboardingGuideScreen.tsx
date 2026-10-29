@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
 
+import { Group, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius, fontFamily } from '@styles/theme';
 
@@ -244,7 +245,7 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
                             {
                                 width: satelliteSize,
                                 height: satelliteSize,
-                                backgroundColor: ds.inset,
+                                backgroundColor: ds.group,
                                 left: sat.x * s - satelliteSize / 2,
                                 top: sat.y * s - satelliteSize / 2,
                             },
@@ -263,21 +264,17 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
     };
 
     const renderRecap = (items: RecapItem[]) => (
-        <View style={styles.recapList}>
+        <Group style={styles.recapList}>
             {items.map((item, index) => (
-                <View
+                <Row
                     key={index}
-                    style={[
-                        styles.recapRow,
-                        { borderBottomColor: ds.hairline, borderBottomWidth: index === items.length - 1 ? 0 : 1 },
-                    ]}
-                >
-                    <Ionicons name={item.icon} size={20} color={ds.text2} />
-                    <Text style={[type.small, styles.recapText, { color: ds.text }]}>{item.text}</Text>
-                    <Ionicons name="checkmark" size={16} color={ds.success} />
-                </View>
+                    icon={item.icon}
+                    title={item.text}
+                    trailing={<Ionicons name="checkmark" size={16} color={ds.success} />}
+                    last={index === items.length - 1}
+                />
             ))}
-        </View>
+        </Group>
     );
 
     const renderSlide = (slide: typeof slides[0]) => {
@@ -308,7 +305,7 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
                 </Text>
 
                 {slide.isNotice && (
-                    <View style={[styles.noticeBox, { backgroundColor: ds.inset, marginBottom: space[4] * verticalScale }]}>
+                    <View style={[styles.noticeBox, { backgroundColor: ds.group, marginBottom: space[4] * verticalScale }]}>
                         <Ionicons name="alert-circle-outline" size={14} color={ds.warning} />
                         <Text style={[type.captionMedium, { color: ds.warning }]}>
                             Important notice
@@ -349,7 +346,7 @@ const OnboardingGuide: React.FC<OnboardingGuideProps> = ({ onFinish, mode = 'onb
     const isLastSlide = currentSlide === slides.length - 1;
 
     return (
-        <View style={[styles.container, { backgroundColor: ds.bg }]}>
+        <View style={[styles.container, { backgroundColor: ds.canvas }]}>
             {/* Header / Skip */}
             <View style={styles.header}>
                 {mode === 'view' && (
@@ -449,15 +446,6 @@ const styles = StyleSheet.create({
     recapList: {
         width: '100%',
         marginBottom: space[4],
-    },
-    recapRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: space[3],
-        paddingVertical: space[3],
-    },
-    recapText: {
-        flex: 1,
     },
     noticeBox: {
         flexDirection: 'row',

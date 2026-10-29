@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { getAllBudgets } from '@services/domain/budgetService';
 import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
 import { getAllReminders } from '@services/domain/reminderService';
@@ -54,36 +54,38 @@ const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
 
     return (
         <>
-            <SectionHeader title="Money setup" />
-            <Row
-                icon="pie-chart-outline"
-                title="Budgets"
-                subtitle={counts ? countLabel(counts.budgets, counts.budgets === 1 ? 'category budgeted' : 'categories budgeted') : undefined}
-                chevron
-                onPress={onBudgetPress}
-            />
-            <Row
-                icon="repeat-outline"
-                title="Recurring rules"
-                subtitle={counts ? countLabel(counts.rules, 'active') : undefined}
-                chevron
-                onPress={onRecurringPress}
-            />
-            <Row
-                icon="notifications-outline"
-                title="Reminders"
-                subtitle={counts ? countLabel(counts.reminders, 'active') : undefined}
-                chevron
-                onPress={onRemindersPress}
-            />
-            <Row
-                icon="list-outline"
-                title="Asset dictionary"
-                subtitle="Manage asset definitions"
-                chevron
-                onPress={onAssetsPress}
-                last
-            />
+            <SectionHeader grouped title="Money setup" />
+            <Group>
+                <Row
+                    icon="pie-chart-outline"
+                    title="Budgets"
+                    subtitle={counts ? countLabel(counts.budgets, counts.budgets === 1 ? 'category budgeted' : 'categories budgeted') : undefined}
+                    chevron
+                    onPress={onBudgetPress}
+                />
+                <Row
+                    icon="repeat-outline"
+                    title="Recurring rules"
+                    subtitle={counts ? countLabel(counts.rules, 'active') : undefined}
+                    chevron
+                    onPress={onRecurringPress}
+                />
+                <Row
+                    icon="notifications-outline"
+                    title="Reminders"
+                    subtitle={counts ? countLabel(counts.reminders, 'active') : undefined}
+                    chevron
+                    onPress={onRemindersPress}
+                />
+                <Row
+                    icon="list-outline"
+                    title="Asset dictionary"
+                    subtitle="Manage asset definitions"
+                    chevron
+                    onPress={onAssetsPress}
+                    last
+                />
+            </Group>
         </>
     );
 };

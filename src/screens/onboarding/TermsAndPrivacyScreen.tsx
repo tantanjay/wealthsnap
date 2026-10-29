@@ -5,16 +5,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import TermsContent from '@components/onboarding/TermsContent';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { Group } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 
 const TermsAndPrivacyScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     const { ds } = useTheme();
     const insets = useSafeAreaInsets();
 
     return (
-        <ScreenWrapper scrollable={false} noPadding style={{ backgroundColor: ds.bg }}>
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScreenWrapper scrollable={false} noPadding>
+            <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.heroHeader}>
                     <View style={[styles.iconContainer, { backgroundColor: ds.accentSoft }]}>
                         <Ionicons name="shield-checkmark-outline" size={36} color={ds.accent} />
@@ -27,7 +28,9 @@ const TermsAndPrivacyScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                     </Text>
                 </View>
 
-                <TermsContent />
+                <Group inset style={styles.terms}>
+                    <TermsContent />
+                </Group>
             </ScrollView>
 
             <View
@@ -36,7 +39,7 @@ const TermsAndPrivacyScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                     {
                         paddingBottom: Math.max(insets.bottom, space[5]),
                         borderTopColor: ds.hairline,
-                        backgroundColor: ds.inset,
+                        backgroundColor: ds.group,
                     },
                 ]}
             >
@@ -55,12 +58,17 @@ const TermsAndPrivacyScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 const styles = StyleSheet.create({
     content: {
         flex: 1,
+    },
+    scrollContent: {
         paddingVertical: space[5],
+    },
+    terms: {
+        marginTop: space[6],
     },
     heroHeader: {
         alignItems: 'center',
         gap: space[2],
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingTop: space[2],
     },
     iconContainer: {
@@ -75,7 +83,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     footer: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingTop: space[4],
         borderTopWidth: 1,
     },

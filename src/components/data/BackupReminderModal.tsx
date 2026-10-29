@@ -2,6 +2,7 @@ import React from 'react';
 import { Text, Pressable, StyleSheet } from 'react-native';
 
 import BottomModal from '@components/common/BottomModal';
+import { Group } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius } from '@styles/theme';
 
@@ -36,9 +37,11 @@ const BackupReminderModal: React.FC<BackupReminderModalProps> = ({
                 </>
             }
         >
-            <Text style={[type.body, { color: ds.text2 }]}>
-                You haven&apos;t backed up your data yet. Do it now?
-            </Text>
+            <Group padded>
+                <Text style={[type.body, { color: ds.text2 }]}>
+                    You haven&apos;t backed up your data yet. Do it now?
+                </Text>
+            </Group>
         </BottomModal>
     );
 };

@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AllExpensesModal from '@components/insights/modals/AllExpensesModal';
 import CategoryTrendModal from '@components/insights/modals/CategoryTrendModal';
 import RecurringExpensesSummaryModal from '@components/insights/modals/RecurringExpensesSummaryModal';
-import { ProgressBar, Row, SectionHeader, Tone, toneColor } from '@components/ds';
+import { Group, ProgressBar, Row, SectionHeader, Tone, toneColor } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
@@ -128,7 +128,7 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
                         data={pieData.map(d => ({ value: d.population, color: d.color, text: '' }))}
                         radius={70}
                         donut
-                        innerCircleColor={ds.bg}
+                        innerCircleColor={ds.group}
                         innerRadius={40}
                         centerLabelComponent={() => (
                             <View style={styles.pieCenter}>
@@ -218,39 +218,45 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
     return (
         <View>
             <SectionHeader
+                grouped
                 title="Expense analysis"
                 menu={{ options: GROUPINGS, value: grouping, onSelect: key => onToggleGrouping(key as 'GROUP' | 'ITEM') }}
             />
 
-            {topCategory && (
-                isLoading ? (
-                    <Skeleton width="90%" height={18} style={styles.subline} />
-                ) : (
-                    <Text style={[type.small, styles.subline, { color: ds.text2 }]}>
-                        {`${topCategory.name} accounts for ${Math.round(topCategory.percentage)}% of your total expenses.`}
-                    </Text>
-                )
-            )}
+            <Group padded>
+                {topCategory && (
+                    isLoading ? (
+                        <Skeleton width="90%" height={18} style={styles.subline} />
+                    ) : (
+                        <Text style={[type.small, styles.subline, { color: ds.text2 }]}>
+                            {`${topCategory.name} accounts for ${Math.round(topCategory.percentage)}% of your total expenses.`}
+                        </Text>
+                    )
+                )}
 
-            {renderPie()}
+                {renderPie()}
+            </Group>
 
             <SectionHeader
+                grouped
                 title="Top spending categories"
                 actionLabel={categoryBreakdown.length > 3 ? `See all ${categoryBreakdown.length}` : undefined}
                 onAction={() => setShowAllModal(true)}
             />
-            {renderTopCategories()}
+            <Group>
+                {renderTopCategories()}
 
-            {/* The recurring summary lists amounts and isn't privacy-aware yet */}
-            {format.isOpen && (
-                <Row
-                    icon="repeat-outline"
-                    title="Recurring expenses"
-                    chevron
-                    onPress={() => setShowRecurringModal(true)}
-                    last
-                />
-            )}
+                {/* The recurring summary lists amounts and isn't privacy-aware yet */}
+                {format.isOpen && (
+                    <Row
+                        icon="repeat-outline"
+                        title="Recurring expenses"
+                        chevron
+                        onPress={() => setShowRecurringModal(true)}
+                        last
+                    />
+                )}
+            </Group>
 
             {/* Category Trend Modal */}
             <CategoryTrendModal

@@ -6,7 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { EmptyState } from '@components/common/EmptyState';
 import { ReviewAppModal } from '@components/common/ReviewAppModal';
-import { Row, SectionHeader, UnderlineTabs, UnderlineTab } from '@components/ds';
+import { Group, Row, SectionHeader, UnderlineTabs, UnderlineTab } from '@components/ds';
 import HomeSettingsSheet, { HomeTab } from '@components/home/HomeSettingsSheet';
 import SnapshotView, { SnapshotData } from '@components/home/SnapshotView';
 import LedgerTab, { LedgerView } from '@components/home/LedgerTab';
@@ -18,7 +18,7 @@ import { usePrivacy } from '@context/PrivacyContext';
 import { useDataStatus } from '@context/DataStatusContext';
 import { usePrivacyFormat } from '@hooks/usePrivacyFormat';
 import { useReviewPrompt } from '@hooks/useReviewPrompt';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { UserProfile } from '@types';
 import { calculateRunwayTrend } from '@utils/financialMetrics';
 import { buildRecentTransactions } from '@utils/historyFeed';
@@ -192,15 +192,17 @@ const HomeScreen = ({ navigation }: any) => {
                 ctaLabel="Add Your First Transaction"
                 onCtaPress={() => navigation.navigate('Record')}
             />
-            <SectionHeader title="Get started" />
-            <Row icon="receipt-outline" title="Add a transaction" chevron onPress={() => navigation.navigate('Record')} />
-            <Row icon="trending-up-outline" title="Add an investment" chevron onPress={() => navigation.navigate('Record')} />
-            <Row icon="flag-outline" title="Set a savings goal" chevron last onPress={() => setTab('goals')} />
+            <SectionHeader grouped title="Get started" />
+            <Group>
+                <Row icon="receipt-outline" title="Add a transaction" chevron onPress={() => navigation.navigate('Record')} />
+                <Row domain="invest" title="Add an investment" chevron onPress={() => navigation.navigate('Record')} />
+                <Row domain="goals" title="Set a savings goal" chevron last onPress={() => setTab('goals')} />
+            </Group>
         </View>
     );
 
     return (
-        <ScreenWrapper scrollable={false} noPadding style={{ backgroundColor: ds.bg }}>
+        <ScreenWrapper scrollable={false} noPadding>
             <View style={styles.topBar}>
                 <Pressable onPress={() => navigation.navigate('Profile')} style={styles.greeting}>
                     <Text style={[type.title, { color: ds.text }]} numberOfLines={1}>
@@ -209,7 +211,7 @@ const HomeScreen = ({ navigation }: any) => {
                 </Pressable>
                 <View style={styles.actions}>
                     {mode !== 'open' && (
-                        <View style={[styles.chip, { backgroundColor: ds.inset }]}>
+                        <View style={[styles.chip, { backgroundColor: ds.group }]}>
                             <Text style={[type.captionMedium, { color: ds.text2 }]}>{mode === 'discreet' ? 'Discreet' : 'Hidden'}</Text>
                         </View>
                     )}
@@ -316,7 +318,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     content: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: space[7],
     },
     loading: {

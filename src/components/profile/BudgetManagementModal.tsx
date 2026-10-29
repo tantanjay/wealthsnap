@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, TextInput, FlatList, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { CategorySelectModal } from '@components/record/CategorySelectModal';
 import SmartSuggestionsModal from '@components/profile/SmartSuggestionsModal';
-import { Row, IconName } from '@components/ds';
+import { Group, Row, SectionHeader, IconName } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { BigNumber } from 'bignumber.js';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 
 import { EmptyState } from '@components/common/EmptyState';
 import { Budget } from '@types';
@@ -173,75 +173,71 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
                             )}
                         </View>
 
-                        <FlatList
-                            data={budgets}
-                            keyExtractor={item => item.category}
-                            ListEmptyComponent={
-                                <EmptyState
-                                    size="compact"
-                                    icon="wallet-outline"
-                                    title="No budgets set yet"
-                                    subtitle="Tap Add budget to set your first one"
-                                />
-                            }
-                            renderItem={({ item, index }) => (
-                                <Row
-                                    icon={getCategoryIcon(item.category)}
-                                    title={item.category}
-                                    subtitle={`${amount(item.amount)} / month`}
-                                    onPress={() => handleEditBudget(item)}
-                                    last={index === budgets.length - 1}
-                                    trailing={
-                                        <Pressable
-                                            onPress={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteBudget(item.category);
-                                            }}
-                                            hitSlop={space[2]}
-                                            accessibilityLabel={`Delete ${item.category} budget`}
-                                        >
-                                            <Ionicons name="trash-outline" size={20} color={ds.danger} />
-                                        </Pressable>
-                                    }
-                                />
-                            )}
-                        />
+                        {budgets.length === 0 ? (
+                            <EmptyState
+                                size="compact"
+                                icon="wallet-outline"
+                                title="No budgets set yet"
+                                subtitle="Tap Add budget to set your first one"
+                            />
+                        ) : (
+                            // A plain list in a Group; a budget per category keeps it short enough not to virtualize.
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <Group>
+                                    {budgets.map((item, index) => (
+                                        <Row
+                                            key={item.category}
+                                            icon={getCategoryIcon(item.category)}
+                                            title={item.category}
+                                            subtitle={`${amount(item.amount)} / month`}
+                                            onPress={() => handleEditBudget(item)}
+                                            last={index === budgets.length - 1}
+                                            trailing={
+                                                <Pressable
+                                                    onPress={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteBudget(item.category);
+                                                    }}
+                                                    hitSlop={space[2]}
+                                                    accessibilityLabel={`Delete ${item.category} budget`}
+                                                >
+                                                    <Ionicons name="trash-outline" size={20} color={ds.danger} />
+                                                </Pressable>
+                                            }
+                                        />
+                                    ))}
+                                </Group>
+                            </ScrollView>
+                        )}
                     </>
                 ) : (
                     <ScrollView keyboardShouldPersistTaps="handled">
-                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Category</Text>
-                        <Pressable
-                            onPress={() => setShowCategoryModal(true)}
-                            style={[styles.field, { backgroundColor: ds.inset }]}
-                        >
-                            <Ionicons
-                                name={selectedCategory ? getCategoryIcon(selectedCategory) : 'pricetag-outline'}
-                                size={18}
-                                color={ds.text2}
+                        <SectionHeader grouped title="Category" style={styles.firstHeader} />
+                        <Group>
+                            <Row
+                                icon={selectedCategory ? getCategoryIcon(selectedCategory) : 'pricetag-outline'}
+                                title={selectedCategory || 'Select a category'}
+                                subtitle={selectedCategory ? getCategoryGroup(selectedCategory, 'EXPENSE') : undefined}
+                                chevron
+                                onPress={() => setShowCategoryModal(true)}
+                                last
                             />
-                            {selectedCategory ? (
-                                <View style={styles.fieldMain}>
-                                    <Text style={[type.body, { color: ds.text }]}>{selectedCategory}</Text>
-                                    <Text style={[type.caption, { color: ds.text2 }]}>{getCategoryGroup(selectedCategory, 'EXPENSE')}</Text>
-                                </View>
-                            ) : (
-                                <Text style={[type.body, styles.fieldMain, { color: ds.text3 }]}>Select a category</Text>
-                            )}
-                            <Ionicons name="chevron-forward" size={16} color={ds.text3} />
-                        </Pressable>
+                        </Group>
 
-                        <Text style={[type.small, styles.label, styles.labelGap, { color: ds.text2 }]}>Monthly limit</Text>
-                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                            <Ionicons name="cash-outline" size={18} color={ds.text2} />
-                            <TextInput
-                                value={budgetAmount}
-                                onChangeText={setBudgetAmount}
-                                placeholder="Enter amount"
-                                keyboardType="numeric"
-                                placeholderTextColor={ds.text3}
-                                style={[type.bodyNum, styles.fieldMain, styles.input, { color: ds.text }]}
-                            />
-                        </View>
+                        <SectionHeader grouped title="Monthly limit" />
+                        <Group padded>
+                            <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="cash-outline" size={18} color={ds.text2} />
+                                <TextInput
+                                    value={budgetAmount}
+                                    onChangeText={setBudgetAmount}
+                                    placeholder="Enter amount"
+                                    keyboardType="numeric"
+                                    placeholderTextColor={ds.text3}
+                                    style={[type.bodyNum, styles.fieldMain, styles.input, { color: ds.text }]}
+                                />
+                            </View>
+                        </Group>
                     </ScrollView>
                 )}
 
@@ -278,13 +274,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'baseline',
-        marginBottom: space[1],
-    },
-    label: {
         marginBottom: space[2],
+        paddingHorizontal: layout.groupPadding,
     },
-    labelGap: {
-        marginTop: space[4],
+    // The sheet title already spaces the first header from the top.
+    firstHeader: {
+        marginTop: 0,
     },
     field: {
         flexDirection: 'row',

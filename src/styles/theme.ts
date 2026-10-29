@@ -1,11 +1,18 @@
 import type { TextStyle, ViewStyle } from 'react-native';
 
-// Refined Minimal tokens (docs/DESIGN.md §2): the only colors components use, so a theme swaps them here.
+// Layered + identity tokens (docs/DESIGN.md §2): the only colors components use, so a theme swaps them here.
 const lightDs = {
-    bg: '#FFFFFF',
+    // Page plane; sections sit on it in `group` surfaces. `bg` is the legacy name for the same color.
+    canvas: '#F3F4F6',
+    bg: '#F3F4F6',
+    group: '#FFFFFF',
+    heroPanel: '#E8F1FB',
     inset: '#F4F5F7',
     raised: '#FFFFFF',
+    // Segmented-control track: reads on both `canvas` and `group`.
+    track: '#E8EAED',
     hairline: '#ECEDF0',
+    // Floating dialog/popover surface; Sheet and BottomModal bodies use `canvas`.
     sheet: '#FFFFFF',
     text: '#121417',
     text2: '#6B7280',
@@ -20,6 +27,12 @@ const lightDs = {
     domainInvest: '#8E7CC3',
     domainLoans: '#B0896B',
     domainGoals: '#3AA39A',
+    // Row icon tiles: domain color at 16% over `group`, precomputed; neutral is 6% black.
+    domainCashSoft: '#E8EDF3',
+    domainInvestSoft: '#EDEAF5',
+    domainLoansSoft: '#F2ECE7',
+    domainGoalsSoft: '#DFF0EF',
+    tileNeutral: 'rgba(0, 0, 0, 0.06)',
     scrim: 'rgba(0, 0, 0, 0.40)',
     // White in every theme: a QR code needs dark on light to scan, and marks drawn over the camera feed.
     qrSurface: '#FFFFFF',
@@ -41,9 +54,13 @@ export const severityColor = (ds: DsColors, severity: 'error' | 'warning' | 'suc
 };
 
 const darkDs: DsColors = {
-    bg: '#0E1013',
-    inset: '#1A1D22',
+    canvas: '#0B0D10',
+    bg: '#0B0D10',
+    group: '#16191D',
+    heroPanel: '#16233A',
+    inset: '#1F2328',
     raised: '#2A2E35',
+    track: '#1F2328',
     hairline: '#262A30',
     sheet: '#16191D',
     text: '#ECEEF1',
@@ -59,6 +76,12 @@ const darkDs: DsColors = {
     domainInvest: '#A89AD6',
     domainLoans: '#C4A288',
     domainGoals: '#5CBDB3',
+    // 22% over `group`; neutral is 6% white.
+    domainCashSoft: '#313944',
+    domainInvestSoft: '#363546',
+    domainLoansSoft: '#3C3735',
+    domainGoalsSoft: '#253D3E',
+    tileNeutral: 'rgba(255, 255, 255, 0.06)',
     scrim: 'rgba(0, 0, 0, 0.60)',
     qrSurface: '#FFFFFF',
     onMedia: '#FFFFFF',
@@ -161,6 +184,17 @@ export const space = {
 export const radius = {
     sm: 8,
     md: 12,
+    // Group surfaces and the hero panel
+    group: 16,
     lg: 20,
     full: 9999,
 } as const;
+
+// Groups and the hero panel sit 14 from the screen edge; group content is padded 14 inside.
+export const layout = {
+    groupInset: 14,
+    groupPadding: 14,
+} as const;
+
+// Accent fill under the hero sparkline, fading to 0 at the baseline.
+export const SPARK_FILL_OPACITY = 0.14;

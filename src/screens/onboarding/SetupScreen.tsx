@@ -11,7 +11,7 @@ import PinCreationScreen from '@screens/security/PinCreationScreen';
 import TermsContent from '@components/onboarding/TermsContent';
 import OnboardingGuide from '@screens/onboarding/OnboardingGuideScreen';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { UserProfile } from '@types';
@@ -20,7 +20,7 @@ import { restoreFromBackup, generateDummyData, BackupProgress } from '@services/
 import { saveUserProfile, setOnboardingComplete, saveAcceptedTermsVersion, saveLastBackupDate } from '@services/core/storageService';
 import { CURRENCIES, getCurrencyInfo } from '@utils/currencyData';
 import { CONFIG } from '@constants/config';
-import { type, space, radius, fontFamily } from '@styles/theme';
+import { type, space, radius, fontFamily, layout } from '@styles/theme';
 
 const { height } = Dimensions.get('window');
 
@@ -188,12 +188,16 @@ const SetupScreen = ({ navigation }: any) => {
     };
 
     const isGoalSelected = (goal: string) => goals.includes(goal);
+    const filteredCurrencies = Object.values(CURRENCIES).filter(c =>
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.code.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <ScreenWrapper
             scrollable={false}
             noPadding={step === 4}
-            style={[{ backgroundColor: ds.bg }, step !== 4 && { paddingHorizontal: space[5] }]}
+            style={step !== 4 && { paddingHorizontal: layout.groupInset }}
         >
             {step === 4 ? (
                 // Rendered outside the ScrollView below: it manages its own full-screen
@@ -222,9 +226,10 @@ const SetupScreen = ({ navigation }: any) => {
                             </Text>
                         </View>
 
-                        <View style={[styles.termsCard, { backgroundColor: ds.inset }]}>
+                        <View style={[styles.termsCard, { backgroundColor: ds.group }]}>
                             <ScrollView
                                 style={{ flex: 1 }}
+                                contentContainerStyle={styles.termsScroll}
                                 nestedScrollEnabled
                                 showsVerticalScrollIndicator
                                 onScroll={(event) => {
@@ -280,7 +285,7 @@ const SetupScreen = ({ navigation }: any) => {
                         <Pressable
                             onPress={() => setStep(1)}
                             disabled={!hasAgreed}
-                            style={[styles.button, { backgroundColor: hasAgreed ? ds.accent : ds.inset }]}
+                            style={[styles.button, { backgroundColor: hasAgreed ? ds.accent : ds.group }]}
                             accessibilityRole="button"
                             accessibilityState={{ disabled: !hasAgreed }}
                         >
@@ -292,39 +297,41 @@ const SetupScreen = ({ navigation }: any) => {
                 {/* Step 1: Welcome / Restore */}
                 {step === 1 && (
                     <View style={styles.stepContainer}>
-                        <Text style={[type.title, { color: ds.text }]}>Welcome to WealthSnap! 🎉</Text>
-                        <Text style={[type.small, styles.description, { color: ds.text2 }]}>
+                        <Text style={[type.title, styles.heading, { color: ds.text }]}>Welcome to WealthSnap! 🎉</Text>
+                        <Text style={[type.small, styles.heading, styles.description, { color: ds.text2 }]}>
                             Start your journey to financial freedom
                         </Text>
 
-                        <Row
-                            icon="person-add-outline"
-                            title="New user"
-                            subtitle="Create your profile"
-                            chevron
-                            onPress={() => setStep(2)}
-                        />
-                        <Row
-                            icon="cloud-download-outline"
-                            leading={isRestoring ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
-                            title={isRestoring ? 'Restoring...' : 'Restore from backup'}
-                            subtitle="Import your previous data"
-                            chevron={!isRestoring}
-                            onPress={isRestoring ? undefined : handleRestoreFromBackup}
-                            last={!CONFIG.ENABLE_DUMMY_DATA}
-                            style={{ opacity: isRestoring ? 0.6 : 1 }}
-                        />
-                        {CONFIG.ENABLE_DUMMY_DATA && (
+                        <Group>
                             <Row
-                                icon="construct-outline"
-                                leading={isRestoring ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
-                                title="Populate demo data"
-                                subtitle="For your eyes only"
-                                chevron={!isRestoring}
-                                onPress={isRestoring ? undefined : handlePopulateDemoData}
-                                last
+                                icon="person-add-outline"
+                                title="New user"
+                                subtitle="Create your profile"
+                                chevron
+                                onPress={() => setStep(2)}
                             />
-                        )}
+                            <Row
+                                icon="cloud-download-outline"
+                                leading={isRestoring ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
+                                title={isRestoring ? 'Restoring...' : 'Restore from backup'}
+                                subtitle="Import your previous data"
+                                chevron={!isRestoring}
+                                onPress={isRestoring ? undefined : handleRestoreFromBackup}
+                                last={!CONFIG.ENABLE_DUMMY_DATA}
+                                style={{ opacity: isRestoring ? 0.6 : 1 }}
+                            />
+                            {CONFIG.ENABLE_DUMMY_DATA && (
+                                <Row
+                                    icon="construct-outline"
+                                    leading={isRestoring ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
+                                    title="Populate demo data"
+                                    subtitle="For your eyes only"
+                                    chevron={!isRestoring}
+                                    onPress={isRestoring ? undefined : handlePopulateDemoData}
+                                    last
+                                />
+                            )}
+                        </Group>
                     </View>
                 )}
 
@@ -340,55 +347,59 @@ const SetupScreen = ({ navigation }: any) => {
                 {/* Step 2: Profile Setup (Existing Logic) */}
                 {step === 2 && (
                     <View style={styles.stepContainer}>
-                        <Text style={[type.title, { color: ds.text }]}>Let&apos;s get started!</Text>
-                        <Text style={[type.small, styles.description, { color: ds.text2 }]}>
+                        <Text style={[type.title, styles.heading, { color: ds.text }]}>Let&apos;s get started!</Text>
+                        <Text style={[type.small, styles.heading, styles.description, { color: ds.text2 }]}>
                             Setup your financial profile
                         </Text>
 
-                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Preferred name</Text>
-                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                            <Ionicons name="person-outline" size={18} color={ds.text2} />
-                            <TextInput
-                                style={[type.body, styles.fieldInput, { color: ds.text }]}
-                                value={name}
-                                onChangeText={setName}
-                                placeholder="John Doe"
-                                placeholderTextColor={ds.text3}
-                            />
-                        </View>
-
-                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Currency</Text>
-                        <Pressable
-                            onPress={() => setCurrencyModalVisible(true)}
-                            style={[styles.field, { backgroundColor: ds.inset }]}
-                            accessibilityRole="button"
-                        >
-                            <Text style={[type.bodyStrong, styles.currencySymbol, { color: ds.text2 }]}>
-                                {getCurrencyInfo(currency).symbol}
-                            </Text>
-                            <View style={styles.flex}>
-                                <Text style={[type.body, { color: ds.text }]}>{currency}</Text>
-                                <Text style={[type.small, { color: ds.text2 }]}>{getCurrencyInfo(currency).name}</Text>
+                        <Group padded>
+                            <Text style={[type.small, styles.firstLabel, { color: ds.text2 }]}>Preferred name</Text>
+                            <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="person-outline" size={18} color={ds.text2} />
+                                <TextInput
+                                    style={[type.body, styles.fieldInput, { color: ds.text }]}
+                                    value={name}
+                                    onChangeText={setName}
+                                    placeholder="John Doe"
+                                    placeholderTextColor={ds.text3}
+                                />
                             </View>
-                            <Ionicons name="chevron-down" size={16} color={ds.text3} />
-                        </Pressable>
 
-                        <SectionHeader title="Financial goals" />
-                        <View style={styles.chips}>
-                            {availableGoals.map(goal => (
-                                <Pressable
-                                    key={goal}
-                                    onPress={() => toggleGoal(goal)}
-                                    style={[styles.chip, isGoalSelected(goal) && { backgroundColor: ds.inset }]}
-                                    accessibilityRole="checkbox"
-                                    accessibilityState={{ checked: isGoalSelected(goal) }}
-                                >
-                                    <Text style={[type.smallMedium, { color: isGoalSelected(goal) ? ds.text : ds.text2 }]}>
-                                        {goal}
-                                    </Text>
-                                </Pressable>
-                            ))}
-                        </View>
+                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Currency</Text>
+                            <Pressable
+                                onPress={() => setCurrencyModalVisible(true)}
+                                style={[styles.field, { backgroundColor: ds.inset }]}
+                                accessibilityRole="button"
+                            >
+                                <Text style={[type.bodyStrong, styles.currencySymbol, { color: ds.text2 }]}>
+                                    {getCurrencyInfo(currency).symbol}
+                                </Text>
+                                <View style={styles.flex}>
+                                    <Text style={[type.body, { color: ds.text }]}>{currency}</Text>
+                                    <Text style={[type.small, { color: ds.text2 }]}>{getCurrencyInfo(currency).name}</Text>
+                                </View>
+                                <Ionicons name="chevron-down" size={16} color={ds.text3} />
+                            </Pressable>
+                        </Group>
+
+                        <SectionHeader grouped title="Financial goals" />
+                        <Group padded>
+                            <View style={styles.chips}>
+                                {availableGoals.map(goal => (
+                                    <Pressable
+                                        key={goal}
+                                        onPress={() => toggleGoal(goal)}
+                                        style={[styles.chip, isGoalSelected(goal) && { backgroundColor: ds.inset }]}
+                                        accessibilityRole="checkbox"
+                                        accessibilityState={{ checked: isGoalSelected(goal) }}
+                                    >
+                                        <Text style={[type.smallMedium, { color: isGoalSelected(goal) ? ds.text : ds.text2 }]}>
+                                            {goal}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                        </Group>
 
                         <Pressable
                             onPress={() => {
@@ -426,7 +437,7 @@ const SetupScreen = ({ navigation }: any) => {
                 maxHeight="85%"
             >
                 <View style={currencyStyles.body}>
-                    <View style={[currencyStyles.search, { backgroundColor: ds.inset }]}>
+                    <View style={[currencyStyles.search, { backgroundColor: ds.group }]}>
                         <Ionicons name="search-outline" size={18} color={ds.text2} />
                         <TextInput
                             style={[type.body, currencyStyles.searchInput, { color: ds.text }]}
@@ -443,13 +454,13 @@ const SetupScreen = ({ navigation }: any) => {
                         )}
                     </View>
 
+                    {/* A Group can't bound a FlatList's height, so the list itself draws the group surface. */}
                     <FlatList
-                        data={Object.values(CURRENCIES).filter(c =>
-                            c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            c.code.toLowerCase().includes(searchQuery.toLowerCase())
-                        )}
+                        data={filteredCurrencies}
                         keyExtractor={item => item.code}
-                        renderItem={({ item }) => {
+                        style={[currencyStyles.list, { backgroundColor: ds.group }]}
+                        contentContainerStyle={currencyStyles.listContent}
+                        renderItem={({ item, index }) => {
                             const selected = currency === item.code;
                             return (
                                 <Row
@@ -464,6 +475,7 @@ const SetupScreen = ({ navigation }: any) => {
                                         setCurrency(item.code);
                                         setCurrencyModalVisible(false);
                                     }}
+                                    last={index === filteredCurrencies.length - 1}
                                 />
                             );
                         }}
@@ -491,6 +503,9 @@ const styles = StyleSheet.create({
     flex: {
         flex: 1,
     },
+    heading: {
+        paddingHorizontal: layout.groupPadding,
+    },
     description: {
         marginTop: space[1],
         marginBottom: space[4],
@@ -512,9 +527,12 @@ const styles = StyleSheet.create({
     termsCard: {
         flex: 1,
         maxHeight: height * 0.5,
-        borderRadius: radius.md,
+        borderRadius: radius.group,
         marginBottom: space[3],
         overflow: 'hidden',
+    },
+    termsScroll: {
+        paddingHorizontal: layout.groupPadding,
     },
     scrollIndicator: {
         flexDirection: 'row',
@@ -539,8 +557,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    firstLabel: {
+        marginBottom: space[2],
+    },
     label: {
-        marginTop: space[4],
+        marginTop: space[3],
         marginBottom: space[2],
     },
     field: {
@@ -562,7 +583,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: space[2],
-        marginTop: space[2],
     },
     chip: {
         paddingVertical: space[2],
@@ -591,7 +611,15 @@ const currencyStyles = StyleSheet.create({
         gap: space[3],
         padding: space[3],
         borderRadius: radius.md,
-        marginBottom: space[1],
+        marginBottom: space[3],
+    },
+    list: {
+        flexGrow: 0,
+        borderRadius: radius.group,
+        overflow: 'hidden',
+    },
+    listContent: {
+        paddingHorizontal: layout.groupPadding,
     },
     searchInput: {
         flex: 1,

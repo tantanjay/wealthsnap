@@ -4,7 +4,7 @@ import { BigNumber } from 'bignumber.js';
 import { View, Text, TextInput, ScrollView, Pressable, Platform, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { SectionHeader, SegmentedControl } from '@components/ds';
+import { Group, SectionHeader, SegmentedControl } from '@components/ds';
 import { CalculatorModal } from '@components/record/CalculatorModal';
 import { CategorySelectModal } from '@components/record/CategorySelectModal';
 import { RecurringOptions } from '@components/transaction/RecurringOptions';
@@ -18,7 +18,7 @@ import { saveRecurrenceRule, calculateNextDueDate } from '@services/domain/recur
 import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
 import { calculateGoalBalance } from '@utils/savingsGoalMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
-import { type as typeScale, space, radius } from '@styles/theme';
+import { type as typeScale, space, radius, layout } from '@styles/theme';
 
 interface TransactionFormProps {
     transactionType: TransactionType;
@@ -342,7 +342,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 />
 
                 {/* Amount */}
-                <View style={styles.amountBlock}>
+                <Group padded style={styles.firstGroup}>
                     <View style={styles.amountLabelRow}>
                         <Text style={[typeScale.small, { color: ds.text2 }]}>Amount</Text>
                         <Pressable onPress={() => setShowCalculator(true)} hitSlop={space[2]} accessibilityRole="button" accessibilityLabel="Open calculator">
@@ -350,166 +350,173 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                         </Pressable>
                     </View>
                     <TextInput
-                        style={[typeScale.recordAmount, styles.amountInput, { color: ds.text, borderBottomColor: ds.hairline }]}
+                        style={[typeScale.recordAmount, styles.amountInput, { color: ds.text }]}
                         value={amount}
                         onChangeText={setAmount}
                         keyboardType="numeric"
                         placeholder="0"
                         placeholderTextColor={ds.text3}
                     />
-                </View>
+                </Group>
 
                 {/* Category Selection */}
-                <SectionHeader title="Category" />
-                <ScrollView
-                    ref={categoryScrollRef}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={[styles.tileStrip, { gap: ITEM_GAP }]}
-                >
-                    {/* Search Button */}
-                    <Pressable
-                        onPress={() => setShowCategoryModal(true)}
-                        style={[styles.tile, { width: ITEM_WIDTH, backgroundColor: ds.inset }]}
+                <SectionHeader title="Category" grouped />
+                <Group padded>
+                    <ScrollView
+                        ref={categoryScrollRef}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.bleed}
+                        contentContainerStyle={[styles.bleedContent, { gap: ITEM_GAP }]}
                     >
-                        <Ionicons name="search-outline" size={20} color={ds.text2} />
-                        <Text style={[typeScale.small, { color: ds.text }]}>Search</Text>
-                    </Pressable>
+                        {/* Search Button */}
+                        <Pressable
+                            onPress={() => setShowCategoryModal(true)}
+                            style={[styles.tile, { width: ITEM_WIDTH, backgroundColor: ds.inset }]}
+                        >
+                            <Ionicons name="search-outline" size={20} color={ds.text2} />
+                            <Text style={[typeScale.small, { color: ds.text }]}>Search</Text>
+                        </Pressable>
 
-                    {/* Recent Categories */}
-                    {(() => {
-                        const categoriesToDisplay = [...recentCategories];
-                        if (category && !categoriesToDisplay.includes(category)) {
-                            categoriesToDisplay.unshift(category);
-                        }
+                        {/* Recent Categories */}
+                        {(() => {
+                            const categoriesToDisplay = [...recentCategories];
+                            if (category && !categoriesToDisplay.includes(category)) {
+                                categoriesToDisplay.unshift(category);
+                            }
 
-                        return categoriesToDisplay.map((cat) => {
-                            const isActive = category === cat;
-                            const catGroupItem = categoryGroups.flatMap(g => g.items).find(c => c.value === cat);
-                            const icon = catGroupItem?.icon || 'ellipsis-horizontal';
+                            return categoriesToDisplay.map((cat) => {
+                                const isActive = category === cat;
+                                const catGroupItem = categoryGroups.flatMap(g => g.items).find(c => c.value === cat);
+                                const icon = catGroupItem?.icon || 'ellipsis-horizontal';
 
-                            return (
-                                <Pressable
-                                    key={cat}
-                                    onPress={() => {
-                                        setCategory(cat);
-                                        setSubCategory('');
-                                    }}
-                                    style={[styles.tile, { width: ITEM_WIDTH, backgroundColor: isActive ? ds.accentSoft : ds.inset }]}
-                                >
-                                    <Ionicons name={icon as any} size={20} color={isActive ? ds.accent : ds.text2} />
-                                    <Text style={[typeScale.small, { color: isActive ? ds.accent : ds.text }]} numberOfLines={1}>
-                                        {cat}
-                                    </Text>
-                                </Pressable>
-                            );
-                        });
-                    })()}
-                </ScrollView>
+                                return (
+                                    <Pressable
+                                        key={cat}
+                                        onPress={() => {
+                                            setCategory(cat);
+                                            setSubCategory('');
+                                        }}
+                                        style={[styles.tile, { width: ITEM_WIDTH, backgroundColor: isActive ? ds.accentSoft : ds.inset }]}
+                                    >
+                                        <Ionicons name={icon as any} size={20} color={isActive ? ds.accent : ds.text2} />
+                                        <Text style={[typeScale.small, { color: isActive ? ds.accent : ds.text }]} numberOfLines={1}>
+                                            {cat}
+                                        </Text>
+                                    </Pressable>
+                                );
+                            });
+                        })()}
+                    </ScrollView>
+                </Group>
 
                 {/* Funding Source (Savings Goals) */}
                 {canPickFundingSource && savingsGoals.length > 0 && (
                     <>
-                        <SectionHeader title="Funding source" />
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipStrip}>
-                            <Pressable
-                                onPress={() => handleSelectFundingGoal(null)}
-                                style={[styles.chip, !fundingGoalId && { backgroundColor: ds.inset }]}
-                            >
-                                <Text style={[typeScale.smallMedium, { color: !fundingGoalId ? ds.text : ds.text2 }]}>
-                                    General funds
-                                </Text>
-                            </Pressable>
+                        <SectionHeader title="Funding source" grouped />
+                        <Group padded>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.bleed} contentContainerStyle={[styles.bleedContent, styles.chipStrip]}>
+                                <Pressable
+                                    onPress={() => handleSelectFundingGoal(null)}
+                                    style={[styles.chip, !fundingGoalId && { backgroundColor: ds.inset }]}
+                                >
+                                    <Text style={[typeScale.smallMedium, { color: !fundingGoalId ? ds.text : ds.text2 }]}>
+                                        General funds
+                                    </Text>
+                                </Pressable>
 
-                            {savingsGoals.map((goal) => {
-                                const isActive = fundingGoalId === goal.id;
-                                return (
-                                    <Pressable
-                                        key={goal.id}
-                                        onPress={() => handleSelectFundingGoal(goal)}
-                                        style={[styles.chip, isActive && { backgroundColor: ds.inset }]}
-                                    >
-                                        <Text style={[typeScale.smallMedium, { color: isActive ? ds.text : ds.text2 }]} numberOfLines={1}>
-                                            {goal.name}
-                                        </Text>
-                                    </Pressable>
-                                );
-                            })}
-                        </ScrollView>
-                        {fundingGoalId && (
-                            <Text style={[typeScale.small, styles.hint, { color: ds.text2 }]}>
-                                This still logs as a normal expense - it just draws from the goal instead of general cash.
-                            </Text>
-                        )}
+                                {savingsGoals.map((goal) => {
+                                    const isActive = fundingGoalId === goal.id;
+                                    return (
+                                        <Pressable
+                                            key={goal.id}
+                                            onPress={() => handleSelectFundingGoal(goal)}
+                                            style={[styles.chip, isActive && { backgroundColor: ds.inset }]}
+                                        >
+                                            <Text style={[typeScale.smallMedium, { color: isActive ? ds.text : ds.text2 }]} numberOfLines={1}>
+                                                {goal.name}
+                                            </Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </ScrollView>
+                            {fundingGoalId && (
+                                <Text style={[typeScale.small, styles.hint, { color: ds.text2 }]}>
+                                    This still logs as a normal expense - it just draws from the goal instead of general cash.
+                                </Text>
+                            )}
+                        </Group>
                     </>
                 )}
 
                 {/* Date, Time and Note */}
-                <SectionHeader title="Details" />
-                <View style={styles.dateRow}>
-                    <View style={styles.dateCol}>
-                        <Text style={fieldLabel}>Date</Text>
-                        <Pressable onPress={() => setShowTransactionDatePicker(true)} style={fieldBox}>
-                            <Ionicons name="calendar-outline" size={18} color={ds.text2} />
-                            <Text style={[typeScale.body, { color: ds.text }]} numberOfLines={1}>
-                                {transactionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </Text>
-                        </Pressable>
+                <SectionHeader title="Details" grouped />
+                <Group padded>
+                    <View style={styles.dateRow}>
+                        <View style={styles.dateCol}>
+                            <Text style={fieldLabel}>Date</Text>
+                            <Pressable onPress={() => setShowTransactionDatePicker(true)} style={fieldBox}>
+                                <Ionicons name="calendar-outline" size={18} color={ds.text2} />
+                                <Text style={[typeScale.body, { color: ds.text }]} numberOfLines={1}>
+                                    {transactionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </Text>
+                            </Pressable>
+                        </View>
+                        <View style={styles.dateCol}>
+                            <Text style={fieldLabel}>Time</Text>
+                            <Pressable onPress={() => setShowTransactionTimePicker(true)} style={fieldBox}>
+                                <Ionicons name="time-outline" size={18} color={ds.text2} />
+                                <Text style={[typeScale.body, { color: ds.text }]} numberOfLines={1}>
+                                    {transactionDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                </Text>
+                            </Pressable>
+                        </View>
                     </View>
-                    <View style={styles.dateCol}>
-                        <Text style={fieldLabel}>Time</Text>
-                        <Pressable onPress={() => setShowTransactionTimePicker(true)} style={fieldBox}>
-                            <Ionicons name="time-outline" size={18} color={ds.text2} />
-                            <Text style={[typeScale.body, { color: ds.text }]} numberOfLines={1}>
-                                {transactionDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                            </Text>
-                        </Pressable>
+
+                    {showTransactionDatePicker && (
+                        <DateTimePicker
+                            value={transactionDate}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={(event: DateTimePickerEvent, date?: Date) => {
+                                setShowTransactionDatePicker(Platform.OS === 'ios');
+                                if (date) {
+                                    const newDate = new Date(transactionDate);
+                                    newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+                                    setTransactionDate(newDate);
+                                }
+                            }}
+                        />
+                    )}
+
+                    {showTransactionTimePicker && (
+                        <DateTimePicker
+                            value={transactionDate}
+                            mode="time"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            onChange={(event: DateTimePickerEvent, date?: Date) => {
+                                setShowTransactionTimePicker(Platform.OS === 'ios');
+                                if (date) {
+                                    const newDate = new Date(transactionDate);
+                                    newDate.setHours(date.getHours(), date.getMinutes());
+                                    setTransactionDate(newDate);
+                                }
+                            }}
+                        />
+                    )}
+
+                    <Text style={[fieldLabel, styles.fieldGap]}>Note (optional)</Text>
+                    <View style={fieldBox}>
+                        <Ionicons name="create-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={[typeScale.body, styles.fieldInput, { color: ds.text }]}
+                            value={note}
+                            onChangeText={setNote}
+                            placeholder="Description"
+                            placeholderTextColor={ds.text3}
+                        />
                     </View>
-                </View>
-
-                {showTransactionDatePicker && (
-                    <DateTimePicker
-                        value={transactionDate}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={(event: DateTimePickerEvent, date?: Date) => {
-                            setShowTransactionDatePicker(Platform.OS === 'ios');
-                            if (date) {
-                                const newDate = new Date(transactionDate);
-                                newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
-                                setTransactionDate(newDate);
-                            }
-                        }}
-                    />
-                )}
-
-                {showTransactionTimePicker && (
-                    <DateTimePicker
-                        value={transactionDate}
-                        mode="time"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={(event: DateTimePickerEvent, date?: Date) => {
-                            setShowTransactionTimePicker(Platform.OS === 'ios');
-                            if (date) {
-                                const newDate = new Date(transactionDate);
-                                newDate.setHours(date.getHours(), date.getMinutes());
-                                setTransactionDate(newDate);
-                            }
-                        }}
-                    />
-                )}
-
-                <Text style={[fieldLabel, styles.fieldGap]}>Note (optional)</Text>
-                <View style={fieldBox}>
-                    <Ionicons name="create-outline" size={18} color={ds.text2} />
-                    <TextInput
-                        style={[typeScale.body, styles.fieldInput, { color: ds.text }]}
-                        value={note}
-                        onChangeText={setNote}
-                        placeholder="Description"
-                        placeholderTextColor={ds.text3}
-                    />
-                </View>
+                </Group>
 
                 {/* Recurring - hidden while a goal is selected as funding source, since a
                     goal-funded expense is never also a recurring transaction */}
@@ -552,7 +559,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </ScrollView>
 
             {/* Fixed Footer Actions */}
-            <View style={[styles.footer, { backgroundColor: ds.inset, borderTopColor: ds.hairline }]}>
+            <View style={[styles.footer, { backgroundColor: ds.group, borderTopColor: ds.hairline }]}>
                 <Pressable onPress={onCancel} style={styles.cancelButton} accessibilityRole="button">
                     <Text style={[typeScale.body, { color: ds.text2 }]}>Cancel</Text>
                 </Pressable>
@@ -566,18 +573,21 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     );
 };
 
+const FOOTER_HEIGHT = space[3] + 48 + space[4] + 1;
+
 const styles = StyleSheet.create({
     // Bottom padding clears the fixed footer.
     content: {
-        paddingHorizontal: space[5],
-        paddingBottom: 120,
+        paddingHorizontal: layout.groupInset,
+        paddingBottom: FOOTER_HEIGHT + space[6],
     },
     title: {
         marginTop: space[4],
-        marginBottom: space[5],
+        marginBottom: space[4],
+        paddingHorizontal: layout.groupPadding,
     },
-    amountBlock: {
-        marginTop: space[6],
+    firstGroup: {
+        marginTop: space[4],
     },
     amountLabelRow: {
         flexDirection: 'row',
@@ -585,12 +595,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     amountInput: {
-        borderBottomWidth: 1,
-        paddingVertical: space[2],
+        paddingTop: space[1],
+        paddingBottom: 0,
         paddingHorizontal: 0,
     },
-    tileStrip: {
-        paddingTop: space[2],
+    // Horizontal strips scroll to the group's edges; inner padding keeps the first item aligned.
+    bleed: {
+        marginHorizontal: -layout.groupPadding,
+    },
+    bleedContent: {
+        paddingHorizontal: layout.groupPadding,
     },
     tile: {
         alignItems: 'center',
@@ -602,7 +616,6 @@ const styles = StyleSheet.create({
     },
     chipStrip: {
         gap: space[1],
-        paddingTop: space[2],
     },
     chip: {
         paddingVertical: space[2],
@@ -615,7 +628,6 @@ const styles = StyleSheet.create({
     dateRow: {
         flexDirection: 'row',
         gap: space[3],
-        paddingTop: space[2],
     },
     dateCol: {
         flex: 1,
@@ -624,7 +636,7 @@ const styles = StyleSheet.create({
         marginBottom: space[1],
     },
     fieldGap: {
-        marginTop: space[4],
+        marginTop: space[3],
     },
     field: {
         flexDirection: 'row',
@@ -646,7 +658,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: space[3],
         paddingTop: space[3],
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: space[4],
         borderTopWidth: 1,
     },

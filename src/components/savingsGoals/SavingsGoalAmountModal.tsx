@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
 import BottomModal from '@components/common/BottomModal';
 import { useTheme } from '@context/ThemeContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { SEVERITY_ICON } from '@utils/severity';
 
 interface SavingsGoalAmountModalProps {
@@ -61,13 +61,14 @@ const SavingsGoalAmountModal: React.FC<SavingsGoalAmountModalProps> = ({
                 </Pressable>
             }
         >
-            <Text style={[type.small, { color: ds.text2 }]}>
+            <Text style={[type.small, styles.intro, { color: ds.text2 }]}>
                 {isWithdraw
                     ? 'This moves money out of the goal and back into your general cash.'
                     : 'This adds money to the goal right now, separate from its recurring schedule.'}
             </Text>
+            {/* Sits on the canvas by itself, so it takes the group fill. */}
             <TextInput
-                style={[type.display, styles.input, { color: ds.text, backgroundColor: ds.inset }]}
+                style={[type.display, styles.input, { color: ds.text, backgroundColor: ds.group }]}
                 value={amount}
                 onChangeText={(v) => { setAmount(v); setError(''); }}
                 keyboardType="numeric"
@@ -86,6 +87,9 @@ const SavingsGoalAmountModal: React.FC<SavingsGoalAmountModalProps> = ({
 };
 
 const styles = StyleSheet.create({
+    intro: {
+        paddingHorizontal: layout.groupPadding,
+    },
     input: {
         marginTop: space[3],
         borderRadius: radius.md,
@@ -96,6 +100,7 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
         gap: space[2],
         marginTop: space[3],
+        paddingHorizontal: layout.groupPadding,
     },
     errorIcon: {
         marginTop: 1,

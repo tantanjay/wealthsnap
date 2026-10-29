@@ -2,9 +2,9 @@ import React from 'react';
 import { Text, StyleSheet } from 'react-native';
 
 import { Disclaimer } from '@components/common/Disclaimer';
-import { Row, Sheet } from '@components/ds';
+import { Group, Row, Sheet } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
-import { type, space } from '@styles/theme';
+import { type, space, layout } from '@styles/theme';
 
 interface FetchPriceListSheetProps {
     visible: boolean;
@@ -25,18 +25,20 @@ const FetchPriceListSheet: React.FC<FetchPriceListSheetProps> = ({ visible, onCl
                 AI-fetched prices are estimates and may differ from official records.
             </Disclaimer>
             <Text style={[type.small, styles.helper, { color: ds.text2 }]}>How far back to fetch prices for all your stocks.</Text>
-            {DURATIONS.map((duration, i) => (
-                <Row
-                    key={duration}
-                    icon="cloud-download-outline"
-                    title={duration}
-                    onPress={() => {
-                        onClose();
-                        onFetch(duration);
-                    }}
-                    last={i === DURATIONS.length - 1}
-                />
-            ))}
+            <Group>
+                {DURATIONS.map((duration, i) => (
+                    <Row
+                        key={duration}
+                        icon="cloud-download-outline"
+                        title={duration}
+                        onPress={() => {
+                            onClose();
+                            onFetch(duration);
+                        }}
+                        last={i === DURATIONS.length - 1}
+                    />
+                ))}
+            </Group>
         </Sheet>
     );
 };
@@ -45,8 +47,11 @@ const styles = StyleSheet.create({
     notice: {
         marginTop: space[4],
     },
+    // Lines up with the group's content, like a grouped section header.
     helper: {
-        marginTop: space[4],
+        paddingHorizontal: layout.groupPadding,
+        marginTop: space[6],
+        marginBottom: space[2],
     },
 });
 

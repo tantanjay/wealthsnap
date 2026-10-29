@@ -5,7 +5,7 @@ import { BigNumber } from 'bignumber.js';
 
 import { useTheme } from '@context/ThemeContext';
 import { type, space } from '@styles/theme';
-import { Hero, IconName, ProgressBar, Row, SectionHeader, Tone } from '@components/ds';
+import { Group, Hero, IconName, ProgressBar, Row, SectionHeader, Tone } from '@components/ds';
 import { EXPENSE_CATEGORY_GROUPS, INCOME_CATEGORY_GROUPS } from '@constants/categories';
 import { PrivacyFormat, DASH, formatPercent, formatPoints } from '@hooks/usePrivacyFormat';
 import { SnapshotPeriod, SnapshotRowId } from '@services/core/storageService';
@@ -250,57 +250,62 @@ const SnapshotView: React.FC<SnapshotViewProps> = ({ data, format: f, order, per
                 stats={hero.stats}
                 actionLabel="Details"
                 onAction={onDetails}
+                panel
                 style={styles.hero}
             />
 
-            <SectionHeader title="Overview" menu={{ options: PERIODS, value: period, onSelect: key => onChangePeriod(key as SnapshotPeriod) }} />
-            {order.map((id, i) => {
-                const row = ROW_BUILDERS[id](data, period, f);
-                const meta = SNAPSHOT_ROW_META[id];
-                return (
-                    <Row
-                        key={id}
-                        domain={meta.domain}
-                        title={(period === 'month' && MONTH_TITLES[id]) || meta.label}
-                        subtitle={row.subtitle}
-                        value={row.value}
-                        change={row.change}
-                        changeTone={row.changeTone}
-                        onPress={() => onRowPress(id)}
-                        last={i === order.length - 1}
-                    >
-                        {f.isDiscreet && row.progress != null ? <ProgressBar percent={row.progress} domain={meta.domain} /> : null}
-                    </Row>
-                );
-            })}
+            <SectionHeader grouped title="Overview" menu={{ options: PERIODS, value: period, onSelect: key => onChangePeriod(key as SnapshotPeriod) }} />
+            <Group>
+                {order.map((id, i) => {
+                    const row = ROW_BUILDERS[id](data, period, f);
+                    const meta = SNAPSHOT_ROW_META[id];
+                    return (
+                        <Row
+                            key={id}
+                            domain={meta.domain}
+                            title={(period === 'month' && MONTH_TITLES[id]) || meta.label}
+                            subtitle={row.subtitle}
+                            value={row.value}
+                            change={row.change}
+                            changeTone={row.changeTone}
+                            onPress={() => onRowPress(id)}
+                            last={i === order.length - 1}
+                        >
+                            {f.isDiscreet && row.progress != null ? <ProgressBar percent={row.progress} domain={meta.domain} /> : null}
+                        </Row>
+                    );
+                })}
+            </Group>
 
-            <SectionHeader title="Recent" actionLabel="See all" onAction={onSeeAllRecent} />
-            {data.recent.length === 0 ? (
-                <Text style={[type.small, styles.emptyRecent, { color: ds.text2 }]}>No transactions yet.</Text>
-            ) : data.recent.map(({ transaction: t, amount }, i) => {
-                const date = new Date(t.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                const isTransfer = t.type === 'TRANSFER_IN' || t.type === 'TRANSFER_OUT';
-                return (
-                    <Row
-                        key={t.id}
-                        icon={transactionIcon(t)}
-                        title={t.note || t.category}
-                        subtitle={t.note ? `${t.category} · ${date}` : date}
-                        // Single transactions show in Discreet; only totals are scale-free there.
-                        value={f.recordMoney(amount, { signed: true })}
-                        valueTone={isTransfer ? 'neutral' : t.type === 'INCOME' && !f.isHidden ? 'good' : undefined}
-                        onPress={onSeeAllRecent}
-                        last={i === data.recent.length - 1}
-                    />
-                );
-            })}
+            <SectionHeader grouped title="Recent" actionLabel="See all" onAction={onSeeAllRecent} />
+            <Group>
+                {data.recent.length === 0 ? (
+                    <Text style={[type.small, styles.emptyRecent, { color: ds.text2 }]}>No transactions yet.</Text>
+                ) : data.recent.map(({ transaction: t, amount }, i) => {
+                    const date = new Date(t.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    const isTransfer = t.type === 'TRANSFER_IN' || t.type === 'TRANSFER_OUT';
+                    return (
+                        <Row
+                            key={t.id}
+                            icon={transactionIcon(t)}
+                            title={t.note || t.category}
+                            subtitle={t.note ? `${t.category} · ${date}` : date}
+                            // Single transactions show in Discreet; only totals are scale-free there.
+                            value={f.recordMoney(amount, { signed: true })}
+                            valueTone={isTransfer ? 'neutral' : t.type === 'INCOME' && !f.isHidden ? 'good' : undefined}
+                            onPress={onSeeAllRecent}
+                            last={i === data.recent.length - 1}
+                        />
+                    );
+                })}
+            </Group>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
     hero: {
-        paddingTop: space[5],
+        marginTop: space[3],
     },
     emptyRecent: {
         paddingVertical: space[3],

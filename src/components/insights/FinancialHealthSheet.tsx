@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-import { ChangeLine, Row, Sheet } from '@components/ds';
+import { ChangeLine, Group, Row, Sheet } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { PrivacyFormat } from '@hooks/usePrivacyFormat';
 import { DebtScenario, FinancialHealthData } from '@hooks/useFinancialHealth';
@@ -88,7 +88,7 @@ const FinancialHealthSheet: React.FC<FinancialHealthSheetProps> = ({ target, onC
     const { ds } = useTheme();
 
     const renderAll = () => (
-        <>
+        <Group>
             {HEALTH_METRIC_IDS.map((id, i) => {
                 const meta = HEALTH_METRIC_META[id];
                 const entry = entries[id];
@@ -108,7 +108,7 @@ const FinancialHealthSheet: React.FC<FinancialHealthSheetProps> = ({ target, onC
                     </Row>
                 );
             })}
-        </>
+        </Group>
     );
 
     const renderSimple = (id: keyof typeof SIMPLE_EXPLANATIONS) => {
@@ -136,7 +136,7 @@ const FinancialHealthSheet: React.FC<FinancialHealthSheetProps> = ({ target, onC
                 return (
                     <>
                         <SheetHero label={HEALTH_METRIC_META[id].label} value={entries[id].value} change="Loading" />
-                        <StatLine label="Calculating from your latest data" value="" last />
+                        <Group><StatLine label="Calculating from your latest data" value="" last /></Group>
                     </>
                 );
             }

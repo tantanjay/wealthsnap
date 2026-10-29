@@ -5,14 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import AutoBackupCard from '@components/data/AutoBackupCard';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { useTheme } from '@context/ThemeContext';
-import { type, space } from '@styles/theme';
+import { type, space, layout } from '@styles/theme';
 
 // Profile → Data → Auto backup.
 const AutoBackupScreen = ({ navigation }: any) => {
     const { ds } = useTheme();
 
     return (
-        <ScreenWrapper scrollable={false} noPadding style={{ backgroundColor: ds.bg }}>
+        <ScreenWrapper scrollable={false} noPadding>
             <View style={styles.topBar}>
                 <Pressable onPress={() => navigation.goBack()} accessibilityLabel="Back" hitSlop={space[2]}>
                     <Ionicons name="chevron-back" size={22} color={ds.text2} />
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: space[5],
     },
     content: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: space[7],
     },
 });

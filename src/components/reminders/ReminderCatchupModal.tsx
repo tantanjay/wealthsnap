@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 
-import { Row } from '@components/ds';
+import { Group, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius } from '@styles/theme';
 import { useAlert } from '@context/AlertContext';
@@ -115,16 +115,20 @@ export const ReminderCatchupModal: React.FC<ReminderCatchupModalProps> = ({
 
     return (
         <View style={styles.container}>
-            <FlatList
-                data={reminders}
-                keyExtractor={item => item.id}
-                renderItem={renderItem}
-                extraData={snoozingReminderId}
-                showsVerticalScrollIndicator={true}
-                style={styles.list}
-                scrollEnabled={true}
-                nestedScrollEnabled={true}
-            />
+            <View style={styles.list}>
+                {/* `padded` puts the list straight in the Group (no clip wrapper), so it can still shrink and scroll. */}
+                <Group padded style={styles.group}>
+                    <FlatList
+                        data={reminders}
+                        keyExtractor={item => item.id}
+                        renderItem={renderItem}
+                        extraData={snoozingReminderId}
+                        showsVerticalScrollIndicator={true}
+                        scrollEnabled={true}
+                        nestedScrollEnabled={true}
+                    />
+                </Group>
+            </View>
 
             <View style={styles.footer}>
                 {reminders.length > 1 && (
@@ -151,6 +155,10 @@ const styles = StyleSheet.create({
     },
     list: {
         flex: 1,
+    },
+    group: {
+        flexShrink: 1,
+        paddingVertical: 0,
     },
     inlineActions: {
         flexDirection: 'row',

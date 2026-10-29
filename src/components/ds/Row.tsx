@@ -5,14 +5,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius } from '@styles/theme';
 import ChangeLine from './ChangeLine';
-import { Domain, IconName, Tone, domainColor, toneColor } from './tone';
+import { DOMAIN_ICONS, Domain, IconName, Tone, domainColor, domainSoftColor, toneColor } from './tone';
 
 export interface RowProps {
     title: string;
     subtitle?: string;
-    // Leading slot: an 8px domain dot, a 20px outline icon, or custom content (radio, checkbox).
+    // Leading slot: a 32px icon tile (domain-tinted when `domain` is set), or custom content (radio, checkbox).
     domain?: Domain;
     icon?: IconName;
+    // 'plain' keeps the old 8px domain dot / bare 20px icon.
+    iconStyle?: 'tile' | 'plain';
     leading?: React.ReactNode;
     // Trailing value and change line arrive already formatted (and privacy-masked) by the caller.
     value?: string;
@@ -37,6 +39,7 @@ const Row: React.FC<RowProps> = ({
     subtitle,
     domain,
     icon,
+    iconStyle = 'tile',
     leading,
     value,
     valueTone,
@@ -50,6 +53,7 @@ const Row: React.FC<RowProps> = ({
     style,
 }) => {
     const { ds } = useTheme();
+    const tileIcon = icon ?? (domain ? DOMAIN_ICONS[domain] : undefined);
 
     return (
         <Pressable
@@ -62,8 +66,13 @@ const Row: React.FC<RowProps> = ({
             ]}
         >
             {leading}
-            {!leading && domain && <View style={[styles.dot, { backgroundColor: domainColor(ds, domain) }]} />}
-            {!leading && !domain && icon && <Ionicons name={icon} size={20} color={ds.text2} />}
+            {!leading && iconStyle === 'tile' && tileIcon && (
+                <View style={[styles.tile, { backgroundColor: domain ? domainSoftColor(ds, domain) : ds.tileNeutral }]}>
+                    <Ionicons name={tileIcon} size={18} color={domain ? domainColor(ds, domain) : ds.text2} />
+                </View>
+            )}
+            {!leading && iconStyle === 'plain' && domain && <View style={[styles.dot, { backgroundColor: domainColor(ds, domain) }]} />}
+            {!leading && iconStyle === 'plain' && !domain && icon && <Ionicons name={icon} size={20} color={ds.text2} />}
 
             <View style={styles.main}>
                 <Text style={[type.body, { color: ds.text }]}>{title}</Text>
@@ -95,6 +104,13 @@ const styles = StyleSheet.create({
         gap: space[3],
         paddingVertical: space[3],
         minHeight: 56,
+    },
+    tile: {
+        width: 32,
+        height: 32,
+        borderRadius: 9,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     dot: {
         width: 8,

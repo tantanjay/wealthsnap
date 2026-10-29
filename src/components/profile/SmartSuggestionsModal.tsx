@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import { EmptyState } from '@components/common/EmptyState';
-import { ChangeLine, IconName, Row } from '@components/ds';
+import { ChangeLine, Group, IconName, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { usePrivacy } from '@context/PrivacyContext';
@@ -14,7 +14,7 @@ import { getAllRecurrenceRules } from '@services/domain/recurrenceService';
 import { getCategoryAverages } from '@utils/financialMetrics';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { EXPENSE_CATEGORY_GROUPS } from '@constants/categories';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 
 // Below this, a gap isn't worth surfacing - keeps the list to the categories that matter
 const SYNC_THRESHOLD_PCT = 15;
@@ -221,64 +221,68 @@ const SmartSuggestionsModal: React.FC<SmartSuggestionsModalProps> = ({ visible, 
                             Removing a suggestion just skips it — your saved budget won&apos;t change until you tap Update.
                         </Text>
                     )}
-                    <FlatList
-                        data={rows}
-                        keyExtractor={item => item.category}
-                        keyboardShouldPersistTaps="handled"
-                        ListEmptyComponent={
-                            <EmptyState
-                                size="compact"
-                                icon="checkmark-circle-outline"
-                                title={hasHistory
-                                    ? 'Your budgets already match your spending'
-                                    : 'Not enough spending history yet - check back after your first full month'}
-                            />
-                        }
-                        renderItem={({ item, index }) => {
-                            const isNew = item.currentBudget === null;
-                            const isUp = !isNew && item.suggestedAmount > item.currentBudget!;
-                            const delta = isNew ? 0 : Math.abs(item.suggestedAmount - item.currentBudget!);
+                    {rows.length === 0 ? (
+                        <EmptyState
+                            size="compact"
+                            icon="checkmark-circle-outline"
+                            title={hasHistory
+                                ? 'Your budgets already match your spending'
+                                : 'Not enough spending history yet - check back after your first full month'}
+                        />
+                    ) : (
+                        // `padded` puts the list straight in the Group (no clip wrapper), so it can still shrink and scroll.
+                        <Group padded style={styles.list}>
+                            <FlatList
+                                data={rows}
+                                keyExtractor={item => item.category}
+                                keyboardShouldPersistTaps="handled"
+                                renderItem={({ item, index }) => {
+                                    const isNew = item.currentBudget === null;
+                                    const isUp = !isNew && item.suggestedAmount > item.currentBudget!;
+                                    const delta = isNew ? 0 : Math.abs(item.suggestedAmount - item.currentBudget!);
 
-                            return (
-                                <Row
-                                    icon={getCategoryIcon(item.category)}
-                                    title={item.category}
-                                    last={index === rows.length - 1}
-                                    trailing={
-                                        <View style={styles.trailing}>
-                                            <TextInput
-                                                value={item.amountText}
-                                                onChangeText={(text) => handleAmountChange(item.category, text)}
-                                                keyboardType="numeric"
-                                                style={[type.smallNum, styles.amountInput, { backgroundColor: ds.inset, color: ds.text }]}
-                                            />
-                                            <Pressable
-                                                onPress={() => handleRemoveRow(item.category)}
-                                                hitSlop={space[2]}
-                                                accessibilityLabel={`Skip ${item.category}`}
-                                            >
-                                                <Ionicons name="trash-outline" size={20} color={ds.danger} />
-                                            </Pressable>
-                                        </View>
-                                    }
-                                >
-                                    {isNew ? (
-                                        <Text style={[type.caption, { color: ds.text2 }]}>Not budgeted yet</Text>
-                                    ) : (
-                                        <ChangeLine
-                                            text={`${isUp ? '+' : '−'}${isPrivacyEnabled ? '****' : formatCurrencyAmount(delta, currency)} vs current`}
-                                            tone={isUp ? 'warning' : 'good'}
-                                        />
-                                    )}
-                                    {item.isInfrequent && (
-                                        <Text style={[type.caption, styles.footnote, { color: ds.text2 }]}>
-                                            Occasional ({item.activeMonths}/{item.totalMonths} months) — smoothed average, not a recurring cost
-                                        </Text>
-                                    )}
-                                </Row>
-                            );
-                        }}
-                    />
+                                    return (
+                                        <Row
+                                            icon={getCategoryIcon(item.category)}
+                                            title={item.category}
+                                            last={index === rows.length - 1}
+                                            trailing={
+                                                <View style={styles.trailing}>
+                                                    <TextInput
+                                                        value={item.amountText}
+                                                        onChangeText={(text) => handleAmountChange(item.category, text)}
+                                                        keyboardType="numeric"
+                                                        style={[type.smallNum, styles.amountInput, { backgroundColor: ds.inset, color: ds.text }]}
+                                                    />
+                                                    <Pressable
+                                                        onPress={() => handleRemoveRow(item.category)}
+                                                        hitSlop={space[2]}
+                                                        accessibilityLabel={`Skip ${item.category}`}
+                                                    >
+                                                        <Ionicons name="trash-outline" size={20} color={ds.danger} />
+                                                    </Pressable>
+                                                </View>
+                                            }
+                                        >
+                                            {isNew ? (
+                                                <Text style={[type.caption, { color: ds.text2 }]}>Not budgeted yet</Text>
+                                            ) : (
+                                                <ChangeLine
+                                                    text={`${isUp ? '+' : '−'}${isPrivacyEnabled ? '****' : formatCurrencyAmount(delta, currency)} vs current`}
+                                                    tone={isUp ? 'warning' : 'good'}
+                                                />
+                                            )}
+                                            {item.isInfrequent && (
+                                                <Text style={[type.caption, styles.footnote, { color: ds.text2 }]}>
+                                                    Occasional ({item.activeMonths}/{item.totalMonths} months) — smoothed average, not a recurring cost
+                                                </Text>
+                                            )}
+                                        </Row>
+                                    );
+                                }}
+                            />
+                        </Group>
+                    )}
                 </View>
             )}
         </BottomModal>
@@ -296,7 +300,12 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     helper: {
-        marginBottom: space[1],
+        marginBottom: space[2],
+        paddingHorizontal: layout.groupPadding,
+    },
+    list: {
+        flexShrink: 1,
+        paddingVertical: 0,
     },
     trailing: {
         flexDirection: 'row',

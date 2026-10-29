@@ -6,7 +6,7 @@ import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import SecurityCard from '@components/profile/SecurityCard';
 import BudgetManagementModal from '@components/profile/BudgetManagementModal';
 import MonthlySummaryModal from '@components/insights/modals/MonthlySummaryModal';
@@ -21,7 +21,7 @@ import { AssetsListModal } from '@components/profile/assets/AssetsListModal';
 import { useTheme } from '@context/ThemeContext';
 import { useSecurity } from '@context/SecurityContext';
 import { useAlert } from '@context/AlertContext';
-import { space } from '@styles/theme';
+import { space, layout } from '@styles/theme';
 import { RecurrenceRule, UserProfile } from '@types';
 import { getAllRecurrenceRules, saveRecurrenceRule, deleteRecurrenceRule } from '@services/domain/recurrenceService';
 import { getUserProfile } from '@services/core/storageService';
@@ -30,7 +30,7 @@ import { CONFIG, ASYNC_KEYS } from '@constants/config';
 
 // Account and app settings only; help and about content lives in the Learn tab.
 const ProfileScreen = ({ navigation }: any) => {
-    const { ds, setMode, mode } = useTheme();
+    const { setMode, mode } = useTheme();
     const { showAlert } = useAlert();
     const { temporarilyDisableLock } = useSecurity();
 
@@ -173,7 +173,7 @@ const ProfileScreen = ({ navigation }: any) => {
     };
 
     return (
-        <ScreenWrapper scrollable={false} noPadding style={{ backgroundColor: ds.bg }}>
+        <ScreenWrapper scrollable={false} noPadding>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
                 <ProfileHeader profile={profile} />
 
@@ -185,29 +185,31 @@ const ProfileScreen = ({ navigation }: any) => {
                     refreshSignal={setupRefresh}
                 />
 
-                <SectionHeader title="Data" />
-                <Row
-                    icon="cloud-upload-outline"
-                    title="Auto backup"
-                    subtitle={autoBackupLabel}
-                    chevron
-                    onPress={() => navigation.navigate('AutoBackup')}
-                />
-                <Row
-                    icon="swap-vertical-outline"
-                    title="Import / export"
-                    subtitle="Backup files, CSV, Excel and device sync"
-                    chevron
-                    onPress={() => navigation.navigate('ImportExport')}
-                />
-                <Row
-                    icon="document-text-outline"
-                    title="Monthly summary"
-                    subtitle="A written recap of each month"
-                    chevron
-                    onPress={() => setShowSummaryModal(true)}
-                    last
-                />
+                <SectionHeader grouped title="Data" />
+                <Group>
+                    <Row
+                        icon="cloud-upload-outline"
+                        title="Auto backup"
+                        subtitle={autoBackupLabel}
+                        chevron
+                        onPress={() => navigation.navigate('AutoBackup')}
+                    />
+                    <Row
+                        icon="swap-vertical-outline"
+                        title="Import / export"
+                        subtitle="Backup files, CSV, Excel and device sync"
+                        chevron
+                        onPress={() => navigation.navigate('ImportExport')}
+                    />
+                    <Row
+                        icon="document-text-outline"
+                        title="Monthly summary"
+                        subtitle="A written recap of each month"
+                        chevron
+                        onPress={() => setShowSummaryModal(true)}
+                        last
+                    />
+                </Group>
 
                 <SecurityCard />
 
@@ -261,7 +263,7 @@ const ProfileScreen = ({ navigation }: any) => {
 
 const styles = StyleSheet.create({
     content: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: space[7],
     },
 });

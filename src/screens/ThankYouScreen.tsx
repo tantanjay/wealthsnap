@@ -8,7 +8,7 @@ import { DONORS, NAME_STYLES } from '@constants/thankyou';
 import { FlashList } from '@shopify/flash-list';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, withSequence } from 'react-native-reanimated';
 import BottomModal from '@components/common/BottomModal';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 
 const stylesKeys = Object.keys(NAME_STYLES);
 
@@ -121,7 +121,7 @@ const ThankYouScreen = ({ navigation }: any) => {
         <View style={[
             styles.container,
             {
-                backgroundColor: ds.bg,
+                backgroundColor: ds.canvas,
                 paddingTop: insets.top,
                 paddingBottom: insets.bottom
             }
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         zIndex: 5,
     },
     center: {

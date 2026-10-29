@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 import { useTheme } from '@context/ThemeContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { UserProfile } from '@types';
 
 const AVATAR_SIZE = 56;
@@ -38,6 +38,7 @@ const styles = StyleSheet.create({
         gap: space[4],
         paddingTop: space[2],
         paddingBottom: space[1],
+        paddingHorizontal: layout.groupPadding,
     },
     avatar: {
         width: AVATAR_SIZE,

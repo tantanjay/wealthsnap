@@ -3,7 +3,7 @@ import { BigNumber } from 'bignumber.js';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 
 import BottomModal from '@components/common/BottomModal';
-import { ProgressBar, Row, Tone, toneColor } from '@components/ds';
+import { Group, ProgressBar, Row, Tone, toneColor } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { Budget } from '@types';
@@ -46,50 +46,52 @@ const AllExpensesModal: React.FC<AllExpensesModalProps> = ({
             subtitle="Full breakdown of your expenses"
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                {categoryBreakdown.map((item, index) => {
-                    const budget = budgets.find(b => b.category === item.name);
-                    const budgetStatus = budget ? checkBudgetStatus(item.amount.minus(item.goalFundedAmount ?? 0), budget.amount) : null;
-                    const tone = budgetStatus ? budgetTone(budgetStatus.status) : 'good';
-                    const share = `${item.percentage.toFixed(1)}%`;
-                    // Discreet: the goal-funded part as % of the category.
-                    const goalShare = item.goalFundedAmount && item.amount.isGreaterThan(0)
-                        ? item.goalFundedAmount.dividedBy(item.amount).times(100).toNumber()
-                        : null;
+                <Group>
+                    {categoryBreakdown.map((item, index) => {
+                        const budget = budgets.find(b => b.category === item.name);
+                        const budgetStatus = budget ? checkBudgetStatus(item.amount.minus(item.goalFundedAmount ?? 0), budget.amount) : null;
+                        const tone = budgetStatus ? budgetTone(budgetStatus.status) : 'good';
+                        const share = `${item.percentage.toFixed(1)}%`;
+                        // Discreet: the goal-funded part as % of the category.
+                        const goalShare = item.goalFundedAmount && item.amount.isGreaterThan(0)
+                            ? item.goalFundedAmount.dividedBy(item.amount).times(100).toNumber()
+                            : null;
 
-                    return (
-                        <Row
-                            key={index}
-                            // Same indexing as the ExpenseAnalysis pie, so each dot maps to its slice.
-                            leading={<View style={[styles.dot, { backgroundColor: ds.chart[index % ds.chart.length] }]} />}
-                            title={item.name}
-                            subtitle={item.goalFundedAmount?.isGreaterThan(0)
-                                ? `${format.show(format.money(item.goalFundedAmount, { compact: true }), formatPercent(goalShare))} from goals`
-                                : undefined}
-                            value={format.show(format.money(item.amount, { compact: true }), share)}
-                            change={format.isDiscreet ? undefined : share}
-                            chevron={!format.isHidden}
-                            onPress={format.isHidden ? undefined : () => {
-                                onSelectCategory(item.name);
-                                onClose();
-                            }}
-                            last={index === categoryBreakdown.length - 1}
-                        >
-                            {budget && budgetStatus && (
-                                <View style={styles.budget}>
-                                    <View style={styles.budgetLine}>
-                                        <Text style={[type.captionNum, { color: ds.text2 }]}>
-                                            {format.show(`Budget ${format.money(budget.amount, { compact: true })}`, 'Budget')}
-                                        </Text>
-                                        <Text style={[type.captionNum, type.captionMedium, { color: toneColor(ds, tone) }]}>
-                                            {budgetStatus.percentage.toFixed(0)}%
-                                        </Text>
+                        return (
+                            <Row
+                                key={index}
+                                // Same indexing as the ExpenseAnalysis pie, so each dot maps to its slice.
+                                leading={<View style={[styles.dot, { backgroundColor: ds.chart[index % ds.chart.length] }]} />}
+                                title={item.name}
+                                subtitle={item.goalFundedAmount?.isGreaterThan(0)
+                                    ? `${format.show(format.money(item.goalFundedAmount, { compact: true }), formatPercent(goalShare))} from goals`
+                                    : undefined}
+                                value={format.show(format.money(item.amount, { compact: true }), share)}
+                                change={format.isDiscreet ? undefined : share}
+                                chevron={!format.isHidden}
+                                onPress={format.isHidden ? undefined : () => {
+                                    onSelectCategory(item.name);
+                                    onClose();
+                                }}
+                                last={index === categoryBreakdown.length - 1}
+                            >
+                                {budget && budgetStatus && (
+                                    <View style={styles.budget}>
+                                        <View style={styles.budgetLine}>
+                                            <Text style={[type.captionNum, { color: ds.text2 }]}>
+                                                {format.show(`Budget ${format.money(budget.amount, { compact: true })}`, 'Budget')}
+                                            </Text>
+                                            <Text style={[type.captionNum, type.captionMedium, { color: toneColor(ds, tone) }]}>
+                                                {budgetStatus.percentage.toFixed(0)}%
+                                            </Text>
+                                        </View>
+                                        <ProgressBar percent={budgetStatus.percentage} tone={tone} style={styles.bar} />
                                     </View>
-                                    <ProgressBar percent={budgetStatus.percentage} tone={tone} style={styles.bar} />
-                                </View>
-                            )}
-                        </Row>
-                    );
-                })}
+                                )}
+                            </Row>
+                        );
+                    })}
+                </Group>
             </ScrollView>
         </BottomModal>
     );

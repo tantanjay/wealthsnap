@@ -240,7 +240,7 @@ const LiveSyncScreen = ({ navigation }: any) => {
     );
 
     return (
-        <View style={[styles.container, { backgroundColor: ds.bg, paddingTop: insets.top }]}>
+        <View style={[styles.container, { backgroundColor: ds.canvas, paddingTop: insets.top }]}>
             <View style={styles.header}>
                 <Pressable onPress={() => navigation.goBack()} accessibilityLabel="Back" hitSlop={space[2]}>
                     <Ionicons name="chevron-back" size={22} color={ds.text2} />

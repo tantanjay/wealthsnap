@@ -15,14 +15,16 @@ export interface TileProps {
     change?: string;
     changeTone?: Tone;
     onPress?: () => void;
+    // Inside a Group the tile uses `inset`; on the canvas (the default) it is its own `group` surface.
+    inGroup?: boolean;
     style?: StyleProp<ViewStyle>;
 }
 
-const Tile: React.FC<TileProps> = ({ label, icon, value, change, changeTone = 'neutral', onPress, style }) => {
+const Tile: React.FC<TileProps> = ({ label, icon, value, change, changeTone = 'neutral', onPress, inGroup, style }) => {
     const { ds } = useTheme();
 
     return (
-        <Pressable onPress={onPress} disabled={!onPress} style={[styles.tile, { backgroundColor: ds.inset }, style]}>
+        <Pressable onPress={onPress} disabled={!onPress} style={[styles.tile, { backgroundColor: inGroup ? ds.inset : ds.group }, style]}>
             <View style={styles.label}>
                 {icon && <Ionicons name={icon} size={15} color={ds.text2} />}
                 <Text style={[type.small, styles.labelText, { color: ds.text2 }]} numberOfLines={1}>{label}</Text>

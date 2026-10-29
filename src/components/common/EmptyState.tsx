@@ -34,7 +34,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
             {isCompact ? (
                 <Ionicons name={icon} size={40} color={ds.text3} style={styles.compactIcon} />
             ) : (
-                <View style={[styles.iconCircle, { backgroundColor: ds.inset }]}>
+                <View style={[styles.iconCircle, { backgroundColor: ds.group }]}>
                     <Ionicons name={icon} size={32} color={iconColor ?? ds.text2} />
                 </View>
             )}

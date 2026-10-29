@@ -5,14 +5,14 @@ import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
 import { EmptyState } from '@components/common/EmptyState';
-import { Hero, ProgressBar, Row, SectionHeader, Tone } from '@components/ds';
+import { Group, Hero, ProgressBar, Row, SectionHeader, Tone } from '@components/ds';
 import { SavingsGoalForm } from '@components/savingsGoals/SavingsGoalForm';
 import SavingsGoalOptionsModal from '@components/savingsGoals/SavingsGoalOptionsModal';
 import SavingsGoalAmountModal from '@components/savingsGoals/SavingsGoalAmountModal';
 import { SavingsGoalsInfoModal } from '@components/savingsGoals/SavingsGoalsInfoModal';
 import { useTheme } from '@context/ThemeContext';
 import { PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
-import { space } from '@styles/theme';
+import { space, layout } from '@styles/theme';
 import { RecurrenceRule, SavingsGoal, Transaction } from '@types';
 import {
     getAllSavingsGoals,
@@ -162,27 +162,31 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ format: f }) => {
                             changeTone={h.changeTone}
                             actionLabel="How it works"
                             onAction={() => setInfoModalVisible(true)}
+                            panel
                             style={styles.hero}
                         />
 
-                        <SectionHeader title="Your goals" actionLabel="New goal" onAction={handleAddNew} />
-                        {rows.map(({ goal, balance, progress, bucket }, i) => {
-                            const status = goalStatus(goal, bucket);
-                            return (
-                                <Row
-                                    key={goal.id}
-                                    title={goal.name}
-                                    subtitle={f.isDiscreet ? recurringLine(goal) : `${f.money(balance)} of ${f.money(goal.targetAmount)}`}
-                                    value={formatPercent(Math.min(100, progress))}
-                                    change={status.text}
-                                    changeTone={status.tone}
-                                    onPress={() => setOptionsGoal(goal)}
-                                    last={i === rows.length - 1}
-                                >
-                                    <ProgressBar percent={progress} domain="goals" />
-                                </Row>
-                            );
-                        })}
+                        <SectionHeader grouped title="Your goals" actionLabel="New goal" onAction={handleAddNew} />
+                        <Group>
+                            {rows.map(({ goal, balance, progress, bucket }, i) => {
+                                const status = goalStatus(goal, bucket);
+                                return (
+                                    <Row
+                                        key={goal.id}
+                                        domain="goals"
+                                        title={goal.name}
+                                        subtitle={f.isDiscreet ? recurringLine(goal) : `${f.money(balance)} of ${f.money(goal.targetAmount)}`}
+                                        value={formatPercent(Math.min(100, progress))}
+                                        change={status.text}
+                                        changeTone={status.tone}
+                                        onPress={() => setOptionsGoal(goal)}
+                                        last={i === rows.length - 1}
+                                    >
+                                        <ProgressBar percent={progress} domain="goals" />
+                                    </Row>
+                                );
+                            })}
+                        </Group>
                     </>
                 )}
             </ScrollView>
@@ -227,12 +231,13 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ format: f }) => {
 
 const styles = StyleSheet.create({
     content: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: space[7],
     },
     hero: {
-        paddingTop: space[5],
+        marginTop: space[3],
     },
+
     loading: {
         alignItems: 'center',
         justifyContent: 'center',

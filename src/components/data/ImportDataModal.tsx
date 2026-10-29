@@ -4,7 +4,7 @@ import * as Clipboard from 'expo-clipboard';
 
 import BottomModal from '@components/common/BottomModal';
 import { Disclaimer } from '@components/common/Disclaimer';
-import { Row, SectionHeader, IconName } from '@components/ds';
+import { Group, Row, SectionHeader, IconName } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { type, space, radius } from '@styles/theme';
@@ -73,30 +73,38 @@ const ImportDataModal: React.FC<ImportDataModalProps> = ({
                     Columns must be in exact order shown below. Other formats will be rejected.
                 </Disclaimer>
 
-                <SectionHeader title="Required format" />
-                {COLUMNS.map((column, i) => (
-                    <Row key={column.name} title={column.name} subtitle={column.description} last={i === COLUMNS.length - 1} />
-                ))}
+                <SectionHeader grouped title="Required format" />
+                <Group>
+                    {COLUMNS.map((column, i) => (
+                        <Row key={column.name} title={column.name} subtitle={column.description} last={i === COLUMNS.length - 1} />
+                    ))}
+                </Group>
 
-                <SectionHeader title="Rules" />
-                {RULES.map((rule, i) => (
-                    <Row key={rule.text} icon={rule.icon} title={rule.text} last={i === RULES.length - 1} />
-                ))}
+                <SectionHeader grouped title="Rules" />
+                <Group>
+                    {RULES.map((rule, i) => (
+                        <Row key={rule.text} icon={rule.icon} title={rule.text} last={i === RULES.length - 1} />
+                    ))}
+                </Group>
 
-                <SectionHeader title="Example" />
-                <View style={[styles.example, { backgroundColor: ds.inset }]}>
-                    <Text style={[type.smallNum, { color: ds.text2 }]}>
-                        Date,Category,Income,Expense,Notes{'\n'}
-                        2026-01-15,Food,-,25.50,Lunch{'\n'}
-                        2026-01-16,Salary,5000,-,Monthly
+                <SectionHeader grouped title="Example" />
+                <Group padded>
+                    <View style={[styles.example, { backgroundColor: ds.inset }]}>
+                        <Text style={[type.smallNum, { color: ds.text2 }]}>
+                            Date,Category,Income,Expense,Notes{'\n'}
+                            2026-01-15,Food,-,25.50,Lunch{'\n'}
+                            2026-01-16,Salary,5000,-,Monthly
+                        </Text>
+                    </View>
+                </Group>
+
+                <SectionHeader grouped title="AI assistance" />
+                <Group>
+                    <Text style={[type.small, styles.groupIntro, { color: ds.text2 }]}>
+                        If your data is in a different format, you can use AI to convert it. Simply copy our prompt and paste it along with your data into ChatGPT, Gemini, or any AI tool you use.
                     </Text>
-                </View>
-
-                <SectionHeader title="AI assistance" />
-                <Text style={[type.small, { color: ds.text2 }]}>
-                    If your data is in a different format, you can use AI to convert it. Simply copy our prompt and paste it along with your data into ChatGPT, Gemini, or any AI tool you use.
-                </Text>
-                <Row icon="sparkles-outline" title="Copy AI prompt" subtitle="Difficult to format? Let AI convert it" onPress={copyPrompt} last />
+                    <Row icon="sparkles-outline" title="Copy AI prompt" subtitle="Difficult to format? Let AI convert it" onPress={copyPrompt} last />
+                </Group>
             </ScrollView>
         </BottomModal>
     );
@@ -109,7 +117,9 @@ const styles = StyleSheet.create({
     example: {
         borderRadius: radius.sm,
         padding: space[3],
-        marginTop: space[2],
+    },
+    groupIntro: {
+        paddingTop: space[3],
     },
     button: {
         height: 48,

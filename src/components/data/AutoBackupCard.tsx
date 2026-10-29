@@ -4,9 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row, SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { useAlert } from '@context/AlertContext';
 import { useSecurity } from '@context/SecurityContext';
 import * as Security from '@services/core/securityService';
@@ -155,53 +155,55 @@ const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
 
     return (
         <>
-            <SectionHeader title="Auto backup" />
-            <Row
-                icon="cloud-done-outline"
-                title="Automatic backups"
-                subtitle={enabled ? formatLastRun(lastRunAt) : 'Off'}
-                last={!enabled}
-                trailing={
-                    <Switch
-                        value={enabled}
-                        onValueChange={handleToggle}
-                        trackColor={{ false: ds.hairline, true: ds.accentSoft }}
-                        thumbColor={enabled ? ds.accent : ds.text3}
-                    />
-                }
-            />
-
-            {enabled && (
-                <>
-                    <Row icon="repeat-outline" title="Frequency" subtitle={frequencyLabel} chevron onPress={() => setShowFrequencyModal(true)} />
-
-                    {Platform.OS === 'android' && (
-                        <Row
-                            icon="folder-outline"
-                            title="Backup folder"
-                            subtitle={folderLabel ?? 'Required — tap to choose a folder'}
-                            trailing={folderLabel ? undefined : warningIcon}
-                            chevron
-                            onPress={handlePickFolder}
+            <SectionHeader grouped title="Auto backup" />
+            <Group>
+                <Row
+                    icon="cloud-done-outline"
+                    title="Automatic backups"
+                    subtitle={enabled ? formatLastRun(lastRunAt) : 'Off'}
+                    last={!enabled}
+                    trailing={
+                        <Switch
+                            value={enabled}
+                            onValueChange={handleToggle}
+                            trackColor={{ false: ds.hairline, true: ds.accentSoft }}
+                            thumbColor={enabled ? ds.accent : ds.text3}
                         />
-                    )}
+                    }
+                />
 
-                    <Row
-                        icon="key-outline"
-                        title="Backup password"
-                        subtitle={hasPassword ? 'Tap to change' : 'Required — tap to set'}
-                        trailing={hasPassword ? undefined : warningIcon}
-                        chevron
-                        onPress={handlePasswordRowPress}
-                        last
-                    />
+                {enabled && (
+                    <>
+                        <Row icon="repeat-outline" title="Frequency" subtitle={frequencyLabel} chevron onPress={() => setShowFrequencyModal(true)} />
 
-                    {Platform.OS === 'ios' && (
-                        <Text style={[type.small, styles.note, { color: ds.text2 }]}>
-                            Auto-backups are saved to WealthSnap&apos;s on-device folder. Open the Files app (On My iPhone → WealthSnap) to move copies to iCloud Drive or elsewhere.
-                        </Text>
-                    )}
-                </>
+                        {Platform.OS === 'android' && (
+                            <Row
+                                icon="folder-outline"
+                                title="Backup folder"
+                                subtitle={folderLabel ?? 'Required — tap to choose a folder'}
+                                trailing={folderLabel ? undefined : warningIcon}
+                                chevron
+                                onPress={handlePickFolder}
+                            />
+                        )}
+
+                        <Row
+                            icon="key-outline"
+                            title="Backup password"
+                            subtitle={hasPassword ? 'Tap to change' : 'Required — tap to set'}
+                            trailing={hasPassword ? undefined : warningIcon}
+                            chevron
+                            onPress={handlePasswordRowPress}
+                            last
+                        />
+                    </>
+                )}
+            </Group>
+
+            {enabled && Platform.OS === 'ios' && (
+                <Text style={[type.small, styles.note, { color: ds.text2 }]}>
+                    Auto-backups are saved to WealthSnap&apos;s on-device folder. Open the Files app (On My iPhone → WealthSnap) to move copies to iCloud Drive or elsewhere.
+                </Text>
             )}
 
             <BottomModal
@@ -210,15 +212,17 @@ const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
                 title="Backup frequency"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    {FREQUENCY_OPTIONS.map((opt, i) => (
-                        <Row
-                            key={opt.value}
-                            title={opt.label}
-                            leading={<Radio selected={frequency === opt.value} />}
-                            onPress={() => handleSelectFrequency(opt.value)}
-                            last={i === FREQUENCY_OPTIONS.length - 1}
-                        />
-                    ))}
+                    <Group>
+                        {FREQUENCY_OPTIONS.map((opt, i) => (
+                            <Row
+                                key={opt.value}
+                                title={opt.label}
+                                leading={<Radio selected={frequency === opt.value} />}
+                                onPress={() => handleSelectFrequency(opt.value)}
+                                last={i === FREQUENCY_OPTIONS.length - 1}
+                            />
+                        ))}
+                    </Group>
                 </ScrollView>
             </BottomModal>
 
@@ -298,36 +302,38 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ visible, mode, onClose, o
             }
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                    <Ionicons name="key-outline" size={18} color={ds.text2} />
-                    <TextInput
-                        style={[type.body, styles.input, { color: ds.text }]}
-                        placeholder="New password"
-                        placeholderTextColor={ds.text3}
-                        secureTextEntry={!showPassword}
-                        value={password}
-                        onChangeText={setPassword}
-                    />
-                    <Pressable
-                        onPressIn={() => setShowPassword(true)}
-                        onPressOut={() => setShowPassword(false)}
-                        hitSlop={space[2]}
-                    >
-                        <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={ds.text2} />
-                    </Pressable>
-                </View>
+                <Group padded>
+                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="key-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={[type.body, styles.input, { color: ds.text }]}
+                            placeholder="New password"
+                            placeholderTextColor={ds.text3}
+                            secureTextEntry={!showPassword}
+                            value={password}
+                            onChangeText={setPassword}
+                        />
+                        <Pressable
+                            onPressIn={() => setShowPassword(true)}
+                            onPressOut={() => setShowPassword(false)}
+                            hitSlop={space[2]}
+                        >
+                            <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={ds.text2} />
+                        </Pressable>
+                    </View>
 
-                <View style={[styles.field, styles.fieldGap, { backgroundColor: ds.inset }]}>
-                    <Ionicons name="key-outline" size={18} color={ds.text2} />
-                    <TextInput
-                        style={[type.body, styles.input, { color: ds.text }]}
-                        placeholder="Confirm password"
-                        placeholderTextColor={ds.text3}
-                        secureTextEntry={!showPassword}
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                    />
-                </View>
+                    <View style={[styles.field, styles.fieldGap, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="key-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={[type.body, styles.input, { color: ds.text }]}
+                            placeholder="Confirm password"
+                            placeholderTextColor={ds.text3}
+                            secureTextEntry={!showPassword}
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                        />
+                    </View>
+                </Group>
             </ScrollView>
         </BottomModal>
     );
@@ -336,6 +342,7 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ visible, mode, onClose, o
 const styles = StyleSheet.create({
     note: {
         paddingTop: space[3],
+        paddingHorizontal: layout.groupPadding,
     },
     radio: {
         width: 20,

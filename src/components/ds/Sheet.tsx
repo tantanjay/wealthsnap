@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@context/ThemeContext';
 import { useSecurity } from '@context/SecurityContext';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 
 export interface SheetProps {
     visible: boolean;
@@ -16,7 +16,7 @@ export interface SheetProps {
     subtitle?: string;
     header?: React.ReactNode;
     children: React.ReactNode;
-    // Footer region (inset fill, hairline top), normally the one primary button.
+    // Footer region (`group` band, hairline top), normally the one primary button.
     footer?: React.ReactNode;
     maxHeight?: DimensionValue;
     dismissable?: boolean;
@@ -33,7 +33,7 @@ export interface SheetScrollControl {
 
 export const SheetScrollContext = createContext<SheetScrollControl | null>(null);
 
-// Refined Minimal bottom sheet. Lock/keyboard handling mirrors common/BottomModal.
+// Canvas-toned bottom sheet; its content sits in Groups. Lock/keyboard handling mirrors common/BottomModal.
 // Never open another modal on top of a Sheet; use a collapsible section instead.
 const Sheet: React.FC<SheetProps> = ({
     visible,
@@ -122,7 +122,7 @@ const Sheet: React.FC<SheetProps> = ({
                     style={[
                         styles.sheet,
                         elevation.sheet,
-                        { backgroundColor: ds.sheet, maxHeight: keyboardVisible ? '95%' : maxHeight },
+                        { backgroundColor: ds.canvas, maxHeight: keyboardVisible ? '95%' : maxHeight },
                     ]}
                 >
                     <View style={[styles.grabber, { backgroundColor: ds.hairline }]} />
@@ -146,7 +146,7 @@ const Sheet: React.FC<SheetProps> = ({
                             style={[
                                 styles.footer,
                                 {
-                                    backgroundColor: ds.inset,
+                                    backgroundColor: ds.group,
                                     borderTopColor: ds.hairline,
                                     paddingBottom: Math.max(insets.bottom, space[6]),
                                 },
@@ -188,12 +188,14 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     body: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
     },
+    // Title and subtitle line up with group content, like a grouped SectionHeader.
     titleRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        paddingHorizontal: layout.groupPadding,
     },
     title: {
         flex: 1,
@@ -202,10 +204,11 @@ const styles = StyleSheet.create({
     subtitle: {
         marginTop: 2,
         marginBottom: space[2],
+        paddingHorizontal: layout.groupPadding,
     },
     footer: {
         paddingTop: space[3],
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         borderTopWidth: 1,
     },
 });

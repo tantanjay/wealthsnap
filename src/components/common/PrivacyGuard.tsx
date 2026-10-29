@@ -32,7 +32,7 @@ export const PrivacyGuard: React.FC = () => {
     }
 
     return (
-        <View style={[StyleSheet.absoluteFill, styles.overlay, { backgroundColor: ds.bg }]} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, styles.overlay, { backgroundColor: ds.canvas }]} pointerEvents="none" />
     );
 };
 

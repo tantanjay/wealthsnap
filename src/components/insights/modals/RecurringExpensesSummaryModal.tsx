@@ -3,7 +3,7 @@ import { BigNumber } from 'bignumber.js';
 import { Text, ScrollView, StyleSheet } from 'react-native';
 
 import BottomModal from '@components/common/BottomModal';
-import { Hero, Row, SectionHeader } from '@components/ds';
+import { Group, Hero, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { RecurrenceRule } from '@types';
 import { type, space } from '@styles/theme';
@@ -82,32 +82,38 @@ const RecurringExpensesSummaryModal: React.FC<RecurringExpensesSummaryProps> = (
             subtitle="Monthly commitments"
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                <Hero label="Total monthly commitment" value={formatCurrencyAmount(totalMonthly, currency)} />
+                <Hero label="Total monthly commitment" value={formatCurrencyAmount(totalMonthly, currency)} panel />
 
-                <SectionHeader title="Upcoming due" />
-                {upcoming.map((item, i) => (
-                    <Row
-                        key={item.id}
-                        icon="calendar-outline"
-                        title={item.transactionTemplate.category}
-                        subtitle={`Due ${new Date(item.nextDueDate).toLocaleDateString()}`}
-                        value={formatCurrencyAmount(item.transactionTemplate.amount, currency)}
-                        last={i === upcoming.length - 1}
-                    />
-                ))}
-                {upcoming.length === 0 && (
-                    <Text style={[type.small, styles.empty, { color: ds.text2 }]}>No active recurring expenses.</Text>
+                <SectionHeader grouped title="Upcoming due" />
+                <Group>
+                    {upcoming.map((item, i) => (
+                        <Row
+                            key={item.id}
+                            icon="calendar-outline"
+                            title={item.transactionTemplate.category}
+                            subtitle={`Due ${new Date(item.nextDueDate).toLocaleDateString()}`}
+                            value={formatCurrencyAmount(item.transactionTemplate.amount, currency)}
+                            last={i === upcoming.length - 1}
+                        />
+                    ))}
+                    {upcoming.length === 0 && (
+                        <Text style={[type.small, styles.empty, { color: ds.text2 }]}>No active recurring expenses.</Text>
+                    )}
+                </Group>
+
+                {categoryBreakdown.length > 0 && <SectionHeader grouped title="By category" />}
+                {categoryBreakdown.length > 0 && (
+                    <Group>
+                        {categoryBreakdown.map(([cat, amount], i) => (
+                            <Row
+                                key={cat}
+                                title={cat}
+                                value={formatCurrencyAmount(amount, currency)}
+                                last={i === categoryBreakdown.length - 1}
+                            />
+                        ))}
+                    </Group>
                 )}
-
-                <SectionHeader title="By category" />
-                {categoryBreakdown.map(([cat, amount], i) => (
-                    <Row
-                        key={cat}
-                        title={cat}
-                        value={formatCurrencyAmount(amount, currency)}
-                        last={i === categoryBreakdown.length - 1}
-                    />
-                ))}
             </ScrollView>
         </BottomModal>
     );

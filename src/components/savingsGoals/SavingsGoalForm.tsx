@@ -3,11 +3,11 @@ import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator, StyleS
 import { BigNumber } from 'bignumber.js';
 import { Ionicons } from '@expo/vector-icons';
 
-import { SectionHeader } from '@components/ds';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { CategorySelectModal } from '@components/record/CategorySelectModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
-import { type, space, radius, fontFamily } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { SavingsGoal, Transaction, RecurrenceRule, RecurrenceFrequency } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { EXPENSE_CATEGORY_GROUPS, RECURRENCE_OPTIONS } from '@constants/categories';
@@ -164,23 +164,24 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
         <View style={{ height: '100%' }}>
             <View style={{ flex: 1 }}>
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: space[7] }}>
-                <Text style={[type.title, { color: ds.text }]}>
+                <Text style={[type.title, styles.title, { color: ds.text }]}>
                     {initialGoal ? 'Edit savings goal' : 'New savings goal'}
                 </Text>
 
-                <View style={styles.amountBlock}>
+                <Group padded>
                     <Text style={[type.small, { color: ds.text2 }]}>Target amount</Text>
                     <TextInput
-                        style={[styles.amountInput, { color: ds.text, borderBottomColor: ds.hairline }]}
+                        style={[type.recordAmount, styles.amountInput, { color: ds.text }]}
                         value={targetAmount}
                         onChangeText={setTargetAmount}
                         keyboardType="numeric"
                         placeholder="0"
                         placeholderTextColor={ds.text3}
                     />
-                </View>
+                </Group>
 
-                <View style={styles.group}>
+                <SectionHeader title="Details" grouped />
+                <Group padded>
                     <Text style={[type.small, styles.label, { color: ds.text2 }]}>Name</Text>
                     <View style={[styles.field, { backgroundColor: ds.inset }]}>
                         <Ionicons name="create-outline" size={18} color={ds.text2} />
@@ -192,78 +193,8 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
                             placeholderTextColor={ds.text3}
                         />
                     </View>
-                </View>
 
-                <View style={styles.group}>
-                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Category</Text>
-                    <Pressable
-                        onPress={() => setShowCategoryModal(true)}
-                        style={[styles.field, { backgroundColor: ds.inset }]}
-                    >
-                        <Ionicons name="grid-outline" size={18} color={ds.text2} />
-                        <Text style={[type.body, styles.fieldInput, { color: category ? ds.text : ds.text3 }]} numberOfLines={1}>
-                            {category || 'Select a category'}
-                        </Text>
-                        <Ionicons name="chevron-forward" size={16} color={ds.text3} />
-                    </Pressable>
-                    <Text style={[type.small, styles.hint, { color: ds.text2 }]}>
-                        Pre-fills onto any expense you fund from this goal (still editable per-expense).
-                    </Text>
-                </View>
-
-                <SectionHeader title="Auto-contribution (optional)" />
-                <View style={[styles.field, { backgroundColor: ds.inset, marginTop: space[2] }]}>
-                    <Ionicons name="repeat-outline" size={18} color={ds.text2} />
-                    <TextInput
-                        style={numInput}
-                        value={recurringAmount}
-                        onChangeText={setRecurringAmount}
-                        keyboardType="numeric"
-                        placeholder="0"
-                        placeholderTextColor={ds.text3}
-                    />
-                </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipStrip}>
-                    {RECURRENCE_OPTIONS.map((opt) => {
-                        const isActive = frequency === opt.value;
-                        return (
-                            <Pressable
-                                key={opt.value}
-                                onPress={() => setFrequency(opt.value)}
-                                style={[styles.chip, isActive && { backgroundColor: ds.inset }]}
-                            >
-                                <Text style={[type.smallMedium, { color: isActive ? ds.text : ds.text2 }]}>
-                                    {opt.label}
-                                </Text>
-                            </Pressable>
-                        );
-                    })}
-                </ScrollView>
-                {nextDuePreview && (
-                    <Text style={[type.small, styles.hint, { color: ds.text2 }]}>
-                        Next contribution: {nextDuePreview.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </Text>
-                )}
-
-                {!initialGoal && (
-                    <View style={[styles.group, { marginTop: space[6] }]}>
-                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Start with a lump sum today? (optional)</Text>
-                        <View style={[styles.field, { backgroundColor: ds.inset }]}>
-                            <Ionicons name="wallet-outline" size={18} color={ds.text2} />
-                            <TextInput
-                                style={numInput}
-                                value={initialContribution}
-                                onChangeText={setInitialContribution}
-                                keyboardType="numeric"
-                                placeholder="0"
-                                placeholderTextColor={ds.text3}
-                            />
-                        </View>
-                    </View>
-                )}
-
-                <View style={[styles.group, { marginTop: space[6] }]}>
-                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Notes (optional)</Text>
+                    <Text style={[type.small, styles.label, styles.fieldGap, { color: ds.text2 }]}>Notes (optional)</Text>
                     <View style={[styles.field, { backgroundColor: ds.inset }]}>
                         <Ionicons name="document-text-outline" size={18} color={ds.text2} />
                         <TextInput
@@ -274,7 +205,74 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
                             placeholderTextColor={ds.text3}
                         />
                     </View>
-                </View>
+                </Group>
+
+                <SectionHeader title="Category" grouped />
+                <Group>
+                    <Row
+                        icon="grid-outline"
+                        title={category || 'Select a category'}
+                        subtitle="Pre-fills onto any expense you fund from this goal (still editable per-expense)."
+                        chevron
+                        onPress={() => setShowCategoryModal(true)}
+                        last
+                    />
+                </Group>
+
+                <SectionHeader title="Auto-contribution (optional)" grouped />
+                <Group padded>
+                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="repeat-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={numInput}
+                            value={recurringAmount}
+                            onChangeText={setRecurringAmount}
+                            keyboardType="numeric"
+                            placeholder="0"
+                            placeholderTextColor={ds.text3}
+                        />
+                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipStrip}>
+                        {RECURRENCE_OPTIONS.map((opt) => {
+                            const isActive = frequency === opt.value;
+                            return (
+                                <Pressable
+                                    key={opt.value}
+                                    onPress={() => setFrequency(opt.value)}
+                                    style={[styles.chip, isActive && { backgroundColor: ds.inset }]}
+                                >
+                                    <Text style={[type.smallMedium, { color: isActive ? ds.text : ds.text2 }]}>
+                                        {opt.label}
+                                    </Text>
+                                </Pressable>
+                            );
+                        })}
+                    </ScrollView>
+                    {nextDuePreview && (
+                        <Text style={[type.small, styles.hint, { color: ds.text2 }]}>
+                            Next contribution: {nextDuePreview.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </Text>
+                    )}
+                </Group>
+
+                {!initialGoal && (
+                    <>
+                        <SectionHeader title="Start with a lump sum today? (optional)" grouped />
+                        <Group padded>
+                            <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="wallet-outline" size={18} color={ds.text2} />
+                                <TextInput
+                                    style={numInput}
+                                    value={initialContribution}
+                                    onChangeText={setInitialContribution}
+                                    keyboardType="numeric"
+                                    placeholder="0"
+                                    placeholderTextColor={ds.text3}
+                                />
+                            </View>
+                        </Group>
+                    </>
+                )}
 
                 <CategorySelectModal
                     visible={showCategoryModal}
@@ -309,23 +307,21 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
 };
 
 const styles = StyleSheet.create({
-    amountBlock: {
-        marginTop: space[5],
+    // Lines up with group content, like the sheet's own title.
+    title: {
+        marginBottom: space[4],
+        paddingHorizontal: layout.groupPadding,
     },
     amountInput: {
-        fontFamily: fontFamily.semibold,
-        fontSize: 44,
-        lineHeight: 52,
-        fontVariant: ['tabular-nums'],
-        borderBottomWidth: 1,
-        paddingVertical: space[1],
+        paddingTop: space[1],
+        paddingBottom: 0,
         paddingHorizontal: 0,
-    },
-    group: {
-        marginTop: space[5],
     },
     label: {
         marginBottom: space[1],
+    },
+    fieldGap: {
+        marginTop: space[3],
     },
     hint: {
         marginTop: space[2],
@@ -333,7 +329,7 @@ const styles = StyleSheet.create({
     field: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: space[3],
+        gap: space[2],
         padding: space[3],
         borderRadius: radius.md,
     },
@@ -342,7 +338,7 @@ const styles = StyleSheet.create({
         padding: 0,
     },
     chipStrip: {
-        marginTop: space[2],
+        marginTop: space[3],
     },
     chips: {
         gap: space[1],

@@ -30,7 +30,7 @@ export const ScreenWrapper: React.FC<Props> = ({ children, style, noPadding, scr
         <KeyboardAvoidingView
             style={[{
                 flex: 1,
-                backgroundColor: ds.bg,
+                backgroundColor: ds.canvas,
                 paddingTop: insets.top,
                 paddingHorizontal: noPadding ? 0 : 16,
             }, style]}

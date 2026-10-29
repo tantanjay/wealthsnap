@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, Pressable, ScrollView, BackHandler } from 'reac
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Row, IconName } from '@components/ds';
+import { Group, Row, IconName } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
-import { type, space, radius, fontFamily } from '@styles/theme';
+import { type, space, radius, fontFamily, layout } from '@styles/theme';
 import { HELP_TOPICS, HelpTopic } from '@constants/helpContent';
 import { splitBoldSegments } from '@utils/markdownParser';
 import OnboardingGuide from '@screens/onboarding/OnboardingGuideScreen';
@@ -58,17 +58,19 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
                 </Text>
             </View>
 
-            {HELP_TOPICS.map((topic, index) => (
-                <Row
-                    key={topic.id}
-                    icon={topic.icon as IconName}
-                    title={topic.title}
-                    subtitle={topic.subtitle}
-                    chevron
-                    last={index === HELP_TOPICS.length - 1}
-                    onPress={() => setSelectedTopic(topic)}
-                />
-            ))}
+            <Group>
+                    {HELP_TOPICS.map((topic, index) => (
+                        <Row
+                            key={topic.id}
+                            icon={topic.icon as IconName}
+                            title={topic.title}
+                            subtitle={topic.subtitle}
+                            chevron
+                            last={index === HELP_TOPICS.length - 1}
+                            onPress={() => setSelectedTopic(topic)}
+                        />
+                    ))}
+            </Group>
 
             <View style={styles.footer}>
                 {mode === 'onboarding' ? (
@@ -82,7 +84,7 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
                 ) : (
                     <Pressable
                         onPress={onFinish}
-                        style={[styles.actionButton, { backgroundColor: ds.inset }]}
+                        style={[styles.actionButton, { backgroundColor: ds.group }]}
                         accessibilityRole="button"
                     >
                         <Text style={[type.bodyStrong, { color: ds.text }]}>Close</Text>
@@ -124,52 +126,54 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
                     contentContainerStyle={[styles.documentContent, { paddingBottom: insets.bottom + space[5] }]}
                     showsVerticalScrollIndicator={false}
                 >
-                    {topic.content?.map((item, index) => {
-                        switch (item.type) {
-                            case 'heading1':
-                                return <Text key={index} style={[type.title, styles.h1, { color: ds.text }]}>{item.text}</Text>;
-                            case 'heading2':
-                                return <Text key={index} style={[type.bodyStrong, styles.h2, { color: ds.text }]}>{item.text}</Text>;
-                            case 'heading3':
-                                return <Text key={index} style={[type.smallStrong, styles.h3, { color: ds.text }]}>{item.text}</Text>;
-                            case 'paragraph':
-                                return (
-                                    <View key={index}>
-                                        {renderFormattedText(item.text, [type.body, styles.p, { color: ds.text2 }])}
-                                    </View>
-                                );
-                            case 'bullet':
-                                return (
-                                    <View
-                                        key={index}
-                                        style={[
-                                            styles.bulletRow,
-                                            item.indent ? { paddingLeft: item.indent * space[5] } : null
-                                        ]}
-                                    >
-                                        <Text style={[type.body, styles.bulletDot, { color: ds.text3 }]}>•</Text>
-                                        {renderFormattedText(item.text, [type.body, styles.bulletText, { color: ds.text2 }])}
-                                    </View>
-                                );
-                            case 'blockquote':
-                                return (
-                                    <View key={index} style={[styles.blockquote, { backgroundColor: ds.inset }]}>
-                                        <Text style={[type.small, styles.blockquoteText, { color: ds.text }]}>{item.text}</Text>
-                                    </View>
-                                );
-                            case 'formula':
-                                return (
-                                    <View key={index} style={[styles.formulaBox, { backgroundColor: ds.inset }]}>
-                                        <Text style={[type.captionMedium, styles.formulaLabel, { color: ds.text2 }]}>Formula</Text>
-                                        <Text style={[type.smallMedium, styles.formulaText, { color: ds.text }]}>{item.text}</Text>
-                                    </View>
-                                );
-                            case 'divider':
-                                return <View key={index} style={[styles.divider, { backgroundColor: ds.hairline }]} />;
-                            default:
-                                return null;
-                        }
-                    })}
+                    <Group padded>
+                        {topic.content?.map((item, index) => {
+                            switch (item.type) {
+                                case 'heading1':
+                                    return <Text key={index} style={[type.title, styles.h1, { color: ds.text }]}>{item.text}</Text>;
+                                case 'heading2':
+                                    return <Text key={index} style={[type.bodyStrong, styles.h2, { color: ds.text }]}>{item.text}</Text>;
+                                case 'heading3':
+                                    return <Text key={index} style={[type.smallStrong, styles.h3, { color: ds.text }]}>{item.text}</Text>;
+                                case 'paragraph':
+                                    return (
+                                        <View key={index}>
+                                            {renderFormattedText(item.text, [type.body, styles.p, { color: ds.text2 }])}
+                                        </View>
+                                    );
+                                case 'bullet':
+                                    return (
+                                        <View
+                                            key={index}
+                                            style={[
+                                                styles.bulletRow,
+                                                item.indent ? { paddingLeft: item.indent * space[5] } : null
+                                            ]}
+                                        >
+                                            <Text style={[type.body, styles.bulletDot, { color: ds.text3 }]}>•</Text>
+                                            {renderFormattedText(item.text, [type.body, styles.bulletText, { color: ds.text2 }])}
+                                        </View>
+                                    );
+                                case 'blockquote':
+                                    return (
+                                        <View key={index} style={[styles.blockquote, { backgroundColor: ds.inset }]}>
+                                            <Text style={[type.small, styles.blockquoteText, { color: ds.text }]}>{item.text}</Text>
+                                        </View>
+                                    );
+                                case 'formula':
+                                    return (
+                                        <View key={index} style={[styles.formulaBox, { backgroundColor: ds.inset }]}>
+                                            <Text style={[type.captionMedium, styles.formulaLabel, { color: ds.text2 }]}>Formula</Text>
+                                            <Text style={[type.smallMedium, styles.formulaText, { color: ds.text }]}>{item.text}</Text>
+                                        </View>
+                                    );
+                                case 'divider':
+                                    return <View key={index} style={[styles.divider, { backgroundColor: ds.hairline }]} />;
+                                default:
+                                    return null;
+                            }
+                        })}
+                    </Group>
                     <View style={{ height: space[7] }} />
                 </ScrollView>
             </View>
@@ -177,7 +181,7 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: ds.bg }]}>
+        <View style={[styles.container, { backgroundColor: ds.canvas }]}>
             {!selectedTopic ? (
                 renderMenu()
             ) : selectedTopic.type === 'onboarding' ? (
@@ -195,10 +199,11 @@ const styles = StyleSheet.create({
     },
     menuContainer: {
         flex: 1,
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingTop: space[5],
     },
     header: {
+        paddingHorizontal: layout.groupPadding,
         gap: space[1],
         marginTop: space[2],
         marginBottom: space[4],
@@ -235,7 +240,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     documentContent: {
-        padding: space[5],
+        padding: layout.groupInset,
     },
     h1: {
         marginBottom: space[4],
@@ -254,7 +259,6 @@ const styles = StyleSheet.create({
     bulletRow: {
         flexDirection: 'row',
         marginBottom: space[3],
-        paddingRight: space[5],
     },
     bulletDot: {
         marginRight: space[2],

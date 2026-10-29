@@ -1,10 +1,10 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
-import { Row } from '@components/ds';
+import { Group, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useAlert } from '@context/AlertContext';
@@ -88,32 +88,39 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
             title="Investment options"
             maxHeight="auto"
         >
-            <Row
-                icon={isBuy ? 'arrow-up-circle-outline' : (isSell ? 'arrow-down-circle-outline' : 'gift-outline')}
-                title={`${investment.symbol} (${investment.action})`}
-                subtitle={`${investment.quantity.toString()} units @ ${money(displayPrice, displayCurrency)}`}
-                value={money(totalValue, displayCurrency)}
-            >
-                {isNative && (
-                    <Text style={[type.small, { color: ds.text2 }]}>
-                        Rate: 1 {displayCurrency} = {rate.toFixed(2)} {currency}
-                    </Text>
-                )}
-            </Row>
-            {linkedTransaction && (
+            <Group>
                 <Row
-                    icon="link-outline"
-                    title="Linked transaction"
-                    value={displayLinkedAmount ? money(displayLinkedAmount, displayCurrency) : undefined}
+                    domain="invest"
+                    icon={isBuy ? 'arrow-up-circle-outline' : (isSell ? 'arrow-down-circle-outline' : 'gift-outline')}
+                    title={`${investment.symbol} (${investment.action})`}
+                    subtitle={`${investment.quantity.toString()} units @ ${money(displayPrice, displayCurrency)}`}
+                    value={money(totalValue, displayCurrency)}
+                >
+                    {isNative && (
+                        <Text style={[type.small, { color: ds.text2 }]}>
+                            Rate: 1 {displayCurrency} = {rate.toFixed(2)} {currency}
+                        </Text>
+                    )}
+                </Row>
+                {linkedTransaction && (
+                    <Row
+                        icon="link-outline"
+                        title="Linked transaction"
+                        value={displayLinkedAmount ? money(displayLinkedAmount, displayCurrency) : undefined}
+                    />
+                )}
+                <Row icon="create-outline" title="Edit investment" onPress={handleEditPress} />
+                <Row
+                    leading={
+                        <View style={[styles.tile, { backgroundColor: ds.tileNeutral }]}>
+                            <Ionicons name="trash-outline" size={18} color={ds.danger} />
+                        </View>
+                    }
+                    title="Delete investment"
+                    onPress={handleDeletePress}
+                    last
                 />
-            )}
-            <Row icon="create-outline" title="Edit investment" onPress={handleEditPress} />
-            <Row
-                leading={<Ionicons name="trash-outline" size={20} color={ds.danger} />}
-                title="Delete investment"
-                onPress={handleDeletePress}
-                last
-            />
+            </Group>
 
             <Text style={[type.caption, styles.id, { color: ds.text3 }]}>ID: {investment.id}</Text>
         </BottomModal>
@@ -121,6 +128,14 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
 };
 
 const styles = StyleSheet.create({
+    // Matches Row's neutral icon tile; only the icon carries the danger tone.
+    tile: {
+        width: 32,
+        height: 32,
+        borderRadius: 9,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     id: {
         textAlign: 'center',
         marginTop: space[3],

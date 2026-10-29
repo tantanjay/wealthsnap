@@ -263,6 +263,7 @@ Not a user-facing feature; app shell, data layer, and utilities used across modu
 - `src/components/ds/tone.ts`
 - `src/components/ds/ChangeLine.tsx`
 - `src/components/ds/DropdownMenu.tsx`
+- `src/components/ds/Group.tsx`
 - `src/components/ds/Hero.tsx`
 - `src/components/ds/ProgressBar.tsx`
 - `src/components/ds/Row.tsx`

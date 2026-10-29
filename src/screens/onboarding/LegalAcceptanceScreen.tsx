@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import TermsContent from '@components/onboarding/TermsContent';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { useTheme } from '@context/ThemeContext';
-import { type, space, radius, fontFamily } from '@styles/theme';
+import { type, space, radius, fontFamily, layout } from '@styles/theme';
 import { saveAcceptedTermsVersion } from '@services/core/storageService';
 import { CONFIG } from '@constants/config';
 
@@ -46,7 +46,7 @@ const LegalAcceptanceScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     };
 
     return (
-        <ScreenWrapper scrollable={false} noPadding style={{ backgroundColor: ds.bg }}>
+        <ScreenWrapper scrollable={false} noPadding>
             <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, space[5]) }]}>
                 <View style={styles.heroHeader}>
                     <View style={[styles.iconContainer, { backgroundColor: ds.accentSoft }]}>
@@ -60,9 +60,10 @@ const LegalAcceptanceScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                     </Text>
                 </View>
 
-                <View style={[styles.termsCard, { backgroundColor: ds.inset }]}>
+                <View style={[styles.termsCard, { backgroundColor: ds.group }]}>
                     <ScrollView
                         style={{ flex: 1 }}
+                        contentContainerStyle={styles.termsScroll}
                         nestedScrollEnabled
                         showsVerticalScrollIndicator
                         onScroll={(event) => {
@@ -118,7 +119,7 @@ const LegalAcceptanceScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                 <Pressable
                     onPress={handleAccept}
                     disabled={!hasAgreed}
-                    style={[styles.button, { backgroundColor: hasAgreed ? ds.accent : ds.inset }]}
+                    style={[styles.button, { backgroundColor: hasAgreed ? ds.accent : ds.group }]}
                     accessibilityRole="button"
                     accessibilityState={{ disabled: !hasAgreed }}
                 >
@@ -132,7 +133,7 @@ const LegalAcceptanceScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingTop: space[5],
     },
     heroHeader: {
@@ -155,9 +156,12 @@ const styles = StyleSheet.create({
     termsCard: {
         flex: 1,
         maxHeight: height * 0.65,
-        borderRadius: radius.md,
+        borderRadius: radius.group,
         marginBottom: space[3],
         overflow: 'hidden',
+    },
+    termsScroll: {
+        paddingHorizontal: layout.groupPadding,
     },
     scrollIndicator: {
         flexDirection: 'row',

@@ -41,8 +41,8 @@ const AppNavigator = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 
         ...DefaultTheme,
         colors: {
             ...DefaultTheme.colors,
-            background: ds.bg,
-            card: ds.sheet,
+            background: ds.canvas,
+            card: ds.canvas,
             text: ds.text,
             border: ds.hairline,
             primary: ds.accent,

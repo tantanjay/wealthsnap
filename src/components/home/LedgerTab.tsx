@@ -9,12 +9,12 @@ import { HistoryCalendar } from '@components/history/HistoryCalendar';
 import { HistoryItem, isDebt, isInvestment } from '@components/history/HistoryListItem';
 import { EmptyState } from '@components/common/EmptyState';
 import BottomModal from '@components/common/BottomModal';
-import { Row } from '@components/ds';
+import { Group, Row } from '@components/ds';
 import { Formula, HowCalculated, SheetHero, StatLine } from '@components/insights/FinancialHealthDetails';
 import { useTheme } from '@context/ThemeContext';
 import { useHistoryData } from '@hooks/useHistoryData';
 import { DASH, PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
-import { type, space, radius } from '@styles/theme';
+import { type, space, radius, layout } from '@styles/theme';
 import { Debt, Investment, Transaction } from '@types';
 import { deleteTransaction } from '@services/domain/transactionService';
 import { deleteInvestment } from '@services/domain/investmentService';
@@ -133,7 +133,7 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
         const detail = investment ? `${item.quantity.toString()} units` : titleCase((item as Debt).type) || 'Loan';
         return (
             <Row
-                icon={investment ? 'trending-up-outline' : 'card-outline'}
+                domain={investment ? 'invest' : 'loans'}
                 title={base}
                 subtitle={`${detail} · No cash entry`}
                 value={f.recordMoney(total)}
@@ -143,8 +143,8 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
         );
     };
 
-    const renderItem = ({ item: historyItem, index, section }: { item: HistoryItem; index: number; section: HistorySection }) => {
-        if (isInvestment(historyItem) || isDebt(historyItem)) return renderUncashedItem(historyItem, index === section.data.length - 1);
+    const renderRow = (historyItem: HistoryItem, last: boolean) => {
+        if (isInvestment(historyItem) || isDebt(historyItem)) return renderUncashedItem(historyItem, last);
         const item = historyItem as Transaction;
         const { title, subtitle } = rowText(item);
         const legs = item.debtId && item.subCategory === 'PRINCIPAL' ? (debtLegsByPrincipalId[item.id] || []) : [];
@@ -158,8 +158,18 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                 value={f.recordMoney(amount, { signed: true })}
                 valueTone={isTransfer(item) ? 'neutral' : item.type === 'INCOME' && !f.isHidden ? 'good' : undefined}
                 onPress={() => handlePress(item)}
-                last={index === section.data.length - 1}
+                last={last}
             />
+        );
+    };
+
+    // SectionList can't wrap a day in a Group, so each row draws its slice of the day's group surface.
+    const renderItem = ({ item, index, section }: { item: HistoryItem; index: number; section: HistorySection }) => {
+        const last = index === section.data.length - 1;
+        return (
+            <View style={[styles.groupSlice, { backgroundColor: ds.group }, index === 0 && styles.groupSliceFirst, last && styles.groupSliceLast]}>
+                {renderRow(item, last)}
+            </View>
         );
     };
 
@@ -182,7 +192,7 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
 
     const listHeader = view === 'CALENDAR' ? (
         <View style={styles.header}>
-            <View style={styles.monthNav}>
+            <View style={[styles.monthNav, styles.alignGroup]}>
                 <Pressable onPress={() => setMonth(addMonthsAnchored(month, -1))} hitSlop={space[2]} accessibilityLabel="Previous month">
                     <Ionicons name="chevron-back" size={20} color={ds.text2} />
                 </Pressable>
@@ -194,20 +204,22 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                 </Pressable>
                 {viewLink('List', 'list-outline', 'LIST')}
             </View>
-            <HistoryCalendar
-                currentDate={month}
-                transactions={calendarMonthTx}
-                investments={calendarMonthInv}
-                recurrenceRules={data.recurrenceRules}
-                selectedDate={selectedDate}
-                onSelectDate={setSelectedDate}
-                currency={profile?.currency}
-                hideAmounts={!f.isOpen}
-            />
+            <Group padded>
+                <HistoryCalendar
+                    currentDate={month}
+                    transactions={calendarMonthTx}
+                    investments={calendarMonthInv}
+                    recurrenceRules={data.recurrenceRules}
+                    selectedDate={selectedDate}
+                    onSelectDate={setSelectedDate}
+                    currency={profile?.currency}
+                    hideAmounts={!f.isOpen}
+                />
+            </Group>
         </View>
     ) : (
         <View style={styles.header}>
-            <View style={[styles.field, { backgroundColor: ds.inset }]}>
+            <View style={[styles.field, { backgroundColor: ds.group }]}>
                 <Ionicons name="search-outline" size={18} color={ds.text2} />
                 <TextInput
                     style={[type.body, styles.input, { color: ds.text }]}
@@ -231,14 +243,14 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                             onPress={() => setFilter(chip.key)}
                             accessibilityRole="button"
                             accessibilityState={{ selected: on }}
-                            style={[styles.chip, on && { backgroundColor: ds.inset }]}
+                            style={[styles.chip, on && { backgroundColor: ds.group }]}
                         >
                             <Text style={[type.smallMedium, { color: on ? ds.text : ds.text2 }]}>{chip.label}</Text>
                         </Pressable>
                     );
                 })}
             </View>
-            <View style={styles.flow}>
+            <View style={[styles.flow, styles.alignGroup]}>
                 {/* Discreet has no scale-free In, so Out reads as a share of In in one phrase. */}
                 {f.isDiscreet ? (
                     <Text style={[type.smallNum, styles.flowText, { color: ds.text2 }]} numberOfLines={1}>
@@ -265,15 +277,17 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                 {viewLink('Calendar', 'calendar-outline', 'CALENDAR')}
             </View>
             {/* Safe-to-Spend has no scale-free version, so Discreet shows "—". */}
-            <Row
-                icon="shield-checkmark-outline"
-                title="Safe to spend"
-                subtitle={`Rest of ${shortMonth}, after bills and commitments`}
-                value={f.show(f.money(safeToSpend.amount, { signed: true }), DASH)}
-                valueTone={f.isOpen ? (safeToSpend.amount.lt(0) ? 'bad' : 'good') : undefined}
-                onPress={() => setIsSafeToSpendVisible(true)}
-                last
-            />
+            <Group>
+                <Row
+                    icon="shield-checkmark-outline"
+                    title="Safe to spend"
+                    subtitle={`Rest of ${shortMonth}, after bills and commitments`}
+                    value={f.show(f.money(safeToSpend.amount, { signed: true }), DASH)}
+                    valueTone={f.isOpen ? (safeToSpend.amount.lt(0) ? 'bad' : 'good') : undefined}
+                    onPress={() => setIsSafeToSpendVisible(true)}
+                    last
+                />
+            </Group>
         </View>
     );
 
@@ -308,9 +322,11 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                 renderSectionHeader={renderSectionHeader}
                 ListHeaderComponent={listHeader}
                 ListEmptyComponent={
-                    <Text style={[type.small, styles.empty, { color: ds.text2 }]}>
-                        {view === 'CALENDAR' ? 'Nothing recorded on this day.' : 'No transactions match.'}
-                    </Text>
+                    <Group padded style={styles.emptyGroup}>
+                        <Text style={[type.small, { color: ds.text2 }]}>
+                            {view === 'CALENDAR' ? 'Nothing recorded on this day.' : 'No transactions match.'}
+                        </Text>
+                    </Group>
                 }
                 stickySectionHeadersEnabled={false}
                 keyboardDismissMode="on-drag"
@@ -326,19 +342,21 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                     change={f.isDiscreet ? 'Not shown in Discreet: it has no scale-free version' : undefined}
                 />
                 {!f.isDiscreet && (
-                    <>
+                    <Group style={styles.sheetGroup}>
                         <StatLine label="Daily living costs" note="Last 90 days of one-off spending" value={f.money(safeToSpend.dailyBurnRate)} />
                         <StatLine label="Living costs to month-end" value={f.money(safeToSpend.projectedVariableSpend)} />
                         <StatLine label="Unpaid debt minimums" value={f.money(safeToSpend.remainingDebtObligations)} />
                         <StatLine label="Unpaid goal contributions" value={f.money(safeToSpend.remainingGoalObligations)} last />
-                    </>
+                    </Group>
                 )}
-                <HowCalculated>
-                    <Formula
-                        formula="(Income + recurring income still due) − (Expenses + Transfers out) − recurring bills still due − daily living costs × days left − unpaid debt minimums − unpaid goal contributions"
-                        explanation="This month only. Daily living costs average your last 90 days of non-recurring spending, without debt payments or goal transactions (debt fees count). Goal-funded purchases don't count as spent."
-                    />
-                </HowCalculated>
+                <Group padded style={styles.sheetGroup}>
+                    <HowCalculated>
+                        <Formula
+                            formula="(Income + recurring income still due) − (Expenses + Transfers out) − recurring bills still due − daily living costs × days left − unpaid debt minimums − unpaid goal contributions"
+                            explanation="This month only. Daily living costs average your last 90 days of non-recurring spending, without debt payments or goal transactions (debt fees count). Goal-funded purchases don't count as spent."
+                        />
+                    </HowCalculated>
+                </Group>
             </BottomModal>
 
             <TransactionOptionsModal
@@ -412,7 +430,7 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
 
 const styles = StyleSheet.create({
     content: {
-        paddingHorizontal: space[5],
+        paddingHorizontal: layout.groupInset,
         paddingBottom: space[7],
     },
     header: {
@@ -443,7 +461,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: space[5],
-        marginTop: space[4],
+        marginTop: space[6],
+        marginBottom: space[2],
+    },
+    // Canvas text lines up with group content, like a grouped section header.
+    alignGroup: {
+        paddingHorizontal: layout.groupPadding,
     },
     flowText: {
         flexShrink: 1,
@@ -467,11 +490,26 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'baseline',
+        paddingHorizontal: layout.groupPadding,
         marginTop: space[6],
-        marginBottom: space[1],
+        marginBottom: space[2],
     },
-    empty: {
-        paddingVertical: space[5],
+    groupSlice: {
+        paddingHorizontal: layout.groupPadding,
+    },
+    groupSliceFirst: {
+        borderTopLeftRadius: radius.group,
+        borderTopRightRadius: radius.group,
+    },
+    groupSliceLast: {
+        borderBottomLeftRadius: radius.group,
+        borderBottomRightRadius: radius.group,
+    },
+    emptyGroup: {
+        marginTop: space[6],
+    },
+    sheetGroup: {
+        marginTop: space[4],
     },
     loading: {
         alignItems: 'center',
