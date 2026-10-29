@@ -2,44 +2,58 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
 
-import { lightTheme, darkTheme } from '@styles/theme';
+import { resolveTheme, SKINS, DEFAULT_SKIN, type Theme, type SkinId } from '@styles/theme';
 import { ASYNC_KEYS } from '@constants/config';
 
-type ThemeType = typeof lightTheme;
-type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 interface ThemeContextType {
-    theme: ThemeType;
+    theme: Theme;
     mode: ThemeMode;
-    ds: ThemeType['ds'];
-    elevation: ThemeType['elevation'];
+    skin: SkinId;
+    ds: Theme['ds'];
+    elevation: Theme['elevation'];
     setMode: (mode: ThemeMode) => void;
+    setSkin: (skin: SkinId) => void;
     toggleTheme: () => void;
 }
 
+const defaultTheme = resolveTheme(DEFAULT_SKIN, 'light');
+
 const ThemeContext = createContext<ThemeContextType>({
-    theme: lightTheme,
+    theme: defaultTheme,
     mode: 'system',
-    ds: lightTheme.ds,
-    elevation: lightTheme.elevation,
+    skin: DEFAULT_SKIN,
+    ds: defaultTheme.ds,
+    elevation: defaultTheme.elevation,
     setMode: () => { },
+    setSkin: () => { },
     toggleTheme: () => { },
 });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const systemColorScheme = useColorScheme();
     const [mode, setModeState] = useState<ThemeMode>('system');
+    const [skin, setSkinState] = useState<SkinId>(DEFAULT_SKIN);
 
-    const theme: ThemeType = useMemo(() => {
+    // Skin picks the palette, mode picks its light or dark half.
+    const theme: Theme = useMemo(() => {
         const effectiveMode = mode === 'system' ? systemColorScheme : mode;
-        return effectiveMode === 'dark' ? darkTheme : lightTheme;
-    }, [mode, systemColorScheme]);
+        return resolveTheme(skin, effectiveMode === 'dark' ? 'dark' : 'light');
+    }, [mode, skin, systemColorScheme]);
 
     const loadThemePreference = async () => {
         try {
-            const storedMode = await AsyncStorage.getItem(ASYNC_KEYS.THEME_MODE);
+            const [storedMode, storedSkin] = await Promise.all([
+                AsyncStorage.getItem(ASYNC_KEYS.THEME_MODE),
+                AsyncStorage.getItem(ASYNC_KEYS.THEME_SKIN),
+            ]);
             if (storedMode) {
                 setModeState(storedMode as ThemeMode);
+            }
+            // Ignore an id from a build that had a skin this one doesn't.
+            if (storedSkin && storedSkin in SKINS) {
+                setSkinState(storedSkin as SkinId);
             }
         } catch (error) {
             console.error('Failed to load theme preference', error);
@@ -60,6 +74,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     };
 
+    const setSkin = async (newSkin: SkinId) => {
+        setSkinState(newSkin);
+        try {
+            await AsyncStorage.setItem(ASYNC_KEYS.THEME_SKIN, newSkin);
+        } catch (error) {
+            console.error('Failed to save skin preference', error);
+        }
+    };
+
     const toggleTheme = () => {
         if (mode === 'light') {
             setMode('dark');
@@ -74,9 +97,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         <ThemeContext.Provider value={{
             theme,
             mode,
+            skin,
             ds: theme.ds,
             elevation: theme.elevation,
             setMode,
+            setSkin,
             toggleTheme
         }}>
             {children}

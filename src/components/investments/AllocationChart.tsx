@@ -276,7 +276,7 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                                     >
                                         {showLabel && (
                                             <Text
-                                                style={[styles.boxLabel, { color: ds.onAccent, fontSize: Math.min(MAX_BOX_FONT, item.width / 4.5) }]}
+                                                style={[styles.boxLabel, { color: ds.onSemantic, fontSize: Math.min(MAX_BOX_FONT, item.width / 4.5) }]}
                                                 numberOfLines={1}
                                                 adjustsFontSizeToFit
                                             >
@@ -290,15 +290,15 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                                                 { flexDirection: isPortrait ? 'column' : 'row' }
                                             ]}>
                                                 {showWeight && (
-                                                    <Text style={[styles.boxSubLabel, { color: ds.onAccent, fontSize: Math.min(MAX_BOX_FONT, item.width / 7) }]}>
+                                                    <Text style={[styles.boxSubLabel, { color: ds.onSemantic, fontSize: Math.min(MAX_BOX_FONT, item.width / 7) }]}>
                                                         {item.weight}
                                                     </Text>
                                                 )}
                                                 {showWeight && showPerf && !isPortrait && (
-                                                    <Text style={[styles.boxSubLabel, { color: ds.onAccent }]}> </Text>
+                                                    <Text style={[styles.boxSubLabel, { color: ds.onSemantic }]}> </Text>
                                                 )}
                                                 {showPerf && (
-                                                    <Text style={[styles.boxSubLabel, { color: ds.onAccent, fontSize: Math.min(MAX_BOX_FONT, item.width / 7), opacity: 0.9 }]}>
+                                                    <Text style={[styles.boxSubLabel, { color: ds.onSemantic, fontSize: Math.min(MAX_BOX_FONT, item.width / 7), opacity: 0.9 }]}>
                                                         ({item.performance})
                                                     </Text>
                                                 )}

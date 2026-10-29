@@ -38,6 +38,7 @@ Surfaces, from back to front. In dark mode each step is lighter than the one beh
 | `accent` | `#1976D2` | `#4A90E2` | Interaction only (see principle 2) |
 | `accentSoft` | accent @ 10% | accent @ 16% | Selected category tile, avatar background |
 | `onAccent` | `#FFFFFF` | `#FFFFFF` | Text/icons on accent fills |
+| `onSemantic` | `#FFFFFF` | `#FFFFFF` | Text/icons on `success`/`danger` fills (treemap tiles, swipe-delete). Never `onAccent`, which is dark in some skins |
 | `success` | `#2E7D32` | `#66BB6A` | Good |
 | `danger` | `#D32F2F` | `#EF5350` | Bad |
 | `warning` | `#E65100` | `#FFA726` | Caution (e.g. budget 70–90%) |
@@ -60,6 +61,16 @@ Other constants: `SPARK_FILL_OPACITY` = 0.14 (the hero sparkline's fill, fading 
 Domain colors are deliberately muted and never reuse a semantic or accent hue. The `chart` hues are muted the same way and ordered so neighbouring slices differ in both hue and lightness.
 
 Severity in dialogs and notices (icon + color, see `src/utils/severity.ts` for icons): error `danger`, warning `warning`, success `success`, info `text2`.
+
+### Skins
+
+The values above are the **Layered** skin. `SKINS` in `src/styles/theme.ts` holds 10 skins, each with a light and a dark token set; `useTheme().ds` is `SKINS[skin][mode]`. Skin and mode are separate settings (Profile → Appearance → Skin), so every skin works with Light, Dark and System.
+
+- **A skin sets 8 roles only:** `canvas`, `group`, `heroPanel`, `text`, `text2`, `hairline`, `accent`, `onAccent`.
+- **Derived from those:** `accentSoft` (accent @ 10% / 16%), the hero sparkline fill, `inset` (a step off `group` toward `text`), `raised`, `track`, `sheet` (= `group`), `text3` (between `text2` and `canvas`) and the `domain*Soft` tiles (domain over the skin's `group`).
+- **Never change per skin:** `success`, `danger`, `warning`, the `domain*` colors, `chart[]`, `onSemantic`, `tileNeutral`, `scrim`, `qrSurface`, `onMedia`. Gain is green and loss is red in every skin.
+- **Components never branch on the skin.** They read `ds` like any other token; if something looks wrong in one skin, fix the token or its derivation, not the component.
+- **Adding a skin:** add its id to `SkinId` and one `skin(name, description, light, dark)` entry to `SKINS`, giving the 8 roles in order for each mode. Check text, `text2` and `accent` against `group`, `canvas` and `heroPanel`, and `onAccent` against `accent`, staying no lower than Layered's own contrast; then look at Home, Insights, Profile, a form and a sheet in both modes.
 
 ### Type
 

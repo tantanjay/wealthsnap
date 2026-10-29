@@ -20,6 +20,7 @@ export const SECURE_KEYS = {
 export const ASYNC_KEYS = {
     USER_PROFILE: '@wealthsnap_user_profile',
     THEME_MODE: '@wealthsnap_theme_mode',
+    THEME_SKIN: '@wealthsnap_theme_skin',
     NOTIFIED_ALERTS: '@wealthsnap_notified_alerts',
     SECURITY: {
         // Legacy on/off flag; read once to migrate into PRIVACY_MODE.

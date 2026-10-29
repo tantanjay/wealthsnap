@@ -13,7 +13,7 @@ import BottomModal from '@components/common/BottomModal';
 import { SecurityProvider, useSecurity } from '@context/SecurityContext';
 import { PrivacyProvider } from '@context/PrivacyContext';
 import { AlertProvider } from '@context/AlertContext';
-import { ThemeProvider } from '@context/ThemeContext';
+import { ThemeProvider, useTheme } from '@context/ThemeContext';
 import { DataStatusProvider } from '@context/DataStatusContext';
 import { GlobalErrorBoundary } from '@components/common/GlobalErrorBoundary';
 import { PrivacyGuard } from '@components/common/PrivacyGuard';
@@ -111,7 +111,7 @@ export default function App() {
                   <PrivacyProvider>
                     <AlertProvider>
                       <PrivacyGuard />
-                      <StatusBar style="auto" />
+                      <ThemedStatusBar />
                       <AppContent initialRoute={initialRoute} />
                     </AlertProvider>
                   </PrivacyProvider>
@@ -124,6 +124,12 @@ export default function App() {
     </DataStatusProvider>
   );
 }
+
+// Follows the app's resolved mode, not the device's, so a forced Dark/Light picks the right icons.
+const ThemedStatusBar = () => {
+  const { theme } = useTheme();
+  return <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />;
+};
 
 // Inner component to access contexts (Security, etc)
 const AppContent = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'LegalAcceptance' }) => {

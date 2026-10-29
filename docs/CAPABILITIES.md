@@ -280,6 +280,7 @@ One calm overview instead of a stack of cards:
 
 - Bottom bar: Home · Insights · Record · Profile · Learn, with Record as the raised center action
 - Profile holds account and app settings only: Money setup, Data, Security and intelligence, Appearance
+- Appearance: 10 colour skins (Layered, Warm paper, Forest, Blush, Grape, Ink, Ocean, Slate, Sunset, Royal), each with a light and dark version, chosen separately from Light / Dark / System
 - Learn gathers the guides, Help center and About WealthSnap in one place
 
 ---
