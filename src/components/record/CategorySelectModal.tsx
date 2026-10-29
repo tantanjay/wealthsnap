@@ -19,19 +19,15 @@ interface CategoryGroup {
     items: CategoryItem[];
 }
 
-interface CategorySelectModalProps {
-    visible: boolean;
-    onClose: () => void;
+interface CategoryPickerProps {
     onSelect: (category: string) => void;
     categoryGroups: CategoryGroup[];
+    // Off when the picker sits inside a form's own ScrollView (an inline, collapsible section).
+    scroll?: boolean;
 }
 
-export const CategorySelectModal: React.FC<CategorySelectModalProps> = ({
-    visible,
-    onClose,
-    onSelect,
-    categoryGroups
-}) => {
+// Search plus group drill-down; CategorySelectModal wraps it in a sheet, forms inside a sheet use it inline.
+export const CategoryPicker: React.FC<CategoryPickerProps> = ({ onSelect, categoryGroups, scroll = true }) => {
     const { ds } = useTheme();
     const [categorySearch, setCategorySearch] = useState('');
     const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -48,13 +44,6 @@ export const CategorySelectModal: React.FC<CategorySelectModalProps> = ({
         onSelect(categoryValue);
         setCategorySearch('');
         setSelectedGroup(null);
-        onClose();
-    };
-
-    const handleClose = () => {
-        setCategorySearch('');
-        setSelectedGroup(null);
-        onClose();
     };
 
     const renderItems = (items: CategoryItem[]) => items.map((item, index) => (
@@ -69,12 +58,10 @@ export const CategorySelectModal: React.FC<CategorySelectModalProps> = ({
 
     const group = selectedGroup ? categoryGroups.find(g => g.group === selectedGroup) : undefined;
 
+    const Body = scroll ? ScrollView : View;
+
     return (
-        <BottomModal
-            visible={visible}
-            onClose={handleClose}
-            title="Select category"
-        >
+        <>
             {/* Search field: sits on the sheet's canvas, so it takes the group fill */}
             <View style={[styles.field, { backgroundColor: ds.group }]}>
                 <Ionicons name="search-outline" size={18} color={ds.text2} />
@@ -92,7 +79,7 @@ export const CategorySelectModal: React.FC<CategorySelectModalProps> = ({
                 ) : null}
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <Body {...(scroll ? { showsVerticalScrollIndicator: false } : {})}>
                 {categorySearch ? (
                     <View>
                         <SectionHeader title="Search results" grouped style={styles.header} />
@@ -128,10 +115,31 @@ export const CategorySelectModal: React.FC<CategorySelectModalProps> = ({
                         ))}
                     </Group>
                 )}
-            </ScrollView>
-        </BottomModal>
+            </Body>
+        </>
     );
 };
+
+interface CategorySelectModalProps {
+    visible: boolean;
+    onClose: () => void;
+    onSelect: (category: string) => void;
+    categoryGroups: CategoryGroup[];
+}
+
+export const CategorySelectModal: React.FC<CategorySelectModalProps> = ({ visible, onClose, onSelect, categoryGroups }) => (
+    <BottomModal visible={visible} onClose={onClose} title="Select category">
+        {/* Keyed on visibility so search and drill-down start fresh each time the sheet opens. */}
+        <CategoryPicker
+            key={visible ? 'open' : 'closed'}
+            categoryGroups={categoryGroups}
+            onSelect={category => {
+                onSelect(category);
+                onClose();
+            }}
+        />
+    </BottomModal>
+);
 
 const styles = StyleSheet.create({
     field: {
