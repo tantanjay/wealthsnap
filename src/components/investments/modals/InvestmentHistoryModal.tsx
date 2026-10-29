@@ -486,7 +486,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                 style={[styles.deleteAction, { backgroundColor: ds.danger }]}
                 onPress={onDelete}
             >
-                <Ionicons name="trash-outline" size={20} color={ds.onAccent} />
+                <Ionicons name="trash-outline" size={20} color={ds.onSemantic} />
             </TouchableOpacity>
         );
     };

@@ -1,78 +1,100 @@
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 
-import { Group, Row, SectionHeader, Sheet } from '@components/ds';
-import { useTheme } from '@context/ThemeContext';
-import { radius } from '@styles/theme';
+import { Group, Row, SectionHeader, SegmentedControl, Sheet } from '@components/ds';
+import { useTheme, type ThemeMode } from '@context/ThemeContext';
+import { SKINS, SKIN_IDS, type, space, radius } from '@styles/theme';
 
-type ThemeMode = 'light' | 'dark' | 'system';
-
-const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
-    { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
-    { value: 'system', label: 'System' },
+const MODE_OPTIONS: { key: ThemeMode; label: string }[] = [
+    { key: 'light', label: 'Light' },
+    { key: 'dark', label: 'Dark' },
+    { key: 'system', label: 'System' },
 ];
 
-interface AppearanceCardProps {
-    mode: string;
-    setMode: (mode: ThemeMode) => void;
-}
-
-// Profile → Appearance: one Theme row; the choice lives in a sheet since it's rarely changed.
-const AppearanceCard: React.FC<AppearanceCardProps> = ({ mode, setMode }) => {
-    const { ds } = useTheme();
+// Profile → Appearance: one Skin row; mode and skin both live in its sheet since they're rarely changed.
+const AppearanceCard: React.FC = () => {
+    const { ds, theme, mode, setMode, skin, setSkin } = useTheme();
     const [visible, setVisible] = useState(false);
-    const current = THEME_OPTIONS.find(o => o.value === mode)?.label ?? 'System';
+    const modeLabel = MODE_OPTIONS.find(o => o.key === mode)?.label ?? 'System';
 
     return (
         <>
             <SectionHeader grouped title="Appearance" />
             <Group>
-                <Row icon="contrast-outline" title="Theme" subtitle={current} chevron last onPress={() => setVisible(true)} />
+                <Row
+                    icon="color-palette-outline"
+                    title="Skin"
+                    subtitle={`${SKINS[skin].name} · ${modeLabel}`}
+                    chevron
+                    last
+                    onPress={() => setVisible(true)}
+                />
             </Group>
 
-            <Sheet
-                visible={visible}
-                onClose={() => setVisible(false)}
-                title="Theme"
-            >
-                <Group>
-                    {THEME_OPTIONS.map((option, i) => {
-                        const selected = mode === option.value;
+            <Sheet visible={visible} onClose={() => setVisible(false)} title="Appearance">
+                <SectionHeader grouped title="Mode" />
+                <SegmentedControl options={MODE_OPTIONS} value={mode} onChange={setMode} />
+
+                <SectionHeader grouped title="Skin" />
+                <View style={styles.grid}>
+                    {SKIN_IDS.map(id => {
+                        const option = SKINS[id];
+                        // Swatches follow the mode currently on screen, so System shows the device's half.
+                        const swatch = option[theme.mode];
+                        const selected = id === skin;
                         return (
-                            <Row
-                                key={option.value}
-                                title={option.label}
-                                subtitle={option.value === 'system' ? 'Follows your device setting' : undefined}
-                                leading={
-                                    <View style={[styles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
-                                        {selected && <View style={[styles.radioDot, { backgroundColor: ds.accent }]} />}
-                                    </View>
-                                }
-                                onPress={() => setMode(option.value)}
-                                last={i === THEME_OPTIONS.length - 1}
-                            />
+                            <Pressable
+                                key={id}
+                                onPress={() => setSkin(id)}
+                                accessibilityRole="radio"
+                                accessibilityState={{ selected }}
+                                accessibilityLabel={`${option.name}, ${option.description}`}
+                                style={[
+                                    styles.card,
+                                    { backgroundColor: ds.group, borderColor: selected ? ds.accent : ds.hairline },
+                                ]}
+                            >
+                                <View style={[styles.strip, { borderColor: ds.hairline }]}>
+                                    {[swatch.canvas, swatch.group, swatch.heroPanel, swatch.accent].map((color, i) => (
+                                        <View key={i} style={[styles.swatch, { backgroundColor: color }]} />
+                                    ))}
+                                </View>
+                                <Text style={[type.smallStrong, { color: ds.text }]} numberOfLines={1}>{option.name}</Text>
+                                <Text style={[type.caption, { color: ds.text2 }]} numberOfLines={2}>{option.description}</Text>
+                            </Pressable>
                         );
                     })}
-                </Group>
+                </View>
             </Sheet>
         </>
     );
 };
 
 const styles = StyleSheet.create({
-    radio: {
-        width: 20,
-        height: 20,
-        borderRadius: radius.full,
-        borderWidth: 2,
-        alignItems: 'center',
-        justifyContent: 'center',
+    grid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: space[3],
     },
-    radioDot: {
-        width: 10,
-        height: 10,
-        borderRadius: radius.full,
+    // Always 2px so selecting a card doesn't shift the grid; only the color changes.
+    card: {
+        flexBasis: '47%',
+        flexGrow: 1,
+        borderRadius: radius.md,
+        borderWidth: 2,
+        padding: space[3],
+        gap: space[1],
+    },
+    strip: {
+        flexDirection: 'row',
+        height: 28,
+        borderRadius: radius.sm,
+        borderWidth: StyleSheet.hairlineWidth,
+        overflow: 'hidden',
+        marginBottom: space[1],
+    },
+    swatch: {
+        flex: 1,
     },
 });
 

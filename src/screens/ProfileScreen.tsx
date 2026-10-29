@@ -18,7 +18,6 @@ import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import { ReminderManager } from '@components/reminders/ReminderManager';
 import { RecurringRulesListModal } from '@components/profile/RecurringRulesListModal';
 import { AssetsListModal } from '@components/profile/assets/AssetsListModal';
-import { useTheme } from '@context/ThemeContext';
 import { useSecurity } from '@context/SecurityContext';
 import { useAlert } from '@context/AlertContext';
 import { space, layout } from '@styles/theme';
@@ -30,7 +29,6 @@ import { CONFIG, ASYNC_KEYS } from '@constants/config';
 
 // Account and app settings only; help and about content lives in the Learn tab.
 const ProfileScreen = ({ navigation }: any) => {
-    const { setMode, mode } = useTheme();
     const { showAlert } = useAlert();
     const { temporarilyDisableLock } = useSecurity();
 
@@ -213,7 +211,7 @@ const ProfileScreen = ({ navigation }: any) => {
 
                 <SecurityCard />
 
-                <AppearanceCard mode={mode} setMode={setMode} />
+                <AppearanceCard />
 
                 {(CONFIG.SHOW_DEVELOPER_OPTIONS || isDevMode) && (
                     <DeveloperToolsCard
