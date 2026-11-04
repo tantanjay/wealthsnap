@@ -129,7 +129,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                         const isSelected = selectedBarIndex === index;
                         const tip = tooltipPosition(index, data.length, plotWidth, TOOLTIP_WIDTH, 8);
                         const showLabelInterval = Math.ceil(labels.length / 6);
-                        const shouldShowLabel = index === 0 || index === labels.length - 1 || index % showLabelInterval === 0;
+                        const shouldShowLabel = index === labels.length - 1 || (index % showLabelInterval === 0 && labels.length - 1 - index >= showLabelInterval);
 
                         return (
                             <View key={index} style={{ alignItems: 'center', flex: 1, zIndex: isSelected ? 100 : 0 }}>

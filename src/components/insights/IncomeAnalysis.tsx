@@ -259,7 +259,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
 
             // Smart Labeling: Throttling for density
             const showLabelInterval = Math.ceil(labels.length / 6);
-            const shouldShowLabel = index === 0 || index === labels.length - 1 || index % showLabelInterval === 0;
+            const shouldShowLabel = index === labels.length - 1 || (index % showLabelInterval === 0 && labels.length - 1 - index >= showLabelInterval);
 
             return {
                 label: shouldShowLabel ? label : '',

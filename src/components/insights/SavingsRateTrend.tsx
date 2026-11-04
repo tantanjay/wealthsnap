@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, Dimensions, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Dimensions, Pressable, ScrollView, StyleSheet, StyleProp, TextStyle } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,6 +37,16 @@ const SAVINGS_TAB_META: Record<SavingsTab, { label: string; metricLabel: string 
 const TAB_OPTIONS = (['RATE', 'AMOUNT', 'CASH'] as SavingsTab[]).map(key => ({ key, label: SAVINGS_TAB_META[key].label }));
 
 const CHART_HEIGHT = 220;
+// Half an x label's width, so the first and last labels aren't clipped.
+// Room kept at each end for the pointer dot; the end labels are anchored to their points instead.
+const X_EDGE = 6;
+const X_LABEL_WIDTH = 28;
+// Percent labels ("-150%") need less room than compact amounts ("−₱120k").
+const Y_AXIS_WIDTH_PERCENT = 36;
+
+// Plain copies: gifted-charts deep-clones data items by writing to them, and StyleSheet styles are frozen in dev.
+const plainStyle = (style: StyleProp<TextStyle>): TextStyle => JSON.parse(JSON.stringify(StyleSheet.flatten(style)));
+const Y_AXIS_WIDTH = 44;
 
 type SavingsMonth = { month: string; rate: number; income: BigNumber; expense: BigNumber; savings: BigNumber; cashFlow: BigNumber };
 
@@ -169,8 +179,8 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
             // For large datasets, show roughly 6 labels evenly distributed
             const interval = Math.ceil(data.length / 6);
 
-            // Always show first and last, and periodic interval matches
-            if (index === 0 || index === data.length - 1 || index % interval === 0) {
+            // Always show the last; periodic ones only when they won't crowd it
+            if (index === data.length - 1 || (index % interval === 0 && data.length - 1 - index >= interval)) {
                 return d.month;
             }
             return ''; // Hide label
@@ -196,8 +206,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
         radius: 6,
         pointerLabelWidth: 140, // Ensure width is known for positioning calculations if needed
         pointerLabelHeight: 100,
-        // Require long press to activate tooltip so scrolling (drag) works
-        activatePointersOnLongPress: true,
+        activatePointersOnLongPress: false,
         autoAdjustPointerLabelPosition: true,
         pointerComponent: (items: any) => {
             const safeItems = Array.isArray(items) ? items : [items].filter(Boolean);
@@ -536,8 +545,16 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
     const worstText = asShareOfIncome ? rawData[worstIndex]?.month ?? '—' : formatValue(Math.min(...activeValues));
 
     const showYAxis = isPercent || format.isOpen;
+    const edgeLabels = {
+        first: plainStyle([type.caption, { color: ds.text2 }, styles.xLabel, styles.xLabelFirst]),
+        last: plainStyle([type.caption, { color: ds.text2 }, styles.xLabel, styles.xLabelLast]),
+    };
     // Group content runs 28 from each screen edge, 8 narrower per side than the old 20 gutter.
-    const chartWidth = screenWidth - 80 - (layout.groupInset + layout.groupPadding - space[5]) * 2;
+    // Charts run edge to edge across the card (past its side padding) to give long ranges room.
+    const chartWidth = screenWidth - layout.groupInset * 2;
+    // A hidden axis hands its room back to the plot, so the line still reaches the right edge.
+    const yAxisWidth = !showYAxis ? space[2] : isPercent ? Y_AXIS_WIDTH_PERCENT : Y_AXIS_WIDTH;
+    const plotWidth = chartWidth - yAxisWidth;
     const axisText = [type.caption, { color: ds.text2 }];
 
     const header = (
@@ -608,7 +625,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
                     <View style={styles.chart}>
                         {/* MANUAL REFERENCE LINE (0%) - Rendered BEHIND chart to avoid tooltip overlap */}
                         <View style={[styles.zeroLine, {
-                            left: showYAxis ? 50 : space[5],
+                            left: yAxisWidth,
                             top: CHART_HEIGHT * (1 - (yOffset / (yBoundary * 2))),
                             borderColor: ds.text3,
                         }]} />
@@ -618,6 +635,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
                                 value: d.value,
                                 dataPointColor: d.dataPointColor,
                                 label: savingsData.labels[index],
+                                labelTextStyle: index === 0 ? edgeLabels.first : index === shiftedChartData.length - 1 ? edgeLabels.last : undefined,
                                 // Metadata for tooltip
                                 originalValue: d.originalValue,
                                 month: savingsData.rawData[index].month,
@@ -627,9 +645,12 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
                             }))}
 
                             height={200}
-                            width={chartWidth}
-                            spacing={chartWidth / Math.max(shiftedChartData.length, 1)}
-                            initialSpacing={20}
+                            width={plotWidth}
+                            // Every month fits the card; a touch shows the tooltip, so there's no scrolling.
+                            spacing={(plotWidth - X_EDGE * 2) / Math.max(shiftedChartData.length - 1, 1)}
+                            initialSpacing={X_EDGE}
+                            endSpacing={X_EDGE}
+                            disableScroll
                             thickness={1.5}
                             curved
                             curveType={0}
@@ -643,10 +664,11 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
                             /* ---- AXIS ---- */
                             yAxisColor="transparent"
                             xAxisColor="transparent"
-                            yAxisLabelWidth={showYAxis ? 45 : space[5]}
+                            yAxisLabelWidth={yAxisWidth}
                             hideYAxisText={!showYAxis}
 
                             yAxisTextStyle={axisText}
+                            yAxisLabelContainerStyle={styles.yLabel}
                             xAxisLabelTextStyle={[axisText, styles.xLabel]}
 
                             /* ---- LINE GRADIENT: above zero is good, below is bad ---- */
@@ -715,7 +737,7 @@ const styles = StyleSheet.create({
     },
     chart: {
         height: CHART_HEIGHT,
-        marginLeft: -space[2],
+        marginHorizontal: -layout.groupPadding,
     },
     zeroLine: {
         position: 'absolute',
@@ -726,8 +748,22 @@ const styles = StyleSheet.create({
         zIndex: -1,
     },
     xLabel: {
-        width: 30,
+        width: X_LABEL_WIDTH,
         textAlign: 'center',
+    },
+    // First and last labels start or end at their point, so the line can run to the edges.
+    xLabelFirst: {
+        textAlign: 'left',
+        transform: [{ translateX: X_LABEL_WIDTH / 2 }],
+    },
+    xLabelLast: {
+        textAlign: 'right',
+        transform: [{ translateX: -X_LABEL_WIDTH / 2 }],
+    },
+    // The library centers y labels in a row; right-aligned, short ones sit next to the plot.
+    yLabel: {
+        justifyContent: 'flex-end',
+        paddingRight: space[1],
     },
     summary: {
         flexDirection: 'row',

@@ -105,7 +105,7 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
         radius: 6,
         pointerLabelWidth: 100,
         pointerLabelHeight: 90,
-        activatePointersOnLongPress: true,
+        activatePointersOnLongPress: false,
         autoAdjustPointerLabelPosition: true,
         pointerComponent: () => (
             <View style={[styles.pointer, { backgroundColor: ds.accent, borderColor: ds.group }]} />
@@ -158,9 +158,9 @@ const CategoryTrendModal: React.FC<CategoryTrendModalProps> = ({
                                     label: trendData.labels[index],
                                 }))}
                                 height={CHART_HEIGHT}
-                                width={screenWidth - 40 - GROUP_NARROWING}
+                                width={screenWidth - 40 - GROUP_NARROWING + (format.isOpen ? 0 : 90 - space[5])}
                                 maxValue={max.multipliedBy(1.2).toNumber()}
-                                spacing={(screenWidth - 150 - GROUP_NARROWING) / Math.max(trendData.data.length - 1, 1)}
+                                spacing={(screenWidth - 150 - GROUP_NARROWING + (format.isOpen ? 0 : 90 - space[5])) / Math.max(trendData.data.length - 1, 1)}
                                 initialSpacing={20}
                                 thickness={1.5}
                                 color={ds.accent}
