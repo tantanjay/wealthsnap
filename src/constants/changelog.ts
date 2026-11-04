@@ -10,14 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-11-04
+
 ### Added
 - Home Snapshot: Projected Net Worth with this month's change, then Cash, Investments, Loans and Goals rows with one Overall / This month switch, replacing Home's five cards.
   - Home settings sheet that changes with the selected tab: privacy mode everywhere, plus the net worth graph range and row order on Snapshot and the section order on Holdings; your old card order carries over.
 - Home tabs: Ledger, Holdings, Goals and Loans, which replace the History and Investment tabs and the Savings Goals and Debt Strategy screens.
   - Ledger shows this month's Safe-to-Spend under In / Out.
 - Insights: a Financial Health grid of 4 numbers you pick from 13, with a detail sheet for each, replacing the overview cards and the Financial Health screen.
+  - Budgets section: your most-used budgets with % used; Show all lists every one.
 - New bottom bar: Home · Insights · Record · Profile · Learn.
 - Learn tab: guides, help and app info move out of Profile, with new Runway, Privacy Modes and Goals guides and an FAQ.
+  - Guides include worked-example diagrams; Home Snapshot explains Safe to spend.
+- Skins: ten looks, each in light and dark, from Profile → Appearance → Skin.
 - Privacy modes: Open, Discreet (percentages, months and counts instead of amounts) and Hidden (the old privacy toggle).
   - Pick the mode in Home settings.
   - Insights and Holdings charts show in Discreet without amounts; Hidden shows one placeholder.
@@ -25,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   - Single transactions keep their amount in Discreet; day and month totals don't.
 
 ### Changed
+- **BREAKING:** App redesigned: the History and Investment tabs and the Financial Health, Savings Goals and Debt Strategy screens are replaced by Home's tabs and Insights.
 - Bottom sheets, pop-ups and Record forms restyled to match the new design.
 - Screens use a grey canvas with grouped white sections, a tinted panel behind the main number, and colour-tinted row icons.
 - Info sheets close with an X in the header instead of Close / Got it buttons.
@@ -34,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Investment boost labels its rate "Dividend yield" (or "Assumed return") instead of "12-Month Return".
 - Runway on Insights shows a negative figure below zero cash, like Home, instead of 0.0 months.
 - Budget Health shows 0% instead of N/A when you have budgets but no spending yet.
+- Math & Formulas guide updated to match current calculations.
 - Updated Expo SDK 57 patch dependencies.
 
 ### Removed
@@ -45,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Home's "due this month" let an extra payment on one loan cover another loan's minimum.
 - Transaction, investment and loan detail sheets showed real amounts while privacy was on.
 - Monthly Summary, Budgets, Recurring Rules and Smart Suggestions showed amounts while privacy was on.
+
+---
 
 ## [1.19.0] — 2026-09-29
 

@@ -12,7 +12,7 @@ Follow [semver.org](https://semver.org/) strictly going forward — the pre-1.14
 |---|---|---|
 | **PATCH** (`x.y.Z`) | Bug fixes only. No new user-facing functionality, no behavior changes a user would notice as "new." | Crash fix, wrong calculation fix, dependency security patch. |
 | **MINOR** (`x.Y.0`) | New backward-compatible functionality, or a UX/behavior change that isn't a fix. | New chart view, new screen, redesigned selector, new persisted preference. |
-| **MAJOR** (`X.0.0`) | Breaking changes — anything that forces the user to take action or invalidates existing state. | PIN reset required, encryption key rotation, API key reconfiguration required. |
+| **MAJOR** (`X.0.0`) | Breaking changes — anything that forces the user to take action or invalidates existing state, or replaces or removes screens and features users rely on. | PIN reset required, encryption key rotation, API key reconfiguration required, a whole-app redesign that removes or replaces screens (2.0.0). |
 
 **Decision rule:** if the release has *any* `### Added` or breaking-change content, it is at minimum MINOR. If it has a breaking change, it is MAJOR — do not fold a breaking change into a MINOR bump just because the rest of the release is small.
 
