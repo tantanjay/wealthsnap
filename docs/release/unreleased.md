@@ -9,9 +9,17 @@
 - **See every holding at once**: The Holdings Allocation map has a new first view, Assets. It draws one box for every holding you own, whatever its type, so funds, crypto, bonds and commodities sit next to your stocks and you can see your whole portfolio at a glance.
 - **Stocks is still there**: The Stocks view keeps showing your stocks only, with each one's share measured against your stock total. In Assets, Sector and Type, a holding's share is measured against your whole portfolio.
 - Your chosen view is remembered, as before. If you had Stocks selected, it stays on Stocks; new installs start on Assets.
-- **Tap a box for details**: Tapping a box opens a tooltip with its full name (even when the box is too small to show it), its share of your portfolio, its Price return, and its value in Open mode. Sector and Type boxes also show how many holdings they contain. The tapped box dims; tap it again to close.
+- **Tap a box for details**: Tapping a box opens a tooltip with its full name (even when the box is too small to show it), its share of your portfolio, its Price return, and its value in Open mode. Sector and Type boxes also show how many holdings they contain. The tapped box dims; tap it again, or anywhere else on the page, to close.
 - **Returns that count dividends**: The tooltip adds a Total return line whenever dividends or sales make it differ from the price return. It's the same Total return as at the top of the Holdings tab, just for one box. A holding like MP2, whose price never moves but pays dividends, used to read 0.0% and now shows what it actually earned. A fees-hit holding that dividends pushed back into profit shows both: a negative price return and a positive total return.
 - A return that rounds to zero now reads 0.0% instead of "-0.0%".
+
+---
+
+## 📚 Six New Guides in Learn
+- **More of the app explained**: Learn has six new guides: Safe to Spend, Budgets, Recurring & Reminders, Monthly Summary, AI Assistant, and Backup, Sync & Export. Each one covers where to find the feature, how its numbers are worked out and what affects them, in the same style as the existing guides.
+- **Safe to Spend gets its own guide**: The formula, what gets set aside for the rest of the month and what a red number means now live in one place. The Home Snapshot guide points to it instead of repeating the formula.
+- **Two-row shelf**: The Guides shelf now shows two rows, so twice as many guides are visible before you scroll sideways. It reads down each column, then across.
+- **Guide notes now show**: Some guides end a section with a short note, like how a number looks in Discreet mode or a warning before clearing your data. These notes were never drawn, so they were missing from the Home Snapshot, Runway, Privacy Modes and Goals guides. They now show with an info or warning icon.
 
 ---
 

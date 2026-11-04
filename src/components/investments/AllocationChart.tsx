@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, MutableRefObject } from 'react';
 import { View, Text, Pressable, StyleSheet, LayoutChangeEvent } from 'react-native';
 
 import { Skeleton } from '@components/common/Skeleton';
@@ -39,6 +39,8 @@ interface AllocationChartProps {
     // Which grouping to draw; the page picks it.
     tab: AllocationTab;
     currency: string;
+    // The page calls this on every touch; one that didn't start on the map closes the tooltip.
+    pageTouchRef?: MutableRefObject<(() => void) | null>;
     isLoading?: boolean;
 }
 
@@ -130,7 +132,7 @@ const getTreemapLayout = (data: any[], width: number, height: number): TreeMapIt
 
 // --- Main Component ---
 // Weights and return % are scale-free, so only Hidden replaces the treemap.
-export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, tab: selectedTab, currency, isLoading = false }) => {
+export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, tab: selectedTab, currency, pageTouchRef, isLoading = false }) => {
     const { ds } = useTheme();
     const { mode } = usePrivacy();
     const format = usePrivacyFormat(currency);
@@ -142,6 +144,16 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
         setPrevTab(selectedTab);
         setSelectedId(null);
     }
+    // Child touch handlers run before the page's, so this marks a touch that began on the map.
+    const touchedInside = useRef(false);
+    useEffect(() => {
+        if (!pageTouchRef) return;
+        pageTouchRef.current = () => {
+            if (!touchedInside.current) setSelectedId(null);
+            touchedInside.current = false;
+        };
+        return () => { pageTouchRef.current = null; };
+    }, [pageTouchRef]);
     const chartHeight = 220;
 
     const onLayout = useCallback((event: LayoutChangeEvent) => {
@@ -305,7 +317,7 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                     <Text style={[type.small, { color: ds.text2 }]}>No active holdings.</Text>
                 </View>
             ) : (
-                <View style={styles.chartWrapper} onLayout={onLayout}>
+                <View style={styles.chartWrapper} onLayout={onLayout} onTouchStart={() => { touchedInside.current = true; }}>
                     <View style={[styles.chartContainer, { height: chartHeight }]}>
                         {layout.length === 0 ? (
                             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

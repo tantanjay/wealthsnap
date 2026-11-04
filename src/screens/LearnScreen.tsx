@@ -23,6 +23,8 @@ import { type, space, radius, layout } from '@styles/theme';
 // Topics with their own Help center / About row stay off the Guides shelf.
 const ROW_TOPICS = ['math', 'faq', 'changelog'];
 const GUIDES = HELP_TOPICS.filter(t => !ROW_TOPICS.includes(t.id));
+// Two rows filled column by column, so the order reads down then across as the shelf scrolls.
+const GUIDE_ROWS = [GUIDES.filter((_, i) => i % 2 === 0), GUIDES.filter((_, i) => i % 2 === 1)];
 
 // Guides, help center and about content (moved out of Profile).
 const LearnScreen = ({ navigation }: any) => {
@@ -93,18 +95,24 @@ const LearnScreen = ({ navigation }: any) => {
 
                 <SectionHeader grouped title="Guides" />
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.shelf} contentContainerStyle={styles.shelfContent}>
-                    {GUIDES.map(topic => (
-                        <Pressable
-                            key={topic.id}
-                            onPress={() => openHelp(topic.id)}
-                            style={[styles.guide, { backgroundColor: ds.group }]}
-                            accessibilityRole="button"
-                        >
-                            <Ionicons name={topic.icon as IconName} size={22} color={ds.accent} />
-                            <Text style={[type.body, styles.guideTitle, { color: ds.text }]}>{topic.title}</Text>
-                            <Text style={[type.caption, styles.guideSubtitle, { color: ds.text2 }]}>{topic.subtitle}</Text>
-                        </Pressable>
-                    ))}
+                    <View style={styles.shelfRows}>
+                        {GUIDE_ROWS.map((row, r) => (
+                            <View key={r} style={styles.shelfRow}>
+                                {row.map(topic => (
+                                    <Pressable
+                                        key={topic.id}
+                                        onPress={() => openHelp(topic.id)}
+                                        style={[styles.guide, { backgroundColor: ds.group }]}
+                                        accessibilityRole="button"
+                                    >
+                                        <Ionicons name={topic.icon as IconName} size={22} color={ds.accent} />
+                                        <Text style={[type.body, styles.guideTitle, { color: ds.text }]}>{topic.title}</Text>
+                                        <Text style={[type.caption, styles.guideSubtitle, { color: ds.text2 }]}>{topic.subtitle}</Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                        ))}
+                    </View>
                 </ScrollView>
 
                 <SectionHeader grouped title="Help center" />
@@ -334,6 +342,13 @@ const styles = StyleSheet.create({
     },
     shelfContent: {
         paddingHorizontal: layout.groupInset,
+    },
+    shelfRows: {
+        gap: space[2],
+    },
+    // Tiles in a row stretch to its tallest, so both rows stay even.
+    shelfRow: {
+        flexDirection: 'row',
         gap: space[2],
     },
     guide: {

@@ -75,6 +75,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
     const [calendarData, setCalendarData] = useState<Record<number, CalendarEvent[]>>({});
     const [sort, setSort] = useState<SortOption>('ALLOCATION');
     const [allocationTab, setAllocationTab] = useState<AllocationTab>('assets');
+    const allocationTouchRef = useRef<(() => void) | null>(null);
     // Kept after closing so the history sheet doesn't blank out while it slides away.
     const [historySymbol, setHistorySymbol] = useState('');
     const [isHistoryVisible, setIsHistoryVisible] = useState(false);
@@ -207,7 +208,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
             <>
                 <SectionHeader grouped title="Allocation" menu={{ options: ALLOCATION_TABS, value: allocationTab, onSelect: key => changeAllocationTab(key as AllocationTab) }} />
                 <Group padded>
-                    <AllocationChart holdingsData={holdings} tab={allocationTab} currency={currency} />
+                    <AllocationChart holdingsData={holdings} tab={allocationTab} currency={currency} pageTouchRef={allocationTouchRef} />
                 </Group>
             </>
         ),
@@ -226,7 +227,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
 
     return (
         <>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content} onTouchStart={() => allocationTouchRef.current?.()}>
                 {holdings.length === 0 ? (
                     <EmptyState
                         icon="trending-up"

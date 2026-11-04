@@ -393,7 +393,7 @@ Alerts run immediately after saving transactions.
 
 # 📚 Built-In Education & Transparency
 
-- Learn tab: guides shelf, FAQ and full Help Center (Getting Started, Home Snapshot, What Runway Tells You, Privacy Modes, Saving with Goals, Financial Insights, Debt Strategy, Investments)
+- Learn tab: two-row guides shelf, FAQ and full Help Center (Getting Started, Home Snapshot, Safe to Spend, What Runway Tells You, Privacy Modes, Saving with Goals, Budgets, Recurring & Reminders, Financial Insights, Monthly Summary, Debt Strategy, Investments, AI Assistant, Backup, Sync & Export)
 - Financial Insights explanations
 - Math & Formula documentation
 - Vision & Philosophy modal

@@ -12,10 +12,12 @@ interface DisclaimerProps {
     severity?: 'info' | 'warning';
     // Inside a Group: `inset` fill instead of the on-canvas `group` fill.
     inGroup?: boolean;
+    // Bold lead-in before the text; null for a plain note.
+    label?: string | null;
     style?: StyleProp<ViewStyle>;
 }
 
-export const Disclaimer: React.FC<DisclaimerProps> = ({ children, severity = 'info', inGroup, style }) => {
+export const Disclaimer: React.FC<DisclaimerProps> = ({ children, severity = 'info', inGroup, label = 'Disclaimer', style }) => {
     const { ds } = useTheme();
     const severityColor = toSeverityColor(ds, severity);
     const isWarning = severity === 'warning';
@@ -30,7 +32,7 @@ export const Disclaimer: React.FC<DisclaimerProps> = ({ children, severity = 'in
         >
             <Ionicons name={SEVERITY_ICON[severity]} size={18} color={severityColor} />
             <Text style={[type.small, styles.text, { color: ds.text }]}>
-                <Text style={[type.smallStrong, { color: isWarning ? ds.warning : ds.text2 }]}>Disclaimer: </Text>
+                {label !== null && <Text style={[type.smallStrong, { color: isWarning ? ds.warning : ds.text2 }]}>{label}: </Text>}
                 {children}
             </Text>
         </View>
