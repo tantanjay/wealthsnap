@@ -224,6 +224,7 @@ First-run setup, legal acceptance, guided tour.
 - `src/screens/onboarding/LegalAcceptanceScreen.tsx`
 - `src/screens/onboarding/HelpCenterScreen.tsx`
 - `src/components/onboarding/TermsContent.tsx`
+- `src/components/onboarding/GuideVisual.tsx`
 
 ## Thank You / Donor Wall
 Post-purchase/support acknowledgement screen.
