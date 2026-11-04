@@ -1,8 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions, FlatList } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Pressable, ActivityIndicator, StyleSheet, Dimensions, FlatList } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 
@@ -11,8 +10,8 @@ import BottomModal from '@components/common/BottomModal';
 import PinCreationScreen from '@screens/security/PinCreationScreen';
 import TermsContent from '@components/onboarding/TermsContent';
 import OnboardingGuide from '@screens/onboarding/OnboardingGuideScreen';
-import { Button, Card } from '@components/index';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { UserProfile } from '@types';
@@ -21,12 +20,12 @@ import { restoreFromBackup, generateDummyData, BackupProgress } from '@services/
 import { saveUserProfile, setOnboardingComplete, saveAcceptedTermsVersion, saveLastBackupDate } from '@services/core/storageService';
 import { CURRENCIES, getCurrencyInfo } from '@utils/currencyData';
 import { CONFIG } from '@constants/config';
-import { SPACING } from '@styles/theme';
+import { type, space, radius, fontFamily, layout } from '@styles/theme';
 
 const { height } = Dimensions.get('window');
 
 const SetupScreen = ({ navigation }: any) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const [step, setStep] = useState(0);
     const [hasAgreed, setHasAgreed] = useState(false);
@@ -188,163 +187,18 @@ const SetupScreen = ({ navigation }: any) => {
         );
     };
 
-    const styles = StyleSheet.create({
-        content: {
-            flex: 1,
-        },
-        stepContainer: {
-            flex: 1,
-            paddingBottom: 20,
-            justifyContent: 'center', // Center content vertically especially for PIN screen
-        },
-        stepTitle: {
-            fontSize: 24,
-            fontWeight: 'bold',
-            marginBottom: 8,
-            marginTop: 10,
-        },
-        stepDescription: {
-            fontSize: 16,
-            textAlign: 'center',
-            opacity: 0.8,
-        },
-        heroHeader: {
-            alignItems: 'center',
-            marginBottom: 24,
-            paddingTop: 10,
-        },
-        iconContainer: {
-            width: 80,
-            height: 80,
-            borderRadius: 40,
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: 16,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
-            elevation: 5,
-        },
-        gradientBg: {
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0,
-            borderRadius: 40,
-        },
-        termsCard: {
-            flex: 1,
-            maxHeight: height * 0.5,
-            borderWidth: 1,
-            borderRadius: 16,
-            marginBottom: 16,
-            padding: 2, // Small padding for the inner scrollview to breathe
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 4,
-            elevation: 2,
-        },
-        termsInnerScroll: {
-            padding: 16,
-        },
-        termsHeading: {
-            fontSize: 16,
-            fontWeight: 'bold',
-            marginTop: 16,
-            marginBottom: 8,
-        },
-        termsText: {
-            fontSize: 14,
-            marginBottom: 8,
-            lineHeight: 20,
-        },
-        checkboxRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: 20,
-            padding: 10,
-        },
-        checkbox: {
-            width: 24,
-            height: 24,
-            borderRadius: 6,
-            borderWidth: 2,
-            marginRight: 12,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        checkboxLabel: {
-            flex: 1,
-            fontSize: 14,
-            lineHeight: 20,
-        },
-        scrollIndicator: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 16,
-            paddingVertical: 8,
-            paddingHorizontal: 16,
-            borderRadius: 20,
-            alignSelf: 'center',
-        },
-        welcomeButton: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            padding: 20,
-            borderRadius: 16,
-            marginBottom: 16,
-            elevation: 2,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-        },
-        welcomeButtonTitle: {
-            fontSize: 18,
-            fontWeight: 'bold',
-            color: '#FFF',
-        },
-        welcomeButtonSubtitle: {
-            fontSize: 14,
-            color: 'rgba(255,255,255,0.8)',
-            marginTop: 2,
-        },
-        label: {
-            fontSize: 16,
-            fontWeight: '600',
-            marginBottom: 8,
-            marginTop: 16,
-        },
-        input: {
-            fontSize: 16,
-            borderBottomWidth: 1,
-            padding: 8,
-        },
-        optionRow: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            marginTop: 8,
-        },
-        optionButton: {
-            borderWidth: 1,
-            borderRadius: 20,
-            paddingVertical: 8,
-            paddingHorizontal: 16,
-            marginRight: 8,
-            marginBottom: 8,
-        },
-        optionText: {
-            fontSize: 14,
-            fontWeight: '600',
-        },
-    });
+    const isGoalSelected = (goal: string) => goals.includes(goal);
+    const filteredCurrencies = Object.values(CURRENCIES).filter(c =>
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.code.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
-        <ScreenWrapper scrollable={false} noPadding={step === 4}>
+        <ScreenWrapper
+            scrollable={false}
+            noPadding={step === 4}
+            style={step !== 4 && { paddingHorizontal: layout.groupInset }}
+        >
             {step === 4 ? (
                 // Rendered outside the ScrollView below: it manages its own full-screen
                 // layout/safe-area insets, and nesting it in a ScrollView let its footer
@@ -354,34 +208,28 @@ const SetupScreen = ({ navigation }: any) => {
             <ScrollView
                 style={styles.content}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}
+                contentContainerStyle={{ paddingBottom: space[7], flexGrow: 1 }}
                 nestedScrollEnabled={true}
             >
                 {/* Step 0: Privacy Policy & Terms */}
                 {step === 0 && (
                     <View style={styles.stepContainer}>
                         <View style={styles.heroHeader}>
-                            <View style={styles.iconContainer}>
-                                <LinearGradient
-                                    colors={[colors.primary, colors.primary + 'CC']}
-                                    style={styles.gradientBg}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
-                                />
-                                <Ionicons name="shield-checkmark" size={40} color="#FFF" />
+                            <View style={[styles.iconContainer, { backgroundColor: ds.accentSoft }]}>
+                                <Ionicons name="shield-checkmark-outline" size={36} color={ds.accent} />
                             </View>
-                            <Text style={[styles.stepTitle, { color: colors.text, textAlign: 'center', marginTop: 0 }]}>
+                            <Text style={[type.title, styles.center, { color: ds.text }]}>
                                 Terms & Privacy
                             </Text>
-                            <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
+                            <Text style={[type.small, styles.center, { color: ds.text2 }]}>
                                 Please review and accept to continue
                             </Text>
                         </View>
 
-                        <View style={[styles.termsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                        <View style={[styles.termsCard, { backgroundColor: ds.group }]}>
                             <ScrollView
                                 style={{ flex: 1 }}
-                                contentContainerStyle={styles.termsInnerScroll}
+                                contentContainerStyle={styles.termsScroll}
                                 nestedScrollEnabled
                                 showsVerticalScrollIndicator
                                 onScroll={(event) => {
@@ -398,121 +246,92 @@ const SetupScreen = ({ navigation }: any) => {
                         </View>
 
                         {!hasScrolledToBottom ? (
-                            <View style={[styles.scrollIndicator, { backgroundColor: colors.primary + '15' }]}>
-                                <Ionicons name="arrow-down-circle" size={18} color={colors.primary} />
-                                <Text style={{ color: colors.primary, fontSize: 13, marginLeft: 8, fontWeight: '500' }}>
+                            <View style={styles.scrollIndicator}>
+                                <Ionicons name="arrow-down-circle-outline" size={18} color={ds.text2} />
+                                <Text style={[type.smallMedium, { color: ds.text2 }]}>
                                     Scroll to the bottom to continue
                                 </Text>
                             </View>
                         ) : (
-                            <View style={[styles.scrollIndicator, { backgroundColor: colors.success + '15' }]}>
-                                <Ionicons name="checkmark-circle" size={18} color={colors.success || '#4CAF50'} />
-                                <Text style={{ color: colors.success || '#4CAF50', fontSize: 13, marginLeft: 8, fontWeight: '500' }}>
+                            <View style={styles.scrollIndicator}>
+                                <Ionicons name="checkmark-circle-outline" size={18} color={ds.success} />
+                                <Text style={[type.smallMedium, { color: ds.success }]}>
                                     You&apos;ve reached the end
                                 </Text>
                             </View>
                         )}
 
-                        <TouchableOpacity
-                            style={[
-                                styles.checkboxRow,
-                                {
-                                    opacity: hasScrolledToBottom ? 1 : 0.4,
-                                    backgroundColor: hasAgreed ? colors.primary + '10' : 'transparent',
-                                    borderRadius: 12,
-                                    marginHorizontal: -4
-                                }
-                            ]}
+                        <Pressable
+                            style={[styles.checkboxRow, { opacity: hasScrolledToBottom ? 1 : 0.4 }]}
                             onPress={() => hasScrolledToBottom && setHasAgreed(!hasAgreed)}
                             disabled={!hasScrolledToBottom}
+                            accessibilityRole="checkbox"
+                            accessibilityState={{ checked: hasAgreed, disabled: !hasScrolledToBottom }}
                         >
                             <View style={[
                                 styles.checkbox,
                                 {
-                                    borderColor: hasScrolledToBottom ? (hasAgreed ? colors.primary : colors.gray500) : colors.gray500,
-                                    backgroundColor: hasAgreed ? colors.primary : 'transparent'
+                                    borderColor: hasAgreed ? ds.accent : ds.text3,
+                                    backgroundColor: hasAgreed ? ds.accent : 'transparent',
                                 }
                             ]}>
-                                {hasAgreed && <Ionicons name="checkmark" size={16} color="#FFF" />}
+                                {hasAgreed && <Ionicons name="checkmark" size={16} color={ds.onAccent} />}
                             </View>
-                            <Text style={[styles.checkboxLabel, { color: hasScrolledToBottom ? colors.text : colors.gray500 }]}>
-                                I have read and agree to the <Text style={{ fontWeight: 'bold', color: colors.primary }}>Terms of Use</Text> and <Text style={{ fontWeight: 'bold', color: colors.primary }}>Privacy Policy</Text>
+                            <Text style={[type.small, styles.flex, { color: ds.text }]}>
+                                I have read and agree to the <Text style={{ fontFamily: fontFamily.medium, color: ds.accent }}>Terms of Use</Text> and <Text style={{ fontFamily: fontFamily.medium, color: ds.accent }}>Privacy Policy</Text>
                             </Text>
-                        </TouchableOpacity>
+                        </Pressable>
 
-                        <Button
-                            title="Continue"
+                        <Pressable
                             onPress={() => setStep(1)}
                             disabled={!hasAgreed}
-                            style={{
-                                marginTop: 10,
-                                height: 56,
-                                borderRadius: 16,
-                                shadowColor: colors.primary,
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: hasAgreed ? 0.3 : 0,
-                                shadowRadius: 8,
-                                elevation: hasAgreed ? 4 : 0,
-                            }}
-                        />
+                            style={[styles.button, { backgroundColor: hasAgreed ? ds.accent : ds.group }]}
+                            accessibilityRole="button"
+                            accessibilityState={{ disabled: !hasAgreed }}
+                        >
+                            <Text style={[type.bodyStrong, { color: hasAgreed ? ds.onAccent : ds.text3 }]}>Continue</Text>
+                        </Pressable>
                     </View>
                 )}
 
                 {/* Step 1: Welcome / Restore */}
                 {step === 1 && (
                     <View style={styles.stepContainer}>
-                        <Text style={[styles.stepTitle, { color: colors.text }]}>Welcome to WealthSnap! 🎉</Text>
-                        <Text style={[styles.stepDescription, { color: colors.textSecondary, paddingBottom: 10 }]}>
+                        <Text style={[type.title, styles.heading, { color: ds.text }]}>Welcome to WealthSnap! 🎉</Text>
+                        <Text style={[type.small, styles.heading, styles.description, { color: ds.text2 }]}>
                             Start your journey to financial freedom
                         </Text>
 
-                        <TouchableOpacity
-                            style={[styles.welcomeButton, { backgroundColor: colors.primary }]}
-                            onPress={() => setStep(2)}
-                        >
-                            <Ionicons name="person-add" size={24} color="#FFF" />
-                            <View style={{ marginLeft: SPACING.md }}>
-                                <Text style={styles.welcomeButtonTitle}>New User</Text>
-                                <Text style={styles.welcomeButtonSubtitle}>Create your profile</Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={24} color="#FFF" style={{ marginLeft: 'auto' }} />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.welcomeButton, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, opacity: isRestoring ? 0.6 : 1 }]}
-                            onPress={handleRestoreFromBackup}
-                            disabled={isRestoring}
-                        >
-                            {isRestoring ? (
-                                <ActivityIndicator size="small" color={colors.primary} />
-                            ) : (
-                                <Ionicons name="cloud-download" size={24} color={colors.primary} />
+                        <Group>
+                            <Row
+                                icon="person-add-outline"
+                                title="New user"
+                                subtitle="Create your profile"
+                                chevron
+                                onPress={() => setStep(2)}
+                            />
+                            <Row
+                                icon="cloud-download-outline"
+                                leading={isRestoring ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
+                                title={isRestoring ? 'Restoring...' : 'Restore from backup'}
+                                subtitle="Import your previous data"
+                                chevron={!isRestoring}
+                                onPress={isRestoring ? undefined : handleRestoreFromBackup}
+                                last={!CONFIG.ENABLE_DUMMY_DATA}
+                                style={{ opacity: isRestoring ? 0.6 : 1 }}
+                            />
+                            {CONFIG.ENABLE_DUMMY_DATA && (
+                                <Row
+                                    icon="construct-outline"
+                                    leading={isRestoring ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
+                                    title="Populate demo data"
+                                    subtitle="For your eyes only"
+                                    chevron={!isRestoring}
+                                    onPress={isRestoring ? undefined : handlePopulateDemoData}
+                                    last
+                                />
                             )}
-                            <View style={{ marginLeft: SPACING.md }}>
-                                <Text style={[styles.welcomeButtonTitle, { color: colors.text }]}>{isRestoring ? 'Restoring...' : 'Restore from Backup'}</Text>
-                                <Text style={[styles.welcomeButtonSubtitle, { color: colors.textSecondary }]}>Import your previous data</Text>
-                            </View>
-                            {!isRestoring && <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />}
-                        </TouchableOpacity>
-
-                        {CONFIG.ENABLE_DUMMY_DATA && (
-                            <TouchableOpacity
-                                style={[styles.welcomeButton, { backgroundColor: '#FF9800', marginTop: 10 }]}
-                                onPress={handlePopulateDemoData}
-                                disabled={isRestoring}
-                            >
-                                {isRestoring ? (
-                                    <ActivityIndicator size="small" color="#FFF" />
-                                ) : (
-                                    <Ionicons name="construct" size={24} color="#FFF" />
-                                )}
-                                <View style={{ marginLeft: SPACING.md }}>
-                                    <Text style={styles.welcomeButtonTitle}>Populate Demo Data</Text>
-                                    <Text style={styles.welcomeButtonSubtitle}>For your eyes only</Text>
-                                </View>
-                                {!isRestoring && <Ionicons name="chevron-forward" size={24} color="#FFF" style={{ marginLeft: 'auto' }} />}
-                            </TouchableOpacity>
-                        )}
+                        </Group>
                     </View>
                 )}
 
@@ -528,89 +347,61 @@ const SetupScreen = ({ navigation }: any) => {
                 {/* Step 2: Profile Setup (Existing Logic) */}
                 {step === 2 && (
                     <View style={styles.stepContainer}>
-                        <Text style={[styles.stepTitle, { color: colors.text }]}>Let&apos;s Get Started!</Text>
-                        <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
+                        <Text style={[type.title, styles.heading, { color: ds.text }]}>Let&apos;s get started!</Text>
+                        <Text style={[type.small, styles.heading, styles.description, { color: ds.text2 }]}>
                             Setup your financial profile
                         </Text>
 
-                        <Card>
-                            <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Preferred Name</Text>
-                            <TextInput
-                                style={{ color: colors.text, fontSize: 16, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                                value={name}
-                                onChangeText={setName}
-                                placeholder="John Doe"
-                                placeholderTextColor={colors.gray500}
-                            />
-                        </Card>
+                        <Group padded>
+                            <Text style={[type.small, styles.firstLabel, { color: ds.text2 }]}>Preferred name</Text>
+                            <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="person-outline" size={18} color={ds.text2} />
+                                <TextInput
+                                    style={[type.body, styles.fieldInput, { color: ds.text }]}
+                                    value={name}
+                                    onChangeText={setName}
+                                    placeholder="John Doe"
+                                    placeholderTextColor={ds.text3}
+                                />
+                            </View>
 
-                        <Card>
-                            <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Currency</Text>
-                            <TouchableOpacity
+                            <Text style={[type.small, styles.label, { color: ds.text2 }]}>Currency</Text>
+                            <Pressable
                                 onPress={() => setCurrencyModalVisible(true)}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    backgroundColor: colors.surface || colors.textSecondary + '20',
-                                    padding: 12,
-                                    borderRadius: 12,
-                                    borderWidth: 1,
-                                    borderColor: colors.border
-                                }}
+                                style={[styles.field, { backgroundColor: ds.inset }]}
+                                accessibilityRole="button"
                             >
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 20,
-                                        backgroundColor: colors.primary + '20',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginRight: 12
-                                    }}>
-                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.primary }}>
-                                            {getCurrencyInfo(currency).symbol}
-                                        </Text>
-                                    </View>
-                                    <View>
-                                        <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text }}>
-                                            {currency}
-                                        </Text>
-                                        <Text style={{ fontSize: 12, color: colors.textSecondary }}>
-                                            {getCurrencyInfo(currency).name}
-                                        </Text>
-                                    </View>
-                                </View>
-                                <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
-                            </TouchableOpacity>
-                        </Card>
-
-                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold', marginVertical: 10 }}>Financial Goals</Text>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                            {availableGoals.map(goal => (
-                                <Text
-                                    key={goal}
-                                    onPress={() => toggleGoal(goal)}
-                                    style={{
-                                        color: goals.includes(goal) ? colors.white : colors.text,
-                                        backgroundColor: goals.includes(goal) ? colors.primary : 'transparent',
-                                        padding: 10,
-                                        borderRadius: 20,
-                                        marginRight: 8,
-                                        marginBottom: 8,
-                                        overflow: 'hidden',
-                                        borderWidth: 1,
-                                        borderColor: goals.includes(goal) ? colors.primary : colors.border
-                                    }}
-                                >
-                                    {goal}
+                                <Text style={[type.bodyStrong, styles.currencySymbol, { color: ds.text2 }]}>
+                                    {getCurrencyInfo(currency).symbol}
                                 </Text>
-                            ))}
-                        </View>
+                                <View style={styles.flex}>
+                                    <Text style={[type.body, { color: ds.text }]}>{currency}</Text>
+                                    <Text style={[type.small, { color: ds.text2 }]}>{getCurrencyInfo(currency).name}</Text>
+                                </View>
+                                <Ionicons name="chevron-down" size={16} color={ds.text3} />
+                            </Pressable>
+                        </Group>
 
-                        <Button
-                            title="Continue"
+                        <SectionHeader grouped title="Financial goals" />
+                        <Group padded>
+                            <View style={styles.chips}>
+                                {availableGoals.map(goal => (
+                                    <Pressable
+                                        key={goal}
+                                        onPress={() => toggleGoal(goal)}
+                                        style={[styles.chip, isGoalSelected(goal) && { backgroundColor: ds.inset }]}
+                                        accessibilityRole="checkbox"
+                                        accessibilityState={{ checked: isGoalSelected(goal) }}
+                                    >
+                                        <Text style={[type.smallMedium, { color: isGoalSelected(goal) ? ds.text : ds.text2 }]}>
+                                            {goal}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                        </Group>
+
+                        <Pressable
                             onPress={() => {
                                 if (name.trim().length < 4) {
                                     showAlert('Invalid Name', 'Name must be at least 4 characters long.');
@@ -618,8 +409,11 @@ const SetupScreen = ({ navigation }: any) => {
                                 }
                                 setStep(3);
                             }}
-                            style={{ marginTop: 20, marginBottom: 40 }}
-                        />
+                            style={[styles.button, styles.profileButton, { backgroundColor: ds.accent }]}
+                            accessibilityRole="button"
+                        >
+                            <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Continue</Text>
+                        </Pressable>
                     </View>
                 )}
             </ScrollView>
@@ -639,91 +433,211 @@ const SetupScreen = ({ navigation }: any) => {
             <BottomModal
                 visible={currencyModalVisible}
                 onClose={() => setCurrencyModalVisible(false)}
-                title="Select Currency"
+                title="Select currency"
                 maxHeight="85%"
             >
-                <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-                    <View style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        borderRadius: 12,
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        marginBottom: 16,
-                        borderWidth: 1,
-                        borderColor: colors.border
-                    }}>
-                        <Ionicons name="search" size={20} color={colors.textSecondary} />
+                <View style={currencyStyles.body}>
+                    <View style={[currencyStyles.search, { backgroundColor: ds.group }]}>
+                        <Ionicons name="search-outline" size={18} color={ds.text2} />
                         <TextInput
-                            style={{ flex: 1, marginLeft: 8, fontSize: 16, color: colors.text }}
+                            style={[type.body, currencyStyles.searchInput, { color: ds.text }]}
                             placeholder="Search currency..."
-                            placeholderTextColor={colors.textSecondary}
+                            placeholderTextColor={ds.text3}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                             autoCorrect={false}
                         />
                         {searchQuery.length > 0 && (
-                            <TouchableOpacity onPress={() => setSearchQuery('')}>
-                                <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+                            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={space[2]} accessibilityLabel="Clear search">
+                                <Ionicons name="close-circle" size={18} color={ds.text3} />
                             </TouchableOpacity>
                         )}
                     </View>
 
+                    {/* A Group can't bound a FlatList's height, so the list itself draws the group surface. */}
                     <FlatList
-                        data={Object.values(CURRENCIES).filter(c =>
-                            c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            c.code.toLowerCase().includes(searchQuery.toLowerCase())
-                        )}
+                        data={filteredCurrencies}
                         keyExtractor={item => item.code}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={{
-                                    paddingVertical: 12,
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: colors.border,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between'
-                                }}
-                                onPress={() => {
-                                    setCurrency(item.code);
-                                    setCurrencyModalVisible(false);
-                                }}
-                            >
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 20,
-                                        backgroundColor: colors.primary + '10',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginRight: 12
-                                    }}>
-                                        <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text }}>{item.symbol}</Text>
-                                    </View>
-                                    <View>
-                                        <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                                            {item.name}
-                                        </Text>
-                                        <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-                                            {item.code}
-                                        </Text>
-                                    </View>
-                                </View>
-                                {currency === item.code && (
-                                    <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
-                                )}
-                            </TouchableOpacity>
-                        )}
-                        style={{ height: '100%' }}
-                        contentContainerStyle={{ paddingBottom: 40 }}
+                        style={[currencyStyles.list, { backgroundColor: ds.group }]}
+                        contentContainerStyle={currencyStyles.listContent}
+                        renderItem={({ item, index }) => {
+                            const selected = currency === item.code;
+                            return (
+                                <Row
+                                    title={item.name}
+                                    subtitle={`${item.code} · ${item.symbol}`}
+                                    leading={
+                                        <View style={[currencyStyles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
+                                            {selected && <View style={[currencyStyles.radioDot, { backgroundColor: ds.accent }]} />}
+                                        </View>
+                                    }
+                                    onPress={() => {
+                                        setCurrency(item.code);
+                                        setCurrencyModalVisible(false);
+                                    }}
+                                    last={index === filteredCurrencies.length - 1}
+                                />
+                            );
+                        }}
                         keyboardShouldPersistTaps="handled"
                     />
                 </View>
             </BottomModal>
 
-        </ScreenWrapper >
+        </ScreenWrapper>
     );
 };
+
+const styles = StyleSheet.create({
+    content: {
+        flex: 1,
+    },
+    stepContainer: {
+        flex: 1,
+        paddingBottom: space[5],
+        justifyContent: 'center', // Center content vertically especially for PIN screen
+    },
+    center: {
+        textAlign: 'center',
+    },
+    flex: {
+        flex: 1,
+    },
+    heading: {
+        paddingHorizontal: layout.groupPadding,
+    },
+    description: {
+        marginTop: space[1],
+        marginBottom: space[4],
+    },
+    heroHeader: {
+        alignItems: 'center',
+        gap: space[2],
+        marginBottom: space[6],
+        paddingTop: space[2],
+    },
+    iconContainer: {
+        width: 72,
+        height: 72,
+        borderRadius: radius.full,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: space[2],
+    },
+    termsCard: {
+        flex: 1,
+        maxHeight: height * 0.5,
+        borderRadius: radius.group,
+        marginBottom: space[3],
+        overflow: 'hidden',
+    },
+    termsScroll: {
+        paddingHorizontal: layout.groupPadding,
+    },
+    scrollIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: space[2],
+        marginBottom: space[3],
+        paddingVertical: space[2],
+    },
+    checkboxRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        marginBottom: space[4],
+        paddingVertical: space[3],
+    },
+    checkbox: {
+        width: 22,
+        height: 22,
+        borderRadius: 6,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    firstLabel: {
+        marginBottom: space[2],
+    },
+    label: {
+        marginTop: space[3],
+        marginBottom: space[2],
+    },
+    field: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        padding: space[3],
+        borderRadius: radius.md,
+    },
+    fieldInput: {
+        flex: 1,
+        padding: 0,
+    },
+    currencySymbol: {
+        minWidth: 18,
+        textAlign: 'center',
+    },
+    chips: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: space[2],
+    },
+    chip: {
+        paddingVertical: space[2],
+        paddingHorizontal: space[3],
+        borderRadius: radius.sm,
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    profileButton: {
+        marginTop: space[6],
+        marginBottom: space[7],
+    },
+});
+
+const currencyStyles = StyleSheet.create({
+    body: {
+        flexShrink: 1,
+    },
+    search: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        padding: space[3],
+        borderRadius: radius.md,
+        marginBottom: space[3],
+    },
+    list: {
+        flexGrow: 0,
+        borderRadius: radius.group,
+        overflow: 'hidden',
+    },
+    listContent: {
+        paddingHorizontal: layout.groupPadding,
+    },
+    searchInput: {
+        flex: 1,
+        padding: 0,
+    },
+    radio: {
+        width: 20,
+        height: 20,
+        borderRadius: radius.full,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    radioDot: {
+        width: 10,
+        height: 10,
+        borderRadius: radius.full,
+    },
+});
+
 export default SetupScreen;

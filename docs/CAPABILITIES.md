@@ -14,14 +14,14 @@ WealthSnap calculates what you can *actually* spend without hurting your future.
 **Formula:**
 
 ```
-(Current Cash + Future Income)
-- (Future Bills + Mandatory Debt Payments + Life Burnrate)
+(This Month's Income + Future Income)
+- (Spending and Transfers Out So Far + Future Bills + Unpaid Debt Payments + Unpaid Goal Contributions + Life Burnrate)
 = Safe-to-Spend
 ```
 
-Where:
+Shown on Home's Ledger tab for the rest of the month, where:
 
-- **Future Income** includes recurring income before period end  
+- **Future Income** includes recurring income before month-end  
 - **Mandatory Debt Payments** are treated as non-optional  
 - **Life Burnrate** is a rolling 90-day average of non-recurring daily spending  
 
@@ -48,7 +48,7 @@ Includes:
 
 ## 🏥 Financial Health Intelligence System
 
-A top-level diagnostic engine that evaluates:
+Lives in Insights as a pick-your-4 grid with a detail sheet per number. It evaluates:
 
 - **Stability Runway**
 - **Net Cash Flow**
@@ -167,13 +167,10 @@ These payments are treated as **mandatory obligations** across:
 
 ---
 
-## 📊 Debt Analytics Card
+## 📊 Loans at a Glance
 
-- Swipe between **Lifetime** and **Monthly** views
-- See:
-  - Required Payments
-  - Paid Principal
-  - Interest Cost
+- Home Snapshot's Loans row: outstanding and % repaid overall, or this month's payments made vs due
+- Loans tab: outstanding, still due this month, each loan's progress and next due date
 - Clear separation of obligations vs activity
 
 ---
@@ -257,13 +254,34 @@ Supports:
 
 # 🏥 Financial Health & Analytics
 
-## 🧾 Financial Health Card
+## 🧾 Home Snapshot
 
-Top-of-dashboard summary with swipeable views:
+One calm overview instead of a stack of cards:
 
-- Health Metrics
-- Net Worth
-- Total Assets
+- Projected net worth with this month's change and a 6-month sparkline, plus Runway and Total Assets
+- Cash, Investments, Loans and Goals rows, each with a context line and change vs last month
+- One Overall / This month switch for every row
+- Drag to reorder the rows; 3 most recent transactions underneath
+- Sticky Home tabs for the full views: **Ledger** (search, Income / Expense / Transfers filters, this month's in/out, transactions by day with day totals, calendar view), **Holdings** (portfolio, return, allocation by asset type, weight and return per holding), **Goals** (saved total, this month's contributions, progress per goal) and **Loans** (You owe / Owed to you, payoff plan, progress and next due date per loan)
+- Every tab follows the Open / Discreet / Hidden privacy mode
+
+---
+
+## 🩺 Insights: Financial Health grid
+
+- Fixed 2×2 grid of the 4 numbers you pick from a pool of 13, in the order you check them in Insights settings; "Show all" lists every number with its value
+- Runway, Spending pace, Debt drag and Investment boost open full detail sheets (Debt drag includes the "extra per month" payoff stepper); the rest show their value and formula
+- Budgets per category, "Ask about your money" (AI chat), and drag-to-reorder for the sections below the grid
+- Follows the Open / Discreet / Hidden privacy mode
+
+---
+
+## 🧭 Five-tab navigation
+
+- Bottom bar: Home · Insights · Record · Profile · Learn, with Record as the raised center action
+- Profile holds account and app settings only: Money setup, Data, Security and intelligence, Appearance
+- Appearance: 10 colour skins (Layered, Warm paper, Forest, Blush, Grape, Ink, Ocean, Slate, Sunset, Royal), each with a light and dark version, chosen separately from Light / Dark / System
+- Learn gathers the guides, Help center and About WealthSnap in one place
 
 ---
 
@@ -323,14 +341,12 @@ Your month at a glance, written in plain language instead of raw numbers.
 
 # 📆 Smart History Calendar
 
-A powerful alternate history view featuring:
+The Ledger tab's month calendar, featuring:
 
 - Income / Expense / Transfer bars per day
-- Safe-to-Spend for period
 - Ghost Forecast (upcoming recurring bills)
 - Discretionary spending heatmap
 - Investment BUY/SELL signal markers
-- Interactive learning modal
 
 ---
 
@@ -366,18 +382,16 @@ Alerts run immediately after saving transactions.
 - Horizontal quick-select categories
 - Rapid entry mode (auto “Add More”)
 - Smart Document Scanner
-- History Screen Filters (by type, keyword, date range)
-- Floating Quick Actions (draggable menu bubble)
-- Swipeable balance cards
+- Ledger filters (by type and keyword) and a month calendar
 - Persistent display preferences
-- Reorderable dashboard sections
+- Reorderable Snapshot rows, Holdings sections and Insights sections
 - Integrated Change Logs in Help Center
 
 ---
 
 # 📚 Built-In Education & Transparency
 
-- Full Help Center (Getting Started, Financial Insights, Debt Strategy, Investments)
+- Learn tab: guides shelf, FAQ and full Help Center (Getting Started, Home Snapshot, What Runway Tells You, Privacy Modes, Saving with Goals, Financial Insights, Debt Strategy, Investments)
 - Financial Insights explanations
 - Math & Formula documentation
 - Vision & Philosophy modal
@@ -402,6 +416,7 @@ No black-box calculations.
 
 # 🛡 Privacy & Security
 
+- **Three privacy modes**: Open (every amount), Discreet (only percentages, months, counts and progress, so the screen stays useful without revealing how much money is involved) and Hidden (every amount masked)
 - Secure PIN lock
 - Intelligent auto-lock logic
 - Conditional screenshot blocking

@@ -1,89 +1,100 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Card } from '@components/index';
-import { useTheme } from '@context/ThemeContext';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 
-interface AppearanceCardProps {
-    mode: string;
-    setMode: (mode: 'light' | 'dark' | 'system') => void;
-}
+import { Group, Row, SectionHeader, SegmentedControl, Sheet } from '@components/ds';
+import { useTheme, type ThemeMode } from '@context/ThemeContext';
+import { SKINS, SKIN_IDS, type, space, radius } from '@styles/theme';
 
-const ThemeOption = ({ icon, title, value, current, setMode, colors }: { icon: string, title: string, value: 'light' | 'dark' | 'system', current: string, setMode: (m: 'light' | 'dark' | 'system') => void, colors: any }) => (
-    <TouchableOpacity
-        style={[
-            styles.themeButton,
-            {
-                backgroundColor: current === value ? colors.primary : 'transparent',
-                borderColor: current === value ? colors.primary : colors.border,
-            }
-        ]}
-        onPress={() => setMode(value)}
-    >
-        <Ionicons
-            name={icon as any}
-            size={18}
-            color={current === value ? '#fff' : colors.text}
-            style={{ marginRight: 6 }}
-        />
-        <Text style={{
-            color: current === value ? '#fff' : colors.text,
-            fontWeight: current === value ? '600' : '400'
-        }}>
-            {title}
-        </Text>
-    </TouchableOpacity>
-);
+const MODE_OPTIONS: { key: ThemeMode; label: string }[] = [
+    { key: 'light', label: 'Light' },
+    { key: 'dark', label: 'Dark' },
+    { key: 'system', label: 'System' },
+];
 
-const AppearanceCard: React.FC<AppearanceCardProps> = ({ mode, setMode }) => {
-    const { colors } = useTheme();
+// Profile → Appearance: one Skin row; mode and skin both live in its sheet since they're rarely changed.
+const AppearanceCard: React.FC = () => {
+    const { ds, theme, mode, setMode, skin, setSkin } = useTheme();
+    const [visible, setVisible] = useState(false);
+    const modeLabel = MODE_OPTIONS.find(o => o.key === mode)?.label ?? 'System';
 
     return (
-        <Card style={{ marginBottom: 16 }}>
-            <View style={styles.cardHeader}>
-                <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
-                    <Ionicons name="color-palette" size={22} color={colors.primary} />
+        <>
+            <SectionHeader grouped title="Appearance" />
+            <Group>
+                <Row
+                    icon="color-palette-outline"
+                    title="Skin"
+                    subtitle={`${SKINS[skin].name} · ${modeLabel}`}
+                    chevron
+                    last
+                    onPress={() => setVisible(true)}
+                />
+            </Group>
+
+            <Sheet visible={visible} onClose={() => setVisible(false)} title="Appearance">
+                <SectionHeader grouped title="Mode" />
+                <SegmentedControl options={MODE_OPTIONS} value={mode} onChange={setMode} />
+
+                <SectionHeader grouped title="Skin" />
+                <View style={styles.grid}>
+                    {SKIN_IDS.map(id => {
+                        const option = SKINS[id];
+                        // Swatches follow the mode currently on screen, so System shows the device's half.
+                        const swatch = option[theme.mode];
+                        const selected = id === skin;
+                        return (
+                            <Pressable
+                                key={id}
+                                onPress={() => setSkin(id)}
+                                accessibilityRole="radio"
+                                accessibilityState={{ selected }}
+                                accessibilityLabel={`${option.name}, ${option.description}`}
+                                style={[
+                                    styles.card,
+                                    { backgroundColor: ds.group, borderColor: selected ? ds.accent : ds.hairline },
+                                ]}
+                            >
+                                <View style={[styles.strip, { borderColor: ds.hairline }]}>
+                                    {[swatch.canvas, swatch.group, swatch.heroPanel, swatch.accent].map((color, i) => (
+                                        <View key={i} style={[styles.swatch, { backgroundColor: color }]} />
+                                    ))}
+                                </View>
+                                <Text style={[type.smallStrong, { color: ds.text }]} numberOfLines={1}>{option.name}</Text>
+                                <Text style={[type.caption, { color: ds.text2 }]} numberOfLines={2}>{option.description}</Text>
+                            </Pressable>
+                        );
+                    })}
                 </View>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>Appearance</Text>
-            </View>
-            <View style={styles.themeContainer}>
-                <ThemeOption icon="sunny" title="Light" value="light" current={mode} setMode={setMode} colors={colors} />
-                <ThemeOption icon="moon" title="Dark" value="dark" current={mode} setMode={setMode} colors={colors} />
-                <ThemeOption icon="phone-portrait" title="System" value="system" current={mode} setMode={setMode} colors={colors} />
-            </View>
-        </Card>
+            </Sheet>
+        </>
     );
 };
 
 const styles = StyleSheet.create({
-    cardHeader: {
+    grid: {
         flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
+        flexWrap: 'wrap',
+        gap: space[3],
     },
-    headerIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
+    // Always 2px so selecting a card doesn't shift the grid; only the color changes.
+    card: {
+        flexBasis: '47%',
+        flexGrow: 1,
+        borderRadius: radius.md,
+        borderWidth: 2,
+        padding: space[3],
+        gap: space[1],
     },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-    },
-    themeContainer: {
+    strip: {
         flexDirection: 'row',
-        gap: 10,
+        height: 28,
+        borderRadius: radius.sm,
+        borderWidth: StyleSheet.hairlineWidth,
+        overflow: 'hidden',
+        marginBottom: space[1],
     },
-    themeButton: {
+    swatch: {
         flex: 1,
-        paddingVertical: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderRadius: 8,
     },
 });
 

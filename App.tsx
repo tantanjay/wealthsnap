@@ -3,19 +3,21 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useFonts } from 'expo-font';
+import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
 
 import AppNavigator from '@navigation/AppNavigator';
 import BottomModal from '@components/common/BottomModal';
 import { SecurityProvider, useSecurity } from '@context/SecurityContext';
 import { PrivacyProvider } from '@context/PrivacyContext';
 import { AlertProvider } from '@context/AlertContext';
-import { ThemeProvider } from '@context/ThemeContext';
-import { FloatingGearProvider } from '@context/FloatingGearContext';
+import { ThemeProvider, useTheme } from '@context/ThemeContext';
 import { DataStatusProvider } from '@context/DataStatusContext';
 import { GlobalErrorBoundary } from '@components/common/GlobalErrorBoundary';
 import { PrivacyGuard } from '@components/common/PrivacyGuard';
 import { CustomAlert } from '@components/common/CustomAlert';
-import FloatingGearBubble from '@components/common/FloatingGearBubble';
 
 import { ReminderCatchupModal } from '@components/reminders/ReminderCatchupModal';
 import { Reminder } from '@types';
@@ -37,6 +39,9 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 export default function App() {
   const [loading, setLoading] = useState(true);
+  // Per-weight imports keep the other 15 Inter files out of the bundle. A load error falls back to the system font.
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold });
+  const fontsSettled = fontsLoaded || fontError !== null;
 
   const [initialRoute, setInitialRoute] = useState<'Onboarding' | 'Main' | 'LegalAcceptance'>('Onboarding');
 
@@ -92,7 +97,7 @@ export default function App() {
   // starting once the first screen that needs it mounts.
   return (
     <DataStatusProvider>
-      {loading ? (
+      {loading || !fontsSettled ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" />
         </View>
@@ -106,10 +111,8 @@ export default function App() {
                   <PrivacyProvider>
                     <AlertProvider>
                       <PrivacyGuard />
-                      <StatusBar style="auto" />
-                      <FloatingGearProvider>
-                        <AppContent initialRoute={initialRoute} />
-                      </FloatingGearProvider>
+                      <ThemedStatusBar />
+                      <AppContent initialRoute={initialRoute} />
                     </AlertProvider>
                   </PrivacyProvider>
                 </SecurityProvider>
@@ -121,6 +124,12 @@ export default function App() {
     </DataStatusProvider>
   );
 }
+
+// Follows the app's resolved mode, not the device's, so a forced Dark/Light picks the right icons.
+const ThemedStatusBar = () => {
+  const { theme } = useTheme();
+  return <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />;
+};
 
 // Inner component to access contexts (Security, etc)
 const AppContent = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'LegalAcceptance' }) => {
@@ -195,7 +204,6 @@ const AppContent = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'L
   return (
     <>
       <AppNavigator initialRoute={initialRoute} />
-      <FloatingGearBubble />
       <CustomAlert />
 
       <BottomModal

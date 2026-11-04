@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, FlatList, ScrollView } from 'react-native';
+import { View, Text, Pressable, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import { CategorySelectModal } from '@components/record/CategorySelectModal';
+import { CategoryPicker } from '@components/record/CategorySelectModal';
 import SmartSuggestionsModal from '@components/profile/SmartSuggestionsModal';
+import { Group, Row, SectionHeader, IconName } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { usePrivacy } from '@context/PrivacyContext';
 import { BigNumber } from 'bignumber.js';
+import { type, space, radius, layout } from '@styles/theme';
 
 import { EmptyState } from '@components/common/EmptyState';
 import { Budget } from '@types';
@@ -22,12 +25,16 @@ interface BudgetManagementProps {
 }
 
 const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClose, currency }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
+    // No Discreet version: Discreet falls back to Hidden.
+    const { isPrivacyEnabled } = usePrivacy();
+    const amount = (value: BigNumber) => (isPrivacyEnabled ? '****' : formatCurrencyAmount(value, currency));
     const { showAlert } = useAlert();
     const [budgets, setBudgetsList] = useState<Budget[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [budgetAmount, setBudgetAmount] = useState<string>('');
-    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    // Picking a category expands inline: a second modal on top of this sheet isn't allowed.
+    const [isPickingCategory, setIsPickingCategory] = useState(false);
     const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
     const [view, setView] = useState<'LIST' | 'FORM'>('LIST');
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -76,6 +83,7 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
         setBudgetAmount(budget.amount.toString());
         setEditingBudget(budget);
         setView('FORM');
+        setIsPickingCategory(false);
     };
 
     const handleAddBudget = () => {
@@ -83,6 +91,7 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
         setBudgetAmount('');
         setEditingBudget(null);
         setView('FORM');
+        setIsPickingCategory(false);
     };
 
     const handleCancelEdit = () => {
@@ -112,247 +121,202 @@ const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClo
 
     const totalBudget = budgets.reduce((sum, b) => sum.plus(b.amount), new BigNumber(0));
 
-    const getCategoryIcon = (categoryValue: string): string => {
+    const getCategoryIcon = (categoryValue: string): IconName => {
         for (const group of EXPENSE_CATEGORY_GROUPS) {
             const cat = group.items.find(c => c.value === categoryValue);
-            if (cat) return cat.icon;
+            if (cat) return cat.icon as IconName;
         }
         return 'ellipsis-horizontal';
     };
 
+    const isList = view === 'LIST';
+
     return (
+        <>
+        {/* Suggestions swap in for this sheet (one sheet on screen at a time); closing them brings it back. */}
         <BottomModal
-            visible={visible}
+            visible={visible && !showSuggestions}
             onClose={onClose}
-            title={view === 'LIST' ? "Manage Budgets" : undefined}
+            title={isList ? 'Manage budgets' : editingBudget ? 'Edit budget' : 'New budget'}
             maxHeight="85%"
-            headerRight={view === 'LIST' ? (
-                <TouchableOpacity
+            headerRight={isList ? (
+                <Pressable
                     onPress={() => setShowSuggestions(true)}
-                    style={{ padding: 4, marginRight: 8 }}
+                    hitSlop={space[2]}
+                    style={styles.headerAction}
+                    accessibilityLabel="Smart suggestions"
                 >
-                    <Ionicons name="sparkles-outline" size={22} color={colors.primary} />
-                </TouchableOpacity>
+                    <Ionicons name="sparkles-outline" size={22} color={ds.text2} />
+                </Pressable>
             ) : undefined}
+            footer={isList ? (
+                <Pressable onPress={handleAddBudget} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
+                    <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Add budget</Text>
+                </Pressable>
+            ) : (
+                <>
+                    <Pressable onPress={handleSaveBudget} style={[styles.button, { backgroundColor: ds.accent }]} accessibilityRole="button">
+                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>{editingBudget ? 'Update budget' : 'Save budget'}</Text>
+                    </Pressable>
+                    <Pressable onPress={handleCancelEdit} style={styles.textButton} accessibilityRole="button">
+                        <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
+                    </Pressable>
+                </>
+            )}
         >
-            <View style={{ height: '100%' }}>
-                {view === 'LIST' ? (
-                    <View style={{ flex: 1 }}>
-                        <View style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: 10,
-                            paddingHorizontal: 20
-                        }}>
-                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
-                                Your Budgets ({budgets.length})
+            <View style={styles.body}>
+                {isList ? (
+                    <>
+                        <View style={styles.summary}>
+                            <Text style={[type.smallStrong, { color: ds.text }]}>
+                                Your budgets ({budgets.length})
                             </Text>
                             {budgets.length > 0 && (
-                                <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600' }}>
-                                    Total: {formatCurrencyAmount(totalBudget, currency)}
+                                <Text style={[type.smallNum, { color: ds.text2 }]}>
+                                    Total {amount(totalBudget)}
                                 </Text>
                             )}
                         </View>
 
-                        <FlatList
-                            data={budgets}
-                            keyExtractor={item => item.category}
-                            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 80 }}
-                            ListEmptyComponent={
-                                <EmptyState
-                                    size="compact"
-                                    icon="wallet-outline"
-                                    title="No budgets set yet"
-                                    subtitle="Tap the + button to add your first budget"
-                                />
-                            }
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    onPress={() => handleEditBudget(item)}
-                                    style={{
-                                        flexDirection: 'row',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                        paddingVertical: 12,
-                                        borderBottomWidth: 1,
-                                        borderBottomColor: colors.border,
-                                        backgroundColor: editingBudget?.category === item.category ? colors.primary + '10' : 'transparent',
-                                        paddingHorizontal: 8,
-                                        borderRadius: 8,
-                                        marginBottom: 4
-                                    }}
-                                >
-                                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                                        <View style={{
-                                            width: 36,
-                                            height: 36,
-                                            borderRadius: 18,
-                                            backgroundColor: colors.primary + '20',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            marginRight: 12
-                                        }}>
-                                            <Ionicons
-                                                name={getCategoryIcon(item.category) as any}
-                                                size={18}
-                                                color={colors.primary}
-                                            />
-                                        </View>
-                                        <View>
-                                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>{item.category}</Text>
-                                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                                {formatCurrencyAmount(item.amount, currency)} / month
-                                            </Text>
-                                        </View>
-                                    </View>
-                                    <TouchableOpacity
-                                        onPress={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteBudget(item.category);
-                                        }}
-                                        style={{ padding: 8 }}
-                                    >
-                                        <Ionicons name="trash-outline" size={20} color="#F44336" />
-                                    </TouchableOpacity>
-                                </TouchableOpacity>
-                            )}
-                        />
-
-                        {/* Floating Action Button */}
-                        <TouchableOpacity
-                            style={{
-                                position: 'absolute',
-                                bottom: 20,
-                                right: 20,
-                                width: 56,
-                                height: 56,
-                                borderRadius: 28,
-                                backgroundColor: colors.primary,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                elevation: 4,
-                                shadowColor: '#000',
-                                shadowOffset: { width: 0, height: 2 },
-                                shadowOpacity: 0.25,
-                                shadowRadius: 3.84,
-                            }}
-                            onPress={handleAddBudget}
-                        >
-                            <Ionicons name="add" size={30} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    <View style={{ flex: 1 }}>
-                        {/* Custom Header */}
-                        <View style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            paddingHorizontal: 16,
-                            paddingVertical: 12,
-                            borderBottomWidth: 1,
-                            borderBottomColor: colors.border,
-                        }}>
-                            <TouchableOpacity onPress={handleCancelEdit}>
-                                <Text style={{ color: colors.error, fontSize: 16 }}>Cancel</Text>
-                            </TouchableOpacity>
-                            <Text style={{ color: colors.text, fontSize: 17, fontWeight: 'bold' }}>
-                                {editingBudget ? 'Edit Budget' : 'New Budget'}
-                            </Text>
-                            <TouchableOpacity onPress={handleSaveBudget}>
-                                <Text style={{ color: colors.primary, fontSize: 16, fontWeight: 'bold' }}>
-                                    {editingBudget ? 'Update' : 'Save'}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Form Content */}
-                        <ScrollView style={{ flex: 1, padding: 20 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 5 }}>Category</Text>
-                            <TouchableOpacity
-                                onPress={() => setShowCategoryModal(true)}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    backgroundColor: colors.background,
-                                    padding: 12,
-                                    borderRadius: 8,
-                                    borderWidth: 1,
-                                    borderColor: selectedCategory ? colors.primary : colors.border,
-                                    marginBottom: 10
-                                }}
-                            >
-                                {selectedCategory ? (
-                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        <View style={{
-                                            width: 32,
-                                            height: 32,
-                                            borderRadius: 16,
-                                            backgroundColor: colors.primary + '20',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            marginRight: 10
-                                        }}>
-                                            <Ionicons
-                                                name={getCategoryIcon(selectedCategory) as any}
-                                                size={18}
-                                                color={colors.primary}
-                                            />
-                                        </View>
-                                        <View>
-                                            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>{selectedCategory}</Text>
-                                            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{getCategoryGroup(selectedCategory, 'EXPENSE')}</Text>
-                                        </View>
-                                    </View>
-                                ) : (
-                                    <Text style={{ color: colors.textSecondary }}>Select a category</Text>
-                                )}
-                                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                            </TouchableOpacity>
-
-                            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 5 }}>Monthly Limit</Text>
-                            <TextInput
-                                value={budgetAmount}
-                                onChangeText={setBudgetAmount}
-                                placeholder="Enter amount"
-                                keyboardType="numeric"
-                                placeholderTextColor={colors.textSecondary}
-                                style={{
-                                    backgroundColor: colors.background,
-                                    color: colors.text,
-                                    padding: 12,
-                                    borderRadius: 8,
-                                    borderWidth: 1,
-                                    borderColor: colors.border,
-                                    marginBottom: 10
-                                }}
+                        {budgets.length === 0 ? (
+                            <EmptyState
+                                size="compact"
+                                icon="wallet-outline"
+                                title="No budgets set yet"
+                                subtitle="Tap Add budget to set your first one"
                             />
-                        </ScrollView>
-                    </View>
+                        ) : (
+                            // A plain list in a Group; a budget per category keeps it short enough not to virtualize.
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <Group>
+                                    {budgets.map((item, index) => (
+                                        <Row
+                                            key={item.category}
+                                            icon={getCategoryIcon(item.category)}
+                                            title={item.category}
+                                            subtitle={`${amount(item.amount)} / month`}
+                                            onPress={() => handleEditBudget(item)}
+                                            last={index === budgets.length - 1}
+                                            trailing={
+                                                <Pressable
+                                                    onPress={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteBudget(item.category);
+                                                    }}
+                                                    hitSlop={space[2]}
+                                                    accessibilityLabel={`Delete ${item.category} budget`}
+                                                >
+                                                    <Ionicons name="trash-outline" size={20} color={ds.danger} />
+                                                </Pressable>
+                                            }
+                                        />
+                                    ))}
+                                </Group>
+                            </ScrollView>
+                        )}
+                    </>
+                ) : (
+                    <ScrollView keyboardShouldPersistTaps="handled">
+                        <SectionHeader grouped title="Category" style={styles.firstHeader} />
+                        <Group>
+                            <Row
+                                icon={selectedCategory ? getCategoryIcon(selectedCategory) : 'pricetag-outline'}
+                                title={selectedCategory || 'Select a category'}
+                                subtitle={selectedCategory ? getCategoryGroup(selectedCategory, 'EXPENSE') : undefined}
+                                trailing={<Ionicons name={isPickingCategory ? 'chevron-up' : 'chevron-down'} size={16} color={ds.text3} />}
+                                onPress={() => setIsPickingCategory(v => !v)}
+                                last
+                            />
+                        </Group>
+                        {isPickingCategory && (
+                            <View style={styles.picker}>
+                                <CategoryPicker
+                                    scroll={false}
+                                    categoryGroups={EXPENSE_CATEGORY_GROUPS}
+                                    onSelect={(cat) => {
+                                        setSelectedCategory(cat);
+                                        setIsPickingCategory(false);
+                                    }}
+                                />
+                            </View>
+                        )}
+
+                        <SectionHeader grouped title="Monthly limit" />
+                        <Group padded>
+                            <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="cash-outline" size={18} color={ds.text2} />
+                                <TextInput
+                                    value={budgetAmount}
+                                    onChangeText={setBudgetAmount}
+                                    placeholder="Enter amount"
+                                    keyboardType="numeric"
+                                    placeholderTextColor={ds.text3}
+                                    style={[type.bodyNum, styles.fieldMain, styles.input, { color: ds.text }]}
+                                />
+                            </View>
+                        </Group>
+                    </ScrollView>
                 )}
 
-                {/* Category Select Modal */}
-                <CategorySelectModal
-                    visible={showCategoryModal}
-                    onClose={() => setShowCategoryModal(false)}
-                    onSelect={(cat) => {
-                        setSelectedCategory(cat);
-                        setShowCategoryModal(false);
-                    }}
-                    categoryGroups={EXPENSE_CATEGORY_GROUPS}
-                />
-
-                <SmartSuggestionsModal
-                    visible={showSuggestions}
-                    onClose={() => setShowSuggestions(false)}
-                    currency={currency}
-                    onApplied={loadBudgets}
-                />
             </View>
         </BottomModal>
+
+        <SmartSuggestionsModal
+            visible={visible && showSuggestions}
+            onClose={() => setShowSuggestions(false)}
+            currency={currency}
+            onApplied={loadBudgets}
+        />
+        </>
     );
 };
+
+const styles = StyleSheet.create({
+    picker: {
+        marginTop: space[2],
+    },
+    body: {
+        flexShrink: 1,
+    },
+    headerAction: {
+        marginRight: space[3],
+    },
+    summary: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'baseline',
+        marginBottom: space[2],
+        paddingHorizontal: layout.groupPadding,
+    },
+    // The sheet title already spaces the first header from the top.
+    firstHeader: {
+        marginTop: 0,
+    },
+    field: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        padding: space[3],
+        borderRadius: radius.md,
+    },
+    fieldMain: {
+        flex: 1,
+    },
+    input: {
+        padding: 0,
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    textButton: {
+        height: 44,
+        marginTop: space[1],
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
 
 export default BudgetManagementModal;

@@ -55,6 +55,29 @@ export const addMonthsAnchored = (date: Date, months: number, anchorDay: number 
 export const getRecurrenceAnchorDay = (rule: RecurrenceRule): number =>
     new Date(rule.startDate || rule.nextDueDate).getDate();
 
+// Recurring bills and income due after `now` up to `end` (Safe-to-Spend). Goal auto-contributions
+// are skipped: Safe-to-Spend already reserves them as remaining goal obligations.
+export const sumUpcomingRecurring = (rules: RecurrenceRule[], now: Date, end: Date): { bills: BigNumber; income: BigNumber } => {
+    let bills = new BigNumber(0);
+    let income = new BigNumber(0);
+    rules.forEach(rule => {
+        if (!rule.isActive || rule.transactionTemplate?.savingsGoalId) return;
+        const anchorDay = getRecurrenceAnchorDay(rule);
+        let pointer = new Date(rule.nextDueDate);
+        while (pointer <= end) {
+            if (pointer > now) {
+                const { type, amount } = rule.transactionTemplate;
+                if (type === 'EXPENSE' || type === 'TRANSFER_OUT') bills = bills.plus(new BigNumber(amount).abs());
+                else if (type === 'INCOME') income = income.plus(new BigNumber(amount).abs());
+            }
+            const next = calculateNextDueDate(pointer, rule.frequency, anchorDay);
+            if (next <= pointer) break;
+            pointer = next;
+        }
+    });
+    return { bills, income };
+};
+
 export const processRecurrenceRules = async (): Promise<number> => {
     try {
         const rules = await getAllRecurrenceRules();

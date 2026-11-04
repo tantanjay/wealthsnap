@@ -311,7 +311,11 @@ const RecordScreen = ({ navigation, route }: any) => {
 
 
     return (
-        <ScreenWrapper scrollable={viewMode !== 'TRANSACTION' && viewMode !== 'AI_REVIEW' && viewMode !== 'INVESTMENT' && viewMode !== 'DEBT'}>
+        <ScreenWrapper
+            scrollable={viewMode !== 'TRANSACTION' && viewMode !== 'AI_REVIEW' && viewMode !== 'INVESTMENT' && viewMode !== 'DEBT'}
+            noPadding
+        >
+            {/* Each form owns its 14px group inset so its fixed footer band can span the full width */}
             {/* Transaction Form */}
             {viewMode === 'TRANSACTION' && transactionType !== 'TRANSFER_IN' && transactionType !== 'TRANSFER_OUT' && (
                 <TransactionForm

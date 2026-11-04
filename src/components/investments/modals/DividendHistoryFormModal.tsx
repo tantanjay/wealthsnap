@@ -5,8 +5,10 @@ import { Picker } from '@react-native-picker/picker';
 import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
+import { Group } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { type, space, radius } from '@styles/theme';
 import { DividendHistory } from '@types';
 import { addDividendHistory, updateDividendHistory } from '@services/domain/dividendHistoryService';
 
@@ -25,7 +27,7 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
     existingItem,
     onSuccess
 }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -33,7 +35,7 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
     const [exDate, setExDate] = useState(new Date());
     const [paymentDate, setPaymentDate] = useState<Date | undefined>(new Date());
     const [amount, setAmount] = useState('');
-    const [type, setType] = useState<'CASH' | 'STOCK' | 'SPECIAL' | 'PROPERTY'>('CASH');
+    const [divType, setDivType] = useState<'CASH' | 'STOCK' | 'SPECIAL' | 'PROPERTY'>('CASH');
     const [status, setStatus] = useState<'DECLARED' | 'PAID' | 'PROJECTED'>('PAID');
 
     // Date Picker State
@@ -48,13 +50,13 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
                 setExDate(new Date(existingItem.exDate));
                 setPaymentDate(existingItem.paymentDate ? new Date(existingItem.paymentDate) : undefined);
                 setAmount(existingItem.amount.toString());
-                setType(existingItem.type);
+                setDivType(existingItem.type);
                 setStatus(existingItem.status);
             } else {
                 setExDate(new Date());
                 setPaymentDate(new Date());
                 setAmount('');
-                setType('CASH');
+                setDivType('CASH');
                 setStatus('PAID');
             }
         }
@@ -73,7 +75,7 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
                 exDate: exDate.toISOString(),
                 paymentDate: paymentDate?.toISOString(),
                 amount: new BigNumber(amount), // Service expects BigNumber/string depending on impl. addDividendHistory takes Omit<DividendHistory...> where amount is BigNumber.
-                type,
+                type: divType,
                 status,
                 source: 'MANUAL' as const
             };
@@ -109,32 +111,30 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title={existingItem ? "Edit Dividend" : "Add Dividend"}
+            title={existingItem ? "Edit dividend" : "Add dividend"}
             maxHeight="85%"
             footer={
                 <TouchableOpacity
-                    style={[styles.saveButton, { backgroundColor: colors.primary }]}
+                    style={[styles.saveButton, { backgroundColor: ds.accent }]}
                     onPress={handleSave}
                     disabled={isLoading}
                 >
                     {isLoading ? (
-                        <ActivityIndicator color="#FFF" />
+                        <ActivityIndicator color={ds.onAccent} />
                     ) : (
-                        <Text style={styles.saveButtonText}>Save</Text>
+                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Save</Text>
                     )}
                 </TouchableOpacity>
             }
         >
-            <View style={styles.content}>
-
-                {/* Ex-Date */}
+            <Group padded>
                 <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>Ex-Date</Text>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Ex-date</Text>
                     <TouchableOpacity
-                        style={[styles.input, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                        style={[styles.input, { backgroundColor: ds.inset }]}
                         onPress={() => setShowExDatePicker(true)}
                     >
-                        <Text style={{ color: colors.text }}>{exDate.toLocaleDateString()}</Text>
+                        <Text style={[type.bodyNum, { color: ds.text }]}>{exDate.toLocaleDateString()}</Text>
                     </TouchableOpacity>
                     {showExDatePicker && (
                         <DateTimePicker
@@ -146,14 +146,13 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
                     )}
                 </View>
 
-                {/* Payment Date */}
                 <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>Payment Date</Text>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Payment date</Text>
                     <TouchableOpacity
-                        style={[styles.input, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                        style={[styles.input, { backgroundColor: ds.inset }]}
                         onPress={() => setShowPaymentDatePicker(true)}
                     >
-                        <Text style={{ color: colors.text }}>{paymentDate ? paymentDate.toLocaleDateString() : 'Select Date'}</Text>
+                        <Text style={[type.bodyNum, { color: paymentDate ? ds.text : ds.text3 }]}>{paymentDate ? paymentDate.toLocaleDateString() : 'Select date'}</Text>
                     </TouchableOpacity>
                     {showPaymentDatePicker && (
                         <DateTimePicker
@@ -165,29 +164,27 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
                     )}
                 </View>
 
-                {/* Amount */}
                 <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>Amount</Text>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Amount</Text>
                     <TextInput
-                        style={[styles.input, { borderColor: colors.border, backgroundColor: colors.surface, color: colors.text }]}
+                        style={[type.bodyNum, styles.input, { backgroundColor: ds.inset, color: ds.text }]}
                         value={amount}
                         onChangeText={setAmount}
                         placeholder="0.00"
-                        placeholderTextColor={colors.textSecondary}
+                        placeholderTextColor={ds.text3}
                         keyboardType="numeric"
                     />
                 </View>
 
-                {/* Type & Status Row */}
-                <View style={styles.row}>
-                    <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                        <Text style={[styles.label, { color: colors.textSecondary }]}>Type</Text>
-                        <View style={[styles.pickerContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                <View style={styles.pickerRow}>
+                    <View style={styles.pickerGroup}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Type</Text>
+                        <View style={[styles.pickerContainer, { backgroundColor: ds.inset }]}>
                             <Picker
-                                selectedValue={type}
-                                onValueChange={(itemValue) => setType(itemValue)}
-                                style={{ color: colors.text }}
-                                dropdownIconColor={colors.text}
+                                selectedValue={divType}
+                                onValueChange={(itemValue) => setDivType(itemValue)}
+                                style={{ color: ds.text }}
+                                dropdownIconColor={ds.text2}
                             >
                                 <Picker.Item label="Cash" value="CASH" />
                                 <Picker.Item label="Stock" value="STOCK" />
@@ -197,14 +194,14 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
                         </View>
                     </View>
 
-                    <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                        <Text style={[styles.label, { color: colors.textSecondary }]}>Status</Text>
-                        <View style={[styles.pickerContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                    <View style={styles.pickerGroup}>
+                        <Text style={[type.small, styles.label, { color: ds.text2 }]}>Status</Text>
+                        <View style={[styles.pickerContainer, { backgroundColor: ds.inset }]}>
                             <Picker
                                 selectedValue={status}
                                 onValueChange={(itemValue) => setStatus(itemValue)}
-                                style={{ color: colors.text }}
-                                dropdownIconColor={colors.text}
+                                style={{ color: ds.text }}
+                                dropdownIconColor={ds.text2}
                             >
                                 <Picker.Item label="Paid" value="PAID" />
                                 <Picker.Item label="Declared" value="DECLARED" />
@@ -213,52 +210,41 @@ const DividendHistoryFormModal: React.FC<DividendHistoryFormModalProps> = ({
                         </View>
                     </View>
                 </View>
-            </View>
+            </Group>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
-    content: {
-        paddingVertical: 10
-    },
     inputGroup: {
-        marginBottom: 16
-    },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between'
+        marginBottom: space[3],
     },
     label: {
-        fontSize: 12,
-        marginBottom: 8,
-        fontWeight: '600'
+        marginBottom: space[2],
     },
     input: {
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        fontSize: 16
-    },
-    pickerContainer: {
-        borderWidth: 1,
-        borderRadius: 8,
-        overflow: 'hidden',
-        justifyContent: 'center',
-        height: 50 // Fixed height for alignment
+        borderRadius: radius.md,
+        padding: space[3],
     },
     saveButton: {
-        marginTop: 10,
-        paddingVertical: 14,
-        borderRadius: 12,
-        alignItems: 'center'
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    saveButtonText: {
-        color: '#FFF',
-        fontSize: 16,
-        fontWeight: 'bold'
-    }
+    pickerRow: {
+        flexDirection: 'row',
+        gap: space[3],
+    },
+    pickerGroup: {
+        flex: 1,
+    },
+    pickerContainer: {
+        borderRadius: radius.md,
+        overflow: 'hidden',
+        justifyContent: 'center',
+        height: 50, // Fixed height so both pickers line up
+    },
 });
 
 export default DividendHistoryFormModal;

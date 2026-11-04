@@ -9,7 +9,8 @@ export interface InlineSegment {
 // inline emphasis inside a <Text> without a full markdown-to-JSX library.
 export const splitBoldSegments = (text: string): InlineSegment[] => {
     return text
-        .split(/(\*\*.*?\*\*)/g)
+        // Bold text can't start or end with * or a space, so a literal "****" (Hidden-mode mask) stays text.
+        .split(/(\*\*[^*\s](?:.*?[^*\s])??\*\*)/g)
         .filter(Boolean)
         .map(part => (part.startsWith('**') && part.endsWith('**'))
             ? { text: part.slice(2, -2), bold: true }

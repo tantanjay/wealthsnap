@@ -20,9 +20,12 @@ export const SECURE_KEYS = {
 export const ASYNC_KEYS = {
     USER_PROFILE: '@wealthsnap_user_profile',
     THEME_MODE: '@wealthsnap_theme_mode',
+    THEME_SKIN: '@wealthsnap_theme_skin',
     NOTIFIED_ALERTS: '@wealthsnap_notified_alerts',
     SECURITY: {
+        // Legacy on/off flag; read once to migrate into PRIVACY_MODE.
         PRIVACY_ENABLED: '@wealthsnap_privacy_enabled',
+        PRIVACY_MODE: '@wealthsnap_privacy_mode',
         TIMEOUT_SETTING: '@wealthsnap_security_timeout',
         LAST_ACTIVE: '@wealthsnap_security_last_active',
         FAILED_PIN_ATTEMPTS: '@wealthsnap_failed_pin_attempts',
@@ -38,14 +41,23 @@ export const ASYNC_KEYS = {
         ACCEPTED_TERMS_VERSION: '@wealthsnap_accepted_terms_version',
     },
     HOME_SCREEN: {
-        FINANCIAL_HEALTH_DISPLAY_MODE: '@wealthsnap_health_display_mode',
-        FINANCE_DISPLAY_MODE: '@wealthsnap_finance_display_mode',
-        INVESTMENT_DISPLAY_MODE: '@wealthsnap_investment_display_mode',
-        DEBT_DISPLAY_MODE: '@wealthsnap_debt_display_mode',
+        SNAPSHOT_ORDER: '@wealthsnap_snapshot_order',
+        SNAPSHOT_PERIOD: '@wealthsnap_snapshot_period',
+        SNAPSHOT_RANGE: '@wealthsnap_snapshot_range',
+        HOLDINGS_ORDER: '@wealthsnap_holdings_order',
+        // Pre-redesign (1.19.0 and earlier) Home cards; read once to migrate, then removed.
         CARD_ORDER: '@wealthsnap_card_order',
-        TRANSACTIONS_TAB: '@wealthsnap_home_transactions_tab',
+        LEGACY_DISPLAY_MODES: [
+            '@wealthsnap_health_display_mode',
+            '@wealthsnap_finance_display_mode',
+            '@wealthsnap_investment_display_mode',
+            '@wealthsnap_debt_display_mode',
+            '@wealthsnap_home_transactions_tab',
+        ],
     },
     INSIGHTS_SCREEN: {
+        HEALTH_GRID: '@wealthsnap_insights_health_grid',
+        // Pre-redesign overview card order; ignored (the grid starts from its default) and removed on first read.
         CARD_ORDER: '@wealthsnap_insights_card_order',
         SECTION_ORDER: '@wealthsnap_insights_section_order',
         EXPENSE_GROUPING: '@wealthsnap_insights_expense_grouping',
@@ -74,9 +86,6 @@ export const ASYNC_KEYS = {
     CHAT_SCREEN: {
         EXCLUDED_CATEGORIES: '@wealthsnap_chat_excluded_categories',
         DISCLOSE_DEBT_NAMES: '@wealthsnap_chat_disclose_debt_names',
-    },
-    FLOATING_GEAR: {
-        DOCKED: '@wealthsnap_floating_gear_docked',
     },
     CRASH_REPORT: '@wealthsnap_crash_report',
     DEVELOPER_MODE: '@wealthsnap_developer_mode',

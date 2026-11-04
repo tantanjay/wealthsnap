@@ -3,6 +3,7 @@ import { TouchableOpacity, Text, ViewStyle, StyleProp, ActivityIndicator, View, 
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius, layout } from '@styles/theme';
 
 interface ButtonProps {
     title: string;
@@ -15,27 +16,24 @@ interface ButtonProps {
 }
 
 export const Button: React.FC<ButtonProps> = ({ title, onPress, variant = 'primary', style, loading, disabled, icon }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
 
     const getBackgroundColor = () => {
-        if (disabled) return colors.gray300;
+        // Buttons sit on the canvas, where `inset` would vanish.
+        if (disabled) return ds.group;
         switch (variant) {
-            case 'primary': return colors.primary;
-            case 'secondary': return colors.secondary;
-            case 'outline': return 'transparent';
-            case 'ghost': return 'transparent';
-            default: return colors.primary;
+            case 'primary': return ds.accent;
+            case 'secondary': return ds.group;
+            default: return 'transparent';
         }
     };
 
     const getTextColor = () => {
-        if (disabled) return colors.gray500;
+        if (disabled) return ds.text3;
         switch (variant) {
-            case 'primary': return colors.textLight;
-            case 'secondary': return colors.textLight;
-            case 'outline': return colors.primary;
-            case 'ghost': return colors.text;
-            default: return colors.textLight;
+            case 'primary': return ds.onAccent;
+            case 'outline': return ds.accent;
+            default: return ds.text;
         }
     };
 
@@ -46,16 +44,16 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, variant = 'prima
             style={[
                 {
                     backgroundColor: getBackgroundColor(),
-                    paddingVertical: 12,
-                    paddingHorizontal: 24,
-                    borderRadius: 12,
+                    minHeight: 48,
+                    paddingVertical: space[3],
+                    paddingHorizontal: space[6],
+                    borderRadius: radius.md,
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderWidth: variant === 'outline' ? 1 : 0,
-                    borderColor: colors.primary,
-                    opacity: disabled ? 0.7 : 1,
+                    borderColor: disabled ? ds.hairline : ds.accent,
                     flexDirection: 'row',
-                    gap: 8,
+                    gap: space[2],
                 },
                 style
             ]}
@@ -65,7 +63,7 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, variant = 'prima
             ) : (
                 <>
                     {icon && <Ionicons name={icon as any} size={20} color={getTextColor()} />}
-                    <Text style={{ color: getTextColor(), fontSize: 16, fontWeight: '600' }}>
+                    <Text style={[type.bodyStrong, { color: getTextColor() }]}>
                         {title}
                     </Text>
                 </>
@@ -78,34 +76,24 @@ interface CardProps {
     children: React.ReactNode;
     style?: StyleProp<ViewStyle>;
     onLayout?: (event: LayoutChangeEvent) => void;
-    // Skips the shadow/elevation in favor of a thin border. Elevation forces its own
-    // offscreen composited layer per view on Android - fine for a handful of section
-    // cards on screen, but costly when repeated across every row of a scrolling list.
+    // Adds a hairline border, for repeated list rows.
     flat?: boolean;
 }
 
+// Legacy container drawn as the `group` surface (docs/DESIGN.md, Group); no shadow.
 export const Card: React.FC<CardProps> = ({ children, style, onLayout, flat }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     return (
         <View
             onLayout={onLayout}
             style={[
                 {
-                    backgroundColor: colors.surface,
-                    borderRadius: 16,
-                    padding: 16,
-                    marginBottom: 16,
+                    backgroundColor: ds.group,
+                    borderRadius: radius.group,
+                    padding: layout.groupPadding,
+                    marginBottom: space[4],
                 },
-                flat ? {
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                } : {
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 8,
-                    elevation: 4,
-                },
+                flat && { borderWidth: 1, borderColor: ds.hairline },
                 style
             ]}>
             {children}

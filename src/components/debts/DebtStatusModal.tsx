@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
 import { Debt, DebtStatus, Transaction } from '@types';
 import { useConfirmDeleteDebt } from '@hooks/useConfirmDeleteDebt';
@@ -15,14 +16,14 @@ interface DebtStatusModalProps {
     onEdit: (debt: Debt) => void;
     onDelete: (id: string, deleteLinked: boolean) => void;
     linkedTransaction: Transaction | null;
+    // Home's Loans tab opens this from a loan row, so recording a payment lives here too.
+    onRecordPayment?: (debt: Debt) => void;
 }
 
-// Explanation lives directly on each option instead of behind a separate confirm dialog -
-// by the time you tap, you've already read what it does, so there's nothing left to confirm.
-// Edit/Delete sit above the status options as quick single-line actions - everything you'd
-// want to do to a debt record, behind the one gear icon on its card.
-const DebtStatusModal: React.FC<DebtStatusModalProps> = ({ visible, onClose, debt, onUpdateStatus, onEdit, onDelete, linkedTransaction }) => {
-    const { colors } = useTheme();
+// Each status option explains itself inline, so there's no separate confirm dialog.
+// Edit/Delete sit above the status options as quick single-line actions.
+const DebtStatusModal: React.FC<DebtStatusModalProps> = ({ visible, onClose, debt, onUpdateStatus, onEdit, onDelete, linkedTransaction, onRecordPayment }) => {
+    const { ds } = useTheme();
     const confirmDeleteDebt = useConfirmDeleteDebt(onDelete, onClose);
 
     if (!debt) return null;
@@ -41,132 +42,84 @@ const DebtStatusModal: React.FC<DebtStatusModalProps> = ({ visible, onClose, deb
 
     const handleDeletePress = () => confirmDeleteDebt(debt.id, linkedTransaction);
 
+    // Closes first so the payment sheet never opens on top of this one.
+    const handlePaymentPress = () => {
+        onClose();
+        onRecordPayment?.(debt);
+    };
+
     return (
         <BottomModal
             visible={visible}
             onClose={onClose}
             title={debt.name}
-            subtitle="Manage Debt"
+            subtitle="Manage debt"
             maxHeight="85%"
         >
-            <View style={styles.container}>
-                {/* Quick Actions */}
-                <View style={styles.quickActions}>
-                    <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: colors.surface }]}
-                        onPress={handleEditPress}
-                    >
-                        <Ionicons name="create-outline" size={22} color={colors.primary} />
-                        <Text style={[styles.actionText, { color: colors.primary }]}>Edit Debt</Text>
-                        <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-                    </TouchableOpacity>
+            <Group>
+                {onRecordPayment && debt.status === 'ACTIVE' && (
+                    <Row
+                        domain="loans"
+                        icon="cash-outline"
+                        title={isReceivable ? 'Record repayment' : 'Record payment'}
+                        onPress={handlePaymentPress}
+                    />
+                )}
+                <Row icon="create-outline" title="Edit debt" onPress={handleEditPress} />
+                <Row
+                    leading={
+                        <View style={[styles.tile, { backgroundColor: ds.tileNeutral }]}>
+                            <Ionicons name="trash-outline" size={18} color={ds.danger} />
+                        </View>
+                    }
+                    title="Delete debt"
+                    onPress={handleDeletePress}
+                    last
+                />
+            </Group>
 
-                    <View style={[styles.separator, { backgroundColor: colors.border }]} />
-
-                    <TouchableOpacity
-                        style={[styles.actionButton, { backgroundColor: colors.surface }]}
-                        onPress={handleDeletePress}
-                    >
-                        <Ionicons name="trash-outline" size={22} color={colors.error} />
-                        <Text style={[styles.actionText, { color: colors.error }]}>Delete Debt</Text>
-                        <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
-
+            <SectionHeader grouped title="Status" />
+            <Group>
                 {debt.status === 'ACTIVE' ? (
                     <>
-                        <TouchableOpacity
-                            style={[styles.optionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                        <Row
+                            icon="checkmark-circle-outline"
+                            title="Mark as paid off"
+                            subtitle="Use this when this debt is actually settled but the payment never passed through WealthSnap - for example, someone paid it off on your behalf. It'll move to your Paid Off list and stop counting toward your totals."
                             onPress={() => handleSelect('PAID_OFF')}
-                        >
-                            <View style={styles.optionHeader}>
-                                <Ionicons name="checkmark-circle-outline" size={22} color={colors.success} />
-                                <Text style={[styles.optionTitle, { color: colors.text }]}>Mark as Paid Off</Text>
-                            </View>
-                            <Text style={[styles.optionBody, { color: colors.textSecondary }]}>
-                                Use this when this debt is actually settled but the payment never passed through WealthSnap - for example, someone paid it off on your behalf. It&apos;ll move to your Paid Off list and stop counting toward your totals.
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.optionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                        />
+                        <Row
+                            icon="hand-left-outline"
+                            title="Mark as forgiven"
+                            subtitle={isReceivable
+                                ? "Use this if you're writing this off - you no longer expect to be repaid. It'll move to your Paid Off list, labeled Forgiven, and stop counting as money owed to you."
+                                : "Use this if the other side forgave what you owed them. It'll move to your Paid Off list, labeled Forgiven, and stop counting toward your debt totals."}
                             onPress={() => handleSelect('FORGIVEN')}
-                        >
-                            <View style={styles.optionHeader}>
-                                <Ionicons name="hand-left-outline" size={22} color={colors.textSecondary} />
-                                <Text style={[styles.optionTitle, { color: colors.text }]}>Mark as Forgiven</Text>
-                            </View>
-                            <Text style={[styles.optionBody, { color: colors.textSecondary }]}>
-                                {isReceivable
-                                    ? "Use this if you're writing this off - you no longer expect to be repaid. It'll move to your Paid Off list, labeled Forgiven, and stop counting as money owed to you."
-                                    : "Use this if the other side forgave what you owed them. It'll move to your Paid Off list, labeled Forgiven, and stop counting toward your debt totals."}
-                            </Text>
-                        </TouchableOpacity>
+                            last
+                        />
                     </>
                 ) : (
-                    <TouchableOpacity
-                        style={[styles.optionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                    <Row
+                        icon="refresh-outline"
+                        title={`Reactivate (${debt.status === 'PAID_OFF' ? 'Paid Off' : 'Forgiven'})`}
+                        subtitle="Moves this debt back to active - it'll count toward your totals again and reappear in the payoff list."
                         onPress={() => handleSelect('ACTIVE')}
-                    >
-                        <View style={styles.optionHeader}>
-                            <Ionicons name="refresh-outline" size={22} color={colors.primary} />
-                            <Text style={[styles.optionTitle, { color: colors.text }]}>
-                                Reactivate ({debt.status === 'PAID_OFF' ? 'Paid Off' : 'Forgiven'})
-                            </Text>
-                        </View>
-                        <Text style={[styles.optionBody, { color: colors.textSecondary }]}>
-                            Moves this debt back to active - it&apos;ll count toward your totals again and reappear in the payoff list.
-                        </Text>
-                    </TouchableOpacity>
+                        last
+                    />
                 )}
-            </View>
+            </Group>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        paddingBottom: 20,
-        gap: 12,
-    },
-    quickActions: {
-        borderRadius: 14,
-        overflow: 'hidden',
-    },
-    actionButton: {
-        flexDirection: 'row',
+    // Matches Row's neutral icon tile; only the icon carries the danger tone.
+    tile: {
+        width: 32,
+        height: 32,
+        borderRadius: 9,
         alignItems: 'center',
-        padding: 14,
-        justifyContent: 'space-between',
-    },
-    actionText: {
-        flex: 1,
-        fontSize: 15,
-        fontWeight: '600',
-        marginLeft: 12,
-    },
-    separator: {
-        height: 1,
-        width: '100%',
-    },
-    optionCard: {
-        borderRadius: 14,
-        borderWidth: 1,
-        padding: 14,
-    },
-    optionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        marginBottom: 6,
-    },
-    optionTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-    },
-    optionBody: {
-        fontSize: 13,
-        lineHeight: 19,
+        justifyContent: 'center',
     },
 });
 
