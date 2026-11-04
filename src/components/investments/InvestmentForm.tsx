@@ -566,7 +566,7 @@ export const InvestmentForm: React.FC<InvestmentFormProps> = ({
                         </View>
                         <View style={styles.pairItem}>
                             <Text style={[type.small, styles.label, { color: ds.text2 }]}>Total</Text>
-                            <Text style={[type.bodyNum, styles.readOnly, { color: ds.text }]} numberOfLines={1}>
+                            <Text style={[type.bodyNum, styles.readOnly, { color: ds.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                                 {(() => {
                                     const qty = new BigNumber(quantity || 0);
                                     const prc = new BigNumber(price || 0);

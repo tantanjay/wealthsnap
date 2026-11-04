@@ -83,7 +83,7 @@ const Row: React.FC<RowProps> = ({
             {(value || change) ? (
                 <View style={styles.end}>
                     {value ? (
-                        <Text style={[type.bodyNum, { color: valueTone ? toneColor(ds, valueTone) : ds.text }]} numberOfLines={1}>
+                        <Text style={[type.bodyNum, { color: valueTone ? toneColor(ds, valueTone) : ds.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
                             {value}
                         </Text>
                     ) : null}

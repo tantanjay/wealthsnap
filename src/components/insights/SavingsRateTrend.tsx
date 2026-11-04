@@ -213,15 +213,10 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
             const item = safeItems[0];
             if (!item) return null;
 
-            // X-Axis Positioning: Always avoid center to prevent finger overlap
-            const index = item.index || 0;
-            const totalItems = savingsData.rawData.length;
-            // If we are in the right half of the chart, show tooltip on the left
-            const marginLeft = index > totalItems / 2 ? -100 : 10;
             const tone = item.originalValue >= 0 ? ds.success : ds.danger;
 
             return (
-                <View style={[styles.pointerLabelWrap, { marginLeft }]}>
+                <View style={styles.pointerLabelWrap}>
                     <View style={[styles.pointerLabel, { backgroundColor: ds.raised, borderColor: ds.hairline }]}>
                         <Text style={[type.captionMedium, styles.center, { color: ds.text2 }]}>{item.month}</Text>
 
@@ -250,7 +245,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
                 </View>
             );
         },
-    }), [ds, format, savingsData.rawData, activeMeta, formatValue, asShareOfIncome]);
+    }), [ds, format, activeMeta, formatValue, asShareOfIncome]);
 
     // Calculate average for the active metric
     const avgValue = useMemo(() => {
@@ -579,7 +574,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
 
     const renderStat = (label: string, value: string, color: string, align: 'flex-start' | 'center' | 'flex-end' = 'flex-start') => (
         <View style={{ alignItems: align, flexShrink: 1 }}>
-            <Text style={[type.caption, { color: ds.text2 }]} numberOfLines={1}>{label}</Text>
+            <Text style={[type.caption, { color: ds.text2 }]}>{label}</Text>
             {isLoading ? (
                 <Skeleton width={50} height={20} />
             ) : (
@@ -752,7 +747,6 @@ const styles = StyleSheet.create({
         height: 100,
         width: 140,
         justifyContent: 'center',
-        marginTop: -30,
         zIndex: 1000,
     },
     pointerLabel: {

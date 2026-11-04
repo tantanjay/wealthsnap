@@ -400,7 +400,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                         style={[styles.tile, { width: ITEM_WIDTH, backgroundColor: isActive ? ds.accentSoft : ds.inset }]}
                                     >
                                         <Ionicons name={icon as any} size={20} color={isActive ? ds.accent : ds.text2} />
-                                        <Text style={[typeScale.small, { color: isActive ? ds.accent : ds.text }]} numberOfLines={1}>
+                                        <Text style={[typeScale.small, styles.tileText, { color: isActive ? ds.accent : ds.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
                                             {cat}
                                         </Text>
                                     </Pressable>
@@ -433,7 +433,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                                             onPress={() => handleSelectFundingGoal(goal)}
                                             style={[styles.chip, isActive && { backgroundColor: ds.inset }]}
                                         >
-                                            <Text style={[typeScale.smallMedium, { color: isActive ? ds.text : ds.text2 }]} numberOfLines={1}>
+                                            <Text style={[typeScale.smallMedium, { color: isActive ? ds.text : ds.text2 }]}>
                                                 {goal.name}
                                             </Text>
                                         </Pressable>
@@ -457,7 +457,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                             <Text style={fieldLabel}>Date</Text>
                             <Pressable onPress={() => setShowTransactionDatePicker(true)} style={fieldBox}>
                                 <Ionicons name="calendar-outline" size={18} color={ds.text2} />
-                                <Text style={[typeScale.body, { color: ds.text }]} numberOfLines={1}>
+                                <Text style={[typeScale.body, styles.fieldText, { color: ds.text }]}>
                                     {transactionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </Text>
                             </Pressable>
@@ -466,7 +466,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                             <Text style={fieldLabel}>Time</Text>
                             <Pressable onPress={() => setShowTransactionTimePicker(true)} style={fieldBox}>
                                 <Ionicons name="time-outline" size={18} color={ds.text2} />
-                                <Text style={[typeScale.body, { color: ds.text }]} numberOfLines={1}>
+                                <Text style={[typeScale.body, styles.fieldText, { color: ds.text }]}>
                                     {transactionDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                 </Text>
                             </Pressable>
@@ -576,6 +576,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 const FOOTER_HEIGHT = space[3] + 48 + space[4] + 1;
 
 const styles = StyleSheet.create({
+    tileText: {
+        textAlign: 'center',
+    },
+    fieldText: {
+        flexShrink: 1,
+    },
     // Bottom padding clears the fixed footer.
     content: {
         paddingHorizontal: layout.groupInset,

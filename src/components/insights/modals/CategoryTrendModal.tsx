@@ -233,8 +233,6 @@ const styles = StyleSheet.create({
         height: 90,
         width: 100,
         justifyContent: 'center',
-        marginTop: -30,
-        marginLeft: -40,
     },
     pointerLabel: {
         paddingHorizontal: space[3],

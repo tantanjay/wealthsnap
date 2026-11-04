@@ -101,8 +101,8 @@ const LearnScreen = ({ navigation }: any) => {
                             accessibilityRole="button"
                         >
                             <Ionicons name={topic.icon as IconName} size={22} color={ds.accent} />
-                            <Text style={[type.body, styles.guideTitle, { color: ds.text }]} numberOfLines={2}>{topic.title}</Text>
-                            <Text style={[type.caption, styles.guideSubtitle, { color: ds.text2 }]} numberOfLines={2}>{topic.subtitle}</Text>
+                            <Text style={[type.body, styles.guideTitle, { color: ds.text }]}>{topic.title}</Text>
+                            <Text style={[type.caption, styles.guideSubtitle, { color: ds.text2 }]}>{topic.subtitle}</Text>
                         </Pressable>
                     ))}
                 </ScrollView>

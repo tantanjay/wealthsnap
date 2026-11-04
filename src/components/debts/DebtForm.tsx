@@ -513,7 +513,7 @@ export const DebtForm: React.FC<DebtFormProps> = ({ currency, onSave, onCancel, 
                                 style={[styles.field, { backgroundColor: ds.inset }]}
                             >
                                 <Ionicons name="list-outline" size={18} color={ds.text2} />
-                                <Text style={[type.body, styles.input, { color: ds.text }]} numberOfLines={1}>
+                                <Text style={[type.body, styles.input, { color: ds.text }]}>
                                     {interestType.charAt(0) + interestType.slice(1).toLowerCase()}
                                 </Text>
                                 <Ionicons name="chevron-down" size={16} color={ds.text3} />

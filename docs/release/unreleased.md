@@ -14,7 +14,7 @@
 
 ## 📈 Net Worth Growth in Insights
 - **Watch your net worth over time**: A new Net worth growth chart in Insights shows how your Projected Net Worth, the same figure as on Home, has moved over 6 months, 1 year, 3 years or all time. Pick the range from the dropdown under the title.
-- **Three views**: Cumulative draws your net worth at the end of each month, ending with today. Percentage shows how far it has moved since the first month shown. Growth draws one bar per month: green when your net worth grew, red when it shrank. Press a bar to see that month's amount and its % of the month before.
+- **Three views**: Cumulative draws your net worth at the end of each month, ending with today. Percentage shows how much it grew or shrank each month, as a % of where it started that month, around a 0% line and a dashed line at your weighted average, so you can spot the months that beat it. Growth draws one bar per month: green when your net worth grew, red when it shrank. Press a bar to see that month's amount and its % of the month before.
 - **A fair number for long ranges**: Over 3 years or all time, a % change from a small early balance can look enormous, like +6,794%. On those ranges the header shows your weighted average growth per month instead, where bigger months count more, so one early jump doesn't swamp it.
 - **Private when you need it**: In Discreet mode the chart drops its amount axis and shows % changes instead; Hidden shows the usual placeholder. The info icon explains each view, with the formulas behind them.
 - Your view and range are remembered. New installs see the chart at the top of Insights; if you've set your own section order, it's added at the bottom, where you can move it from Insights settings.
@@ -28,7 +28,8 @@
 ---
 
 ## 📱 Small Phone Fixes
-- **Nothing pushed off the edge on narrow screens**: On phones around 360dp wide, a few one-line rows ran out of room and pushed their last item off the screen. In Discreet, the Snapshot's "Runway · Savings rate · Details" line hid the Details link, and in Open the Ledger's "In · Out" line could hide Calendar once both amounts were large. These lines now wrap onto a second line instead, so every link stays visible and tappable. Along the same lines, the big number at the top of each tab shrinks to fit instead of breaking over two lines, the Savings trend stats shrink to fit their card, section titles shorten with "…" before their "Show all" link would, all five Home tabs fit without scrolling, and your name in the greeting shrinks slightly before it gets cut off.
+- **Nothing pushed off the edge on narrow screens**: On phones around 360dp wide, a few one-line rows ran out of room and pushed their last item off the screen. In Discreet, the Snapshot's "Runway · Savings rate · Details" line hid the Details link, and in Open the Ledger's "In · Out" line could hide Calendar once both amounts were large. These lines now wrap onto a second line instead, so every link stays visible and tappable. Along the same lines, the big number at the top of each tab shrinks to fit instead of breaking over two lines, the Savings trend stats shrink to fit their card, section titles wrap onto a second line before they'd crowd their "Show all" link, all five Home tabs fit without scrolling, and your name in the greeting shrinks slightly before it gets cut off.
+- **No more "…" on your information**: Anywhere a line of information used to stop at "…" or get cut off, it now wraps onto the next line, including chart summaries, budget names, transaction details, skin names, guide titles and goal names. Single amounts shrink slightly to fit instead of splitting. Wider screens still show everything on one line.
 
 ---
 

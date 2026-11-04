@@ -52,10 +52,10 @@ const BudgetsSection: React.FC<BudgetsSectionProps> = ({ lines, monthLabel, form
         return (
             <View key={line.category} style={[styles.row, { borderBottomColor: ds.hairline, borderBottomWidth: i === list.length - 1 ? 0 : 1 }]}>
                 <View style={styles.top}>
-                    <Text style={[type.body, styles.name, { color: ds.text }]} numberOfLines={1}>{line.category}</Text>
+                    <Text style={[type.body, styles.name, { color: ds.text }]}>{line.category}</Text>
                     {/* Discreet leaves the amounts out; the % carries it. */}
                     {!f.isDiscreet && (
-                        <Text style={[type.smallNum, { color: ds.text2 }]} numberOfLines={1}>
+                        <Text style={[type.smallNum, styles.shrink, { color: ds.text2 }]}>
                             {f.money(line.spent, { compact: true })} / {f.money(line.budget, { compact: true })}
                         </Text>
                     )}
@@ -102,6 +102,9 @@ const styles = StyleSheet.create({
     name: {
         flex: 1,
         minWidth: 0,
+    },
+    shrink: {
+        flexShrink: 1,
     },
     percent: {
         minWidth: 48,

@@ -20,7 +20,7 @@ const ProfileHeader: React.FC<{ profile: UserProfile | null }> = ({ profile }) =
                 <Text style={[type.title, { color: ds.accent }]}>{name.charAt(0).toUpperCase()}</Text>
             </View>
             <View style={styles.main}>
-                <Text style={[type.title, { color: ds.text }]} numberOfLines={1}>{name}</Text>
+                <Text style={[type.title, { color: ds.text }]}>{name}</Text>
                 {profile && (
                     <Text style={[type.small, { color: ds.text2 }]}>
                         {profile.currency}{since ? ` · since ${since}` : ''}

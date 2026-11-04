@@ -107,7 +107,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
                     <Text style={[type.body, { color: ds.text }]}>
                         {inv.symbol} <Text style={[type.small, { color: ds.text2 }]}>({inv.action})</Text>
                     </Text>
-                    <Text style={[type.smallNum, { color: ds.text2 }]} numberOfLines={1}>
+                    <Text style={[type.smallNum, { color: ds.text2 }]}>
                         {inv.quantity.toString()} units @ {formatCurrencyAmount(nativePrice, inv.currency || profileCurrency || 'PHP')}
                         {plElement}
                     </Text>
@@ -134,7 +134,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
                     <Text style={[type.body, { color: ds.text }]}>
                         {debt.name}
                     </Text>
-                    <Text style={[type.smallNum, { color: ds.text2 }]} numberOfLines={1}>
+                    <Text style={[type.smallNum, { color: ds.text2 }]}>
                         {debt.type.replace(/_/g, ' ')} • {debt.interestRate.toString()}% {debt.interestType}
                     </Text>
                 </View>
@@ -274,7 +274,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
                     {getDisplayName()}
                 </Text>
                 {!isNotedTransferRow && (subtitleText || goalFundedName) && (
-                    <Text style={[type.small, { color: ds.text2 }]} numberOfLines={1}>
+                    <Text style={[type.small, { color: ds.text2 }]}>
                         {subtitleText}
                         {goalFundedName && (
                             <Text>
@@ -284,7 +284,7 @@ const HistoryListItem: React.FC<HistoryListItemProps> = ({
                     </Text>
                 )}
                 {hasDebtBreakdown && (
-                    <Text style={type.smallNum} numberOfLines={1}>
+                    <Text style={type.smallNum}>
                         <Text style={{ color: t.type === 'TRANSFER_OUT' ? ds.danger : ds.success }}>
                             {t.type === 'TRANSFER_OUT' ? '-' : '+'}{formatCurrency(t.amount)} principal
                         </Text>

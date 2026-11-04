@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - "How is this calculated?" sections are always open.
 
 ### Fixed
-- Links and amounts no longer cut off on small phones, such as Details on Home and Calendar on the Ledger.
+- Links, amounts and labels no longer cut off or end in "…" on small phones; long lines wrap instead.
 
 ---
 

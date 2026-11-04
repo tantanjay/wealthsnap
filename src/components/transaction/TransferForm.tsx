@@ -166,7 +166,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({
                                     style={[styles.tile, { backgroundColor: isActive ? ds.accentSoft : ds.inset }]}
                                 >
                                     <Ionicons name={config.icon as any} size={20} color={isActive ? ds.accent : ds.text2} />
-                                    <Text style={[type.small, { color: isActive ? ds.accent : ds.text }]} numberOfLines={1}>
+                                    <Text style={[type.small, styles.tileText, { color: isActive ? ds.accent : ds.text }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
                                         {config.label}
                                     </Text>
                                 </Pressable>
@@ -183,7 +183,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({
                             <Text style={fieldLabel}>Date</Text>
                             <Pressable onPress={() => setShowTransactionDatePicker(true)} style={fieldBox}>
                                 <Ionicons name="calendar-outline" size={18} color={ds.text2} />
-                                <Text style={[type.body, { color: ds.text }]} numberOfLines={1}>
+                                <Text style={[type.body, styles.fieldText, { color: ds.text }]}>
                                     {transactionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </Text>
                             </Pressable>
@@ -192,7 +192,7 @@ export const TransferForm: React.FC<TransferFormProps> = ({
                             <Text style={fieldLabel}>Time</Text>
                             <Pressable onPress={() => setShowTransactionTimePicker(true)} style={fieldBox}>
                                 <Ionicons name="time-outline" size={18} color={ds.text2} />
-                                <Text style={[type.body, { color: ds.text }]} numberOfLines={1}>
+                                <Text style={[type.body, styles.fieldText, { color: ds.text }]}>
                                     {transactionDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                 </Text>
                             </Pressable>
@@ -270,6 +270,12 @@ export const TransferForm: React.FC<TransferFormProps> = ({
 const FOOTER_HEIGHT = space[3] + 48 + space[4] + 1;
 
 const styles = StyleSheet.create({
+    tileText: {
+        textAlign: 'center',
+    },
+    fieldText: {
+        flexShrink: 1,
+    },
     // Bottom padding clears the fixed footer.
     content: {
         paddingHorizontal: layout.groupInset,

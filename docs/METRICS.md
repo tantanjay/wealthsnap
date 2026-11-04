@@ -329,17 +329,17 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (Cumulative):** [Net Worth at each past month-end](#net-worth-change) across the chosen range (6 months, 1 year, 3 years or all time; default 6 months), then the browsed month's own point: Net Worth now for the current month, else Net Worth at that month's end. Long ranges draw the first point and every few months back from the last, to stay near 36 points
 
-**Formula (Percentage):** (Net Worth at a point − Net Worth at the first point) ÷ Net Worth at the first point × 100
+**Formula (Percentage):** each month's growth % = (Net Worth at a month-end − Net Worth at the month-end before) ÷ Net Worth at the month-end before × 100, every month in the range that started above ₱0 (the current month runs to now). Header: weighted average growth per month on every range; a solid 0% line and a dashed line at that average. The axis fits typical months (from 1st quartile − 1.5 × IQR to 3rd quartile + 1.5 × IQR, with 4+ months, always including 0% and the average); months beyond it are drawn at its edge, with their real % in the tooltip
 
 **Formula (Growth):** Net Worth at a month-end − Net Worth at the month-end before it, every month in the range (no skipping); the current month's bar runs to now. Header: last point − first point and months up. Pressing a bar shows its amount and its % of the month before
 
-**Formula (3 years and all time header, every view):** weighted average growth per month = Σ monthly growth ÷ Σ Net Worth at the start of those months × 100, over every month in the range (months starting at ₱0 or below left out), in place of the % since the first point. Cumulative in Open keeps Net Worth as its value, with this rate in its change line
+**Formula (weighted average growth per month; Percentage header on every range, and every view's header on 3 years and all time):** Σ monthly growth ÷ Σ Net Worth at the start of those months × 100, over every month in the range (months starting at ₱0 or below left out), in place of the % since the first point. Cumulative in Open keeps Net Worth as its value, with this rate in its change line
 
 **Shown on:** Insights (Net worth growth chart)
 
 **Computed from:** same as [Net Worth Change](#net-worth-change)
 
-**Notes:** `getNetWorthHistory`, built on `calculateNetWorth`, the same calculation as Home's sparkline. Computed when Insights loads, not stored. Month-ends before the first transaction are left out; needs two points to draw. Percentage needs a first point above ₱0, otherwise the chart says so. Follows the month Insights is browsing. Tone: up good, down bad.
+**Notes:** `getNetWorthHistory`, built on `calculateNetWorth`, the same calculation as Home's sparkline. Computed when Insights loads, not stored. Month-ends before the first transaction are left out; needs two points to draw. Percentage needs two months that started above ₱0, otherwise the chart says so. Follows the month Insights is browsing. Tone: up good, down bad.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
@@ -530,7 +530,7 @@ Total income and Total expense compare month-to-date figures while the month is 
 | Expense analysis, All categories | Pie and % legend unchanged; rows show share %; "from goals" as goal-funded % of the category; budget line shows % only |
 | Category trend | Tooltip vs average %; Total and Average left out; Highest = peak month and its % vs average |
 | Income analytics | Tooltips vs average %; Sources pie and % legend unchanged; growth % shown in every mode |
-| Net worth growth | No amount axis on Cumulative and Growth. Header: % change over the range (3 years and all time: weighted average growth per month). Tooltips: % vs the first point (lines) or vs the month before (bars). Percentage view unchanged |
+| Net worth growth | No amount axis on Cumulative and Growth. Header: % change over the range (3 years and all time: weighted average growth per month). Tooltips: Cumulative % vs the first point; Percentage and Growth % of the month before, without the amount |
 | Savings trend | Rate tab unchanged; Saved and Cash flow: current = % of that month's income, Average = total kept ÷ total income, Best/Worst = month names; tooltips drop income/expense |
 | Allocation treemap | Same as Open (weights and returns only) |
 | Dividends (Actual, Projected) | Bars without an amount axis; tooltip: each ticker's share of the month and the month's share of the year; year total left out |

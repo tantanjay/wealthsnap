@@ -13,6 +13,14 @@ import { MonthlyDividend } from '@services/domain/investmentService';
 import { Ionicons } from '@expo/vector-icons';
 import { saveInvestmentDividendTab, getInvestmentDividendTab } from '@services/core/storageService';
 
+const TOOLTIP_WIDTH = 140;
+// Left offset (from the bar's column) that keeps a fixed-width tooltip inside the plot, and its arrow over the bar.
+const tooltipPosition = (index: number, count: number, plotWidth: number, tipWidth: number, arrowSize: number) => {
+    const col = plotWidth / Math.max(count, 1);
+    const left = Math.min(Math.max(col / 2 - tipWidth / 2, -index * col), (count - index) * col - tipWidth);
+    return { left, arrowLeft: col / 2 - left - arrowSize / 2 };
+};
+
 interface DividendChartProps {
     projectedDividends: { labels: string[], data: MonthlyDividend[] };
     actualDividends: Record<number, MonthlyDividend[]>;
@@ -47,6 +55,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
 
     const [activeTab, setActiveTab] = useState<TabType>('actual');
     const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
+    const [plotWidth, setPlotWidth] = useState(0);
 
     // For Actual Dividends Year Selection
     const availableYears = Object.keys(actualDividends).map(Number).sort((a, b) => a - b);
@@ -113,11 +122,12 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                     </View>
                 )}
 
-                <View style={styles.bars}>
+                <View style={styles.bars} onLayout={e => setPlotWidth(e.nativeEvent.layout.width)}>
                     {data.map((item, index) => {
                         const value = item.total;
                         const barHeight = yRange > 0 ? ((value - yMin) / yRange) * chartHeight : 0;
                         const isSelected = selectedBarIndex === index;
+                        const tip = tooltipPosition(index, data.length, plotWidth, TOOLTIP_WIDTH, 8);
                         const showLabelInterval = Math.ceil(labels.length / 6);
                         const shouldShowLabel = index === 0 || index === labels.length - 1 || index % showLabelInterval === 0;
 
@@ -138,7 +148,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                                 </TouchableOpacity>
 
                                 {isSelected && (
-                                    <View style={[styles.tooltip, { backgroundColor: ds.raised, borderColor: ds.hairline, bottom: Math.max(2, barHeight) + space[2] }]}>
+                                    <View style={[styles.tooltip, { width: TOOLTIP_WIDTH, left: tip.left, backgroundColor: ds.raised, borderColor: ds.hairline, bottom: Math.max(2, barHeight) + space[2] }]}>
                                         <Text style={[type.captionMedium, { color: ds.text, marginBottom: space[1] }]}>{labels[index]}</Text>
 
                                         {data[index].breakdown.length > 0 ? (
@@ -162,7 +172,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
                                             </Text>
                                         </View>
 
-                                        <View style={[styles.tooltipArrow, { backgroundColor: ds.raised, borderColor: ds.hairline }]} />
+                                        <View style={[styles.tooltipArrow, { left: tip.arrowLeft, backgroundColor: ds.raised, borderColor: ds.hairline }]} />
                                     </View>
                                 )}
 
@@ -331,7 +341,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         alignItems: 'center',
         zIndex: 1000,
-        minWidth: 100,
     },
     tooltipRow: {
         flexDirection: 'row',

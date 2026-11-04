@@ -28,7 +28,7 @@ const Stack: React.FC<{ segments: Segment[]; height?: number }> = ({ segments, h
         <View style={[styles.stack, { height }]}>
             {segments.map((s, i) => (
                 <View key={i} style={[styles.segment, { flex: s.flex, backgroundColor: s.color }]}>
-                    {s.label ? <Text style={[type.captionMedium, { color: ds.onSemantic }]} numberOfLines={1}>{s.label}</Text> : null}
+                    {s.label ? <Text style={[type.captionMedium, { color: ds.onSemantic }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{s.label}</Text> : null}
                 </View>
             ))}
         </View>
@@ -168,8 +168,8 @@ const PrivacyModes = () => {
                 {modes.map(([mode, value, change]) => (
                     <View key={mode} style={[styles.trioTile, { backgroundColor: ds.raised }]}>
                         <Text style={[type.captionMedium, { color: ds.text2 }]}>{mode}</Text>
-                        <Text style={[type.bodyNum, { color: ds.text }]} numberOfLines={1}>{value}</Text>
-                        <Text style={[type.captionNum, { color: change.startsWith('+') ? ds.success : ds.text2 }]} numberOfLines={1}>{change}</Text>
+                        <Text style={[type.bodyNum, { color: ds.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{value}</Text>
+                        <Text style={[type.captionNum, { color: change.startsWith('+') ? ds.success : ds.text2 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{change}</Text>
                     </View>
                 ))}
             </View>
@@ -286,7 +286,7 @@ const Scale: React.FC<{ bands: Segment[]; marks: string[]; marker?: { at: number
                 {bands.map((b, i) => (
                     <View key={i} style={{ flex: b.flex }}>
                         <Text style={[type.captionNum, { color: ds.text2 }]}>{marks[i]}</Text>
-                        <Text style={[type.captionMedium, { color: b.color }]} numberOfLines={1}>{b.label}</Text>
+                        <Text style={[type.captionMedium, { color: b.color }]}>{b.label}</Text>
                     </View>
                 ))}
             </View>
@@ -320,7 +320,7 @@ const PayoffOrder = () => {
             {rows.map(([name, key], i) => (
                 <View key={name} style={styles.payoffRow}>
                     <Text style={[type.captionNum, styles.rank, { color: ds.text3 }]}>{i + 1}</Text>
-                    <Text style={[type.caption, styles.flex, { color: ds.text }]} numberOfLines={1}>{name}</Text>
+                    <Text style={[type.caption, styles.flex, { color: ds.text }]}>{name}</Text>
                     <Text style={[type.captionNum, { color: ds.domainLoans }]}>{key}</Text>
                 </View>
             ))}

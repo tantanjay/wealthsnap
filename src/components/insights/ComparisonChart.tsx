@@ -16,6 +16,14 @@ import { Formula, HowCalculated } from './FinancialHealthDetails';
 import { getMonthlyTrends, getMonthlyTrendsForYear } from '@utils/financialMetrics';
 import { saveInsightsComparisonView, getInsightsComparisonView, saveInsightsComparisonTimeRange, getInsightsComparisonTimeRange } from '@services/core/storageService';
 
+const TOOLTIP_WIDTH = 120;
+// Left offset (from the bar's column) that keeps a fixed-width tooltip inside the plot, and its arrow over the bar.
+const tooltipPosition = (index: number, count: number, plotWidth: number, tipWidth: number, arrowSize: number) => {
+    const col = plotWidth / Math.max(count, 1);
+    const left = Math.min(Math.max(col / 2 - tipWidth / 2, -index * col), (count - index) * col - tipWidth);
+    return { left, arrowLeft: col / 2 - left - arrowSize / 2 };
+};
+
 interface ComparisonChartProps {
     currentMonthExpense: BigNumber;
     lastMonthExpense: BigNumber;
@@ -42,6 +50,7 @@ const VIEWS = [
 const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year, currency, transactions, isLoading = false, selectedDate = new Date() }) => {
     const [showInfoModal, setShowInfoModal] = React.useState(false);
     const [selectedBarIndex, setSelectedBarIndex] = React.useState<number | null>(null);
+    const [plotWidth, setPlotWidth] = React.useState(0);
     const [activeView, setActiveView] = React.useState<'COMPARISON' | 'MONTHLY'>('COMPARISON');
     const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
     const [selectedYear, setSelectedYear] = React.useState(selectedDate.getFullYear());
@@ -261,7 +270,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                     </View>
                 )}
 
-                <View style={styles.bars}>
+                <View style={styles.bars} onLayout={e => setPlotWidth(e.nativeEvent.layout.width)}>
                     {barData.map((bar, index) => {
                         // Calculate heights relative to yMin-yMax range
                         const totalHeight = (yRange > 0
@@ -275,6 +284,8 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                         const projectedHeight = bar.isProjected ? Math.max(0, totalHeight - actualHeight) : 0;
 
                         const isSelected = selectedBarIndex === index;
+
+                        const tip = tooltipPosition(index, barData.length, plotWidth, TOOLTIP_WIDTH, 10);
                         const barOpacity = isSelected ? PRESSED_OPACITY : 1;
                         const actualPct = vsAverage(bar.actual);
                         const projectedPct = vsAverage(bar.value);
@@ -309,7 +320,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
 
                                 {/* Tooltip Overlay */}
                                 {isSelected && (
-                                    <View style={[styles.tooltip, { bottom: Math.max(0, totalHeight) + 8, backgroundColor: ds.raised, borderColor: ds.hairline }]}>
+                                    <View style={[styles.tooltip, { width: TOOLTIP_WIDTH, left: tip.left, bottom: Math.max(0, totalHeight) + 8, backgroundColor: ds.raised, borderColor: ds.hairline }]}>
                                         <Text style={[type.captionMedium, { color: ds.text }]}>{bar.fullLabel.replace('*', '')}</Text>
                                         <Text style={[type.captionNum, { color: ds.text2 }]}>
                                             Actual: <Text style={{ color: ds.text }}>
@@ -323,7 +334,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                                                 </Text>
                                             </Text>
                                         )}
-                                        <View style={[styles.tooltipArrow, { backgroundColor: ds.raised, borderColor: ds.hairline }]} />
+                                        <View style={[styles.tooltipArrow, { left: tip.arrowLeft, backgroundColor: ds.raised, borderColor: ds.hairline }]} />
                                     </View>
                                 )}
 
@@ -529,7 +540,6 @@ const styles = StyleSheet.create({
     },
     tooltip: {
         position: 'absolute',
-        minWidth: 100,
         alignItems: 'center',
         padding: space[2],
         borderRadius: radius.sm,
