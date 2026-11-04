@@ -11,7 +11,7 @@ The single source of truth for every number the app computes: its formula, where
 - **Cash:** [Cash Balance](#cash-balance) · [Runway](#runway) · [Runway Change](#runway-change) · [Net Cash Flow](#net-cash-flow-monthly)
 - **Spending:** [Total Expense / Monthly Net / Daily Average](#total-expense--monthly-net--daily-average) · [Category Breakdown / Top Category](#category-breakdown--top-category) · [Savings Rate](#savings-rate) · [Budget Health](#budget-health)
 - **Obligations:** [Burn Rate](#burn-rate) · [Debts Drag](#debts-drag) · [Safe-to-Spend](#safe-to-spend)
-- **Wealth:** [Net Worth / Total Debt](#net-worth--total-debt) · [Net Worth Change](#net-worth-change)
+- **Wealth:** [Net Worth / Total Debt](#net-worth--total-debt) · [Net Worth Change](#net-worth-change) · [Net Worth Growth](#net-worth-growth)
 - **Home Snapshot rows:** [Cash Kept](#cash-kept) · [Investment Return](#investment-return) · [Loans Repaid / Obligations Paid](#loans-repaid--obligations-paid) · [Goals Progress / On Track](#goals-progress--on-track)
 - **Home tabs:** [Money In / Out](#money-in--out) · [Loan Payoff Plan](#loan-payoff-plan)
 - **Insights:** [Spending Pace](#spending-pace) · [Investment Boost](#investment-boost) · [Financial Health grid](#financial-health-grid)
@@ -290,7 +290,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (Total Debt):** current principal on active debts you owe; no future interest
 
-**Shown on:** Home Snapshot (hero, Total Assets, Loans row) · Insights Debt drag sheet (Total Debt, inside Self-sustain impact) · Home Loans tab (Outstanding) · Chat (Total Debt)
+**Shown on:** Home Snapshot (hero, Total Assets, Loans row) · Insights (Net worth growth chart; Debt drag sheet Total Debt, inside Self-sustain impact) · Home Loans tab (Outstanding) · Chat (Total Debt)
 
 **Computed from:** `transactions` (cash, goal balances, principal repaid) · `investments` + `price_history` (market value) · `debts` (`initialAmount`, and `interestRate`, `interestType`, `termMonths`, `minPayment` for projected interest)
 
@@ -324,6 +324,26 @@ These apply to every metric unless its section says otherwise.
 | Version | Rule after this change | What changed |
 |---|---|---|
 | 2.0.0 | As above | Introduced with the Home Snapshot |
+
+## Net Worth Growth
+
+**Formula (Cumulative):** [Net Worth at each past month-end](#net-worth-change) across the chosen range (6 months, 1 year, 3 years or all time; default 6 months), then the browsed month's own point: Net Worth now for the current month, else Net Worth at that month's end. Long ranges draw the first point and every few months back from the last, to stay near 36 points
+
+**Formula (Percentage):** (Net Worth at a point − Net Worth at the first point) ÷ Net Worth at the first point × 100
+
+**Formula (Growth):** Net Worth at a month-end − Net Worth at the month-end before it, every month in the range (no skipping); the current month's bar runs to now. Header: last point − first point and months up. Pressing a bar shows its amount and its % of the month before
+
+**Formula (3 years and all time header, every view):** weighted average growth per month = Σ monthly growth ÷ Σ Net Worth at the start of those months × 100, over every month in the range (months starting at ₱0 or below left out), in place of the % since the first point. Cumulative in Open keeps Net Worth as its value, with this rate in its change line
+
+**Shown on:** Insights (Net worth growth chart)
+
+**Computed from:** same as [Net Worth Change](#net-worth-change)
+
+**Notes:** `getNetWorthHistory`, built on `calculateNetWorth`, the same calculation as Home's sparkline. Computed when Insights loads, not stored. Month-ends before the first transaction are left out; needs two points to draw. Percentage needs a first point above ₱0, otherwise the chart says so. Follows the month Insights is browsing. Tone: up good, down bad.
+
+| Version | Rule after this change | What changed |
+|---|---|---|
+| Unreleased | As above | Introduced |
 
 ## Cash Kept
 
@@ -510,6 +530,7 @@ Total income and Total expense compare month-to-date figures while the month is 
 | Expense analysis, All categories | Pie and % legend unchanged; rows show share %; "from goals" as goal-funded % of the category; budget line shows % only |
 | Category trend | Tooltip vs average %; Total and Average left out; Highest = peak month and its % vs average |
 | Income analytics | Tooltips vs average %; Sources pie and % legend unchanged; growth % shown in every mode |
+| Net worth growth | No amount axis on Cumulative and Growth. Header: % change over the range (3 years and all time: weighted average growth per month). Tooltips: % vs the first point (lines) or vs the month before (bars). Percentage view unchanged |
 | Savings trend | Rate tab unchanged; Saved and Cash flow: current = % of that month's income, Average = total kept ÷ total income, Best/Worst = month names; tooltips drop income/expense |
 | Allocation treemap | Same as Open (weights and returns only) |
 | Dividends (Actual, Projected) | Bars without an amount axis; tooltip: each ticker's share of the month and the month's share of the year; year total left out |

@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - Allocation: Assets view showing every holding, alongside Stocks, Sector and Type.
+- Insights: Net worth growth chart with Cumulative, Percentage and Growth views over 6M, 1Y, 3Y or All time.
+
+### Changed
+- Spending comparison and Income analytics: one info icon; the calculation notes moved into "Understanding your chart".
+- "How is this calculated?" sections are always open.
 
 ### Fixed
 - Links and amounts no longer cut off on small phones, such as Details on Home and Calendar on the Ledger.

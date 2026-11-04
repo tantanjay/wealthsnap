@@ -7,11 +7,12 @@ import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
 import { Group, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
+import HiddenChart from '@components/common/HiddenChart';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { Transaction } from '@types';
 import { type, space, radius } from '@styles/theme';
-import { Formula } from './FinancialHealthDetails';
+import { Formula, HowCalculated } from './FinancialHealthDetails';
 import { getMonthlyTrends, getMonthlyTrendsForYear } from '@utils/financialMetrics';
 import { saveInsightsComparisonView, getInsightsComparisonView, saveInsightsComparisonTimeRange, getInsightsComparisonTimeRange } from '@services/core/storageService';
 
@@ -38,20 +39,8 @@ const VIEWS = [
     { key: 'MONTHLY', label: 'Trend' },
 ];
 
-// Hidden mode: same size, fill and copy as every other hidden chart.
-const HiddenChart: React.FC<{ height: number }> = ({ height }) => {
-    const { ds } = useTheme();
-    return (
-        <View style={[styles.hidden, { height, backgroundColor: ds.inset }]}>
-            <Ionicons name="lock-closed-outline" size={18} color={ds.text2} />
-            <Text style={[type.small, { color: ds.text2 }]}>Chart hidden for privacy</Text>
-        </View>
-    );
-};
-
 const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, lastMonthExpense, averageExpense, average6Month, average1Year, currency, transactions, isLoading = false, selectedDate = new Date() }) => {
     const [showInfoModal, setShowInfoModal] = React.useState(false);
-    const [showInsightInfo, setShowInsightInfo] = React.useState(false);
     const [selectedBarIndex, setSelectedBarIndex] = React.useState<number | null>(null);
     const [activeView, setActiveView] = React.useState<'COMPARISON' | 'MONTHLY'>('COMPARISON');
     const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
@@ -368,22 +357,19 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
             <Group padded>
                 <View style={styles.subline}>
                     <Text style={[type.small, styles.flex, { color: ds.text2 }]}>{isLoading ? "Analyzing spending habits..." : getComparisonInsight()}</Text>
-                    <Pressable onPress={() => setShowInsightInfo(true)} hitSlop={space[2]}>
-                        <Ionicons name="calculator-outline" size={18} color={ds.text2} />
+                    <Pressable onPress={() => setShowInfoModal(true)} hitSlop={space[2]} accessibilityLabel="Understanding your chart">
+                        <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
                     </Pressable>
                 </View>
                 <Text style={[type.caption, styles.footnote, { color: ds.text2 }]}>
                     *Projection assumes even spending throughout month
                 </Text>
 
-                <View style={styles.toolbar}>
-                    {activeView === 'MONTHLY' ? (
+                {activeView === 'MONTHLY' && (
+                    <View style={styles.toolbar}>
                         <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
-                    ) : <View />}
-                    <Pressable onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
-                        <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
-                    </Pressable>
-                </View>
+                    </View>
+                )}
 
                 {isLoading ? (
                     <Skeleton height={CHART_HEIGHT} width="100%" borderRadius={radius.md} />
@@ -448,37 +434,30 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                             </Text>
                         </View>
                     </Group>
-                </ScrollView>
-            </BottomModal>
 
-            <BottomModal
-                visible={showInsightInfo}
-                onClose={() => setShowInsightInfo(false)}
-                title="How is this calculated?"
-                maxHeight="55%"
-            >
-                <Group padded>
-                    <Text style={[type.small, modalStyles.lead, { color: ds.text2 }]}>
-                        This smart insight compares your <Text style={{ color: ds.text }}>projected spending</Text> for this month against your <Text style={{ color: ds.text }}>3-month average</Text>.
-                    </Text>
-                    <Formula formula="Projected = (Spent so far ÷ Days elapsed) × Days in month" />
-                    <View style={modalStyles.legend}>
-                        <View style={modalStyles.legendRow}>
-                            <View style={[modalStyles.legendDot, { backgroundColor: ds.success }]} />
-                            <Text style={[type.small, modalStyles.noteText, { color: ds.text2 }]}>
-                                <Text style={{ color: ds.text }}>Less than average: </Text>
-                                You&apos;re on track to spend less than your 3-month average.
-                            </Text>
+                    <HowCalculated>
+                        <Text style={[type.small, modalStyles.lead, { color: ds.text2 }]}>
+                            This smart insight compares your <Text style={{ color: ds.text }}>projected spending</Text> for this month against your <Text style={{ color: ds.text }}>3-month average</Text>.
+                        </Text>
+                        <Formula formula="Projected = (Spent so far ÷ Days elapsed) × Days in month" />
+                        <View style={modalStyles.legend}>
+                            <View style={modalStyles.legendRow}>
+                                <View style={[modalStyles.legendDot, { backgroundColor: ds.success }]} />
+                                <Text style={[type.small, modalStyles.noteText, { color: ds.text2 }]}>
+                                    <Text style={{ color: ds.text }}>Less than average: </Text>
+                                    You&apos;re on track to spend less than your 3-month average.
+                                </Text>
+                            </View>
+                            <View style={modalStyles.legendRow}>
+                                <View style={[modalStyles.legendDot, { backgroundColor: ds.danger }]} />
+                                <Text style={[type.small, modalStyles.noteText, { color: ds.text2 }]}>
+                                    <Text style={{ color: ds.text }}>More than average: </Text>
+                                    You&apos;re on track to spend more than your 3-month average.
+                                </Text>
+                            </View>
                         </View>
-                        <View style={modalStyles.legendRow}>
-                            <View style={[modalStyles.legendDot, { backgroundColor: ds.danger }]} />
-                            <Text style={[type.small, modalStyles.noteText, { color: ds.text2 }]}>
-                                <Text style={{ color: ds.text }}>More than average: </Text>
-                                You&apos;re on track to spend more than your 3-month average.
-                            </Text>
-                        </View>
-                    </View>
-                </Group>
+                    </HowCalculated>
+                </ScrollView>
             </BottomModal>
         </View>
     );
@@ -506,12 +485,6 @@ const styles = StyleSheet.create({
     chartArea: {
         height: CHART_HEIGHT,
         paddingVertical: space[2],
-    },
-    hidden: {
-        borderRadius: radius.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: space[2],
     },
     yearSelector: {
         flexDirection: 'row',

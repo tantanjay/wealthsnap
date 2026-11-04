@@ -68,6 +68,8 @@ export const ASYNC_KEYS = {
         SAVINGS_TAB: '@wealthsnap_insights_savings_tab',
         SAVINGS_TIME_RANGE: '@wealthsnap_insights_savings_time_range',
         PULSE_PERIOD: '@wealthsnap_insights_pulse_period',
+        NET_WORTH_VIEW: '@wealthsnap_insights_net_worth_view',
+        NET_WORTH_TIME_RANGE: '@wealthsnap_insights_net_worth_time_range',
     },
     HISTORY_SCREEN: {
         PREFERENCE: '@wealthsnap_history_prefs'

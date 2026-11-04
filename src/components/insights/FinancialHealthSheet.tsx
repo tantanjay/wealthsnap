@@ -155,7 +155,7 @@ const FinancialHealthSheet: React.FC<FinancialHealthSheetProps> = ({ target, onC
             title={target === 'all' ? 'Financial health' : undefined}
             subtitle={target === 'all' ? `All ${HEALTH_METRIC_IDS.length} numbers. Tap one for details.` : undefined}
         >
-            {/* Keyed so a collapsible's open state doesn't carry over to the next metric. */}
+            {/* Keyed so each metric's detail mounts fresh instead of reusing the last one's state. */}
             <View key={target ?? 'none'}>
                 {target === 'all' && renderAll()}
                 {target && target !== 'all' && renderDetail(target)}

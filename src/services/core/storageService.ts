@@ -468,6 +468,40 @@ export const getInsightsSavingsTimeRange = async (): Promise<string | null> => {
     }
 };
 
+export const saveInsightsNetWorthView = async (view: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.NET_WORTH_VIEW, view);
+    } catch (error) {
+        console.error('Failed to save insights net worth view:', error);
+    }
+};
+
+export const getInsightsNetWorthView = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.NET_WORTH_VIEW);
+    } catch (error) {
+        console.error('Failed to get insights net worth view:', error);
+        return null;
+    }
+};
+
+export const saveInsightsNetWorthTimeRange = async (range: string): Promise<void> => {
+    try {
+        await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.NET_WORTH_TIME_RANGE, range);
+    } catch (error) {
+        console.error('Failed to save insights net worth time range:', error);
+    }
+};
+
+export const getInsightsNetWorthTimeRange = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem(ASYNC_KEYS.INSIGHTS_SCREEN.NET_WORTH_TIME_RANGE);
+    } catch (error) {
+        console.error('Failed to get insights net worth time range:', error);
+        return null;
+    }
+};
+
 export const saveInsightsPulsePeriod = async (period: string): Promise<void> => {
     try {
         await AsyncStorage.setItem(ASYNC_KEYS.INSIGHTS_SCREEN.PULSE_PERIOD, period);

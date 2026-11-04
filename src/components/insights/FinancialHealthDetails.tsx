@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
@@ -46,24 +46,16 @@ export const Formula: React.FC<{ title?: string; formula: string; worked?: strin
     );
 };
 
-// Collapsible "How is this calculated?"; replaces the old info modals (never a modal over a sheet).
+// Always-open "How is this calculated?" block; replaces the old info modals (never a modal over a sheet).
 export const HowCalculated: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { ds } = useTheme();
-    const [open, setOpen] = useState(false);
     return (
         <Group padded style={styles.how}>
-            <Pressable
-                onPress={() => setOpen(o => !o)}
-                style={styles.howSummary}
-                accessibilityRole="button"
-                accessibilityState={{ expanded: open }}
-                hitSlop={space[2]}
-            >
-                <Ionicons name="calculator-outline" size={15} color={ds.accent} />
-                <Text style={[type.smallMedium, { color: ds.accent }]}>How is this calculated?</Text>
-                <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={ds.accent} />
-            </Pressable>
-            {open ? children : null}
+            <View style={styles.howSummary} accessibilityRole="header">
+                <Ionicons name="calculator-outline" size={15} color={ds.text2} />
+                <Text style={[type.smallStrong, { color: ds.text }]}>How is this calculated?</Text>
+            </View>
+            {children}
         </Group>
     );
 };

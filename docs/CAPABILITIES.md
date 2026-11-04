@@ -289,6 +289,7 @@ One calm overview instead of a stack of cards:
 
 - Assets minus liabilities
 - Liabilities include projected interest
+- Net worth growth chart in Insights: cumulative, percentage and month-by-month growth over 6M, 1Y, 3Y or all time
 - Conservative projection model
 - Clear separation of mandatory vs discretionary cash flow
 
@@ -296,6 +297,7 @@ One calm overview instead of a stack of cards:
 
 ## 📉 Interactive Trend Analytics
 
+- Net Worth Growth
 - Savings Rate Trend
 - Income Analysis
 - Spending Comparison

@@ -117,9 +117,9 @@ Text is sentence case everywhere (no ALL-CAPS section labels).
 | **Bottom tab bar** | `group` fill, hairline top, 5 items. Inactive icons and labels `text2`; active = filled icon + `accent`. Labels `caption` 500. Center Record = 48px `accent` circle raised above the bar, the only floating accent; its shadow is accent-tinted in light and plain black in dark. |
 | **Bottom sheet** | `canvas` fill, top radius 20, 36×4 grabber, body inset 14 from the edges. Title `title` (lined up with group content) *or* a hero (`<Hero panel>`). Body content sits in Groups, exactly like a screen. Footer: `group` band + hairline top, holding the primary button. Both `ds/Sheet` and `common/BottomModal` draw this. Never open a modal on top of a sheet — use a collapsible section instead. |
 | **Dialog** (CustomAlert) | `sheet` fill (white / `#16191D`), radius 20, centered. Footer: `inset` band + hairline top. |
-| **"How is this calculated?"** | In its own `<Group padded>`. Collapsible: `small` 500 `accent` summary with `calculator-outline` icon → `inset` formula block (radius 8, `small`) → one `small` `text2` explanation line. |
+| **"How is this calculated?"** | In its own `<Group padded>`. Always open: `small` 600 `text` heading with a `text2` `calculator-outline` icon (not tappable, so never `accent`) → `inset` formula block (radius 8, `small`) → one `small` `text2` explanation line. |
 | **Selection lists** | Rows in a Group. Radio (20px ring, accent dot) for single choice; numbered checkbox (22px, radius 6, accent fill with position number) when choice order matters. |
-| **Charts** | In a `<Group padded>`. Anything that must match the surface behind it (pointer borders, a donut's inner circle) uses `group`. Bars: `accent` at 100% for recorded amounts, 22% for projected or estimated ones (the projected rest of this month stacks faint on top of its solid part); a pressed bar dims to 70%. Top radius 4, no gridlines, `caption` `text2` axis labels. Lines: 1.5px `accent`; the recorded (actual) series may carry a soft `accent` fill fading from 18% to 0, projections and averages never do. |
+| **Charts** | In a `<Group padded>`. Anything that must match the surface behind it (pointer borders, a donut's inner circle) uses `group`. Bars: `accent` at 100% for recorded amounts, 22% for projected or estimated ones (the projected rest of this month stacks faint on top of its solid part); a pressed bar dims to 70%. Bars that show a gain or loss (net worth growth) use `success` above zero and `danger` below it instead of `accent`, rounded at their far end. Top radius 4, no gridlines, `caption` `text2` axis labels. Lines: 1.5px `accent`; the recorded (actual) series may carry a soft `accent` fill fading from 18% to 0, projections and averages never do. |
 
 ## 4. Numbers
 
@@ -186,7 +186,7 @@ For moving an existing Refined Minimal screen, form or sheet onto Layered + iden
 1. Nothing to change on the container: both now draw a canvas body, a 14 side inset, a title lined up with group content and a `group` footer band.
 2. Wrap the body content in Groups exactly as for a screen (rows → `<Group>`, everything else → `<Group padded>`). The first group directly under the title needs no header; later sections use `SectionHeader grouped`.
 3. A sheet whose header is a hero uses `<Hero panel>`.
-4. Collapsible "How is this calculated?" blocks go in their own `<Group padded>`; the formula block stays `inset`.
+4. "How is this calculated?" blocks go in their own `<Group padded>`; the formula block stays `inset`.
 5. Remove `contentStyle` / inner-view paddings or backgrounds that assumed the old 20 gutter or a white body.
 6. Drag-to-reorder lists sit in a Group; the dragged row uses `ds.raised`.
 

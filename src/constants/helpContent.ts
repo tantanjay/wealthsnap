@@ -265,6 +265,13 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'heading2', text: 'Charts & Trends' },
             { type: 'paragraph', text: 'Charts answer "Where am I heading?", not just where I am.' },
 
+            { type: 'heading3', text: 'Net Worth Growth' },
+            { type: 'blockquote', text: 'Shows: How your net worth has moved over 6 months, 1 year, 3 years or all time.' },
+            { type: 'bullet', text: 'Cumulative — your net worth at the end of each month, ending with today' },
+            { type: 'bullet', text: 'Percentage — how far it has moved since the first month shown, as a %' },
+            { type: 'bullet', text: 'Growth — how much it went up (green) or down (red) in each month' },
+            { type: 'paragraph', text: 'Uses the same Projected Net Worth as Home. In Discreet mode, amounts become % changes and the amount axis is dropped.' },
+
             { type: 'heading3', text: 'Savings Rate Trend' },
             { type: 'blockquote', text: 'Shows: Your monthly performance over time, across three switchable views.' },
             { type: 'bullet', text: 'Rate — the percentage of income you kept each month' },
@@ -506,6 +513,18 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'heading2', text: 'Out of Cash Detection' },
             { type: 'formula', text: 'Triggered when: Cash Balance ≤ 0' },
             { type: 'paragraph', text: 'Checked every month, so it keeps reminding you until your balance is back above zero. While it applies, Runway Drop is skipped.' },
+
+            { type: 'divider' },
+            { type: 'heading1', text: '8. Net Worth Growth' },
+            { type: 'paragraph', text: 'Net Worth at a month-end is your Projected Net Worth as of that day: cash, goal balances and investments (at their latest price on or before then) minus loan principal and projected future interest. The last point is today.' },
+            { type: 'formula', text: 'Cumulative(month) = Net Worth at that month-end' },
+            { type: 'formula', text: 'Percentage(month) = (Net Worth then − Net Worth at the start) ÷ Net Worth at the start × 100' },
+            { type: 'formula', text: 'Growth(month) = Net Worth at that month-end − Net Worth at the month-end before it' },
+            { type: 'bullet', text: 'Long ranges skip months on the Cumulative and Percentage lines to stay near 36 points; Growth always has one bar per month' },
+            { type: 'formula', text: 'Weighted avg growth per month (3 years and all time, every view) = Σ monthly growth ÷ Σ Net Worth at the start of those months × 100' },
+            { type: 'bullet', text: '3 years and all time use the weighted average because a % from an early, small balance can be huge and meaningless; months starting at zero or below are left out' },
+            { type: 'bullet', text: 'Percentage needs a starting net worth above zero' },
+            { type: 'bullet', text: 'Months before your first transaction are left out' },
 
             { type: 'divider' },
             { type: 'heading1', text: 'Edge Cases Handled' },

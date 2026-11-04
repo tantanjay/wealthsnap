@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Skeleton } from '@components/common/Skeleton';
+import HiddenChart from '@components/common/HiddenChart';
 import { Group, SectionHeader } from '@components/ds';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useTheme } from '@context/ThemeContext';
@@ -247,12 +248,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
 
     const renderContent = () => {
         if (isHidden) {
-            return (
-                <View style={[styles.placeholder, { backgroundColor: ds.inset }]}>
-                    <Ionicons name="lock-closed-outline" size={18} color={ds.text2} />
-                    <Text style={[type.small, { color: ds.text2 }]}>Chart hidden for privacy</Text>
-                </View>
-            );
+            return <HiddenChart />;
         }
 
         switch (activeTab) {
@@ -303,13 +299,6 @@ const styles = StyleSheet.create({
     },
     total: {
         marginBottom: space[2],
-    },
-    placeholder: {
-        flex: 1,
-        borderRadius: radius.md,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: space[2],
     },
     barChart: {
         flex: 1,

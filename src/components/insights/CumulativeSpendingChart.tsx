@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomModal from '@components/common/BottomModal';
 import { Group, Row, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
+import HiddenChart from '@components/common/HiddenChart';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { Transaction } from '@types';
@@ -31,17 +32,6 @@ const PERIODS = [
 // Signed % change of a value against its reference; null when there's no reference.
 const changeVs = (value: number, reference: number): number | null =>
     reference > 0 ? ((value - reference) / reference) * 100 : null;
-
-// Hidden mode: same size, fill and copy as every other hidden chart.
-const HiddenChart: React.FC<{ height: number }> = ({ height }) => {
-    const { ds } = useTheme();
-    return (
-        <View style={[styles.hidden, { height, backgroundColor: ds.inset }]}>
-            <Ionicons name="lock-closed-outline" size={18} color={ds.text2} />
-            <Text style={[type.small, { color: ds.text2 }]}>Chart hidden for privacy</Text>
-        </View>
-    );
-};
 
 const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
     transactions,
@@ -449,12 +439,6 @@ const styles = StyleSheet.create({
     xLabel: {
         width: 30,
         textAlign: 'center',
-    },
-    hidden: {
-        borderRadius: radius.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: space[2],
     },
     pointer: {
         height: 10,

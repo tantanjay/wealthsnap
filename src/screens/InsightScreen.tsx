@@ -11,6 +11,7 @@ import ComparisonChart from '@components/insights/ComparisonChart';
 import SmartAlerts from '@components/insights/SmartAlerts';
 import SavingsRateTrend from '@components/insights/SavingsRateTrend';
 import CumulativeSpendingChart from '@components/insights/CumulativeSpendingChart';
+import NetWorthGrowthChart from '@components/insights/NetWorthGrowthChart';
 import FinancialHealthGrid from '@components/insights/FinancialHealthGrid';
 import FinancialHealthSheet, { HealthSheetTarget } from '@components/insights/FinancialHealthSheet';
 import InsightsSettingsSheet, { InsightsSectionId, normalizeSectionOrder, DEFAULT_SECTION_ORDER } from '@components/insights/InsightsSettingsSheet';
@@ -32,6 +33,9 @@ import { getAllSavingsGoals } from '@services/domain/savingsGoalService';
 import * as Metrics from '@utils/financialMetrics';
 import * as Storage from '@services/core/storageService';
 import { getCachedTransactions } from '@services/domain/transactionService';
+import { getCachedInvestments } from '@services/domain/investmentService';
+import { getPriceHistoryForSymbols } from '@services/domain/priceHistoryService';
+import { buildPriceLookup, PriceLookup } from '@utils/snapshotMetrics';
 
 const InsightScreen = ({ navigation }: any) => {
     const { ds } = useTheme();
@@ -55,6 +59,8 @@ const InsightScreen = ({ navigation }: any) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [debts, setDebts] = useState<import('@types').Debt[]>([]);
     const [goals, setGoals] = useState<import('@types').SavingsGoal[]>([]);
+    const [investments, setInvestments] = useState<import('@types').Investment[]>([]);
+    const [priceAt, setPriceAt] = useState<PriceLookup | null>(null);
 
     const selectedYear = selectedDate.getFullYear();
     // Update picker year when selected date changes (for external sync)
@@ -241,14 +247,17 @@ const InsightScreen = ({ navigation }: any) => {
     const fetchAllData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [profile, savedGrid, savedSectionOrder, allTransactions, allDebts, allGoals] = await Promise.all([
+            const [profile, savedGrid, savedSectionOrder, allTransactions, allDebts, allGoals, allInvestments] = await Promise.all([
                 Storage.getUserProfile(),
                 Storage.getHealthGrid(),
                 Storage.getInsightsSectionOrder(),
                 getCachedTransactions(),
                 getAllDebts(),
                 getAllSavingsGoals(),
+                getCachedInvestments(),
             ]);
+            const symbols = Array.from(new Set(allInvestments.map(i => i.symbol)));
+            const lookup = buildPriceLookup(await getPriceHistoryForSymbols(symbols));
 
             if (profile?.currency) setCurrency(profile.currency);
 
@@ -262,6 +271,8 @@ const InsightScreen = ({ navigation }: any) => {
             setTransactions(safeTransactions);
             setDebts(allDebts);
             setGoals(allGoals);
+            setInvestments(allInvestments);
+            setPriceAt(() => lookup);
             // We pass variables directly here to bypass the React state update delay
             await calculateMetrics(safeTransactions, allDebts, allGoals, viewRef.current.expenseGrouping, viewRef.current.selectedDate);
         } catch (error) {
@@ -320,6 +331,18 @@ const InsightScreen = ({ navigation }: any) => {
     const openChat = () => checkConsent(() => navigation.navigate('Chat'));
 
     const sections: Record<InsightsSectionId, React.ReactNode> = {
+        netWorth: (
+            <NetWorthGrowthChart
+                transactions={transactions}
+                investments={investments}
+                debts={debts}
+                goals={goals}
+                priceAt={priceAt}
+                currency={currency}
+                isLoading={isLoading}
+                selectedDate={selectedDate}
+            />
+        ),
         cumulative: (
             <CumulativeSpendingChart
                 transactions={transactions}

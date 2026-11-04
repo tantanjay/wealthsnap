@@ -9,9 +9,10 @@ import { type, space, layout } from '@styles/theme';
 import { HEALTH_METRIC_META } from './financialHealthPool';
 
 // Sections below the grid, in their default order. 'budgets' is new with the redesign.
-export type InsightsSectionId = 'cumulative' | 'comparison' | 'expense' | 'income' | 'savings' | 'budgets' | 'alerts';
+export type InsightsSectionId = 'netWorth' | 'cumulative' | 'comparison' | 'expense' | 'income' | 'savings' | 'budgets' | 'alerts';
 
 export const INSIGHTS_SECTION_META: Record<InsightsSectionId, OrderItemMeta> = {
+    netWorth: { label: 'Net worth growth' },
     cumulative: { label: 'Cumulative spending' },
     comparison: { label: 'Spending comparison' },
     expense: { label: 'Expense analysis' },
