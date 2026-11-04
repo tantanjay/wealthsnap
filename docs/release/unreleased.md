@@ -24,6 +24,8 @@
 ## 🧭 Tidier Chart Explanations
 - **One info icon per chart**: Spending comparison and Income analytics used to show a calculator icon and an info icon side by side. The calculator is gone: its explanation of the insight line now sits at the bottom of the chart's "Understanding your chart" sheet, and the info icon sits at the end of the insight line, the same spot as on Monthly pulse.
 - **Formulas always shown**: "How is this calculated?" sections, in the Financial Health sheets, Safe to spend and chart guides, are now always open, so the formulas are there without an extra tap.
+- **More room for long ranges**: Savings trend and Monthly pulse now run edge to edge across their card, with slimmer amount labels sitting right next to the line, so long ranges like All time have more space for their points. Savings trend now fits every month on screen instead of running off the right edge, so there's nothing to scroll. In Discreet mode, where the amount labels are hidden, the line uses that space instead of leaving a gap.
+- **Touch to see a month**: Savings trend and a category's trend now show their tooltip as soon as you touch the line, like Monthly pulse, instead of needing a long press. Drag along the line to move between months. Month labels along the bottom are spaced out so the last one no longer crowds the one before it.
 
 ---
 
