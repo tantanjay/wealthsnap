@@ -34,6 +34,7 @@ interface HoldingsTabProps {
 type PortfolioStats = Awaited<ReturnType<typeof getPortfolioStats>>;
 type SortOption = 'ALLOCATION' | 'PL_PERCENT' | 'PL_AMOUNT' | 'YIELD' | 'ALPHABETICAL';
 const ALLOCATION_TABS: { key: AllocationTab; label: string }[] = [
+    { key: 'assets', label: 'Assets' },
     { key: 'stocks', label: 'Stocks' },
     { key: 'sector', label: 'Sector' },
     { key: 'type', label: 'Type' },
@@ -73,7 +74,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
     const [actualDividends, setActualDividends] = useState<Record<number, MonthlyDividend[]>>({});
     const [calendarData, setCalendarData] = useState<Record<number, CalendarEvent[]>>({});
     const [sort, setSort] = useState<SortOption>('ALLOCATION');
-    const [allocationTab, setAllocationTab] = useState<AllocationTab>('stocks');
+    const [allocationTab, setAllocationTab] = useState<AllocationTab>('assets');
     // Kept after closing so the history sheet doesn't blank out while it slides away.
     const [historySymbol, setHistorySymbol] = useState('');
     const [isHistoryVisible, setIsHistoryVisible] = useState(false);

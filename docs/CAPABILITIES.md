@@ -227,7 +227,7 @@ Supports:
 
 - Realized P/L
 - Unrealized P/L
-- Allocation heatmap (Stock / Sector views)
+- Allocation heatmap (Assets / Stocks / Sector / Type views)
 - Holdings list with sorting
 - Native currency support
 - Monthly vs Total portfolio view

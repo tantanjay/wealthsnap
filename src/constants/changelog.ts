@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Allocation: Assets view showing every holding, alongside Stocks, Sector and Type.
+
 ### Fixed
 - Links and amounts no longer cut off on small phones, such as Details on Home and Calendar on the Ledger.
 
