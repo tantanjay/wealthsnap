@@ -408,6 +408,11 @@ export interface PortfolioHolding {
     name?: string;
     type?: string;
     priceAsOf?: string;
+    // Total return pieces for this holding (docs/METRICS.md, Investment Return):
+    // (unrealized + realized + dividends) ÷ (cost of what's held + cost of what was sold).
+    realizedPL: number;
+    dividends: number;
+    totalInvested: number;
 }
 
 export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
@@ -472,7 +477,13 @@ export const getPortfolioHoldings = async (): Promise<PortfolioHolding[]> => {
             sector: asset?.sector || 'Other',
             name: asset?.name,
             type: asset?.type,
-            priceAsOf: priceDateMap[m.symbol]
+            priceAsOf: priceDateMap[m.symbol],
+            realizedPL: m.realizedPL.toNumber(),
+            dividends: groupedInvestments[m.symbol]
+                .filter(inv => inv.action === 'DIVIDEND')
+                .reduce((sum, inv) => sum.plus(inv.price.times(inv.quantity)), new BigNumber(0))
+                .toNumber(),
+            totalInvested: m.totalCostBasis.plus(m.realizedCostBasis).toNumber(),
         };
     });
 
