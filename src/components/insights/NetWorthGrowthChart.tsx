@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Dimensions, Pressable, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Dimensions, Pressable, ScrollView, StyleSheet, StyleProp, TextStyle, TouchableOpacity } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -45,6 +45,15 @@ const CHART_HEIGHT = 200;
 const BAR_HEIGHT = 160;
 const PRESSED_OPACITY = 0.7;
 const TOOLTIP_WIDTH = 120;
+const Y_AXIS_WIDTH = 44;
+// Room kept at each end for the pointer dot; the end labels are anchored to their points instead.
+const X_EDGE = 6;
+const X_LABEL_WIDTH = 28;
+// Percent labels ("-150%") need less room than compact amounts ("−₱120k").
+const Y_AXIS_WIDTH_PERCENT = 36;
+
+// Plain copies: gifted-charts deep-clones data items by writing to them, and StyleSheet styles are frozen in dev.
+const plainStyle = (style: StyleProp<TextStyle>): TextStyle => JSON.parse(JSON.stringify(StyleSheet.flatten(style)));
 const MAX_LINE_POINTS = 37;
 // Ranges whose header shows the weighted monthly rate instead of the % since the first point.
 const WEIGHTED_RANGES: TimeRange[] = ['3Y', 'ALL'];
@@ -54,8 +63,8 @@ const toneOf = (value: number): Tone => (value > 0 ? 'good' : value < 0 ? 'bad' 
 // Change vs a base; null while the base is zero or below (a % of it means nothing).
 const pctOf = (change: number, base: number): number | null => (base > 0 ? (change / base) * 100 : null);
 
-const monthLabel = (date: Date, withYear: boolean): string =>
-    date.toLocaleDateString('en-US', { month: 'short' }) + (withYear ? ` '${String(date.getFullYear()).slice(2)}` : '');
+// Axis labels are month names only, like the other charts; tooltips carry the year.
+const monthLabel = (date: Date): string => date.toLocaleDateString('en-US', { month: 'short' });
 
 const fullLabel = (p: NetWorthPoint): string =>
     p.isNow ? 'Today' : p.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
@@ -129,10 +138,6 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
     const change = last - first;
     const changePct = pctOf(change, first);
     const startText = points[0] ? fullLabel(points[0]) : '';
-    const spanMonths = points.length > 1
-        ? (points[points.length - 1].date.getFullYear() - points[0].date.getFullYear()) * 12 + points[points.length - 1].date.getMonth() - points[0].date.getMonth()
-        : 0;
-    const withYear = spanMonths > 12;
 
     const growth = useMemo(() => points.slice(1).map((p, i) => ({
         point: p,
@@ -193,7 +198,8 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
         };
     }, [view, timeRange, format, change, changePct, last, startText, growth, weightedMonthly]);
 
-    const chartWidth = screenWidth - 80 - (layout.groupInset + layout.groupPadding - space[5]) * 2;
+    // Charts run edge to edge across the card (past its side padding) to give long ranges room.
+    const chartWidth = screenWidth - layout.groupInset * 2;
     const axisText = [type.caption, { color: ds.text2 }];
 
     // ---------- Line views (Cumulative, Percentage) ----------
@@ -234,7 +240,14 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
     }, [lineValues, view, weightedMonthly]);
 
     const showYAxis = view === 'PERCENT' || format.isOpen;
-    const lineLabels = thinLabels(lineSeries.map(s => monthLabel(s.point.date, withYear)));
+    const edgeLabels = useMemo(() => ({
+        first: plainStyle([type.caption, { color: ds.text2 }, styles.xLabel, styles.xLabelFirst]),
+        last: plainStyle([type.caption, { color: ds.text2 }, styles.xLabel, styles.xLabelLast]),
+    }), [ds]);
+    // A hidden axis hands its room back to the plot, so the line still reaches the right edge.
+    const yAxisWidth = !showYAxis ? space[2] : view === 'PERCENT' ? Y_AXIS_WIDTH_PERCENT : Y_AXIS_WIDTH;
+    const plotWidth = chartWidth - yAxisWidth;
+    const lineLabels = thinLabels(lineSeries.map(s => monthLabel(s.point.date)));
 
     const pointerConfig = useMemo(() => ({
         pointerStripHeight: CHART_HEIGHT - 20,
@@ -291,13 +304,15 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
                         // Months beyond the axis are drawn at its edge; the tooltip still shows their real %.
                         value: Math.min(Math.max(v, lineScale.lo), lineScale.hi) - lineScale.lo,
                         label: lineLabels[i],
+                        labelTextStyle: i === 0 ? edgeLabels.first : i === lineValues.length - 1 ? edgeLabels.last : undefined,
                         index: i,
                     }))}
                     height={CHART_HEIGHT - 30}
-                    width={chartWidth}
-                    initialSpacing={10}
-                    endSpacing={10}
-                    spacing={n > 1 ? (chartWidth - 20) / (n - 1) : 0}
+                    width={plotWidth}
+                    initialSpacing={X_EDGE}
+                    endSpacing={X_EDGE}
+                    spacing={n > 1 ? (plotWidth - X_EDGE * 2) / (n - 1) : 0}
+                    disableScroll
                     thickness={1.5}
                     color={ds.accent}
                     curved
@@ -313,9 +328,10 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
                     hideRules
                     yAxisColor="transparent"
                     xAxisColor="transparent"
-                    yAxisLabelWidth={showYAxis ? 48 : space[2]}
+                    yAxisLabelWidth={yAxisWidth}
                     hideYAxisText={!showYAxis}
                     yAxisTextStyle={axisText}
+                    yAxisLabelContainerStyle={styles.yLabel}
                     xAxisLabelTextStyle={[axisText, styles.xLabel]}
                     formatYLabel={(label: string) => {
                         const real = Number(label) + lineScale.lo;
@@ -356,7 +372,7 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
         const maxDown = Math.max(0, ...growth.map(g => -g.value));
         const total = maxUp + maxDown || 1;
         const zeroFromTop = (maxUp / total) * BAR_HEIGHT;
-        const labels = thinLabels(growth.map(g => monthLabel(g.point.date, withYear)));
+        const labels = thinLabels(growth.map(g => monthLabel(g.point.date)));
         const pressed = pressedBar !== null ? growth[pressedBar] : null;
         const columnWidth = barsWidth / Math.max(growth.length, 1);
         const tipLeft = pressedBar !== null
@@ -567,7 +583,7 @@ const styles = StyleSheet.create({
     },
     chart: {
         height: CHART_HEIGHT,
-        marginLeft: -space[2],
+        marginHorizontal: -layout.groupPadding,
     },
     legend: {
         flexDirection: 'row',
@@ -591,8 +607,22 @@ const styles = StyleSheet.create({
         borderStyle: 'dashed',
     },
     xLabel: {
-        width: 40,
+        width: X_LABEL_WIDTH,
         textAlign: 'center',
+    },
+    // First and last labels start or end at their point, so the line can run to the edges.
+    xLabelFirst: {
+        textAlign: 'left',
+        transform: [{ translateX: X_LABEL_WIDTH / 2 }],
+    },
+    xLabelLast: {
+        textAlign: 'right',
+        transform: [{ translateX: -X_LABEL_WIDTH / 2 }],
+    },
+    // The library centers y labels in a row; right-aligned, short ones sit next to the plot.
+    yLabel: {
+        justifyContent: 'flex-end',
+        paddingRight: space[1],
     },
     pointerLabelWrap: {
         width: 140,
@@ -610,9 +640,11 @@ const styles = StyleSheet.create({
     plot: {
         flexDirection: 'row',
         height: CHART_HEIGHT,
+        marginLeft: -layout.groupPadding,
+        marginRight: -space[2],
     },
     yAxis: {
-        width: 52,
+        width: Y_AXIS_WIDTH,
         marginRight: space[1],
     },
     yTick: {

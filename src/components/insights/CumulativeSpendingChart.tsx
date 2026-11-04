@@ -260,9 +260,10 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
 
     // The chart box is the page width minus its right gutter (it bleeds into the left one), so day 31's
     // label must fit inside that box: spacing comes from what's left after the y-axis and edge room.
-    const yAxisWidth = format.isOpen ? 56 : space[5];
+    const yAxisWidth = format.isOpen ? 44 : space[2];
     // The chart bleeds into the group's left padding, so it spans group edge → content edge.
-    const plotWidth = screenWidth - layout.groupInset * 2 - layout.groupPadding - yAxisWidth;
+    // Edge to edge across the card, past its side padding.
+    const plotWidth = screenWidth - layout.groupInset * 2 - yAxisWidth;
     const pointSpacing = (plotWidth - X_START - X_END) / 30;
 
     return (
@@ -300,6 +301,7 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
                             yAxisColor="transparent"
                             xAxisColor="transparent"
                             yAxisTextStyle={axisText}
+                            yAxisLabelContainerStyle={styles.yLabel}
                             xAxisLabelTextStyle={[axisText, styles.xLabel]}
                             hideYAxisText={!format.isOpen}
                             hideDataPoints
@@ -392,8 +394,8 @@ const CumulativeSpendingChart: React.FC<CumulativeSpendingChartProps> = ({
 const NO_FILL = { areaChart: true, startOpacity: 0, endOpacity: 0 };
 
 // Room before day 1 and after day 31, so the first and last x labels aren't clipped.
-const X_START = 10;
-const X_END = 16;
+const X_START = 6;
+const X_END = 6;
 
 const styles = StyleSheet.create({
     subline: {
@@ -407,7 +409,12 @@ const styles = StyleSheet.create({
     },
     chart: {
         overflow: 'hidden',
-        marginLeft: -layout.groupPadding,
+        marginHorizontal: -layout.groupPadding,
+    },
+    // The library centers y labels in a row; right-aligned, short ones sit next to the plot.
+    yLabel: {
+        justifyContent: 'flex-end',
+        paddingRight: space[1],
     },
     xLabel: {
         width: 30,
