@@ -30,6 +30,7 @@
 ## 📱 Small Phone Fixes
 - **Nothing pushed off the edge on narrow screens**: On phones around 360dp wide, a few one-line rows ran out of room and pushed their last item off the screen. In Discreet, the Snapshot's "Runway · Savings rate · Details" line hid the Details link, and in Open the Ledger's "In · Out" line could hide Calendar once both amounts were large. These lines now wrap onto a second line instead, so every link stays visible and tappable. Along the same lines, the big number at the top of each tab shrinks to fit instead of breaking over two lines, the Savings trend stats shrink to fit their card, section titles wrap onto a second line before they'd crowd their "Show all" link, all five Home tabs fit without scrolling, and your name in the greeting shrinks slightly before it gets cut off.
 - **No more "…" on your information**: Anywhere a line of information used to stop at "…" or get cut off, it now wraps onto the next line, including chart summaries, budget names, transaction details, skin names, guide titles and goal names. Single amounts shrink slightly to fit instead of splitting. Wider screens still show everything on one line.
+- **Tooltips stay on the chart**: Touching a point near the edge of Savings trend, Monthly pulse or a category trend could push its tooltip half off the chart, and pressing the first or last bar in Spending comparison, Income analytics or Dividends could clip its tooltip at the card's edge. Tooltips now stay inside the chart, with the arrow still pointing at the bar you pressed.
 
 ---
 

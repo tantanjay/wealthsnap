@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 - Links, amounts and labels no longer cut off or end in "…" on small phones; long lines wrap instead.
+- Chart tooltips no longer cut off at the edges of Insights and Dividends charts.
 
 ---
 
