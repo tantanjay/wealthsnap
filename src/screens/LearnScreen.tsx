@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Text, View, StyleSheet, ScrollView, Pressable, Linking, ToastAndroid, Modal } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -53,7 +53,7 @@ const LearnScreen = ({ navigation }: any) => {
     const [showManifestoModal, setShowManifestoModal] = useState(false);
 
     const [isDevMode, setIsDevMode] = useState(false);
-    const [devTapCount, setDevTapCount] = useState(0);
+    const devTapCount = useRef(0);
 
     useFocusEffect(
         useCallback(() => {
@@ -67,8 +67,9 @@ const LearnScreen = ({ navigation }: any) => {
     const handleDevTap = async () => {
         if (isDevMode) return;
 
-        const newCount = devTapCount + 1;
-        setDevTapCount(newCount);
+        // A ref, not state, so quick taps on a slow device each count before the next render.
+        devTapCount.current += 1;
+        const newCount = devTapCount.current;
 
         if (newCount >= 7) {
             try {

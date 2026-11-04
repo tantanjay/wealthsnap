@@ -117,3 +117,9 @@ emulator -list-avds
 ```bash
 emulator -avd Medium_Phone_API_36.1
 ```
+
+**Launch the Small Phone Emulator (Cold Boot):**
+Use this to check layouts on a narrow screen. `-no-snapshot-load` skips the saved snapshot and cold boots, which also fixes an emulator stuck "offline" in `adb devices`.
+```bash
+emulator -avd Small_Phone -no-snapshot-load
+```

@@ -35,7 +35,7 @@ function SegmentedControl<K extends string>({ options, value, onChange, style }:
                             selected && { backgroundColor: ds.raised, borderColor: ds.hairline },
                         ]}
                     >
-                        <Text style={[type.smallMedium, { color: selected ? ds.text : ds.text2 }]}>{option.label}</Text>
+                        <Text style={[type.smallMedium, { color: selected ? ds.text : ds.text2 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{option.label}</Text>
                     </Pressable>
                 );
             })}

@@ -205,7 +205,8 @@ const HomeScreen = ({ navigation }: any) => {
         <ScreenWrapper scrollable={false} noPadding>
             <View style={styles.topBar}>
                 <Pressable onPress={() => navigation.navigate('Profile')} style={styles.greeting}>
-                    <Text style={[type.title, { color: ds.text }]} numberOfLines={1}>
+                    {/* Shrinks a little before it truncates, so the name stays readable on narrow phones. */}
+                    <Text style={[type.title, { color: ds.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
                         {greeting()}{profile?.name ? `, ${profile.name}` : ''}
                     </Text>
                 </Pressable>
