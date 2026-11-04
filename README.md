@@ -62,7 +62,7 @@ Track and analyze:
 Features include:
 - Buy / Sell / Dividends / Interest tracking
 - Unrealized & Realized P/L
-- Allocation Heatmap (Stock & Sector views)
+- Allocation Heatmap (Assets, Stocks, Sector & Type views)
 - Dividend projection chart
 - Price & dividend history management
 - Native currency recording (multi-currency support)

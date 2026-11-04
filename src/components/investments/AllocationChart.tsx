@@ -28,7 +28,7 @@ interface Holding {
     type?: string;
 }
 
-export type AllocationTab = 'stocks' | 'sector' | 'type';
+export type AllocationTab = 'assets' | 'stocks' | 'sector' | 'type';
 
 interface AllocationChartProps {
     holdingsData: Holding[];
@@ -123,19 +123,11 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
     const chartItems = useMemo(() => {
         if (!holdingsData || holdingsData.length === 0) return [];
 
-        // Filter based on selected tab logic first
-        // For Stocks tab, we only want actual Stocks
-        let filteredHoldings = holdingsData;
-        if (selectedTab === 'stocks') {
-            filteredHoldings = holdingsData.filter(h => h.type === 'STOCKS');
-        }
-
-        if (filteredHoldings.length === 0) return [];
-
-        const totalPortfolioValue = filteredHoldings.reduce((sum, h) => sum + h.totalValue, 0);
-
-        if (selectedTab === 'stocks') {
-            return filteredHoldings.map(h => {
+        // Assets: one box per holding of any type. Stocks: the same, stocks only, weighted among stocks.
+        if (selectedTab === 'assets' || selectedTab === 'stocks') {
+            const boxHoldings = selectedTab === 'stocks' ? holdingsData.filter(h => h.type === 'STOCKS') : holdingsData;
+            const totalPortfolioValue = boxHoldings.reduce((sum, h) => sum + h.totalValue, 0);
+            return boxHoldings.map(h => {
                 const isGain = h.gainLoss >= 0;
                 const glSign = isGain ? '+' : '';
                 // null means a real gain/loss with an undefined percent (e.g. $0 cost basis) —
@@ -156,8 +148,6 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
             });
         } else if (selectedTab === 'sector') {
             const sectors: { [key: string]: { value: number, gainLoss: number } } = {};
-            // For Sector view, we use ALL holdings (as requested "its ok in Sector option")
-            // So we use holdingsData, not filteredHoldings (which was only filtered for 'stocks' tab)
             holdingsData.forEach(h => {
                 const s = h.sector || 'Other';
                 if (!sectors[s]) sectors[s] = { value: 0, gainLoss: 0 };
@@ -249,7 +239,7 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                     <View style={[styles.chartContainer, { height: chartHeight }]}>
                         {layout.length === 0 ? (
                             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                                <Text style={[type.small, { color: ds.text2 }]}>No data for {selectedTab}</Text>
+                                <Text style={[type.small, { color: ds.text2 }]}>{selectedTab === 'stocks' ? 'No stocks to show' : 'No data to show'}</Text>
                             </View>
                         ) : (
                             layout.map((item) => {

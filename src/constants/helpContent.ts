@@ -649,7 +649,7 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading2', text: 'Allocation Chart' },
             { type: 'blockquote', text: 'Shows: How your money is spread out, as a treemap — box size reflects weight in your portfolio.' },
-            { type: 'bullet', text: 'Switch between Stocks, Sector, and Type views' },
+            { type: 'bullet', text: 'Switch between Assets (every holding, any type), Stocks (stocks only), Sector, and Type views' },
             { type: 'bullet', text: 'Color intensity reflects how much that holding is up or down' },
 
             { type: 'heading2', text: 'Dividend Chart' },
