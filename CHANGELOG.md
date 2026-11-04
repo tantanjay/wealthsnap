@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Spending comparison and Income analytics: one info icon; the calculation notes moved into "Understanding your chart".
 - "How is this calculated?" sections are always open.
+- Savings trend and Monthly pulse use the card's full width; Savings trend fits every month without scrolling.
+- Savings trend and category trend tooltips show on touch instead of a long press.
 
 ### Fixed
 - Links, amounts and labels no longer cut off or end in "…" on small phones; long lines wrap instead.
