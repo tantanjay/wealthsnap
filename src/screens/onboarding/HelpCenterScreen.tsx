@@ -9,6 +9,7 @@ import { type, space, radius, fontFamily, layout } from '@styles/theme';
 import { HELP_TOPICS, HelpTopic } from '@constants/helpContent';
 import { splitBoldSegments } from '@utils/markdownParser';
 import OnboardingGuide from '@screens/onboarding/OnboardingGuideScreen';
+import GuideVisual from '@components/onboarding/GuideVisual';
 
 interface HelpCenterProps {
     onFinish: () => void;
@@ -167,6 +168,8 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
                                             <Text style={[type.smallMedium, styles.formulaText, { color: ds.text }]}>{item.text}</Text>
                                         </View>
                                     );
+                                case 'visual':
+                                    return <GuideVisual key={index} id={item.id} />;
                                 case 'divider':
                                     return <View key={index} style={[styles.divider, { backgroundColor: ds.hairline }]} />;
                                 default:
