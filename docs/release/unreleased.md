@@ -5,10 +5,13 @@
 
 ---
 
-## 🧩 New Assets View in Allocation
+## 🧩 Allocation Map: Assets View and Tap Details
 - **See every holding at once**: The Holdings Allocation map has a new first view, Assets. It draws one box for every holding you own, whatever its type, so funds, crypto, bonds and commodities sit next to your stocks and you can see your whole portfolio at a glance.
 - **Stocks is still there**: The Stocks view keeps showing your stocks only, with each one's share measured against your stock total. In Assets, Sector and Type, a holding's share is measured against your whole portfolio.
 - Your chosen view is remembered, as before. If you had Stocks selected, it stays on Stocks; new installs start on Assets.
+- **Tap a box for details**: Tapping a box opens a tooltip with its full name (even when the box is too small to show it), its share of your portfolio, its Price return, and its value in Open mode. Sector and Type boxes also show how many holdings they contain. The tapped box dims; tap it again to close.
+- **Returns that count dividends**: The tooltip adds a Total return line whenever dividends or sales make it differ from the price return. It's the same Total return as at the top of the Holdings tab, just for one box. A holding like MP2, whose price never moves but pays dividends, used to read 0.0% and now shows what it actually earned. A fees-hit holding that dividends pushed back into profit shows both: a negative price return and a positive total return.
+- A return that rounds to zero now reads 0.0% instead of "-0.0%".
 
 ---
 

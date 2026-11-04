@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - "How is this calculated?" sections are always open.
 - Savings trend and Monthly pulse use the card's full width; Savings trend fits every month without scrolling.
 - Savings trend and category trend tooltips show on touch instead of a long press.
+- Holdings allocation map: tap a box for its details, including Total return with dividends.
 
 ### Fixed
 - Links, amounts and labels no longer cut off or end in "…" on small phones; long lines wrap instead.

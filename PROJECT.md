@@ -16,6 +16,10 @@ When a new feature is introduced, you must also check and update [docs/CAPABILIT
 
 [docs/DESIGN.md](docs/DESIGN.md) is the visual source of truth (Refined Minimal): tokens, type scale, components, and a checklist for new screens. Read it before building or restyling any UI, and match the prototype in `docs/mockups/navigation-redesign/`. If a screen needs something the guide doesn't cover, propose an addition to DESIGN.md instead of inventing a one-off style.
 
+## Charts
+
+- **Check what a library already does before adding your own adjustment on top.** Before adding offsets, alignment or sizing to something a library positions or lays out itself (a chart tooltip, an axis label), read how the library places it — stacking a manual shift on top of its auto-positioning double-applies, and a style meant for one layout direction can do something else in its container.
+
 ## Metric definitions
 
 [docs/METRICS.md](docs/METRICS.md) is the single source of truth for each metric: its formula, where it's shown, which tables it reads, and a timeline of how its rule changed. Before changing how a metric is calculated, read its section, history included. Afterwards, update its Formula line, add a history row, and update every place under Shown on (code first, then explanations, per the section below). If a change would break a shared rule for just one screen, raise it with the user instead of quietly making an exception.
