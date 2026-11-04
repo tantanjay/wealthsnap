@@ -457,10 +457,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: space[3],
         borderRadius: radius.sm,
     },
+    // Wraps on narrow phones so Calendar stays on screen next to long amounts.
     flow: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         alignItems: 'center',
-        gap: space[5],
+        columnGap: space[5],
+        rowGap: space[2],
         marginTop: space[6],
         marginBottom: space[2],
     },

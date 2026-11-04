@@ -36,7 +36,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ title, actionLabel, onAct
 
     return (
         <View style={[styles.container, grouped && styles.grouped, style]}>
-            <Text style={[type.smallStrong, { color: ds.text }]}>{title}</Text>
+            <Text style={[type.smallStrong, styles.title, { color: ds.text }]} numberOfLines={1}>{title}</Text>
             {label ? (
                 <Pressable ref={triggerRef} onPress={menu ? openMenu : onAction} disabled={!menu && !onAction} hitSlop={space[2]}>
                     <Text style={[type.smallMedium, { color: ds.accent }]}>{label}</Text>
@@ -60,8 +60,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'baseline',
+        gap: space[3],
         marginTop: space[6],
         marginBottom: space[1],
+    },
+    // Shrinks (with an ellipsis) before the action link does.
+    title: {
+        flexShrink: 1,
     },
     grouped: {
         paddingHorizontal: layout.groupPadding,

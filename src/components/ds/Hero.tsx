@@ -86,7 +86,7 @@ const Hero: React.FC<HeroProps> = ({
     return (
         <View style={[panel && [styles.panel, { backgroundColor: ds.heroPanel }], style]}>
             <Text style={[type.small, { color: ds.text2 }]}>{label}</Text>
-            <Text style={[type.display, styles.tight, { color: ds.text }]}>{value}</Text>
+            <Text style={[type.display, styles.tight, { color: ds.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{value}</Text>
             {change ? <ChangeLine text={change} tone={changeTone} size="small" style={styles.tight} /> : null}
 
             {sparkline && sparkline.length > 1 && <Sparkline data={sparkline} color={ds.accent} />}
@@ -123,10 +123,13 @@ const styles = StyleSheet.create({
         marginTop: space[3],
         marginBottom: space[2],
     },
+    // Wraps on narrow phones so the trailing link never gets pushed off the panel.
     stats: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         alignItems: 'center',
-        gap: space[5],
+        columnGap: space[5],
+        rowGap: space[2],
     },
     statsNoSpark: {
         marginTop: space[3],

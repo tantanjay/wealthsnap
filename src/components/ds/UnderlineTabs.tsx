@@ -50,8 +50,9 @@ const styles = StyleSheet.create({
         flexGrow: 0,
         borderBottomWidth: 1,
     },
+    // A tighter gap lets five tabs fit a 360dp phone; it still scrolls if the font is enlarged.
     content: {
-        gap: space[5],
+        gap: space[4],
         paddingHorizontal: space[5],
     },
     tab: {

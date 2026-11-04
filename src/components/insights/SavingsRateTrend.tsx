@@ -588,12 +588,12 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoa
     }
 
     const renderStat = (label: string, value: string, color: string, align: 'flex-start' | 'center' | 'flex-end' = 'flex-start') => (
-        <View style={{ alignItems: align }}>
-            <Text style={[type.caption, { color: ds.text2 }]}>{label}</Text>
+        <View style={{ alignItems: align, flexShrink: 1 }}>
+            <Text style={[type.caption, { color: ds.text2 }]} numberOfLines={1}>{label}</Text>
             {isLoading ? (
                 <Skeleton width={50} height={20} />
             ) : (
-                <Text style={[type.bodyNum, { color }]}>{value}</Text>
+                <Text style={[type.bodyNum, { color }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{value}</Text>
             )}
         </View>
     );
@@ -720,10 +720,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
+        gap: space[3],
         marginBottom: space[2],
     },
     statGroup: {
         flexDirection: 'row',
+        flexShrink: 1,
         gap: space[4],
     },
     hidden: {
@@ -751,6 +753,7 @@ const styles = StyleSheet.create({
     summary: {
         flexDirection: 'row',
         justifyContent: 'space-around',
+        gap: space[2],
         marginTop: space[3],
         paddingTop: space[3],
         borderTopWidth: 1,
