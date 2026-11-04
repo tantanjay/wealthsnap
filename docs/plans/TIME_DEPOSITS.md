@@ -128,7 +128,18 @@ Net Worth formula: `assets = cash + investments (market value + active time-depo
   - **Sector** view: adds to the "Fixed income" box. Bonds the user tags "Fixed income" in the Asset Dictionary share it.
   - **Type** view: adds to a "Time deposit" box, kept separate from Bonds (no market price, guaranteed principal).
   - Weights use the same total (securities market value + deposit principal) in all three views.
-- `src/components/timeDeposits/TimeDepositForm.tsx` (new): name, principal, rate, tax rate (default 20), start date, term (months/days toggle) and maturity date. Maturity is auto-filled from the term but editable. Also a funding choice: "From my cash" or "Already outside WealthSnap", reusing the DebtForm / SavingsGoalForm initial-funding pattern. Show the estimated net interest live under the rate fields.
+- `src/components/timeDeposits/TimeDepositForm.tsx` (new): name, principal, rate, tax rate (default 20), start date, term and maturity date.
+  - **Term:** quick-pick chips for **1, 3, 6, 12, 24, 36 months** (labelled "1 mo", "3 mo", "6 mo", "1 yr", "2 yrs", "3 yrs"; stored as `termMonths`), plus **Custom**. Custom shows a number field with a months / days switch (default months), for banks that quote 30/60/90/180/360-day terms (`termDays`). There's no years unit: years are stored as months.
+  - **Maturity date:** auto-filled from start date + term and editable, since the bank's date wins. Editing it by hand deselects the chip and shows "Custom".
+  - Re-deposit pre-fills the same chip as the old deposit.
+  - **Cash flow section**, copying [InvestmentForm.tsx:713](../../src/components/investments/InvestmentForm.tsx:713) exactly. It has a "Cash flow" `SectionHeader` and a "Record a transaction" `Row` with an info icon and a `Switch`, which sets `fundedFromCash`.
+    - Subtitle: "Will record as Transfer Out (cash out)" when on, "No transaction will be recorded" when off.
+    - **Default on.** It defaults to off when the start date is before the user's first recorded transaction (an existing deposit).
+    - Turning it off shows the same warning as investments: "This will not deduct from your cash."
+    - The info icon opens a "Syncing Your Cash Flow" sheet that reuses the investment one's cash ⇄ deposit flow diagram.
+    - When editing, the switch is disabled, and the subtitle reads "Auto-updated with deposit changes".
+  - Show the estimated net interest live under the rate fields.
+  - **Notes:** an optional multi-line field at the bottom, the same style as InvestmentForm's notes, for things like account number hints, the branch, or "auto-renews". It's saved to `notes` (encrypted), stays editable after the deposit closes, and shows in the deposit's Options modal under its details. It isn't copied into the `OPENING` transaction's note, and it's carried over to the new deposit on Re-deposit.
 - **Record menu entry:** add a "Time deposit" item (`lock-closed-outline`, free now that the "Locked" chip is removed) to the Investment section of [RecordMenuModal.tsx:139](../../src/components/record/RecordMenuModal.tsx:139), after Commodities. It skips the Asset Dictionary check that `handleInvestmentSelect` does (deposits have no symbol). Add an `onSelectTimeDeposit` prop, wired in [RecordScreen.tsx:384](../../src/screens/RecordScreen.tsx:384), that renders `TimeDepositForm` the same way `handleDebtSelect` renders `DebtForm` (line 181). The Holdings "Add time deposit" row opens the same form.
 - `src/components/timeDeposits/TimeDepositOptionsModal.tsx` (new): same gear-menu convention as `SavingsGoalOptionsModal`. Edit and Delete on top, then action cards: Withdraw (if matured), Re-deposit (if matured), Pre-terminate (if active).
 - [TransferForm.tsx:28](../../src/components/transaction/TransferForm.tsx:28): drop `TIME_DEPOSIT` from `DEST_CONFIG` only (UI; enum stays).
@@ -137,7 +148,7 @@ Net Worth formula: `assets = cash + investments (market value + active time-depo
 
 **Phase 1 done when:**
 - A deposit funded from cash makes cash drop by the principal while Net Worth stays flat; the Holdings total and the Snapshot Investments row rise by the principal.
-- A deposit marked "already outside" leaves cash unchanged and raises Net Worth by the principal.
+- A deposit saved with the Cash flow switch off leaves cash unchanged and raises Net Worth by the principal.
 - Last month's sparkline point includes a deposit that started before that month-end and excludes one that started after.
 - Tagged rows can't be edited or deleted from History or Ledger.
 - "Locked" is gone from the Transfer form.
@@ -225,6 +236,7 @@ Net Worth formula: `assets = cash + investments (market value + active time-depo
 ## Edge cases
 
 **Creation**
+- **Start date in the past, not yet matured** (e.g. a 9-month deposit opened 6 months ago): the start date is editable and defaults to today. Maturity is computed from the past start date (3 months from now), and its notification is scheduled. Interest is estimated over the full start → maturity period. The Cash flow switch **defaults to off** when the start date is before the user's first recorded transaction. Turning it on back-dates the `OPENING` transfer, which lowers cash in past months too, so it's only right if that cash was already tracked then. Either way, past Net Worth points from `startDate` onward now include the deposit.
 - **Start date in the past, already matured:** saving makes it show in the maturity sheet immediately (check again after save). No notification is scheduled, since its date has passed.
 - **Start date in the future:** allowed. Future-dated rows count for cash immediately (METRICS shared rule), so the `OPENING` transfer (dated `startDate`) lowers cash now. To match, "now" Net Worth counts any `ACTIVE` deposit regardless of start date; past month-ends use `startDate`. Cash and deposit move together, and Net Worth stays flat.
 - **Maturity date before start date, zero or negative principal, rate > 100%, tax rate outside 0–100:** form validation via an in-app alert, never `alert()`.
@@ -232,7 +244,7 @@ Net Worth formula: `assets = cash + investments (market value + active time-depo
 - **Term in months landing on a non-existent day** (31 Jan + 1 month): clamp to the month end, and let the user edit the maturity date because the bank's date wins.
 
 **While active**
-- **Editing principal or start date** of a cash-funded deposit: update its `OPENING` row's amount and date in the same DB transaction. Toggling `fundedFromCash` adds or removes that row.
+- **Editing principal or start date** of a cash-funded deposit: update its `OPENING` row's amount and date in the same DB transaction. The Cash flow switch is locked after creation, as on investments. To change it, delete the deposit and re-add it.
 - **Editing the maturity date:** reschedules the notification (via `syncMaturityNotifications`). A date moved into the past makes it show in the sheet.
 - **Editing after it's closed:** only name and notes are editable. Amounts are locked because interest and maturity rows already reflect them.
 - **Editing the rate or tax on an active deposit:** fine. Only the estimate changes.
