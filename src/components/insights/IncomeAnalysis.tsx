@@ -9,10 +9,12 @@ import TimeRangeSelector from '@components/common/TimeRangeSelector';
 import MonthEndProjectionModal from '@components/insights/modals/MonthEndProjectionModal';
 import { Group, Row, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
+import HiddenChart from '@components/common/HiddenChart';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { Transaction } from '@types';
 import { type, space, radius } from '@styles/theme';
+import { HowCalculated } from './FinancialHealthDetails';
 import { getMonthlyTrends, getMonthlyTrendsForYear } from '@utils/financialMetrics';
 import { saveInsightsIncomeTab, getInsightsIncomeTab, saveInsightsIncomeTimeRange, getInsightsIncomeTimeRange } from '@services/core/storageService';
 
@@ -47,24 +49,12 @@ const TABS = [
     { key: 'SOURCES', label: 'Sources' },
 ];
 
-// Hidden mode: same size, fill and copy as every other hidden chart.
-const HiddenChart: React.FC<{ height: number }> = ({ height }) => {
-    const { ds } = useTheme();
-    return (
-        <View style={[styles.hidden, { height, backgroundColor: ds.inset }]}>
-            <Ionicons name="lock-closed-outline" size={18} color={ds.text2} />
-            <Text style={[type.small, { color: ds.text2 }]}>Chart hidden for privacy</Text>
-        </View>
-    );
-};
-
 const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialTrends, categoryBreakdown, currency, transactions, isLoading = false, selectedDate = new Date() }) => {
     const { ds } = useTheme();
     const format = usePrivacyFormat(currency);
     const [showProjectionModal, setShowProjectionModal] = React.useState(false);
     const [showInfoModal, setShowInfoModal] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState<'TREND' | 'SOURCES'>('TREND');
-    const [showInsightInfo, setShowInsightInfo] = React.useState(false);
     const [selectedBarIndex, setSelectedBarIndex] = React.useState<number | null>(null);
 
     // Time Range Filter Logic
@@ -414,20 +404,17 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
             <Group padded>
                 <View style={styles.subline}>
                     <Text style={[type.small, styles.flex, { color: ds.text2 }]}>{isLoading ? "Analyzing income trends..." : getInsight()}</Text>
-                    <Pressable onPress={() => setShowInsightInfo(true)} hitSlop={space[2]}>
-                        <Ionicons name="calculator-outline" size={18} color={ds.text2} />
-                    </Pressable>
-                </View>
-
-                <View style={styles.toolbar}>
-                    {/* Time Range Filter - Only show for TREND tab */}
-                    {activeTab === 'TREND' ? (
-                        <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
-                    ) : <View />}
-                    <Pressable onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
+                    <Pressable onPress={() => setShowInfoModal(true)} hitSlop={space[2]} accessibilityLabel="Understanding your chart">
                         <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
                     </Pressable>
                 </View>
+
+                {/* Range only applies to the Trend tab */}
+                {activeTab === 'TREND' && (
+                    <View style={styles.toolbar}>
+                        <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
+                    </View>
+                )}
 
                 {isLoading ? (
                     <Skeleton width="100%" height={chartHeight} borderRadius={radius.md} />
@@ -513,33 +500,27 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                             Projecting you will match your historical average.
                         </Text>
                     </Group>
+
+                    <HowCalculated>
+                        <Text style={[type.small, { color: ds.text2 }]}>
+                            This smart insight compares the <Text style={{ color: ds.text }}>income actually recorded</Text> in the latest month shown (not the projected part of its bar) against the <Text style={{ color: ds.text }}>month before it</Text>.
+                        </Text>
+                        <View style={modalStyles.legend}>
+                            {([
+                                ['Growth', 'You earned more than last month.', ds.success],
+                                ['Decline', 'Income is lower than last month.', ds.danger],
+                                ['Stable', 'Income is exactly the same as last month.', ds.text2],
+                            ] as const).map(([label, meaning, color]) => (
+                                <View key={label} style={modalStyles.legendRow}>
+                                    <View style={[modalStyles.legendDot, { backgroundColor: color }]} />
+                                    <Text style={[type.small, modalStyles.flex, { color: ds.text2 }]}>
+                                        <Text style={{ color: ds.text }}>{label}: </Text>{meaning}
+                                    </Text>
+                                </View>
+                            ))}
+                        </View>
+                    </HowCalculated>
                 </ScrollView>
-            </BottomModal>
-            <BottomModal
-                visible={showInsightInfo}
-                onClose={() => setShowInsightInfo(false)}
-                title="How is this calculated?"
-                maxHeight="40%"
-            >
-                <Group padded>
-                    <Text style={[type.small, { color: ds.text2 }]}>
-                        This smart insight compares the <Text style={{ color: ds.text }}>income actually recorded</Text> in the latest month shown (not the projected part of its bar) against the <Text style={{ color: ds.text }}>month before it</Text>.
-                    </Text>
-                    <View style={modalStyles.legend}>
-                        {([
-                            ['Growth', 'You earned more than last month.', ds.success],
-                            ['Decline', 'Income is lower than last month.', ds.danger],
-                            ['Stable', 'Income is exactly the same as last month.', ds.text2],
-                        ] as const).map(([label, meaning, color]) => (
-                            <View key={label} style={modalStyles.legendRow}>
-                                <View style={[modalStyles.legendDot, { backgroundColor: color }]} />
-                                <Text style={[type.small, modalStyles.flex, { color: ds.text2 }]}>
-                                    <Text style={{ color: ds.text }}>{label}: </Text>{meaning}
-                                </Text>
-                            </View>
-                        ))}
-                    </View>
-                </Group>
             </BottomModal>
         </View>
     );
@@ -560,12 +541,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: space[3],
         marginBottom: space[2],
-    },
-    hidden: {
-        borderRadius: radius.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: space[2],
     },
     empty: {
         textAlign: 'center',

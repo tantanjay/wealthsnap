@@ -2,13 +2,13 @@ import React from 'react';
 import { BigNumber } from 'bignumber.js';
 import { View, Text, StyleSheet } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
-import { Ionicons } from '@expo/vector-icons';
 
 import AllExpensesModal from '@components/insights/modals/AllExpensesModal';
 import CategoryTrendModal from '@components/insights/modals/CategoryTrendModal';
 import RecurringExpensesSummaryModal from '@components/insights/modals/RecurringExpensesSummaryModal';
 import { Group, ProgressBar, Row, SectionHeader, Tone, toneColor } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
+import HiddenChart from '@components/common/HiddenChart';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { Budget, RecurrenceRule, Transaction } from '@types';
@@ -40,17 +40,6 @@ const GROUPINGS = [
 
 const budgetTone = (status: string): Exclude<Tone, 'neutral'> =>
     status === 'over' ? 'bad' : status === 'warning' ? 'warning' : 'good';
-
-// Hidden mode: same size, fill and copy as every other hidden chart.
-const HiddenChart: React.FC<{ height: number }> = ({ height }) => {
-    const { ds } = useTheme();
-    return (
-        <View style={[styles.hidden, { height, backgroundColor: ds.inset }]}>
-            <Ionicons name="lock-closed-outline" size={18} color={ds.text2} />
-            <Text style={[type.small, { color: ds.text2 }]}>Chart hidden for privacy</Text>
-        </View>
-    );
-};
 
 const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, currency, grouping, onToggleGrouping, transactions, isLoading = false, selectedDate = new Date() }) => {
     const { ds } = useTheme();
@@ -292,12 +281,6 @@ const ExpenseAnalysis: React.FC<ExpenseAnalysisProps> = ({ categoryBreakdown, cu
 const styles = StyleSheet.create({
     subline: {
         marginBottom: space[3],
-    },
-    hidden: {
-        borderRadius: radius.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: space[2],
     },
     empty: {
         textAlign: 'center',

@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, LayoutChangeEvent } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 import { Skeleton } from '@components/common/Skeleton';
+import HiddenChart from '@components/common/HiddenChart';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius } from '@styles/theme';
@@ -226,10 +226,7 @@ export const AllocationChart: React.FC<AllocationChartProps> = ({ holdingsData, 
                     <Skeleton width="100%" height={chartHeight} borderRadius={radius.md} />
                 </View>
             ) : mode === 'hidden' ? (
-                <View style={[styles.placeholder, { height: chartHeight, backgroundColor: ds.inset }]}>
-                    <Ionicons name="lock-closed-outline" size={18} color={ds.text2} />
-                    <Text style={[type.small, { color: ds.text2 }]}>Chart hidden for privacy</Text>
-                </View>
+                <HiddenChart height={chartHeight} />
             ) : (!holdingsData || holdingsData.length === 0) ? (
                 <View style={[styles.placeholder, { height: chartHeight, backgroundColor: ds.inset }]}>
                     <Text style={[type.small, { color: ds.text2 }]}>No active holdings.</Text>

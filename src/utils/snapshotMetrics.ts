@@ -151,6 +151,47 @@ export const calculateNetWorthChange = (
     return { now: current, prev, change, percent, sparkline };
 };
 
+export interface NetWorthPoint {
+    // Month-end, or today for the current month's point.
+    date: Date;
+    netWorth: number;
+    isNow: boolean;
+}
+
+// Net Worth at each month-end across the range ending at `end`'s month, then that month's own point
+// (today's Net Worth for the current month). Skips months before the first transaction; unless
+// everyMonth, long ranges skip months like the Home sparkline.
+export const getNetWorthHistory = (
+    transactions: Transaction[], investments: Investment[], debts: Debt[], goals: SavingsGoal[], priceAt: PriceLookup,
+    end: Date = new Date(), rangeMonths: number | 'ALL' = 6, everyMonth = false, now: Date = new Date()
+): NetWorthPoint[] => {
+    const firstDate = transactions.reduce<Date | null>((min, t) => {
+        const d = parseDate(t.date);
+        return !min || d < min ? d : min;
+    }, null);
+    if (!firstDate) return [];
+
+    const sinceFirst = (end.getFullYear() - firstDate.getFullYear()) * 12 + end.getMonth() - firstDate.getMonth();
+    if (sinceFirst < 0) return [];
+    const monthsBack = rangeMonths === 'ALL' ? sinceFirst : Math.min(rangeMonths, sinceFirst);
+    const step = everyMonth ? 1 : Math.max(1, Math.ceil(monthsBack / MAX_SPARKLINE_POINTS));
+
+    const points: NetWorthPoint[] = [];
+    for (let i = monthsBack > 0 ? 1 + Math.floor((monthsBack - 1) / step) * step : 0; i >= 1; i -= step) {
+        const monthEnd = endOfMonth(end.getFullYear(), end.getMonth() - i);
+        points.push({ date: monthEnd, netWorth: calculateNetWorth(transactions, investments, debts, goals, priceAt, monthEnd).netWorth.toNumber(), isNow: false });
+    }
+
+    const isCurrentMonth = end.getFullYear() === now.getFullYear() && end.getMonth() === now.getMonth();
+    const lastEnd = endOfMonth(end.getFullYear(), end.getMonth());
+    points.push({
+        date: isCurrentMonth ? now : lastEnd,
+        netWorth: calculateNetWorth(transactions, investments, debts, goals, priceAt, isCurrentMonth ? undefined : lastEnd).netWorth.toNumber(),
+        isNow: isCurrentMonth,
+    });
+    return points;
+};
+
 export interface MonthCashFlow {
     income: BigNumber;
     // Total Expense: goal-funded purchases left out.

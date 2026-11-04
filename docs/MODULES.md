@@ -54,6 +54,7 @@ Tab: `Insights`. Financial Health grid and detail sheets, spending/income analys
 - `src/components/insights/ExpenseAnalysis.tsx`
 - `src/components/insights/IncomeAnalysis.tsx`
 - `src/components/insights/InsightsSettingsSheet.tsx`
+- `src/components/insights/NetWorthGrowthChart.tsx`
 - `src/components/insights/SavingsRateTrend.tsx`
 - `src/components/insights/SmartAlerts.tsx`
 - `src/components/insights/modals/AllExpensesModal.tsx`
@@ -247,6 +248,7 @@ Not a user-facing feature; app shell, data layer, and utilities used across modu
 - `src/components/common/ScreenWrapper.tsx`
 - `src/components/common/GlobalErrorBoundary.tsx`
 - `src/components/common/CustomAlert.tsx`
+- `src/components/common/HiddenChart.tsx`
 - `src/components/common/BottomModal.tsx`
 - `src/components/common/Skeleton.tsx`
 - `src/components/common/TimeRangeSelector.tsx`
