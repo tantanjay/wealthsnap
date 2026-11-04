@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
         marginTop: space[6],
         marginBottom: space[1],
     },
-    // Shrinks (with an ellipsis) before the action link does.
+    // Wraps onto a second line before the action link gives up room.
     title: {
         flexShrink: 1,
     },
