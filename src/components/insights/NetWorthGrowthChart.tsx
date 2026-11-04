@@ -156,18 +156,19 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
     const summary = useMemo((): { label: string; value: string; line: string; tone: Tone } => {
         const rangeText = `over ${RANGE_TEXT[timeRange]}`;
         const pctText = formatPercent(changePct, { signed: true, decimals: 1 });
-        const sinceText = `${format.money(change, { signed: true })} since ${startText}`;
-        // Over long ranges a % from an early, small balance means little, so every view shows the weighted monthly rate.
+        // Over long ranges a % from an early, small balance means little, so every view shows the weighted monthly rate,
+        // and amounts are per month too so both figures mean the same thing.
         if (WEIGHTED_RANGES.includes(timeRange)) {
             const weightedText = formatPercent(weightedMonthly, { signed: true, decimals: 1 });
             const upText = `${growth.filter(g => g.value > 0).length} of ${growth.length} months up`;
+            const avgText = `Avg ${format.money(growth.length > 0 ? change / growth.length : 0, { signed: true })}/month`;
             if (view === 'CUMULATIVE' && format.isOpen) {
-                return { label: 'Net worth', value: format.money(last), line: `${sinceText} · ${weightedText}/month avg`, tone: toneOf(change) };
+                return { label: 'Net worth', value: format.money(last), line: `${avgText} · ${weightedText}/month`, tone: toneOf(change) };
             }
             return {
                 label: 'Weighted avg growth per month',
                 value: weightedText,
-                line: view === 'CUMULATIVE' ? `since ${startText}` : (format.isOpen ? `${sinceText} · ${upText}` : upText),
+                line: view === 'CUMULATIVE' ? `since ${startText}` : (format.isOpen ? `${avgText} · ${upText}` : upText),
                 tone: toneOf(weightedMonthly ?? 0),
             };
         }
@@ -499,7 +500,7 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
                     <Formula
                         title="Weighted avg growth per month"
                         formula="Σ monthly growth ÷ Σ net worth at the start of those months × 100"
-                        explanation="The Percentage header on every range, and every view's header for 3 years and all time. Big months count more than small ones, so a jump from a tiny first balance doesn't swamp it. Months starting at zero or below are left out."
+                        explanation="The Percentage header on every range, and every view's header for 3 years and all time, next to the average amount per month (total change ÷ months). Big months count more than small ones, so a jump from a tiny first balance doesn't swamp it. Months starting at zero or below are left out."
                     />
                 </HowCalculated>
             </ScrollView>

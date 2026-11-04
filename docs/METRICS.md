@@ -333,7 +333,7 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (Growth):** Net Worth at a month-end − Net Worth at the month-end before it, every month in the range (no skipping); the current month's bar runs to now. Header: last point − first point and months up. Pressing a bar shows its amount and its % of the month before
 
-**Formula (weighted average growth per month; Percentage header on every range, and every view's header on 3 years and all time):** Σ monthly growth ÷ Σ Net Worth at the start of those months × 100, over every month in the range (months starting at ₱0 or below left out), in place of the % since the first point. Cumulative in Open keeps Net Worth as its value, with this rate in its change line
+**Formula (weighted average growth per month; Percentage header on every range, and every view's header on 3 years and all time):** Σ monthly growth ÷ Σ Net Worth at the start of those months × 100, over every month in the range (months starting at ₱0 or below left out), in place of the % since the first point. On those ranges the amount in the header line is per month too: average growth per month = (last point − first point) ÷ months in the range. Cumulative in Open keeps Net Worth as its value, with both per-month figures in its change line
 
 **Shown on:** Insights (Net worth growth chart)
 
