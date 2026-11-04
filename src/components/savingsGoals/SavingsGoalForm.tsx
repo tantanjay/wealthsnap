@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, ActivityIndicator, StyleSheet, TextStyle } from 'react-native';
 import { BigNumber } from 'bignumber.js';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Button, Card } from '@components/index';
-import { CategorySelectModal } from '@components/record/CategorySelectModal';
+import { Group, Row, SectionHeader } from '@components/ds';
+import BottomModal from '@components/common/BottomModal';
+import { CategoryPicker } from '@components/record/CategorySelectModal';
 import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
+import { type, space, radius } from '@styles/theme';
 import { SavingsGoal, Transaction, RecurrenceRule, RecurrenceFrequency } from '@types';
 import { generateUUID } from '@utils/uuid';
 import { EXPENSE_CATEGORY_GROUPS, RECURRENCE_OPTIONS } from '@constants/categories';
@@ -14,6 +16,7 @@ import { saveSavingsGoal, contributeToGoal } from '@services/domain/savingsGoalS
 import { saveRecurrenceRule, deleteRecurrenceRule, calculateNextDueDate } from '@services/domain/recurrenceService';
 
 interface SavingsGoalFormProps {
+    visible: boolean;
     initialGoal?: SavingsGoal;
     existingRule?: RecurrenceRule; // the goal's current auto-contribution rule, if any - lets
     // save() tell "still the same schedule" apart from "just turned recurring on/changed it"
@@ -22,15 +25,16 @@ interface SavingsGoalFormProps {
     onCancel: () => void;
 }
 
-export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, existingRule, existingTransactions, onSave, onCancel }) => {
-    const { colors } = useTheme();
+export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ visible, initialGoal, existingRule, existingTransactions, onSave, onCancel }) => {
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
 
     const [name, setName] = useState(initialGoal?.name || '');
     const [targetAmount, setTargetAmount] = useState(initialGoal?.targetAmount?.toString() || '');
     const [category, setCategory] = useState(initialGoal?.category || '');
     const [subCategory, setSubCategory] = useState(initialGoal?.subCategory || '');
-    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    // Picking a category expands inline: a second modal on top of this sheet isn't allowed.
+    const [isPickingCategory, setIsPickingCategory] = useState(false);
     const [notes, setNotes] = useState(initialGoal?.notes || '');
 
     const [recurringAmount, setRecurringAmount] = useState(initialGoal?.recurringAmount?.toString() || '');
@@ -152,146 +156,214 @@ export const SavingsGoalForm: React.FC<SavingsGoalFormProps> = ({ initialGoal, e
         }
     };
 
+    const fieldInput: TextStyle[] = [type.body, styles.fieldInput, { color: ds.text }];
+    const numInput: TextStyle[] = [type.bodyNum, styles.fieldInput, { color: ds.text }];
+
+    const footer = (
+        <View style={styles.actions}>
+            <Pressable onPress={onCancel} style={styles.cancelButton}>
+                <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
+            </Pressable>
+            <Pressable
+                onPress={handleSave}
+                disabled={isSaving}
+                style={[styles.primaryButton, { backgroundColor: ds.accent }]}
+            >
+                {isSaving
+                    ? <ActivityIndicator color={ds.onAccent} />
+                    : <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Save goal</Text>}
+            </Pressable>
+        </View>
+    );
+
     return (
-        // height: '100%' (not flex: 1) - this form is hosted inside BottomModal, which sizes
-        // itself to content rather than providing a bounded flex context, so a flex:1 root
-        // here collapses to ~0 height instead of expanding. See BudgetManagementModal.tsx for
-        // the same pattern.
-        <View style={{ height: '100%' }}>
-            <View style={{ flex: 1 }}>
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-                <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', marginVertical: 10 }}>
-                    {initialGoal ? 'Edit Savings Goal' : 'New Savings Goal'}
-                </Text>
-
-                <Card>
-                    <Text style={{ color: colors.textSecondary }}>Name</Text>
+        <BottomModal
+            visible={visible}
+            onClose={onCancel}
+            title={initialGoal ? 'Edit savings goal' : 'New savings goal'}
+            maxHeight="90%"
+            footer={footer}
+        >
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                <Group padded>
+                    <Text style={[type.small, { color: ds.text2 }]}>Target amount</Text>
                     <TextInput
-                        style={{ color: colors.text, fontSize: 18, fontWeight: '600', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                        value={name}
-                        onChangeText={setName}
-                        placeholder="e.g. Travel Fund"
-                        placeholderTextColor={colors.gray500}
-                    />
-                </Card>
-
-                <Card>
-                    <Text style={{ color: colors.textSecondary }}>Target Amount</Text>
-                    <TextInput
-                        style={{ color: colors.text, fontSize: 32, fontWeight: 'bold', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
+                        style={[type.recordAmount, styles.amountInput, { color: ds.text }]}
                         value={targetAmount}
                         onChangeText={setTargetAmount}
                         keyboardType="numeric"
-                        placeholder="0.00"
-                        placeholderTextColor={colors.gray300}
+                        placeholder="0"
+                        placeholderTextColor={ds.text3}
                     />
-                </Card>
+                </Group>
 
-                <View style={{ marginBottom: 10 }}>
-                    <Text style={{ color: colors.textSecondary, marginBottom: 8, marginLeft: 4 }}>Category</Text>
-                    <TouchableOpacity
-                        onPress={() => setShowCategoryModal(true)}
-                        style={{
-                            padding: 14,
-                            borderRadius: 12,
-                            backgroundColor: colors.surface,
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                        }}
-                    >
-                        <Text style={{ color: category ? colors.text : colors.gray500, fontSize: 15 }}>
-                            {category || 'Select a category'}
-                        </Text>
-                        <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 6, marginLeft: 4 }}>
-                        Pre-fills onto any expense you fund from this goal (still editable per-expense).
-                    </Text>
-                </View>
+                <SectionHeader title="Details" grouped />
+                <Group padded>
+                    <Text style={[type.small, styles.label, { color: ds.text2 }]}>Name</Text>
+                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="create-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={fieldInput}
+                            value={name}
+                            onChangeText={setName}
+                            placeholder="e.g. Travel fund"
+                            placeholderTextColor={ds.text3}
+                        />
+                    </View>
 
-                <Card>
-                    <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Recurring Auto-Contribution (Optional)</Text>
-                    <TextInput
-                        style={{ color: colors.text, fontSize: 20, fontWeight: '600', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8, marginBottom: 10 }}
-                        value={recurringAmount}
-                        onChangeText={setRecurringAmount}
-                        keyboardType="numeric"
-                        placeholder="0.00"
-                        placeholderTextColor={colors.gray300}
+                    <Text style={[type.small, styles.label, styles.fieldGap, { color: ds.text2 }]}>Notes (optional)</Text>
+                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="document-text-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={fieldInput}
+                            value={notes}
+                            onChangeText={setNotes}
+                            placeholder="Description"
+                            placeholderTextColor={ds.text3}
+                        />
+                    </View>
+                </Group>
+
+                <SectionHeader title="Category" grouped />
+                <Group>
+                    <Row
+                        icon="grid-outline"
+                        title={category || 'Select a category'}
+                        subtitle="Pre-fills onto any expense you fund from this goal (still editable per-expense)."
+                        trailing={<Ionicons name={isPickingCategory ? 'chevron-up' : 'chevron-down'} size={16} color={ds.text3} />}
+                        onPress={() => setIsPickingCategory(v => !v)}
+                        last
                     />
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                </Group>
+                {isPickingCategory && (
+                    <View style={styles.picker}>
+                        <CategoryPicker
+                            scroll={false}
+                            categoryGroups={EXPENSE_CATEGORY_GROUPS}
+                            onSelect={(cat: string) => {
+                                setCategory(cat);
+                                setSubCategory('');
+                                setIsPickingCategory(false);
+                            }}
+                        />
+                    </View>
+                )}
+
+                <SectionHeader title="Auto-contribution (optional)" grouped />
+                <Group padded>
+                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="repeat-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={numInput}
+                            value={recurringAmount}
+                            onChangeText={setRecurringAmount}
+                            keyboardType="numeric"
+                            placeholder="0"
+                            placeholderTextColor={ds.text3}
+                        />
+                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipStrip}>
                         {RECURRENCE_OPTIONS.map((opt) => {
                             const isActive = frequency === opt.value;
                             return (
-                                <TouchableOpacity
+                                <Pressable
                                     key={opt.value}
                                     onPress={() => setFrequency(opt.value)}
-                                    style={{
-                                        paddingVertical: 8,
-                                        paddingHorizontal: 12,
-                                        borderRadius: 10,
-                                        borderWidth: 1.5,
-                                        borderColor: isActive ? colors.primary : 'transparent',
-                                        backgroundColor: isActive ? colors.primary + '15' : colors.background,
-                                    }}
+                                    style={[styles.chip, isActive && { backgroundColor: ds.inset }]}
                                 >
-                                    <Text style={{ color: isActive ? colors.primary : colors.text, fontSize: 12, fontWeight: isActive ? '700' : '500' }}>
+                                    <Text style={[type.smallMedium, { color: isActive ? ds.text : ds.text2 }]}>
                                         {opt.label}
                                     </Text>
-                                </TouchableOpacity>
+                                </Pressable>
                             );
                         })}
                     </ScrollView>
                     {nextDuePreview && (
-                        <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 10 }}>
+                        <Text style={[type.small, styles.hint, { color: ds.text2 }]}>
                             Next contribution: {nextDuePreview.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </Text>
                     )}
-                </Card>
+                </Group>
 
                 {!initialGoal && (
-                    <Card>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 8 }}>Start with a lump sum today? (Optional)</Text>
-                        <TextInput
-                            style={{ color: colors.text, fontSize: 20, fontWeight: '600', borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                            value={initialContribution}
-                            onChangeText={setInitialContribution}
-                            keyboardType="numeric"
-                            placeholder="0.00"
-                            placeholderTextColor={colors.gray300}
-                        />
-                    </Card>
+                    <>
+                        <SectionHeader title="Start with a lump sum today? (optional)" grouped />
+                        <Group padded>
+                            <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                                <Ionicons name="wallet-outline" size={18} color={ds.text2} />
+                                <TextInput
+                                    style={numInput}
+                                    value={initialContribution}
+                                    onChangeText={setInitialContribution}
+                                    keyboardType="numeric"
+                                    placeholder="0"
+                                    placeholderTextColor={ds.text3}
+                                />
+                            </View>
+                        </Group>
+                    </>
                 )}
 
-                <Card>
-                    <Text style={{ color: colors.textSecondary }}>Notes (Optional)</Text>
-                    <TextInput
-                        style={{ color: colors.text, fontSize: 16, borderBottomWidth: 1, borderBottomColor: colors.border, padding: 8 }}
-                        value={notes}
-                        onChangeText={setNotes}
-                        placeholder="Description"
-                        placeholderTextColor={colors.gray500}
-                    />
-                </Card>
-
-                <CategorySelectModal
-                    visible={showCategoryModal}
-                    onClose={() => setShowCategoryModal(false)}
-                    onSelect={(cat: string) => {
-                        setCategory(cat);
-                        setSubCategory('');
-                        setShowCategoryModal(false);
-                    }}
-                    categoryGroups={EXPENSE_CATEGORY_GROUPS}
-                />
-                </ScrollView>
-
-                <View style={{ flexDirection: 'row', gap: 12, paddingTop: 8 }}>
-                    <Button title="Cancel" variant="outline" onPress={onCancel} style={{ flex: 1 }} />
-                    <Button title="Save" onPress={handleSave} loading={isSaving} style={{ flex: 1 }} />
-                </View>
-            </View>
-        </View>
+            </ScrollView>
+        </BottomModal>
     );
 };
+
+const styles = StyleSheet.create({
+    picker: {
+        marginTop: space[2],
+    },
+    amountInput: {
+        paddingTop: space[1],
+        paddingBottom: 0,
+        paddingHorizontal: 0,
+    },
+    label: {
+        marginBottom: space[1],
+    },
+    fieldGap: {
+        marginTop: space[3],
+    },
+    hint: {
+        marginTop: space[2],
+    },
+    field: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+        padding: space[3],
+        borderRadius: radius.md,
+    },
+    fieldInput: {
+        flex: 1,
+        padding: 0,
+    },
+    chipStrip: {
+        marginTop: space[3],
+    },
+    chips: {
+        gap: space[1],
+    },
+    chip: {
+        paddingVertical: space[2],
+        paddingHorizontal: space[3],
+        borderRadius: radius.sm,
+    },
+    actions: {
+        flexDirection: 'row',
+        gap: space[3],
+    },
+    cancelButton: {
+        flex: 1,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    primaryButton: {
+        flex: 2,
+        height: 48,
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});

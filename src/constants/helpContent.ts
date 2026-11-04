@@ -11,14 +11,19 @@ export type ContentItem =
     | { type: 'formula'; text: string }
     | { type: 'divider' }
     | { type: 'example'; text: string }
-    | { type: 'alert'; text: string; alertType?: 'info' | 'warning' | 'danger' };
+    | { type: 'alert'; text: string; alertType?: 'info' | 'warning' | 'danger' }
+    | { type: 'visual'; id: GuideVisualId };
+
+// Worked-example infographics drawn by GuideVisual.
+export type GuideVisualId =
+    | 'net-worth' | 'runway' | 'burn-rate' | 'privacy-modes' | 'goal-flow' | 'goal-cap'
+    | 'health-grid' | 'budget-scale' | 'payoff-order' | 'payment-split' | 'total-return' | 'advisor-scale';
 
 export interface HelpTopic {
     id: string;
     title: string;
     subtitle: string;
     icon: string;
-    color: string;
     type: 'onboarding' | 'document';
     content?: ContentItem[];
 }
@@ -29,46 +34,183 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Getting Started',
         subtitle: 'The basic guide to WealthSnap',
         icon: 'rocket-outline',
-        color: '#4CAF50',
         type: 'onboarding'
+    },
+    {
+        id: 'home-snapshot',
+        title: 'Home Snapshot',
+        subtitle: 'Net worth, overview rows and privacy modes',
+        icon: 'home-outline',
+        type: 'document',
+        content: [
+            { type: 'heading1', text: 'Home Snapshot' },
+            { type: 'paragraph', text: 'Home shows your net worth on top, then one row each for Cash, Investments, Loans and Goals, then your 3 most recent transactions. Tap "Overall" to switch every row to "This month". Reorder the rows from the sliders button, which opens the settings for whichever Home tab you are on.' },
+            { type: 'paragraph', text: 'The tabs under the greeting open the full lists: Ledger (every transaction by day, with search, filters and a calendar), Holdings, Goals and Loans. Tapping a row jumps to its tab.' },
+            { type: 'divider' },
+            { type: 'heading2', text: 'Projected Net Worth' },
+            { type: 'formula', text: 'Net Worth = Cash + Investments + Goal balances − (Loan principal + Projected future interest)' },
+            { type: 'visual', id: 'net-worth' },
+            { type: 'bullet', text: 'Only loans you owe count. Money owed to you isn\'t an asset until it\'s repaid.' },
+            { type: 'bullet', text: 'Change this month = Net Worth now − Net Worth at the end of last month. The % divides by last month\'s figure, and shows "—" while that was zero or below.' },
+            { type: 'bullet', text: 'Last month\'s figure uses your cash, goal balances and loan principal as of then, and each holding\'s latest price on or before then (or its last trade price). The line under the number shows your past month-ends, 6 months back by default; change it to 1 year, 3 years or all time in Home settings.' },
+            { type: 'heading2', text: 'Overview rows' },
+            { type: 'bullet', text: 'Cash (Overall): your cash balance. Cash kept = Cash balance ÷ Lifetime income.' },
+            { type: 'bullet', text: 'Cash (This month): Monthly net = Income − Expense, with goal-funded purchases left out. Savings rate = (Income − Expense − Debt principal repaid) ÷ Income.' },
+            { type: 'bullet', text: 'Investments: market value. Return = Unrealized P/L ÷ Cost of what you still hold. This month: net invested (buys − sells) and the return on shares bought this month that you still hold.' },
+            { type: 'bullet', text: 'Loans: what you still owe on active loans. % repaid = (Borrowed − Still owed) ÷ Borrowed. Obligations paid counts principal + interest paid this month (not fees), up to each loan\'s minimum payment, so overpaying one loan doesn\'t cover another.' },
+            { type: 'bullet', text: 'Goals: total saved. % to target = Saved (each goal capped at its target) ÷ Total targets. A goal is on track once it reaches its target, or while it has an active recurring contribution. "On plan" means this month\'s contributions reached your goals\' monthly plan.' },
+            { type: 'heading2', text: 'Home tabs' },
+            { type: 'bullet', text: 'Ledger In / Out: In = Income + Transfer In, Out = Expense + Transfer Out, for this month. That is raw cash movement, so goal contributions, loan payments and investment buys count as Out.' },
+            { type: 'heading3', text: 'Safe to spend' },
+            { type: 'paragraph', text: 'The Ledger tab\'s Safe to spend row is what\'s left to spend for the rest of this month once everything already planned is set aside.' },
+            { type: 'formula', text: 'Safe to spend = Income + Upcoming recurring income − Spent so far − Transfers out − Upcoming recurring bills − Living costs for the days left − Debt and goal payments still due' },
+            { type: 'bullet', text: 'Living costs for the days left = your average daily spending over the last 90 days × days left this month. Recurring bills, goal-funded purchases and loan principal and interest are left out of that average; loan fees stay in.' },
+            { type: 'bullet', text: 'Debt payments still due = each loan\'s minimum payment minus what you\'ve paid toward it this month (principal + interest, not fees). Goal payments still due work the same way, from each goal\'s recurring contribution.' },
+            { type: 'bullet', text: 'Every transfer out lowers it, including investment buys and money you lend. Transfers in never raise it.' },
+            { type: 'bullet', text: 'Purchases paid from a goal don\'t count as spent so far; that cash left when you saved it.' },
+            { type: 'alert', alertType: 'info', text: 'In Discreet mode Safe to spend shows "—", since it has no version without amounts.' },
+            { type: 'formula', text: 'Total return = (Unrealized P/L + Realized P/L + Dividends) ÷ Everything you ever invested' },
+            { type: 'bullet', text: 'Holdings: "everything you ever invested" is the cost of what you still hold plus the cost of what you sold. Each holding\'s own return is still unrealized only, like the Investments row above.' },
+            { type: 'bullet', text: 'Loans: "Owed to you" uses the same rules as money you owe: % collected = (Lent − Still owed) ÷ Lent, and repayments received count up to each loan\'s minimum.' },
+            { type: 'divider' },
+            { type: 'heading2', text: 'Privacy modes' },
+            { type: 'paragraph', text: 'Open, Discreet or Hidden, picked from the sliders button on Home. See the Privacy Modes guide for what each one shows.' },
+        ]
+    },
+    {
+        id: 'runway',
+        title: 'What Runway Tells You',
+        subtitle: 'How long your cash would last',
+        icon: 'hourglass-outline',
+        type: 'document',
+        content: [
+            { type: 'heading1', text: 'What Runway Tells You' },
+            { type: 'paragraph', text: 'Runway is how many months your tracked cash would last at your usual monthly costs if no more money came in.' },
+            { type: 'formula', text: 'Runway = Cash balance ÷ Burn rate' },
+            { type: 'visual', id: 'runway' },
+            { type: 'paragraph', text: 'Cash balance is everything you\'ve recorded coming in (income, transfers in) minus everything going out (expenses, transfers out). It\'s your tracked balance, so it only matches your bank if every peso is recorded.' },
+            { type: 'heading2', text: 'Burn rate' },
+            { type: 'paragraph', text: 'What a typical month costs you:' },
+            { type: 'visual', id: 'burn-rate' },
+            { type: 'bullet', text: 'Your average spending over up to the last 6 full months. With no full month yet: your daily spending since your first transaction × 30.44.' },
+            { type: 'bullet', text: 'Plus your loans\' minimum payments.' },
+            { type: 'bullet', text: 'Plus your goals\' recurring contributions. Paused goals and goals already at their target don\'t count.' },
+            { type: 'bullet', text: 'Left out: purchases paid from a goal (that cash left when you saved it), and loan principal and interest (already inside the minimum payment). Loan fees stay in, since minimum payments don\'t cover them.' },
+            { type: 'heading2', text: 'What moves it' },
+            { type: 'bullet', text: 'Up: more cash recorded, lower spending, a loan paid off (its minimum payment stops counting).' },
+            { type: 'bullet', text: 'Down: spending more, a new loan\'s minimum payment, a new recurring goal contribution.' },
+            { type: 'bullet', text: 'Putting money into a goal shortens your runway right away: that cash left your pocket, even though it still counts toward net worth.' },
+            { type: 'heading2', text: 'Where you see it' },
+            { type: 'bullet', text: 'Home → Snapshot, under net worth, with the change since the end of last month.' },
+            { type: 'bullet', text: 'Insights → Runway tile. Its sheet shows the date your cash would last until and how spending, debts and investments move it.' },
+            { type: 'bullet', text: 'Alerts: one when runway falls 25% or more below last month\'s, and a monthly reminder while your cash balance is at or below zero.' },
+            { type: 'alert', alertType: 'info', text: 'In Discreet mode runway shows as it is, since months don\'t reveal amounts.' },
+        ]
+    },
+    {
+        id: 'privacy-modes',
+        title: 'Privacy Modes',
+        subtitle: 'Open, Discreet and Hidden',
+        icon: 'eye-off-outline',
+        type: 'document',
+        content: [
+            { type: 'heading1', text: 'Privacy Modes' },
+            { type: 'paragraph', text: 'Pick a mode in Home settings (the sliders button on Home). It applies everywhere as soon as you pick it.' },
+            { type: 'visual', id: 'privacy-modes' },
+            { type: 'bullet', text: 'Open: every amount.' },
+            { type: 'bullet', text: 'Discreet: only numbers that don\'t reveal how much money is involved: percentages, months, counts and progress bars. Single transactions keep their amount, but day and month totals are left out. Useful at a glance in public.' },
+            { type: 'bullet', text: 'Hidden: every amount shows as ****, keeping a leading + or − sign.' },
+            { type: 'heading2', text: 'What Discreet shows instead' },
+            { type: 'bullet', text: 'Home: net worth\'s % change, runway in months, savings rate, cash kept as a % of lifetime income, investment return %, % of loans repaid, % to your goals.' },
+            { type: 'bullet', text: 'Ledger: this month\'s Out as a % of In. Holdings: total return and each holding\'s weight. Goals and Loans: % to target, % repaid or collected.' },
+            { type: 'bullet', text: 'Insights: each Financial Health number\'s scale-free version (see the Financial Insights guide). Investment boost shows "—".' },
+            { type: 'alert', alertType: 'info', text: 'Screens that don\'t have a Discreet version yet show Hidden instead.' },
+            { type: 'heading2', text: 'Screenshots' },
+            { type: 'paragraph', text: 'In Open and Discreet, screenshots are blocked so your amounts and charts can\'t be captured by accident. Hidden allows them. To allow screenshots for 15 seconds, use Profile → Security → "Reveal for screenshot".' },
+        ]
+    },
+    {
+        id: 'goals',
+        title: 'Saving with Goals',
+        subtitle: 'Set money aside and spend it down',
+        icon: 'flag-outline',
+        type: 'document',
+        content: [
+            { type: 'heading1', text: 'Saving with Goals' },
+            { type: 'paragraph', text: 'A goal sets aside cash for a purpose, like a Travel Fund or Annual Insurance. The money still counts toward your net worth; it just moves from cash into the goal.' },
+            { type: 'heading2', text: 'Using goals' },
+            { type: 'bullet', text: 'Home → Goals → "New goal": a name, a target, and optionally a recurring contribution.' },
+            { type: 'bullet', text: 'Tap a goal to add funds, withdraw, pause, edit or delete it.' },
+            { type: 'bullet', text: 'To spend from a goal, record an expense and pick the goal as its Funding Source.' },
+            { type: 'heading2', text: 'How goals affect your numbers' },
+            { type: 'visual', id: 'goal-flow' },
+            { type: 'bullet', text: 'Putting money in lowers your cash right away, so runway goes down. A recurring contribution also counts in burn rate as a monthly cost, like a bill; a one-off contribution doesn\'t.' },
+            { type: 'bullet', text: 'Spending from a goal adds nothing extra to burn rate, runway or your monthly spending trends: the cash already left when you saved it. The purchase still shows in your category breakdown and as "+ from goals" under Total Expense, and never counts against a budget.' },
+            { type: 'heading2', text: 'Progress' },
+            { type: 'formula', text: '% to target = Saved (each goal counted only up to its target) ÷ All targets' },
+            { type: 'visual', id: 'goal-cap' },
+            { type: 'bullet', text: 'Capping stops one overfunded goal from hiding one that\'s behind.' },
+            { type: 'bullet', text: 'A goal is on track once it reaches its target, or while it has an active recurring contribution. Goals have no target date, so on track doesn\'t mean on pace for a date.' },
+            { type: 'bullet', text: 'On plan means this month\'s contributions reached your goals\' combined monthly plan.' },
+            { type: 'alert', alertType: 'info', text: 'In Discreet mode Goals shows % to target and how many goals got a contribution this month.' },
+        ]
     },
     {
         id: 'insights',
         title: 'Financial Insights',
-        subtitle: 'Meaning of cards and charts',
+        subtitle: 'Financial Health grid and charts',
         icon: 'bar-chart-outline',
-        color: '#2196F3',
         type: 'document',
         content: [
-            { type: 'heading1', text: 'Cards & Charts Overview' },
-            { type: 'paragraph', text: 'This guide explains what each card and chart shows and the user value behind it.' },
+            { type: 'heading1', text: 'Financial Health & Charts' },
+            { type: 'paragraph', text: 'This guide explains what each number and chart shows and the user value behind it.' },
             { type: 'divider' },
-            { type: 'heading2', text: 'Overview Cards' },
-            { type: 'paragraph', text: 'These cards answer "Am I financially okay right now?" at a glance. You can browse past months via the month selector above; each card\'s subtitle shows which month it\'s reflecting.' },
+            { type: 'heading2', text: 'Financial Health grid' },
+            { type: 'paragraph', text: 'Four tiles that answer "Am I financially okay right now?" at a glance. Pick which 4 of the 13 numbers below appear, and in what order, from the sliders button on Insights: the order you check them in is their order on the grid. "Show all" lists every number with its value. Tap a tile or row for its details and "How is this calculated?".' },
+            { type: 'visual', id: 'health-grid' },
+            { type: 'paragraph', text: 'Runway, Spending pace, Debt drag and Investment boost always reflect today. The rest follow the month selector; the line under each one says which month it shows.' },
 
-            { type: 'heading3', text: '1. Financial Runway' },
+            { type: 'heading3', text: '1. Runway' },
             { type: 'blockquote', text: 'Shows: How many months your current balance can support your lifestyle.' },
             { type: 'bullet', text: 'Measures financial safety' },
             { type: 'bullet', text: '"Current balance" here is your entire transaction history, not just the browsed month — everything you\'ve ever earned and transferred in, minus everything you\'ve ever spent and transferred out' },
             { type: 'bullet', text: 'Includes your mandatory minimum debt payments and your active savings goal contributions, not just everyday spending' },
             { type: 'bullet', text: 'Always reflects today, even while you\'re browsing a past month' },
             { type: 'bullet', text: 'Highlights risk early' },
+            { type: 'bullet', text: 'Its sheet shows the change since last month, the date your cash would last until, and how spending, debts and investments move it' },
             { type: 'paragraph', text: 'User insight: "I can sustain my current spending for X months."' },
 
-            { type: 'heading3', text: '2. Budget Health' },
+            { type: 'heading3', text: '2. Spending pace' },
+            { type: 'blockquote', text: 'Shows: How this month\'s spending so far compares with your 3-month average by the same day.' },
+            { type: 'bullet', text: 'Catches overspending mid-month, before the month is over' },
+            { type: 'bullet', text: 'Its sheet adds this month\'s net flow and how many months of self-sustain your net flow buys each year' },
+
+            { type: 'heading3', text: '3. Debt drag' },
+            { type: 'blockquote', text: 'Shows: How many months of runway your debt minimum payments cost you.' },
+            { type: 'bullet', text: 'Only debts you owe count; money owed to you isn\'t a liability' },
+            { type: 'bullet', text: 'Its sheet shows your mandatory payments, interest cost and self-sustain delay, plus an "extra per month" stepper that runs your payoff plan to show how much sooner you\'d be debt-free' },
+
+            { type: 'heading3', text: '4. Investment boost' },
+            { type: 'blockquote', text: 'Shows: How many extra months of runway your investments would add if you sold them today.' },
+            { type: 'bullet', text: 'Its sheet shows your portfolio value, dividend yield, yearly dividend impact and how much sooner investing your surplus brings self-sustain' },
+            { type: 'bullet', text: 'Shown as "—" in Discreet mode, since a large figure would reveal that your investments far exceed your spending' },
+
+            { type: 'heading3', text: '5. Budget Health' },
             { type: 'blockquote', text: 'Shows: How much of your monthly budgets you’ve used (percentage).' },
             { type: 'bullet', text: 'Only counts categories that actually have a budget set' },
+            { type: 'visual', id: 'budget-scale' },
             { type: 'bullet', text: 'Purchases funded from a savings goal don\'t count against a budget — the goal was the budget for them' },
             { type: 'bullet', text: 'Early warning before overspending' },
             { type: 'paragraph', text: 'User insight: "My spending is healthy / getting risky."' },
+            { type: 'paragraph', text: 'The Budgets section further down Insights breaks this into one row per budget: spent ÷ budget, with the same colors. The 5 most-used show, and "Show all" lists the rest. It\'s hidden when no budgets are set.' },
 
-            { type: 'heading3', text: '3. Net Cash Flow' },
+            { type: 'heading3', text: '6. Net Cash Flow' },
             { type: 'blockquote', text: 'Shows: The true net movement of liquid cash for the selected month — income plus transfers in, minus expenses and transfers out.' },
             { type: 'bullet', text: 'Indicates progress or regression' },
             { type: 'bullet', text: 'Contributing to or spending from a savings goal is a transfer, not an expense, so it nets to ₱0 here instead of looking like a cash drop' },
             { type: 'paragraph', text: 'User insight: "I’m moving forward / falling behind this month."' },
 
-            { type: 'heading3', text: '4. Savings Rate' },
+            { type: 'heading3', text: '7. Savings Rate' },
             { type: 'blockquote', text: 'Shows: Percentage of income saved this month.' },
             { type: 'bullet', text: 'Standard wealth metric' },
             { type: 'bullet', text: 'Scales across any income level' },
@@ -76,42 +218,48 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Debt principal you repay counts as spent, not saved — the rate reflects cash you actually kept' },
             { type: 'paragraph', text: 'User insight: "How efficiently am I saving what I earn?"' },
 
-            { type: 'heading3', text: '5. Total Income' },
+            { type: 'heading3', text: '8. Total Income' },
             { type: 'blockquote', text: 'Shows: All income received in the selected month.' },
             { type: 'bullet', text: 'Baseline for all other insights' },
             { type: 'bullet', text: 'Useful for variable income earners' },
 
-            { type: 'heading3', text: '6. Total Expense' },
+            { type: 'heading3', text: '9. Total Expense' },
             { type: 'blockquote', text: 'Shows: All spending recorded in the selected month.' },
             { type: 'bullet', text: 'Clear cost awareness' },
             { type: 'bullet', text: 'No category noise' },
             { type: 'bullet', text: 'Excludes purchases funded from a savings goal — that cash already left when you contributed it, not when you later spent it. They\'re shown underneath instead, as "+ ₱X from goals"' },
 
-            { type: 'heading3', text: '7. Burn Rate' },
+            { type: 'heading3', text: '10. Burn Rate' },
             { type: 'blockquote', text: 'Shows: Average monthly spending based on recent history, as of today.' },
             { type: 'bullet', text: 'More realistic than a single month' },
             { type: 'bullet', text: 'Includes your mandatory minimum debt payments and your active savings goal contributions' },
             { type: 'bullet', text: 'Excludes purchases funded from a savings goal, so a big goal-funded purchase doesn\'t look like a spending surge' },
             { type: 'bullet', text: 'Always reflects today, even while you\'re browsing a past month' },
-            { type: 'bullet', text: 'Powers the Runway card' },
+            { type: 'bullet', text: 'Powers Runway, Debt drag and Investment boost' },
             { type: 'paragraph', text: 'User insight: "This is what my lifestyle actually costs, debts and goals included."' },
 
-            { type: 'heading3', text: '8. Daily Average' },
+            { type: 'heading3', text: '11. Daily Average' },
             { type: 'blockquote', text: 'Shows: Average amount spent per day so far in the selected month.' },
             { type: 'bullet', text: 'Helps pace spending mid-month' },
             { type: 'bullet', text: 'Easy mental model' },
             { type: 'bullet', text: 'Excludes purchases funded from a savings goal' },
 
-            { type: 'heading3', text: '9. Annualized Expense' },
+            { type: 'heading3', text: '12. Annualized Expense' },
             { type: 'blockquote', text: 'Shows: Burn Rate projected across a full year.' },
             { type: 'bullet', text: 'Connects daily habits to long-term impact' },
             { type: 'bullet', text: 'Helps plan income needs' },
 
-            { type: 'heading3', text: '10. Top Category' },
+            { type: 'heading3', text: '13. Top Category' },
             { type: 'blockquote', text: 'Shows: Highest spending category in the selected month.' },
             { type: 'bullet', text: 'Identifies biggest money drain' },
             { type: 'bullet', text: 'Includes purchases funded from a savings goal, so a big goal-funded trip can top the list — the spending breakdown marks how much of each category came from goals' },
             { type: 'bullet', text: 'Highlights optimization opportunities' },
+
+            { type: 'heading3', text: 'In Discreet mode' },
+            { type: 'bullet', text: 'Runway, Spending pace, Debt drag, Budget Health and Savings Rate are already scale-free and stay the same' },
+            { type: 'bullet', text: 'Net Cash Flow: % of the month\'s income kept. Total Expense: % of income. Total Income: % vs your average of up to 6 prior full months' },
+            { type: 'bullet', text: 'Burn Rate and Annualized Expense: % of your average monthly income. Daily Average: % lower or higher than your daily average over the 3 prior full months' },
+            { type: 'bullet', text: 'Top Category: its share of spending. Investment boost: "—". Debt drag\'s stepper counts steps instead of amounts' },
 
             { type: 'divider' },
             { type: 'heading2', text: 'Charts & Trends' },
@@ -161,24 +309,37 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Math & Formulas',
         subtitle: 'Calculations reference',
         icon: 'calculator-outline',
-        color: '#9C27B0',
         type: 'document',
         content: [
             { type: 'heading1', text: 'Mathematical Documentation' },
             { type: 'paragraph', text: 'Technical reference for all calculations used in the Financial Insights feature.' },
             { type: 'divider' },
 
-            { type: 'heading1', text: '1. Overview Cards' },
+            { type: 'heading1', text: '1. Financial Health grid' },
 
-            { type: 'heading2', text: 'Financial Runway' },
+            { type: 'heading2', text: 'Runway' },
             { type: 'formula', text: 'Runway = Net Liquid Balance ÷ Adjusted Burn Rate' },
             { type: 'bullet', text: 'Net Liquid Balance = (Lifetime Income + Lifetime Transfer In) − (Lifetime Total Expenses + Lifetime Transfer Out) — summed across every transaction you\'ve recorded, including ones dated in the future, not just the browsed month. Savings goal contributions/spends are transfers, so they shift money between this balance and your goal balances without changing the total' },
             { type: 'bullet', text: 'Adjusted Burn Rate = Burn Rate + Total Minimum Payments on your active, payable debts + Total Monthly Contributions on your active, not-yet-completed savings goals' },
             { type: 'paragraph', text: 'Both this and Burn Rate are computed as of today, regardless of which month you\'re browsing, and both draw on your full history rather than a single month.' },
-            { type: 'paragraph', text: 'Color Coding:' },
-            { type: 'bullet', text: 'Green: ≥6 months' },
-            { type: 'bullet', text: 'Orange: 3-6 months' },
-            { type: 'bullet', text: 'Red: <3 months' },
+            { type: 'formula', text: 'Runway change = Runway now − Runway at the end of last month' },
+
+            { type: 'heading2', text: 'Spending pace' },
+            { type: 'formula', text: 'Pace = (Spent this month so far − 3-month average by the same day) ÷ 3-month average × 100' },
+            { type: 'bullet', text: 'Excludes purchases funded from a savings goal. Months with no transactions are left out of the average.' },
+            { type: 'formula', text: 'Impact on self-sustain = 3-month average Net Cash Flow × 12 ÷ Adjusted Burn Rate' },
+
+            { type: 'heading2', text: 'Debt drag' },
+            { type: 'formula', text: 'Debt drag = Runway without debt minimum payments − Runway with them' },
+            { type: 'bullet', text: 'Interest cost = Σ balance × monthly rate (Flat-rate loans use the original amount)' },
+            { type: 'bullet', text: 'Self-sustain delay = Total debt ÷ ((6-month average income − Adjusted Burn Rate) × 12)' },
+            { type: 'bullet', text: '"Extra per month" = how many months sooner your payoff plan (Snowball or Avalanche) reaches zero with the extra added' },
+
+            { type: 'heading2', text: 'Investment boost' },
+            { type: 'formula', text: 'Investment boost = Investment market value ÷ Adjusted Burn Rate' },
+            { type: 'bullet', text: 'Dividend yield = held shares × annual dividend per share ÷ market value; 7.2% is assumed when there\'s no dividend data' },
+            { type: 'bullet', text: 'Annual dividend impact = Market value × Yield ÷ Adjusted Burn Rate (months per year)' },
+            { type: 'bullet', text: 'Self-sustain = years until investments reach 300 × monthly costs (without debt minimums), at today\'s average monthly buys vs your full surplus' },
 
             { type: 'heading2', text: 'Budget Health' },
             { type: 'formula', text: 'Health = (Total Spent in Budgeted Categories ÷ Total Budget Amounts) × 100' },
@@ -186,16 +347,22 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: '1. Get all budgets for the selected month' },
             { type: 'bullet', text: '2. Sum total spent in those specific categories, leaving out purchases funded from a savings goal' },
             { type: 'bullet', text: '3. Divide by total budget limit' },
+            { type: 'bullet', text: 'No budgets set → "—". Budgets set but nothing spent yet → 0%' },
             { type: 'paragraph', text: 'Color Coding:' },
-            { type: 'bullet', text: 'Green: <70% (healthy)' },
-            { type: 'bullet', text: 'Orange: 70-90% (warning)' },
+            { type: 'bullet', text: 'Green: ≤70% (healthy)' },
+            { type: 'bullet', text: 'Orange: over 70%, up to 90% (warning)' },
             { type: 'bullet', text: 'Red: >90% (danger/over)' },
+
+            { type: 'heading2', text: 'Budgets section' },
+            { type: 'formula', text: 'Budget used = Spent in that category this month ÷ Its budget × 100' },
+            { type: 'bullet', text: 'Spent leaves out purchases funded from a savings goal, same as Budget Health' },
+            { type: 'bullet', text: 'Same colors as Budget Health: green ≤70%, orange up to 90%, red above 90%' },
+            { type: 'bullet', text: 'Sorted most-used first. The summary line counts budgets over (above 100%), close to the limit (over 70%, up to 100%) and on track' },
+            { type: 'bullet', text: 'Budgets of ₱0 are skipped. In Discreet mode only the % shows' },
 
             { type: 'heading2', text: 'Net Cash Flow' },
             { type: 'formula', text: 'Net Cash Flow = (Income + Transfer In) − (Expenses + Transfer Out)' },
             { type: 'paragraph', text: 'For the selected month only. Nets out transfers (rather than plain Income − Expenses) so a savings goal contribution or a goal-funded purchase — both transfers — don\'t swing this figure even though no real liquid cash left your overall balance.' },
-            { type: 'bullet', text: 'Green: ≥0 (positive)' },
-            { type: 'bullet', text: 'Red: <0 (negative)' },
 
             { type: 'heading2', text: 'Savings Rate' },
             { type: 'formula', text: 'Rate = ((Income − Expenses − Debt Principal Repaid) ÷ Income) × 100' },
@@ -216,7 +383,7 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading2', text: 'Daily Average' },
             { type: 'formula', text: 'Daily Average = Expenses So Far This Month ÷ Days Elapsed' },
-            { type: 'bullet', text: 'Uses days actually elapsed in the current month, not the full calendar length.' },
+            { type: 'bullet', text: 'Uses days actually elapsed in the current month, not the full calendar length. A past month divides by its full length.' },
             { type: 'bullet', text: 'Excludes purchases funded from a savings goal, same as Total Expense and Burn Rate.' },
 
             { type: 'heading2', text: 'Annualized Expense' },
@@ -224,7 +391,13 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading2', text: 'Top Category' },
             { type: 'formula', text: 'Category with highest spending in the selected month' },
-            { type: 'bullet', text: 'Uses SUB_CATEGORY level (e.g., "Groceries")' },
+            { type: 'bullet', text: 'Uses item level, the category you picked (e.g., "Groceries")' },
+
+            { type: 'heading2', text: 'Discreet versions' },
+            { type: 'bullet', text: 'Net Cash Flow ÷ Income × 100 ("kept"); Total Expense ÷ Income × 100' },
+            { type: 'bullet', text: 'Total Income vs its average of up to 6 prior full months; Burn Rate (and Annualized Expense) ÷ that average income' },
+            { type: 'bullet', text: 'Daily Average vs (3-month average Total Expense ÷ 30.44)' },
+            { type: 'bullet', text: 'While a month is in progress, income and expense comparisons use the month so far' },
 
             { type: 'divider' },
             { type: 'heading1', text: '2. Savings Rate Trend' },
@@ -239,12 +412,15 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading2', text: 'Color Gradient' },
             { type: 'paragraph', text: 'Whichever view is active, the line changes color at the zero mark:' },
-            { type: 'bullet', text: 'Above 0: Primary Color (Green/Blue)' },
+            { type: 'bullet', text: 'Above 0: Green' },
             { type: 'bullet', text: 'Below 0: Red' },
 
             { type: 'heading2', text: 'Statistics' },
             { type: 'bullet', text: 'Average: Sum of the active view\'s monthly values ÷ number of months' },
-            { type: 'bullet', text: 'Streak: Consecutive months on the same side of zero' },
+            { type: 'bullet', text: 'Streak: Consecutive months on the same side of zero, counting back from the latest month' },
+            { type: 'bullet', text: 'Positive / Negative ("8 / 5"): months above (or below) zero / the longest run of them in a row' },
+            { type: 'bullet', text: 'Best & Worst: the highest and lowest month in the period' },
+            { type: 'bullet', text: 'Streak and counts skip months with no transactions; a month at exactly 0 counts as positive' },
 
             { type: 'divider' },
             { type: 'heading1', text: '3. Cumulative Spending Chart' },
@@ -296,8 +472,9 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading2', text: 'Budget Integration' },
             { type: 'formula', text: 'progress = (spent / budgetLimit) × 100' },
-            { type: 'bullet', text: 'Green: <80%' },
-            { type: 'bullet', text: 'Orange: 80-100%' },
+            { type: 'bullet', text: 'Green: ≤80%' },
+            { type: 'bullet', text: 'Orange: over 80%, up to 100%' },
+            { type: 'bullet', text: 'Spent leaves out purchases funded from a savings goal' },
             { type: 'bullet', text: 'Red: >100%' },
 
             { type: 'heading2', text: 'Smart Sorting Priority' },
@@ -310,6 +487,7 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'divider' },
             { type: 'heading1', text: '7. Smart Alerts' },
+            { type: 'paragraph', text: 'Alerts start once you have at least 10 transactions recorded. Purchases funded from a savings goal never trigger a Spending Spike or Budget Exceeded alert.' },
 
             { type: 'heading2', text: 'Spending Spike Detection' },
             { type: 'paragraph', text: 'Triggered if ALL conditions are met:' },
@@ -347,11 +525,10 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Debt Strategy',
         subtitle: 'Payoff plans, interest cost, and payments',
         icon: 'trending-down-outline',
-        color: '#FF5722',
         type: 'document',
         content: [
             { type: 'heading1', text: 'Debt Strategy Overview' },
-            { type: 'paragraph', text: 'This guide explains the cards, payoff strategies, and payment tracking on the Debt Strategy screen.' },
+            { type: 'paragraph', text: 'This guide explains the payoff plan, strategies and payment tracking on Home\'s Loans tab. Switch between "You owe" and "Owed to you" at the top.' },
             { type: 'divider' },
 
             { type: 'heading2', text: 'Payable vs Receivable' },
@@ -360,7 +537,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Recording a payment on a Receivable logs Transfer In + Income, instead of Transfer Out + Expense' },
 
             { type: 'divider' },
-            { type: 'heading2', text: 'The Cards' },
+            { type: 'heading2', text: 'What the Loans tab shows' },
 
             { type: 'heading3', text: 'Estimated Debt-Free Date' },
             { type: 'blockquote', text: 'Shows: When you\'ll be debt-free, simulated month by month using your active debts\' minimum payments.' },
@@ -377,14 +554,16 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'divider' },
             { type: 'heading2', text: 'Payoff Strategy' },
-            { type: 'paragraph', text: 'Choose how your Priority Payoff Order is ranked:' },
+            { type: 'paragraph', text: 'Tap the strategy name next to "Payoff plan" to choose how your active loans are ranked:' },
+            { type: 'visual', id: 'payoff-order' },
             { type: 'bullet', text: 'Avalanche — highest interest rate first. Mathematically minimizes total interest paid.' },
             { type: 'bullet', text: 'Snowball — smallest balance first. Clears individual debts faster for a motivational win.' },
             { type: 'paragraph', text: 'Overdue and due-soon debts always jump to the top of the list regardless of strategy.' },
 
             { type: 'divider' },
             { type: 'heading2', text: 'Recording a Payment' },
-            { type: 'paragraph', text: 'Tap "Pay Now" on any debt to log a payment split up to three ways:' },
+            { type: 'paragraph', text: 'Tap a loan, then "Record Payment", to log a payment split up to three ways:' },
+            { type: 'visual', id: 'payment-split' },
             { type: 'bullet', text: 'Principal — reduces your debt balance' },
             { type: 'bullet', text: 'Interest — the cost of borrowing; doesn\'t reduce your balance' },
             { type: 'bullet', text: 'Fee / Insurance — optional add-ons like MRI (Mortgage Redemption Insurance) or Fire Insurance' },
@@ -437,39 +616,36 @@ export const HELP_TOPICS: HelpTopic[] = [
         title: 'Investments',
         subtitle: 'Portfolio stats, Smart Advisor, and dividends',
         icon: 'trending-up-outline',
-        color: '#00BFA5',
         type: 'document',
         content: [
             { type: 'heading1', text: 'Investments Overview' },
-            { type: 'paragraph', text: 'This guide explains the portfolio stats, allocation chart, dividend tracking, and Smart Advisor on the Investments screen.' },
+            { type: 'paragraph', text: 'This guide explains the portfolio total, holdings, allocation, dividends and Smart Advisor on Home\'s Holdings tab.' },
             { type: 'divider' },
 
-            { type: 'heading2', text: 'Portfolio Stats' },
+            { type: 'heading2', text: 'Portfolio' },
 
-            { type: 'heading3', text: 'Total Equity' },
-            { type: 'blockquote', text: 'Shows: The current market value of everything you hold.' },
-            { type: 'bullet', text: 'Subtitle shows this month\'s net amount invested — green if you added money, red if you withdrew via selling' },
+            { type: 'heading3', text: 'Portfolio value and total return' },
+            { type: 'blockquote', text: 'Shows: The current market value of everything you hold, with your all-time total return underneath.' },
+            { type: 'formula', text: 'Total return = (Unrealized P/L + Realized P/L + Dividends) ÷ (Cost of what you still hold + Cost of what you sold)' },
+            { type: 'visual', id: 'total-return' },
+            { type: 'bullet', text: 'Green when you\'re ahead, red when you\'re behind' },
 
-            { type: 'heading3', text: 'Realized P/L' },
-            { type: 'blockquote', text: 'Shows: Profit or loss you\'ve already locked in by selling.' },
-            { type: 'bullet', text: 'Comes from your logged Capital Gain / Capital Loss transactions' },
-            { type: 'bullet', text: 'Subtitle shows this as a percentage of what those sold shares originally cost you' },
+            { type: 'heading3', text: 'Realized' },
+            { type: 'blockquote', text: 'Shows: Profit or loss you\'ve already locked in by selling, from your Capital Gain / Capital Loss transactions.' },
+            { type: 'bullet', text: 'Discreet shows it as a % of what those sold shares originally cost you' },
 
-            { type: 'heading3', text: 'Unrealized P/L' },
-            { type: 'blockquote', text: 'Shows: Paper profit or loss on what you\'re still holding — the gap between what it\'s worth now and what you paid.' },
-            { type: 'bullet', text: 'Green if positive, red if negative' },
-            { type: 'bullet', text: 'Subtitle shows this as a percentage of your cost basis' },
-
-            { type: 'heading3', text: 'Total Dividends Received' },
+            { type: 'heading3', text: 'Dividends' },
             { type: 'blockquote', text: 'Shows: All dividend income ever recorded.' },
-            { type: 'bullet', text: 'Subtitle shows dividends received this month' },
+            { type: 'bullet', text: 'Discreet shows it as a % of the same total cost as total return' },
+
+            { type: 'paragraph', text: 'The bar under the total splits your portfolio by asset type (stocks, funds, crypto and so on).' },
 
             { type: 'divider' },
-            { type: 'heading2', text: 'Holdings List' },
-            { type: 'paragraph', text: 'One card per asset you hold.' },
-            { type: 'bullet', text: 'Price and gain/loss %, with an allocation bar showing its share of your portfolio' },
-            { type: 'bullet', text: 'Dividend yield badge and an estimated annual dividend income for that holding' },
-            { type: 'bullet', text: 'Sort by Allocation, Alphabetical, P/L amount, P/L %, or Yield' },
+            { type: 'heading2', text: 'Holdings' },
+            { type: 'paragraph', text: 'One row per asset you hold: its value, its weight in your portfolio, and its unrealized return.' },
+            { type: 'formula', text: 'Return = Unrealized P/L ÷ Cost of what you still hold' },
+            { type: 'bullet', text: 'Tap a holding for its trades, price history and dividends' },
+            { type: 'bullet', text: 'Sort from the section header: by value, return, P/L, yield, or A–Z' },
 
             { type: 'heading2', text: 'Allocation Chart' },
             { type: 'blockquote', text: 'Shows: How your money is spread out, as a treemap — box size reflects weight in your portfolio.' },
@@ -485,6 +661,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'divider' },
             { type: 'heading2', text: 'Smart Advisor' },
             { type: 'paragraph', text: 'Automatically scans your stock holdings and flags four kinds of opportunities.' },
+            { type: 'visual', id: 'advisor-scale' },
             { type: 'bullet', text: 'Crash — a stock has dropped more than 15% from its 30-day high' },
             { type: 'bullet', text: 'Dip — a stock is 5–15% off its 30-day high, or sitting more than 3% below your own average cost' },
             { type: 'bullet', text: 'Dividend — a holding has an ex-dividend date coming up within 30 days' },
@@ -531,11 +708,40 @@ export const HELP_TOPICS: HelpTopic[] = [
         ]
     },
     {
+        id: 'faq',
+        title: 'FAQ',
+        subtitle: 'Common questions',
+        icon: 'help-circle-outline',
+        type: 'document',
+        content: [
+            { type: 'heading1', text: 'FAQ' },
+            { type: 'heading3', text: 'Where is my data stored?' },
+            { type: 'paragraph', text: 'Only on this phone. WealthSnap has no account and no server, so nobody else can see your records.' },
+            { type: 'heading3', text: 'Does WealthSnap go online?' },
+            { type: 'paragraph', text: 'Only for two things: exchange rates when you record an investment in another currency, and Google Gemini features (chat, receipt scanning, fetching prices and dividends) if you add your own API key.' },
+            { type: 'heading3', text: 'How do I move to a new phone?' },
+            { type: 'paragraph', text: 'Profile → Data → Import / export → Backup data creates a password-protected file. Copy it to the new phone and use Restore data. If both phones are on the same WiFi, "Sync from device" merges them directly.' },
+            { type: 'heading3', text: 'What if I forget my backup password?' },
+            { type: 'paragraph', text: 'The backup can\'t be opened without it, and there\'s no way to recover it. Keep it somewhere safe.' },
+            { type: 'heading3', text: 'Can I back up automatically?' },
+            { type: 'paragraph', text: 'Yes. Profile → Data → Auto backup saves an encrypted backup weekly or every 2 weeks.' },
+            { type: 'heading3', text: 'Why doesn\'t my balance match my bank?' },
+            { type: 'paragraph', text: 'WealthSnap only knows what you record. Your cash balance is everything recorded coming in minus everything going out.' },
+            { type: 'heading3', text: 'Can I change my currency or name?' },
+            { type: 'paragraph', text: 'Not in this version. Both are set when you first open the app.' },
+            { type: 'heading3', text: 'Why can\'t I take a screenshot?' },
+            { type: 'paragraph', text: 'In Open and Discreet, screenshots are blocked to protect your amounts and charts. Switch to Hidden, or use Profile → Security → "Reveal for screenshot".' },
+            { type: 'heading3', text: 'Do I need a Gemini API key?' },
+            { type: 'paragraph', text: 'Only for the AI features. You bring your own key (Profile → Google Gemini), so you pay Google directly for what you use and WealthSnap stays free.' },
+            { type: 'heading3', text: 'I\'m locked out of my PIN.' },
+            { type: 'paragraph', text: 'After too many wrong tries, the PIN screen waits 30 seconds before you can try again. If your phone supports it, use your fingerprint or face instead.' },
+        ]
+    },
+    {
         id: 'changelog',
         title: 'Change Logs',
         subtitle: 'Version history and release notes',
         icon: 'git-branch-outline',
-        color: '#607D8B',
         type: 'document',
         content: parseMarkdownToContentItems(CHANGELOG_MARKDOWN)
     }

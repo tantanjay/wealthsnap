@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, StyleSheet, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, Switch, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import BottomModal from '@components/common/BottomModal';
-import SettingItem from '@components/common/SettingItem';
-import { Card, Button } from '@components/index';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius, layout } from '@styles/theme';
 import { useAlert } from '@context/AlertContext';
 import { useSecurity } from '@context/SecurityContext';
 import * as Security from '@services/core/securityService';
@@ -42,7 +42,7 @@ interface AutoBackupCardProps {
 }
 
 const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const { temporarilyDisableLock } = useSecurity();
 
@@ -149,114 +149,80 @@ const AutoBackupCard: React.FC<AutoBackupCardProps> = ({ refreshSignal }) => {
         setShowFrequencyModal(false);
     };
 
+    const warningIcon = <Ionicons name="alert-circle-outline" size={18} color={ds.warning} />;
     const frequencyLabel = FREQUENCY_OPTIONS.find(o => o.value === frequency)?.label ?? 'Weekly';
     const folderLabel = getFolderDisplayName(folderUri);
 
     return (
         <>
-            <Card style={{ marginBottom: 16 }}>
-                <View style={styles.cardHeader}>
-                    <View style={[styles.headerIcon, { backgroundColor: colors.success + '20' }]}>
-                        <Ionicons name="time" size={22} color={colors.success} />
-                    </View>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>Auto Backup</Text>
-                </View>
-
-                <SettingItem
-                    icon="cloud-done"
-                    title="Automatic Backups"
+            <SectionHeader grouped title="Auto backup" />
+            <Group>
+                <Row
+                    icon="cloud-done-outline"
+                    title="Automatic backups"
                     subtitle={enabled ? formatLastRun(lastRunAt) : 'Off'}
-                    iconBg={colors.success + '20'}
-                    iconColor={colors.success}
-                    isLast={!enabled}
-                    rightElement={
+                    last={!enabled}
+                    trailing={
                         <Switch
                             value={enabled}
                             onValueChange={handleToggle}
-                            trackColor={{ false: colors.gray300, true: colors.primary + '80' }}
-                            thumbColor={enabled ? colors.primary : colors.gray300}
+                            trackColor={{ false: ds.hairline, true: ds.accentSoft }}
+                            thumbColor={enabled ? ds.accent : ds.text3}
                         />
                     }
                 />
 
                 {enabled && (
                     <>
-                        <SettingItem
-                            icon="repeat"
-                            title="Frequency"
-                            subtitle={frequencyLabel}
-                            onPress={() => setShowFrequencyModal(true)}
-                            iconBg={colors.info + '20'}
-                            iconColor={colors.info}
-                        />
+                        <Row icon="repeat-outline" title="Frequency" subtitle={frequencyLabel} chevron onPress={() => setShowFrequencyModal(true)} />
 
                         {Platform.OS === 'android' && (
-                            <SettingItem
-                                icon="folder"
-                                title="Backup Folder"
+                            <Row
+                                icon="folder-outline"
+                                title="Backup folder"
                                 subtitle={folderLabel ?? 'Required — tap to choose a folder'}
+                                trailing={folderLabel ? undefined : warningIcon}
+                                chevron
                                 onPress={handlePickFolder}
-                                iconBg={folderLabel ? colors.primary + '20' : colors.warning + '20'}
-                                iconColor={folderLabel ? colors.primary : colors.warning}
                             />
                         )}
 
-                        <SettingItem
-                            icon="key"
-                            title="Backup Password"
+                        <Row
+                            icon="key-outline"
+                            title="Backup password"
                             subtitle={hasPassword ? 'Tap to change' : 'Required — tap to set'}
+                            trailing={hasPassword ? undefined : warningIcon}
+                            chevron
                             onPress={handlePasswordRowPress}
-                            iconBg={hasPassword ? colors.primary + '20' : colors.warning + '20'}
-                            iconColor={hasPassword ? colors.primary : colors.warning}
-                            isLast
+                            last
                         />
-
-                        {Platform.OS === 'ios' && (
-                            <View style={{ paddingTop: 12 }}>
-                                <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 18 }}>
-                                    Auto-backups are saved to WealthSnap&apos;s on-device folder. Open the Files app (On My iPhone → WealthSnap) to move copies to iCloud Drive or elsewhere.
-                                </Text>
-                            </View>
-                        )}
                     </>
                 )}
-            </Card>
+            </Group>
 
-            {/* Frequency Selection Modal */}
+            {enabled && Platform.OS === 'ios' && (
+                <Text style={[type.small, styles.note, { color: ds.text2 }]}>
+                    Auto-backups are saved to WealthSnap&apos;s on-device folder. Open the Files app (On My iPhone → WealthSnap) to move copies to iCloud Drive or elsewhere.
+                </Text>
+            )}
+
             <BottomModal
                 visible={showFrequencyModal}
                 onClose={() => setShowFrequencyModal(false)}
-                title="Backup Frequency"
+                title="Backup frequency"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <View style={{ gap: 8 }}>
-                        {FREQUENCY_OPTIONS.map(opt => (
-                            <TouchableOpacity
+                    <Group>
+                        {FREQUENCY_OPTIONS.map((opt, i) => (
+                            <Row
                                 key={opt.value}
+                                title={opt.label}
+                                leading={<Radio selected={frequency === opt.value} />}
                                 onPress={() => handleSelectFrequency(opt.value)}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    paddingVertical: 14,
-                                    paddingHorizontal: 4,
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: colors.border
-                                }}
-                            >
-                                <Text style={{
-                                    color: colors.text,
-                                    fontSize: 16,
-                                    fontWeight: frequency === opt.value ? '600' : '400'
-                                }}>
-                                    {opt.label}
-                                </Text>
-                                {frequency === opt.value && (
-                                    <Ionicons name="checkmark" size={20} color={colors.primary} />
-                                )}
-                            </TouchableOpacity>
+                                last={i === FREQUENCY_OPTIONS.length - 1}
+                            />
                         ))}
-                    </View>
+                    </Group>
                 </ScrollView>
             </BottomModal>
 
@@ -278,8 +244,17 @@ interface PasswordModalProps {
     onSubmit: (password: string) => void;
 }
 
+const Radio: React.FC<{ selected: boolean }> = ({ selected }) => {
+    const { ds } = useTheme();
+    return (
+        <View style={[styles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
+            {selected && <View style={[styles.radioDot, { backgroundColor: ds.accent }]} />}
+        </View>
+    );
+};
+
 const PasswordModal: React.FC<PasswordModalProps> = ({ visible, mode, onClose, onSubmit }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -307,82 +282,109 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ visible, mode, onClose, o
         <BottomModal
             visible={visible}
             onClose={onClose}
-            title={mode === 'set' ? 'Set Backup Password' : 'Change Backup Password'}
+            title={mode === 'set' ? 'Set backup password' : 'Change backup password'}
             subtitle="Stored securely on this device so auto-backups can run in the background without asking you each time."
             dismissable={false}
+            footer={
+                <>
+                    <Pressable
+                        onPress={handleSubmit}
+                        disabled={isPasswordTooShort}
+                        style={[styles.button, { backgroundColor: ds.accent }, isPasswordTooShort && styles.disabled]}
+                        accessibilityRole="button"
+                    >
+                        <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Save</Text>
+                    </Pressable>
+                    <Pressable onPress={onClose} style={styles.textButton} accessibilityRole="button">
+                        <Text style={[type.body, { color: ds.text2 }]}>Cancel</Text>
+                    </Pressable>
+                </>
+            }
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: 8,
-                    marginBottom: 12,
-                    backgroundColor: colors.surface
-                }}>
-                    <TextInput
-                        style={{ flex: 1, padding: 12, color: colors.text }}
-                        placeholder="New password"
-                        placeholderTextColor={colors.gray500}
-                        secureTextEntry={!showPassword}
-                        value={password}
-                        onChangeText={setPassword}
-                    />
-                    <TouchableOpacity
-                        onPressIn={() => setShowPassword(true)}
-                        onPressOut={() => setShowPassword(false)}
-                        style={{ padding: 10 }}
-                    >
-                        <Ionicons name={showPassword ? 'eye' : 'eye-off'} size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
+                <Group padded>
+                    <View style={[styles.field, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="key-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={[type.body, styles.input, { color: ds.text }]}
+                            placeholder="New password"
+                            placeholderTextColor={ds.text3}
+                            secureTextEntry={!showPassword}
+                            value={password}
+                            onChangeText={setPassword}
+                        />
+                        <Pressable
+                            onPressIn={() => setShowPassword(true)}
+                            onPressOut={() => setShowPassword(false)}
+                            hitSlop={space[2]}
+                        >
+                            <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={ds.text2} />
+                        </Pressable>
+                    </View>
 
-                <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderRadius: 8,
-                    marginBottom: 20,
-                    backgroundColor: colors.surface
-                }}>
-                    <TextInput
-                        style={{ flex: 1, padding: 12, color: colors.text }}
-                        placeholder="Confirm password"
-                        placeholderTextColor={colors.gray500}
-                        secureTextEntry={!showPassword}
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                    />
-                </View>
-
-                <View style={{ gap: 10 }}>
-                    <Button title="Save" onPress={handleSubmit} disabled={isPasswordTooShort} />
-                    <Button variant="outline" title="Cancel" onPress={onClose} />
-                </View>
+                    <View style={[styles.field, styles.fieldGap, { backgroundColor: ds.inset }]}>
+                        <Ionicons name="key-outline" size={18} color={ds.text2} />
+                        <TextInput
+                            style={[type.body, styles.input, { color: ds.text }]}
+                            placeholder="Confirm password"
+                            placeholderTextColor={ds.text3}
+                            secureTextEntry={!showPassword}
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                        />
+                    </View>
+                </Group>
             </ScrollView>
         </BottomModal>
     );
 };
 
 const styles = StyleSheet.create({
-    cardHeader: {
+    note: {
+        paddingTop: space[3],
+        paddingHorizontal: layout.groupPadding,
+    },
+    radio: {
+        width: 20,
+        height: 20,
+        borderRadius: radius.full,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    radioDot: {
+        width: 10,
+        height: 10,
+        borderRadius: radius.full,
+    },
+    field: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 16,
+        gap: space[3],
+        padding: space[3],
+        borderRadius: radius.md,
     },
-    headerIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: 'center',
+    fieldGap: {
+        marginTop: space[3],
+    },
+    input: {
+        flex: 1,
+        padding: 0,
+    },
+    button: {
+        height: 48,
+        borderRadius: radius.md,
         alignItems: 'center',
-        marginRight: 12,
+        justifyContent: 'center',
     },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: '700',
+    disabled: {
+        opacity: 0.4,
+    },
+    textButton: {
+        height: 44,
+        marginTop: space[1],
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });
 

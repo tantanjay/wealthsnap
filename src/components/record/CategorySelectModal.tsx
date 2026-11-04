@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, Pressable, TextInput, ScrollView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
+import { Group, IconName, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius, layout } from '@styles/theme';
 
 interface CategoryItem {
     label: string;
@@ -17,20 +19,16 @@ interface CategoryGroup {
     items: CategoryItem[];
 }
 
-interface CategorySelectModalProps {
-    visible: boolean;
-    onClose: () => void;
+interface CategoryPickerProps {
     onSelect: (category: string) => void;
     categoryGroups: CategoryGroup[];
+    // Off when the picker sits inside a form's own ScrollView (an inline, collapsible section).
+    scroll?: boolean;
 }
 
-export const CategorySelectModal: React.FC<CategorySelectModalProps> = ({
-    visible,
-    onClose,
-    onSelect,
-    categoryGroups
-}) => {
-    const { colors } = useTheme();
+// Search plus group drill-down; CategorySelectModal wraps it in a sheet, forms inside a sheet use it inline.
+export const CategoryPicker: React.FC<CategoryPickerProps> = ({ onSelect, categoryGroups, scroll = true }) => {
+    const { ds } = useTheme();
     const [categorySearch, setCategorySearch] = useState('');
     const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
@@ -46,167 +44,130 @@ export const CategorySelectModal: React.FC<CategorySelectModalProps> = ({
         onSelect(categoryValue);
         setCategorySearch('');
         setSelectedGroup(null);
-        onClose();
     };
 
-    const handleClose = () => {
-        setCategorySearch('');
-        setSelectedGroup(null);
-        onClose();
-    };
+    const renderItems = (items: CategoryItem[]) => items.map((item, index) => (
+        <Row
+            key={index}
+            icon={item.icon as IconName}
+            title={item.label}
+            onPress={() => handleSelect(item.value)}
+            last={index === items.length - 1}
+        />
+    ));
+
+    const group = selectedGroup ? categoryGroups.find(g => g.group === selectedGroup) : undefined;
+
+    const Body = scroll ? ScrollView : View;
 
     return (
-        <BottomModal
-            visible={visible}
-            onClose={handleClose}
-            title="Select Category"
-        >
-            {/* Search */}
-            <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: colors.background,
-                borderRadius: 12,
-                paddingHorizontal: 12,
-                marginBottom: 16,
-                borderWidth: 1,
-                borderColor: colors.border
-            }}>
-                <Ionicons name="search" size={20} color={colors.textSecondary} />
+        <>
+            {/* Search field: sits on the sheet's canvas, so it takes the group fill */}
+            <View style={[styles.field, { backgroundColor: ds.group }]}>
+                <Ionicons name="search-outline" size={18} color={ds.text2} />
                 <TextInput
-                    style={{ flex: 1, padding: 12, color: colors.text }}
+                    style={[type.body, styles.input, { color: ds.text }]}
                     placeholder="Search categories..."
-                    placeholderTextColor={colors.gray500}
+                    placeholderTextColor={ds.text3}
                     value={categorySearch}
                     onChangeText={setCategorySearch}
                 />
                 {categorySearch ? (
-                    <TouchableOpacity onPress={() => setCategorySearch('')}>
-                        <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
+                    <Pressable onPress={() => setCategorySearch('')} hitSlop={space[2]} accessibilityLabel="Clear search">
+                        <Ionicons name="close-circle" size={18} color={ds.text3} />
+                    </Pressable>
                 ) : null}
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <Body {...(scroll ? { showsVerticalScrollIndicator: false } : {})}>
                 {categorySearch ? (
-                    // Search Results
                     <View>
-                        <Text style={{ color: colors.textSecondary, marginBottom: 10 }}>Search Results</Text>
+                        <SectionHeader title="Search results" grouped style={styles.header} />
                         {filteredCategories.length === 0 ? (
-                            <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 20 }}>No categories found.</Text>
+                            <Group padded>
+                                <Text style={[type.small, styles.empty, { color: ds.text2 }]}>No categories found.</Text>
+                            </Group>
                         ) : (
-                            filteredCategories.map((item, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    onPress={() => handleSelect(item.value)}
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        paddingVertical: 12,
-                                        borderBottomWidth: 1,
-                                        borderBottomColor: colors.border
-                                    }}
-                                >
-                                    <View style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 20,
-                                        backgroundColor: colors.primary + '20',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginRight: 12
-                                    }}>
-                                        <Ionicons name={item.icon as any} size={20} color={colors.primary} />
-                                    </View>
-                                    <Text style={{ color: colors.text, fontSize: 16 }}>{item.label}</Text>
-                                </TouchableOpacity>
-                            ))
+                            <Group>{renderItems(filteredCategories)}</Group>
                         )}
                     </View>
+                ) : group ? (
+                    <View>
+                        <Pressable onPress={() => setSelectedGroup(null)} style={styles.back} hitSlop={space[2]}>
+                            <Ionicons name="chevron-back" size={16} color={ds.accent} />
+                            <Text style={[type.smallMedium, { color: ds.accent }]}>Back to groups</Text>
+                        </Pressable>
+                        <SectionHeader title={group.group} grouped style={styles.header} />
+                        <Group>{renderItems(group.items)}</Group>
+                    </View>
                 ) : (
-                    // Categories List
-                    selectedGroup ? (
-                        // Show items in selected group
-                        <View>
-                            <TouchableOpacity
-                                onPress={() => setSelectedGroup(null)}
-                                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
-                            >
-                                <Ionicons name="arrow-back" size={20} color={colors.primary} />
-                                <Text style={{ color: colors.primary, fontSize: 16, marginLeft: 8 }}>Back to Groups</Text>
-                            </TouchableOpacity>
-
-                            <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>
-                                {categoryGroups.find(g => g.group === selectedGroup)?.group}
-                            </Text>
-
-                            {categoryGroups.find(g => g.group === selectedGroup)?.items.map((item, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    onPress={() => handleSelect(item.value)}
-                                    style={{
-                                        flexDirection: 'row',
-                                        alignItems: 'center',
-                                        paddingVertical: 12,
-                                        borderBottomWidth: 1,
-                                        borderBottomColor: colors.border
-                                    }}
-                                >
-                                    <View style={{
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: 20,
-                                        backgroundColor: colors.primary + '20',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginRight: 12
-                                    }}>
-                                        <Ionicons name={item.icon as any} size={20} color={colors.primary} />
-                                    </View>
-                                    <Text style={{ color: colors.text, fontSize: 16 }}>{item.label}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    ) : (
-                        // Show Groups
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                            {categoryGroups.map(group => (
-                                <TouchableOpacity
-                                    key={group.group}
-                                    onPress={() => setSelectedGroup(group.group)}
-                                    style={{
-                                        width: '48%',
-                                        backgroundColor: colors.background,
-                                        padding: 16,
-                                        borderRadius: 16,
-                                        alignItems: 'center',
-                                        borderWidth: 1,
-                                        borderColor: colors.border
-                                    }}
-                                >
-                                    <View style={{
-                                        width: 48,
-                                        height: 48,
-                                        borderRadius: 24,
-                                        backgroundColor: colors.primary + '20',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        marginBottom: 12
-                                    }}>
-                                        <Ionicons name={group.icon as any || 'folder-open'} size={24} color={colors.primary} />
-                                    </View>
-                                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', textAlign: 'center' }}>
-                                        {group.group}
-                                    </Text>
-                                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
-                                        {group.items.length} items
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    )
+                    <Group style={styles.firstGroup}>
+                        {categoryGroups.map((g, i) => (
+                            <Row
+                                key={g.group}
+                                icon={(g.icon || 'folder-open-outline') as IconName}
+                                title={g.group}
+                                subtitle={`${g.items.length} items`}
+                                chevron
+                                onPress={() => setSelectedGroup(g.group)}
+                                last={i === categoryGroups.length - 1}
+                            />
+                        ))}
+                    </Group>
                 )}
-            </ScrollView>
-        </BottomModal>
+            </Body>
+        </>
     );
 };
+
+interface CategorySelectModalProps {
+    visible: boolean;
+    onClose: () => void;
+    onSelect: (category: string) => void;
+    categoryGroups: CategoryGroup[];
+}
+
+export const CategorySelectModal: React.FC<CategorySelectModalProps> = ({ visible, onClose, onSelect, categoryGroups }) => (
+    <BottomModal visible={visible} onClose={onClose} title="Select category">
+        {/* Keyed on visibility so search and drill-down start fresh each time the sheet opens. */}
+        <CategoryPicker
+            key={visible ? 'open' : 'closed'}
+            categoryGroups={categoryGroups}
+            onSelect={category => {
+                onSelect(category);
+                onClose();
+            }}
+        />
+    </BottomModal>
+);
+
+const styles = StyleSheet.create({
+    field: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+        borderRadius: radius.md,
+        paddingHorizontal: space[3],
+    },
+    input: {
+        flex: 1,
+        paddingVertical: space[3],
+    },
+    header: {
+        marginTop: space[4],
+    },
+    firstGroup: {
+        marginTop: space[3],
+    },
+    empty: {
+        textAlign: 'center',
+    },
+    back: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[1],
+        alignSelf: 'flex-start',
+        marginTop: space[4],
+        paddingHorizontal: layout.groupPadding,
+    },
+});

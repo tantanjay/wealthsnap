@@ -16,7 +16,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     style,
     borderRadius = 4
 }) => {
-    const { mode } = useTheme();
+    const { ds } = useTheme();
     const [opacity] = useState(() => new Animated.Value(0.3));
 
     useEffect(() => {
@@ -40,7 +40,8 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         return () => animation.stop();
     }, [opacity]);
 
-    const baseColor = mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    // `track` reads on both the canvas and a group; `hairline` vanishes on the canvas.
+    const baseColor = ds.track;
 
     return (
         <Animated.View

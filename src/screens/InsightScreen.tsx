@@ -1,24 +1,30 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, ScrollView, TouchableOpacity, Text, RefreshControl, StyleSheet } from 'react-native';
+import { View, ScrollView, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 
 
-import InsightsOverviewCards from '@components/insights/InsightsOverviewCards';
-import InsightsSettingsModal from '@components/insights/modals/InsightsSettingsModal';
 import IncomeAnalysis from '@components/insights/IncomeAnalysis';
 import ExpenseAnalysis from '@components/insights/ExpenseAnalysis';
 import ComparisonChart from '@components/insights/ComparisonChart';
 import SmartAlerts from '@components/insights/SmartAlerts';
 import SavingsRateTrend from '@components/insights/SavingsRateTrend';
 import CumulativeSpendingChart from '@components/insights/CumulativeSpendingChart';
+import FinancialHealthGrid from '@components/insights/FinancialHealthGrid';
+import FinancialHealthSheet, { HealthSheetTarget } from '@components/insights/FinancialHealthSheet';
+import InsightsSettingsSheet, { InsightsSectionId, normalizeSectionOrder, DEFAULT_SECTION_ORDER } from '@components/insights/InsightsSettingsSheet';
+import BudgetsSection, { BudgetLine } from '@components/insights/BudgetsSection';
+import { buildHealthEntries, InsightsMonthData } from '@components/insights/financialHealthPool';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { ScreenWrapper } from '@components/common/ScreenWrapper';
 import BottomModal from '@components/common/BottomModal';
-import DraggableIconButton from '@components/common/DraggableIconButton';
 import { useTheme } from '@context/ThemeContext';
 import { usePrivacy } from '@context/PrivacyContext';
-import { useFloatingGear } from '@context/FloatingGearContext';
+import { useAIConsent } from '@hooks/useAIConsent';
+import { useFinancialHealth } from '@hooks/useFinancialHealth';
+import { usePrivacyFormat } from '@hooks/usePrivacyFormat';
+import { type, space, radius, layout } from '@styles/theme';
 import { Transaction } from '@types';
 import { getAllBudgets } from '@services/domain/budgetService';
 import { getAllDebts } from '@services/domain/debtService';
@@ -27,31 +33,20 @@ import * as Metrics from '@utils/financialMetrics';
 import * as Storage from '@services/core/storageService';
 import { getCachedTransactions } from '@services/domain/transactionService';
 
-// Valid IDs for validation/filtering
-const VALID_CARD_IDS = [
-    'financial-runway', 'budget-performance', 'net-cash-flow', 'savings-rate',
-    'total-income', 'total-expense', 'burn-rate', 'avg-daily-spending',
-    'annual-spending', 'largest-category'
-];
-
-const VALID_SECTION_IDS = [
-    'overview', 'cumulative', 'comparison', 'expense',
-    'income', 'savings', 'alerts'
-];
-
 const InsightScreen = ({ navigation }: any) => {
-    const { colors } = useTheme();
-    const { isPrivacyEnabled, togglePrivacy } = usePrivacy();
-    const { isDocked, registerSecondAction } = useFloatingGear();
-    const routeName = useRoute().name;
+    const { ds } = useTheme();
+    const { mode } = usePrivacy();
+    const { checkConsent } = useAIConsent();
     const [currency, setCurrency] = useState('PHP');
-    const [refreshing, setRefreshing] = useState(false);
+    const format = usePrivacyFormat(currency);
+    const { data: health, load: loadHealth, scenario } = useFinancialHealth(format.isDiscreet);
     const [expenseGrouping, setExpenseGrouping] = useState<'GROUP' | 'ITEM'>('ITEM');
     const [isLoading, setIsLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date());
 
-    const [cardOrder, setCardOrder] = useState<string[]>([]);
-    const [sectionOrder, setSectionOrder] = useState<string[]>([]);
+    const [grid, setGrid] = useState<Storage.HealthMetricId[]>(Storage.DEFAULT_HEALTH_GRID);
+    const [sectionOrder, setSectionOrder] = useState<InsightsSectionId[]>(DEFAULT_SECTION_ORDER);
+    const [healthSheet, setHealthSheet] = useState<HealthSheetTarget | null>(null);
 
     const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
     const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
@@ -125,7 +120,11 @@ const InsightScreen = ({ navigation }: any) => {
         budgetPerformance: new BigNumber(0),
         topExpenseCategory: { name: 'None', amount: new BigNumber(0), percentage: new BigNumber(0) },
         daysInMonth: 30,
-        dailyAverage: new BigNumber(0)
+        dailyAverage: new BigNumber(0),
+        averageIncome: new BigNumber(0),
+        burnAverageIncome: new BigNumber(0),
+        hasBudgets: false,
+        budgetLines: [] as BudgetLine[]
     });
 
     const calculateMetrics = useCallback(async (currentTransactions: Transaction[], currentDebts: import('@types').Debt[], currentGoals: import('@types').SavingsGoal[], grouping: 'GROUP' | 'ITEM', referenceDate: Date = new Date()) => {
@@ -177,9 +176,17 @@ const InsightScreen = ({ navigation }: any) => {
         // Budget Performance
         const budgets = await getAllBudgets();
         let budgetPerformance = new BigNumber(0);
+        let budgetLines: BudgetLine[] = [];
         if (budgets.length > 0) {
             // A goal was the budget for its own purchases - they never count against a category budget.
             const specificCategoryBreakdown = Metrics.getCategoryBreakdown(nonGoalCurrentMonthTrans, 'EXPENSE', 'ITEM');
+            budgetLines = budgets
+                .filter(b => b.amount.gt(0))
+                .map(b => {
+                    const spent = specificCategoryBreakdown.find(cat => cat.name === b.category)?.amount ?? new BigNumber(0);
+                    return { category: b.category, spent, budget: b.amount, percent: spent.div(b.amount).times(100).toNumber() };
+                })
+                .sort((a, b) => b.percent - a.percent);
             const budgetedCategorySpent = specificCategoryBreakdown
                 .filter(cat => budgets.some(b => b.category === cat.name))
                 .reduce((sum, cat) => sum.plus(cat.amount), new BigNumber(0));
@@ -217,16 +224,26 @@ const InsightScreen = ({ navigation }: any) => {
             topExpenseCategory: specificBreakdown[0] || { name: 'None', amount: new BigNumber(0), percentage: new BigNumber(0) },
             daysInMonth: new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate(),
             // Avg Daily Spending - goal-excluded, same reasoning as currentMonthExpense above.
-            dailyAverage: nonGoalCurrentMonthExpense.dividedBy(Math.max(1, (today.getMonth() === new Date().getMonth() && today.getFullYear() === new Date().getFullYear()) ? today.getDate() : new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()))
+            dailyAverage: nonGoalCurrentMonthExpense.dividedBy(Math.max(1, (today.getMonth() === new Date().getMonth() && today.getFullYear() === new Date().getFullYear()) ? today.getDate() : new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate())),
+            // Discreet comparisons (docs/METRICS.md, Financial Health grid). Burn rate's is as of today, like Burn rate itself.
+            averageIncome: Metrics.calculateAverageIncome(currentTransactions, 6, today),
+            burnAverageIncome: Metrics.calculateAverageIncome(currentTransactions, 6),
+            hasBudgets: budgets.length > 0,
+            budgetLines
         });
     }, []);
 
-    const fetchAllData = useCallback(async (isManualRefresh = false) => {
-        if (!isManualRefresh) setIsLoading(true);
+    // Read through refs so browsing months or regrouping doesn't re-run the focus fetch (and Financial Health's reload);
+    // the effect below recalculates for those.
+    const viewRef = useRef({ selectedDate, expenseGrouping });
+    useEffect(() => { viewRef.current = { selectedDate, expenseGrouping }; }, [selectedDate, expenseGrouping]);
+
+    const fetchAllData = useCallback(async () => {
+        setIsLoading(true);
         try {
-            const [profile, savedCardOrder, savedSectionOrder, allTransactions, allDebts, allGoals] = await Promise.all([
+            const [profile, savedGrid, savedSectionOrder, allTransactions, allDebts, allGoals] = await Promise.all([
                 Storage.getUserProfile(),
-                Storage.getInsightsCardOrder(),
+                Storage.getHealthGrid(),
                 Storage.getInsightsSectionOrder(),
                 getCachedTransactions(),
                 getAllDebts(),
@@ -235,15 +252,9 @@ const InsightScreen = ({ navigation }: any) => {
 
             if (profile?.currency) setCurrency(profile.currency);
 
-            if (savedCardOrder) {
-                const validOrder = savedCardOrder.filter((id: string) => VALID_CARD_IDS.includes(id));
-                if (validOrder.length > 0) setCardOrder(validOrder);
-            }
-
-            if (savedSectionOrder) {
-                const validOrder = savedSectionOrder.filter((id: string) => VALID_SECTION_IDS.includes(id));
-                if (validOrder.length > 0) setSectionOrder(validOrder);
-            }
+            setGrid(savedGrid);
+            setSectionOrder(normalizeSectionOrder(savedSectionOrder));
+            loadHealth();
 
             // Fallback if getTransactions returns null/undefined (though likely it returns empty array)
             const safeTransactions = allTransactions || [];
@@ -252,28 +263,19 @@ const InsightScreen = ({ navigation }: any) => {
             setDebts(allDebts);
             setGoals(allGoals);
             // We pass variables directly here to bypass the React state update delay
-            await calculateMetrics(safeTransactions, allDebts, allGoals, expenseGrouping, selectedDate);
+            await calculateMetrics(safeTransactions, allDebts, allGoals, viewRef.current.expenseGrouping, viewRef.current.selectedDate);
         } catch (error) {
             console.error("Error loading insights:", error);
         } finally {
             setIsLoading(false);
         }
-    }, [calculateMetrics, expenseGrouping, selectedDate]);
+    }, [calculateMetrics, loadHealth]);
 
     useFocusEffect(
         useCallback(() => {
             fetchAllData();
         }, [fetchAllData])
     );
-
-    useEffect(() => {
-        registerSecondAction(routeName, {
-            label: 'Screen Settings',
-            icon: 'options-outline',
-            onPress: () => setIsSettingsModalVisible(true),
-        });
-        return () => registerSecondAction(routeName, null);
-    }, [registerSecondAction, routeName]);
 
     // Only re-calculate breakdown if grouping or date changes specifically
     useEffect(() => {
@@ -283,283 +285,234 @@ const InsightScreen = ({ navigation }: any) => {
         }
     }, [expenseGrouping, calculateMetrics, transactions, debts, goals, selectedDate]);
 
-    const onRefresh = useCallback(async () => {
-        setRefreshing(true);
-        await fetchAllData(true);
-        setRefreshing(false);
-    }, [fetchAllData]);
+    const isCurrentMonth = selectedDate.getMonth() === new Date().getMonth() && selectedDate.getFullYear() === new Date().getFullYear();
+    const shortMonth = selectedDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+
+    const monthData: InsightsMonthData = useMemo(() => ({
+        monthLabel: isCurrentMonth ? 'this month' : shortMonth,
+        netCashFlow: data.netCashFlow,
+        income: data.income,
+        expense: data.expense,
+        goalFundedExpense: data.goalFundedExpense,
+        savingsRate: data.savingsRate,
+        averageIncome: data.averageIncome,
+        averageExpense: data.averageExpense,
+        dailyAverage: data.dailyAverage,
+        burnRate: data.burnRate,
+        burnAverageIncome: data.burnAverageIncome,
+        hasBudgets: data.hasBudgets,
+        budgetPerformance: data.budgetPerformance,
+        topExpenseCategory: data.topExpenseCategory,
+    }), [data, isCurrentMonth, shortMonth]);
+
+    const entries = useMemo(() => buildHealthEntries(monthData, health, format), [monthData, health, format]);
+
+    const changeGrid = (next: Storage.HealthMetricId[]) => {
+        setGrid(next);
+        Storage.saveHealthGrid(next);
+    };
+
+    const changeSectionOrder = (next: InsightsSectionId[]) => {
+        setSectionOrder(next);
+        Storage.saveInsightsSectionOrder(next);
+    };
+
+    const openChat = () => checkConsent(() => navigation.navigate('Chat'));
+
+    const sections: Record<InsightsSectionId, React.ReactNode> = {
+        cumulative: (
+            <CumulativeSpendingChart
+                transactions={transactions}
+                currency={currency}
+                isLoading={isLoading}
+                selectedDate={selectedDate}
+            />
+        ),
+        comparison: (
+            <ComparisonChart
+                currentMonthExpense={data.currentMonthExpense}
+                lastMonthExpense={data.lastMonthExpense}
+                averageExpense={data.averageExpense}
+                average6Month={data.average6Month}
+                average1Year={data.average1Year}
+                currency={currency}
+                transactions={transactions}
+                isLoading={isLoading}
+                selectedDate={selectedDate}
+            />
+        ),
+        expense: (
+            <ExpenseAnalysis
+                categoryBreakdown={data.expenseBreakdown}
+                currency={currency}
+                grouping={expenseGrouping}
+                onToggleGrouping={setExpenseGrouping}
+                transactions={transactions}
+                isLoading={isLoading}
+                selectedDate={selectedDate}
+            />
+        ),
+        income: (
+            <IncomeAnalysis
+                monthlyTrends={data.incomeTrends}
+                categoryBreakdown={data.incomeBreakdown}
+                currency={currency}
+                transactions={transactions}
+                isLoading={isLoading}
+                selectedDate={selectedDate}
+            />
+        ),
+        savings: (
+            <SavingsRateTrend
+                transactions={transactions}
+                isLoading={isLoading}
+                currency={currency}
+                selectedDate={selectedDate}
+            />
+        ),
+        budgets: (
+            <BudgetsSection
+                lines={data.budgetLines}
+                monthLabel={isCurrentMonth ? selectedDate.toLocaleDateString('en-US', { month: 'long' }) : shortMonth}
+                format={format}
+            />
+        ),
+        alerts: <SmartAlerts anomalies={data.anomalies} hasHistory={transactions.length > 10} />,
+    };
+
+    const settingsIcon = <Ionicons name="options-outline" size={22} color={ds.text2} />;
 
     return (
-        <ScreenWrapper scrollable={false}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 15 }}>
-                    <Ionicons name="arrow-back" size={24} color={colors.text} />
-                </TouchableOpacity>
-                <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.textSecondary }}>Spending Overview</Text>
-                    <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold' }}>Financial Insights</Text>
+        <ScreenWrapper scrollable={false} noPadding>
+            <View style={styles.topBar}>
+                <Text style={[type.title, styles.title, { color: ds.text }]} numberOfLines={1}>Insights</Text>
+                <View style={styles.actions}>
+                    {mode !== 'open' && (
+                        <View style={[styles.chip, { backgroundColor: ds.group }]}>
+                            <Text style={[type.captionMedium, { color: ds.text2 }]}>{mode === 'discreet' ? 'Discreet' : 'Hidden'}</Text>
+                        </View>
+                    )}
+                    <Pressable onPress={() => setIsSettingsModalVisible(true)} style={styles.iconButton} accessibilityLabel="Insights settings" hitSlop={space[2]}>
+                        {settingsIcon}
+                    </Pressable>
                 </View>
-                {isDocked && (
-                    <>
-                        <DraggableIconButton
-                            onPress={togglePrivacy}
-                            style={[
-                                styles.iconButton,
-                                { backgroundColor: colors.surface, marginRight: 10 }
-                            ]}
-                        >
-                            <Ionicons
-                                name={isPrivacyEnabled ? 'eye-off' : 'eye'}
-                                size={20}
-                                color={colors.text}
-                            />
-                        </DraggableIconButton>
-                        <DraggableIconButton
-                            style={[styles.iconButton, { backgroundColor: colors.surface }]}
-                            onPress={() => setIsSettingsModalVisible(true)}
-                        >
-                            <Ionicons name="options-outline" size={20} color={colors.text} />
-                        </DraggableIconButton>
-                    </>
-                )}
             </View>
 
-            {/* Month Selector */}
-            <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: colors.surface,
-                marginHorizontal: 4,
-                marginBottom: 15,
-                borderRadius: 12,
-                paddingVertical: 10,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.1,
-                shadowRadius: 2,
-                elevation: 2,
-            }}>
-                <TouchableOpacity
+            {/* Month selector: the month-based numbers and sections follow it; Financial Health's four are as of today. */}
+            <View style={styles.monthBar}>
+                <Pressable
                     onPress={() => {
-                        // Built from y/m components with an explicit day=1, not via setMonth()
-                        // on the existing date - setMonth doesn't clamp, so navigating from a
-                        // day that doesn't exist in the target month (e.g. the 31st) rolls
-                        // forward into a different month than intended. Day is never used by
-                        // any consumer of selectedDate below (always whole-month lookups).
+                        // Day pinned to 1: setMonth() from the 29th-31st overflows into the wrong month.
                         setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1));
                     }}
-                    style={{ padding: 8 }}
+                    accessibilityLabel="Previous month"
+                    hitSlop={space[2]}
+                    style={styles.monthArrow}
                 >
-                    <Ionicons name="chevron-back" size={24} color={colors.primary} />
-                </TouchableOpacity>
-
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                    <TouchableOpacity
-                        onPress={() => setIsDatePickerVisible(true)}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-                    >
-                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>
-                            {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                        </Text>
-                        <Ionicons name="calendar-outline" size={18} color={colors.primary} />
-                    </TouchableOpacity>
-                    {(selectedDate.getMonth() !== new Date().getMonth() || selectedDate.getFullYear() !== new Date().getFullYear()) && (
-                        <TouchableOpacity
-                            onPress={() => setSelectedDate(new Date())}
-                            style={{ marginTop: 2 }}
-                        >
-                            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>Back to Today</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                <TouchableOpacity
-                    onPress={() => {
-                        setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1));
-                    }}
-                    disabled={selectedDate.getMonth() === new Date().getMonth() && selectedDate.getFullYear() === new Date().getFullYear()}
-                    style={{ padding: 8, opacity: (selectedDate.getMonth() === new Date().getMonth() && selectedDate.getFullYear() === new Date().getFullYear()) ? 0.3 : 1 }}
+                    <Ionicons name="chevron-back" size={18} color={ds.accent} />
+                </Pressable>
+                <Pressable onPress={() => setIsDatePickerVisible(true)} style={styles.monthLabel} accessibilityLabel="Pick a month">
+                    <Text style={[type.smallStrong, { color: ds.text }]}>
+                        {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </Text>
+                    <Ionicons name="chevron-down" size={14} color={ds.text2} />
+                </Pressable>
+                {!isCurrentMonth && (
+                    <Pressable onPress={() => setSelectedDate(new Date())} hitSlop={space[2]}>
+                        <Text style={[type.smallMedium, { color: ds.accent }]}>Today</Text>
+                    </Pressable>
+                )}
+                <Pressable
+                    onPress={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 1))}
+                    disabled={isCurrentMonth}
+                    accessibilityLabel="Next month"
+                    hitSlop={space[2]}
+                    style={[styles.monthArrow, isCurrentMonth && styles.disabled]}
                 >
-                    <Ionicons name="chevron-forward" size={24} color={colors.primary} />
-                </TouchableOpacity>
+                    <Ionicons name="chevron-forward" size={18} color={ds.accent} />
+                </Pressable>
             </View>
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-                }
+                contentContainerStyle={styles.content}
             >
-                {/* Sections Mapping */}
-                {[
-                    {
-                        id: 'overview',
-                        component: (
-                            <InsightsOverviewCards
-                                key="overview"
-                                netCashFlow={data.netCashFlow}
-                                income={data.income}
-                                expense={data.expense}
-                                goalFundedExpense={data.goalFundedExpense}
-                                savingsRate={data.savingsRate}
-                                burnRate={data.burnRate}
-                                currency={currency}
-                                isPrivacyEnabled={isPrivacyEnabled}
-                                isLoading={isLoading}
-                                currentBalance={data.currentBalance}
-                                budgetPerformance={data.budgetPerformance}
-                                topExpenseCategory={data.topExpenseCategory}
-                                dailyAverage={data.dailyAverage}
-                                cardOrder={cardOrder}
-                                selectedDate={selectedDate}
-                            />
-                        )
-                    },
-                    {
-                        id: 'cumulative',
-                        component: (
-                            <CumulativeSpendingChart
-                                key="cumulative"
-                                transactions={transactions}
-                                currency={currency}
-                                isPrivacyEnabled={isPrivacyEnabled}
-                                isLoading={isLoading}
-                                selectedDate={selectedDate}
-                            />
-                        )
-                    },
-                    {
-                        id: 'comparison',
-                        component: (
-                            <ComparisonChart
-                                key="comparison"
-                                currentMonthExpense={data.currentMonthExpense}
-                                lastMonthExpense={data.lastMonthExpense}
-                                averageExpense={data.averageExpense}
-                                average6Month={data.average6Month}
-                                average1Year={data.average1Year}
-                                currency={currency}
-                                isPrivacyEnabled={isPrivacyEnabled}
-                                transactions={transactions}
-                                isLoading={isLoading}
-                                selectedDate={selectedDate}
-                            />
-                        )
-                    },
-                    {
-                        id: 'expense',
-                        component: (
-                            <ExpenseAnalysis
-                                key="expense"
-                                categoryBreakdown={data.expenseBreakdown}
-                                currency={currency}
-                                isPrivacyEnabled={isPrivacyEnabled}
-                                grouping={expenseGrouping}
-                                onToggleGrouping={setExpenseGrouping}
-                                transactions={transactions}
-                                isLoading={isLoading}
-                                selectedDate={selectedDate}
-                            />
-                        )
-                    },
-                    {
-                        id: 'income',
-                        component: (
-                            <IncomeAnalysis
-                                key="income"
-                                monthlyTrends={data.incomeTrends}
-                                categoryBreakdown={data.incomeBreakdown}
-                                currency={currency}
-                                isPrivacyEnabled={isPrivacyEnabled}
-                                transactions={transactions}
-                                isLoading={isLoading}
-                                selectedDate={selectedDate}
-                            />
-                        )
-                    },
-                    {
-                        id: 'savings',
-                        component: (
-                            <SavingsRateTrend
-                                key="savings"
-                                transactions={transactions}
-                                privacyMode={isPrivacyEnabled}
-                                isLoading={isLoading}
-                                currency={currency}
-                                selectedDate={selectedDate}
-                            />
-                        )
-                    },
-                    {
-                        id: 'alerts',
-                        component: (
-                            <SmartAlerts
-                                key="alerts"
-                                anomalies={data.anomalies}
-                                hasHistory={transactions.length > 10}
-                            />
-                        )
-                    }
-                ].sort((a, b) => {
-                    if (!sectionOrder || sectionOrder.length === 0) return 0;
-                    const indexA = sectionOrder.indexOf(a.id);
-                    const indexB = sectionOrder.indexOf(b.id);
-                    if (indexA === -1 && indexB === -1) return 0;
-                    if (indexA === -1) return 1;
-                    if (indexB === -1) return -1;
-                    return indexA - indexB;
-                }).map(section => section.component)}
+                <FinancialHealthGrid
+                    grid={grid}
+                    entries={entries}
+                    isHidden={format.isHidden}
+                    onShowAll={() => setHealthSheet('all')}
+                    onSelect={setHealthSheet}
+                    onOpenSettings={() => setIsSettingsModalVisible(true)}
+                />
 
-                <View style={{ height: 40 }} />
+                <View style={styles.sections}>
+                    {sectionOrder.map(id => <React.Fragment key={id}>{sections[id]}</React.Fragment>)}
+                </View>
+
+                <SectionHeader grouped title="Ask" />
+                <Group>
+                    <Row
+                        title="Ask about your money"
+                        subtitle="Chat with WealthSnap AI"
+                        icon="sparkles-outline"
+                        chevron
+                        last
+                        onPress={openChat}
+                    />
+                </Group>
             </ScrollView>
 
-            {/* Settings Modal */}
-            <InsightsSettingsModal
+            <FinancialHealthSheet
+                target={healthSheet}
+                onClose={() => setHealthSheet(null)}
+                onSelect={setHealthSheet}
+                entries={entries}
+                grid={grid}
+                health={health}
+                scenario={scenario}
+                format={format}
+            />
+
+            <InsightsSettingsSheet
                 visible={isSettingsModalVisible}
                 onClose={() => setIsSettingsModalVisible(false)}
-                cardsOrder={cardOrder}
-                insightsOrder={sectionOrder}
-                onUpdateCardsOrder={async (newOrder) => {
-                    setCardOrder(newOrder);
-                    await Storage.saveInsightsCardOrder(newOrder);
-                }}
-                onUpdateInsightsOrder={async (newOrder) => {
-                    setSectionOrder(newOrder);
-                    await Storage.saveInsightsSectionOrder(newOrder);
-                }}
+                grid={grid}
+                onChangeGrid={changeGrid}
+                sectionOrder={sectionOrder}
+                onChangeSectionOrder={changeSectionOrder}
             />
             {/* Month/Year Picker Modal */}
             <BottomModal
                 visible={isDatePickerVisible}
                 onClose={() => setIsDatePickerVisible(false)}
-                title="Select Month & Year"
+                title="Select month and year"
                 maxHeight="60%"
             >
-                <View style={{ padding: 16 }}>
-                    {/* Year Selector */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                        <TouchableOpacity
+                <Group padded>
+                    <View style={styles.yearRow}>
+                        <Pressable
                             onPress={() => setPickerYear(prev => prev - 1)}
                             disabled={pickerYear <= availableRange.minYear}
-                            style={{ padding: 10, opacity: pickerYear <= availableRange.minYear ? 0.2 : 1 }}
+                            accessibilityLabel="Previous year"
+                            hitSlop={space[2]}
+                            style={styles.monthArrow}
                         >
-                            <Ionicons name="chevron-back" size={28} color={colors.primary} />
-                        </TouchableOpacity>
-
-                        <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.text }}>{pickerYear}</Text>
-
-                        <TouchableOpacity
+                            <Ionicons name="chevron-back" size={22} color={pickerYear <= availableRange.minYear ? ds.text3 : ds.accent} />
+                        </Pressable>
+                        <Text style={[type.titleNum, { color: ds.text }]}>{pickerYear}</Text>
+                        <Pressable
                             onPress={() => setPickerYear(prev => prev + 1)}
                             disabled={pickerYear >= availableRange.maxYear}
-                            style={{ padding: 10, opacity: pickerYear >= availableRange.maxYear ? 0.2 : 1 }}
+                            accessibilityLabel="Next year"
+                            hitSlop={space[2]}
+                            style={styles.monthArrow}
                         >
-                            <Ionicons name="chevron-forward" size={28} color={colors.primary} />
-                        </TouchableOpacity>
+                            <Ionicons name="chevron-forward" size={22} color={pickerYear >= availableRange.maxYear ? ds.text3 : ds.accent} />
+                        </Pressable>
                     </View>
 
-                    {/* Months Grid */}
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                    <View style={styles.monthGrid}>
                         {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, index) => {
                             const isSelected = selectedDate.getMonth() === index && selectedDate.getFullYear() === pickerYear;
                             const isFuture = pickerYear > availableRange.maxYear || (pickerYear === availableRange.maxYear && index > availableRange.maxMonth);
@@ -567,56 +520,98 @@ const InsightScreen = ({ navigation }: any) => {
                             const isDisabled = isFuture || isBeforeStart;
 
                             return (
-                                <TouchableOpacity
+                                <Pressable
                                     key={month}
                                     onPress={() => {
                                         setSelectedDate(new Date(pickerYear, index, 1));
                                         setIsDatePickerVisible(false);
                                     }}
                                     disabled={isDisabled}
-                                    style={{
-                                        width: '22%',
-                                        paddingVertical: 14,
-                                        borderRadius: 12,
-                                        backgroundColor: isSelected ? colors.primary : colors.surface,
-                                        borderWidth: 1,
-                                        borderColor: isSelected ? colors.primary : colors.border,
-                                        alignItems: 'center',
-                                        opacity: isDisabled ? 0.15 : 1
-                                    }}
+                                    style={[styles.monthCell, { backgroundColor: isSelected ? ds.accent : ds.inset }]}
                                 >
-                                    <Text style={{
-                                        color: isSelected ? '#fff' : isDisabled ? colors.textSecondary : colors.text,
-                                        fontWeight: isSelected ? 'bold' : '500',
-                                        fontSize: 14
-                                    }}>
+                                    <Text style={[isSelected ? type.bodyStrong : type.body, { color: isSelected ? ds.onAccent : isDisabled ? ds.text3 : ds.text }]}>
                                         {month}
                                     </Text>
-                                </TouchableOpacity>
+                                </Pressable>
                             );
                         })}
                     </View>
-
-                    <View style={{ height: 20 }} />
-                </View>
+                </Group>
             </BottomModal>
         </ScreenWrapper>
     );
 };
 
 const styles = StyleSheet.create({
-    iconButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
+    topBar: {
+        flexDirection: 'row',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-    }
+        gap: space[2],
+        paddingTop: space[1],
+        paddingBottom: space[2],
+        paddingHorizontal: space[5],
+    },
+    title: {
+        flex: 1,
+    },
+    actions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    chip: {
+        paddingVertical: 3,
+        paddingHorizontal: space[2],
+        borderRadius: radius.sm,
+    },
+    iconButton: {
+        padding: space[1],
+    },
+    monthBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[3],
+        paddingHorizontal: space[5],
+        paddingBottom: space[2],
+    },
+    monthArrow: {
+        padding: space[1],
+    },
+    monthLabel: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: space[1],
+    },
+    disabled: {
+        opacity: 0.3,
+    },
+    content: {
+        paddingHorizontal: layout.groupInset,
+        paddingBottom: space[7],
+    },
+    sections: {
+        marginTop: space[6],
+    },
+    yearRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: space[4],
+    },
+    monthGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: space[3],
+        justifyContent: 'center',
+    },
+    monthCell: {
+        width: '22%',
+        paddingVertical: space[3],
+        borderRadius: radius.md,
+        alignItems: 'center',
+    },
 });
 
 export default InsightScreen;

@@ -3,33 +3,34 @@ import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
-import { SEVERITY_ICON, getSeverityColor } from '@utils/severity';
+import { SEVERITY_ICON } from '@utils/severity';
+import { type, space, radius, severityColor as toSeverityColor } from '@styles/theme';
 
 interface DisclaimerProps {
     children: React.ReactNode;
     // 'warning' for disclaimers about real risk (e.g. data loss), 'info' for caveats on numbers.
     severity?: 'info' | 'warning';
+    // Inside a Group: `inset` fill instead of the on-canvas `group` fill.
+    inGroup?: boolean;
     style?: StyleProp<ViewStyle>;
 }
 
-export const Disclaimer: React.FC<DisclaimerProps> = ({ children, severity = 'info', style }) => {
-    const { colors } = useTheme();
-    const severityColor = getSeverityColor(colors, severity);
+export const Disclaimer: React.FC<DisclaimerProps> = ({ children, severity = 'info', inGroup, style }) => {
+    const { ds } = useTheme();
+    const severityColor = toSeverityColor(ds, severity);
     const isWarning = severity === 'warning';
 
     return (
         <View
             style={[
                 styles.container,
-                isWarning
-                    ? { backgroundColor: severityColor + '15', borderColor: severityColor + '40' }
-                    : { backgroundColor: colors.surface, borderColor: colors.border },
+                { backgroundColor: inGroup ? ds.inset : ds.group, borderColor: isWarning ? ds.warning : 'transparent' },
                 style,
             ]}
         >
-            <Ionicons name={SEVERITY_ICON[severity]} size={22} color={severityColor} style={styles.icon} />
-            <Text style={[styles.text, { color: colors.text }]}>
-                <Text style={[styles.label, { color: isWarning ? severityColor : colors.textSecondary }]}>Disclaimer: </Text>
+            <Ionicons name={SEVERITY_ICON[severity]} size={18} color={severityColor} />
+            <Text style={[type.small, styles.text, { color: ds.text }]}>
+                <Text style={[type.smallStrong, { color: isWarning ? ds.warning : ds.text2 }]}>Disclaimer: </Text>
                 {children}
             </Text>
         </View>
@@ -40,21 +41,13 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        borderRadius: 12,
+        gap: space[3],
+        borderRadius: radius.md,
         borderWidth: 1,
-        padding: 16,
-        marginTop: 8,
-    },
-    icon: {
-        marginRight: 12,
-        marginTop: 1,
+        padding: space[4],
+        marginTop: space[2],
     },
     text: {
         flex: 1,
-        fontSize: 13,
-        lineHeight: 20,
-    },
-    label: {
-        fontWeight: 'bold',
     },
 });

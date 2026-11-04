@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@context/ThemeContext';
+import { type, space, radius } from '@styles/theme';
 import { useAlert } from '@context/AlertContext';
 import { Disclaimer } from '@components/common/Disclaimer';
 import { setPin } from '@services/core/securityService';
@@ -15,7 +16,7 @@ interface PinCreationScreenProps {
 const PIN_LENGTH = 6;
 
 const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCancel }) => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
     const { showAlert } = useAlert();
     const [pin, setPinState] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
@@ -90,8 +91,8 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
                         style={[
                             styles.dot,
                             {
-                                borderColor: colors.primary,
-                                backgroundColor: i < currentLength ? colors.primary : 'transparent'
+                                borderColor: ds.accent,
+                                backgroundColor: i < currentLength ? ds.accent : 'transparent'
                             }
                         ]}
                     />
@@ -109,13 +110,13 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
                     if (key === 'del') {
                         return (
                             <TouchableOpacity key={index} style={styles.key} onPress={handleDelete}>
-                                <Ionicons name="backspace-outline" size={28} color={colors.text} />
+                                <Ionicons name="backspace-outline" size={28} color={ds.text2} />
                             </TouchableOpacity>
                         );
                     }
                     return (
                         <TouchableOpacity key={index} style={styles.key} onPress={() => handlePress(key)}>
-                            <Text style={[styles.keyText, { color: colors.text }]}>{key}</Text>
+                            <Text style={[type.titleNum, { color: ds.text }]}>{key}</Text>
                         </TouchableOpacity>
                     );
                 })}
@@ -123,70 +124,12 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
         );
     };
 
-    const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-            width: '100%',
-            minHeight: 400, // Ensure it doesn't collapse in scroll views
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-        },
-        title: {
-            fontSize: 24,
-            fontWeight: 'bold',
-            marginBottom: 10,
-            textAlign: 'center',
-            color: colors.text
-        },
-        subtitle: {
-            fontSize: 16,
-            textAlign: 'center',
-            marginBottom: 30,
-            color: colors.textSecondary
-        },
-        dotsContainer: {
-            flexDirection: 'row',
-            justifyContent: 'center',
-            marginBottom: 50,
-        },
-        dot: {
-            width: 20,
-            height: 20,
-            borderRadius: 10,
-            borderWidth: 2,
-            marginHorizontal: 10,
-        },
-        keypad: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            width: '100%',
-            maxWidth: 300,
-        },
-        key: {
-            width: '30%',
-            height: 60,
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: 20,
-        },
-        keyText: {
-            fontSize: 28,
-            fontWeight: '600',
-        },
-        disclaimer: {
-            marginTop: 30,
-            alignSelf: 'stretch',
-        }
-    });
-
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>
+            <Text style={[type.title, styles.title, { color: ds.text }]}>
                 {step === 'create' ? 'Create a PIN' : 'Confirm your PIN'}
             </Text>
-            <Text style={styles.subtitle}>
+            <Text style={[type.small, styles.subtitle, { color: ds.text2 }]}>
                 {step === 'create'
                     ? 'Enhance your security with a 6-digit PIN'
                     : 'Please re-enter your PIN to confirm'}
@@ -201,12 +144,64 @@ const PinCreationScreen: React.FC<PinCreationScreenProps> = ({ onSuccess, onCanc
                 </Disclaimer>
             )}
             {onCancel && step === 'create' && (
-                <TouchableOpacity onPress={onCancel} style={{ marginTop: 20 }}>
-                    <Text style={{ color: colors.primary, fontSize: 16 }}>Skip / Cancel</Text>
+                <TouchableOpacity onPress={onCancel} style={styles.cancel} hitSlop={space[2]}>
+                    <Text style={[type.smallMedium, { color: ds.accent }]}>Skip / Cancel</Text>
                 </TouchableOpacity>
             )}
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        width: '100%',
+        minHeight: 400, // Ensure it doesn't collapse in scroll views
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: space[5],
+    },
+    title: {
+        marginBottom: space[2],
+        textAlign: 'center',
+    },
+    subtitle: {
+        textAlign: 'center',
+        marginBottom: space[7],
+    },
+    dotsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: space[4],
+        marginBottom: space[7] + space[4],
+    },
+    dot: {
+        width: 16,
+        height: 16,
+        borderRadius: radius.full,
+        borderWidth: 2,
+    },
+    keypad: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        width: '100%',
+        maxWidth: 300,
+    },
+    key: {
+        width: '30%',
+        height: 60,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: space[5],
+    },
+    disclaimer: {
+        marginTop: space[7],
+        alignSelf: 'stretch',
+    },
+    cancel: {
+        marginTop: space[5],
+    },
+});
 
 export default PinCreationScreen;

@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, AppState, StyleSheet } from 'react-native';
 
 import { usePrivacy } from '@context/PrivacyContext';
+import { useTheme } from '@context/ThemeContext';
 import { useScreenshotProtection } from '@hooks/useScreenshotProtection';
 
 export const PrivacyGuard: React.FC = () => {
-    const { isPrivacyEnabled } = usePrivacy();
+    const { mode } = usePrivacy();
+    const { ds } = useTheme();
     const [isAppActive, setIsAppActive] = useState(true);
 
     // 1. Activate OS-Level Protection (FLAG_SECURE)
@@ -20,26 +22,22 @@ export const PrivacyGuard: React.FC = () => {
         return () => {
             subscription.remove();
         };
-    }, [isPrivacyEnabled]);
+    }, []);
 
-    // Logic:
-    // If Privacy Mode is OFF (Protection Needed: isPrivacyEnabled = false)
-    // AND App is NOT Active (Background/Inactive)
-    // THEN Show Overlay
-    const showOverlay = !isPrivacyEnabled && !isAppActive;
+    // Mask the app switcher whenever screenshots are blocked (every mode but Hidden).
+    const showOverlay = mode !== 'hidden' && !isAppActive;
 
     if (!showOverlay) {
         return null;
     }
 
     return (
-        <View style={[StyleSheet.absoluteFill, styles.overlay]} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFill, styles.overlay, { backgroundColor: ds.canvas }]} pointerEvents="none" />
     );
 };
 
 const styles = StyleSheet.create({
     overlay: {
-        backgroundColor: '#FFFFFF', // White overlay to mask content
         zIndex: 99999, // Ensure it sits on top of everything
         elevation: 99999, // Android elevation
     },

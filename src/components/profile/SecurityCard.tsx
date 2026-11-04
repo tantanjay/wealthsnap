@@ -1,20 +1,26 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Pressable, Modal, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
-import SettingItem from '@components/common/SettingItem';
 import PinCreationScreen from '@screens/security/PinCreationScreen';
 import GeminiSettingsModal from '@components/profile/settings/GeminiSettingsModal';
 import GeminiUsageModal from '@components/profile/settings/GeminiUsageModal';
-import { Card } from '@components/index';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
+import { usePrivacy } from '@context/PrivacyContext';
+import { useAlert } from '@context/AlertContext';
 import { getAIConfig } from '@services/core/storageService';
 import * as Security from '@services/core/securityService';
+import { space, radius } from '@styles/theme';
 
 const SecurityCard = () => {
-    const { colors } = useTheme();
+    const { ds } = useTheme();
+    const { mode: privacyMode, revealForScreenshot } = usePrivacy();
+    const { showAlert } = useAlert();
+    // Hidden already allows screenshots.
+    const showReveal = privacyMode !== 'hidden';
     const [hasPin, setHasPin] = useState(false);
     const [hasApiKey, setHasApiKey] = useState(false);
     const [timeoutSetting, setTimeoutSetting] = useState<Security.TimeoutOption>('daily');
@@ -47,6 +53,17 @@ const SecurityCard = () => {
         setShowTimeoutModal(false);
     };
 
+    const handleRevealForScreenshot = () => {
+        showAlert(
+            'Allow Screenshot?',
+            "This will briefly allow a screenshot of what's on screen, then screenshot protection resumes automatically.",
+            [
+                { text: 'No', style: 'cancel' },
+                { text: 'Yes', onPress: revealForScreenshot },
+            ]
+        );
+    };
+
     const getTimeoutLabel = (value: Security.TimeoutOption) => {
         const option = Security.TIMEOUT_OPTIONS.find(o => o.value === value);
         return option ? option.label : 'Select';
@@ -54,65 +71,60 @@ const SecurityCard = () => {
 
     return (
         <>
-            <Card style={{ marginBottom: 16 }}>
-                <View style={styles.cardHeader}>
-                    <View style={[styles.headerIcon, { backgroundColor: colors.error + '20' }]}>
-                        <Ionicons name="shield" size={22} color={colors.error} />
-                    </View>
-                    <Text style={[styles.cardTitle, { color: colors.text }]}>Security & Intelligence</Text>
-                </View>
-
-                <SettingItem
-                    icon="lock-closed"
-                    title="App Lock"
-                    subtitle={hasPin ? "Tap to change your PIN" : "Secure your app with a PIN"}
+            <SectionHeader grouped title="Security and intelligence" />
+            <Group>
+                <Row
+                    icon="lock-closed-outline"
+                    title="App lock"
+                    subtitle={hasPin ? 'PIN on · tap to change' : 'Off · secure the app with a PIN'}
+                    chevron
                     onPress={() => setShowPinModal(true)}
-                    iconBg={colors.error + '20'}
-                    iconColor={colors.error}
                 />
-
                 {hasPin && (
-                    <SettingItem
-                        icon="timer"
-                        title="Auto-Lock Timeout"
+                    <Row
+                        icon="timer-outline"
+                        title="Auto-lock timeout"
                         subtitle={getTimeoutLabel(timeoutSetting)}
+                        chevron
                         onPress={() => setShowTimeoutModal(true)}
-                        iconBg={colors.warning + '20'}
-                        iconColor={colors.warning}
                     />
                 )}
-
-                {/* AI Section */}
-                <SettingItem
-                    icon="sparkles"
+                <Row
+                    icon="sparkles-outline"
                     title="Google Gemini"
-                    subtitle={hasApiKey ? "API Key configured" : "Configure AI provider"}
+                    subtitle={hasApiKey ? 'API key configured' : 'Configure AI provider'}
+                    chevron
                     onPress={() => setShowGeminiSettings(true)}
-                    iconBg={colors.primary + '20'}
-                    iconColor={colors.primary}
-                    isLast={!hasApiKey}
+                    last={!hasApiKey && !showReveal}
                 />
-
                 {hasApiKey && (
-                    <SettingItem
-                        icon="bar-chart"
-                        title="Usage Statistics"
+                    <Row
+                        icon="bar-chart-outline"
+                        title="Usage statistics"
                         subtitle="Track token usage and costs"
+                        chevron
                         onPress={() => setShowGeminiUsage(true)}
-                        iconBg={colors.info + '20'}
-                        iconColor={colors.info}
-                        isLast={true}
+                        last={!showReveal}
                     />
                 )}
-            </Card>
+                {showReveal && (
+                    <Row
+                        icon="camera-outline"
+                        title="Reveal for screenshot"
+                        subtitle="Allow screenshots for 15 seconds"
+                        onPress={handleRevealForScreenshot}
+                        last
+                    />
+                )}
+            </Group>
 
             {/* PIN Modal */}
             <Modal visible={showPinModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPinModal(false)}>
-                <View style={{ flex: 1, backgroundColor: colors.background, paddingVertical: 40, paddingHorizontal: 20 }}>
-                    <View style={{ alignItems: 'flex-end', marginBottom: 20 }}>
-                        <TouchableOpacity onPress={() => setShowPinModal(false)} style={{ padding: 10 }}>
-                            <Text style={{ color: colors.primary, fontSize: 16, fontWeight: 'bold' }}>Close</Text>
-                        </TouchableOpacity>
+                <View style={[styles.pinPage, { backgroundColor: ds.canvas }]}>
+                    <View style={styles.pinHeader}>
+                        <Pressable onPress={() => setShowPinModal(false)} hitSlop={space[2]} accessibilityRole="button" accessibilityLabel="Close">
+                            <Ionicons name="close" size={22} color={ds.text2} />
+                        </Pressable>
                     </View>
                     <PinCreationScreen
                         onSuccess={() => {
@@ -128,37 +140,27 @@ const SecurityCard = () => {
             <BottomModal
                 visible={showTimeoutModal}
                 onClose={() => setShowTimeoutModal(false)}
-                title="Auto-Lock Timeout"
+                title="Auto-lock timeout"
             >
                 <ScrollView showsVerticalScrollIndicator={false}>
-                    <View style={{ gap: 8 }}>
-                        {Security.TIMEOUT_OPTIONS.map(opt => (
-                            <TouchableOpacity
-                                key={opt.value}
-                                onPress={() => handleSetTimeout(opt.value)}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    paddingVertical: 14,
-                                    paddingHorizontal: 4,
-                                    borderBottomWidth: 1,
-                                    borderBottomColor: colors.border
-                                }}
-                            >
-                                <Text style={{
-                                    color: colors.text,
-                                    fontSize: 16,
-                                    fontWeight: timeoutSetting === opt.value ? '600' : '400'
-                                }}>
-                                    {opt.label}
-                                </Text>
-                                {timeoutSetting === opt.value && (
-                                    <Ionicons name="checkmark" size={20} color={colors.primary} />
-                                )}
-                            </TouchableOpacity>
-                        ))}
-                    </View>
+                    <Group>
+                        {Security.TIMEOUT_OPTIONS.map((opt, i) => {
+                            const selected = timeoutSetting === opt.value;
+                            return (
+                                <Row
+                                    key={opt.value}
+                                    title={opt.label}
+                                    leading={
+                                        <View style={[styles.radio, { borderColor: selected ? ds.accent : ds.text3 }]}>
+                                            {selected && <View style={[styles.radioDot, { backgroundColor: ds.accent }]} />}
+                                        </View>
+                                    }
+                                    onPress={() => handleSetTimeout(opt.value)}
+                                    last={i === Security.TIMEOUT_OPTIONS.length - 1}
+                                />
+                            );
+                        })}
+                    </Group>
                 </ScrollView>
             </BottomModal>
 
@@ -180,22 +182,27 @@ const SecurityCard = () => {
 };
 
 const styles = StyleSheet.create({
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
+    pinPage: {
+        flex: 1,
+        paddingVertical: space[7],
+        paddingHorizontal: space[5],
     },
-    headerIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
+    pinHeader: {
+        alignItems: 'flex-end',
+        marginBottom: space[5],
+    },
+    radio: {
+        width: 20,
+        height: 20,
+        borderRadius: radius.full,
+        borderWidth: 2,
+        alignItems: 'center',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
     },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: '700',
+    radioDot: {
+        width: 10,
+        height: 10,
+        borderRadius: radius.full,
     },
 });
 

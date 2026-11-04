@@ -1,23 +1,23 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, Dimensions, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Dimensions, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { LinearGradient, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
-import { Card } from '@components/index';
+import { Group, Row, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import { useTheme } from '@context/ThemeContext';
+import { usePrivacyFormat, formatMoney, formatPercent } from '@hooks/usePrivacyFormat';
 import { Transaction } from '@types';
+import { type, space, radius, layout } from '@styles/theme';
 import { getSavingsRateTrend } from '@utils/financialMetrics';
-import { formatCompactCurrency } from '@utils/currencyUtils';
 import { saveInsightsSavingsTab, getInsightsSavingsTab, saveInsightsSavingsTimeRange, getInsightsSavingsTimeRange } from '@services/core/storageService';
 
 interface SavingsRateTrendProps {
     transactions: Transaction[];
-    privacyMode: boolean;
     isLoading?: boolean;
     currency: string;
     selectedDate?: Date;
@@ -31,9 +31,11 @@ type SavingsTab = 'RATE' | 'AMOUNT' | 'CASH';
 const SAVINGS_TAB_META: Record<SavingsTab, { label: string; metricLabel: string }> = {
     RATE: { label: 'Rate', metricLabel: 'Savings Rate' },
     AMOUNT: { label: 'Saved', metricLabel: 'Amount Saved' },
-    CASH: { label: 'Cash Flow', metricLabel: 'Cash Flow' },
+    CASH: { label: 'Cash flow', metricLabel: 'Cash Flow' },
 };
-const SAVINGS_TAB_ORDER: SavingsTab[] = ['RATE', 'AMOUNT', 'CASH'];
+const TAB_OPTIONS = (['RATE', 'AMOUNT', 'CASH'] as SavingsTab[]).map(key => ({ key, label: SAVINGS_TAB_META[key].label }));
+
+const CHART_HEIGHT = 220;
 
 type SavingsMonth = { month: string; rate: number; income: BigNumber; expense: BigNumber; savings: BigNumber; cashFlow: BigNumber };
 
@@ -55,8 +57,47 @@ const getNiceCurrencyBoundary = (value: number): number => {
     return niceNormalized * magnitude;
 };
 
-const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, privacyMode, isLoading = false, currency, selectedDate = new Date() }) => {
-    const { colors } = useTheme();
+// Discreet: an amount as % of that income ("—" without income).
+const formatShare = (value: number, income: number): string =>
+    formatPercent(income > 0 ? (value / income) * 100 : null, { decimals: 1 });
+
+// Hidden mode: same size, fill and copy as every other hidden chart.
+const HiddenChart: React.FC<{ height: number }> = ({ height }) => {
+    const { ds } = useTheme();
+    return (
+        <View style={[styles.hidden, { height, backgroundColor: ds.inset }]}>
+            <Ionicons name="lock-closed-outline" size={18} color={ds.text2} />
+            <Text style={[type.small, { color: ds.text2 }]}>Chart hidden for privacy</Text>
+        </View>
+    );
+};
+
+// Sample stat tile for the info sheet; colored like the real tile under the chart.
+const ExampleTile: React.FC<{ label: string; value: string; color: string }> = ({ label, value, color }) => {
+    const { ds } = useTheme();
+    return (
+        <View style={[modalStyles.tile, { backgroundColor: ds.inset }]}>
+            <Text style={[type.small, { color: ds.text2 }]}>{label}</Text>
+            <Text style={[type.titleNum, { color }]}>{value}</Text>
+        </View>
+    );
+};
+
+const LegendLine: React.FC<{ label: string; meaning: string; color: string }> = ({ label, meaning, color }) => {
+    const { ds } = useTheme();
+    return (
+        <View style={modalStyles.legendRow}>
+            <View style={[modalStyles.dot, modalStyles.legendDot, { backgroundColor: color }]} />
+            <Text style={[type.small, modalStyles.flex, { color: ds.text2 }]}>
+                <Text style={{ color: ds.text }}>{label}: </Text>{meaning}
+            </Text>
+        </View>
+    );
+};
+
+const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, isLoading = false, currency, selectedDate = new Date() }) => {
+    const { ds } = useTheme();
+    const format = usePrivacyFormat(currency);
     const screenWidth = Dimensions.get('window').width;
 
     const [timeRange, setTimeRange] = React.useState<'6M' | '1Y' | '3Y' | 'ALL'>('6M');
@@ -104,10 +145,13 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
 
     const isPercent = activeTab === 'RATE';
     const activeMeta = SAVINGS_TAB_META[activeTab];
+    // Discreet amount tabs show each value as % of that month's income.
+    const asShareOfIncome = format.isDiscreet && !isPercent;
 
     const formatValue = useCallback((value: number): string => {
-        return isPercent ? `${value.toFixed(1)}%` : formatCompactCurrency(value, currency, 1);
-    }, [isPercent, currency]);
+        return isPercent ? `${value.toFixed(1)}%` : format.money(value, { compact: true });
+    }, [isPercent, format]);
+
 
     // Calculate how many months of data to load based on selection
     const monthsToLoad = useMemo(() => {
@@ -156,9 +200,9 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
     // Pointer Config for Tap & Drag
     const pointerConfig = useMemo(() => ({
         pointerStripHeight: 160,
-        pointerStripColor: colors.border,
-        pointerStripWidth: 2,
-        pointerColor: colors.primary,
+        pointerStripColor: ds.hairline,
+        pointerStripWidth: 1,
+        pointerColor: ds.accent,
         radius: 6,
         pointerLabelWidth: 140, // Ensure width is known for positioning calculations if needed
         pointerLabelHeight: 100,
@@ -171,14 +215,7 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
             if (!item) return <View />;
 
             return (
-                <View style={{
-                    height: 10,
-                    width: 10,
-                    borderRadius: 5,
-                    backgroundColor: item.originalValue >= 0 ? colors.success : colors.error,
-                    borderWidth: 2,
-                    borderColor: colors.surface
-                }} />
+                <View style={[styles.pointer, { backgroundColor: item.originalValue >= 0 ? ds.success : ds.danger, borderColor: ds.group }]} />
             );
         },
         pointerLabelComponent: (items: any) => {
@@ -186,87 +223,44 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
             const item = safeItems[0];
             if (!item) return null;
 
-            // --- Dynamic Positioning Logic (Copied & Adapted from CumulativeSpendingChart) ---
+            // X-Axis Positioning: Always avoid center to prevent finger overlap
             const index = item.index || 0;
             const totalItems = savingsData.rawData.length;
-
-            // X-Axis Positioning: Always avoid center to prevent finger overlap
-            let marginLeft = 10; // Default to Right side
             // If we are in the right half of the chart, show tooltip on the left
-            if (index > totalItems / 2) {
-                marginLeft = -100;
-            }
-
-            // Y-Axis Positioning:
-            // Since we use shifted values, the "visual" y is high for positive numbers.
-            // We want to avoid blocking the point itself.
-            let marginTop = -30; // Default (Above point)
-
-            // Note: In CumulativeChart, logic was based on value > max * 0.8
-            // Here, we can try similar, but let's stick to simple "Above" usually works,
-            // unless it's at the very top of the graph.
-            // If item.value (shifted) is very high, move tooltip down.
-            // yBoundary is max; value is shifted. Max visual ~ yBoundary * 2.
+            const marginLeft = index > totalItems / 2 ? -100 : 10;
+            const tone = item.originalValue >= 0 ? ds.success : ds.danger;
 
             return (
-                <View
-                    style={{
-                        height: 100,
-                        width: 140,
-                        justifyContent: 'center',
-                        marginTop: marginTop,
-                        marginLeft: marginLeft,
-                        zIndex: 1000, // Ensure tooltip is above everything
-                    }}>
-                    <View style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 10,
-                        borderRadius: 12,
-                        backgroundColor: colors.surface,
-                        elevation: 10, // Increase elevation for Android
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 4.65,
-                        borderWidth: 1,
-                        borderColor: colors.border + '20'
-                    }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: 'bold', marginBottom: 6, textAlign: 'center' }}>
-                            {item.month}
-                        </Text>
+                <View style={[styles.pointerLabelWrap, { marginLeft }]}>
+                    <View style={[styles.pointerLabel, { backgroundColor: ds.raised, borderColor: ds.hairline }]}>
+                        <Text style={[type.captionMedium, styles.center, { color: ds.text2 }]}>{item.month}</Text>
 
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>{activeMeta.metricLabel}</Text>
-                            <Text style={{
-                                color: item.originalValue >= 0 ? colors.success : colors.error,
-                                fontSize: 12,
-                                fontWeight: '600'
-                            }}>
-                                {formatValue(item.originalValue)}
+                        <View style={styles.pointerRow}>
+                            <Text style={[type.caption, { color: ds.text2 }]}>{asShareOfIncome ? 'Of income' : activeMeta.metricLabel}</Text>
+                            <Text style={[type.captionNum, type.captionMedium, { color: tone }]}>
+                                {asShareOfIncome ? formatShare(item.originalValue, Number(item.income)) : formatValue(item.originalValue)}
                             </Text>
                         </View>
 
-                        <View style={{ height: 1, backgroundColor: colors.border + '40', marginVertical: 4 }} />
-
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Income</Text>
-                            <Text style={{ color: colors.text, fontSize: 10 }}>
-                                {formatCompactCurrency(item.income, currency)}
-                            </Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Expense</Text>
-                            <Text style={{ color: colors.text, fontSize: 10 }}>
-                                {formatCompactCurrency(item.expense, currency)}
-                            </Text>
-                        </View>
+                        {/* Income and expense are amounts only */}
+                        {format.isOpen && (
+                            <>
+                                <View style={[styles.pointerDivider, { backgroundColor: ds.hairline }]} />
+                                <View style={styles.pointerRow}>
+                                    <Text style={[type.caption, { color: ds.text2 }]}>Income</Text>
+                                    <Text style={[type.captionNum, { color: ds.text }]}>{format.money(Number(item.income), { compact: true })}</Text>
+                                </View>
+                                <View style={styles.pointerRow}>
+                                    <Text style={[type.caption, { color: ds.text2 }]}>Expense</Text>
+                                    <Text style={[type.captionNum, { color: ds.text }]}>{format.money(Number(item.expense), { compact: true })}</Text>
+                                </View>
+                            </>
+                        )}
                     </View>
                 </View>
             );
         },
-    }), [colors, currency, savingsData.rawData, activeMeta, formatValue]);
-
-
+    }), [ds, format, savingsData.rawData, activeMeta, formatValue, asShareOfIncome]);
 
     // Calculate average for the active metric
     const avgValue = useMemo(() => {
@@ -366,316 +360,172 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
         return { positiveCount, negativeCount, longestPositiveStreak, longestNegativeStreak };
     }, [savingsData.rawData, activeTab]);
 
-    const exampleValue = isPercent ? '25%' : formatCompactCurrency(25000, currency, 0);
+    const exampleValue = isPercent ? '25%' : formatMoney(25000, currency);
+
+    const ratesActive = activeTab === 'RATE' || activeTab === 'AMOUNT';
 
     const renderInfoModal = () => (
         <BottomModal
             visible={showInfoModal}
             onClose={() => setShowInfoModal(false)}
-            title="Understanding Your Chart"
+            title="Understanding your chart"
             maxHeight="85%"
         >
             <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Visual Metrics Example */}
-                <View style={{ marginBottom: 20 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 12 }}>
-                        {/* Current Example */}
-                        <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Current</Text>
-                            <Text style={{ color: colors.success, fontSize: 18, fontWeight: 'bold' }}>{exampleValue}</Text>
-                        </View>
-
-                        {/* Streak Example */}
-                        <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Streak</Text>
-                            <Text style={{ color: colors.success, fontSize: 18, fontWeight: 'bold' }}>5📈</Text>
-                        </View>
+                {/* Mirrors the stat tiles under the chart */}
+                <Group padded>
+                    <View style={modalStyles.grid}>
+                        <ExampleTile label="Current" value={exampleValue} color={ds.success} />
+                        <ExampleTile label="Streak" value="5📈" color={ds.success} />
+                        <ExampleTile label="Positive" value="8 / 5" color={ds.success} />
+                        <ExampleTile label="Negative" value="3 / 2" color={ds.danger} />
                     </View>
+                </Group>
 
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-                        {/* Positive Example */}
-                        <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Positive</Text>
-                            <Text style={{ color: colors.success, fontSize: 16, fontWeight: 'bold' }}>8 / 5</Text>
-                        </View>
+                <SectionHeader grouped title="Rate, saved & cash flow" />
+                <Group>
+                    <Row
+                        title="Rate"
+                        subtitle="The % of your income you kept each month. Debt principal payments count as spending here; money moved into a savings goal counts as kept."
+                    />
+                    <Row title="Saved" subtitle="The raw amount you kept, including money moved into investments." />
+                    <Row
+                        title="Cash flow"
+                        subtitle="What's actually left in cash after everything, including investments and other transfers out."
+                        last
+                    />
+                </Group>
 
-                        {/* Negative Example */}
-                        <View style={{ alignItems: 'center', flex: 1, padding: 10, backgroundColor: colors.surface, borderRadius: 12, marginHorizontal: 4 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Negative</Text>
-                            <Text style={{ color: colors.error, fontSize: 16, fontWeight: 'bold' }}>3 / 2</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Tab Explanation */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>🎛️ Rate, Saved &amp; Cash Flow</Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, gap: 8 }}>
-                        <View>
-                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Rate</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                The % of your income you kept each month. Debt principal payments count as spending here; money moved into a savings goal counts as kept.
-                            </Text>
-                        </View>
-                        <View style={{ height: 1, backgroundColor: colors.border }} />
-                        <View>
-                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Saved</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                The raw amount you kept, including money moved into investments.
-                            </Text>
-                        </View>
-                        <View style={{ height: 1, backgroundColor: colors.border }} />
-                        <View>
-                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Cash Flow</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                What&apos;s actually left in cash after everything - including investments and other transfers out.
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* How the 3 metrics relate - visual income breakdown */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>🔀 How They Relate</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 10 }}>
+                <SectionHeader grouped title="How they relate" />
+                <Group padded>
+                    <Text style={[type.small, { color: ds.text2 }]}>
                         Every month, your income splits into three pieces. Each tab measures a different slice:
                     </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 6, textAlign: 'center' }}>Monthly Income</Text>
+                    <View style={[modalStyles.block, { backgroundColor: ds.inset }]}>
+                        <Text style={[type.caption, modalStyles.center, { color: ds.text2 }]}>Monthly income</Text>
 
-                        {/* Stacked bar: Expenses / Invested / Cash Left */}
-                        <View style={{ flexDirection: 'row', height: 28, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>
-                            <View style={{ flex: 5, backgroundColor: colors.error }} />
-                            <View style={{ flex: 2, backgroundColor: '#2196F3' }} />
-                            <View style={{ flex: 3, backgroundColor: colors.success }} />
+                        <View style={modalStyles.stack}>
+                            <View style={{ flex: 5, backgroundColor: ds.danger }} />
+                            <View style={{ flex: 2, backgroundColor: ds.domainInvest }} />
+                            <View style={{ flex: 3, backgroundColor: ds.success }} />
                         </View>
 
-                        {/* Legend */}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error }} />
-                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Expenses</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#2196F3' }} />
-                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Invested</Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
-                                <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Cash Left</Text>
-                            </View>
+                        <View style={modalStyles.stackLegend}>
+                            {([['Expenses', ds.danger], ['Invested', ds.domainInvest], ['Cash left', ds.success]] as const).map(([label, color]) => (
+                                <View key={label} style={modalStyles.legendItem}>
+                                    <View style={[modalStyles.dot, { backgroundColor: color }]} />
+                                    <Text style={[type.caption, { color: ds.text2 }]}>{label}</Text>
+                                </View>
+                            ))}
                         </View>
 
-                        {/* Bracket: Rate & Saved = Invested + Cash Left (right 70%) */}
-                        <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+                        {/* Rate & Saved = Invested + Cash left (right 50%); Cash flow = Cash left only (right 30%) */}
+                        <View style={modalStyles.bracketRow}>
                             <View style={{ flex: 5 }} />
-                            <View style={{
-                                flex: 5,
-                                borderTopWidth: 2,
-                                borderColor: (activeTab === 'RATE' || activeTab === 'AMOUNT') ? colors.primary : colors.border,
-                                paddingTop: 3
-                            }}>
-                                <Text style={{
-                                    color: (activeTab === 'RATE' || activeTab === 'AMOUNT') ? colors.primary : colors.textSecondary,
-                                    fontSize: 10,
-                                    fontWeight: '700',
-                                    textAlign: 'center'
-                                }}>Rate & Saved</Text>
+                            <View style={[modalStyles.bracket, { flex: 5, borderColor: ratesActive ? ds.accent : ds.hairline }]}>
+                                <Text style={[type.captionMedium, modalStyles.center, { color: ratesActive ? ds.accent : ds.text2 }]}>Rate & saved</Text>
                             </View>
                         </View>
-
-                        {/* Bracket: Cash Flow = Cash Left only (right 30%) */}
-                        <View style={{ flexDirection: 'row' }}>
+                        <View style={modalStyles.bracketRow}>
                             <View style={{ flex: 7 }} />
-                            <View style={{
-                                flex: 3,
-                                borderTopWidth: 2,
-                                borderColor: activeTab === 'CASH' ? colors.success : colors.border,
-                                paddingTop: 3
-                            }}>
-                                <Text style={{
-                                    color: activeTab === 'CASH' ? colors.success : colors.textSecondary,
-                                    fontSize: 10,
-                                    fontWeight: '700',
-                                    textAlign: 'center'
-                                }}>Cash Flow</Text>
+                            <View style={[modalStyles.bracket, { flex: 3, borderColor: activeTab === 'CASH' ? ds.accent : ds.hairline }]}>
+                                <Text style={[type.captionMedium, modalStyles.center, { color: activeTab === 'CASH' ? ds.accent : ds.text2 }]}>Cash flow</Text>
                             </View>
                         </View>
                     </View>
-                    <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 18, marginTop: 8 }}>
-                        <Text style={{ fontWeight: 'bold' }}>Rate</Text> and <Text style={{ fontWeight: 'bold' }}>Saved</Text> count money moved into investments as kept.{"\n"}
-                        <Text style={{ fontWeight: 'bold' }}>Cash Flow</Text> only counts what&apos;s actually left in your wallet.
+                    <Text style={[type.small, modalStyles.paragraph, { color: ds.text2 }]}>
+                        <Text style={{ color: ds.text }}>Rate</Text> and <Text style={{ color: ds.text }}>Saved</Text> count money moved into investments as kept.{"\n"}
+                        <Text style={{ color: ds.text }}>Cash flow</Text> only counts what&apos;s actually left in your wallet.
                     </Text>
-                </View>
+                </Group>
 
-                {/* Chart Explanation */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📈 Reading the Chart</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 12 }}>
+                <SectionHeader grouped title="Reading the chart" />
+                <Group padded>
+                    <Text style={[type.small, { color: ds.text2 }]}>
                         The line chart shows your {activeMeta.metricLabel.toLowerCase()} trend over time. Here&apos;s what it means:
                     </Text>
-
-                    {/* Visual examples side by side */}
-                    <View style={{ flexDirection: 'row', marginBottom: 12, gap: 8 }}>
-                        {/* Saving Example */}
-                        <View style={{ flex: 1, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
-                            <View style={{ alignItems: 'center', marginBottom: 8 }}>
-                                <View style={{ width: '100%', height: 60, backgroundColor: colors.background, borderRadius: 6, position: 'relative', overflow: 'hidden' }}>
-                                    {/* Zero line */}
-                                    <View style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: colors.border }} />
-                                    {/* Upward trend line */}
-                                    <View style={{ position: 'absolute', bottom: 10, left: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
-                                    <View style={{ position: 'absolute', bottom: 18, left: '40%', width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
-                                    <View style={{ position: 'absolute', bottom: 25, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
-                                </View>
+                    <View style={modalStyles.pair}>
+                        <View style={[modalStyles.tile, { backgroundColor: ds.inset }]}>
+                            <View style={[modalStyles.miniChart, { backgroundColor: ds.raised }]}>
+                                <View style={[modalStyles.zeroLine, { backgroundColor: ds.hairline }]} />
+                                <View style={[modalStyles.point, { bottom: 10, left: 10, backgroundColor: ds.success }]} />
+                                <View style={[modalStyles.point, { bottom: 18, left: '40%', backgroundColor: ds.success }]} />
+                                <View style={[modalStyles.point, { bottom: 25, right: 10, backgroundColor: ds.success }]} />
                             </View>
-                            <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 13, marginBottom: 2, textAlign: 'center' }}>Saving Money</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, textAlign: 'center' }}>Line above zero (green)</Text>
+                            <Text style={[type.smallMedium, modalStyles.center, { color: ds.success }]}>Saving money</Text>
+                            <Text style={[type.caption, modalStyles.center, { color: ds.text2 }]}>Line above zero (green)</Text>
                         </View>
-
-                        {/* Overspending Example */}
-                        <View style={{ flex: 1, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
-                            <View style={{ alignItems: 'center', marginBottom: 8 }}>
-                                <View style={{ width: '100%', height: 60, backgroundColor: colors.background, borderRadius: 6, position: 'relative', overflow: 'hidden' }}>
-                                    {/* Zero line */}
-                                    <View style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: colors.border }} />
-                                    {/* Downward trend line */}
-                                    <View style={{ position: 'absolute', top: 35, left: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error }} />
-                                    <View style={{ position: 'absolute', top: 40, left: '40%', width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error }} />
-                                    <View style={{ position: 'absolute', top: 43, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.error }} />
-                                </View>
+                        <View style={[modalStyles.tile, { backgroundColor: ds.inset }]}>
+                            <View style={[modalStyles.miniChart, { backgroundColor: ds.raised }]}>
+                                <View style={[modalStyles.zeroLine, { backgroundColor: ds.hairline }]} />
+                                <View style={[modalStyles.point, { top: 35, left: 10, backgroundColor: ds.danger }]} />
+                                <View style={[modalStyles.point, { top: 40, left: '40%', backgroundColor: ds.danger }]} />
+                                <View style={[modalStyles.point, { top: 43, right: 10, backgroundColor: ds.danger }]} />
                             </View>
-                            <Text style={{ color: colors.error, fontWeight: 'bold', fontSize: 13, marginBottom: 2, textAlign: 'center' }}>Overspending</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11, textAlign: 'center' }}>Line below zero (red)</Text>
+                            <Text style={[type.smallMedium, modalStyles.center, { color: ds.danger }]}>Overspending</Text>
+                            <Text style={[type.caption, modalStyles.center, { color: ds.text2 }]}>Line below zero (red)</Text>
                         </View>
                     </View>
-
-                    {/* Key Points */}
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
-                            • <Text style={{ fontWeight: 'bold' }}>Zero Line:</Text> The horizontal line in the middle{"\n"}
-                            • <Text style={{ color: colors.success, fontWeight: 'bold' }}>Green Line:</Text> Above zero = You&apos;re saving{"\n"}
-                            • <Text style={{ color: colors.error, fontWeight: 'bold' }}>Red Line:</Text> Below zero = Spending more than earning{"\n"}
-                            • <Text style={{ fontWeight: 'bold' }}>Dots:</Text> Each represents one month{"\n"}
-                            • <Text style={{ fontWeight: 'bold' }}>Higher is Better:</Text> More savings = further above zero
-                        </Text>
+                    <View style={modalStyles.legend}>
+                        {([
+                            ['Zero line', 'The horizontal line in the middle', ds.hairline],
+                            ['Green line', "Above zero = You're saving", ds.success],
+                            ['Red line', 'Below zero = Spending more than earning', ds.danger],
+                            ['Dots', 'Each represents one month', ds.text2],
+                            ['Higher is better', 'More savings = further above zero', ds.text2],
+                        ] as const).map(([label, meaning, color]) => (
+                            <LegendLine key={label} label={label} meaning={meaning} color={color} />
+                        ))}
                     </View>
-                </View>
+                </Group>
 
-                {/* Current Value Explanation */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📊 Current {activeMeta.metricLabel}</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 8 }}>
+                <SectionHeader grouped title={`Current ${activeMeta.metricLabel.toLowerCase()}`} />
+                <Group padded>
+                    <Text style={[type.small, { color: ds.text2 }]}>
                         Your {activeMeta.metricLabel.toLowerCase()} for the most recent month:
                     </Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                            • <Text style={{ color: colors.success, fontWeight: 'bold' }}>{isPercent ? 'Positive %' : 'Positive amount'}</Text>: You saved money 💰{"\n"}
-                            • <Text style={{ color: colors.error, fontWeight: 'bold' }}>{isPercent ? 'Negative %' : 'Negative amount'}</Text>: You overspent 📉
-                        </Text>
+                    <View style={modalStyles.legend}>
+                        <LegendLine label={isPercent ? 'Positive %' : 'Positive amount'} meaning="You saved money" color={ds.success} />
+                        <LegendLine label={isPercent ? 'Negative %' : 'Negative amount'} meaning="You overspent" color={ds.danger} />
                     </View>
-                </View>
+                </Group>
 
-                {/* Streak Explanation */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>🔥 Streak</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 8 }}>
-                        Consecutive months with the same trend. Higher streaks show consistency!
+                <SectionHeader grouped title="Streak" />
+                <Group padded>
+                    <Text style={[type.small, { color: ds.text2 }]}>
+                        Consecutive months with the same trend. Higher streaks show consistency.
                     </Text>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <View style={{ flex: 1, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
-                            <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 13, marginBottom: 4 }}>5📈</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>5 months of saving</Text>
-                        </View>
-                        <View style={{ flex: 1, backgroundColor: colors.surface, padding: 10, borderRadius: 8 }}>
-                            <Text style={{ color: colors.error, fontWeight: 'bold', fontSize: 13, marginBottom: 4 }}>2📉</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>2 months overspending</Text>
-                        </View>
+                    <View style={modalStyles.pair}>
+                        <ExampleTile label="5 months of saving" value="5📈" color={ds.success} />
+                        <ExampleTile label="2 months overspending" value="2📉" color={ds.danger} />
                     </View>
-                </View>
+                </Group>
 
-                {/* Positive/Negative Format Explanation */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📈 Understanding &quot;8 / 5&quot; Format</Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: 8 }}>
-                        This shows <Text style={{ fontWeight: 'bold' }}>two separate numbers</Text>, not division:
+                <SectionHeader grouped title="Understanding the “8 / 5” format" />
+                <Group>
+                    <Text style={[type.small, modalStyles.groupIntro, { color: ds.text2 }]}>
+                        This shows <Text style={{ color: ds.text }}>two separate numbers</Text>, not division:
                     </Text>
+                    <Row
+                        leading={<View style={[modalStyles.dot, { backgroundColor: ds.success }]} />}
+                        title="Positive: 8 / 5"
+                        subtitle={'8 = Total positive months\n5 = Best consecutive streak'}
+                    />
+                    <Row
+                        leading={<View style={[modalStyles.dot, { backgroundColor: ds.danger }]} />}
+                        title="Negative: 3 / 2"
+                        subtitle={'3 = Total negative months\n2 = Worst consecutive streak'}
+                        last
+                    />
+                </Group>
 
-                    {/* Positive Visual Example */}
-                    <View style={{ backgroundColor: colors.success + '20', padding: 12, borderRadius: 8, marginBottom: 8, borderLeftWidth: 4, borderLeftColor: colors.success }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 6 }}>Positive: 8 / 5</Text>
-                        <View style={{ marginLeft: 8 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 3 }}>
-                                <Text style={{ color: colors.success, fontWeight: 'bold' }}>8</Text> = Total positive months
-                            </Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                                <Text style={{ color: colors.success, fontWeight: 'bold' }}>5</Text> = Best consecutive streak
-                            </Text>
-                        </View>
-                    </View>
-
-                    {/* Negative Visual Example */}
-                    <View style={{ backgroundColor: colors.error + '20', padding: 12, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: colors.error }}>
-                        <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14, marginBottom: 6 }}>Negative: 3 / 2</Text>
-                        <View style={{ marginLeft: 8 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 3 }}>
-                                <Text style={{ color: colors.error, fontWeight: 'bold' }}>3</Text> = Total negative months
-                            </Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                                <Text style={{ color: colors.error, fontWeight: 'bold' }}>2</Text> = Worst consecutive streak
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Other Metrics */}
-                <View style={{ marginBottom: 16 }}>
-                    <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>📉 Other Metrics</Text>
-                    <View style={{ backgroundColor: colors.surface, padding: 12, borderRadius: 8, gap: 8 }}>
-                        <View>
-                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Average</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                Average {activeMeta.metricLabel.toLowerCase()} across all months
-                            </Text>
-                        </View>
-                        <View style={{ height: 1, backgroundColor: colors.border }} />
-                        <View>
-                            <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>Best & Worst Month</Text>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                                Highest and lowest values in the period
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-
-                <View style={{ height: 20 }} />
+                <SectionHeader grouped title="Other metrics" />
+                <Group>
+                    <Row title="Average" subtitle={`Average ${activeMeta.metricLabel.toLowerCase()} across all months`} />
+                    <Row title="Best & worst month" subtitle="Highest and lowest values in the period" last />
+                </Group>
             </ScrollView>
         </BottomModal>
-    );
-
-    const renderTabs = () => (
-        <View style={{ flexDirection: 'row', backgroundColor: colors.background, borderRadius: 8, padding: 2 }}>
-            {SAVINGS_TAB_ORDER.map((tab) => (
-                <TouchableOpacity
-                    key={tab}
-                    onPress={() => handleTabChange(tab)}
-                    style={{
-                        paddingVertical: 6,
-                        paddingHorizontal: 10,
-                        backgroundColor: activeTab === tab ? colors.surface : 'transparent',
-                        borderRadius: 6,
-                        borderWidth: activeTab === tab ? 1 : 0,
-                        borderColor: colors.border
-                    }}
-                >
-                    <Text style={{
-                        color: activeTab === tab ? colors.text : colors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: activeTab === tab ? '600' : '400'
-                    }}>{SAVINGS_TAB_META[tab].label}</Text>
-                </TouchableOpacity>
-            ))}
-        </View>
     );
 
     // --- Center-zero workaround for gifted-charts (older versions) ---
@@ -686,141 +536,97 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
     const shiftedChartData = activeValues.map((val) => ({
         value: val + yOffset, // shift
         originalValue: val,   // keep real value for labels/colors
-        dataPointColor: val < 0 ? colors.error : colors.success,
+        dataPointColor: val < 0 ? ds.danger : ds.success,
     }));
+
+    // Summary figures: Discreet amount tabs swap amounts for % of income, or the month itself.
+    const rawData = savingsData.rawData;
+    const latest = rawData[rawData.length - 1];
+    const totalIncome = rawData.reduce((sum, d) => sum + d.income.toNumber(), 0);
+    const bestIndex = activeValues.indexOf(Math.max(...activeValues));
+    const worstIndex = activeValues.indexOf(Math.min(...activeValues));
+    const currentText = asShareOfIncome ? formatShare(latestValue, latest ? latest.income.toNumber() : 0) : formatValue(latestValue);
+    const averageText = asShareOfIncome ? formatShare(avgValue * rawData.length, totalIncome) : formatValue(avgValue);
+    const bestText = asShareOfIncome ? rawData[bestIndex]?.month ?? '—' : formatValue(Math.max(...activeValues));
+    const worstText = asShareOfIncome ? rawData[worstIndex]?.month ?? '—' : formatValue(Math.min(...activeValues));
+
+    const showYAxis = isPercent || format.isOpen;
+    // Group content runs 28 from each screen edge, 8 narrower per side than the old 20 gutter.
+    const chartWidth = screenWidth - 80 - (layout.groupInset + layout.groupPadding - space[5]) * 2;
+    const axisText = [type.caption, { color: ds.text2 }];
+
+    const header = (
+        <SectionHeader
+            grouped
+            title="Savings trend"
+            menu={{ options: TAB_OPTIONS, value: activeTab, onSelect: key => handleTabChange(key as SavingsTab) }}
+        />
+    );
+
+    const toolbar = (
+        <View style={styles.toolbar}>
+            <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
+            <Pressable onPress={() => setShowInfoModal(true)} hitSlop={space[2]}>
+                <Ionicons name="information-circle-outline" size={18} color={ds.text2} />
+            </Pressable>
+        </View>
+    );
 
     if (!isLoading && savingsData.rawData.length === 0) {
         return (
             <View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>Savings Trend</Text>
-                        <TouchableOpacity
-                            onPress={() => setShowInfoModal(true)}
-                            style={{
-                                padding: 4,
-                                backgroundColor: colors.primary + '20',
-                                borderRadius: 6
-                            }}
-                        >
-                            <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-                    <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
-                </View>
-                <Card>
-                    <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 20 }}>
+                {header}
+                <Group padded>
+                    {toolbar}
+                    <Text style={[type.small, styles.empty, { color: ds.text2 }]}>
                         No data yet. Start tracking income and expenses!
                     </Text>
-                </Card>
+                </Group>
                 {renderInfoModal()}
             </View>
         );
     }
 
+    const renderStat = (label: string, value: string, color: string, align: 'flex-start' | 'center' | 'flex-end' = 'flex-start') => (
+        <View style={{ alignItems: align }}>
+            <Text style={[type.caption, { color: ds.text2 }]}>{label}</Text>
+            {isLoading ? (
+                <Skeleton width={50} height={20} />
+            ) : (
+                <Text style={[type.bodyNum, { color }]}>{value}</Text>
+            )}
+        </View>
+    );
+
     return (
         <View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, marginBottom: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>{activeMeta.metricLabel}</Text>
-                    <TouchableOpacity onPress={() => setShowInfoModal(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                        <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                </View>
-            </View>
-            <Card>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    {renderTabs()}
-                    <TimeRangeSelector value={timeRange} onChange={handleTimeRangeChange} />
-                </View>
+            {header}
 
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                    {/* Left side metrics */}
-                    <View style={{ flexDirection: 'row', gap: 16 }}>
-                        {/* Streak */}
-                        <View style={{ alignItems: 'flex-start' }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Streak</Text>
-                            {isLoading ? (
-                                <Skeleton width={40} height={20} />
-                            ) : (
-                                <Text style={{
-                                    color: streak.type === 'positive' ? colors.success : colors.error,
-                                    fontSize: 18,
-                                    fontWeight: 'bold'
-                                }}>
-                                    {privacyMode ? '••' : `${streak.count}${streak.type === 'positive' ? '📈' : '📉'}`}
-                                </Text>
-                            )}
-                        </View>
+            <Group padded>
+                {toolbar}
 
-                        {/* Positive */}
-                        <View style={{ alignItems: 'flex-start' }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Positive</Text>
-                            {isLoading ? (
-                                <Skeleton width={50} height={20} />
-                            ) : (
-                                <Text style={{
-                                    color: colors.success,
-                                    fontSize: 16,
-                                    fontWeight: 'bold'
-                                }}>
-                                    {privacyMode ? '••' : `${historicalStats.positiveCount} / ${historicalStats.longestPositiveStreak}`}
-                                </Text>
-                            )}
-                        </View>
-
-                        {/* Negative */}
-                        <View style={{ alignItems: 'flex-start' }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Negative</Text>
-                            {isLoading ? (
-                                <Skeleton width={50} height={20} />
-                            ) : (
-                                <Text style={{
-                                    color: colors.error,
-                                    fontSize: 16,
-                                    fontWeight: 'bold'
-                                }}>
-                                    {privacyMode ? '••' : `${historicalStats.negativeCount} / ${historicalStats.longestNegativeStreak}`}
-                                </Text>
-                            )}
-                        </View>
+                {/* Counts and % read the same in every mode */}
+                <View style={styles.stats}>
+                    <View style={styles.statGroup}>
+                        {renderStat('Streak', `${streak.count}${streak.type === 'positive' ? '📈' : '📉'}`, streak.type === 'positive' ? ds.success : ds.danger)}
+                        {renderStat('Positive', `${historicalStats.positiveCount} / ${historicalStats.longestPositiveStreak}`, ds.success)}
+                        {renderStat('Negative', `${historicalStats.negativeCount} / ${historicalStats.longestNegativeStreak}`, ds.danger)}
                     </View>
-
-                    {/* Right: Current Value */}
-                    <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Current</Text>
-                        {isLoading ? (
-                            <Skeleton width={60} height={20} />
-                        ) : (
-                            <Text style={{
-                                color: latestValue >= 0 ? colors.success : colors.error,
-                                fontSize: 18,
-                                fontWeight: 'bold'
-                            }}>
-                                {privacyMode ? '••••' : formatValue(latestValue)}
-                            </Text>
-                        )}
-                    </View>
+                    {renderStat(asShareOfIncome ? 'Of income' : 'Current', currentText, latestValue >= 0 ? ds.success : ds.danger, 'flex-end')}
                 </View>
 
                 {isLoading ? (
-                    <View style={{ height: 220, paddingVertical: 10 }}>
-                        <Skeleton height={180} width="100%" borderRadius={16} />
-                    </View>
-                ) : !privacyMode && (
-                    <View style={{ height: 220, paddingVertical: 10, marginLeft: -10 }}>
+                    <Skeleton height={CHART_HEIGHT} width="100%" borderRadius={radius.md} />
+                ) : format.isHidden ? (
+                    <HiddenChart height={CHART_HEIGHT} />
+                ) : (
+                    <View style={styles.chart}>
                         {/* MANUAL REFERENCE LINE (0%) - Rendered BEHIND chart to avoid tooltip overlap */}
-                        <View style={{
-                            position: 'absolute',
-                            left: 50, // Match yAxisLabelWidth roughly + spacing
-                            right: 0,
-                            top: 220 * (1 - (yOffset / (yBoundary * 2))), // Calculate Top Position
-                            height: 1,
-                            borderTopWidth: 1,
-                            borderColor: colors.textSecondary,
-                            borderStyle: 'dashed',
-                            zIndex: -1
-                        }} />
+                        <View style={[styles.zeroLine, {
+                            left: showYAxis ? 50 : space[5],
+                            top: CHART_HEIGHT * (1 - (yOffset / (yBoundary * 2))),
+                            borderColor: ds.text3,
+                        }]} />
 
                         <LineChart
                             data={shiftedChartData.map((d, index) => ({
@@ -836,10 +642,10 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                             }))}
 
                             height={200}
-                            width={screenWidth - 80}
-                            spacing={(screenWidth - 80) / Math.max(shiftedChartData.length, 1)}
+                            width={chartWidth}
+                            spacing={chartWidth / Math.max(shiftedChartData.length, 1)}
                             initialSpacing={20}
-                            thickness={3}
+                            thickness={1.5}
                             curved
                             curveType={0}
 
@@ -847,95 +653,241 @@ const SavingsRateTrend: React.FC<SavingsRateTrendProps> = ({ transactions, priva
                             maxValue={yBoundary * 2}
                             noOfSections={4}
 
-                            /* ---- GRID ---- */
-                            hideRules={false}
-                            rulesType="solid"
-                            rulesColor={colors.border + '80'}
-                            rulesThickness={1}
-
-                            showVerticalLines
-                            verticalLinesColor={colors.border + '80'}
-                            verticalLinesThickness={1}
+                            hideRules
 
                             /* ---- AXIS ---- */
                             yAxisColor="transparent"
                             xAxisColor="transparent"
-                            yAxisLabelWidth={45}
+                            yAxisLabelWidth={showYAxis ? 45 : space[5]}
+                            hideYAxisText={!showYAxis}
 
-                            yAxisTextStyle={{ color: colors.textSecondary, fontSize: 10 }}
-                            xAxisLabelTextStyle={{ color: colors.textSecondary, fontSize: 10, width: 30, textAlign: 'center' }}
+                            yAxisTextStyle={axisText}
+                            xAxisLabelTextStyle={[axisText, styles.xLabel]}
 
-                            /* ---- REMOVED BUILT-IN REFERENCE LINE ---- */
-
-
-                            /* ---- LINE GRADIENT ---- */
+                            /* ---- LINE GRADIENT: above zero is good, below is bad ---- */
                             lineGradient
                             lineGradientId="g_savings"
                             lineGradientComponent={() => (
                                 <LinearGradient id="g_savings" x1="0" y1="0" x2="0" y2="1">
-                                    <Stop offset="0%" stopColor={colors.success} stopOpacity="1" />
-                                    <Stop offset="50%" stopColor={colors.success} stopOpacity="1" />
-                                    <Stop offset="50%" stopColor={colors.error} stopOpacity="1" />
-                                    <Stop offset="100%" stopColor={colors.error} stopOpacity="1" />
+                                    <Stop offset="0%" stopColor={ds.success} stopOpacity="1" />
+                                    <Stop offset="50%" stopColor={ds.success} stopOpacity="1" />
+                                    <Stop offset="50%" stopColor={ds.danger} stopOpacity="1" />
+                                    <Stop offset="100%" stopColor={ds.danger} stopOpacity="1" />
                                 </LinearGradient>
                             )}
 
                             /* ---- LABEL FIX (UNSHIFT VALUES) ---- */
                             formatYLabel={(value: string) => {
                                 const realValue = Number(value) - yOffset;
-                                return isPercent ? `${realValue.toFixed(0)}%` : formatCompactCurrency(realValue, currency, 1);
+                                return isPercent ? `${realValue.toFixed(0)}%` : format.money(realValue, { compact: true });
                             }}
                             pointerConfig={pointerConfig}
                         />
-
-                    </View>
-                )}
-
-                {!isLoading && privacyMode && (
-                    <View style={{
-                        height: 220,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: colors.border + '20',
-                        borderRadius: 16,
-                        marginVertical: 8
-                    }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>🔒 Chart hidden for privacy</Text>
                     </View>
                 )}
 
                 {savingsData.rawData.length > 1 ? (
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
-                        <View style={{ alignItems: 'center' }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Average</Text>
-                            <Text style={{ color: avgValue >= 0 ? colors.success : colors.error, fontSize: 14, fontWeight: '600' }}>
-                                {privacyMode ? '••••' : formatValue(avgValue)}
-                            </Text>
-                        </View>
-                        <View style={{ alignItems: 'center' }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Best Month</Text>
-                            <Text style={{ color: colors.success, fontSize: 14, fontWeight: '600' }}>
-                                {privacyMode ? '••••' : formatValue(Math.max(...activeValues))}
-                            </Text>
-                        </View>
-                        <View style={{ alignItems: 'center' }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 11 }}>Worst Month</Text>
-                            <Text style={{ color: colors.error, fontSize: 14, fontWeight: '600' }}>
-                                {privacyMode ? '••••' : formatValue(Math.min(...activeValues))}
-                            </Text>
-                        </View>
+                    <View style={[styles.summary, { borderTopColor: ds.hairline }]}>
+                        {renderStat('Average', averageText, avgValue >= 0 ? ds.success : ds.danger, 'center')}
+                        {renderStat('Best month', bestText, ds.success, 'center')}
+                        {renderStat('Worst month', worstText, ds.danger, 'center')}
                     </View>
                 ) : (
-                    <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
-                        <Text style={{ color: colors.textSecondary, textAlign: 'center', fontSize: 12 }}>
+                    <View style={[styles.summary, { borderTopColor: ds.hairline }]}>
+                        <Text style={[type.small, styles.center, styles.flex, { color: ds.text2 }]}>
                             Track more months to see your best and worst ratios!
                         </Text>
                     </View>
                 )}
-            </Card>
+            </Group>
             {renderInfoModal()}
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    toolbar: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: space[3],
+    },
+    empty: {
+        textAlign: 'center',
+        paddingVertical: space[5],
+    },
+    stats: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: space[2],
+    },
+    statGroup: {
+        flexDirection: 'row',
+        gap: space[4],
+    },
+    hidden: {
+        borderRadius: radius.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: space[2],
+    },
+    chart: {
+        height: CHART_HEIGHT,
+        marginLeft: -space[2],
+    },
+    zeroLine: {
+        position: 'absolute',
+        right: 0,
+        height: 1,
+        borderTopWidth: 1,
+        borderStyle: 'dashed',
+        zIndex: -1,
+    },
+    xLabel: {
+        width: 30,
+        textAlign: 'center',
+    },
+    summary: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: space[3],
+        paddingTop: space[3],
+        borderTopWidth: 1,
+    },
+    pointer: {
+        height: 10,
+        width: 10,
+        borderRadius: radius.full,
+        borderWidth: 2,
+    },
+    pointerLabelWrap: {
+        height: 100,
+        width: 140,
+        justifyContent: 'center',
+        marginTop: -30,
+        zIndex: 1000,
+    },
+    pointerLabel: {
+        paddingHorizontal: space[3],
+        paddingVertical: space[2],
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        gap: space[1],
+    },
+    pointerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: space[2],
+    },
+    pointerDivider: {
+        height: 1,
+    },
+    center: {
+        textAlign: 'center',
+    },
+    flex: {
+        flex: 1,
+    },
+});
+
+const modalStyles = StyleSheet.create({
+    grid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: space[3],
+    },
+    tile: {
+        flexGrow: 1,
+        flexBasis: '40%',
+        gap: space[1],
+        padding: space[4],
+        borderRadius: radius.md,
+    },
+    pair: {
+        flexDirection: 'row',
+        gap: space[3],
+        marginTop: space[3],
+    },
+    block: {
+        padding: space[3],
+        borderRadius: radius.sm,
+        marginTop: space[3],
+    },
+    stack: {
+        flexDirection: 'row',
+        height: 24,
+        borderRadius: radius.sm,
+        overflow: 'hidden',
+        marginVertical: space[2],
+    },
+    stackLegend: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: space[3],
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[1],
+    },
+    bracketRow: {
+        flexDirection: 'row',
+        marginBottom: space[1],
+    },
+    bracket: {
+        borderTopWidth: 2,
+        paddingTop: space[1],
+    },
+    miniChart: {
+        height: 60,
+        borderRadius: radius.sm,
+        overflow: 'hidden',
+        marginBottom: space[1],
+    },
+    zeroLine: {
+        position: 'absolute',
+        top: '50%',
+        left: 0,
+        right: 0,
+        height: 1,
+    },
+    point: {
+        position: 'absolute',
+        width: 8,
+        height: 8,
+        borderRadius: radius.full,
+    },
+    legend: {
+        gap: space[2],
+        marginTop: space[3],
+    },
+    legendRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: space[2],
+    },
+    legendDot: {
+        marginTop: 5,
+    },
+    dot: {
+        width: 8,
+        height: 8,
+        borderRadius: radius.full,
+    },
+    flex: {
+        flex: 1,
+    },
+    center: {
+        textAlign: 'center',
+    },
+    paragraph: {
+        marginTop: space[2],
+    },
+    groupIntro: {
+        paddingTop: space[3],
+    },
+});
 
 export default SavingsRateTrend;
