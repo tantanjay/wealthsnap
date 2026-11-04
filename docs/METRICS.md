@@ -63,7 +63,7 @@ These apply to every metric unless its section says otherwise.
 | 1.7.0 | (Income + Transfer In) − (Expense + Transfer Out) | Home Cash Balance and History count transfers, introduced this version |
 | 1.8.1 | Same, for Insights too | Insights Runway's balance now counts transfers |
 | 1.19.0 | Every recorded transaction, future-dated included | Runway-drop alert stopped cutting off at today; hand-rolled copies in five files merged into `calculateBalance` |
-| Unreleased | Same | History removed; Home's cards replaced by the Snapshot Cash row |
+| 2.0.0 | Same | History removed; Home's cards replaced by the Snapshot Cash row |
 
 ## Runway
 
@@ -85,7 +85,7 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | Same | Runway-drop alert no longer drops the last day of last month |
 | 1.19.0 | Alert uses the screens' Runway | Runway-drop alert now compares the same Runway and last-month figure as Runway Change (`calculateRunwayTrend`) |
 | 1.19.0 | Out-of-cash alert while Cash Balance ≤ 0, in place of the runway-drop alert | The runway-drop alert skipped a drop to zero or below (since 1.8.1). The new alert repeats every month cash stays there, with its own once-a-month notification |
-| Unreleased | Same | Insights' Financial Runway card and the Financial Health screen merged into one Runway tile and sheet (`calculateRunwayTrend`). The old Insights card showed 0.0 months below zero cash; the tile now shows the same (negative) figure as Home |
+| 2.0.0 | Same | Insights' Financial Runway card and the Financial Health screen merged into one Runway tile and sheet (`calculateRunwayTrend`). The old Insights card showed 0.0 months below zero cash; the tile now shows the same (negative) figure as Home |
 
 ## Runway Change
 
@@ -105,7 +105,7 @@ These apply to every metric unless its section says otherwise.
 | 1.17.0 | Debts you owe, active today, that were open last month | **↩ Partly undoes 1.13.0/1.16.0.** A debt paid off or forgiven is left out of last month too, so paying one off doesn't show as a runway gain |
 | 1.18.0 | + goal contributions | Today's contributions, since goals keep no history. Financial Health no longer drops last month's final day |
 | 1.19.0 | Last month's balance = balance at last month's end; base uses Burn Rate's fallback as of then | Home and Financial Health share one calculation (`calculateRunwayTrend`), also used by the runway-drop alert. Home stopped counting later-dated transactions in last month's balance; Financial Health stopped overstating last month's runway for someone who started last month |
-| Unreleased | Same | Home no longer shows it: the Snapshot hero shows Runway in months only. Financial Health's moved to the Insights Runway tile and sheet |
+| 2.0.0 | Same | Home no longer shows it: the Snapshot hero shows Runway in months only. Financial Health's moved to the Insights Runway tile and sheet |
 
 ## Net Cash Flow (monthly)
 
@@ -129,7 +129,7 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | Same, for Insights too | Insights switched to the transfer-inclusive formula so goal contributions and goal purchases net out |
 | 1.18.0 | Same | Savings Trend Cash Flow view and Financial Health's average net flow no longer drop the last day (bug since 1.10.1) |
 | 1.19.0 | Same | Financial Health's Net Flow includes this month's future-dated transactions |
-| Unreleased | Same | Home Monthly Balance card removed; the Snapshot Cash row's change line shows cash now − cash at last month-end |
+| 2.0.0 | Same | Home Monthly Balance card removed; the Snapshot Cash row's change line shows cash now − cash at last month-end |
 
 ## Total Expense / Monthly Net / Daily Average
 
@@ -154,7 +154,7 @@ These apply to every metric unless its section says otherwise.
 | 1.12.0 | Same; a past month ÷ its full length | Insights month picker added; its cards follow the browsed month |
 | 1.18.0 | Expenses leave out goal-funded purchases | Insights Total Expense and Daily Average, History Expenses, Monthly Summary, Month-End Projection and spending charts. Savings Goals added |
 | 1.19.0 | Same; goal-funded purchases shown as "+ from goals" | Line added under Insights Total Expense, History Expenses and Home Expense; Home Monthly Net stopped subtracting them |
-| Unreleased | Same | History (and its Expenses figure) removed; Home's Monthly Net moved to the Snapshot Cash row ("This month"), without a "from goals" line |
+| 2.0.0 | Same | History (and its Expenses figure) removed; Home's Monthly Net moved to the Snapshot Cash row ("This month"), without a "from goals" line |
 
 ## Category Breakdown / Top Category
 
@@ -173,7 +173,7 @@ These apply to every metric unless its section says otherwise.
 | 1.10.0 | Items grouped by `category` only | `subCategory` no longer splits items; it now holds tags such as debt `INTEREST` |
 | 1.18.0 | Same, goal-funded purchases included | Savings Goals added; their purchases show here in full |
 | 1.19.0 | Each row also carries `goalFundedAmount` | The spending breakdown marks each category's goal-funded share |
-| Unreleased | Same | Home's Top Transactions list (the month's five largest expenses, `getTopExpenses`) removed with Home's cards |
+| 2.0.0 | Same | Home's Top Transactions list (the month's five largest expenses, `getTopExpenses`) removed with Home's cards |
 
 ## Savings Rate
 
@@ -195,7 +195,7 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | Expense leaves out goal-funded purchases | Savings Goals added. Card and chart still differ on principal |
 | 1.18.0 | Same | Chart no longer mixes up months' repayments on the 29th-31st |
 | 1.19.0 | (Income − Expense − Debt Principal Repaid) ÷ Income, everywhere | Card, Monthly Summary, Chat and Month-End Projection now count principal as spent, matching the chart. Month-End uses principal repaid so far |
-| Unreleased | Same; "—" on Home when the month has no income | Home Snapshot shows this month's rate in Discreet mode (hero and Cash row), change line in points vs last month |
+| 2.0.0 | Same; "—" on Home when the month has no income | Home Snapshot shows this month's rate in Discreet mode (hero and Cash row), change line in points vs last month |
 
 ## Budget Health
 
@@ -215,7 +215,7 @@ These apply to every metric unless its section says otherwise.
 | 1.4.0 | Same | Colors: green ≤70%, orange ≤90%, red >90% |
 | 1.18.0 | Same | Monthly Summary budget alerts, over-budget alerts and Chat budgets leave out goal-funded purchases; this card doesn't |
 | 1.19.0 | Leaves out goal-funded purchases | Also Home budget %, spending-breakdown bars, Smart Suggestions |
-| Unreleased | Same; 0% (not "N/A") when budgets exist but nothing is spent | Home budget % removed. Insights tile shows "—" only when no budgets are set. New Budgets section: each budget's spent ÷ its amount, same colors |
+| 2.0.0 | Same; 0% (not "N/A") when budgets exist but nothing is spent | Home budget % removed. Insights tile shows "—" only when no budgets are set. New Budgets section: each budget's spent ÷ its amount, same colors |
 
 ## Burn Rate
 
@@ -261,7 +261,7 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | Same | Same fix on Home; goal-funded purchases left out of living costs. Goal contributions were added to Runway but not here |
 | 1.19.0 | Living costs include goal contributions | Now measured against the real Runway |
 | 1.19.0 | Same | Fees count as living costs again (↩ see Burn Rate) |
-| Unreleased | Same | Moved from the Financial Health screen to Insights' Debt drag tile and sheet. Discreet: payments as a loan count, interest as % of payments, stepper as a step count starting from 0 (the income-based starting amount would reveal scale) |
+| 2.0.0 | Same | Moved from the Financial Health screen to Insights' Debt drag tile and sheet. Discreet: payments as a loan count, interest as % of payments, stepper as a step count starting from 0 (the income-based starting amount would reveal scale) |
 
 ## Safe-to-Spend
 
@@ -282,7 +282,7 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | Same − remaining goal contributions; debt-tagged and goal-funded spending left out of the allowance | Lent money no longer treated as a payment; interest counted once (fees dropped too, see Burn Rate). Goal-funded purchases left out of spending so far; recurring goal contributions not counted as bills; bills on the 29th-31st keep their day |
 | 1.19.0 | Same | Docs only: Daily/Weekly and Monthly formulas documented separately |
 | 1.19.0 | Allowance keeps debt fees | ↩ See Burn Rate |
-| Unreleased | This month only (the Monthly formula) | Moved from History to the Ledger tab. History's Daily, Weekly and Yearly views and their formulas are gone. Bi-annual recurring rules now count every occurrence due before month-end (History counted only the next one) |
+| 2.0.0 | This month only (the Monthly formula) | Moved from History to the Ledger tab. History's Daily, Weekly and Yearly views and their formulas are gone. Bi-annual recurring rules now count every occurrence due before month-end (History counted only the next one) |
 
 ## Net Worth / Total Debt
 
@@ -305,7 +305,7 @@ These apply to every metric unless its section says otherwise.
 | 1.18.0 | + goal balances | Money in a goal still counts as yours |
 | 1.19.0 | Same | Relabeled "Projected Net Worth" and "Debt + Interest" |
 | 1.19.0 | Same | Documented: money owed to you isn't an asset until repaid (code already worked this way) |
-| Unreleased | Same | Home's Financial Health and Debts cards replaced by the Snapshot hero and Loans row; one shared calculation (`calculateNetWorth`) |
+| 2.0.0 | Same | Home's Financial Health and Debts cards replaced by the Snapshot hero and Loans row; one shared calculation (`calculateNetWorth`) |
 
 ## Net Worth Change
 
@@ -323,7 +323,7 @@ These apply to every metric unless its section says otherwise.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | As above | Introduced with the Home Snapshot |
+| 2.0.0 | As above | Introduced with the Home Snapshot |
 
 ## Cash Kept
 
@@ -339,7 +339,7 @@ These apply to every metric unless its section says otherwise.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | As above | Introduced with the Home Snapshot |
+| 2.0.0 | As above | Introduced with the Home Snapshot |
 
 ## Investment Return
 
@@ -357,7 +357,7 @@ These apply to every metric unless its section says otherwise.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | Unrealized % unchanged; + Total return; monthly buys' return documented | Investments screen removed. The Home Snapshot Investments row shows the existing unrealized % (also in Discreet); the new Holdings tab adds total return (realized, unrealized and dividends over all cost ever invested) in Open and Discreet |
+| 2.0.0 | Unrealized % unchanged; + Total return; monthly buys' return documented | Investments screen removed. The Home Snapshot Investments row shows the existing unrealized % (also in Discreet); the new Holdings tab adds total return (realized, unrealized and dividends over all cost ever invested) in Open and Discreet |
 
 ## Loans Repaid / Obligations Paid
 
@@ -373,7 +373,7 @@ These apply to every metric unless its section says otherwise.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | Obligations capped per debt at its minimum; same rules for money owed to you | Home's Debts card summed raw payments, so paying extra on one debt covered another's minimum. Moved to the Snapshot Loans row and the Loans tab, which adds "Owed to you" (% collected, repayments received capped at each minimum) and the % repaid change line |
+| 2.0.0 | Obligations capped per debt at its minimum; same rules for money owed to you | Home's Debts card summed raw payments, so paying extra on one debt covered another's minimum. Moved to the Snapshot Loans row and the Loans tab, which adds "Owed to you" (% collected, repayments received capped at each minimum) and the % repaid change line |
 
 ## Goals Progress / On Track
 
@@ -393,7 +393,7 @@ These apply to every metric unless its section says otherwise.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | As above | Introduced with the Home Snapshot |
+| 2.0.0 | As above | Introduced with the Home Snapshot |
 
 ## Money In / Out
 
@@ -409,7 +409,7 @@ These apply to every metric unless its section says otherwise.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | As above | Introduced with the Home Ledger tab |
+| 2.0.0 | As above | Introduced with the Home Ledger tab |
 
 ## Loan Payoff Plan
 
@@ -427,7 +427,7 @@ These apply to every metric unless its section says otherwise.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | As above | Moved from the Debt Strategy screen; Discreet percentages added |
+| 2.0.0 | As above | Moved from the Debt Strategy screen; Discreet percentages added |
 
 ## Spending Pace
 
@@ -442,7 +442,7 @@ These apply to every metric unless its section says otherwise.
 | Version | Rule after this change | What changed |
 |---|---|---|
 | 1.10.0 | As above | Spending trend on the Financial Health screen |
-| Unreleased | Same | Moved to Insights as the Spending pace tile and sheet. Documented here for the first time |
+| 2.0.0 | Same | Moved to Insights as the Spending pace tile and sheet. Documented here for the first time |
 
 ## Investment Boost
 
@@ -457,7 +457,7 @@ These apply to every metric unless its section says otherwise.
 | Version | Rule after this change | What changed |
 |---|---|---|
 | 1.10.0 | As above | Wealth Growth card on the Financial Health screen |
-| Unreleased | Same | Moved to Insights as the Investment boost tile and sheet. Documented here for the first time. The sheet labels the rate "Dividend yield" ("Assumed return" at the 7.2% default) instead of "12-Month Return" |
+| 2.0.0 | Same | Moved to Insights as the Investment boost tile and sheet. Documented here for the first time. The sheet labels the rate "Dividend yield" ("Assumed return" at the 7.2% default) instead of "12-Month Return" |
 
 ## Financial Health grid
 
@@ -487,7 +487,7 @@ Total income and Total expense compare month-to-date figures while the month is 
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | As above | Replaced Insights' 10 swipeable overview cards and the Financial Health screen. The old overview card order isn't migrated |
+| 2.0.0 | As above | Replaced Insights' 10 swipeable overview cards and the Financial Health screen. The old overview card order isn't migrated |
 
 ## Discreet and Hidden rendering
 
@@ -499,7 +499,7 @@ Total income and Total expense compare month-to-date figures while the month is 
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | Open / Discreet / Hidden | Replaced the on/off privacy toggle (on → Hidden, off → Open), set from Home settings instead of eye buttons; Insights follows it too. Screenshots stay blocked except in Hidden (the old "on"). Budgets, Recurring rules, Smart suggestions and Monthly Summary ignored the old toggle; they now fall back to Hidden |
+| 2.0.0 | Open / Discreet / Hidden | Replaced the on/off privacy toggle (on → Hidden, off → Open), set from Home settings instead of eye buttons; Insights follows it too. Screenshots stay blocked except in Hidden (the old "on"). Budgets, Recurring rules, Smart suggestions and Monthly Summary ignored the old toggle; they now fall back to Hidden |
 
 **Discreet chart figures**
 
