@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Links and amounts no longer cut off on small phones, such as Details on Home and Calendar on the Ledger.
+
+---
+
 ## [2.0.0] — 2026-11-04
 
 ### Added
