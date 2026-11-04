@@ -12,17 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 - Allocation: Assets view showing every holding, alongside Stocks, Sector and Type.
 - Insights: Net worth growth chart with Cumulative, Percentage and Growth views over 6M, 1Y, 3Y or All time.
+- Learn: guides for Safe to Spend, Budgets, Recurring & Reminders, Monthly Summary, AI Assistant and Backup, Sync & Export; the Guides shelf shows two rows.
 
 ### Changed
 - Spending comparison and Income analytics: one info icon; the calculation notes moved into "Understanding your chart".
 - "How is this calculated?" sections are always open.
 - Savings trend and Monthly pulse use the card's full width; Savings trend fits every month without scrolling.
 - Savings trend and category trend tooltips show on touch instead of a long press.
-- Holdings allocation map: tap a box for its details, including Total return with dividends.
+- Holdings allocation map: tap a box for its details, including Total return with dividends; tap elsewhere to close.
 
 ### Fixed
 - Links, amounts and labels no longer cut off or end in "…" on small phones; long lines wrap instead.
 - Chart tooltips no longer cut off at the edges of Insights and Dividends charts.
+- Notes inside Learn guides, such as what Discreet mode shows, were missing and now appear.
 
 ---
 

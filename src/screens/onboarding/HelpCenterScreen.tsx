@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Group, Row, IconName } from '@components/ds';
+import { Disclaimer } from '@components/common/Disclaimer';
 import { useTheme } from '@context/ThemeContext';
 import { type, space, radius, fontFamily, layout } from '@styles/theme';
 import { HELP_TOPICS, HelpTopic } from '@constants/helpContent';
@@ -172,6 +173,12 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
                                     return <GuideVisual key={index} id={item.id} />;
                                 case 'divider':
                                     return <View key={index} style={[styles.divider, { backgroundColor: ds.hairline }]} />;
+                                case 'alert':
+                                    return (
+                                        <Disclaimer key={index} severity={item.alertType === 'info' || !item.alertType ? 'info' : 'warning'} inGroup label={null} style={styles.alert}>
+                                            {item.text}
+                                        </Disclaimer>
+                                    );
                                 default:
                                     return null;
                             }
@@ -276,6 +283,10 @@ const styles = StyleSheet.create({
     },
     blockquoteText: {
         fontStyle: 'italic',
+    },
+    alert: {
+        marginTop: 0,
+        marginBottom: space[4],
     },
     formulaBox: {
         padding: space[4],
