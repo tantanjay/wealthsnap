@@ -30,11 +30,25 @@ Guidance for Claude Code when working in this repository.
 - For comments carrying real non-obvious rationale (a business rule, why a check is skipped somewhere, a subtle return-value contract), keep the fact and cut the prose — tight, not padded.
 - Never point a comment at context outside the repo ("see the brainstorm history on X", "as discussed") — a future reader wasn't in that conversation, so the comment has to stand on its own.
 
+## Framework-wired code with no visible callers
+
+- **Say why it exists, in a comment, when writing it.** A class the framework picks up on its own (an auto-registered filter, an annotated bean, a listener, an override of a default) often has no callers to grep for, so it reads as dead code later. Note what it pre-empts or works around — e.g. "runs ahead of the framework's default X page" — so a later reader doesn't have to rediscover the quirk.
+- **Find what a workaround works around before recommending its removal.** Code with no callers can still be pre-empting framework behavior (a filter ordered ahead of a built-in handler, a bean that suppresses an auto-configured default). Before calling it dead, identify what would take over without it — and suggest disabling it for a quick test rather than deleting it outright.
+
+## Debugging
+
+- **When behavior works in isolated tests but not in the running app, reproduce it through the real framework stack early.** Unit tests that call your own code directly skip the framework's wrappers, such as response streams, converters and filters. Before ruling components out one by one, stand up the smallest real server path, like a throwaway full-context test on a random port, and check what actually goes out. Delete the throwaway test afterwards.
+
 ## Mock/dummy data pages & panels
 
 - Dummy data must never render by default. Gate it behind a flag (e.g. local component state) that starts off, and only flips on an explicit user click — never on mount, timeout, or route change.
 - Before the flag flips, show an empty-state in its place, not the raw content or a placeholder shape: an icon, a short heading naming what's missing, one sentence of context on when real data will actually appear there, and a button (styled as the app's primary/accent action) labeled something like "Load mock data" that flips the flag.
 - Scope the empty-state to what's actually mocked. If an entire page is dummy data, replace the whole page — header included — with one empty-state. If only one chart/card within an otherwise-real page is mocked, scope the empty-state to just that card, and hide anything else derived from the same mock data (e.g. a summary badge fed by the same numbers) until that same flag flips. Don't gate real, already-wired-up content just because it sits next to mocked content.
+
+## Documentation (`docs/`) writing style
+
+- **Never paste verbatim source code as documentation.** Pasting an actual class, function, or annotation to describe a data model, config, or piece of logic is implementation dumped into docs, not documentation. Convert it: a data model becomes a field/column table with a one-phrase meaning per row; a branch of logic becomes a plain-English list of its conditions; a security/config annotation becomes a sentence naming what it actually checks. Reserve fenced code blocks for what a reader will themselves write or send — a request/response payload, a script in a scripting API — not for internal implementation restated in code form.
+- **Don't explain what's already obvious from the language, framework, or type system.** If a fact needs no domain knowledge to guess — a getter returns what its name says, a standard framework feature does what that feature always does — leave it out. Spend the words on what a reader couldn't infer on their own: the non-default choice, the surprising edge case, the cross-file consequence.
 
 ## Component extraction
 
