@@ -207,7 +207,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
             <>
                 <SectionHeader grouped title="Allocation" menu={{ options: ALLOCATION_TABS, value: allocationTab, onSelect: key => changeAllocationTab(key as AllocationTab) }} />
                 <Group padded>
-                    <AllocationChart holdingsData={holdings} tab={allocationTab} />
+                    <AllocationChart holdingsData={holdings} tab={allocationTab} currency={currency} />
                 </Group>
             </>
         ),

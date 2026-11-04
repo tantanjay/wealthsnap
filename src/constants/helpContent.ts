@@ -671,6 +671,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'blockquote', text: 'Shows: How your money is spread out, as a treemap — box size reflects weight in your portfolio.' },
             { type: 'bullet', text: 'Switch between Assets (every holding, any type), Stocks (stocks only), Sector, and Type views' },
             { type: 'bullet', text: 'Color intensity reflects how much that holding is up or down' },
+            { type: 'bullet', text: 'Tap a box for its details: its share, Price return (what the box shows), and Total return when dividends or sales make it different, so a holding like MP2 that earns through dividends shows what it really made. Tap it again to close' },
 
             { type: 'heading2', text: 'Dividend Chart' },
             { type: 'blockquote', text: 'Shows: Your dividend income over time and what\'s coming next.' },

@@ -369,15 +369,16 @@ These apply to every metric unless its section says otherwise.
 
 **Formula (This month):** net invested = this month's buys (+ fees) − sells (− fees). Return on this month's buys = (market value − cost) of shares bought this month and still held ÷ that cost × 100
 
-**Shown on:** Home Snapshot (Investments row, unrealized) · Home Holdings tab (hero: total return; Realized and Dividends stats; top holding; each holding's unrealized return)
+**Shown on:** Home Snapshot (Investments row, unrealized) · Home Holdings tab (hero: total return; Realized and Dividends stats; top holding; each holding's unrealized return; allocation map tooltip: price and total return per box)
 
 **Computed from:** `investments` · `price_history`
 
-**Notes:** `calculateInvestmentSnapshot`, same unrealized % as `getPortfolioStats` (the old Investments screen's figure). Realized gains and dividends aren't part of the return. "—" when cost basis is ₱0. The Holdings tab shows each holding's own unrealized % (`getPortfolioHoldings`) and its weight = its market value ÷ total market value (top holding is the largest weight).
+**Notes:** `calculateInvestmentSnapshot`, same unrealized % as `getPortfolioStats` (the old Investments screen's figure). Realized gains and dividends aren't part of the return. "—" when cost basis is ₱0. The Holdings tab shows each holding's own unrealized % (`getPortfolioHoldings`) and its weight = its market value ÷ total market value (top holding is the largest weight). The allocation map's tap tooltip shows a box's unrealized % as "Price return" and, when different, its total return as "Total return": the Total return formula over that holding, or summed over a sector's or type's holdings (dividends = its `DIVIDEND` records).
 
 | Version | Rule after this change | What changed |
 |---|---|---|
 | 2.0.0 | Unrealized % unchanged; + Total return; monthly buys' return documented | Investments screen removed. The Home Snapshot Investments row shows the existing unrealized % (also in Discreet); the new Holdings tab adds total return (realized, unrealized and dividends over all cost ever invested) in Open and Discreet |
+| Unreleased | Same; + Total return per allocation box | The allocation map's tap tooltip shows each box's total return beside its price return, so dividend earners like MP2 don't read 0.0% |
 
 ## Loans Repaid / Obligations Paid
 
@@ -532,7 +533,7 @@ Total income and Total expense compare month-to-date figures while the month is 
 | Income analytics | Tooltips vs average %; Sources pie and % legend unchanged; growth % shown in every mode |
 | Net worth growth | No amount axis on Cumulative and Growth. Header: % change over the range (3 years and all time: weighted average growth per month). Tooltips: Cumulative % vs the first point; Percentage and Growth % of the month before, without the amount |
 | Savings trend | Rate tab unchanged; Saved and Cash flow: current = % of that month's income, Average = total kept ÷ total income, Best/Worst = month names; tooltips drop income/expense |
-| Allocation treemap | Same as Open (weights and returns only) |
+| Allocation treemap | Same as Open (weights and returns only); the tap tooltip leaves out the box's value |
 | Dividends (Actual, Projected) | Bars without an amount axis; tooltip: each ticker's share of the month and the month's share of the year; year total left out |
 | Dividends (Calendar) | Same as Open (tickers only) |
 
