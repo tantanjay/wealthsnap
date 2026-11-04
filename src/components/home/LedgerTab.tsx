@@ -253,7 +253,7 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
             <View style={[styles.flow, styles.alignGroup]}>
                 {/* Discreet has no scale-free In, so Out reads as a share of In in one phrase. */}
                 {f.isDiscreet ? (
-                    <Text style={[type.smallNum, styles.flowText, { color: ds.text2 }]} numberOfLines={1}>
+                    <Text style={[type.smallNum, styles.flowText, { color: ds.text2 }]}>
                         {monthFlow.outPercentOfIn === null ? `${shortMonth} · nothing came in yet` : (
                             <>
                                 {shortMonth} · out was{' '}

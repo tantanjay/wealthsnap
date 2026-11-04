@@ -116,7 +116,7 @@ const HelpCenterScreen: React.FC<HelpCenterProps> = ({ onFinish, mode = 'onboard
                     >
                         <Ionicons name="arrow-back" size={24} color={ds.text2} />
                     </Pressable>
-                    <Text style={[type.body, styles.viewerTitle, { color: ds.text }]} numberOfLines={1}>
+                    <Text style={[type.body, styles.viewerTitle, { color: ds.text }]}>
                         {topic.title}
                     </Text>
                     <View style={{ width: 24 }} />

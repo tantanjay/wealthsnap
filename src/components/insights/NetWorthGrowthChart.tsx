@@ -162,18 +162,18 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
             return {
                 label: 'Weighted avg growth per month',
                 value: weightedText,
-                line: view === 'GROWTH'
-                    ? (format.isOpen ? `${sinceText} · ${upText}` : upText)
-                    : (format.isOpen ? sinceText : `since ${startText}`),
+                line: view === 'CUMULATIVE' ? `since ${startText}` : (format.isOpen ? `${sinceText} · ${upText}` : upText),
                 tone: toneOf(weightedMonthly ?? 0),
             };
         }
+        // Each month's growth % already reads per month, so its header is the weighted monthly rate on every range.
         if (view === 'PERCENT') {
+            const upText = `${growth.filter(g => g.value > 0).length} of ${growth.length} months up`;
             return {
-                label: `Change since ${startText}`,
-                value: pctText,
-                line: format.isOpen ? `${format.money(change, { signed: true })} from ${format.money(first)}` : rangeText,
-                tone: toneOf(change),
+                label: 'Weighted avg growth per month',
+                value: formatPercent(weightedMonthly, { signed: true, decimals: 1 }),
+                line: format.isOpen ? `${format.money(change, { signed: true })} ${rangeText} · ${upText}` : upText,
+                tone: toneOf(weightedMonthly ?? 0),
             };
         }
         if (view === 'GROWTH') {
@@ -191,37 +191,50 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
             line: format.isDiscreet ? `since ${startText}` : `${format.money(change, { signed: true })} ${rangeText}`,
             tone: toneOf(change),
         };
-    }, [view, timeRange, format, change, changePct, first, last, startText, growth, weightedMonthly]);
+    }, [view, timeRange, format, change, changePct, last, startText, growth, weightedMonthly]);
 
     const chartWidth = screenWidth - 80 - (layout.groupInset + layout.groupPadding - space[5]) * 2;
     const axisText = [type.caption, { color: ds.text2 }];
 
     // ---------- Line views (Cumulative, Percentage) ----------
-    const percentUnavailable = view === 'PERCENT' && first <= 0;
-    // Long ranges keep the first point and every step-th month back from the last, about 36 points.
-    const linePoints = useMemo(() => {
-        if (points.length <= MAX_LINE_POINTS) return points;
-        const step = Math.ceil((points.length - 1) / (MAX_LINE_POINTS - 1));
-        return points.filter((_, i) => i === 0 || (points.length - 1 - i) % step === 0);
-    }, [points]);
-    const lineValues = useMemo(
-        () => linePoints.map(p => (view === 'PERCENT' ? pctOf(p.netWorth - first, first) ?? 0 : p.netWorth)),
-        [linePoints, view, first]
-    );
+    // Cumulative: net worth per point, long ranges keeping the first and every step-th month back from the last.
+    // Percentage: each month's growth %, every month that started above 0.
+    const lineSeries = useMemo((): { point: NetWorthPoint; value: number; amount: number | null }[] => {
+        if (view === 'PERCENT') {
+            return growth.filter(g => g.pct !== null).map(g => ({ point: g.point, value: g.pct as number, amount: g.value }));
+        }
+        const step = points.length <= MAX_LINE_POINTS ? 1 : Math.ceil((points.length - 1) / (MAX_LINE_POINTS - 1));
+        return points
+            .filter((_, i) => i === 0 || (points.length - 1 - i) % step === 0)
+            .map(p => ({ point: p, value: p.netWorth, amount: null }));
+    }, [view, points, growth]);
+    const lineValues = useMemo(() => lineSeries.map(s => s.value), [lineSeries]);
+    const percentUnavailable = view === 'PERCENT' && lineSeries.length < 2;
 
     // Values are shifted so the lowest sits at 0 (gifted-charts here can't draw below its baseline).
     const lineScale = useMemo(() => {
         if (lineValues.length === 0) return { lo: 0, hi: 1 };
         let lo = Math.min(...lineValues);
         let hi = Math.max(...lineValues);
-        if (view === 'PERCENT') { lo = Math.min(lo, 0); hi = Math.max(hi, 0); }
+        if (view === 'PERCENT') {
+            // Fit typical months (Tukey fences): a jump off a tiny early balance would flatten the rest.
+            if (lineValues.length >= 4) {
+                const sorted = [...lineValues].sort((a, b) => a - b);
+                const q = (p: number) => sorted[Math.round(p * (sorted.length - 1))];
+                const iqr = q(0.75) - q(0.25);
+                lo = Math.max(lo, q(0.25) - 1.5 * iqr);
+                hi = Math.min(hi, q(0.75) + 1.5 * iqr);
+            }
+            lo = Math.min(lo, 0, weightedMonthly ?? 0);
+            hi = Math.max(hi, 0, weightedMonthly ?? 0);
+        }
         const pad = (hi - lo) * 0.1 || Math.abs(hi) * 0.1 || 1;
         const paddedLo = lo - pad;
         return { lo: view === 'CUMULATIVE' && lo >= 0 && paddedLo < 0 ? 0 : paddedLo, hi: hi + pad };
-    }, [lineValues, view]);
+    }, [lineValues, view, weightedMonthly]);
 
     const showYAxis = view === 'PERCENT' || format.isOpen;
-    const lineLabels = thinLabels(linePoints.map(p => monthLabel(p.date, withYear)));
+    const lineLabels = thinLabels(lineSeries.map(s => monthLabel(s.point.date, withYear)));
 
     const pointerConfig = useMemo(() => ({
         pointerStripHeight: CHART_HEIGHT - 20,
@@ -236,41 +249,50 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
         pointerLabelComponent: (items: any) => {
             const item = (Array.isArray(items) ? items : [items])[0];
             if (!item) return null;
-            const p: NetWorthPoint | undefined = linePoints[item.index];
-            if (!p) return null;
-            const sinceStart = p.netWorth - first;
-            const value = view === 'PERCENT' || format.isDiscreet
-                ? `${formatPercent(pctOf(sinceStart, first), { signed: true, decimals: 1 })} vs start`
-                : format.money(p.netWorth);
+            const s = lineSeries[item.index];
+            if (!s) return null;
+            const isRate = view === 'PERCENT';
+            const value = isRate
+                ? `${formatPercent(s.value, { signed: true, decimals: 1 })} that month`
+                : format.isDiscreet
+                    ? `${formatPercent(pctOf(s.value - first, first), { signed: true, decimals: 1 })} vs start`
+                    : format.money(s.value);
             return (
-                <View style={[styles.pointerLabelWrap, { marginLeft: item.index > linePoints.length / 2 ? -110 : 10 }]}>
+                <View style={styles.pointerLabelWrap}>
                     <View style={[styles.pointerLabel, { backgroundColor: ds.raised, borderColor: ds.hairline }]}>
-                        <Text style={[type.captionMedium, { color: ds.text2 }]}>{fullLabel(p)}</Text>
-                        <Text style={[type.captionNum, type.captionMedium, { color: ds.text }]}>{value}</Text>
-                        {view === 'PERCENT' && format.isOpen && (
-                            <Text style={[type.captionNum, { color: ds.text2 }]}>{format.money(p.netWorth)}</Text>
+                        <Text style={[type.captionMedium, { color: ds.text2 }]}>{fullLabel(s.point)}</Text>
+                        <Text style={[type.captionNum, type.captionMedium, { color: isRate ? toneColor(ds, toneOf(s.value)) : ds.text }]}>{value}</Text>
+                        {isRate && format.isOpen && s.amount !== null && (
+                            <Text style={[type.captionNum, { color: ds.text2 }]}>{format.money(s.amount, { signed: true })}</Text>
                         )}
                     </View>
                 </View>
             );
         },
-    }), [ds, linePoints, first, view, format]);
+    }), [ds, lineSeries, first, view, format]);
 
     const renderLine = () => {
         if (percentUnavailable) {
             return (
                 <View style={[styles.notice, { height: CHART_HEIGHT }]}>
                     <Text style={[type.small, styles.center, { color: ds.text2 }]}>
-                        A percentage needs a starting net worth above zero. Try Cumulative or Growth.
+                        Monthly growth % needs at least two months that started above zero. Try Cumulative or Growth.
                     </Text>
                 </View>
             );
         }
         const n = lineValues.length;
+        const isRate = view === 'PERCENT';
         return (
+            <View>
             <View style={styles.chart}>
                 <LineChart
-                    data={lineValues.map((v, i) => ({ value: v - lineScale.lo, label: lineLabels[i], index: i }))}
+                    data={lineValues.map((v, i) => ({
+                        // Months beyond the axis are drawn at its edge; the tooltip still shows their real %.
+                        value: Math.min(Math.max(v, lineScale.lo), lineScale.hi) - lineScale.lo,
+                        label: lineLabels[i],
+                        index: i,
+                    }))}
                     height={CHART_HEIGHT - 30}
                     width={chartWidth}
                     initialSpacing={10}
@@ -281,7 +303,7 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
                     curved
                     curveType={0}
                     hideDataPoints
-                    areaChart
+                    areaChart={!isRate}
                     startFillColor={ds.accent}
                     endFillColor={ds.accent}
                     startOpacity={0.18}
@@ -297,13 +319,33 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
                     xAxisLabelTextStyle={[axisText, styles.xLabel]}
                     formatYLabel={(label: string) => {
                         const real = Number(label) + lineScale.lo;
-                        return view === 'PERCENT' ? `${Math.round(real)}%` : format.money(real, { compact: true });
+                        return isRate ? `${Number(real.toFixed(1))}%` : format.money(real, { compact: true });
                     }}
-                    showReferenceLine1={view === 'PERCENT'}
+                    showReferenceLine1={isRate}
                     referenceLine1Position={-lineScale.lo}
-                    referenceLine1Config={{ color: ds.text3, thickness: 1, dashWidth: 4, dashGap: 4 }}
+                    referenceLine1Config={{ color: ds.text3, thickness: 1, dashWidth: 1, dashGap: 0 }}
+                    showReferenceLine2={isRate && weightedMonthly !== null}
+                    referenceLine2Position={(weightedMonthly ?? 0) - lineScale.lo}
+                    referenceLine2Config={{ color: ds.text2, thickness: 1, dashWidth: 4, dashGap: 4 }}
                     pointerConfig={pointerConfig}
                 />
+            </View>
+            {isRate && (
+                <View style={styles.legend}>
+                    <View style={styles.legendItem}>
+                        <View style={[styles.swatch, { backgroundColor: ds.text3 }]} />
+                        <Text style={[type.caption, { color: ds.text2 }]}>0%</Text>
+                    </View>
+                    {weightedMonthly !== null && (
+                        <View style={styles.legendItem}>
+                            <View style={[styles.swatch, styles.dashed, { borderColor: ds.text2 }]} />
+                            <Text style={[type.captionNum, { color: ds.text2 }]}>
+                                Weighted avg {formatPercent(weightedMonthly, { signed: true, decimals: 1 })}
+                            </Text>
+                        </View>
+                    )}
+                </View>
+            )}
             </View>
         );
     };
@@ -398,15 +440,16 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
                 <SectionHeader grouped title="Three views" />
                 <Group>
                     <Row title="Cumulative" subtitle="Your net worth at the end of each month, ending with today." />
-                    <Row title="Percentage" subtitle="How far your net worth has moved since the first month shown, as a %." />
+                    <Row title="Percentage" subtitle="How much your net worth grew or shrank each month, as a % of what it was at the start of that month." />
                     <Row title="Growth" subtitle="How much your net worth went up or down in each month." last />
                 </Group>
 
                 <SectionHeader grouped title="Reading the chart" />
                 <Group padded>
                     <View style={modalStyles.legend}>
-                        <LegendLine label="Blue line" meaning="Your net worth (Cumulative) or its change since the start (Percentage)" color={ds.accent} />
-                        <LegendLine label="Dashed line" meaning="0% on the Percentage view: above it, you're ahead of where you started" color={ds.text3} dashed />
+                        <LegendLine label="Blue line" meaning="Your net worth (Cumulative) or each month's growth % (Percentage)" color={ds.accent} />
+                        <LegendLine label="Grey line" meaning="0% on the Percentage view: above it, your net worth grew that month" color={ds.text3} />
+                        <LegendLine label="Dashed line" meaning="Your weighted average growth per month: months above it beat your average" color={ds.text2} dashed />
                         <LegendLine label="Green bar" meaning="A month your net worth grew" color={ds.success} />
                         <LegendLine label="Red bar" meaning="A month your net worth shrank" color={ds.danger} />
                         <LegendLine label="Details" meaning="Touch or drag along the line, or press a bar, to see that month" color={ds.text2} />
@@ -429,8 +472,8 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
                     />
                     <Formula
                         title="Percentage"
-                        formula="(Net worth then − net worth at the start) ÷ net worth at the start × 100"
-                        explanation="Needs a starting net worth above zero."
+                        formula="(Net worth at a month-end − net worth at the month-end before) ÷ net worth at the month-end before × 100"
+                        explanation="One point per month. Months that started at zero or below are left out. The scale fits your typical months; an unusual spike, like a deposit into a tiny early balance, is drawn at the edge, and touching it shows its real %."
                     />
                     <Formula
                         title="Growth"
@@ -438,9 +481,9 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
                         explanation="This month's bar runs to today. Every month gets its own bar, whatever the range. Press a bar for its amount and its % of the month before."
                     />
                     <Formula
-                        title="Weighted avg growth per month (3 years, all time)"
+                        title="Weighted avg growth per month"
                         formula="Σ monthly growth ÷ Σ net worth at the start of those months × 100"
-                        explanation="Shown on every view for 3 years and all time. Big months count more than small ones, so a jump from a tiny first balance doesn't swamp it. Months starting at zero or below are left out."
+                        explanation="The Percentage header on every range, and every view's header for 3 years and all time. Big months count more than small ones, so a jump from a tiny first balance doesn't swamp it. Months starting at zero or below are left out."
                     />
                 </HowCalculated>
             </ScrollView>
@@ -486,7 +529,7 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
                     {isLoading ? <Skeleton width={120} height={26} /> : (
                         <>
                             <Text style={[type.titleNum, { color: ds.text }]} numberOfLines={1} adjustsFontSizeToFit>{summary.value}</Text>
-                            <Text style={[type.smallNum, { color: toneColor(ds, summary.tone) }]} numberOfLines={1}>{summary.line}</Text>
+                            <Text style={[type.smallNum, { color: toneColor(ds, summary.tone) }]}>{summary.line}</Text>
                         </>
                     )}
                 </View>
@@ -526,12 +569,34 @@ const styles = StyleSheet.create({
         height: CHART_HEIGHT,
         marginLeft: -space[2],
     },
+    legend: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: space[4],
+        marginTop: space[2],
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space[2],
+    },
+    swatch: {
+        width: 12,
+        height: 2,
+    },
+    dashed: {
+        height: 0,
+        borderTopWidth: 2,
+        borderStyle: 'dashed',
+    },
     xLabel: {
         width: 40,
         textAlign: 'center',
     },
     pointerLabelWrap: {
         width: 140,
+        height: 70,
         justifyContent: 'center',
         zIndex: 1000,
     },

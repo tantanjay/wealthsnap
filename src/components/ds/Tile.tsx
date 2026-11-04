@@ -27,7 +27,7 @@ const Tile: React.FC<TileProps> = ({ label, icon, value, change, changeTone = 'n
         <Pressable onPress={onPress} disabled={!onPress} style={[styles.tile, { backgroundColor: inGroup ? ds.inset : ds.group }, style]}>
             <View style={styles.label}>
                 {icon && <Ionicons name={icon} size={15} color={ds.text2} />}
-                <Text style={[type.small, styles.labelText, { color: ds.text2 }]} numberOfLines={1}>{label}</Text>
+                <Text style={[type.small, styles.labelText, { color: ds.text2 }]}>{label}</Text>
             </View>
             <Text style={[type.titleNum, styles.value, { color: ds.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{value}</Text>
             {change ? <ChangeLine text={change} tone={changeTone} style={styles.change} /> : null}

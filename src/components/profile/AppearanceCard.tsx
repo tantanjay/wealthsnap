@@ -59,8 +59,8 @@ const AppearanceCard: React.FC = () => {
                                         <View key={i} style={[styles.swatch, { backgroundColor: color }]} />
                                     ))}
                                 </View>
-                                <Text style={[type.smallStrong, { color: ds.text }]} numberOfLines={1}>{option.name}</Text>
-                                <Text style={[type.caption, { color: ds.text2 }]} numberOfLines={2}>{option.description}</Text>
+                                <Text style={[type.smallStrong, { color: ds.text }]}>{option.name}</Text>
+                                <Text style={[type.caption, { color: ds.text2 }]}>{option.description}</Text>
                             </Pressable>
                         );
                     })}

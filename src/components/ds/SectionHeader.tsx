@@ -36,7 +36,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ title, actionLabel, onAct
 
     return (
         <View style={[styles.container, grouped && styles.grouped, style]}>
-            <Text style={[type.smallStrong, styles.title, { color: ds.text }]} numberOfLines={1}>{title}</Text>
+            <Text style={[type.smallStrong, styles.title, { color: ds.text }]}>{title}</Text>
             {label ? (
                 <Pressable ref={triggerRef} onPress={menu ? openMenu : onAction} disabled={!menu && !onAction} hitSlop={space[2]}>
                     <Text style={[type.smallMedium, { color: ds.accent }]}>{label}</Text>

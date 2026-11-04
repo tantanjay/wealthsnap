@@ -276,7 +276,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                                 <Text style={[type.small, styles.label, { color: ds.text2 }]}>Date</Text>
                                 <Pressable onPress={() => setShowDatePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
                                     <Ionicons name="calendar-outline" size={18} color={ds.text2} />
-                                    <Text style={[type.bodyNum, styles.fieldValue, { color: ds.text }]} numberOfLines={1}>
+                                    <Text style={[type.bodyNum, styles.fieldValue, { color: ds.text }]}>
                                         {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                     </Text>
                                 </Pressable>
@@ -285,7 +285,7 @@ export const ReceiptReviewForm: React.FC<ReceiptReviewFormProps> = ({ imageUri, 
                                 <Text style={[type.small, styles.label, { color: ds.text2 }]}>Time</Text>
                                 <Pressable onPress={() => setShowTimePicker(true)} style={[styles.field, { backgroundColor: ds.inset }]}>
                                     <Ionicons name="time-outline" size={18} color={ds.text2} />
-                                    <Text style={[type.bodyNum, styles.fieldValue, { color: ds.text }]} numberOfLines={1}>
+                                    <Text style={[type.bodyNum, styles.fieldValue, { color: ds.text }]}>
                                         {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                     </Text>
                                 </Pressable>
