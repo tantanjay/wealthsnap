@@ -469,9 +469,8 @@ const InsightScreen = ({ navigation }: any) => {
                     onOpenSettings={() => setIsSettingsModalVisible(true)}
                 />
 
-                <View style={styles.sections}>
-                    {sectionOrder.map(id => <React.Fragment key={id}>{sections[id]}</React.Fragment>)}
-                </View>
+                {/* Each section opens with its own SectionHeader, which carries the gap above it. */}
+                {sectionOrder.map(id => <React.Fragment key={id}>{sections[id]}</React.Fragment>)}
 
                 <SectionHeader grouped title="Ask" />
                 <Group>
@@ -613,9 +612,6 @@ const styles = StyleSheet.create({
     content: {
         paddingHorizontal: layout.groupInset,
         paddingBottom: space[7],
-    },
-    sections: {
-        marginTop: space[6],
     },
     yearRow: {
         flexDirection: 'row',
