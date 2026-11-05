@@ -13,7 +13,8 @@ import { Group, Row } from '@components/ds';
 import { Formula, HowCalculated, SheetHero, StatLine } from '@components/insights/FinancialHealthDetails';
 import { useTheme } from '@context/ThemeContext';
 import { useHistoryData } from '@hooks/useHistoryData';
-import { DASH, PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
+import { BigNumber } from 'bignumber.js';
+import { DASH, MINUS, PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { type, space, radius, layout } from '@styles/theme';
 import { Debt, Investment, Transaction } from '@types';
 import { deleteTransaction } from '@services/domain/transactionService';
@@ -44,6 +45,14 @@ const CHIPS: { key: HistoryFilter; label: string }[] = [
 
 const titleCase = (value?: string) => value?.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 const isTransfer = (t: Transaction) => t.type === 'TRANSFER_IN' || t.type === 'TRANSFER_OUT';
+
+// Discreet's scale-free Safe to spend: an amount as days of usual daily spending. "—" with no spending to divide by.
+const asSpendingDays = (amount: BigNumber, dailyBurnRate: BigNumber, signed = false): string => {
+    if (dailyBurnRate.lte(0)) return DASH;
+    const days = Math.round(amount.dividedBy(dailyBurnRate).toNumber());
+    const sign = days < 0 ? MINUS : signed && days > 0 ? '+' : '';
+    return `${sign}${Math.abs(days)} ${Math.abs(days) === 1 ? 'day' : 'days'}`;
+};
 
 const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, onOpenRecord }) => {
     const { ds } = useTheme();
@@ -91,6 +100,9 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
         const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
         return calculateMonthSafeToSpend(transactions, data.debts, data.goals, sumUpcomingRecurring(data.recurrenceRules, now, monthEnd), now);
     }, [transactions, data.debts, data.goals, data.recurrenceRules]);
+    const safeToSpendText = f.show(f.money(safeToSpend.amount, { signed: true }), asSpendingDays(safeToSpend.amount, safeToSpend.dailyBurnRate, true));
+    // The sign isn't scale, so Discreet keeps the tone; Hidden and "—" don't.
+    const safeToSpendTone = f.isHidden || safeToSpendText === DASH ? undefined : safeToSpend.amount.lt(0) ? 'bad' : 'good';
     const calendarMonthTx = useMemo(() => getTransactionsByMonth(transactions, month), [transactions, month]);
     const calendarMonthInv = useMemo(() => investments.filter(i => {
         const d = new Date(i.date);
@@ -276,14 +288,13 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                 )}
                 {viewLink('Calendar', 'calendar-outline', 'CALENDAR')}
             </View>
-            {/* Safe-to-Spend has no scale-free version, so Discreet shows "—". */}
             <Group>
                 <Row
                     icon="shield-checkmark-outline"
                     title="Safe to spend"
                     subtitle={`Rest of ${shortMonth}, after bills and commitments`}
-                    value={f.show(f.money(safeToSpend.amount, { signed: true }), DASH)}
-                    valueTone={f.isOpen ? (safeToSpend.amount.lt(0) ? 'bad' : 'good') : undefined}
+                    value={safeToSpendText}
+                    valueTone={safeToSpendTone}
                     onPress={() => setIsSafeToSpendVisible(true)}
                     last
                 />
@@ -338,10 +349,16 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
             <BottomModal visible={isSafeToSpendVisible} onClose={() => setIsSafeToSpendVisible(false)} title="Safe to spend">
                 <SheetHero
                     label={`Rest of ${shortMonth}`}
-                    value={f.show(f.money(safeToSpend.amount, { signed: true }), DASH)}
-                    change={f.isDiscreet ? 'Not shown in Discreet: it has no scale-free version' : undefined}
+                    value={safeToSpendText}
+                    change={f.isDiscreet && safeToSpendText !== DASH ? 'Of your usual daily spending' : undefined}
                 />
-                {!f.isDiscreet && (
+                {f.isDiscreet ? (
+                    // Daily living costs (always 1 day) and costs to month-end (the days left) say nothing in days.
+                    <Group style={styles.sheetGroup}>
+                        <StatLine label="Unpaid debt minimums" value={asSpendingDays(safeToSpend.remainingDebtObligations, safeToSpend.dailyBurnRate)} />
+                        <StatLine label="Unpaid goal contributions" value={asSpendingDays(safeToSpend.remainingGoalObligations, safeToSpend.dailyBurnRate)} last />
+                    </Group>
+                ) : (
                     <Group style={styles.sheetGroup}>
                         <StatLine label="Daily living costs" note="Last 90 days of one-off spending" value={f.money(safeToSpend.dailyBurnRate)} />
                         <StatLine label="Living costs to month-end" value={f.money(safeToSpend.projectedVariableSpend)} />
