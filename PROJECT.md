@@ -36,6 +36,10 @@ When a calculation changes, update its explanations in the same change. Search f
 
 In this repo these live in `src/constants/helpContent.ts` (Help Center guides, including Math & Formulas and the Home Snapshot guide), the `*HelpModal.tsx` / `*InfoModal.tsx` components, and inline "How is this calculated?" / "Understanding Your Chart" `BottomModal`s inside screens and chart components, and the always-open "How is this calculated?" sections in Insights' Financial Health sheets (`src/components/insights/FinancialHealthSheet.tsx`, `FinancialHealthDetails.tsx`).
 
+## Line endings
+
+Working copies here are CRLF (`core.autocrlf=true`; the index stores LF). When changing files with sed, Python or similar instead of the editor tools, read and write in a way that keeps each file's existing line endings, and don't splice in text with the other style — a stray lone CR makes git treat the file as binary. Afterwards, check `git diff --stat`: a small edit showing up as a whole-file rewrite means the line endings changed, so fix that before moving on.
+
 ## Release notes / changelog
 
 When asked to update release notes for unreleased work, follow [docs/dev/versioning-and-release-process.md](docs/dev/versioning-and-release-process.md) exactly — don't improvise the format. Key points to not forget:

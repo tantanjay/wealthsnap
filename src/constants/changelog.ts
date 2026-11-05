@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fetch dividend list: fetches dividends for every stock you hold in one go, from This year or one or two years back, from Holdings → Tools or Holdings settings.
 - Background task banner: long tasks like Fetch price list show their progress above the bottom bar on every screen, then their result; tap it to hide it until the task finishes.
 - Loading placeholders in the shape of each page on Home and its Ledger, Holdings, Goals and Loans tabs, replacing the spinner.
+- Assets: a Dividends setting, Per share or Pro-rated by time held (monthly or daily), for assets like Pag-IBIG MP2; Projected dividends use it.
 
 ### Changed
 - Spending comparison and Income analytics: one info icon; the calculation notes moved into "Understanding your chart".

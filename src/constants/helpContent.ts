@@ -770,7 +770,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'blockquote', text: 'Shows: Your dividend income over time and what\'s coming next.' },
             { type: 'bullet', text: 'Actual — dividends you\'ve actually received, by year' },
             { type: 'bullet', text: 'Calendar — a month-by-month grid of dividend events' },
-            { type: 'bullet', text: 'Projected — an estimate of upcoming dividends based on each holding\'s history' },
+            { type: 'bullet', text: 'Projected — a year of regular dividends, based on what each holding paid over the past 12 months' },
 
             { type: 'divider' },
             { type: 'heading2', text: 'Smart Advisor' },
@@ -811,7 +811,10 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Balance: sector allocation below 10% of your stock portfolio' },
 
             { type: 'heading3', text: 'Projected Dividends' },
-            { type: 'paragraph', text: 'For each month, uses that month\'s dividend history if you have it; otherwise falls back to the same month last year. Amounts are converted to your profile currency.' },
+            { type: 'formula', text: 'Month total = Σ (regular dividends per share that went ex in that month, past 12 months) × your shares now' },
+            { type: 'paragraph', text: 'For each holding, takes the regular dividends from the past 12 months and places each one in the month it went ex-dividend, so a payout that moved a few days into the next month still counts once. If a later dividend is already on record, the 12 months end at that date instead of today. Special dividends are one-offs, so they\'re left out. Amounts are converted to your profile currency.' },
+            { type: 'paragraph', text: 'Pro-rated assets, like Pag-IBIG MP2 (set in the asset\'s Dividends setting), only pay each unit for the part of the year it was held. Their projected payout uses your average units held over the year that payout covers instead of your shares now, assuming no more buys or sells: Monthly averages the 12 month-end balances (a March contribution counts 10/12), Daily averages every day\'s balance.' },
+            { type: 'formula', text: 'Pro-rated payout = Dividend per unit × Average units held over the year it covers' },
 
             { type: 'divider' },
             { type: 'heading2', text: 'Edge Cases Handled' },

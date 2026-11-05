@@ -237,7 +237,8 @@ Supports:
 ## 📈 Dividend & Income Projections
 
 - Dividend tracking
-- Dividend projection chart
+- Dividend projection chart (a year of regular dividends from each holding's past 12 months; one-off specials left out)
+- Pro-rated dividends per asset (e.g. Pag-IBIG MP2): units earn only for the time held, averaged monthly or daily
 - Price history
 - Dividend history
 - Manual and AI-assisted updates
@@ -246,8 +247,11 @@ Supports:
 
 ## 🤖 AI-Assisted Market Research (Optional)
 
-- Historical price research
+- Historical price research for stocks and crypto
 - Dividend date and amount fetching
+- One-tap Fetch price list and Fetch dividend list for every holding, one request per holding run in parallel
+- Background task banner that follows you across screens while a fetch runs, then shows its result
+- Each fetch shows as one entry in Gemini usage, with its cost, tokens and number of requests
 - Powered by your own Gemini API key for higher reliability and structured output
 
 ---

@@ -3,8 +3,8 @@ import { Asset } from '@types';
 
 // --- Queries ---
 const INSERT_ASSET_QUERY = `
-    INSERT OR REPLACE INTO assets (symbol, name, exchange, sector, type, currency, description)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT OR REPLACE INTO assets (symbol, name, exchange, sector, type, currency, description, dividendBasis, proRateBy)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 
@@ -23,18 +23,23 @@ const DELETE_ASSET_QUERY = `
 /**
  * Create or update an asset
  */
+// Column values in INSERT_ASSET_QUERY's order; a backup from before the dividend settings restores as per-share.
+const assetInsertValues = (asset: Asset) => [
+    asset.symbol,
+    asset.name || null,
+    asset.exchange || null,
+    asset.sector || null,
+    asset.type || null,
+    asset.currency || null,
+    asset.description || null,
+    asset.dividendBasis || 'PER_SHARE',
+    asset.proRateBy || 'MONTHLY',
+];
+
 export const createAsset = async (asset: Asset): Promise<void> => {
     try {
         const db = await getDatabase();
-        await db.runAsync(INSERT_ASSET_QUERY, [
-            asset.symbol,
-            asset.name || null,
-            asset.exchange || null,
-            asset.sector || null,
-            asset.type || null,
-            asset.currency || null,
-            asset.description || null
-        ]);
+        await db.runAsync(INSERT_ASSET_QUERY, assetInsertValues(asset));
     } catch (error) {
         console.error('Error creating asset:', error);
         throw new Error('Failed to create asset');
@@ -57,6 +62,8 @@ export const updateAsset = async (symbol: string, asset: Partial<Asset>): Promis
         if (asset.type !== undefined) { fields.push('type = ?'); values.push(asset.type); }
         if (asset.currency !== undefined) { fields.push('currency = ?'); values.push(asset.currency); }
         if (asset.description !== undefined) { fields.push('description = ?'); values.push(asset.description); }
+        if (asset.dividendBasis !== undefined) { fields.push('dividendBasis = ?'); values.push(asset.dividendBasis); }
+        if (asset.proRateBy !== undefined) { fields.push('proRateBy = ?'); values.push(asset.proRateBy); }
 
         fields.push('updatedAt = CURRENT_TIMESTAMP');
 
@@ -121,15 +128,7 @@ export const bulkSaveAssets = async (assets: Asset[]): Promise<void> => {
         const db = await getDatabase();
         await db.withTransactionAsync(async () => {
             for (const asset of assets) {
-                await db.runAsync(INSERT_ASSET_QUERY, [
-                    asset.symbol,
-                    asset.name || null,
-                    asset.exchange || null,
-                    asset.sector || null,
-                    asset.type || null,
-                    asset.currency || null,
-                    asset.description || null
-                ]);
+                await db.runAsync(INSERT_ASSET_QUERY, assetInsertValues(asset));
             }
         });
     } catch (error) {

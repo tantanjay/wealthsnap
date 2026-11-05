@@ -6,7 +6,7 @@ import { useTheme } from '@context/ThemeContext';
 import { useAlert } from '@context/AlertContext';
 import { Group, SectionHeader } from '@components/ds';
 import { type, space, radius, layout } from '@styles/theme';
-import { Asset, AssetType } from '@types';
+import { Asset, AssetType, DividendBasis, ProRateBy } from '@types';
 import { createAsset, updateAsset } from '@services/domain/assetService';
 
 interface AssetFormProps {
@@ -16,6 +16,37 @@ interface AssetFormProps {
 }
 
 const ASSET_TYPES: AssetType[] = ['STOCKS', 'FUNDS', 'CRYPTO', 'FOREX', 'REAL_ESTATE', 'VEHICLE', 'JEWELRY', 'ART', 'CASH', 'OTHER'];
+
+const DIVIDEND_BASES: { value: DividendBasis; label: string }[] = [
+    { value: 'PER_SHARE', label: 'Per share' },
+    { value: 'PRO_RATED', label: 'Pro-rated by time held' },
+];
+
+const PRO_RATE_OPTIONS: { value: ProRateBy; label: string }[] = [
+    { value: 'MONTHLY', label: 'Monthly' },
+    { value: 'DAILY', label: 'Daily' },
+];
+
+// A labelled picker on a hairline row, matching FieldRow.
+function PickerRow<T extends string>({ label, value, options, onChange, last }: {
+    label: string;
+    value: T;
+    options: { value: T; label: string }[];
+    onChange: (value: T) => void;
+    last?: boolean;
+}) {
+    const { ds } = useTheme();
+    return (
+        <View style={[styles.fieldRow, { borderBottomColor: ds.hairline, borderBottomWidth: last ? 0 : 1 }]}>
+            <Text style={[type.small, styles.label, { color: ds.text2 }]}>{label}</Text>
+            <View style={styles.picker}>
+                <Picker selectedValue={value} onValueChange={v => onChange(v as T)} style={{ color: ds.text }} dropdownIconColor={ds.text2}>
+                    {options.map(o => <Picker.Item key={o.value} label={o.label} value={o.value} />)}
+                </Picker>
+            </View>
+        </View>
+    );
+}
 
 // One labelled input on a hairline row.
 const FieldRow: React.FC<TextInputProps & { label: string; last?: boolean }> = ({ label, last, style, ...inputProps }) => {
@@ -39,6 +70,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSave, onCancel })
     const [sector, setSector] = useState(asset?.sector || '');
     const [currency, setCurrency] = useState(asset?.currency || 'PHP');
     const [description, setDescription] = useState(asset?.description || '');
+    const [dividendBasis, setDividendBasis] = useState<DividendBasis>(asset?.dividendBasis || 'PER_SHARE');
+    const [proRateBy, setProRateBy] = useState<ProRateBy>(asset?.proRateBy || 'MONTHLY');
     const [loading, setLoading] = useState(false);
 
     const isEditing = !!asset;
@@ -77,6 +110,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSave, onCancel })
                     sector,
                     currency,
                     description,
+                    dividendBasis,
+                    proRateBy,
                 });
             } else {
                 await createAsset({
@@ -87,6 +122,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSave, onCancel })
                     sector,
                     currency,
                     description,
+                    dividendBasis,
+                    proRateBy,
                 });
             }
             onSave();
@@ -159,6 +196,17 @@ export const AssetForm: React.FC<AssetFormProps> = ({ asset, onSave, onCancel })
                     />
                 </Group>
 
+                <SectionHeader grouped title="Dividends" />
+                <Group>
+                    <Text style={[type.small, styles.note, { color: ds.text2 }]}>
+                        Per share pays every unit you hold on the ex-date, like stocks. Pro-rated pays each unit only for the part of the year you held it, like Pag-IBIG MP2.
+                    </Text>
+                    <PickerRow label="Paid" value={dividendBasis} options={DIVIDEND_BASES} onChange={setDividendBasis} last={dividendBasis !== 'PRO_RATED'} />
+                    {dividendBasis === 'PRO_RATED' && (
+                        <PickerRow label="Pro-rate by" value={proRateBy} options={PRO_RATE_OPTIONS} onChange={setProRateBy} last />
+                    )}
+                </Group>
+
                 <SectionHeader grouped title="Description" />
                 <Group padded>
                     <TextInput
@@ -215,6 +263,9 @@ const styles = StyleSheet.create({
     picker: {
         flex: 1,
         marginHorizontal: -space[3],
+    },
+    note: {
+        paddingTop: space[3],
     },
     description: {
         height: 96,

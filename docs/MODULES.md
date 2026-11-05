@@ -7,7 +7,7 @@ Shared/core files are listed in their own module at the bottom — include them 
 ---
 
 ## Home Dashboard
-Tab: `Home`. Sticky top tabs: Snapshot (net worth hero, Cash / Investments / Loans / Goals overview rows, Recent), Ledger, Holdings, Goals, Loans. Home Settings sheet holds the privacy mode, the net worth graph range and row order (Snapshot) and the section order (Holdings). The Ledger shows this month's Safe-to-Spend (`calculateMonthSafeToSpend`). The Ledger, Holdings, Goals and Loans tabs reuse the History, Investments, Savings Goals and Debts modules' modals and services listed below.
+Tab: `Home`. Sticky top tabs: Snapshot (net worth hero, Cash / Investments / Loans / Goals overview rows, Recent), Ledger, Holdings, Goals, Loans. Home Settings sheet holds the privacy mode, the net worth graph range and row order (Snapshot) and the section order plus Fetch price / dividend list (Holdings). The Ledger shows this month's Safe-to-Spend (`calculateMonthSafeToSpend`). The Ledger, Holdings, Goals and Loans tabs reuse the History, Investments, Savings Goals and Debts modules' modals and services listed below.
 
 - `src/screens/HomeScreen.tsx`
 - `src/components/home/SnapshotView.tsx`
@@ -17,6 +17,7 @@ Tab: `Home`. Sticky top tabs: Snapshot (net worth hero, Cash / Investments / Loa
 - `src/components/home/LoansTab.tsx`
 - `src/components/home/HomeSettingsSheet.tsx`
 - `src/components/home/SnapshotOrderList.tsx`
+- `src/components/home/HomeSkeleton.tsx`
 - `src/utils/snapshotMetrics.ts`
 
 ## Record / Add Transaction
@@ -76,7 +77,7 @@ Home → Holdings tab (`src/components/home/HoldingsTab.tsx`). Holdings, price/d
 - `src/components/investments/modals/DividendHistoryFormModal.tsx`
 - `src/components/investments/modals/InvestmentHistoryModal.tsx`
 - `src/components/investments/modals/InvestmentOptionsModal.tsx`
-- `src/components/investments/FetchPriceListSheet.tsx`
+- `src/components/investments/FetchListSheet.tsx`
 - `src/components/investments/modals/PriceHistoryFormModal.tsx`
 - `src/services/domain/investmentService.ts`
 - `src/services/domain/priceHistoryService.ts`
@@ -251,6 +252,8 @@ Not a user-facing feature; app shell, data layer, and utilities used across modu
 - `src/components/common/HiddenChart.tsx`
 - `src/components/common/BottomModal.tsx`
 - `src/components/common/Skeleton.tsx`
+- `src/components/common/BackgroundTaskBanner.tsx`
+- `src/services/core/backgroundTaskService.ts`
 - `src/components/common/TimeRangeSelector.tsx`
 - `src/components/common/ReviewAppModal.tsx`
 - `src/components/common/EmptyState.tsx`

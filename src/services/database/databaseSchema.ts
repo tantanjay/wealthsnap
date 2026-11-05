@@ -4,7 +4,7 @@ import { ASYNC_KEYS } from '@constants/config';
 import { encryptField } from '@services/core/encryptionService';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 18;
+export const DATABASE_VERSION = 19;
 
 /**
  * Create all database tables and indexes
@@ -136,6 +136,8 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             type TEXT,
             currency TEXT,
             description TEXT,
+            dividendBasis TEXT NOT NULL DEFAULT 'PER_SHARE',
+            proRateBy TEXT NOT NULL DEFAULT 'MONTHLY',
             createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
             updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
         );
@@ -689,6 +691,25 @@ export const migrateToVersion18 = async (db: SQLite.SQLiteDatabase): Promise<voi
         console.log('[Migration] Successfully migrated to version 18');
     } catch (error) {
         console.error('[Migration] Failed version 18 migration:', error);
+        throw error;
+    }
+};
+
+// Adds per-asset dividend settings: whether dividends are per share or pro-rated by time held, and how finely.
+export const migrateToVersion19 = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+    try {
+        console.log('[Migration] Starting migration to version 19...');
+        const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(assets)');
+        if (!columns.some(c => c.name === 'dividendBasis')) {
+            await db.execAsync("ALTER TABLE assets ADD COLUMN dividendBasis TEXT NOT NULL DEFAULT 'PER_SHARE'");
+        }
+        if (!columns.some(c => c.name === 'proRateBy')) {
+            await db.execAsync("ALTER TABLE assets ADD COLUMN proRateBy TEXT NOT NULL DEFAULT 'MONTHLY'");
+        }
+        await setDatabaseVersion(db, 19);
+        console.log('[Migration] Successfully migrated to version 19');
+    } catch (error) {
+        console.error('[Migration] Failed version 19 migration:', error);
         throw error;
     }
 };
