@@ -237,7 +237,7 @@ Supports:
 ## 📈 Dividend & Income Projections
 
 - Dividend tracking
-- Dividend projection chart (a year of regular dividends from each holding's past 12 months; one-off specials left out)
+- Dividend projection chart (a year of regular cash dividends from each holding's past 12 months; one-off specials and stock or property dividends left out)
 - Pro-rated dividends per asset (e.g. Pag-IBIG MP2): units earn only for the time held, averaged monthly or daily
 - Price history
 - Dividend history

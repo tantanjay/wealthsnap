@@ -812,7 +812,7 @@ export const HELP_TOPICS: HelpTopic[] = [
 
             { type: 'heading3', text: 'Projected Dividends' },
             { type: 'formula', text: 'Month total = Σ (regular dividends per share that went ex in that month, past 12 months) × your shares now' },
-            { type: 'paragraph', text: 'For each holding, takes the regular dividends from the past 12 months and places each one in the month it went ex-dividend, so a payout that moved a few days into the next month still counts once. If a later dividend is already on record, the 12 months end at that date instead of today. Special dividends are one-offs, so they\'re left out. Amounts are converted to your profile currency.' },
+            { type: 'paragraph', text: 'For each holding, takes the regular cash dividends from the past 12 months and places each one in the month it went ex-dividend, so a payout that moved a few days into the next month still counts once. If a later dividend is already on record, the 12 months end at that date instead of today. Special dividends are one-offs and stock or property dividends aren\'t paid in cash, so they\'re left out. Amounts are converted to your profile currency.' },
             { type: 'paragraph', text: 'Pro-rated assets, like Pag-IBIG MP2 (set in the asset\'s Dividends setting), only pay each unit for the part of the year it was held. Their projected payout uses your average units held over the year that payout covers instead of your shares now, assuming no more buys or sells: Monthly averages the 12 month-end balances (a March contribution counts 10/12), Daily averages every day\'s balance.' },
             { type: 'formula', text: 'Pro-rated payout = Dividend per unit × Average units held over the year it covers' },
 

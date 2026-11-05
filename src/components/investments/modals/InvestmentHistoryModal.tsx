@@ -18,7 +18,7 @@ import { getDividendHistory, deleteAutoDividendHistory, deleteDividendHistory } 
 import { getAllAssets } from '@services/domain/assetService';
 import { AssetRequest } from '@services/integrations/geminiService';
 import { EmptyState } from '@components/common/EmptyState';
-import { refreshAssetPrices, refreshAssetDividends } from '@services/domain/marketDataService';
+import { refreshAssetPrices, refreshAssetDividends, requestExchange } from '@services/domain/marketDataService';
 import { formatCurrencyAmount } from '@utils/currencyUtils';
 import { DividendHistory, PriceHistory, Investment, Transaction, Asset } from '@types';
 import PriceHistoryFormModal from '@components/investments/modals/PriceHistoryFormModal';
@@ -363,7 +363,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
 
             const assetRequest: AssetRequest = {
                 symbol: symbol,
-                exchange: assetInfo?.exchange || 'Unknown'
+                exchange: requestExchange(assetInfo?.exchange, assetInfo?.type)
             };
 
 

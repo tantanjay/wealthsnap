@@ -43,6 +43,10 @@ export const hideBackgroundTask = (id: string) => {
     emit(tasks.map(t => (t.id === id && t.status === 'running' ? { ...t, hidden: true } : t)));
 };
 
+export const showBackgroundTask = (id: string) => {
+    emit(tasks.map(t => (t.id === id && t.status === 'running' ? { ...t, hidden: false } : t)));
+};
+
 // Swaps the task for its result, which stays visible for a few seconds.
 export const finishBackgroundTask = (id: string, tone: BackgroundTaskTone, message: string) => {
     clearDoneTimer(id);
