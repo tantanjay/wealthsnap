@@ -271,7 +271,7 @@ These apply to every metric unless its section says otherwise.
 
 **Computed from:** `transactions` (spending so far, 90-day allowance) · `recurrence_rules` (upcoming income and bills) · `debts` (`minPayment`) · `savings_goals` (recurring contribution)
 
-**Notes:** `calculateMonthSafeToSpend`, with upcoming bills and income from `sumUpcomingRecurring` (goal auto-contributions skipped, since they're reserved as goal obligations). Investment buys, plain transfers and money lent out lower it. Safe-to-Spend never adds any `TRANSFER_IN`. It has no scale-free version: Discreet shows "—".
+**Notes:** `calculateMonthSafeToSpend`, with upcoming bills and income from `sumUpcomingRecurring` (goal auto-contributions skipped, since they're reserved as goal obligations). Investment buys, plain transfers and money lent out lower it. Safe-to-Spend never adds any `TRANSFER_IN`. Discreet: amount ÷ the daily allowance, as days ("+9 days"), keeping the good/bad tone; the sheet shows unpaid debt minimums and goal contributions the same way and drops the allowance and living costs to month-end. "—" when the allowance is ₱0.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
@@ -283,6 +283,7 @@ These apply to every metric unless its section says otherwise.
 | 1.19.0 | Same | Docs only: Daily/Weekly and Monthly formulas documented separately |
 | 1.19.0 | Allowance keeps debt fees | ↩ See Burn Rate |
 | 2.0.0 | This month only (the Monthly formula) | Moved from History to the Ledger tab. History's Daily, Weekly and Yearly views and their formulas are gone. Bi-annual recurring rules now count every occurrence due before month-end (History counted only the next one) |
+| Unreleased | Same | Discreet shows days of usual daily spending instead of "—" |
 
 ## Net Worth / Total Debt
 
@@ -512,15 +513,16 @@ Total income and Total expense compare month-to-date figures while the month is 
 
 ## Discreet and Hidden rendering
 
-**Rule:** Open shows every amount. Discreet replaces each amount with that metric's scale-free alternative (%, months, counts, progress); an amount with none is shown as "—". A single transaction's own amount (Ledger rows, Home's Recent, its options sheet) shows as in Open: one record says nothing about your totals; day totals and the month In / Out stay out. Hidden shows `****`, keeping a leading sign. %, months and counts render unchanged in every mode
+**Rule:** Open shows every amount. Discreet replaces each amount with that metric's scale-free alternative (%, months, counts, progress); an amount with none is shown as "—". A single record's own amount (Ledger rows, Home's Recent, a transaction's options sheet, a recurring rule, a budget's limit; Profile's budgets total too) shows as in Open: one record says nothing about your totals; day totals and the month In / Out stay out. Hidden shows `****`, keeping a leading sign. %, months and counts render unchanged in every mode
 
 **Shown on:** every amount. Screens without a Discreet version yet render Discreet as Hidden
 
-**Notes:** `usePrivacyFormat` (`src/hooks/usePrivacyFormat.ts`). Investment Boost months are always "—" in Discreet: a large figure implies investments far exceed spending (Hidden still shows them, as months aren't amounts). Discreet leaves out Ledger's "In" and paid-off loan amounts (their interest shows as %). The Debt drag stepper shows a step count in Discreet, starting from 0. Ledger's Safe to spend shows "—". Budgets, Recurring rules and Smart suggestions mask amounts in Discreet and Hidden; Monthly Summary (free text) is withheld there. Insights' numbers: see [Financial Health grid](#financial-health-grid). Charts: Open draws them as is. Discreet draws them with no currency: amount axes are dropped and tooltips, legends and header totals show a scale-free figure (below) or are left out. Hidden replaces every chart with one placeholder (lock icon, "Chart hidden for privacy") and masks amounts around it with `****`. Screenshots: blocked in Open and Discreet, allowed in Hidden or during Profile → Security → "Reveal for screenshot" (15 seconds).
+**Notes:** `usePrivacyFormat` (`src/hooks/usePrivacyFormat.ts`). Investment Boost months are always "—" in Discreet: a large figure implies investments far exceed spending (Hidden still shows them, as months aren't amounts). Discreet leaves out Ledger's "In" and paid-off loan amounts (their interest shows as %). The Debt drag stepper shows a step count in Discreet, starting from 0. Ledger's Safe to spend shows days of usual spending. Profile's Budgets (limits and their total) and Recurring rules show amounts in Discreet. Smart suggestions mask amounts in Discreet and Hidden; Monthly Summary (free text) is withheld there. Insights' numbers: see [Financial Health grid](#financial-health-grid). Charts: Open draws them as is. Discreet draws them with no currency: amount axes are dropped and tooltips, legends and header totals show a scale-free figure (below) or are left out. Hidden replaces every chart with one placeholder (lock icon, "Chart hidden for privacy") and masks amounts around it with `****`. Screenshots: blocked in Open and Discreet, allowed in Hidden or during Profile → Security → "Reveal for screenshot" (15 seconds).
 
 | Version | Rule after this change | What changed |
 |---|---|---|
 | 2.0.0 | Open / Discreet / Hidden | Replaced the on/off privacy toggle (on → Hidden, off → Open), set from Home settings instead of eye buttons; Insights follows it too. Screenshots stay blocked except in Hidden (the old "on"). Budgets, Recurring rules, Smart suggestions and Monthly Summary ignored the old toggle; they now fall back to Hidden |
+| Unreleased | Same | Profile's Budgets and Recurring rules show amounts in Discreet, including Budgets' total |
 
 **Discreet chart figures**
 

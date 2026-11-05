@@ -29,8 +29,8 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
     currency
 }) => {
     const { ds } = useTheme();
-    // No Discreet version: Discreet falls back to Hidden.
-    const { isPrivacyEnabled } = usePrivacy();
+    // One rule's own amount is a single record, so Discreet shows it; only Hidden masks it.
+    const { mode } = usePrivacy();
 
     const sortedRules = useMemo(() => {
         return [...rules].sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime());
@@ -60,7 +60,7 @@ export const RecurringRulesListModal: React.FC<RecurringRulesListModalProps> = (
                                     icon="repeat-outline"
                                     title={item.name || item.transactionTemplate.category}
                                     subtitle={`${item.frequency} · Next due ${nextDue}`}
-                                    value={isPrivacyEnabled ? '****' : formatCurrencyAmount(item.transactionTemplate.amount, currency)}
+                                    value={mode === 'hidden' ? '****' : formatCurrencyAmount(item.transactionTemplate.amount, currency)}
                                     valueTone={item.transactionTemplate.type === 'EXPENSE' ? 'bad' : 'good'}
                                     change={item.isActive ? 'Active' : 'Paused'}
                                     last={i === sortedRules.length - 1}

@@ -26,9 +26,9 @@ interface BudgetManagementProps {
 
 const BudgetManagementModal: React.FC<BudgetManagementProps> = ({ visible, onClose, currency }) => {
     const { ds } = useTheme();
-    // No Discreet version: Discreet falls back to Hidden.
-    const { isPrivacyEnabled } = usePrivacy();
-    const amount = (value: BigNumber) => (isPrivacyEnabled ? '****' : formatCurrencyAmount(value, currency));
+    // Budget limits and their total show in Discreet; only Hidden masks them.
+    const { mode } = usePrivacy();
+    const amount = (value: BigNumber) => (mode === 'hidden' ? '****' : formatCurrencyAmount(value, currency));
     const { showAlert } = useAlert();
     const [budgets, setBudgetsList] = useState<Budget[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>('');

@@ -92,7 +92,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: "Red, below zero: what's planned already costs more than what came in. Spending less, or recording income you're still expecting, brings it back up." },
             { type: 'bullet', text: "It works month by month: on the 1st, a new month starts from that month's income and spending only." },
             { type: 'bullet', text: "Adding your salary and regular bills as recurring rules makes it more accurate, since they then count before they happen." },
-            { type: 'alert', alertType: 'info', text: "In Discreet mode Safe to spend shows \"—\", since it has no version without amounts." },
+            { type: 'alert', alertType: 'info', text: "In Discreet mode Safe to spend shows days of your usual daily spending instead of an amount, like +9 days. Its sheet shows debt and goal payments still due the same way." },
         ]
     },
     {

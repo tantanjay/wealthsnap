@@ -32,6 +32,13 @@
 
 ---
 
+## 🛡️ More to See in Discreet Mode
+- **A number instead of a dash**: In Discreet mode the Ledger's Safe to spend row used to show "—". It now shows how many days of your usual spending are left over this month, like +9 days, in green, or −4 days in red when you're on track to overspend. It's your Safe to spend amount divided by your daily living costs, so it tells you how much room you have without revealing how much money that is.
+- **The sheet too**: Tapping the row shows the same days figure, plus debt and goal payments still due in days. It shows "—" until you have some spending in the last 90 days to measure against.
+- **Budgets and Recurring show their amounts**: In Profile, Manage budgets and Recurring transactions used to show `****` in Discreet mode. They now show each budget's monthly limit, the total across your budgets, and each recurring transaction's amount. Hidden mode still masks everything.
+
+---
+
 ## 🧭 Tidier Chart Explanations
 - **One info icon per chart**: Spending comparison and Income analytics used to show a calculator icon and an info icon side by side. The calculator is gone: its explanation of the insight line now sits at the bottom of the chart's "Understanding your chart" sheet, and the info icon sits at the end of the insight line, the same spot as on Monthly pulse.
 - **Formulas always shown**: "How is this calculated?" sections, in the Financial Health sheets, Safe to spend and chart guides, are now always open, so the formulas are there without an extra tap.
