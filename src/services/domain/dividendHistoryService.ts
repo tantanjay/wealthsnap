@@ -78,7 +78,7 @@ const shiftYears = (stamp: string, years: number): string => {
 // --- Queries ---
 
 const INSERT_DIVIDEND_HISTORY_QUERY = `
-    INSERT INTO dividend_history (id, symbol, exDate, paymentDate, recordDate, amount, type, status, source)
+    INSERT OR REPLACE INTO dividend_history (id, symbol, exDate, paymentDate, recordDate, amount, type, status, source)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
@@ -135,10 +135,11 @@ export const bulkSaveDividendHistories = async (dividendHistories: DividendHisto
 /**
  * Add a new dividend history entry
  */
-export const addDividendHistory = async (dividend: Omit<DividendHistory, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+// `id` is optional; AI fetches pass a deterministic one so two concurrent fetches collapse into one row.
+export const addDividendHistory = async (dividend: Omit<DividendHistory, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<void> => {
     try {
         const db = await getDatabase();
-        const id = generateUUID();
+        const id = dividend.id || generateUUID();
         await db.runAsync(INSERT_DIVIDEND_HISTORY_QUERY, [
             id,
             dividend.symbol,
@@ -291,8 +292,8 @@ export const getProjectedDividends = async (holdings: PortfolioHolding[], invest
                 return averageUnitsHeld(trades, shiftYears(payout, -1), payout, asset?.proRateBy === 'DAILY' ? 'DAILY' : 'MONTHLY');
             };
 
-            // Specials are one-offs, so they don't project into next year.
-            const regular = history.filter(d => d.type !== 'SPECIAL').map(d => ({ date: String(d.exDate).slice(0, 10), exDate: d.exDate, amount: d.amount }));
+            // Only regular cash dividends repeat as cash: specials are one-offs, stock and property dividends pay in kind.
+            const regular = history.filter(d => d.type === 'CASH').map(d => ({ date: String(d.exDate).slice(0, 10), exDate: d.exDate, amount: d.amount }));
             if (regular.length === 0) continue;
 
             // One year of payouts, ending today or at an already-declared later one. Each payout counts once, in its own

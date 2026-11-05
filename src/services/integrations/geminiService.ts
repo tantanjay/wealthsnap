@@ -474,6 +474,7 @@ const fetchPerSymbol = async <T extends { symbol: string }>(
     const today = new Date().toISOString().split('T')[0];
     const runId = generateUUID();
     const results: T[] = [];
+    let failed = 0;
 
     const fetchOne = async (asset: AssetRequest) => {
         const label = assetLabel(asset);
@@ -497,6 +498,7 @@ const fetchPerSymbol = async <T extends { symbol: string }>(
             results.push(...parsed);
         } catch (error) {
             console.warn(`[Gemini] ${endpoint} failed for ${label}`, error);
+            failed++;
             const message = error instanceof Error ? error.message : String(error);
             await logUsage(endpoint, message, '', 0, 0, Date.now() - startTime, modelName, 'error', undefined, runId);
         }
@@ -507,6 +509,8 @@ const fetchPerSymbol = async <T extends { symbol: string }>(
         for (let next = queue.shift(); next; next = queue.shift()) await fetchOne(next);
     }));
 
+    // Every call failing (bad key, quota, offline) is an error, not "nothing found".
+    if (assets.length > 0 && failed === assets.length) throw new Error(`${endpoint}: every request failed`);
     return results;
 };
 

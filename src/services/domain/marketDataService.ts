@@ -5,7 +5,7 @@ import { addPriceHistory, updatePriceHistory, getPriceHistory } from '@services/
 import { addDividendHistory, updateDividendHistory, getDividendHistory } from '@services/domain/dividendHistoryService';
 import { getAllAssets } from '@services/domain/assetService';
 import { BigNumber } from 'bignumber.js';
-import { BackgroundTaskTone, finishBackgroundTask, isBackgroundTaskRunning, startBackgroundTask } from '@services/core/backgroundTaskService';
+import { BackgroundTaskTone, finishBackgroundTask, isBackgroundTaskRunning, showBackgroundTask, startBackgroundTask } from '@services/core/backgroundTaskService';
 
 /**
  * Orchestrates fetching market data and handles currency conversion.
@@ -110,6 +110,8 @@ export const refreshAssetDividends = async (assets: AssetRequest[], duration: st
                 });
             } else {
                 await addDividendHistory({
+                    // Same idea as prices: a concurrent fetch of the same dividend replaces this row instead of adding one.
+                    id: `AI_${d.symbol}_${d.exDate.slice(0, 10)}`,
                     symbol: d.symbol,
                     exDate: d.exDate,
                     paymentDate: d.paymentDate,
@@ -153,6 +155,8 @@ const runHoldingsFetch = async (
     onUpdated: () => void,
 ): Promise<void> => {
     if (isBackgroundTaskRunning(job.taskId)) {
+        // Brings back a banner the user hid, so the tap still visibly answers (notify is Android-only).
+        showBackgroundTask(job.taskId);
         notify(`A ${job.noun.replace(/s$/, '')} fetch is already running.`);
         return;
     }
@@ -173,8 +177,7 @@ const runHoldingsFetch = async (
         const allAssets = await getAllAssets();
         const requests: AssetRequest[] = fetchable.map(h => ({
             symbol: h.symbol,
-            // The AI prompt prices "CRYPTO:<coin>" in USD on a 24/7 calendar.
-            exchange: allAssets.find(a => a.symbol === h.symbol)?.exchange || (h.type === 'CRYPTO' ? 'CRYPTO' : 'Unknown'),
+            exchange: requestExchange(allAssets.find(a => a.symbol === h.symbol)?.exchange, h.type),
         }));
 
         const savedCount = await job.fetch(requests);
@@ -189,6 +192,9 @@ const runHoldingsFetch = async (
         finish('error', `Failed to fetch ${job.noun}.`);
     }
 };
+
+// The AI prompt prices "CRYPTO:<coin>" in USD on a 24/7 calendar, so crypto without an exchange gets that one.
+export const requestExchange = (exchange?: string, type?: string) => exchange || (type === 'CRYPTO' ? 'CRYPTO' : 'Unknown');
 
 const isStock = (type?: string) => type === 'STOCKS' || type === 'STOCK';
 
