@@ -15,7 +15,7 @@ import { useAIConsent } from '@hooks/useAIConsent';
 import { PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { type, space, layout } from '@styles/theme';
 import * as Storage from '@services/core/storageService';
-import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding, getActualDividendsGrouped, MonthlyDividend } from '@services/domain/investmentService';
+import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding, getActualDividendsGrouped, MonthlyDividend, getCachedInvestments } from '@services/domain/investmentService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
 import { getProjectedDividends, getDividendCalendar, CalendarEvent } from '@services/domain/dividendHistoryService';
 import { refreshHoldingDividends, refreshHoldingPrices } from '@services/domain/marketDataService';
@@ -86,7 +86,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, fetchLis
             setStats(s);
             setHoldings(h);
             const [projected, actual, calendar] = await Promise.all([
-                getProjectedDividends(h),
+                getProjectedDividends(h, await getCachedInvestments()),
                 getActualDividendsGrouped(),
                 getDividendCalendar(h),
             ]);

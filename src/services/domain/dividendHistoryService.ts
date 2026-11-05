@@ -7,8 +7,9 @@ import { getAsset } from '@services/domain/assetService';
 import { fetchExchangeRate } from '@services/integrations/currencyService';
 import { decryptData } from '@services/core/encryptionService';
 import { ASYNC_KEYS } from '@constants/config';
-import { DividendHistory } from '@types';
+import { DividendHistory, Investment } from '@types';
 import { getLocalDateStamp } from '@utils/financialMetrics';
+import { averageUnitsHeld } from '@utils/investmentMetrics';
 
 /**
  * Helper to get user's default currency without importing storageService (circular dep prevention).
@@ -261,9 +262,10 @@ export const deleteAutoDividendHistory = async (symbol: string): Promise<void> =
 };
 
 /**
- * Calculate projected dividends for the current year based on holdings
+ * Projected dividends for the coming year, by month. `investments` (passed in to avoid importing investmentService)
+ * supplies the dated buys and sells that pro-rated assets need.
  */
-export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promise<{ labels: string[], data: { total: number, breakdown: { symbol: string, amount: number }[] }[] }> => {
+export const getProjectedDividends = async (holdings: PortfolioHolding[], investments: Investment[] = []): Promise<{ labels: string[], data: { total: number, breakdown: { symbol: string, amount: number }[] }[] }> => {
     try {
         const db = await getDatabase();
 
@@ -274,6 +276,20 @@ export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promi
         for (const holding of holdings) {
             const history = await db.getAllAsync<any>(GET_DIVIDEND_HISTORY_BY_SYMBOL_QUERY, [holding.symbol]);
             const conversionRate = await getDividendConversionRate(holding.symbol);
+            const asset = await getAsset(holding.symbol);
+            const proRated = asset?.dividendBasis === 'PRO_RATED';
+            const trades = proRated
+                ? investments
+                    .filter(inv => inv.symbol === holding.symbol && (inv.action === 'BUY' || inv.action === 'SELL'))
+                    .map(inv => ({ date: getLocalDateStamp(new Date(inv.date)), units: (inv.action === 'BUY' ? 1 : -1) * new BigNumber(inv.quantity).toNumber() }))
+                : [];
+            // Pro-rated: a payout covers the year before it, so the next one (a year after a past ex-date) pays on the
+            // units held through that year, assuming no more buys or sells. Per share: every unit held now.
+            const unitsFor = (exDate: string) => {
+                if (!proRated) return holding.shares;
+                const payout = exDate > today ? exDate : shiftYears(exDate, 1);
+                return averageUnitsHeld(trades, shiftYears(payout, -1), payout, asset?.proRateBy === 'DAILY' ? 'DAILY' : 'MONTHLY');
+            };
 
             // Specials are one-offs, so they don't project into next year.
             const regular = history.filter(d => d.type !== 'SPECIAL').map(d => ({ date: String(d.exDate).slice(0, 10), exDate: d.exDate, amount: d.amount }));
@@ -287,12 +303,12 @@ export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promi
             for (const d of regular) {
                 if (d.date <= windowStart || d.date > latest) continue;
                 const { month } = getExDateYearMonth(d.exDate);
-                perMonth[month] = perMonth[month].plus(new BigNumber(d.amount).times(conversionRate));
+                perMonth[month] = perMonth[month].plus(new BigNumber(d.amount).times(conversionRate).times(unitsFor(d.date)));
             }
 
-            perMonth.forEach((perShare, m) => {
-                if (!perShare.isGreaterThan(0)) return;
-                const amount = perShare.times(holding.shares).toNumber();
+            perMonth.forEach((total, m) => {
+                if (!total.isGreaterThan(0)) return;
+                const amount = total.toNumber();
                 monthlyData[m].total += amount;
                 monthlyData[m].breakdown.push({ symbol: holding.symbol, amount });
             });

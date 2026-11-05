@@ -164,6 +164,11 @@ export interface ReminderLog {
     timestamp: string; // ISO string
 }
 
+// PER_SHARE: a dividend pays its amount on every unit held at the ex-date (stocks, most funds).
+// PRO_RATED: units only earn for the part of the dividend year they were held (e.g. Pag-IBIG MP2).
+export type DividendBasis = 'PER_SHARE' | 'PRO_RATED';
+export type ProRateBy = 'MONTHLY' | 'DAILY';
+
 export interface Asset {
     symbol: string;
     name?: string;
@@ -172,6 +177,9 @@ export interface Asset {
     type?: AssetType;
     currency?: string;
     description?: string;
+    dividendBasis?: DividendBasis;
+    // Only used when dividendBasis is PRO_RATED.
+    proRateBy?: ProRateBy;
     createdAt?: string;
     updatedAt?: string;
 }

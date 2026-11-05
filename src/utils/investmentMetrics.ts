@@ -143,3 +143,50 @@ export const getAllPortfolioMetrics = (investments: Investment[], marketPrices: 
         return calculatePortfolioMetrics(grouped[symbol], currentPrice);
     });
 };
+
+// --- Pro-rated dividends ---
+
+const stampToDate = (stamp: string) => {
+    const [y, m, d] = stamp.split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
+
+const dateToStamp = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+/**
+ * Average units held over a dividend period, for assets that pay only for the time each unit was held.
+ * `trades` are local YYYY-MM-DD dates with +units for a buy and -units for a sell; the period runs from
+ * after `periodStart` through `periodEnd`. MONTHLY averages the 12 month-end balances (a March buy counts
+ * 10/12), DAILY averages every day's balance. Days after the last trade keep the latest balance.
+ */
+export const averageUnitsHeld = (
+    trades: { date: string; units: number }[],
+    periodStart: string,
+    periodEnd: string,
+    by: 'MONTHLY' | 'DAILY',
+): number => {
+    const sorted = [...trades].sort((a, b) => a.date.localeCompare(b.date));
+    let next = 0;
+    let held = 0;
+    // Balance at the end of `stamp`; samples must be requested in increasing date order.
+    const heldThrough = (stamp: string) => {
+        while (next < sorted.length && sorted[next].date <= stamp) held += sorted[next++].units;
+        return Math.max(held, 0);
+    };
+
+    const samples: string[] = [];
+    const start = stampToDate(periodStart);
+    if (by === 'MONTHLY') {
+        for (let k = 0; k < 12; k++) {
+            const monthEnd = dateToStamp(new Date(start.getFullYear(), start.getMonth() + k + 1, 0));
+            samples.push(monthEnd < periodEnd ? monthEnd : periodEnd);
+        }
+    } else {
+        for (let day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1); dateToStamp(day) <= periodEnd; day.setDate(day.getDate() + 1)) {
+            samples.push(dateToStamp(day));
+        }
+    }
+    if (samples.length === 0) return 0;
+    return samples.reduce((sum, stamp) => sum + heldThrough(stamp), 0) / samples.length;
+};
