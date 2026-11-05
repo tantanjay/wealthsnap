@@ -68,6 +68,12 @@ const getExDateYearMonth = (exDate: string): { year: number; month: number } => 
     return { year: d.getFullYear(), month: d.getMonth() };
 };
 
+// Moves a YYYY-MM-DD stamp by whole years, as a string (Feb 29 lands on Mar 1 in a non-leap year, which is fine here).
+const shiftYears = (stamp: string, years: number): string => {
+    const [y, m, d] = stamp.split('-').map(Number);
+    return getLocalDateStamp(new Date(y + years, m - 1, d));
+};
+
 // --- Queries ---
 
 const INSERT_DIVIDEND_HISTORY_QUERY = `
@@ -263,42 +269,33 @@ export const getProjectedDividends = async (holdings: PortfolioHolding[]): Promi
 
         // Initialize monthly aggregators (Jan-Dec)
         const monthlyData = Array.from({ length: 12 }, () => ({ total: 0, breakdown: [] as { symbol: string, amount: number }[] }));
-        const currentYear = new Date().getFullYear();
+        const today = getLocalDateStamp(new Date());
 
         for (const holding of holdings) {
             const history = await db.getAllAsync<any>(GET_DIVIDEND_HISTORY_BY_SYMBOL_QUERY, [holding.symbol]);
             const conversionRate = await getDividendConversionRate(holding.symbol);
 
-            // Map to better objects
-            const divEvents = history.map(d => {
-                const { year, month } = getExDateYearMonth(d.exDate);
-                return {
-                    month, // 0-11
-                    year,
-                    amount: new BigNumber(d.amount).times(conversionRate),
-                    status: d.status
-                };
-            });
+            // Specials are one-offs, so they don't project into next year.
+            const regular = history.filter(d => d.type !== 'SPECIAL').map(d => ({ date: String(d.exDate).slice(0, 10), exDate: d.exDate, amount: d.amount }));
+            if (regular.length === 0) continue;
 
-            for (let m = 0; m < 12; m++) {
-                // Sum every event in this month (not just the first found) - a symbol can pay
-                // more than once in the same month (a regular + special dividend, for instance).
-                const thisYearEvents = divEvents.filter(e => e.month === m && e.year === currentYear);
-                let dividendAmount = thisYearEvents.reduce((sum, e) => sum.plus(e.amount), new BigNumber(0));
-
-                if (dividendAmount.isZero()) {
-                    // Fallback to last year
-                    const lastYearEvents = divEvents.filter(e => e.month === m && e.year === currentYear - 1);
-                    dividendAmount = lastYearEvents.reduce((sum, e) => sum.plus(e.amount), new BigNumber(0));
-                }
-
-                if (dividendAmount.isGreaterThan(0)) {
-                    // Calculate total: dividend per share * number of shares
-                    const totalProposed = dividendAmount.times(holding.shares).toNumber();
-                    monthlyData[m].total += totalProposed;
-                    monthlyData[m].breakdown.push({ symbol: holding.symbol, amount: totalProposed });
-                }
+            // One year of payouts, ending today or at an already-declared later one. Each payout counts once, in its own
+            // month, so a dividend paid a few days later than last year (Apr 30 → May 4) isn't counted in both months.
+            const latest = regular.reduce((max, d) => (d.date > max ? d.date : max), today);
+            const windowStart = shiftYears(latest, -1);
+            const perMonth = Array.from({ length: 12 }, () => new BigNumber(0));
+            for (const d of regular) {
+                if (d.date <= windowStart || d.date > latest) continue;
+                const { month } = getExDateYearMonth(d.exDate);
+                perMonth[month] = perMonth[month].plus(new BigNumber(d.amount).times(conversionRate));
             }
+
+            perMonth.forEach((perShare, m) => {
+                if (!perShare.isGreaterThan(0)) return;
+                const amount = perShare.times(holding.shares).toNumber();
+                monthlyData[m].total += amount;
+                monthlyData[m].breakdown.push({ symbol: holding.symbol, amount });
+            });
         }
 
         return {

@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, Pressable, SectionList, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, SectionList, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import TransactionOptionsModal from '@components/transaction/TransactionOptionsModal';
+import { LedgerSkeleton } from '@components/home/HomeSkeleton';
 import InvestmentOptionsModal from '@components/investments/modals/InvestmentOptionsModal';
 import DebtOptionsModal from '@components/debts/DebtOptionsModal';
 import { HistoryCalendar } from '@components/history/HistoryCalendar';
@@ -303,11 +304,7 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
     );
 
     if (data.isLoading) {
-        return (
-            <View style={styles.loading}>
-                <ActivityIndicator size="large" color={ds.accent} />
-            </View>
-        );
+        return <LedgerSkeleton />;
     }
 
     if (feedItems.length === 0) {
@@ -530,11 +527,6 @@ const styles = StyleSheet.create({
     },
     sheetGroup: {
         marginTop: space[4],
-    },
-    loading: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: space[7] * 2,
     },
 });
 

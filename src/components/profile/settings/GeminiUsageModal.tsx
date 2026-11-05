@@ -7,8 +7,7 @@ import BottomModal from '@components/common/BottomModal';
 import { Disclaimer } from '@components/common/Disclaimer';
 import { Group, Hero, Row } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
-import { AIUsageLog } from '@types';
-import { getAIUsageLogs } from '@services/domain/logService';
+import { AIUsageRow, getAIUsageLogs, mergeUsageRuns } from '@services/domain/logService';
 import { type, space } from '@styles/theme';
 
 interface GeminiUsageModalProps {
@@ -19,14 +18,14 @@ interface GeminiUsageModalProps {
 const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose }) => {
     const { ds } = useTheme();
 
-    const [logs, setLogs] = useState<AIUsageLog[]>([]);
+    const [logs, setLogs] = useState<AIUsageRow[]>([]);
     const [refreshing, setRefreshing] = useState(false);
     const [totalCost, setTotalCost] = useState(new BigNumber(0));
 
     const loadLogs = async () => {
         const data = await getAIUsageLogs();
         // Sort newest first
-        const sorted = data.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        const sorted = mergeUsageRuns(data).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
         setLogs(sorted);
         const total = sorted.reduce((acc, log) => {
             const rawCost = log.costUSD ?? 0;
@@ -91,7 +90,11 @@ const GeminiUsageModal: React.FC<GeminiUsageModalProps> = ({ visible, onClose })
                                         />
                                     }
                                     title={log.endpoint.replace('analyze', '').replace('Screenshot', '').replace('Image', '').replace('generate', '')}
-                                    subtitle={[log.model, `${time} (${(log.durationMs / 1000).toFixed(2)}s)`].filter(Boolean).join(' · ')}
+                                    subtitle={[
+                                        log.model,
+                                        `${time} (${(log.durationMs / 1000).toFixed(2)}s)`,
+                                        log.calls > 1 ? `${log.calls} calls${log.failedCalls ? `, ${log.failedCalls} failed` : ''}` : '',
+                                    ].filter(Boolean).join(' · ')}
                                     value={`$${new BigNumber(log.costUSD || 0).toFixed(5)}`}
                                     change={`In ${log.inputTokens}${log.imageCount > 0 ? ` (${log.imageCount} img)` : ''} · Out ${log.outputTokens}`}
                                     last={i === logs.length - 1}

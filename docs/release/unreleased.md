@@ -15,6 +15,31 @@
 
 ---
 
+## 💹 Fetch Price List: Crypto, a Progress Banner and a Much Faster Fetch
+- **Crypto too**: Fetch price list now fetches prices for your crypto holdings along with your stocks. A coin with no exchange set is looked up as crypto, priced in USD and converted to your currency, with a price for every calendar day, since crypto trades around the clock.
+- **See it working**: Fetching prices can take a few minutes. Before, on Android you saw a brief "Fetching prices…" toast and then nothing until the result; on iPhone there was no message at all. Now a banner sits just above the bottom bar for as long as the fetch runs, with how many holdings it covers. It follows you to every screen, so you can keep using the app. When the fetch finishes, it shows the result for a few seconds: how many prices were updated, that there was nothing new, or that it failed.
+- **Out of your way**: On Home, Insights, Record, Profile and Learn, pages end above the banner, so you can still scroll everything into view. Tap the banner to hide it until the fetch finishes; the result still shows.
+- **One at a time**: Starting Fetch price list again while one is running tells you it's already running instead of starting a second fetch.
+- **Much faster**: Fetch price list used to send every holding to the AI in one big request, then send its answer back a second time to be turned into prices. Now each holding gets its own request, which looks up its prices and returns them in one go, and up to six run at the same time. A fetch for 7 holdings took about 100 seconds in testing instead of 260, for about the same cost. If one holding can't be fetched, the others are still saved.
+- **Dividends the same way**: Fetching dividends from a holding's history (its Dividends tab) also makes one request that looks up the dividends and returns them in one go, instead of two requests one after the other.
+- **Every stock's dividends in one tap**: A new Fetch dividend list sits under Fetch price list, both in the Holdings tab's Tools and in Holdings settings. Pick This year, or start one or two years back, and it fetches dividends for every stock you hold, the same way Fetch price list does for prices, instead of opening each stock's history one by one. It shows in the same banner while it runs and when it finishes, and it can run alongside a price fetch; the banner shows "+1 more" while both are going.
+- **One entry in Gemini usage**: Each holding's request is recorded in Gemini usage as soon as it finishes, but a whole price or dividend fetch shows as one row: the total cost and tokens, how long the whole fetch took, and how many requests it made (and how many failed, if any). The list now keeps your latest 300 entries instead of 50, so one large fetch doesn't push older entries off it.
+- **Also in Holdings settings**: Fetch price list and Fetch dividend list now have their own Prices section at the bottom of Holdings settings, as well as their place at the bottom of the Holdings tab.
+
+---
+
+## 🧮 Projected Dividends Fix
+- **No more double-counted dividends**: The Projected view of the Holdings Dividends chart filled each month with this year's dividend, or last year's if this year's hadn't come yet. When a company paid a few days later than the year before and the date crossed into the next month, like Apr 30 one year and May 4 the next, the same dividend was counted in both months, so the yearly total came out too high. Projected now takes each holding's dividends from the past 12 months and places each one in its own month, so every payout counts once.
+- **Special dividends left out**: One-off special dividends were projected as if they'd come again every year. They're now left out of Projected, so it only shows the regular dividends you can expect. Specials still count everywhere they were actually paid, including your dividend yield.
+- **Declared dividends move the year forward**: If a holding already has an upcoming dividend on record, the 12 months end at that date instead of today, so it replaces the matching payout from a year earlier instead of adding to it. A holding that hasn't paid anything in over a year no longer projects a dividend.
+
+---
+
+## ⏳ Loading Placeholders
+- **The page's shape, not a spinner**: While Home loads, or while you open its Ledger, Holdings, Goals or Loans tab, you now see softly pulsing grey shapes laid out like the page that's coming: the summary panel, section titles and rows, with progress bars on Goals and day groups on the Ledger. When your data arrives it takes the same places, so nothing jumps around. This mostly shows on slower phones, which used to see a small spinner on an empty page.
+
+---
+
 ## 📚 Six New Guides in Learn
 - **More of the app explained**: Learn has six new guides: Safe to Spend, Budgets, Recurring & Reminders, Monthly Summary, AI Assistant, and Backup, Sync & Export. Each one covers where to find the feature, how its numbers are worked out and what affects them, in the same style as the existing guides.
 - **Safe to Spend gets its own guide**: The formula, what gets set aside for the rest of the month and what a red number means now live in one place. The Home Snapshot guide points to it instead of repeating the formula.
@@ -36,6 +61,7 @@
 - **A number instead of a dash**: In Discreet mode the Ledger's Safe to spend row used to show "—". It now shows how many days of your usual spending are left over this month, like +9 days, in green, or −4 days in red when you're on track to overspend. It's your Safe to spend amount divided by your daily living costs, so it tells you how much room you have without revealing how much money that is.
 - **The sheet too**: Tapping the row shows the same days figure, plus debt and goal payments still due in days. It shows "—" until you have some spending in the last 90 days to measure against.
 - **Budgets and Recurring show their amounts**: In Profile, Manage budgets and Recurring transactions used to show `****` in Discreet mode. They now show each budget's monthly limit, the total across your budgets, and each recurring transaction's amount. Hidden mode still masks everything.
+- **Prices and dividends in a holding's history**: Opening a holding from the Holdings tab, the Prices and Dividends tabs used to show `****` in Discreet mode. They now show each day's closing price and each dividend per share, since these are the same for anyone who owns that stock and don't reveal how much you hold. The Positions tab stays masked, because its share counts next to each price would give your amounts away. In Hidden mode, a price's high and low used to still show under its date; they're now hidden along with the price.
 
 ---
 

@@ -1,14 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Platform, ToastAndroid } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform, ToastAndroid } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { EmptyState } from '@components/common/EmptyState';
+import { HoldingsSkeleton } from '@components/home/HomeSkeleton';
 import { Group, Hero, Row, SectionHeader, Tone } from '@components/ds';
 import { SmartAdvisor, Suggestion } from '@components/investments/SmartAdvisor';
 import { AllocationChart, AllocationTab } from '@components/investments/AllocationChart';
 import { DividendChart } from '@components/investments/DividendChart';
 import { InvestmentHistoryModal } from '@components/investments/modals/InvestmentHistoryModal';
-import FetchPriceListSheet from '@components/investments/FetchPriceListSheet';
+import FetchListSheet, { FetchListKind } from '@components/investments/FetchListSheet';
 import { useTheme } from '@context/ThemeContext';
 import { useAIConsent } from '@hooks/useAIConsent';
 import { PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
@@ -17,15 +18,14 @@ import * as Storage from '@services/core/storageService';
 import { getPortfolioStats, getPortfolioHoldings, PortfolioHolding, getActualDividendsGrouped, MonthlyDividend } from '@services/domain/investmentService';
 import { getSmartSuggestions, Priority } from '@services/domain/smartAdvisorService';
 import { getProjectedDividends, getDividendCalendar, CalendarEvent } from '@services/domain/dividendHistoryService';
-import { refreshStockHoldingPrices } from '@services/domain/marketDataService';
-
+import { refreshHoldingDividends, refreshHoldingPrices } from '@services/domain/marketDataService';
 interface HoldingsTabProps {
     format: PrivacyFormat;
     currency: string;
-    // Holdings settings (fetch price list).
-    settingsVisible: boolean;
-    onOpenSettings: () => void;
-    onCloseSettings: () => void;
+    // Which "Fetch … list" sheet is open; HomeScreen owns it so Holdings settings can open one too.
+    fetchList: FetchListKind | null;
+    onOpenFetchList: (kind: FetchListKind) => void;
+    onCloseFetchList: () => void;
     onOpenRecord: () => void;
     // Order of the sections below the summary (Home settings).
     sectionOrder: Storage.HoldingsSectionId[];
@@ -63,7 +63,7 @@ const typeLabel = (t?: string) => (t ? t.charAt(0) + t.slice(1).toLowerCase() : 
 // Allocation bar segments: domainInvest at 100 / 60 / 30% (docs/DESIGN.md); a 4th type onward folds into "Other".
 const SEGMENT_OPACITY = [1, 0.6, 0.3];
 
-const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settingsVisible, onOpenSettings, onCloseSettings, onOpenRecord, sectionOrder }) => {
+const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, fetchList, onOpenFetchList, onCloseFetchList, onOpenRecord, sectionOrder }) => {
     const { ds } = useTheme();
     const { checkConsent } = useAIConsent();
     const [stats, setStats] = useState<PortfolioStats | null>(null);
@@ -130,11 +130,16 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
         if (!isInitialPrefsLoad.current) Storage.saveInvestmentAdvisorPriority(p);
     };
 
+    const showToast = (msg: string) => {
+        if (Platform.OS === 'android') ToastAndroid.show(msg, ToastAndroid.SHORT);
+    };
+
     const handleFetchPrices = (duration: string) => {
-        const showToast = (msg: string) => {
-            if (Platform.OS === 'android') ToastAndroid.show(msg, ToastAndroid.SHORT);
-        };
-        checkConsent(() => refreshStockHoldingPrices(holdings, duration, currency, showToast, loadData));
+        checkConsent(() => refreshHoldingPrices(holdings, duration, currency, showToast, loadData));
+    };
+
+    const handleFetchDividends = (range: { label: string; year: number }) => {
+        checkConsent(() => refreshHoldingDividends(holdings, range, showToast, loadData));
     };
 
     const total = stats?.totalEquity ?? 0;
@@ -156,11 +161,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
     }, [holdings]);
 
     if (!stats) {
-        return (
-            <View style={styles.loading}>
-                <ActivityIndicator size="large" color={ds.accent} />
-            </View>
-        );
+        return <HoldingsSkeleton />;
     }
 
     // Total return: unrealized + realized + dividends (docs/METRICS.md, Investment Return).
@@ -278,7 +279,8 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
                         <SectionHeader grouped title="Tools" />
                         <Group>
                             <Row icon="add-circle-outline" title="Add an investment" subtitle="Buy, sell or dividend, from Record" chevron onPress={onOpenRecord} />
-                            <Row icon="cloud-download-outline" title="Fetch price list" subtitle="AI estimates for your stocks" chevron last onPress={onOpenSettings} />
+                            <Row icon="cloud-download-outline" title="Fetch price list" subtitle="AI estimates for your stocks and crypto" chevron onPress={() => onOpenFetchList('price')} />
+                            <Row icon="cash-outline" title="Fetch dividend list" subtitle="AI lookup of your stocks' dividends" chevron last onPress={() => onOpenFetchList('dividend')} />
                         </Group>
                     </>
                 )}
@@ -292,7 +294,7 @@ const HoldingsTab: React.FC<HoldingsTabProps> = ({ format: f, currency, settings
                 onDataChange={loadData}
             />
 
-            <FetchPriceListSheet visible={settingsVisible} onClose={onCloseSettings} onFetch={handleFetchPrices} />
+            <FetchListSheet kind={fetchList} onClose={onCloseFetchList} onFetchPrices={handleFetchPrices} onFetchDividends={handleFetchDividends} />
         </>
     );
 };
@@ -324,11 +326,6 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         gap: space[4],
         marginTop: space[2],
-    },
-    loading: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: space[7] * 2,
     },
 });
 

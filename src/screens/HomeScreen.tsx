@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Text, View, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { Text, View, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -8,9 +8,11 @@ import { EmptyState } from '@components/common/EmptyState';
 import { ReviewAppModal } from '@components/common/ReviewAppModal';
 import { Group, Row, SectionHeader, UnderlineTabs, UnderlineTab } from '@components/ds';
 import HomeSettingsSheet, { HomeTab } from '@components/home/HomeSettingsSheet';
+import { FetchListKind } from '@components/investments/FetchListSheet';
 import SnapshotView, { SnapshotData } from '@components/home/SnapshotView';
 import LedgerTab, { LedgerView } from '@components/home/LedgerTab';
 import HoldingsTab from '@components/home/HoldingsTab';
+import { HomeSkeleton } from '@components/home/HomeSkeleton';
 import GoalsTab from '@components/home/GoalsTab';
 import LoansTab from '@components/home/LoansTab';
 import { useTheme } from '@context/ThemeContext';
@@ -76,7 +78,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [hasLoaded, setHasLoaded] = useState(false);
     const [tab, setTab] = useState<HomeTab>('snapshot');
     const [ledgerView, setLedgerView] = useState<LedgerView>('LIST');
-    const [isHoldingsSettingsVisible, setIsHoldingsSettingsVisible] = useState(false);
+    const [fetchList, setFetchList] = useState<FetchListKind | null>(null);
     const isLoading = useRef(false);
 
     const currency = profile?.currency || 'PHP';
@@ -176,6 +178,12 @@ const HomeScreen = ({ navigation }: any) => {
         Storage.saveHoldingsOrder(next);
     };
 
+    // iOS won't present a modal while another is still sliding out, so the fetch sheet waits for settings to close.
+    const openFetchListFromSettings = (kind: FetchListKind) => {
+        setIsSettingsVisible(false);
+        setTimeout(() => setFetchList(kind), 350);
+    };
+
     const changeOrder = (next: Storage.SnapshotRowId[]) => {
         setOrder(next);
         Storage.saveSnapshotOrder(next);
@@ -223,9 +231,7 @@ const HomeScreen = ({ navigation }: any) => {
             </View>
 
             {isStatusChecking || !hasLoaded ? (
-                <View style={styles.loading}>
-                    <ActivityIndicator size="large" color={ds.accent} />
-                </View>
+                <HomeSkeleton />
             ) : (
                 <>
                     {/* Outside the tab's own scroll view, so it stays put under the top bar. */}
@@ -254,9 +260,9 @@ const HomeScreen = ({ navigation }: any) => {
                             <HoldingsTab
                                 format={format}
                                 currency={currency}
-                                settingsVisible={isHoldingsSettingsVisible}
-                                onOpenSettings={() => setIsHoldingsSettingsVisible(true)}
-                                onCloseSettings={() => setIsHoldingsSettingsVisible(false)}
+                                fetchList={fetchList}
+                                onOpenFetchList={setFetchList}
+                                onCloseFetchList={() => setFetchList(null)}
                                 onOpenRecord={() => openRecord()}
                                 sectionOrder={holdingsOrder}
                             />
@@ -277,6 +283,7 @@ const HomeScreen = ({ navigation }: any) => {
                 onChangeRange={changeRange}
                 holdingsOrder={holdingsOrder}
                 onChangeHoldingsOrder={changeHoldingsOrder}
+                onFetchList={openFetchListFromSettings}
             />
 
             <ReviewAppModal
@@ -321,11 +328,6 @@ const styles = StyleSheet.create({
     content: {
         paddingHorizontal: layout.groupInset,
         paddingBottom: space[7],
-    },
-    loading: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: space[7] * 2,
     },
     newUser: {
         paddingTop: space[5],

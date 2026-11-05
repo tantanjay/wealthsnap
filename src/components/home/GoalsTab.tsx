@@ -1,15 +1,15 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { BigNumber } from 'bignumber.js';
 
 import { EmptyState } from '@components/common/EmptyState';
+import { GoalsSkeleton } from '@components/home/HomeSkeleton';
 import { Group, Hero, ProgressBar, Row, SectionHeader, Tone } from '@components/ds';
 import { SavingsGoalForm } from '@components/savingsGoals/SavingsGoalForm';
 import SavingsGoalOptionsModal from '@components/savingsGoals/SavingsGoalOptionsModal';
 import SavingsGoalAmountModal from '@components/savingsGoals/SavingsGoalAmountModal';
 import { SavingsGoalsInfoModal } from '@components/savingsGoals/SavingsGoalsInfoModal';
-import { useTheme } from '@context/ThemeContext';
 import { PrivacyFormat, formatPercent } from '@hooks/usePrivacyFormat';
 import { space, layout } from '@styles/theme';
 import { RecurrenceRule, SavingsGoal, Transaction } from '@types';
@@ -42,7 +42,6 @@ const goalStatus = (goal: SavingsGoal, bucket: SavingsGoalBucket): { text: strin
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 const GoalsTab: React.FC<GoalsTabProps> = ({ format: f }) => {
-    const { ds } = useTheme();
     const [goals, setGoals] = useState<SavingsGoal[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [recurrenceRules, setRecurrenceRules] = useState<RecurrenceRule[]>([]);
@@ -133,11 +132,7 @@ const GoalsTab: React.FC<GoalsTabProps> = ({ format: f }) => {
     };
 
     if (!hasLoaded) {
-        return (
-            <View style={styles.loading}>
-                <ActivityIndicator size="large" color={ds.accent} />
-            </View>
-        );
+        return <GoalsSkeleton />;
     }
 
     const h = hero();
@@ -239,11 +234,6 @@ const styles = StyleSheet.create({
         marginTop: space[3],
     },
 
-    loading: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: space[7] * 2,
-    },
 });
 
 export default GoalsTab;

@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@context/ThemeContext';
 import { IconName } from '@components/ds';
-import { type, space, radius } from '@styles/theme';
+import { BackgroundTaskBanner } from '@components/common/BackgroundTaskBanner';
+import { type, space, radius, layout } from '@styles/theme';
 
 // Filled icon when active, its -outline variant otherwise.
 const TAB_ICONS: Record<string, IconName> = {
@@ -29,47 +30,56 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
     const insets = useSafeAreaInsets();
 
     return (
-        <View style={[styles.bar, { backgroundColor: ds.group, paddingBottom: Math.max(insets.bottom, space[2]) }]}>
-            <View pointerEvents="none" style={[styles.line, { backgroundColor: ds.hairline }]} />
-            {state.routes.map((route, index) => {
-                const focused = state.index === index;
-                const color = focused ? ds.accent : ds.text2;
-                const icon = TAB_ICONS[route.name] ?? 'ellipse';
-                const isRecord = route.name === 'Record';
-
-                const onPress = () => {
-                    // Emitted so screens can intercept a re-tap (Record reopens its menu).
-                    const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-                    if (!focused && !event.defaultPrevented) {
-                        navigation.navigate(route.name, route.params);
-                    }
-                };
-
-                return (
-                    <Pressable
-                        key={route.key}
-                        onPress={onPress}
-                        accessibilityRole="button"
-                        accessibilityState={focused ? { selected: true } : {}}
-                        accessibilityLabel={route.name}
-                        style={[styles.item, !isRecord && { paddingTop: ITEM_TOP }]}
-                    >
-                        {isRecord ? (
-                            <View style={[styles.fab, { backgroundColor: ds.accent }, elevation.fab]}>
-                                <Ionicons name={icon} size={24} color={ds.onAccent} />
-                            </View>
-                        ) : (
-                            <Ionicons name={focused ? icon : (`${icon}-outline` as IconName)} size={24} color={color} />
-                        )}
-                        <Text style={[type.captionMedium, { color }]} numberOfLines={1}>{route.name}</Text>
-                    </Pressable>
-                );
-            })}
-        </View>
+        <>
+            {/* Part of the tab bar's layout, so tab screens end above it and can scroll their content past it. */}
+            <BackgroundTaskBanner style={styles.banner} />
+            <View style={[styles.bar, { backgroundColor: ds.group, paddingBottom: Math.max(insets.bottom, space[2]) }]}>
+                <View pointerEvents="none" style={[styles.line, { backgroundColor: ds.hairline }]} />
+                {state.routes.map((route, index) => {
+                    const focused = state.index === index;
+                    const color = focused ? ds.accent : ds.text2;
+                    const icon = TAB_ICONS[route.name] ?? 'ellipse';
+                    const isRecord = route.name === 'Record';
+    
+                    const onPress = () => {
+                        // Emitted so screens can intercept a re-tap (Record reopens its menu).
+                        const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+                        if (!focused && !event.defaultPrevented) {
+                            navigation.navigate(route.name, route.params);
+                        }
+                    };
+    
+                    return (
+                        <Pressable
+                            key={route.key}
+                            onPress={onPress}
+                            accessibilityRole="button"
+                            accessibilityState={focused ? { selected: true } : {}}
+                            accessibilityLabel={route.name}
+                            style={[styles.item, !isRecord && { paddingTop: ITEM_TOP }]}
+                        >
+                            {isRecord ? (
+                                <View style={[styles.fab, { backgroundColor: ds.accent }, elevation.fab]}>
+                                    <Ionicons name={icon} size={24} color={ds.onAccent} />
+                                </View>
+                            ) : (
+                                <Ionicons name={focused ? icon : (`${icon}-outline` as IconName)} size={24} color={color} />
+                            )}
+                            <Text style={[type.captionMedium, { color }]} numberOfLines={1}>{route.name}</Text>
+                        </Pressable>
+                    );
+                })}
+            </View>
+        </>
     );
 };
 
 const styles = StyleSheet.create({
+    banner: {
+        marginHorizontal: layout.groupInset,
+        marginTop: space[2],
+        marginBottom: space[2],
+    },
     bar: {
         flexDirection: 'row',
         alignItems: 'flex-start',

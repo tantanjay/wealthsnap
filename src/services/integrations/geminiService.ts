@@ -113,7 +113,7 @@ export interface LoggedUsage {
     costUSD: BigNumber;
 }
 
-export const logUsage = async (endpoint: string, promptText: string, responseText: string, imageTokens: number, imageCount: number, durationMs: number, modelName: string = 'unknown', status: 'success' | 'error' = 'success', usage?: GeminiUsageMetadata): Promise<LoggedUsage> => {
+export const logUsage = async (endpoint: string, promptText: string, responseText: string, imageTokens: number, imageCount: number, durationMs: number, modelName: string = 'unknown', status: 'success' | 'error' = 'success', usage?: GeminiUsageMetadata, runId?: string): Promise<LoggedUsage> => {
     try {
         // Prefer the API's own token counts (captures thinking tokens); fall back to estimation on error paths.
         const inputTokens = usage?.promptTokenCount ?? (estimateTokens(promptText) + imageTokens);
@@ -168,7 +168,8 @@ export const logUsage = async (endpoint: string, promptText: string, responseTex
             outputTokens,
             imageCount,
             durationMs,
-            costUSD: new BigNumber(totalCost)
+            costUSD: new BigNumber(totalCost),
+            runId: runId ?? null,
         };
 
         await saveAIUsageLog(log);
@@ -437,114 +438,97 @@ const assetPriceSchema = {
     }
 };
 
-export const fetchHistoricalPrices = async (assets: AssetRequest[], duration: string): Promise<FetchedPrice[]> => {
-    const startTime = Date.now();
-    let currentModelName = 'unknown';
+const MARKET_FETCH_THINKING = ThinkingLevel.MEDIUM;
+// Caps simultaneous per-symbol requests so a large portfolio doesn't trip the API's rate limit.
+const MARKET_FETCH_CONCURRENCY = 6;
 
+const assetLabel = (a: AssetRequest) => `${a.exchange ? a.exchange.toUpperCase() : 'PSE'}:${a.symbol.toUpperCase()}`;
+
+// Search grounding can drop the start of a JSON reply; fall back to the outermost [...] in the text.
+const parseJsonArray = <T>(text: string): T[] => {
+    try {
+        return JSON.parse(text);
+    } catch {
+        const start = text.indexOf('[');
+        const end = text.lastIndexOf(']');
+        if (start === -1 || end <= start) throw new Error('No JSON array in reply');
+        return JSON.parse(text.slice(start, end + 1));
+    }
+};
+
+// One request per symbol, run in parallel: each searches and returns JSON in a single call. Every call logs as it
+// finishes under one runId, timed from the run's start, so the usage screen shows the whole fetch as one row.
+const fetchPerSymbol = async <T extends { symbol: string }>(
+    endpoint: string,
+    assets: AssetRequest[],
+    schema: object,
+    buildPrompt: (asset: AssetRequest, label: string, today: string) => string,
+): Promise<T[]> => {
     const isConfigured = await isGeminiConfigured();
     if (!isConfigured) throw new Error("Gemini API Key is not configured");
 
-    try {
-        const { genAI, modelName } = await getGeminiClient();
-        currentModelName = modelName;
+    const startTime = Date.now();
+    const { genAI, modelName } = await getGeminiClient();
+    // Before Gemini 3 a request can't combine search with a JSON schema, so those models get the format in the prompt.
+    const jsonConfig = isGemini3Model(modelName) ? { responseMimeType: 'application/json', responseJsonSchema: schema } : {};
+    const today = new Date().toISOString().split('T')[0];
+    const runId = generateUUID();
+    const results: T[] = [];
 
-        const assetList = assets.map(a => {
-            const symbol = a.symbol.toUpperCase();
-            const exchange = a.exchange ? a.exchange.toUpperCase() : 'PSE';
-            return `${exchange}:${symbol}`;
-        }).join(', ');
+    const fetchOne = async (asset: AssetRequest) => {
+        const label = assetLabel(asset);
+        const prompt = buildPrompt(asset, label, today);
+        try {
+            const response = await genAI.models.generateContent({
+                model: modelName,
+                config: {
+                    tools: [{ googleSearch: {} }],
+                    ...jsonConfig,
+                    ...withThinkingLevel(modelName, MARKET_FETCH_THINKING),
+                },
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            });
+            const text = response.text || '[]';
+            await logUsage(endpoint, prompt, text, 0, 0, Date.now() - startTime, modelName, 'success', response.usageMetadata, runId);
 
-        // --- PASS 1: THE RESEARCHER (Search Enabled, No Schema) ---
-        const researchPrompt = `
-Retrieve historical daily prices for the following assets:
+            // Pin the symbol to what was asked, in case the model wrote e.g. "BTC-USD".
+            const parsed = parseJsonArray<T>(text).map(item => ({ ...item, symbol: asset.symbol }));
+            if (parsed.length === 0) console.warn(`[Gemini] ${endpoint}: nothing found for ${label}`);
+            results.push(...parsed);
+        } catch (error) {
+            console.warn(`[Gemini] ${endpoint} failed for ${label}`, error);
+            const message = error instanceof Error ? error.message : String(error);
+            await logUsage(endpoint, message, '', 0, 0, Date.now() - startTime, modelName, 'error', undefined, runId);
+        }
+    };
 
-Assets:
-${assetList}
+    const queue = [...assets];
+    await Promise.all(Array.from({ length: Math.min(MARKET_FETCH_CONCURRENCY, queue.length) }, async () => {
+        for (let next = queue.shift(); next; next = queue.shift()) await fetchOne(next);
+    }));
+
+    return results;
+};
+
+export const fetchHistoricalPrices = (assets: AssetRequest[], duration: string): Promise<FetchedPrice[]> =>
+    fetchPerSymbol<FetchedPrice>('fetchHistoricalPrices', assets, assetPriceSchema, (asset, label, today) => `
+Retrieve historical daily closing prices for ${label}.
 
 Duration: ${duration}
-Today (UTC): ${new Date().toISOString().split('T')[0]}
+Today (UTC): ${today}
 
 RULES:
-- Every price MUST include its currency (ISO 4217).
-- Examples:
-  - PSE stocks → PHP
-  - US stocks → USD
-  - Crypto → USD unless exchange specifies otherwise
-- Use real historical market data only.
-- Do NOT fabricate or estimate prices.
-- Stocks: include only official exchange trading days.
-- Crypto: include all calendar days (24/7 markets).
-- Clearly label each entry with:
-  - Symbol
-  - Exchange
-  - Date (YYYY-MM-DD)
-  - Closing price
-  - Currency
+- Use real historical market data only. Do NOT fabricate or estimate prices; leave a day out instead.
+- Every price MUST include its currency (ISO 4217): PSE stocks → PHP, US stocks → USD, crypto → USD unless the exchange says otherwise.
+- Stocks: only official exchange trading days. Crypto: every calendar day (24/7 markets).
 - Prefer reputable sources (Yahoo Finance, exchange data, CoinMarketCap, CoinGecko).
 
-Output format:
-A simple, line-by-line list. No commentary.
-`;
-
-        const researchResponse = await genAI.models.generateContent({
-            model: currentModelName,
-            config: {
-                tools: [{ googleSearch: {} }],
-                temperature: 1.0, // Higher temp helps synthesize search results better
-                // Synthesizing search results into accurate historical prices benefits from deeper reasoning.
-                ...withThinkingLevel(currentModelName, ThinkingLevel.HIGH),
-            },
-            contents: [{ role: 'user', parts: [{ text: researchPrompt }] }]
-        });
-
-        const rawResearchText = researchResponse.text || '';
-
-        await logUsage('fetchHistoricalPrices_Research', researchPrompt, rawResearchText, 0, 0, Date.now() - startTime, modelName, 'success', researchResponse.usageMetadata);
-
-        // --- PASS 2: THE ACCOUNTANT (No Tools, Strict Schema Enabled) ---
-        const formatPrompt = `
-Transform the following research data into valid JSON
-matching the provided schema.
-
-RESEARCH DATA:
-${rawResearchText}
-
-STRICT RULES:
-- Do NOT infer or guess currency.
-- If currency is missing, EXCLUDE the entry.
-- Currency must be a valid ISO 4217 code (e.g. USD, PHP).
-- Do NOT invent missing values.
-- Exclude entries with missing prices or dates.
-- Symbols must be tickers only (e.g. "AREIT", "BTC").
-- Dates must be in YYYY-MM-DD format.
-- Prices must be numeric.
-- If high, low, or volume are unavailable, set them to null.
-`;
-        const formatResponse = await genAI.models.generateContent({
-            model: currentModelName,
-            config: {
-                temperature: 0.1,
-                responseMimeType: "application/json",
-                responseJsonSchema: assetPriceSchema,
-                // Pure reformatting of already-researched data - no reasoning needed.
-                ...withThinkingLevel(currentModelName, ThinkingLevel.LOW),
-            },
-            contents: [{ role: 'user', parts: [{ text: formatPrompt }] }]
-        });
-
-        const finalJson = formatResponse.text || '[]';
-        const parsed: FetchedPrice[] = JSON.parse(finalJson);
-
-        await logUsage('fetchHistoricalPrices_Accountant', formatPrompt, finalJson, 0, 0, Date.now() - startTime, modelName, 'success', formatResponse.usageMetadata);
-
-        return parsed;
-
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        await logUsage('fetchHistoricalPrices', message, '', 0, 0, Date.now() - startTime, currentModelName, 'error');
-        return [];
-    }
-};
+OUTPUT:
+- Only a JSON array of objects with: symbol, price, currency, date, high, low, volume. No other text.
+- symbol must be "${asset.symbol.toUpperCase()}". Dates in YYYY-MM-DD. Prices numeric.
+- If high, low or volume are unavailable, set them to null.
+- Return an empty array if you can't find any real prices.
+`);
 
 export interface FetchedDividend {
     symbol: string;
@@ -575,70 +559,21 @@ const dividendHistorySchema = {
     }
 };
 
-export const fetchDividendHistory = async (assets: AssetRequest[], duration: string): Promise<FetchedDividend[]> => {
-    const startTime = Date.now();
-    let currentModelName = 'unknown';
+export const fetchDividendHistory = (assets: AssetRequest[], duration: string): Promise<FetchedDividend[]> =>
+    fetchPerSymbol<FetchedDividend>('fetchDividendHistory', assets, dividendHistorySchema, (asset, label, today) => `
+Retrieve the dividend history for ${label}.
 
-    try {
-        const { genAI, modelName } = await getGeminiClient();
-        currentModelName = modelName;
+Duration: ${duration}
+Today (UTC): ${today}
 
-        const assetList = assets.map(a => {
-            const symbol = a.symbol.toUpperCase();
-            const exchange = a.exchange ? a.exchange.toUpperCase() : 'PSE';
-            return `${exchange}:${symbol}`;
-        }).join(', ');
+RULES:
+- Use real, officially declared dividends only. Do NOT fabricate or estimate; leave a dividend out instead.
+- amount is per share, in the stock's local currency (e.g. PHP for PSE).
+- type is CASH, STOCK or SPECIAL, as declared.
+- Prefer reputable sources (exchange disclosures, company announcements, Yahoo Finance).
 
-        // --- PASS 1: THE RESEARCHER (Plain Text + Search) ---
-        const researchPrompt = `Find the dividend history for: [${assetList}]. 
-        Duration: ${duration}. Focus on Ex-Date, Record Date, and Amount in local currency (e.g. PHP for PSE). 
-        Provide the raw results in text.`;
-
-        const researchResponse = await genAI.models.generateContent({
-            model: currentModelName,
-            config: {
-                tools: [{ googleSearch: {} }], // Tools allowed here
-                // Synthesizing search results into accurate dividend records benefits from deeper reasoning.
-                ...withThinkingLevel(currentModelName, ThinkingLevel.HIGH),
-            },
-            contents: [{ role: 'user', parts: [{ text: researchPrompt }] }]
-        });
-
-        const rawResearchText = researchResponse.text || '';
-
-        await logUsage('fetchDividendHistory_Research', researchPrompt, rawResearchText, 0, 0, Date.now() - startTime, modelName, 'success', researchResponse.usageMetadata);
-
-        // --- PASS 2: THE ACCOUNTANT (Strict JSON + No Tools) ---
-        const accountantPrompt = `Convert this raw financial research into a structured JSON list:
-        
-        RESEARCH DATA:
-        ${rawResearchText}
-
-        RULES:
-        - Use ONLY the following JSON Schema.
-        - Ticker symbols only (e.g., "DMC").
-        - Dates in YYYY-MM-DD.`;
-
-        const extractionResponse = await genAI.models.generateContent({
-            model: currentModelName,
-            config: {
-                responseMimeType: "application/json",
-                responseJsonSchema: dividendHistorySchema,
-                // Pure reformatting of already-researched data - no reasoning needed.
-                ...withThinkingLevel(currentModelName, ThinkingLevel.LOW),
-            },
-            contents: [{ role: 'user', parts: [{ text: accountantPrompt }] }]
-        });
-
-        const finalJson = extractionResponse.text || '[]';
-        const parsed: FetchedDividend[] = JSON.parse(finalJson);
-
-        await logUsage('fetchDividendHistory_Accountant', accountantPrompt, finalJson, 0, 0, Date.now() - startTime, modelName, 'success', extractionResponse.usageMetadata);
-
-        return parsed;
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        await logUsage('fetchDividendHistory', message, '', 0, 0, Date.now() - startTime, currentModelName, 'error');
-        return [];
-    }
-};
+OUTPUT:
+- Only a JSON array of objects with: symbol, exDate, recordDate, paymentDate, amount, type. No other text.
+- symbol must be "${asset.symbol.toUpperCase()}". Dates in YYYY-MM-DD; set recordDate or paymentDate to null if unknown.
+- Return an empty array if there were no dividends in that period.
+`);

@@ -117,6 +117,8 @@ export interface AIUsageLog {
     imageCount: number;
     durationMs: number;
     costUSD: BigNumber;
+    // Shared by every call of one multi-call job (e.g. a per-symbol price fetch); the usage screen merges them.
+    runId?: string | null;
 }
 
 export interface ReceiptItem {
