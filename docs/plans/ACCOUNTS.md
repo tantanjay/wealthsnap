@@ -124,7 +124,7 @@ Then grep every other `TRANSFER_IN` / `TRANSFER_OUT` filter in `src/utils/` and 
     - `INSERT OR IGNORE` the Cash on hand row
     - swallow only "duplicate column name", as `addColumnWithBackfill` does
   - Bump `DATABASE_VERSION` and wire it after [databaseService.ts:62](../../src/services/database/databaseService.ts:62).
-  - **Version clash:** the [Time Deposits plan](TIME_DEPOSITS.md) also claims v18. Whichever ships second takes v19.
+  - [Time Deposits](TIME_DEPOSITS.md) ships after this and takes v19.
 - [transactionService.ts](../../src/services/domain/transactionService.ts): add the new columns to both INSERTs (lines 17, 26), `prepareTransactionValues` (line 41) and the row mapper (line 258).
 - [types/index.ts](../../src/types/index.ts): `accountId?`, `originalAmount?: BigNumber`, `exchangeRate?: BigNumber` on `Transaction`; `Account`, `AccountKind`. `RecurrenceRule.transactionTemplate` picks up `accountId` automatically, since it's `Omit<Transaction, …>`.
 
@@ -141,7 +141,7 @@ Then grep every other `TRANSFER_IN` / `TRANSFER_OUT` filter in `src/utils/` and 
     - deletes the row and tombstones it
 - [transactionService.ts:297](../../src/services/domain/transactionService.ts:297) `deleteTransaction`, two fixes:
   - **The cascade only runs parent → child.** Deleting an IN or fee leg directly (reachable from search) would orphan the OUT leg and make cash drift. For `ACCOUNT_TRANSFER` / `TRANSFER_FEE` rows, resolve to the parent and delete the whole group. Mirror this in [dataCache.ts:108](../../src/services/core/dataCache.ts:108).
-  - **Only the first child is tombstoned** (`getFirstAsync`, line 304), but the `DELETE` removes every child. A transfer with a fee, or a debt payment with both interest and fee legs today, leaves an un-tombstoned child that a synced device never learns was deleted. Tombstone every child (`getAllAsync`). This is a **pre-existing bug for debt payments**; fix it in this change and mention it in the release notes.
+  - Every linked child is already tombstoned (fixed separately for debt payments with both interest and fee legs), so a transfer with a fee needs no extra work there.
 - `src/utils/accountMetrics.ts` (new):
   - `resolveAccountId(t, accounts)`.
   - `calculateAccountBalances(transactions, accounts, asOf?)` returns a balance per account in the account's own currency, reusing `calculateBalance`'s sign rules.
@@ -236,7 +236,7 @@ Each form below gets the `AccountPicker`, pre-selecting Cash on hand. A rule wit
 | AI receipt ([ReceiptReviewForm.tsx](../../src/components/ai/ReceiptReviewForm.tsx)) | "Paid from" | |
 | [CsvImportFlow.tsx:162](../../src/components/data/CsvImportFlow.tsx:162) | one "Import into" picker for the whole file | The CSV header format stays the same. A foreign account converts each row at its date's rate (Phase 3). |
 | [dummyDataService.ts](../../src/services/integrations/dummyDataService.ts) | — | Seed 2–3 accounts (one non-spendable, one USD) and spread the mock rows across them. |
-| Time deposits (if shipped first) | "Funded from" / "Withdraw to" | |
+| Time deposits | "Funded from" / "Withdraw to" | Built after Accounts, with these pickers from the start; see [TIME_DEPOSITS.md](TIME_DEPOSITS.md). |
 
 For v1, debts, goals and investments are tracked in the profile currency. Paying any of them from a foreign account converts at that day's rate, the same as an expense (Phase 3).
 

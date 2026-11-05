@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Links, amounts and labels no longer cut off or end in "…" on small phones; long lines wrap instead.
 - Chart tooltips no longer cut off at the edges of Insights and Dividends charts.
 - Notes inside Learn guides, such as what Discreet mode shows, were missing and now appear.
+- Live Sync: deleting a debt payment with both interest and fees now removes all of it on your other devices.
 
 ---
 

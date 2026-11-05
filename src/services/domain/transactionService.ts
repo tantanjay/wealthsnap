@@ -299,9 +299,9 @@ export const deleteTransaction = async (id: string): Promise<void> => {
         const db = await getDatabase();
 
         await db.withTransactionAsync(async () => {
-            // Look up the paired transfer leg before it gets cascaded away, so it can be
-            // tombstoned too - otherwise a synced device would never learn it was deleted.
-            const pairedLeg = await db.getFirstAsync<{ id: string }>(
+            // Collect every linked leg (a debt payment can have both interest and fee legs) before
+            // the cascade, so each is tombstoned - otherwise a synced device keeps the leftovers.
+            const linkedLegs = await db.getAllAsync<{ id: string }>(
                 'SELECT id FROM transactions WHERE linkedTransactionId = ?',
                 [id]
             );
@@ -311,8 +311,8 @@ export const deleteTransaction = async (id: string): Promise<void> => {
             await db.runAsync('DELETE FROM transactions WHERE linkedTransactionId = ?', [id]);
 
             await upsertTombstone('transactions', id);
-            if (pairedLeg) {
-                await upsertTombstone('transactions', pairedLeg.id);
+            for (const leg of linkedLegs) {
+                await upsertTombstone('transactions', leg.id);
             }
         });
 
