@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Pressable, ActivityIndicator, StyleSheet, Dimensions, FlatList } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Pressable, ActivityIndicator, StyleSheet, Dimensions, FlatList, Image } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -23,6 +23,7 @@ import { CONFIG } from '@constants/config';
 import { type, space, radius, fontFamily, layout } from '@styles/theme';
 
 const { height } = Dimensions.get('window');
+const APP_ICON = require('../../../assets/images/icon.png');
 
 const SetupScreen = ({ navigation }: any) => {
     const { ds } = useTheme();
@@ -36,6 +37,8 @@ const SetupScreen = ({ navigation }: any) => {
     const [searchQuery, setSearchQuery] = useState('');
 
     const [isRestoring, setIsRestoring] = useState(false);
+    const [isPopulating, setIsPopulating] = useState(false);
+    const isBusy = isRestoring || isPopulating;
     const [hasRestored, setHasRestored] = useState(false);
 
     // Restore State
@@ -156,9 +159,9 @@ const SetupScreen = ({ navigation }: any) => {
      */
     const handlePopulateDemoData = async () => {
         try {
-            setIsRestoring(true); // Reuse restoring state for loading indicator
+            setIsPopulating(true);
             await generateDummyData();
-            setIsRestoring(false);
+            setIsPopulating(false);
 
             await saveLastBackupDate(new Date().toISOString());
 
@@ -171,7 +174,7 @@ const SetupScreen = ({ navigation }: any) => {
                 }
             ], { cancelable: false });
         } catch {
-            setIsRestoring(false);
+            setIsPopulating(false);
             showAlert('Error', 'Failed to generate demo data.');
         }
     };
@@ -296,42 +299,73 @@ const SetupScreen = ({ navigation }: any) => {
 
                 {/* Step 1: Welcome / Restore */}
                 {step === 1 && (
-                    <View style={styles.stepContainer}>
-                        <Text style={[type.title, styles.heading, { color: ds.text }]}>Welcome to WealthSnap! 🎉</Text>
-                        <Text style={[type.small, styles.heading, styles.description, { color: ds.text2 }]}>
-                            Start your journey to financial freedom
-                        </Text>
+                    <View style={styles.welcome}>
+                        <View style={styles.welcomeTop}>
+                            <View style={styles.brand}>
+                                <Image source={APP_ICON} style={styles.appIcon} accessibilityIgnoresInvertColors />
+                                <Text style={[type.title, styles.center, { color: ds.text }]}>Welcome to WealthSnap</Text>
+                                <Text style={[type.small, styles.center, styles.tagline, { color: ds.text2 }]}>
+                                    A clear picture of your money — what you spend, what you own, and what you&apos;re saving for.
+                                </Text>
+                            </View>
 
-                        <Group>
-                            <Row
-                                icon="person-add-outline"
-                                title="New user"
-                                subtitle="Create your profile"
-                                chevron
+                            <Group>
+                                <Row domain="cash" title="Know where it goes" subtitle="Spending, budgets and safe-to-spend" />
+                                <Row domain="invest" title="Watch it grow" subtitle="Holdings, dividends and net worth" />
+                                <Row domain="goals" title="Save with purpose" subtitle="Goals that fund themselves each month" last />
+                            </Group>
+                        </View>
+
+                        <View style={styles.actions}>
+                            <View style={styles.privacyNote}>
+                                <Ionicons name="lock-closed-outline" size={14} color={ds.text2} />
+                                <Text style={[type.caption, { color: ds.text2 }]}>
+                                    No account needed · Data stays encrypted on this device
+                                </Text>
+                            </View>
+
+                            <Pressable
                                 onPress={() => setStep(2)}
-                            />
-                            <Row
-                                icon="cloud-download-outline"
-                                leading={isRestoring ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
-                                title={isRestoring ? 'Restoring...' : 'Restore from backup'}
-                                subtitle="Import your previous data"
-                                chevron={!isRestoring}
-                                onPress={isRestoring ? undefined : handleRestoreFromBackup}
-                                last={!CONFIG.ENABLE_DUMMY_DATA}
-                                style={{ opacity: isRestoring ? 0.6 : 1 }}
-                            />
+                                disabled={isBusy}
+                                style={[styles.button, { backgroundColor: ds.accent, opacity: isBusy ? 0.5 : 1 }]}
+                                accessibilityRole="button"
+                                accessibilityState={{ disabled: isBusy }}
+                            >
+                                <Text style={[type.bodyStrong, { color: ds.onAccent }]}>Get started</Text>
+                            </Pressable>
+
+                            <Pressable
+                                onPress={handleRestoreFromBackup}
+                                disabled={isBusy}
+                                style={[styles.linkButton, { opacity: isBusy && !isRestoring ? 0.5 : 1 }]}
+                                accessibilityRole="button"
+                                accessibilityState={{ disabled: isBusy, busy: isRestoring }}
+                            >
+                                {isRestoring
+                                    ? <ActivityIndicator size="small" color={ds.accent} />
+                                    : <Ionicons name="cloud-download-outline" size={18} color={ds.accent} />}
+                                <Text style={[type.bodyStrong, { color: ds.accent }]}>
+                                    {isRestoring ? 'Restoring…' : 'Restore from a backup'}
+                                </Text>
+                            </Pressable>
+
                             {CONFIG.ENABLE_DUMMY_DATA && (
-                                <Row
-                                    icon="construct-outline"
-                                    leading={isRestoring ? <ActivityIndicator size="small" color={ds.accent} /> : undefined}
-                                    title="Populate demo data"
-                                    subtitle="For your eyes only"
-                                    chevron={!isRestoring}
-                                    onPress={isRestoring ? undefined : handlePopulateDemoData}
-                                    last
-                                />
+                                <Pressable
+                                    onPress={handlePopulateDemoData}
+                                    disabled={isBusy}
+                                    style={[styles.linkButton, { opacity: isBusy && !isPopulating ? 0.5 : 1 }]}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ disabled: isBusy, busy: isPopulating }}
+                                >
+                                    {isPopulating
+                                        ? <ActivityIndicator size="small" color={ds.text2} />
+                                        : <Ionicons name="construct-outline" size={16} color={ds.text2} />}
+                                    <Text style={[type.small, { color: ds.text2 }]}>
+                                        {isPopulating ? 'Generating demo data…' : 'Populate demo data · dev only'}
+                                    </Text>
+                                </Pressable>
                             )}
-                        </Group>
+                        </View>
                     </View>
                 )}
 
@@ -509,6 +543,47 @@ const styles = StyleSheet.create({
     description: {
         marginTop: space[1],
         marginBottom: space[4],
+    },
+    welcome: {
+        flex: 1,
+        justifyContent: 'space-between',
+        paddingTop: space[7],
+        paddingBottom: space[5],
+        gap: space[6],
+    },
+    welcomeTop: {
+        gap: space[6],
+    },
+    brand: {
+        alignItems: 'center',
+        gap: space[2],
+        paddingHorizontal: layout.groupPadding,
+    },
+    appIcon: {
+        width: 72,
+        height: 72,
+        borderRadius: radius.group,
+        marginBottom: space[3],
+    },
+    tagline: {
+        maxWidth: 320,
+    },
+    actions: {
+        gap: space[3],
+    },
+    privacyNote: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: space[1],
+        marginBottom: space[1],
+    },
+    linkButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: space[2],
+        minHeight: 44,
     },
     heroHeader: {
         alignItems: 'center',
