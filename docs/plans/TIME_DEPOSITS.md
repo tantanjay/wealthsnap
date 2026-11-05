@@ -6,6 +6,8 @@ WealthSnap can record moving money into a time deposit today, but only as a bare
 
 This plan adds Time Deposits as a real entity: principal, rate, withholding tax, term, maturity. The deposit is treated as an investment: it lives in Holdings and counts in the Investments total and Net Worth. The app prompts on maturity, both on open and as a push notification, and the user can withdraw or re-deposit.
 
+**Builds on [Accounts](ACCOUNTS.md), which ships first.** Every cash row a deposit writes (opening, maturity, interest, penalty) belongs to an account. So the deposit form has a **"Funded from"** picker, and withdrawing has a **"Withdraw to"** picker, from day one. That avoids retrofitting these forms, and the backup and sync logic for their rows, after Accounts lands.
+
 **Decisions made with the user:**
 - **Interest is counted only at maturity.** No daily accrual. Net Worth includes principal while the deposit is active; interest enters as `INCOME` when it's paid out.
 - **Withholding tax is a stored field** (`taxRate`, e.g. 20% PH final tax), separate from `interestRate`.
@@ -13,7 +15,10 @@ This plan adds Time Deposits as a real entity: principal, rate, withholding tax,
 - **Deposits live in the Holdings tab and count as an investment**: in the Holdings total, the Snapshot "Investments" row, and allocation.
 - **Maturity prompt** works like Reminder Catch-up: a sheet on app open (when unlocked) listing matured deposits, with Withdraw / Re-deposit / Later. **Later** hides a deposit until the next day.
 - **Push notification on the maturity date**, plus the on-open sheet.
-- **"Locked" is removed from the Transfer form UI only.** The `TIME_DEPOSIT` enum value stays in the type and the DB CHECK, and old rows stay as they are, with an opt-in "Convert to time deposit" action.
+- **Funded from an account, withdrawn to an account.** The deposit remembers its funding account (`fundingAccountId`).
+  - Withdraw, Re-deposit (for interest that isn't rolled in) and Pre-terminate pre-select that same account, since money usually goes back where it came from. The user can pick another account.
+  - Cash on hand is the default when nothing else is chosen, as everywhere else.
+- **"Locked" is already gone from the Transfer form**, because Accounts removes all of its destination chips. The `TIME_DEPOSIT` enum value stays in the type and the DB CHECK, and old rows stay as they are, with an opt-in "Convert to time deposit" action.
 - **Pre-termination:** if the amount received is less than the principal, the shortfall is recorded as an expense. If it's at least the principal, the excess is just (reduced) interest.
 - **One new table**, `time_deposits`, plus a `timeDepositId` tag column on `transactions`, the same shape as debts and savings goals.
 
@@ -40,6 +45,7 @@ export interface TimeDeposit {
     closedAt?: string;          // set on withdraw / pre-terminate / roll-over
     rolledFromId?: string;      // the deposit this one was re-deposited from
     fundedFromCash: boolean;    // false = money was never in tracked cash (no opening transfer)
+    fundingAccountId?: string;  // account the OPENING row came from; default for Withdraw to. Unset = Cash on hand
     currency?: string;
     notes?: string;
     createdAt: string;
@@ -63,6 +69,11 @@ Tagged transactions record **cash movements only**: opening, maturity, interest,
 | `ROLLOVER` | `TRANSFER_OUT` +new deposit, `transferAccount: 'TIME_DEPOSIT'` | Re-deposit: principal (± interest) moved into the new deposit |
 | `INTEREST` | `INCOME` +deposit, category `Interest` | Net interest paid (gross − tax) |
 | `PENALTY` | `EXPENSE` +deposit, category `Fees` | Pre-termination where the amount received < principal |
+
+**Every row also carries an `accountId`** (Accounts plan):
+- `OPENING` uses the funding account.
+- `MATURITY`, `INTEREST` and `PENALTY` use the account chosen in Withdraw to / Received into.
+- A roll-over writes its `MATURITY`, `INTEREST` and `ROLLOVER` rows all on that one account, so the account nets to zero, or to the net interest when interest isn't rolled in.
 
 ### Interest and tax math (pre-fill only, always editable)
 
@@ -102,17 +113,17 @@ Net Worth formula: `assets = cash + investments (market value + active time-depo
 
 ### Schema & types
 - [databaseSchema.ts](../../src/services/database/databaseSchema.ts): add `CREATE TABLE IF NOT EXISTS time_deposits`, modeled on `debts`. Encrypt TEXT `name`, `principal` and `notes`; plaintext for rates, dates, status. Add indexes on `status` and `maturityDate`. The table needs no migration (same reason given in the `migrateToVersion17` comment, [databaseSchema.ts:615](../../src/services/database/databaseSchema.ts:615)).
-- Add `timeDepositId TEXT` to the `transactions` CREATE (fresh installs). Add `migrateToVersion18` as a plain `ALTER TABLE transactions ADD COLUMN timeDepositId TEXT`. **No table rebuild:** `'TIME_DEPOSIT'` is already in the CHECK, and a column with no default can be added in place. Swallow only the "duplicate column name" error, as `addColumnWithBackfill` ([databaseSchema.ts:299](../../src/services/database/databaseSchema.ts:299)) does. Bump `DATABASE_VERSION` to 18 ([databaseSchema.ts:7](../../src/services/database/databaseSchema.ts:7)) and wire it after [databaseService.ts:62](../../src/services/database/databaseService.ts:62).
+- Add `timeDepositId TEXT` to the `transactions` CREATE (fresh installs). Add `migrateToVersion19` as a plain `ALTER TABLE transactions ADD COLUMN timeDepositId TEXT`. **No table rebuild:** `'TIME_DEPOSIT'` is already in the CHECK, and a column with no default can be added in place. Swallow only the "duplicate column name" error, as `addColumnWithBackfill` ([databaseSchema.ts:299](../../src/services/database/databaseSchema.ts:299)) does. Bump `DATABASE_VERSION` to 19 ([databaseSchema.ts:7](../../src/services/database/databaseSchema.ts:7)) and wire it after Accounts' `migrateToVersion18` in [databaseService.ts](../../src/services/database/databaseService.ts). If Accounts' version number changes, this one moves with it.
 - [transactionService.ts](../../src/services/domain/transactionService.ts): add `timeDepositId` to both INSERT queries (lines 17 and 26), the values array (line 56) and the row mapper (line 258).
 - [types/index.ts](../../src/types/index.ts): `timeDepositId?: string` on `Transaction`; `TimeDeposit` and `TimeDepositStatus` from Phase 0. `TransferAccount` unchanged.
 
 ### Domain service & metrics
 - `src/services/domain/timeDepositService.ts` (new): mirror [savingsGoalService.ts](../../src/services/domain/savingsGoalService.ts). Covers `save`, `getAll` (decrypt, then sort in JS), `delete` (tombstone via `upsertTombstone('time_deposits', id)`) and `bulkSave`. Actions:
-  - `openDeposit(deposit, fundedFromCash)`: saves the deposit, plus an `OPENING` transfer if funded from cash.
-  - `convertLegacyTransfer(deposit, existingTx)`: saves the deposit and tags `existingTx` as `OPENING`.
-  - `withdrawAtMaturity(deposit, netInterest)`: writes `MATURITY` and `INTEREST`, sets `status = 'MATURED'` and `closedAt`.
-  - `rollOver(old, newDeposit, netInterest, includeInterest)`: closes the old deposit like a withdrawal, then opens the new one with `rolledFromId` and a `ROLLOVER` transfer of principal (or principal + net interest).
-  - `preterminate(deposit, amountReceived)`: applies the Phase 0 pre-termination rule.
+  - `openDeposit(deposit, fundedFromCash, fundingAccountId)`: saves the deposit with `fundingAccountId`, plus an `OPENING` transfer from that account if funded from cash.
+  - `convertLegacyTransfer(deposit, existingTx)`: saves the deposit and tags `existingTx` as `OPENING`. The deposit's `fundingAccountId` is copied from the row's own `accountId`.
+  - `withdrawAtMaturity(deposit, netInterest, toAccountId)`: writes `MATURITY` and `INTEREST` into `toAccountId`, sets `status = 'MATURED'` and `closedAt`.
+  - `rollOver(old, newDeposit, netInterest, includeInterest, toAccountId)`: closes the old deposit like a withdrawal into `toAccountId`, then opens the new one with `rolledFromId` and a `ROLLOVER` transfer of principal (or principal + net interest) out of that same account. The new deposit's `fundingAccountId` = `toAccountId`.
+  - `preterminate(deposit, amountReceived, toAccountId)`: applies the Phase 0 pre-termination rule, with every row on `toAccountId`.
   - `deleteDeposit(deposit, mode)`: see edge cases.
   - Write each action's rows in one DB transaction, so a partial failure can't leave cash and deposit status disagreeing. Every action ends by calling `syncMaturityNotifications` (Phase 2).
 - `src/utils/timeDepositMetrics.ts` (new): `getDepositBalance(d, asOf?)`, `isActiveAsOf(d, asOf)`, `estimateInterest(d)` (returns `{ gross, tax, net }` on a 365-day basis), `isMatured(d, today)` and `daysToMaturity`.
@@ -138,17 +149,19 @@ Net Worth formula: `assets = cash + investments (market value + active time-depo
     - Turning it off shows the same warning as investments: "This will not deduct from your cash."
     - The info icon opens a "Syncing Your Cash Flow" sheet that reuses the investment one's cash ⇄ deposit flow diagram.
     - When editing, the switch is disabled, and the subtitle reads "Auto-updated with deposit changes".
+  - **Funded from:** the Accounts `AccountPicker`, shown under the Cash flow switch while it's on. Cash on hand is pre-selected. Hidden when the switch is off, since there's no `OPENING` row. While editing it's locked, like the switch; to move a deposit's funding to another account, delete and re-add it. Only profile-currency accounts are listed (deposits are profile currency in v1).
   - Show the estimated net interest live under the rate fields.
   - **Notes:** an optional multi-line field at the bottom, the same style as InvestmentForm's notes, for things like account number hints, the branch, or "auto-renews". It's saved to `notes` (encrypted), stays editable after the deposit closes, and shows in the deposit's Options modal under its details. It isn't copied into the `OPENING` transaction's note, and it's carried over to the new deposit on Re-deposit.
 - **Record menu entry:** add a "Time deposit" item (`lock-closed-outline`, free now that the "Locked" chip is removed) to the Investment section of [RecordMenuModal.tsx:139](../../src/components/record/RecordMenuModal.tsx:139), after Commodities. It skips the Asset Dictionary check that `handleInvestmentSelect` does (deposits have no symbol). Add an `onSelectTimeDeposit` prop, wired in [RecordScreen.tsx:384](../../src/screens/RecordScreen.tsx:384), that renders `TimeDepositForm` the same way `handleDebtSelect` renders `DebtForm` (line 181). The Holdings "Add time deposit" row opens the same form.
 - `src/components/timeDeposits/TimeDepositOptionsModal.tsx` (new): same gear-menu convention as `SavingsGoalOptionsModal`. Edit and Delete on top, then action cards: Withdraw (if matured), Re-deposit (if matured), Pre-terminate (if active).
-- [TransferForm.tsx:28](../../src/components/transaction/TransferForm.tsx:28): drop `TIME_DEPOSIT` from `DEST_CONFIG` only (UI; enum stays).
+- Transfer form: nothing to do. Accounts already removed every destination chip, "Locked" included. Old `TIME_DEPOSIT` rows keep their label through the label map Accounts moved to `src/constants/accounts.ts`.
 - [TransactionOptionsModal.tsx](../../src/components/transaction/TransactionOptionsModal.tsx): add "Convert to time deposit" for legacy untagged `TIME_DEPOSIT` rows.
 - History and Ledger locking: tagged deposit rows are **not tappable for edit or delete** (extend `isLocked` in [HistoryListItem.tsx:217](../../src/components/history/HistoryListItem.tsx:217) and the gate in [LedgerTab.tsx:115](../../src/components/home/LedgerTab.tsx:115)). Deleting an `OPENING` row by hand would bring the cash back while the deposit still counts, inflating Net Worth. Changes go through the deposit's Options.
 
 **Phase 1 done when:**
 - A deposit funded from cash makes cash drop by the principal while Net Worth stays flat; the Holdings total and the Snapshot Investments row rise by the principal.
 - A deposit saved with the Cash flow switch off leaves cash unchanged and raises Net Worth by the principal.
+- A deposit funded from BDO lowers BDO's balance only; other accounts are unchanged.
 - Last month's sparkline point includes a deposit that started before that month-end and excludes one that started after.
 - Tagged rows can't be edited or deleted from History or Ledger.
 - "Locked" is gone from the Transfer form.
@@ -160,14 +173,15 @@ Net Worth formula: `assets = cash + investments (market value + active time-depo
 
 ### On-open sheet
 - `src/components/timeDeposits/MaturityCatchupModal.tsx` (new): same structure as [ReminderCatchupModal.tsx](../../src/components/reminders/ReminderCatchupModal.tsx) (a `Group` + `FlatList` of `Row`s and a footer). Each row shows the deposit, principal, maturity date and an **editable net interest** field pre-filled from the 365-day estimate, with actions:
-  - **Withdraw to cash:** `withdrawAtMaturity` with the typed interest
+  - **Withdraw:** `withdrawAtMaturity` with the typed interest, into the row's **Withdraw to** account. That's a compact account chip on the row, pre-selected to the deposit's funding account (or Cash on hand), and tapping it opens the picker.
   - **Re-deposit:** opens `TimeDepositForm` pre-filled with the same name, rate, tax and term, start = old maturity date, the typed interest, and a toggle "Include interest in new principal". On save, `rollOver`.
   - **Later:** hides the deposit until the next calendar day. Store `{ [depositId]: 'YYYY-MM-DD' }` in AsyncStorage (device-local UI state, like the backup-reminder date; not synced or backed up).
-- Footer: "Withdraw all (n)" when more than one is listed, like "Complete all" in Reminder Catch-up. It uses each row's current interest value.
+- Footer: "Withdraw all (n)" when more than one is listed, like "Complete all" in Reminder Catch-up. It uses each row's current interest value and Withdraw to account.
+- Re-deposit's form shows the same Withdraw to chip, labelled "Interest to" when "Include interest in new principal" is off. That's where the interest lands, and it's the account the roll-over rows run through.
 - [App.tsx:149](../../App.tsx:149) `checkBackupsAndReminders`: after the reminders check, load deposits where `status === 'ACTIVE' && maturityDate <= today` and not snoozed for today. Only one sheet shows at a time: if reminders are pending, show them first, then check deposits from that sheet's `onClose`. Mount a second `BottomModal` next to Reminder Catch-up ([App.tsx:208](../../App.tsx:208)). Only run when unlocked, as reminders do.
 
 ### Pre-terminate (from Options, not the sheet)
-- One input, "Total amount received", pre-filled with the principal. Below it, a live preview of what will be recorded: "₱X interest" or "₱Y loss recorded as an expense". Then `preterminate`.
+- One input, "Total amount received", pre-filled with the principal, plus a **Received into** account picker, pre-selected to the funding account. Below it, a live preview of what will be recorded: "₱X interest" or "₱Y loss recorded as an expense". Then `preterminate`.
 
 ### Push notification on maturity date
 - `syncMaturityNotifications(deposits)` in `timeDepositService.ts`:
@@ -210,7 +224,7 @@ Net Worth formula: `assets = cash + investments (market value + active time-depo
 
 ## Phase 5 — Backup / Export / Sync / Clear-data
 
-- [backupEntities.ts](../../src/services/integrations/backupEntities.ts): add a `timeDeposits` registry entry (mirroring `savingsGoals`, line 31). Add `{ field: 'timeDepositId', refEntity: 'timeDeposits' }` to the transactions `fkFields` (line 44), and a self-reference FK for `rolledFromId`. Check the registry supports an entity referencing itself; if not, remap it after insert.
+- [backupEntities.ts](../../src/services/integrations/backupEntities.ts): add a `timeDeposits` registry entry (mirroring `savingsGoals`, line 31). Add `{ field: 'timeDepositId', refEntity: 'timeDeposits' }` to the transactions `fkFields` (line 44), `{ field: 'fundingAccountId', refEntity: 'accounts' }` on the deposit entry (placed after `accounts` in the registry), and a self-reference FK for `rolledFromId`. Check the registry supports an entity referencing itself; if not, remap it after insert.
 - [syncEntities.ts:34](../../src/services/integrations/syncEntities.ts:34): add a `SYNC_ENTITY_REGISTRY` entry.
 - [exportService.ts](../../src/services/integrations/exportService.ts): a "Time Deposits" sheet and a "Deposit Transactions" sheet, mirroring the goal pair (lines 114 and 128).
 - [storageService.ts:688](../../src/services/core/storageService.ts:688) `clearAllData`: add `DELETE FROM time_deposits;` and clear the "Later" AsyncStorage key.
@@ -240,7 +254,14 @@ Net Worth formula: `assets = cash + investments (market value + active time-depo
 - **Start date in the past, already matured:** saving makes it show in the maturity sheet immediately (check again after save). No notification is scheduled, since its date has passed.
 - **Start date in the future:** allowed. Future-dated rows count for cash immediately (METRICS shared rule), so the `OPENING` transfer (dated `startDate`) lowers cash now. To match, "now" Net Worth counts any `ACTIVE` deposit regardless of start date; past month-ends use `startDate`. Cash and deposit move together, and Net Worth stays flat.
 - **Maturity date before start date, zero or negative principal, rate > 100%, tax rate outside 0–100:** form validation via an in-app alert, never `alert()`.
-- **`fundedFromCash` but cash would go negative:** warn, allow (same as other transfers).
+- **`fundedFromCash` but the funding account would go negative:** warn, allow (same as other transfers).
+- **Funding from a non-spendable account** (e.g. an emergency fund): Safe-to-Spend and Runway don't change, since that money was already excluded. Withdrawing into a spendable account doesn't raise Safe-to-Spend either, because no `TRANSFER_IN` does (Accounts rules).
+
+**Accounts**
+- **Funding account archived:** Withdraw to still pre-selects it, since banks often return a deposit to the account it came from. The picker shows it with an "Archived" tag, so the user can switch if that account is closed.
+- **Funding account deleted:** Accounts moves its rows to Cash on hand. `fundingAccountId` points nowhere, so Withdraw to falls back to Cash on hand. The `OPENING` row already moved with the rest.
+- **Withdrawing to a different account than the funding one:** allowed, nothing special. The two accounts' balances just reflect where the money went.
+- **Foreign-currency accounts:** not offered in either picker in v1, since deposits are profile currency.
 - **Term in months landing on a non-existent day** (31 Jan + 1 month): clamp to the month end, and let the user edit the maturity date because the bank's date wins.
 
 **While active**
