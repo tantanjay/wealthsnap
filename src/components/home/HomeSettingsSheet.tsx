@@ -6,6 +6,7 @@ import { PrivacyMode, usePrivacy } from '@context/PrivacyContext';
 import { type, space, radius } from '@styles/theme';
 import { Group, Row, SectionHeader, Sheet } from '@components/ds';
 import { HoldingsSectionId, SNAPSHOT_RANGES, SnapshotRange, SnapshotRowId } from '@services/core/storageService';
+import { FetchListKind } from '@components/investments/FetchListSheet';
 import SnapshotOrderList, { OrderItemMeta, SNAPSHOT_ROW_META } from './SnapshotOrderList';
 
 export type HomeTab = 'snapshot' | 'ledger' | 'holdings' | 'goals' | 'loans';
@@ -51,9 +52,10 @@ interface HomeSettingsSheetProps {
     onChangeRange: (range: SnapshotRange) => void;
     holdingsOrder: HoldingsSectionId[];
     onChangeHoldingsOrder: (order: HoldingsSectionId[]) => void;
+    onFetchList: (kind: FetchListKind) => void;
 }
 
-const HomeSettingsSheet: React.FC<HomeSettingsSheetProps> = ({ visible, onClose, tab, order, onChangeOrder, range, onChangeRange, holdingsOrder, onChangeHoldingsOrder }) => {
+const HomeSettingsSheet: React.FC<HomeSettingsSheetProps> = ({ visible, onClose, tab, order, onChangeOrder, range, onChangeRange, holdingsOrder, onChangeHoldingsOrder, onFetchList }) => {
     const { ds } = useTheme();
     const { mode, setMode } = usePrivacy();
 
@@ -108,6 +110,12 @@ const HomeSettingsSheet: React.FC<HomeSettingsSheetProps> = ({ visible, onClose,
                     <Group style={styles.orderGroup}>
                         <Text style={[type.small, styles.note, { color: ds.text2 }]}>Hold the handle and drag to reorder the sections under your portfolio summary.</Text>
                         <SnapshotOrderList order={holdingsOrder} meta={HOLDINGS_SECTION_META} onChange={onChangeHoldingsOrder} />
+                    </Group>
+
+                    <SectionHeader grouped title="Prices" />
+                    <Group>
+                        <Row icon="cloud-download-outline" title="Fetch price list" subtitle="AI estimates for your stocks and crypto" chevron onPress={() => onFetchList('price')} />
+                        <Row icon="cash-outline" title="Fetch dividend list" subtitle="AI lookup of your stocks' dividends" chevron last onPress={() => onFetchList('dividend')} />
                     </Group>
                 </>
             )}

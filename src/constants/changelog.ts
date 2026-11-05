@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Allocation: Assets view showing every holding, alongside Stocks, Sector and Type.
 - Insights: Net worth growth chart with Cumulative, Percentage and Growth views over 6M, 1Y, 3Y or All time.
 - Learn: guides for Safe to Spend, Budgets, Recurring & Reminders, Monthly Summary, AI Assistant and Backup, Sync & Export; the Guides shelf shows two rows.
+- Holdings settings: Fetch price list and Fetch dividend list, in a new Prices section at the bottom.
+- Fetch dividend list: fetches dividends for every stock you hold in one go, from This year or one or two years back, from Holdings → Tools or Holdings settings.
+- Background task banner: long tasks like Fetch price list show their progress above the bottom bar on every screen, then their result; tap it to hide it until the task finishes.
+- Loading placeholders in the shape of each page on Home and its Ledger, Holdings, Goals and Loans tabs, replacing the spinner.
 
 ### Changed
 - Spending comparison and Income analytics: one info icon; the calculation notes moved into "Understanding your chart".
@@ -23,12 +27,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Holdings allocation map: tap a box for its details, including Total return with dividends; tap elsewhere to close.
 - Ledger: Safe to spend shows days of usual spending in Discreet mode instead of "—".
 - Profile: Budgets and Recurring transactions show their amounts and total in Discreet mode.
+- Fetch price list also fetches prices for your crypto holdings.
+- Fetch price list asks for each holding on its own, several at a time, so it finishes much faster: about 100 seconds instead of 260 for 7 holdings.
+- Fetching dividends from a holding's history makes one AI request instead of two.
+- Gemini usage: a price or dividend fetch shows as one row with its number of calls; the list keeps the latest 300 entries instead of 50.
+- Holding history: Prices and Dividends show their per-share amounts in Discreet mode; Hidden still masks them.
+- Starting Fetch price list while one is already running no longer starts a second fetch.
 
 ### Fixed
 - Links, amounts and labels no longer cut off or end in "…" on small phones; long lines wrap instead.
 - Chart tooltips no longer cut off at the edges of Insights and Dividends charts.
 - Notes inside Learn guides, such as what Discreet mode shows, were missing and now appear.
 - Live Sync: deleting a debt payment with both interest and fees now removes all of it on your other devices.
+- Holding history: a price's high and low no longer show in Hidden mode.
+- Holdings: Projected dividends no longer count a dividend twice when it's paid in a different month than the year before, and leave out one-off special dividends.
 
 ---
 

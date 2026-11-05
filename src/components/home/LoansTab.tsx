@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BigNumber } from 'bignumber.js';
 
 import BottomModal from '@components/common/BottomModal';
+import { LoansSkeleton } from '@components/home/HomeSkeleton';
 import { Disclaimer } from '@components/common/Disclaimer';
 import { EmptyState } from '@components/common/EmptyState';
 import DebtStatusModal from '@components/debts/DebtStatusModal';
@@ -256,11 +257,7 @@ const LoansTab: React.FC<LoansTabProps> = ({ format: f, currency, onOpenRecord }
     };
 
     if (!hasLoaded) {
-        return (
-            <View style={styles.loading}>
-                <ActivityIndicator size="large" color={ds.accent} />
-            </View>
-        );
+        return <LoansSkeleton />;
     }
 
     if (debts.length === 0) {
@@ -592,11 +589,6 @@ const styles = StyleSheet.create({
     },
     empty: {
         paddingVertical: space[3],
-    },
-    loading: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: space[7] * 2,
     },
     fields: {
         gap: space[3],

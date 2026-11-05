@@ -18,6 +18,7 @@ import { DataStatusProvider } from '@context/DataStatusContext';
 import { GlobalErrorBoundary } from '@components/common/GlobalErrorBoundary';
 import { PrivacyGuard } from '@components/common/PrivacyGuard';
 import { CustomAlert } from '@components/common/CustomAlert';
+import { RootBackgroundTaskBanner } from '@components/common/BackgroundTaskBanner';
 
 import { ReminderCatchupModal } from '@components/reminders/ReminderCatchupModal';
 import { Reminder } from '@types';
@@ -204,6 +205,7 @@ const AppContent = ({ initialRoute }: { initialRoute: 'Onboarding' | 'Main' | 'L
   return (
     <>
       <AppNavigator initialRoute={initialRoute} />
+      {!isLocked && <RootBackgroundTaskBanner />}
       <CustomAlert />
 
       <BottomModal

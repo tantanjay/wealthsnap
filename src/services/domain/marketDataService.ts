@@ -5,6 +5,7 @@ import { addPriceHistory, updatePriceHistory, getPriceHistory } from '@services/
 import { addDividendHistory, updateDividendHistory, getDividendHistory } from '@services/domain/dividendHistoryService';
 import { getAllAssets } from '@services/domain/assetService';
 import { BigNumber } from 'bignumber.js';
+import { BackgroundTaskTone, finishBackgroundTask, isBackgroundTaskRunning, startBackgroundTask } from '@services/core/backgroundTaskService';
 
 /**
  * Orchestrates fetching market data and handles currency conversion.
@@ -132,46 +133,103 @@ const FETCH_DURATIONS: Record<string, string> = {
     'Last 3 days': 'Last 3 days',
 };
 
-// "Fetch price list" for every stock holding (Holdings tab and Investment screen). `notify` shows progress.
-export const refreshStockHoldingPrices = async (
+interface HoldingsFetchJob {
+    taskId: string;
+    // Plural noun for messages: "prices", "dividends".
+    noun: string;
+    // Shown in the banner, e.g. "Last 3 days" or "This year".
+    durationLabel: string;
+    isFetchable: (type?: string) => boolean;
+    // What to say when no holding qualifies.
+    noneMessage: string;
+    fetch: (requests: AssetRequest[]) => Promise<number>;
+}
+
+// Shared by the "Fetch … list" actions: one banner task per kind, one fetch of that kind at a time.
+const runHoldingsFetch = async (
+    job: HoldingsFetchJob,
+    holdings: { symbol: string; type?: string }[],
+    notify: (message: string) => void,
+    onUpdated: () => void,
+): Promise<void> => {
+    if (isBackgroundTaskRunning(job.taskId)) {
+        notify(`A ${job.noun.replace(/s$/, '')} fetch is already running.`);
+        return;
+    }
+    const fetchable = holdings.filter(h => job.isFetchable(h.type));
+    if (fetchable.length === 0) {
+        notify(job.noneMessage);
+        return;
+    }
+
+    const finish = (tone: BackgroundTaskTone, message: string) => {
+        finishBackgroundTask(job.taskId, tone, message);
+        notify(message);
+    };
+
+    const count = `${fetchable.length} ${fetchable.length === 1 ? 'holding' : 'holdings'}`;
+    startBackgroundTask(job.taskId, `Fetching ${job.noun} · ${job.durationLabel}`, `${count} · can take a few minutes`);
+    try {
+        const allAssets = await getAllAssets();
+        const requests: AssetRequest[] = fetchable.map(h => ({
+            symbol: h.symbol,
+            // The AI prompt prices "CRYPTO:<coin>" in USD on a 24/7 calendar.
+            exchange: allAssets.find(a => a.symbol === h.symbol)?.exchange || (h.type === 'CRYPTO' ? 'CRYPTO' : 'Unknown'),
+        }));
+
+        const savedCount = await job.fetch(requests);
+        if (savedCount > 0) {
+            finish('success', `Updated ${savedCount} ${job.noun}.`);
+            onUpdated();
+        } else {
+            finish('info', `No new ${job.noun} to update.`);
+        }
+    } catch (err) {
+        console.error(`Bulk ${job.noun} fetch failed`, err);
+        finish('error', `Failed to fetch ${job.noun}.`);
+    }
+};
+
+const isStock = (type?: string) => type === 'STOCKS' || type === 'STOCK';
+
+// "Fetch price list": every stock and crypto holding; progress shows in the app-wide banner, `notify` adds a toast.
+export const refreshHoldingPrices = (
     holdings: { symbol: string; type?: string }[],
     durationLabel: string,
     targetCurrency: string,
     notify: (message: string) => void,
     onUpdated: () => void,
-): Promise<void> => {
-    if (holdings.length === 0) {
-        notify('No holdings to fetch prices for.');
-        return;
-    }
-    notify(`Fetching prices for ${durationLabel}...`);
+): Promise<void> => runHoldingsFetch({
+    taskId: 'price-fetch',
+    noun: 'prices',
+    durationLabel,
+    isFetchable: type => isStock(type) || type === 'CRYPTO',
+    noneMessage: 'No stock or crypto holdings to fetch prices for.',
+    fetch: requests => refreshAssetPrices(requests, FETCH_DURATIONS[durationLabel] || 'Last 7 days', targetCurrency),
+}, holdings, notify, onUpdated);
 
-    try {
-        const stockHoldings = holdings.filter(h => h.type === 'STOCKS' || h.type === 'STOCK');
-        if (stockHoldings.length === 0) {
-            notify('No Stock holdings found.');
-            return;
-        }
-
-        const allAssets = await getAllAssets();
-        const requests: AssetRequest[] = stockHoldings.map(h => ({
-            symbol: h.symbol,
-            exchange: allAssets.find(a => a.symbol === h.symbol)?.exchange || 'Unknown',
-        }));
-
-        refreshAssetPrices(requests, FETCH_DURATIONS[durationLabel] || 'Last 7 days', targetCurrency).then(savedCount => {
-            if (savedCount > 0) {
-                notify(`Updated ${savedCount} prices.`);
-                onUpdated();
-            } else {
-                notify('No new prices to update.');
-            }
-        }).catch(err => {
-            console.error('Bulk fetch failed', err);
-            notify('Failed to fetch prices.');
-        });
-    } catch (e) {
-        console.error('Error preparing bulk fetch', e);
-        notify('Error initiating fetch.');
-    }
+// Dividend list options: the label shown, and the start year sent to the AI.
+export const getDividendListRanges = () => {
+    const year = new Date().getFullYear();
+    return [
+        { label: 'This year', year },
+        { label: `Since ${year - 1}`, year: year - 1 },
+        { label: `Since ${year - 2}`, year: year - 2 },
+    ];
 };
+
+// "Fetch dividend list": every stock holding, from January 1 of the chosen year.
+export const refreshHoldingDividends = (
+    holdings: { symbol: string; type?: string }[],
+    range: { label: string; year: number },
+    notify: (message: string) => void,
+    onUpdated: () => void,
+): Promise<void> => runHoldingsFetch({
+    taskId: 'dividend-fetch',
+    noun: 'dividends',
+    durationLabel: range.label,
+    isFetchable: isStock,
+    noneMessage: 'No stock holdings to fetch dividends for.',
+    // Same wording as a single holding's dividend fetch.
+    fetch: requests => refreshAssetDividends(requests, `From January 1, ${range.year} to Present`),
+}, holdings, notify, onUpdated);

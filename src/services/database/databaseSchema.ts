@@ -4,7 +4,7 @@ import { ASYNC_KEYS } from '@constants/config';
 import { encryptField } from '@services/core/encryptionService';
 
 export const DATABASE_NAME = 'wealthsnap.db';
-export const DATABASE_VERSION = 17;
+export const DATABASE_VERSION = 18;
 
 /**
  * Create all database tables and indexes
@@ -174,7 +174,8 @@ export const createTables = async (db: SQLite.SQLiteDatabase): Promise<void> => 
             outputTokens INTEGER DEFAULT 0,
             imageCount INTEGER DEFAULT 0,
             durationMs INTEGER DEFAULT 0,
-            costUSD TEXT DEFAULT 0
+            costUSD TEXT DEFAULT 0,
+            runId TEXT
         );
 
         CREATE INDEX IF NOT EXISTS idx_ai_logs_timestamp ON ai_usage_logs(timestamp DESC);
@@ -672,6 +673,22 @@ export const migrateToVersion17 = async (db: SQLite.SQLiteDatabase): Promise<voi
         console.log('[Migration] Successfully migrated to version 17');
     } catch (error) {
         console.error('[Migration] Failed version 17 migration:', error);
+        throw error;
+    }
+};
+
+// Adds runId so the calls of one multi-call AI job (e.g. a per-symbol price fetch) can be shown as one usage row.
+export const migrateToVersion18 = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+    try {
+        console.log('[Migration] Starting migration to version 18...');
+        const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(ai_usage_logs)');
+        if (!columns.some(c => c.name === 'runId')) {
+            await db.execAsync('ALTER TABLE ai_usage_logs ADD COLUMN runId TEXT');
+        }
+        await setDatabaseVersion(db, 18);
+        console.log('[Migration] Successfully migrated to version 18');
+    } catch (error) {
+        console.error('[Migration] Failed version 18 migration:', error);
         throw error;
     }
 };

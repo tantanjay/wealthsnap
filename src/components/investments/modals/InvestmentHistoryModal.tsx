@@ -72,9 +72,12 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
     onDataChange
 }) => {
     const { ds } = useTheme();
-    const { isPrivacyEnabled } = usePrivacy();
+    const { isPrivacyEnabled, mode } = usePrivacy();
     // Detail sheets follow the privacy mode too: Discreet and Hidden both mask amounts here.
     const money = (...args: Parameters<typeof formatCurrencyAmount>) => (isPrivacyEnabled ? '****' : formatCurrencyAmount(...args));
+    // Per-share prices and dividends are market data, not your money, so only Hidden masks them.
+    const isHidden = mode === 'hidden';
+    const marketMoney = (...args: Parameters<typeof formatCurrencyAmount>) => (isHidden ? '****' : formatCurrencyAmount(...args));
     const { showAlert } = useAlert();
     const { checkConsent } = useAIConsent();
     const navigation = useNavigation<any>();
@@ -595,8 +598,8 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                     domain="invest"
                     icon={isAiFetch ? 'sparkles-outline' : 'pricetag-outline'}
                     title={new Date(item.timestamp).toLocaleDateString()}
-                    subtitle={item.high && item.low ? `H: ${item.high.toNumber()} L: ${item.low.toNumber()}` : undefined}
-                    value={money(displayPrice.toNumber(), displayCurrency)}
+                    subtitle={item.high && item.low && !isHidden ? `H: ${item.high.toNumber()} L: ${item.low.toNumber()}` : undefined}
+                    value={marketMoney(displayPrice.toNumber(), displayCurrency)}
                     trailing={canDelete ? renderDeleteButton(() => handleDeletePrice(item.id)) : undefined}
                     last={index === filteredPrices.length - 1}
                 />
@@ -631,7 +634,7 @@ export const InvestmentHistoryModal: React.FC<InvestmentHistoryModalProps> = ({
                     icon={isAiFetch ? 'sparkles-outline' : 'cash-outline'}
                     title={`Ex ${new Date(item.exDate).toLocaleDateString()}`}
                     subtitle={item.paymentDate ? `Pay ${new Date(item.paymentDate).toLocaleDateString()}` : undefined}
-                    value={money(item.amount.toNumber(), currency)}
+                    value={marketMoney(item.amount.toNumber(), currency)}
                     change={item.type.charAt(0) + item.type.slice(1).toLowerCase()}
                     trailing={canDelete ? renderDeleteButton(() => handleDeleteDividend(item.id)) : undefined}
                     last={index === filteredDividends.length - 1}
