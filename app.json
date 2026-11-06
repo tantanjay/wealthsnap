@@ -92,7 +92,8 @@
       "expo-task-manager",
       "expo-sharing",
       "@react-native-community/datetimepicker",
-      "./plugins/withScannerOrientationFix"
+      "./plugins/withScannerOrientationFix",
+      "./plugins/withR8Optimization"
     ],
     "extra": {
       "eas": {

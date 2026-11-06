@@ -87,6 +87,9 @@
 ## 🔄 Live Sync Fix
 - **Deleted debt payments stay deleted everywhere**: A debt payment that included both interest and a fee is saved as three linked parts. Deleting it removed all three on the phone you used, but only told your other synced devices about two of them, so the interest or the fee stayed behind there as a lone expense. Deleting a payment now removes every part on every device. Payments deleted before this update aren't fixed automatically; delete the leftover interest or fee line on the other device.
 
+## ⚙️ Leaner Android Build
+- **R8 optimisation on**: Android release builds already removed unused code and resources. Now R8 also optimises the code that is left and uses optimised resource shrinking, for better memory use and performance. Google Play had flagged both as missing.
+
 ---
 
 **Previous Version:** 2.0.0
