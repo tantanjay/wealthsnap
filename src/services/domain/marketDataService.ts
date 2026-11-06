@@ -90,10 +90,11 @@ export const refreshAssetDividends = async (assets: AssetRequest[], duration: st
 
     for (const d of dividends) {
         try {
-            // Check for existing AI_FETCH record (match exDate YYYY-MM-DD or ISO start)
+            // Same ex-date and type: a regular and a special dividend can share an ex-date and stay separate rows.
             const history = await getDividendHistory(d.symbol);
             const existing = history.find(curr =>
                 curr.source === 'AI_FETCH' &&
+                curr.type === d.type &&
                 (curr.exDate === d.exDate || curr.exDate.startsWith(d.exDate))
             );
 
@@ -110,8 +111,8 @@ export const refreshAssetDividends = async (assets: AssetRequest[], duration: st
                 });
             } else {
                 await addDividendHistory({
-                    // Same idea as prices: a concurrent fetch of the same dividend replaces this row instead of adding one.
-                    id: `AI_${d.symbol}_${d.exDate.slice(0, 10)}`,
+                    // Deterministic so a concurrent fetch of the same dividend replaces this row instead of adding one.
+                    id: `AI_${d.symbol}_${d.exDate.slice(0, 10)}_${d.type}`,
                     symbol: d.symbol,
                     exDate: d.exDate,
                     paymentDate: d.paymentDate,
