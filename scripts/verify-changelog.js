@@ -1,5 +1,6 @@
 const fs = require('fs');
-const md = fs.readFileSync('CHANGELOG.md', 'utf8').replace(/\n\[.+?\]: https:\/\/github\.com\/[\s\S]*$/, '\n');
+const md = fs.readFileSync('CHANGELOG.md', 'utf8').replace(/\n\[.+?\]: https:\/\/github\.com\/[\s\S]*$/, '\n')
+    .replace(/^## \[Unreleased\]\s*\n(?=## )/m, ''); // regen hides an empty Unreleased heading
 let CHANGELOG_MARKDOWN;
 const tsSrc = fs.readFileSync('src/constants/changelog.ts', 'utf8').replace('export const CHANGELOG_MARKDOWN', 'CHANGELOG_MARKDOWN');
 eval(tsSrc);

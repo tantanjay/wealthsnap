@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Background task banner: long tasks like Fetch price list show their progress above the bottom bar on every screen, then their result; tap it to hide it until the task finishes; starting the same task again brings it back.
 - Loading placeholders in the shape of each page on Home and its Ledger, Holdings, Goals and Loans tabs, replacing the spinner.
 - Assets: a Dividends setting, Per share or Pro-rated by time held (monthly or daily), for assets like Pag-IBIG MP2; Projected dividends use it.
+- Change Logs: a version menu in the header jumps to any release.
 
 ### Changed
 - Spending comparison and Income analytics: one info icon; the calculation notes moved into "Understanding your chart".
@@ -46,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fetching prices or dividends now reports a failure when every AI request failed, instead of "No new prices to update".
 - A crypto holding's own price fetch looks it up as crypto, like Fetch price list does.
 - Holdings: Dividend yield no longer counts dividends paid in shares or property as cash.
+- Change Logs: links open in your browser instead of showing as raw text.
+- Change Logs: an empty Unreleased heading no longer shows.
 
 ---
 

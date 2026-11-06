@@ -77,6 +77,13 @@
 
 ---
 
+## 🗒️ Change Logs: Jump to a Version
+- **Pick a release, go straight there**: Change Logs lists every release from the newest down, so reading about an older one meant a long scroll. A version menu now sits in the top right of Change Logs. Tap it and pick a release, like 1.11.0 · Mar 9, 2026, and the page scrolls to it. The menu shows the version you're reading and keeps up as you scroll.
+- **Links you can tap**: Links in Change Logs used to show as raw text, square brackets and web address included. They now show as tappable text that opens in your browser.
+- **No empty heading**: Each release left an empty Unreleased heading at the top of Change Logs. It now only shows when there's something under it.
+
+---
+
 ## 📱 Small Phone Fixes
 - **Nothing pushed off the edge on narrow screens**: On phones around 360dp wide, a few one-line rows ran out of room and pushed their last item off the screen. In Discreet, the Snapshot's "Runway · Savings rate · Details" line hid the Details link, and in Open the Ledger's "In · Out" line could hide Calendar once both amounts were large. These lines now wrap onto a second line instead, so every link stays visible and tappable. Along the same lines, the big number at the top of each tab shrinks to fit instead of breaking over two lines, the Savings trend stats shrink to fit their card, section titles wrap onto a second line before they'd crowd their "Show all" link, all five Home tabs fit without scrolling, and your name in the greeting shrinks slightly before it gets cut off.
 - **No more "…" on your information**: Anywhere a line of information used to stop at "…" or get cut off, it now wraps onto the next line, including chart summaries, budget names, transaction details, skin names, guide titles and goal names. Single amounts shrink slightly to fit instead of splitting. Wider screens still show everything on one line.
