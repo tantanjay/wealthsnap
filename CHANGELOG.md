@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Holdings allocation map: tap a box for its details, including Total return with dividends; tap elsewhere to close.
 - Ledger: Safe to spend shows days of usual spending in Discreet mode instead of "—".
 - Profile: Budgets and Recurring transactions show their amounts and total in Discreet mode.
+- Ledger calendar: upcoming recurring amounts on future days show in Discreet mode; Hidden still leaves them out.
 - Fetch price list also fetches prices for your crypto holdings.
 - Fetch price list asks for each holding on its own, several at a time, so it finishes much faster: about 100 seconds instead of 260 for 7 holdings.
 - Fetching dividends from a holding's history makes one AI request instead of two.
