@@ -328,13 +328,12 @@ async function restoreV1Legacy(zip: JSZip, password: string | undefined, onProgr
         throw new Error('INVALID_BACKUP_FORMAT');
     }
 
-    // Set to today so it wont prompt during restoring data
-    await AsyncStorage.setItem(ASYNC_KEYS.REVIEW_PROMPT.LAST_PROMPT, new Date().toISOString());
-
     // Restore Data
     // We clear all existing data first to ensure the restore is a complete replacement/clean slate.
     onProgress?.({ stage: 'clearing', label: 'Clearing existing data…' });
     await Storage.clearAllData();
+    // After the clear (which wipes this key), so the review prompt doesn't fire on restored data.
+    await AsyncStorage.setItem(ASYNC_KEYS.REVIEW_PROMPT.LAST_PROMPT, new Date().toISOString());
 
     if (backupData.profile) {
         await Storage.saveUserProfile(backupData.profile);
@@ -477,8 +476,9 @@ async function restoreV2(zip: JSZip, password: string | undefined, onProgress?: 
     }
 
     onProgress?.({ stage: 'clearing', label: 'Clearing existing data…' });
-    await AsyncStorage.setItem(ASYNC_KEYS.REVIEW_PROMPT.LAST_PROMPT, new Date().toISOString());
     await Storage.clearAllData();
+    // After the clear (which wipes this key), so the review prompt doesn't fire on restored data.
+    await AsyncStorage.setItem(ASYNC_KEYS.REVIEW_PROMPT.LAST_PROMPT, new Date().toISOString());
 
     if (profile) {
         await Storage.saveUserProfile(profile);
@@ -501,6 +501,7 @@ async function restoreV2(zip: JSZip, password: string | undefined, onProgress?: 
         onProgress?.({ stage: 'clearing', label: 'Restore failed - restoring your previous data…' });
         try {
             await Storage.clearAllData();
+            await AsyncStorage.setItem(ASYNC_KEYS.REVIEW_PROMPT.LAST_PROMPT, new Date().toISOString());
             if (preRestoreProfile) {
                 await Storage.saveUserProfile(preRestoreProfile);
                 if (preRestoreProfile.isOnboardingComplete) {
