@@ -40,6 +40,10 @@ In this repo these live in `src/constants/helpContent.ts` (Help Center guides, i
 
 Working copies here are CRLF (`core.autocrlf=true`; the index stores LF). When changing files with sed, Python or similar instead of the editor tools, read and write in a way that keeps each file's existing line endings, and don't splice in text with the other style — a stray lone CR makes git treat the file as binary. Afterwards, check `git diff --stat`: a small edit showing up as a whole-file rewrite means the line endings changed, so fix that before moving on.
 
+## Android device testing (Windows)
+
+In Git Bash, set `MSYS_NO_PATHCONV=1` before passing device paths to `adb` (e.g. `/sdcard/ui.xml`). Otherwise they get rewritten as Windows paths (`/Files/Git/sdcard/...`) and the command quietly reads or writes the wrong place.
+
 ## Release notes / changelog
 
 When asked to update release notes for unreleased work, follow [docs/dev/versioning-and-release-process.md](docs/dev/versioning-and-release-process.md) exactly — don't improvise the format. Key points to not forget:
