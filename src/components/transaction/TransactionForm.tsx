@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { BigNumber } from 'bignumber.js';
-import { View, Text, TextInput, ScrollView, Pressable, Platform, StyleSheet } from 'react-native';
+import { View, Text, TextInput, ScrollView, ScrollViewInstance, Pressable, Platform, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Group, SectionHeader, SegmentedControl } from '@components/ds';
@@ -61,7 +61,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     const [showCategoryModal, setShowCategoryModal] = useState(false);
 
     const [recentCategories, setRecentCategories] = useState<string[]>([]);
-    const categoryScrollRef = useRef<ScrollView>(null);
+    const categoryScrollRef = useRef<ScrollViewInstance>(null);
 
     // Funding Source (Savings Goals). Only offered when creating a new EXPENSE - editing an
     // existing transaction doesn't re-run the Auto-Offset/Split-Funding creation logic below

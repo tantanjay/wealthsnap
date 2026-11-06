@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Modal, Pressable, StyleSheet, DimensionValue, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
-import { GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
+// Legacy ScrollView: its ref carries the handlerTag that SnapshotOrderList's blocksExternalGesture needs.
+import { GestureHandlerRootView, LegacyScrollView as ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

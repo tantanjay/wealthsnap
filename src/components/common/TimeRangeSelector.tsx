@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { Text, Pressable, PressableInstance } from 'react-native';
 
 import { DropdownMenu, DropdownAnchor } from '@components/ds';
 import { useTheme } from '@context/ThemeContext';
@@ -23,7 +23,7 @@ interface TimeRangeSelectorProps {
 // Text trigger ("6M ⌄") with a dropdown anchored under it, like SectionHeader's menu.
 const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({ value, onChange, options = ['6M', '1Y', '3Y', 'ALL'] }) => {
     const { ds } = useTheme();
-    const triggerRef = useRef<View>(null);
+    const triggerRef = useRef<PressableInstance>(null);
     const [anchor, setAnchor] = useState<DropdownAnchor | null>(null);
 
     const openMenu = () => {

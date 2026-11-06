@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Gemini usage: a price or dividend fetch shows as one row with its number of calls; the list keeps the latest 300 entries instead of 50.
 - Holding history: Prices and Dividends show their per-share amounts in Discreet mode; Hidden still masks them.
 - Starting Fetch price list while one is already running no longer starts a second fetch.
-- Build: Turned on R8 optimisation and optimised resource shrinking for Android release builds.
+- Build: Upgraded to Expo SDK 58 (React Native 0.88, Android Gradle Plugin 9), with R8 optimisation and optimised resource shrinking on for Android release builds.
 
 ### Fixed
 - Links, amounts and labels no longer cut off or end in "…" on small phones; long lines wrap instead.

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { View, Text, Pressable, PressableInstance, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 
 import { useTheme } from '@context/ThemeContext';
 import { type, space, layout } from '@styles/theme';
@@ -25,7 +25,7 @@ export interface SectionHeaderProps {
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({ title, actionLabel, onAction, menu, grouped, style }) => {
     const { ds } = useTheme();
-    const triggerRef = useRef<View>(null);
+    const triggerRef = useRef<PressableInstance>(null);
     const [anchor, setAnchor] = useState<DropdownAnchor | null>(null);
 
     const openMenu = () => {
