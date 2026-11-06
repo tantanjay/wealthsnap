@@ -39,7 +39,7 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, []);
 
     const handleAppStateChange = useCallback(async (nextAppState: AppStateStatus) => {
-        if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        if (appState.current?.match(/inactive|background/) && nextAppState === 'active') {
             // App coming to foreground
             if (isPickingFile.current) {
                 // Allow a grace period before re-enabling lock checks

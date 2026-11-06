@@ -93,7 +93,7 @@
       "expo-sharing",
       "@react-native-community/datetimepicker",
       "./plugins/withScannerOrientationFix",
-      "./plugins/withR8Optimization"
+      "./plugins/withCmakeObjectPathMax"
     ],
     "extra": {
       "eas": {

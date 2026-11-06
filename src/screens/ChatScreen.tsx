@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Platform, KeyboardAvoidingView, StyleSheet } from 'react-native';
+import { View, Text, Pressable, TouchableOpacity, TextInput, ScrollView, ScrollViewInstance, ActivityIndicator, Platform, KeyboardAvoidingView, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
@@ -114,7 +114,7 @@ const ChatScreen = ({ navigation }: any) => {
     // here rather than per-message, since createChatCache already bills it once.
     const [cacheCreationStats, setCacheCreationStats] = useState<{ tokens: number; costUSD: BigNumber }>({ tokens: 0, costUSD: new BigNumber(0) });
 
-    const scrollRef = useRef<ScrollView>(null);
+    const scrollRef = useRef<ScrollViewInstance>(null);
     const chatCacheRef = useRef<ChatCache | null>(null);
 
     useEffect(() => {
