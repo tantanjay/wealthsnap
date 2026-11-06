@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, Modal, Pressable, StyleSheet, useWindowDimensions, LayoutChangeEvent } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, Modal, Pressable, ScrollView, ScrollViewInstance, StyleSheet, useWindowDimensions, LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -36,6 +36,9 @@ function DropdownMenu<K extends string>({ anchor, options, value, onSelect, onCl
     const insets = useSafeAreaInsets();
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
     const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+    const scrollRef = useRef<ScrollViewInstance>(null);
+    // Long lists (e.g. every changelog version) scroll inside the menu instead of running off screen.
+    const maxListHeight = Math.min(screenHeight * 0.6, screenHeight - insets.top - insets.bottom - EDGE * 2);
 
     const onLayout = (e: LayoutChangeEvent) => {
         const { width, height } = e.nativeEvent.layout;
@@ -64,24 +67,28 @@ function DropdownMenu<K extends string>({ anchor, options, value, onSelect, onCl
                     position ?? styles.measuring,
                 ]}
             >
-                {options.map(option => {
-                    const selected = option.key === value;
-                    return (
-                        <Pressable
-                            key={option.key}
-                            onPress={() => {
-                                onClose();
-                                if (!selected) onSelect(option.key);
-                            }}
-                            accessibilityRole="menuitem"
-                            accessibilityState={{ selected }}
-                            style={({ pressed }) => [styles.item, pressed && { backgroundColor: ds.inset }]}
-                        >
-                            <Text style={[type.smallMedium, { color: selected ? ds.accent : ds.text }]}>{option.label}</Text>
-                            {selected && <Ionicons name="checkmark" size={16} color={ds.accent} />}
-                        </Pressable>
-                    );
-                })}
+                <ScrollView ref={scrollRef} style={{ maxHeight: maxListHeight }} contentContainerStyle={styles.list} bounces={false}>
+                    {options.map(option => {
+                        const selected = option.key === value;
+                        return (
+                            <Pressable
+                                key={option.key}
+                                // Starts a scrolled list with the current option in view.
+                                onLayout={selected ? e => scrollRef.current?.scrollTo({ y: Math.max(0, e.nativeEvent.layout.y - maxListHeight / 2), animated: false }) : undefined}
+                                onPress={() => {
+                                    onClose();
+                                    if (!selected) onSelect(option.key);
+                                }}
+                                accessibilityRole="menuitem"
+                                accessibilityState={{ selected }}
+                                style={({ pressed }) => [styles.item, pressed && { backgroundColor: ds.inset }]}
+                            >
+                                <Text style={[type.smallMedium, { color: selected ? ds.accent : ds.text }]}>{option.label}</Text>
+                                {selected && <Ionicons name="checkmark" size={16} color={ds.accent} />}
+                            </Pressable>
+                        );
+                    })}
+                </ScrollView>
             </View>
         </Modal>
     );
@@ -91,9 +98,11 @@ const styles = StyleSheet.create({
     menu: {
         position: 'absolute',
         minWidth: 180,
-        paddingVertical: space[1],
         borderRadius: radius.md,
         borderWidth: 1,
+    },
+    list: {
+        paddingVertical: space[1],
     },
     measuring: {
         top: 0,

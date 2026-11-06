@@ -18,6 +18,25 @@ export const splitBoldSegments = (text: string): InlineSegment[] => {
         );
 };
 
+export interface LinkSegment {
+    text: string;
+    url?: string;
+}
+
+// Splits [label](https://…) links out of a line; other text passes through unchanged.
+export const splitLinkSegments = (text: string): LinkSegment[] => {
+    const segments: LinkSegment[] = [];
+    const pattern = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
+    let last = 0;
+    for (const m of text.matchAll(pattern)) {
+        if (m.index > last) segments.push({ text: text.slice(last, m.index) });
+        segments.push({ text: m[1], url: m[2] });
+        last = m.index + m[0].length;
+    }
+    if (last < text.length) segments.push({ text: text.slice(last) });
+    return segments;
+};
+
 export const parseMarkdownToContentItems = (markdown: string): ContentItem[] => {
     const lines = markdown.split('\n');
     const items: ContentItem[] = [];
