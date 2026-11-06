@@ -19,6 +19,8 @@ interface HistoryCalendarProps {
     currency?: string;
     // Privacy Discreet/Hidden: drop the per-day amounts, keep the income/expense strips and badges.
     hideAmounts?: boolean;
+    // Privacy Hidden only: Discreet keeps the upcoming recurring amounts, like Profile's Recurring list.
+    hideForecast?: boolean;
 }
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -32,6 +34,7 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
     recurrenceRules = [],
     currency = 'PHP',
     hideAmounts = false,
+    hideForecast = false,
 }) => {
     const { ds } = useTheme();
 
@@ -199,7 +202,7 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     </View>
                 </View>
                 <View style={styles.centerContent}>
-                    {!hideAmounts && date > new Date() && stat && (stat.futureIncomeAmount.isGreaterThan(0) || stat.futureExpenseAmount.isGreaterThan(0)) && (
+                    {!hideForecast && date > new Date() && stat && (stat.futureIncomeAmount.isGreaterThan(0) || stat.futureExpenseAmount.isGreaterThan(0)) && (
                         <View style={styles.ghostStack}>
                             {stat.futureIncomeAmount.isGreaterThan(0) && <Text style={[styles.ghostText, { color: ds.success }]}>{formatCompactCurrency(stat.futureIncomeAmount, currency)}</Text>}
                             {stat.futureExpenseAmount.isGreaterThan(0) && <Text style={[styles.ghostText, { color: ds.danger }]}>{formatCompactCurrency(stat.futureExpenseAmount, currency)}</Text>}

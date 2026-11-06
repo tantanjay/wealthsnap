@@ -227,6 +227,7 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                     onSelectDate={setSelectedDate}
                     currency={profile?.currency}
                     hideAmounts={!f.isOpen}
+                    hideForecast={f.isHidden}
                 />
             </Group>
         </View>

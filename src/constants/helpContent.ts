@@ -140,7 +140,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'bullet', text: 'Hidden: every amount shows as ****, keeping a leading + or − sign.' },
             { type: 'heading2', text: 'What Discreet shows instead' },
             { type: 'bullet', text: 'Home: net worth\'s % change, runway in months, savings rate, cash kept as a % of lifetime income, investment return %, % of loans repaid, % to your goals.' },
-            { type: 'bullet', text: 'Ledger: this month\'s Out as a % of In. Holdings: total return and each holding\'s weight. Goals and Loans: % to target, % repaid or collected.' },
+            { type: 'bullet', text: 'Ledger: this month\'s Out as a % of In. The calendar keeps upcoming recurring amounts on future days. Holdings: total return and each holding\'s weight. Goals and Loans: % to target, % repaid or collected.' },
             { type: 'bullet', text: 'Insights: each Financial Health number\'s scale-free version (see the Financial Insights guide). Investment boost shows "—".' },
             { type: 'alert', alertType: 'info', text: 'Screens that don\'t have a Discreet version yet show Hidden instead.' },
             { type: 'heading2', text: 'Screenshots' },
