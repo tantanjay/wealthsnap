@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Holdings: Projected dividends no longer count a dividend twice when it's paid in a different month than the year before, and leave out one-off special dividends and dividends paid in shares or property.
 - Fetching prices or dividends now reports a failure when every AI request failed, instead of "No new prices to update".
 - A crypto holding's own price fetch looks it up as crypto, like Fetch price list does.
+- Holdings: Dividend yield no longer counts dividends paid in shares or property as cash.
 
 ---
 

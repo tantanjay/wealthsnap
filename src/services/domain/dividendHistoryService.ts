@@ -77,11 +77,6 @@ const shiftYears = (stamp: string, years: number): string => {
 
 // --- Queries ---
 
-const INSERT_DIVIDEND_HISTORY_QUERY = `
-    INSERT OR REPLACE INTO dividend_history (id, symbol, exDate, paymentDate, recordDate, amount, type, status, source)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-`;
-
 const UPDATE_DIVIDEND_HISTORY_QUERY = `
     UPDATE dividend_history 
     SET symbol = ?, exDate = ?, paymentDate = ?, recordDate = ?, amount = ?, type = ?, status = ?, source = ?, updatedAt = CURRENT_TIMESTAMP
@@ -140,7 +135,7 @@ export const addDividendHistory = async (dividend: Omit<DividendHistory, 'id' | 
     try {
         const db = await getDatabase();
         const id = dividend.id || generateUUID();
-        await db.runAsync(INSERT_DIVIDEND_HISTORY_QUERY, [
+        await db.runAsync(UPSERT_DIVIDEND_HISTORY_QUERY, [
             id,
             dividend.symbol,
             dividend.exDate,
@@ -337,10 +332,12 @@ export const getAnnualDividend = async (symbol: string): Promise<number> => {
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         const dateStr = getLocalDateStamp(oneYearAgo);
 
+        // Stock and property dividends pay in kind; their amount isn't cash per share.
         const query = `
-            SELECT amount FROM dividend_history 
-            WHERE symbol = ? 
-                AND exDate >= ? 
+            SELECT amount FROM dividend_history
+            WHERE symbol = ?
+                AND exDate >= ?
+                AND type IN ('CASH', 'SPECIAL')
         `;
 
         const rows = await db.getAllAsync<any>(query, [symbol, dateStr]);
