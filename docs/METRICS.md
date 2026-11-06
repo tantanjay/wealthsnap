@@ -2,7 +2,7 @@
 
 The single source of truth for every number the app computes: its formula, where it's shown, which data it reads, and how its rule changed over time.
 
-**To change a metric:** read its section first, history included. Change its **Formula** line, add a row to its history table, then update every place under **Shown on** and its user-facing explanations (see `PROJECT.md` → Calculation explanations). If the change undoes part of an earlier one, mark the row **↩** and name that version, both here and in the release notes.
+**To change a metric:** read its section first, history included. Change its **Formula** line, add a row to its history table, then update every place under **Shown on** and its user-facing explanations (see `PROJECT.md` → Calculation explanations). If the change undoes part of an earlier one, mark the row **↩** and name that version, both here and in the release notes. Every formula change or new history row needs a test in `src/utils/__tests__` that fails without the change, and a new row in [What each transaction counts toward](#what-each-transaction-counts-toward) needs a matching case in its matrix test. Run `npm test`.
 
 `master`'s history was rewritten after 1.15.0. Its log still covers every version, but under different commit IDs, so tags `v1.0.0`–`v1.15.0` aren't ancestors of `master` and ranges like `v1.14.0..master` don't work. To read old code, run `git fetch --tags`, then `git show v1.X.0:<path>`. The `v1.0.0` tag holds only the project scaffold; the code that shipped as 1.0.0 is at `v1.0.1`.
 
