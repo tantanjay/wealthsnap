@@ -159,7 +159,7 @@ const PrivacyModes = () => {
     // [mode, net worth, its change line, screenshots allowed]
     const modes: [string, string, string, boolean][] = [
         ['Open', '₱45,200', '+₱1,400', false],
-        ['Discreet', '+3.2%', 'this month', false],
+        ['Discreet', '+3.2%', 'this month', true],
         ['Hidden', '****', '+****', true],
     ];
     return (

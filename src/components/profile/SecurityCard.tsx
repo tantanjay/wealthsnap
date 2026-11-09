@@ -19,8 +19,8 @@ const SecurityCard = () => {
     const { ds } = useTheme();
     const { mode: privacyMode, revealForScreenshot } = usePrivacy();
     const { showAlert } = useAlert();
-    // Hidden already allows screenshots.
-    const showReveal = privacyMode !== 'hidden';
+    // Discreet and Hidden already allow screenshots.
+    const showReveal = privacyMode === 'open';
     const [hasPin, setHasPin] = useState(false);
     const [hasApiKey, setHasApiKey] = useState(false);
     const [timeoutSetting, setTimeoutSetting] = useState<Security.TimeoutOption>('daily');

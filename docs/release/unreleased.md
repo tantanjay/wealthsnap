@@ -66,6 +66,7 @@
 - **The sheet too**: Tapping the row shows the same days figure, plus debt and goal payments still due in days. It shows "—" until you have some spending in the last 90 days to measure against.
 - **Budgets and Recurring show their amounts**: In Profile, Manage budgets and Recurring transactions used to show `****` in Discreet mode. They now show each budget's monthly limit, the total across your budgets, and each recurring transaction's amount. Hidden mode still masks everything.
 - **Prices and dividends in a holding's history**: Opening a holding from the Holdings tab, the Prices and Dividends tabs used to show `****` in Discreet mode. They now show each day's closing price and each dividend per share, since these are the same for anyone who owns that stock and don't reveal how much you hold. The Positions tab stays masked, because its share counts next to each price would give your amounts away. In Hidden mode, a price's high and low used to still show under its date; they're now hidden along with the price.
+- **Screenshots in Discreet**: Discreet mode used to block screenshots like Open does. It now allows them, like Hidden, so you can capture your percentages and charts without any extra steps. Amounts Discreet still shows, such as single transactions and budgets, can be captured too. Discreet also no longer covers the app in your recent apps. Open still blocks screenshots, and Reveal for screenshot in Profile → Security now only appears there, since it's the only mode that needs it.
 
 ---
 

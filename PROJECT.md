@@ -44,7 +44,7 @@ Working copies here are CRLF (`core.autocrlf=true`; the index stores LF). When c
 
 In Git Bash, set `MSYS_NO_PATHCONV=1` before passing device paths to `adb` (e.g. `/sdcard/ui.xml`). Otherwise they get rewritten as Windows paths (`/Files/Git/sdcard/...`) and the command quietly reads or writes the wrong place.
 
-**Emulator screenshots are black in Open and Discreet.** The app blocks screenshots in those modes, so `adb exec-out screencap` returns a black image. To check UI, read the layout with `uiautomator dump` (text and bounds), or ask for Hidden mode / "Reveal for screenshot" when the visuals themselves need checking.
+**Emulator screenshots are black in Open.** The app blocks screenshots in that mode, so `adb exec-out screencap` returns a black image. To check UI, read the layout with `uiautomator dump` (text and bounds), or ask for Discreet / Hidden mode / "Reveal for screenshot" when the visuals themselves need checking.
 
 **Local Windows release builds and path length.** CMake build folders for some native libraries can go over the Windows path limit. `plugins/withCmakeObjectPathMax.js` works around this, but builds still fail from deep paths such as `.claude/worktrees/...`. Build from a short path, and don't lower the 240 value; smaller values make CMake skip the shortening.
 

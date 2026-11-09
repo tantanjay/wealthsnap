@@ -24,8 +24,8 @@ export const PrivacyGuard: React.FC = () => {
         };
     }, []);
 
-    // Mask the app switcher whenever screenshots are blocked (every mode but Hidden).
-    const showOverlay = mode !== 'hidden' && !isAppActive;
+    // Mask the app switcher whenever screenshots are blocked (Open only).
+    const showOverlay = mode === 'open' && !isAppActive;
 
     if (!showOverlay) {
         return null;

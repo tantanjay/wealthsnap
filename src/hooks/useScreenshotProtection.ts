@@ -3,11 +3,11 @@ import * as ScreenCapture from 'expo-screen-capture';
 
 import { usePrivacy } from '@context/PrivacyContext';
 
-// Blocks screenshots (FLAG_SECURE) in Open and Discreet; only Hidden, or an active
-// "Reveal for screenshot" window, allows them.
+// Blocks screenshots (FLAG_SECURE) in Open unless a "Reveal for screenshot" window is
+// active; Discreet and Hidden always allow them.
 export const useScreenshotProtection = () => {
     const { mode, isScreenshotRevealActive } = usePrivacy();
-    const allowCapture = mode === 'hidden' || isScreenshotRevealActive;
+    const allowCapture = mode !== 'open' || isScreenshotRevealActive;
 
     useEffect(() => {
         const updateProtection = async () => {
