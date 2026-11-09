@@ -173,7 +173,8 @@ export const getAllInvestments = async (): Promise<Investment[]> => {
 export const getLatestInvestmentDate = async (): Promise<string | null> => {
     try {
         const db = await getDatabase();
-        const result = await db.getAllAsync<{ createdAt: string }>('SELECT createdAt FROM investments ORDER BY createdAt DESC LIMIT 1');
+        // createdAt is SQLite UTC ("YYYY-MM-DD HH:MM:SS") or ISO for synced rows, so sort by real time and return as ISO UTC.
+        const result = await db.getAllAsync<{ createdAt: string }>(`SELECT strftime('%Y-%m-%dT%H:%M:%SZ', createdAt) AS createdAt FROM investments ORDER BY julianday(createdAt) DESC LIMIT 1`);
         return result[0]?.createdAt || null;
     } catch (error) {
         console.error('Error getting latest investment date:', error);

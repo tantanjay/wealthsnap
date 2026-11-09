@@ -101,31 +101,11 @@ export const useReviewPrompt = () => {
     const handleRate = async () => {
         setIsVisible(false);
 
-        // Mark as rated immediately so the modal disappears and doesn't return
-        await AsyncStorage.setItem(ASYNC_KEYS.REVIEW_PROMPT.HAS_RATED, 'true');
-
-        try {
-            if (await StoreReview.hasAction()) {
-                await StoreReview.requestReview();
-            } else {
-                const storeUrl = Platform.select({
-                    ios: 'https://apps.apple.com/app/idYOUR_APP_ID?action=write-review',
-                    // Web fallback for Android just in case market:// isn't supported
-                    android: 'market://details?id=com.christian.soyosa.WealthSnap',
-                });
-
-                if (storeUrl) {
-                    const canOpen = await Linking.canOpenURL(storeUrl);
-                    if (canOpen) {
-                        await Linking.openURL(storeUrl);
-                    } else if (Platform.OS === 'android') {
-                        // Final fallback to web browser for Android
-                        await Linking.openURL('https://play.google.com/store/apps/details?id=com.christian.soyosa.WealthSnap');
-                    }
-                }
-            }
-        } catch (error) {
-            console.warn("Rating redirect failed", error);
+        if (await openStoreListing()) {
+            await AsyncStorage.setItem(ASYNC_KEYS.REVIEW_PROMPT.HAS_RATED, 'true');
+        } else {
+            // Nothing opened, so ask again after the usual cooldown.
+            await AsyncStorage.setItem(ASYNC_KEYS.REVIEW_PROMPT.LAST_PROMPT, new Date().toISOString());
         }
     };
 
