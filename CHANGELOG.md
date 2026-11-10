@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Savings trend and category trend tooltips show on touch instead of a long press.
 - Holdings allocation map: tap a box for its details, including Total return with dividends; tap elsewhere to close.
 - Ledger: Safe to spend shows days of usual spending in Discreet mode instead of "—".
+- Ledger: each day's total shows in Discreet mode, as in Open; Hidden still masks it.
 - Profile: Budgets and Recurring transactions show their amounts and total in Discreet mode.
 - Ledger calendar: upcoming recurring amounts on future days show in Discreet mode; Hidden still leaves them out.
 - Fetch price list also fetches prices for your crypto holdings.

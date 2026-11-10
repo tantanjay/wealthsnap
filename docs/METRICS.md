@@ -513,7 +513,7 @@ Total income and Total expense compare month-to-date figures while the month is 
 
 ## Discreet and Hidden rendering
 
-**Rule:** Open shows every amount. Discreet replaces each amount with that metric's scale-free alternative (%, months, counts, progress); an amount with none is shown as "—". A single record's own amount (Ledger rows, Home's Recent, a transaction's options sheet, a recurring rule, a budget's limit; Profile's budgets total too) shows as in Open: one record says nothing about your totals; day totals and the month In / Out stay out. Hidden shows `****`, keeping a leading sign. %, months and counts render unchanged in every mode
+**Rule:** Open shows every amount. Discreet replaces each amount with that metric's scale-free alternative (%, months, counts, progress); an amount with none is shown as "—". A single record's own amount (Ledger rows, Home's Recent, a transaction's options sheet, a recurring rule, a budget's limit; Profile's budgets total too) shows as in Open: one record says nothing about your totals. The Ledger's day totals show too; the month In / Out stays out. Hidden shows `****`, keeping a leading sign. %, months and counts render unchanged in every mode
 
 **Shown on:** every amount. Screens without a Discreet version yet render Discreet as Hidden
 

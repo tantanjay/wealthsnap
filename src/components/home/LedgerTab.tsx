@@ -167,7 +167,7 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
                 icon={transactionIcon(item)}
                 title={title}
                 subtitle={subtitle}
-                // Single transactions show in Discreet; only totals (day, month) are left out.
+                // Single transactions and day totals show in Discreet; only month totals are left out.
                 value={f.recordMoney(amount, { signed: true })}
                 valueTone={isTransfer(item) ? 'neutral' : item.type === 'INCOME' && !f.isHidden ? 'good' : undefined}
                 onPress={() => handlePress(item)}
@@ -189,9 +189,7 @@ const LedgerTab: React.FC<LedgerTabProps> = ({ format: f, view, onChangeView, on
     const renderSectionHeader = ({ section }: { section: HistorySection }) => (
         <View style={styles.dayHeader}>
             <Text style={[type.smallStrong, { color: ds.text }]}>{section.title}</Text>
-            {!f.isDiscreet && (
-                <Text style={[type.smallNum, { color: ds.text2 }]}>{f.money(section.totalAmount, { signed: true })}</Text>
-            )}
+            <Text style={[type.smallNum, { color: ds.text2 }]}>{f.recordMoney(section.totalAmount, { signed: true })}</Text>
         </View>
     );
 

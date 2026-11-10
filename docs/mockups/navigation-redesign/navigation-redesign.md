@@ -78,11 +78,11 @@ The chosen mode applies app-wide (Insights isn't under Home but still follows it
 | Holdings | value ₱ | total return %, weight % per holding |
 | Loans row / Loans | outstanding ₱ | % repaid, obligations paid count |
 | Goals row / Goals | balance ₱ | % to target, goals on track |
-| Ledger / Recent | amounts, day totals, In / Out | each transaction's own amount; no day totals; Out as % of In |
+| Ledger / Recent | amounts, day totals, In / Out | each transaction's own amount and day totals; Out as % of In |
 | Ledger Safe to spend | ₱ | "—" |
 | Debt Drag sheet stepper | ₱ extra per month | number of steps, starting from 0 |
 
-Dropped in Discreet because they still leak scale: Investment Boost months (a huge "+N months" implies investments far exceed spending), portfolio value, totals built from transactions (day totals, month In / Out, Safe to spend), and the stepper's income-based starting amount. A single transaction's own amount stays: one record says nothing about your totals (see `docs/METRICS.md` → Discreet and Hidden rendering).
+Dropped in Discreet because they still leak scale: Investment Boost months (a huge "+N months" implies investments far exceed spending), portfolio value, totals built from transactions (month In / Out, Safe to spend), and the stepper's income-based starting amount. A single transaction's own amount and the Ledger's day totals stay: one record says nothing about your totals (see `docs/METRICS.md` → Discreet and Hidden rendering).
 
 ## 4. Insights
 

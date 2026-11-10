@@ -136,7 +136,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'paragraph', text: 'Pick a mode in Home settings (the sliders button on Home). It applies everywhere as soon as you pick it.' },
             { type: 'visual', id: 'privacy-modes' },
             { type: 'bullet', text: 'Open: every amount.' },
-            { type: 'bullet', text: 'Discreet: only numbers that don\'t reveal how much money is involved: percentages, months, counts and progress bars. Single transactions keep their amount, but day and month totals are left out. Useful at a glance in public.' },
+            { type: 'bullet', text: 'Discreet: only numbers that don\'t reveal how much money is involved: percentages, months, counts and progress bars. Single transactions and the Ledger\'s day totals keep their amount, but month totals are left out. Useful at a glance in public.' },
             { type: 'bullet', text: 'Hidden: every amount shows as ****, keeping a leading + or − sign.' },
             { type: 'heading2', text: 'What Discreet shows instead' },
             { type: 'bullet', text: 'Home: net worth\'s % change, runway in months, savings rate, cash kept as a % of lifetime income, investment return %, % of loans repaid, % to your goals.' },
