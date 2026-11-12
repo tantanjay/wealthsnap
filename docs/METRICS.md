@@ -283,7 +283,7 @@ These apply to every metric unless its section says otherwise.
 | 1.19.0 | Same | Docs only: Daily/Weekly and Monthly formulas documented separately |
 | 1.19.0 | Allowance keeps debt fees | ↩ See Burn Rate |
 | 2.0.0 | This month only (the Monthly formula) | Moved from History to the Ledger tab. History's Daily, Weekly and Yearly views and their formulas are gone. Bi-annual recurring rules now count every occurrence due before month-end (History counted only the next one) |
-| Unreleased | Same | Discreet shows days of usual daily spending instead of "—" |
+| 2.1.0 | Same | Discreet shows days of usual daily spending instead of "—" |
 
 ## Net Worth / Total Debt
 
@@ -344,7 +344,7 @@ These apply to every metric unless its section says otherwise.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
-| Unreleased | As above | Introduced |
+| 2.1.0 | As above | Introduced |
 
 ## Cash Kept
 
@@ -379,7 +379,7 @@ These apply to every metric unless its section says otherwise.
 | Version | Rule after this change | What changed |
 |---|---|---|
 | 2.0.0 | Unrealized % unchanged; + Total return; monthly buys' return documented | Investments screen removed. The Home Snapshot Investments row shows the existing unrealized % (also in Discreet); the new Holdings tab adds total return (realized, unrealized and dividends over all cost ever invested) in Open and Discreet |
-| Unreleased | Same; + Total return per allocation box | The allocation map's tap tooltip shows each box's total return beside its price return, so dividend earners like MP2 don't read 0.0% |
+| 2.1.0 | Same; + Total return per allocation box | The allocation map's tap tooltip shows each box's total return beside its price return, so dividend earners like MP2 don't read 0.0% |
 
 ## Loans Repaid / Obligations Paid
 
@@ -522,7 +522,7 @@ Total income and Total expense compare month-to-date figures while the month is 
 | Version | Rule after this change | What changed |
 |---|---|---|
 | 2.0.0 | Open / Discreet / Hidden | Replaced the on/off privacy toggle (on → Hidden, off → Open), set from Home settings instead of eye buttons; Insights follows it too. Screenshots stay blocked except in Hidden (the old "on"). Budgets, Recurring rules, Smart suggestions and Monthly Summary ignored the old toggle; they now fall back to Hidden |
-| Unreleased | Same | Profile's Budgets and Recurring rules show amounts in Discreet, including Budgets' total |
+| 2.1.0 | Same | Profile's Budgets and Recurring rules show amounts in Discreet, including Budgets' total |
 
 **Discreet chart figures**
 

@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [2.1.0] — 2026-11-12
 
 ### Added
 - Allocation: Assets view showing every holding, alongside Stocks, Sector and Type.

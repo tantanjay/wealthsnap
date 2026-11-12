@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-11-12
+
 ### Added
 - Allocation: Assets view showing every holding, alongside Stocks, Sector and Type.
 - Insights: Net worth growth chart with Cumulative, Percentage and Growth views over 6M, 1Y, 3Y or All time.
@@ -901,7 +903,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - AES-256 encrypted local storage.
 - No accounts, no ads, no cloud dependency.
 
-[Unreleased]: https://github.com/tantanjay/wealthsnap/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/tantanjay/wealthsnap/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/tantanjay/wealthsnap/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/tantanjay/wealthsnap/compare/v1.19.0...v2.0.0
 [1.19.0]: https://github.com/tantanjay/wealthsnap/compare/v1.18.0...v1.19.0
 [1.18.0]: https://github.com/tantanjay/wealthsnap/compare/v1.17.0...v1.18.0
