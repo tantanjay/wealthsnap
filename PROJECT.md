@@ -48,6 +48,8 @@ In Git Bash, set `MSYS_NO_PATHCONV=1` before passing device paths to `adb` (e.g.
 
 **Local Windows release builds and path length.** CMake build folders for some native libraries can go over the Windows path limit. `plugins/withCmakeObjectPathMax.js` works around this for the app and every native library, but builds still fail from deep paths such as `.claude/worktrees/...`. Build from a short path, and keep the limit between 251 and 259: CMake only shortens a long path when the shortened one fits under it.
 
+**EAS builds ignore some project config.** EAS sets its own `GRADLE_OPTS`, which overrides `gradle.properties` (parallel mode, heap). Before changing how an EAS build behaves, check the EAS docs for what it overrides and verify the change takes effect locally (e.g. run Gradle with the same `GRADLE_OPTS`). Free-tier builds are limited, so don't spend one on an unverified change.
+
 ## Release notes / changelog
 
 When asked to update release notes for unreleased work, follow [docs/dev/versioning-and-release-process.md](docs/dev/versioning-and-release-process.md) exactly — don't improvise the format. Key points to not forget:
