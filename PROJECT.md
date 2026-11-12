@@ -46,7 +46,7 @@ In Git Bash, set `MSYS_NO_PATHCONV=1` before passing device paths to `adb` (e.g.
 
 **Emulator screenshots are black in Open.** The app blocks screenshots in that mode, so `adb exec-out screencap` returns a black image. To check UI, read the layout with `uiautomator dump` (text and bounds), or ask for Discreet / Hidden mode / "Reveal for screenshot" when the visuals themselves need checking.
 
-**Local Windows release builds and path length.** CMake build folders for some native libraries can go over the Windows path limit. `plugins/withCmakeObjectPathMax.js` works around this, but builds still fail from deep paths such as `.claude/worktrees/...`. Build from a short path, and don't lower the 240 value; smaller values make CMake skip the shortening.
+**Local Windows release builds and path length.** CMake build folders for some native libraries can go over the Windows path limit. `plugins/withCmakeObjectPathMax.js` works around this for the app and every native library, but builds still fail from deep paths such as `.claude/worktrees/...`. Build from a short path, and keep the limit between 251 and 259: CMake only shortens a long path when the shortened one fits under it.
 
 ## Release notes / changelog
 

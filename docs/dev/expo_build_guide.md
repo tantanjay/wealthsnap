@@ -77,6 +77,34 @@ To see the status of your builds or download artifacts later:
 eas build:list
 ```
 
+### EAS memory limits
+The `preview`, `production` and `apk` profiles set `GRADLE_OPTS` in `eas.json` to turn off Gradle's parallel mode and allow at most 2 tasks at once. Without the cap, free-tier workers ran out of memory while R8 overlapped the native builds ("Gradle build daemon disappeared unexpectedly"). EAS's own `GRADLE_OPTS` overrides `gradle.properties`, so this is the only place the cap takes effect. Setting it also drops EAS's default heap, so `plugins/withGradleMemoryLimits.js` sets Gradle's heap to 3 GB instead.
+
+---
+
+## 4b. Build a Signed AAB Locally
+Use this when an EAS build fails or you have no EAS builds left. It produces the same Play Store AAB on your own machine.
+
+**1. Get the upload keystore.** Run `eas credentials -p android` and choose **credentials.json → Download credentials from EAS to credentials.json**. You get `credentials.json` (keystore password, key alias and key password in plain text) and `credentials/android/keystore.jks`. Keep both out of git and somewhere safe; EAS keeps the originals.
+
+**2. Build:**
+```bash
+npm run build:aab -- --credentials=path/to/credentials.json
+```
+Or pass the four values yourself:
+```bash
+npm run build:aab -- --store-file=path/to/keystore.jks --store-password=STORE_PASSWORD --key-alias=KEY_ALIAS --key-password=KEY_PASSWORD
+```
+
+The script (`scripts/build-aab.js`):
+- runs a clean prebuild with the `production` update channel baked in (`--channel=...` to change it), which `eas build` normally adds itself; without it the build never receives `eas update --channel production`. It restores `app.json` afterwards.
+- removes the EAS memory limits from the generated `android/gradle.properties` (parallel mode on, 4 GB heap).
+- runs `gradlew bundleRelease`, signed with your keystore, and prints the signer's SHA-1 to compare with the upload key certificate in Play Console → Protected with Play → app signing (Play also rejects a wrong key on upload). It stops if the AAB came out debug-signed.
+
+The AAB lands at `android/app/build/outputs/bundle/release/app-release.aab`. Upload it in Play Console. `--prepare-only` stops after the prebuild and Gradle edits, without building.
+
+Run it from a short path such as `D:\Projects\TOOLS\wealthsnap`, not from a deep worktree folder, or native builds hit the Windows path limit. Passing passwords as arguments leaves them in your shell history; `--credentials` avoids that.
+
 ## 5. EAS Update
 Use this to push updates to your application without requiring a full rebuild or submission to the Play Store.
 
