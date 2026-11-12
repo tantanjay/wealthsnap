@@ -19,7 +19,8 @@
       "channel": "preview",
       "env": {
         "NODE_ENV": "production",
-        "EXPO_NO_TELEMETRY": "1"
+        "EXPO_NO_TELEMETRY": "1",
+        "GRADLE_OPTS": "-Dorg.gradle.parallel=false -Dorg.gradle.workers.max=2 -Dorg.gradle.daemon=false"
       }
     },
     "production": {
@@ -29,7 +30,8 @@
       },
       "env": {
         "NODE_ENV": "production",
-        "EXPO_NO_TELEMETRY": "1"
+        "EXPO_NO_TELEMETRY": "1",
+        "GRADLE_OPTS": "-Dorg.gradle.parallel=false -Dorg.gradle.workers.max=2 -Dorg.gradle.daemon=false"
       },
       "channel": "production"
     },
@@ -40,7 +42,8 @@
       },
       "env": {
         "NODE_ENV": "production",
-        "EXPO_NO_TELEMETRY": "1"
+        "EXPO_NO_TELEMETRY": "1",
+        "GRADLE_OPTS": "-Dorg.gradle.parallel=false -Dorg.gradle.workers.max=2 -Dorg.gradle.daemon=false"
       },
       "channel": "apk"
     }

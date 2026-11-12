@@ -99,7 +99,7 @@
       "@react-native-community/datetimepicker",
       "./plugins/withScannerOrientationFix",
       "./plugins/withCmakeObjectPathMax",
-      "./plugins/withSerialGradleBuild"
+      "./plugins/withGradleMemoryLimits"
     ],
     "extra": {
       "eas": {
