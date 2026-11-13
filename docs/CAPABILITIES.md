@@ -196,7 +196,7 @@ Set aside cash toward a specific purpose — a Travel Fund, Annual Insurance, Ca
 
 ## 📊 Operational Filter (Insights Integration)
 
-- Contributions count toward Burn Rate, Runway, Safe-to-Spend, and Avg Daily Spending
+- Recurring contributions count toward Burn Rate, Runway, and Safe-to-Spend; they do not count toward Avg Daily Spending (which tracks expenses only)
 - Spending from a goal is excluded from month-over-month trend charts (Comparison, Cumulative Spending, Savings Rate) so a big purchase never reads as a false spike
 - Still fully visible in category breakdown charts, so you can see exactly what you bought
 - An in-app guide explains how each number is affected, with a worked example
@@ -425,8 +425,8 @@ No black-box calculations.
 - **Three privacy modes**: Open (every amount), Discreet (only percentages, months, counts and progress, so the screen stays useful without revealing how much money is involved) and Hidden (every amount masked)
 - Secure PIN lock
 - Intelligent auto-lock logic
-- Conditional screenshot blocking
-- Reveal for Screenshot (temporarily bypass protection with confirmation)
+- Conditional screenshot blocking (Open mode blocks screenshots; Discreet and Hidden allow them)
+- Reveal for Screenshot (temporarily allow screenshots in Open mode with confirmation)
 - Encrypted sensitive fields
 - Versioned Terms acceptance
 - Local crash telemetry only

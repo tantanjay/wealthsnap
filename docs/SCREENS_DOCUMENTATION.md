@@ -16,7 +16,7 @@ The main dashboard. A greeting top bar with the privacy chip and the Home Settin
 - **Goals** (`GoalsTab`): savings goals, contributions and progress.
 - **Loans** (`LoansTab`): You owe / Owed to you, payoff plan and each loan.
 
-**Home Settings sheet**: privacy mode (Open / Discreet / Hidden) and Snapshot row order.
+**Home Settings sheet**: privacy mode (Open / Discreet / Hidden), Net worth sparkline range (6M, 1Y, 3Y, All Time), and Snapshot row order.
 
 ## 2. Insights Screen (`InsightScreen.tsx`)
 
@@ -43,14 +43,14 @@ Tab: Profile. Account and app settings only, as hairline rows:
 - **Money setup** (`QuickActionsCard`): Budgets, Recurring rules, Reminders, Asset dictionary.
 - **Data**: Auto backup and Import / export, each a stack screen (below).
 - **Security and intelligence** (`SecurityCard`): App lock, Auto-lock timeout, Google Gemini, Usage statistics.
-- **Appearance** (`AppearanceCard`): Theme (Light / Dark / System sheet).
+- **Appearance** (`AppearanceCard`): Skin (10 colour palettes) and Theme (Light / Dark / System).
 - **Developer options** (`DeveloperToolsCard`): only in developer mode.
 
 ## 5. Learn Screen (`LearnScreen.tsx`)
 
 Tab: Learn.
 
-- **Guides**: a horizontal shelf of Help Center topics (Getting Started, Home Snapshot, What Runway Tells You, Privacy Modes, Saving with Goals, Financial Insights, Debt Strategy, Investments).
+- **Guides**: a two-row horizontal shelf of Help Center topics (Getting Started, Home Snapshot, Safe to Spend, What Runway Tells You, Privacy Modes, Saving with Goals, Budgets, Recurring & Reminders, Financial Insights, Monthly Summary, Debt Strategy, Investments, AI Assistant, Backup, Sync & Export).
 - **Help center**: Math and formulas, FAQ, Contact the developer, Provide feedback, Terms of use and privacy.
 - **About WealthSnap**: Why it's free, Manifesto, A message from the developer, Supporter wall, Support the developer, Rate WealthSnap, Version (opens the change log). Tapping the section header 7 times turns on developer options.
 

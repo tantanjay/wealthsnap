@@ -46,11 +46,11 @@ WealthSnap is a privacy-first personal finance application built with React Nati
 - Metadata stored raw when safe (hybrid encryption model)
 - Strict local-only persistence
 
-### Database Policy (v1.8.0+)
+### Database Policy (v1.8.0+ / Schema v19)
 
-- Enforces latest schema on startup
-- Legacy waterfall migration system removed
-- Treats DB as fresh installation for outdated schemas (V1–V6 dropped)
+- Enforces latest schema on startup (`DATABASE_VERSION = 19`)
+- Sequential migrations for V8 through V19 (including Savings Goals and pro-rated dividends)
+- Treats DB as fresh installation for outdated legacy schemas (V1–V7 dropped)
 
 ---
 
@@ -140,19 +140,20 @@ Fix:
 
 # 📊 Financial Logic Systems
 
-## Safe-to-Spend (v1.8.1 overhaul)
+## Safe-to-Spend (Monthly)
 
 ```
-(Current Cash + Future Income)
-- (Future Bills + Burn Rate)
+(This Month's Income + Upcoming Recurring Income)
+- (Spending So Far + Transfers Out So Far + Upcoming Recurring Bills + Projected Living Costs + Remaining Debt Minimums + Remaining Goal Obligations)
 = Safe-to-Spend
 ```
 
 Where:
 
-- Future Income: recurring income before period end
-- Burn Rate: average non-recurring spend (last 3 months)
-- Transfers Out treated as expenses (strict policy)
+- Income & Upcoming Recurring Income: recorded income plus recurring income due before month-end
+- Spending & Transfers Out So Far: this month's recorded expenses (excluding goal-funded purchases) and transfers out
+- Projected Living Costs: rolling 90-day daily non-recurring allowance × days left in the month (keeps debt fees)
+- Obligations: remaining mandatory minimum payments for payable debts and active recurring goal contributions
 
 ---
 
