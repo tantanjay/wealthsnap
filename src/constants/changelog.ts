@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Insights: Net worth growth on 1Y shows a calendar year, with arrows to step to the previous or next year.
 - Holdings Dividends chart: the Actual tab's year arrows match the Insights charts.
+- Insights Financial health: amounts show their percentage underneath in Open mode, the one Discreet shows instead (e.g. "62% of income").
 
 ## [2.1.0] — 2026-11-12
 

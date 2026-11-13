@@ -487,7 +487,7 @@ These apply to every metric unless its section says otherwise.
 
 **Shown on:** Insights (grid, "Show all" sheet, detail sheets)
 
-**Notes:** Values and their Discreet versions. Hidden masks amounts with `****`; percentages and months show as in Discreet. "—" whenever a divisor is ₱0.
+**Notes:** Values and their Discreet versions. In Open, each amount's change line is its Discreet percentage (falling back to the month label when the percentage is "—"). Hidden masks amounts with `****` and keeps the Open labels; percentages and months show as in Discreet. "—" whenever a divisor is ₱0.
 
 | Number | Open | Discreet |
 |---|---|---|
@@ -496,20 +496,21 @@ These apply to every metric unless its section says otherwise.
 | Debt drag | months of runway lost | same |
 | Investment boost | months, if sold | "—" |
 | Budget health | % of budgets used | same |
-| Net cash flow | ₱ | Net Cash Flow ÷ Income × 100, "% kept" |
+| Net cash flow | ₱ · % kept | Net Cash Flow ÷ Income × 100, "% kept" |
 | Savings rate | % | same |
-| Total income | ₱ | (Income − average income of up to 6 prior full months) ÷ that average × 100 |
-| Total expense | ₱ · "+ from goals" | Total Expense ÷ Income × 100, "of income" |
-| Burn rate | ₱ | Burn Rate ÷ average income of up to 6 prior full months (as of today) × 100 |
-| Daily average | ₱ | Daily Average vs (3-month average Total Expense ÷ 30.44), % lower/higher |
-| Annualized exp. | ₱ | same as Burn rate (yearly cost ÷ yearly income) |
-| Top category | name · ₱ | name · % of spending |
+| Total income | ₱ · % vs 6-mo avg | (Income − average income of up to 6 prior full months) ÷ that average × 100 |
+| Total expense | ₱ · % of income · "+ from goals" (tile: % only) | Total Expense ÷ Income × 100, "of income" |
+| Burn rate | ₱ · % of avg income | Burn Rate ÷ average income of up to 6 prior full months (as of today) × 100 |
+| Daily average | ₱ · % lower/higher, toned | Daily Average vs (3-month average Total Expense ÷ 30.44), % lower/higher |
+| Annualized exp. | ₱ · % of yearly income | same as Burn rate (yearly cost ÷ yearly income) |
+| Top category | name · ₱ · % of spending | name · % of spending |
 
 Total income and Total expense compare month-to-date figures while the month is in progress. Detail sheets follow the same rules; the Runway and Investment boost sheets drop Cash, Monthly costs, Portfolio value and the boost in Discreet, and the Investment boost sheet's hero becomes the yearly rate.
 
 | Version | Rule after this change | What changed |
 |---|---|---|
 | 2.0.0 | As above | Replaced Insights' 10 swipeable overview cards and the Financial Health screen. The old overview card order isn't migrated |
+| Unreleased | As above | Open shows the Discreet percentage as the change line of the six amount numbers and Top category; Daily average's is green/red. Show all keeps the change line on grid picks, next to their "Card N" |
 
 ## Discreet and Hidden rendering
 

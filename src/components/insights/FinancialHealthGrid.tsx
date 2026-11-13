@@ -42,7 +42,7 @@ const FinancialHealthGrid: React.FC<FinancialHealthGridProps> = ({ grid, entries
                                         label={HEALTH_METRIC_META[id].label}
                                         icon={HEALTH_METRIC_META[id].icon}
                                         value={entry.value}
-                                        change={entry.change}
+                                        change={entry.tileChange ?? entry.change}
                                         changeTone={isHidden ? 'neutral' : entry.changeTone}
                                         onPress={() => onSelect(id)}
                                         style={styles.tile}

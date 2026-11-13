@@ -17,5 +17,13 @@
 
 ---
 
+## 💯 Percentages in Open Mode
+- **Amount and share together**: In Financial health, amounts like Total expense, Burn rate and Net cash flow now show their percentage underneath in Open mode, the same one Discreet mode shows instead of the amount. For example, Total expense reads "62% of income" and Net cash flow "18% kept", so you see how big a number is next to what it means.
+- **Daily average is colored**: Its line says how today's pace compares with your 3-month daily average, green when lower and red when higher.
+- **Show all keeps it on your cards**: The 4 numbers on your grid show their "Card" badge next to the percentage instead of in place of it.
+- Hidden mode is unchanged.
+
+---
+
 **Previous Version:** 2.1.0
 **Package:** `com.christian.soyosa.WealthSnap`

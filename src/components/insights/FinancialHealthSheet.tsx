@@ -102,9 +102,10 @@ const FinancialHealthSheet: React.FC<FinancialHealthSheetProps> = ({ target, onC
                         onPress={() => onSelect(id)}
                         last={i === HEALTH_METRIC_IDS.length - 1}
                     >
-                        {slot >= 0
-                            ? <Text style={[type.captionMedium, { color: ds.accent }]}>Card {slot + 1}</Text>
-                            : <ChangeLine text={entry.change} tone={format.isHidden ? 'neutral' : entry.changeTone} />}
+                        <View style={styles.subLine}>
+                            {slot >= 0 && <Text style={[type.captionMedium, { color: ds.accent }]}>Card {slot + 1}</Text>}
+                            <ChangeLine text={entry.change} tone={format.isHidden ? 'neutral' : entry.changeTone} style={styles.subLineText} />
+                        </View>
                     </Row>
                 );
             })}
@@ -165,6 +166,14 @@ const FinancialHealthSheet: React.FC<FinancialHealthSheetProps> = ({ target, onC
 };
 
 const styles = StyleSheet.create({
+    subLine: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        gap: space[2],
+    },
+    subLineText: {
+        flexShrink: 1,
+    },
     guide: {
         gap: space[2],
         marginTop: space[1],

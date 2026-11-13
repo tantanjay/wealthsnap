@@ -232,7 +232,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             { type: 'paragraph', text: 'This guide explains what each number and chart shows and the user value behind it.' },
             { type: 'divider' },
             { type: 'heading2', text: 'Financial Health grid' },
-            { type: 'paragraph', text: 'Four tiles that answer "Am I financially okay right now?" at a glance. Pick which 4 of the 13 numbers below appear, and in what order, from the sliders button on Insights: the order you check them in is their order on the grid. "Show all" lists every number with its value. Tap a tile or row for its details and "How is this calculated?".' },
+            { type: 'paragraph', text: 'Four tiles that answer "Am I financially okay right now?" at a glance. Pick which 4 of the 13 numbers below appear, and in what order, from the sliders button on Insights: the order you check them in is their order on the grid. "Show all" lists every number with its value. Amounts also show their percentage underneath, the same one Discreet shows in their place. Tap a tile or row for its details and "How is this calculated?".' },
             { type: 'visual', id: 'health-grid' },
             { type: 'paragraph', text: 'Runway, Spending pace, Debt drag and Investment boost always reflect today. The rest follow the month selector; the line under each one says which month it shows.' },
 

@@ -50,6 +50,8 @@ export interface HealthEntry {
     value: string;
     change: string;
     changeTone: Tone;
+    // Shorter change line for the narrow grid tiles, when `change` would be cut off there.
+    tileChange?: string;
 }
 
 const AVG_DAYS_PER_MONTH = 30.44;
@@ -95,7 +97,14 @@ export const buildHealthEntries = (
     const hasIncome = m.income.gt(0);
     const top = m.topExpenseCategory;
     const hasTopCategory = top.amount.gt(0);
-    const burnShare = formatPercent(ratio(m.burnRate, m.burnAverageIncome));
+    const burnRatio = ratio(m.burnRate, m.burnAverageIncome);
+    const burnShare = formatPercent(burnRatio);
+    const keptRatio = ratio(m.netCashFlow, m.income);
+    const expenseRatio = ratio(m.expense, m.income);
+    const incomeVsAvg = m.averageIncome.gt(0) ? m.income.minus(m.averageIncome).dividedBy(m.averageIncome).times(100).toNumber() : null;
+    const goalsNote = m.goalFundedExpense.gt(0) ? `+ ${f.money(m.goalFundedExpense, { compact: true })} from goals` : null;
+    // Open pairs the amount with Discreet's percentage as its change line; Hidden keeps the plain label.
+    const openShare = (text: string | null, fallback: string): string => (f.isOpen && text ? text : fallback);
     const dailyBaseline = m.averageExpense.dividedBy(AVG_DAYS_PER_MONTH);
     const dailyPace = dailyBaseline.gt(0) ? paceText(m.dailyAverage.minus(dailyBaseline).dividedBy(dailyBaseline).times(100).toNumber()) : null;
 
@@ -146,8 +155,8 @@ export const buildHealthEntries = (
             }
             : { value: DASH, change: 'no budgets set', changeTone: 'neutral' },
         netflow: {
-            value: f.show(f.money(m.netCashFlow, { signed: true }), hasIncome ? `${formatPercent(ratio(m.netCashFlow, m.income))} kept` : DASH),
-            change: m.monthLabel,
+            value: f.show(f.money(m.netCashFlow, { signed: true }), hasIncome ? `${formatPercent(keptRatio)} kept` : DASH),
+            change: openShare(keptRatio !== null ? `${formatPercent(keptRatio)} kept` : null, m.monthLabel),
             changeTone: 'neutral',
         },
         savings: hasIncome
@@ -160,38 +169,45 @@ export const buildHealthEntries = (
         income: {
             value: f.show(
                 f.money(m.income),
-                formatPercent(m.averageIncome.gt(0) ? m.income.minus(m.averageIncome).dividedBy(m.averageIncome).times(100).toNumber() : null, { signed: true }),
+                formatPercent(incomeVsAvg, { signed: true }),
             ),
-            change: f.show(m.monthLabel, 'vs 6-mo avg'),
+            change: f.show(openShare(incomeVsAvg !== null ? `${formatPercent(incomeVsAvg, { signed: true })} vs 6-mo avg` : null, m.monthLabel), 'vs 6-mo avg'),
             changeTone: 'neutral',
         },
         expense: {
-            value: f.show(f.money(m.expense), formatPercent(ratio(m.expense, m.income))),
+            value: f.show(f.money(m.expense), formatPercent(expenseRatio)),
             change: f.show(
-                m.goalFundedExpense.gt(0) ? `+ ${f.money(m.goalFundedExpense, { compact: true })} from goals` : m.monthLabel,
+                openShare(
+                    expenseRatio !== null ? [`${formatPercent(expenseRatio)} of income`, goalsNote].filter(Boolean).join(' · ') : null,
+                    goalsNote ?? m.monthLabel,
+                ),
                 'of income',
             ),
             changeTone: 'neutral',
+            tileChange: f.isOpen && expenseRatio !== null ? `${formatPercent(expenseRatio)} of income` : undefined,
         },
         burn: {
             value: f.show(f.money(m.burnRate), burnShare),
-            change: f.show('avg monthly', 'of avg income'),
+            change: f.show(openShare(burnRatio !== null ? `${burnShare} of avg income` : null, 'avg monthly'), 'of avg income'),
             changeTone: 'neutral',
         },
         daily: {
             value: f.show(f.money(m.dailyAverage), dailyPace ? dailyPace.text : DASH),
-            change: f.show(m.monthLabel, 'vs 3-mo daily avg'),
-            changeTone: f.isDiscreet && dailyPace ? dailyPace.tone : 'neutral',
+            change: f.show(openShare(dailyPace ? `${dailyPace.text} vs 3-mo avg` : null, m.monthLabel), 'vs 3-mo daily avg'),
+            changeTone: !f.isHidden && dailyPace ? dailyPace.tone : 'neutral',
         },
         annual: {
             value: f.show(f.money(m.burnRate.times(12)), burnShare),
-            change: f.show('burn rate × 12', 'of yearly income'),
+            change: f.show(openShare(burnRatio !== null ? `${burnShare} of yearly income` : null, 'burn rate × 12'), 'of yearly income'),
             changeTone: 'neutral',
         },
         topcat: {
             value: hasTopCategory ? top.name : 'None',
-            change: hasTopCategory ? f.show(f.money(top.amount), `${top.percentage.toFixed(0)}% of spending`) : 'no spending',
+            change: hasTopCategory
+                ? f.show(openShare(`${f.money(top.amount)} · ${top.percentage.toFixed(0)}% of spending`, f.money(top.amount)), `${top.percentage.toFixed(0)}% of spending`)
+                : 'no spending',
             changeTone: 'neutral',
+            tileChange: f.isOpen && hasTopCategory ? `${f.money(top.amount, { compact: true })} · ${top.percentage.toFixed(0)}%` : undefined,
         },
     };
 };
