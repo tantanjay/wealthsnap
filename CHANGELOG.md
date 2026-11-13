@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Insights: Net worth growth on 1Y shows a calendar year, with arrows to step to the previous or next year.
+- Holdings Dividends chart: the Actual tab's year arrows match the Insights charts.
+
 ## [2.1.0] — 2026-11-12
 
 ### Added
