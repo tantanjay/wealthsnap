@@ -16,7 +16,11 @@ The main dashboard. A greeting top bar with the privacy chip and the Home Settin
 - **Goals** (`GoalsTab`): savings goals, contributions and progress.
 - **Loans** (`LoansTab`): You owe / Owed to you, payoff plan and each loan.
 
-**Home Settings sheet**: privacy mode (Open / Discreet / Hidden), Net worth sparkline range (6M, 1Y, 3Y, All Time), and Snapshot row order.
+**Home Settings sheet** (titled "{Tab} settings", contents depend on the open tab):
+
+- Every tab: privacy mode (Open / Discreet / Hidden).
+- Snapshot: Net worth graph range (6 months, 1 year, 3 years, All time) and Snapshot row order.
+- Holdings: section order, plus Fetch price list and Fetch dividend list (AI lookups).
 
 ## 2. Insights Screen (`InsightScreen.tsx`)
 

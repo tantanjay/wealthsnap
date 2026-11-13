@@ -50,7 +50,8 @@ WealthSnap is a privacy-first personal finance application built with React Nati
 
 - Enforces latest schema on startup (`DATABASE_VERSION = 19`)
 - Sequential migrations for V8 through V19 (including Savings Goals and pro-rated dividends)
-- Treats DB as fresh installation for outdated legacy schemas (V1–V7 dropped)
+- Tables are created if missing on every start; a new install (version 0) is stamped straight to V19
+- Any older version, V1–V7 included, runs every migration from V8 up; nothing is dropped
 
 ---
 

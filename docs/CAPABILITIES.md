@@ -196,7 +196,8 @@ Set aside cash toward a specific purpose — a Travel Fund, Annual Insurance, Ca
 
 ## 📊 Operational Filter (Insights Integration)
 
-- Recurring contributions count toward Burn Rate, Runway, and Safe-to-Spend; they do not count toward Avg Daily Spending (which tracks expenses only)
+- Every contribution lowers cash, so it lowers Runway and Safe-to-Spend; only recurring contributions also count in Burn Rate as a monthly cost
+- Contributions never count toward Avg Daily Spending (which tracks expenses only)
 - Spending from a goal is excluded from month-over-month trend charts (Comparison, Cumulative Spending, Savings Rate) so a big purchase never reads as a false spike
 - Still fully visible in category breakdown charts, so you can see exactly what you bought
 - An in-app guide explains how each number is affected, with a worked example
