@@ -6,6 +6,7 @@ import { PieChart } from 'react-native-gifted-charts';
 
 import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
+import YearSelector from '@components/common/YearSelector';
 import MonthEndProjectionModal from '@components/insights/modals/MonthEndProjectionModal';
 import { Group, Row, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
@@ -178,34 +179,6 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
         }
 
         return "Your income has been stable.";
-    };
-
-    const renderYearSelector = () => {
-        if (availableYears.length <= 1 && availableYears[0] === new Date().getFullYear()) return null;
-
-        const currentIndex = availableYears.indexOf(selectedYear);
-        const hasNext = currentIndex > 0;
-        const hasPrev = currentIndex < availableYears.length - 1;
-
-        return (
-            <View style={styles.yearSelector}>
-                <Pressable
-                    onPress={() => setSelectedYear(availableYears[currentIndex + 1])}
-                    disabled={!hasPrev}
-                    hitSlop={space[2]}
-                >
-                    <Ionicons name="chevron-back" size={18} color={hasPrev ? ds.text : ds.text3} />
-                </Pressable>
-                <Text style={[type.smallMediumNum, { color: ds.text }]}>{selectedYear}</Text>
-                <Pressable
-                    onPress={() => setSelectedYear(availableYears[currentIndex - 1])}
-                    disabled={!hasNext}
-                    hitSlop={space[2]}
-                >
-                    <Ionicons name="chevron-forward" size={18} color={hasNext ? ds.text : ds.text3} />
-                </Pressable>
-            </View>
-        );
     };
 
     const renderTrend = () => {
@@ -432,7 +405,7 @@ const IncomeAnalysis: React.FC<IncomeAnalysisProps> = ({ monthlyTrends: initialT
                     <HiddenChart height={chartHeight} />
                 ) : activeTab === 'TREND' ? (
                     <View style={styles.trendArea}>
-                        {timeRange === '1Y' && renderYearSelector()}
+                        {timeRange === '1Y' && <YearSelector years={availableYears} value={selectedYear} onChange={setSelectedYear} />}
                         {renderTrend()}
                     </View>
                 ) : renderSources()}
@@ -559,13 +532,6 @@ const styles = StyleSheet.create({
     trendArea: {
         height: TREND_HEIGHT,
         paddingVertical: space[2],
-    },
-    yearSelector: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: space[5],
-        marginBottom: space[3],
     },
     plot: {
         flex: 1,

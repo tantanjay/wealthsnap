@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector from '@components/common/TimeRangeSelector';
+import YearSelector from '@components/common/YearSelector';
 import { Group, SectionHeader } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import HiddenChart from '@components/common/HiddenChart';
@@ -158,34 +159,6 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
             return `On track to spend ${gap}more than your 3-month average.*`;
         }
         return `Great job! On track to spend ${gap}less than average.*`;
-    };
-
-    const renderYearSelector = () => {
-        if (availableYears.length <= 1 && availableYears[0] === new Date().getFullYear()) return null;
-
-        const currentIndex = availableYears.indexOf(selectedYear);
-        const hasNext = currentIndex > 0;
-        const hasPrev = currentIndex < availableYears.length - 1;
-
-        return (
-            <View style={styles.yearSelector}>
-                <Pressable
-                    onPress={() => setSelectedYear(availableYears[currentIndex + 1])}
-                    disabled={!hasPrev}
-                    hitSlop={space[2]}
-                >
-                    <Ionicons name="chevron-back" size={18} color={hasPrev ? ds.text : ds.text3} />
-                </Pressable>
-                <Text style={[type.smallMediumNum, { color: ds.text }]}>{selectedYear}</Text>
-                <Pressable
-                    onPress={() => setSelectedYear(availableYears[currentIndex - 1])}
-                    disabled={!hasNext}
-                    hitSlop={space[2]}
-                >
-                    <Ionicons name="chevron-forward" size={18} color={hasNext ? ds.text : ds.text3} />
-                </Pressable>
-            </View>
-        );
     };
 
 
@@ -388,7 +361,7 @@ const ComparisonChart: React.FC<ComparisonChartProps> = ({ currentMonthExpense, 
                     <HiddenChart height={CHART_HEIGHT} />
                 ) : (
                     <View style={styles.chartArea}>
-                        {activeView === 'MONTHLY' && timeRange === '1Y' && renderYearSelector()}
+                        {activeView === 'MONTHLY' && timeRange === '1Y' && <YearSelector years={availableYears} value={selectedYear} onChange={setSelectedYear} />}
                         {renderChart()}
                     </View>
                 )}
@@ -496,13 +469,6 @@ const styles = StyleSheet.create({
     chartArea: {
         height: CHART_HEIGHT,
         paddingVertical: space[2],
-    },
-    yearSelector: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: space[5],
-        marginBottom: space[3],
     },
     plot: {
         flex: 1,

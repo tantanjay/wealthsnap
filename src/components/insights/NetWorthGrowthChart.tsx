@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import BottomModal from '@components/common/BottomModal';
 import TimeRangeSelector, { TimeRange } from '@components/common/TimeRangeSelector';
+import YearSelector from '@components/common/YearSelector';
 import { Group, Row, SectionHeader, Tone, toneColor } from '@components/ds';
 import { Skeleton } from '@components/common/Skeleton';
 import HiddenChart from '@components/common/HiddenChart';
@@ -101,6 +102,22 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
     const [showInfo, setShowInfo] = useState(false);
     const [pressedBar, setPressedBar] = useState<number | null>(null);
     const [barsWidth, setBarsWidth] = useState(0);
+    const [selectedYear, setSelectedYear] = useState(selectedDate.getFullYear());
+
+    // Follow the month picker at the top of Insights; the arrows can still move off it.
+    const pickerYear = selectedDate.getFullYear();
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- a default the arrows can override
+        setSelectedYear(pickerYear);
+    }, [pickerYear]);
+
+    // Net worth carries on without new transactions, so every year from the first one to now counts.
+    const availableYears = useMemo(() => {
+        const thisYear = new Date().getFullYear();
+        if (transactions.length === 0) return [thisYear];
+        const firstYear = Math.min(...transactions.map(t => new Date(t.date).getFullYear()));
+        return Array.from({ length: Math.max(thisYear - firstYear, 0) + 1 }, (_, i) => thisYear - i);
+    }, [transactions]);
 
     // Restore the saved view and range; a tap before the read resolves wins over it.
     const isInitialPrefLoad = useRef(true);
@@ -128,10 +145,16 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
     };
 
     // Every month, so bars and the weighted average use real monthly changes; the lines thin it below.
+    // 1 year is a calendar year: from the end of the year before to December, or today for this year.
     const points = useMemo(() => {
         if (!priceAt) return [];
+        if (timeRange === '1Y') {
+            const now = new Date();
+            const end = selectedYear >= now.getFullYear() ? now : new Date(selectedYear, 11, 1);
+            return getNetWorthHistory(transactions, investments, debts, goals, priceAt, end, end.getMonth() + 1, true);
+        }
         return getNetWorthHistory(transactions, investments, debts, goals, priceAt, selectedDate, RANGE_MONTHS[timeRange], true);
-    }, [transactions, investments, debts, goals, priceAt, selectedDate, timeRange]);
+    }, [transactions, investments, debts, goals, priceAt, selectedDate, timeRange, selectedYear]);
 
     const first = points[0]?.netWorth ?? 0;
     const last = points[points.length - 1]?.netWorth ?? 0;
@@ -154,7 +177,7 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
 
     // ---------- Summary above the chart ----------
     const summary = useMemo((): { label: string; value: string; line: string; tone: Tone } => {
-        const rangeText = `over ${RANGE_TEXT[timeRange]}`;
+        const rangeText = timeRange === '1Y' ? `in ${selectedYear}` : `over ${RANGE_TEXT[timeRange]}`;
         const pctText = formatPercent(changePct, { signed: true, decimals: 1 });
         // Over long ranges a % from an early, small balance means little, so every view shows the weighted monthly rate,
         // and amounts are per month too so both figures mean the same thing.
@@ -197,7 +220,7 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
             line: format.isDiscreet ? `since ${startText}` : `${format.money(change, { signed: true })} ${rangeText}`,
             tone: toneOf(change),
         };
-    }, [view, timeRange, format, change, changePct, last, startText, growth, weightedMonthly]);
+    }, [view, timeRange, selectedYear, format, change, changePct, last, startText, growth, weightedMonthly]);
 
     // Charts run edge to edge across the card (past its side padding) to give long ranges room.
     const chartWidth = screenWidth - layout.groupInset * 2;
@@ -485,7 +508,7 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
                     <Formula
                         title="Cumulative"
                         formula="Net worth at each month-end, then today"
-                        explanation="Long ranges skip months to keep the line near 36 points."
+                        explanation="Long ranges skip months to keep the line near 36 points. 1 year shows the calendar year picked with the arrows, starting from the end of the year before."
                     />
                     <Formula
                         title="Percentage"
@@ -520,12 +543,16 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
         </View>
     );
 
+    const renderYearSelector = () =>
+        timeRange === '1Y' ? <YearSelector years={availableYears} value={selectedYear} onChange={setSelectedYear} /> : null;
+
     if (!isLoading && points.length < 2) {
         return (
             <View>
                 {header}
                 <Group padded>
                     {toolbar}
+                    {renderYearSelector()}
                     <Text style={[type.small, styles.empty, { color: ds.text2 }]}>
                         Your net worth chart starts once you&apos;ve tracked past your first month.
                     </Text>
@@ -540,6 +567,7 @@ const NetWorthGrowthChart: React.FC<NetWorthGrowthChartProps> = ({
             {header}
             <Group padded>
                 {toolbar}
+                {renderYearSelector()}
 
                 <View style={styles.summary}>
                     <Text style={[type.small, { color: ds.text2 }]}>{summary.label}</Text>

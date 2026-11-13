@@ -328,7 +328,7 @@ These apply to every metric unless its section says otherwise.
 
 ## Net Worth Growth
 
-**Formula (Cumulative):** [Net Worth at each past month-end](#net-worth-change) across the chosen range (6 months, 1 year, 3 years or all time; default 6 months), then the browsed month's own point: Net Worth now for the current month, else Net Worth at that month's end. Long ranges draw the first point and every few months back from the last, to stay near 36 points
+**Formula (Cumulative):** [Net Worth at each past month-end](#net-worth-change) across the chosen range (6 months, 1 year, 3 years or all time; default 6 months), then the browsed month's own point: Net Worth now for the current month, else Net Worth at that month's end. Long ranges draw the first point and every few months back from the last, to stay near 36 points. 1 year is a calendar year picked with prev/next arrows (defaulting to the browsed month's year, any year from the first transaction's to now): Net Worth at the end of the year before, each month-end through December, or through now for the current year
 
 **Formula (Percentage):** each month's growth % = (Net Worth at a month-end − Net Worth at the month-end before) ÷ Net Worth at the month-end before × 100, every month in the range that started above ₱0 (the current month runs to now). Header: weighted average growth per month on every range; a solid 0% line and a dashed line at that average. The axis fits typical months (from 1st quartile − 1.5 × IQR to 3rd quartile + 1.5 × IQR, with 4+ months, always including 0% and the average); months beyond it are drawn at its edge, with their real % in the tooltip
 

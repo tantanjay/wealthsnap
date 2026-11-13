@@ -255,6 +255,7 @@ Not a user-facing feature; app shell, data layer, and utilities used across modu
 - `src/components/common/BackgroundTaskBanner.tsx`
 - `src/services/core/backgroundTaskService.ts`
 - `src/components/common/TimeRangeSelector.tsx`
+- `src/components/common/YearSelector.tsx`
 - `src/components/common/ReviewAppModal.tsx`
 - `src/components/common/EmptyState.tsx`
 - `src/components/common/Disclaimer.tsx`

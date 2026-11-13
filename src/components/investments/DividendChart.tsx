@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Skeleton } from '@components/common/Skeleton';
 import HiddenChart from '@components/common/HiddenChart';
+import YearSelector from '@components/common/YearSelector';
 import { Group, SectionHeader } from '@components/ds';
 import { usePrivacy } from '@context/PrivacyContext';
 import { useTheme } from '@context/ThemeContext';
@@ -10,7 +11,6 @@ import { type, space, radius } from '@styles/theme';
 import { formatCurrencyAmount, formatCompactNumber, formatCompactCurrency } from '@utils/currencyUtils';
 import { CalendarEvent } from '@services/domain/dividendHistoryService';
 import { MonthlyDividend } from '@services/domain/investmentService';
-import { Ionicons } from '@expo/vector-icons';
 import { saveInvestmentDividendTab, getInvestmentDividendTab } from '@services/core/storageService';
 
 const TOOLTIP_WIDTH = 140;
@@ -193,27 +193,7 @@ export const DividendChart: React.FC<DividendChartProps> = ({
 
         return (
             <View style={{ flex: 1 }}>
-                <View style={styles.yearSelector}>
-                    <TouchableOpacity
-                        onPress={() => {
-                            const idx = availableYears.indexOf(selectedYear);
-                            if (idx > 0) setSelectedYear(availableYears[idx - 1]);
-                        }}
-                        disabled={availableYears.indexOf(selectedYear) <= 0}
-                    >
-                        <Ionicons name="chevron-back" size={20} color={availableYears.indexOf(selectedYear) <= 0 ? ds.text3 : ds.text} />
-                    </TouchableOpacity>
-                    <Text style={[type.smallStrong, { color: ds.text }]}>{selectedYear}</Text>
-                    <TouchableOpacity
-                        onPress={() => {
-                            const idx = availableYears.indexOf(selectedYear);
-                            if (idx < availableYears.length - 1) setSelectedYear(availableYears[idx + 1]);
-                        }}
-                        disabled={availableYears.indexOf(selectedYear) >= availableYears.length - 1 || availableYears.length === 0}
-                    >
-                        <Ionicons name="chevron-forward" size={20} color={availableYears.indexOf(selectedYear) >= availableYears.length - 1 || availableYears.length === 0 ? ds.text3 : ds.text} />
-                    </TouchableOpacity>
-                </View>
+                <YearSelector years={[...availableYears].reverse()} value={selectedYear} onChange={setSelectedYear} style={styles.yearSelector} />
                 {renderBarChart(months, currentData, selectedYear === currentYear ? currentMonth : null)}
             </View>
         );
@@ -363,11 +343,8 @@ const styles = StyleSheet.create({
         width: 32,
         textAlign: 'center',
     },
+    // Tighter than YearSelector's default: the Actual tab shares the card's fixed chart height.
     yearSelector: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: space[5],
         marginBottom: space[1],
     },
     calendarGrid: {
