@@ -1,4 +1,5 @@
 import 'react-native-get-random-values';
+import CryptoJS from 'crypto-js';
 
 // Pre-compute hex strings from 0 to 255
 const LUT: string[] = [];
@@ -22,6 +23,16 @@ export const generateUUID = (): string => {
         LUT[rnds[8]] + LUT[rnds[9]] + '-' +
         LUT[rnds[10]] + LUT[rnds[11]] + LUT[rnds[12]] + LUT[rnds[13]] + LUT[rnds[14]] + LUT[rnds[15]]
     );
+};
+
+/**
+ * Same seed, same id, on every device: a v4-shaped UUID from a SHA-256 of the seed.
+ * Shaped as v4 so restore's isUUID check keeps it instead of re-minting it.
+ */
+export const deterministicUUID = (seed: string): string => {
+    const h = CryptoJS.SHA256(seed).toString();
+    const variant = ((parseInt(h[16], 16) & 0x3) | 0x8).toString(16);
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${variant}${h.slice(17, 20)}-${h.slice(20, 32)}`;
 };
 
 /**

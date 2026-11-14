@@ -2,9 +2,10 @@ import { BigNumber } from 'bignumber.js';
 import { RecurrenceRule, Transaction, RecurrenceFrequency } from '@types';
 import { getDatabase } from "@services/database/databaseService";
 import { bulkSaveTransactions } from '@services/domain/transactionService';
-import { generateUUID } from '@utils/uuid';
+import { deterministicUUID } from '@utils/uuid';
+import { chunkArray } from '@utils/index';
 import { decryptField, encryptField } from "@services/core/encryptionService";
-import { upsertTombstone } from '@services/domain/tombstoneService';
+import { getTombstoneMap, upsertTombstone } from '@services/domain/tombstoneService';
 
 // =============================================================================
 // DOMAIN LOGIC
@@ -107,7 +108,7 @@ export const processRecurrenceRules = async (): Promise<number> => {
 
                 const newTransaction: Transaction = {
                     ...rule.transactionTemplate,
-                    id: generateUUID(),
+                    id: recurringTransactionId(rule.id, nextDueDate),
                     date: nextDueDate.toISOString(),
                     note: rule.name || rule.transactionTemplate.note,
                     createdAt: new Date().toISOString(),
@@ -134,11 +135,14 @@ export const processRecurrenceRules = async (): Promise<number> => {
             }
         }
 
-        if (newTransactions.length > 0) {
-            await bulkSaveTransactions(newTransactions);
+        // A crash between these two writes, or another synced device that already ran the
+        // same occurrence, regenerates the same ids: skip any that exist or were deleted.
+        const toSave = await filterUnseenTransactions(newTransactions);
+        if (toSave.length > 0) {
+            await bulkSaveTransactions(toSave);
         }
         if (updatedRules.length > 0) {
-            await bulkSaveRecurrenceRules(updatedRules);
+            await advanceRecurrenceRules(updatedRules);
         }
 
         return processedCount;
@@ -149,6 +153,35 @@ export const processRecurrenceRules = async (): Promise<number> => {
     }
 };
 
+
+// One id per rule and due date, so every device generates the same row for an occurrence.
+const recurringTransactionId = (ruleId: string, dueDate: Date): string =>
+    deterministicUUID(`recurrence:${ruleId}:${dueDate.toISOString()}`);
+
+const filterUnseenTransactions = async (transactions: Transaction[]): Promise<Transaction[]> => {
+    if (transactions.length === 0) return [];
+    const db = await getDatabase();
+    const seen = new Set((await getTombstoneMap('transactions')).keys());
+    for (const chunk of chunkArray(transactions.map(t => t.id))) {
+        const rows = await db.getAllAsync<{ id: string }>(
+            `SELECT id FROM transactions WHERE id IN (${chunk.map(() => '?').join(', ')})`,
+            chunk
+        );
+        rows.forEach(r => seen.add(r.id));
+    }
+    return transactions.filter(t => !seen.has(t.id));
+};
+
+// Catch-up only moves nextDueDate. An UPDATE leaves updatedAt alone, so an automatic
+// advance never outranks a real edit from another device in sync's last-write-wins.
+const advanceRecurrenceRules = async (rules: RecurrenceRule[]): Promise<void> => {
+    const db = await getDatabase();
+    await db.withTransactionAsync(async () => {
+        for (const rule of rules) {
+            await db.runAsync('UPDATE recurrence_rules SET nextDueDate = ? WHERE id = ?', [rule.nextDueDate, rule.id]);
+        }
+    });
+};
 
 // =============================================================================
 // DATA ACCESS (CRUD)

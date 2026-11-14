@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Holdings Dividends chart: the Actual tab's year arrows match the Insights charts.
 - Insights Financial health: amounts show their percentage underneath in Open mode, the one Discreet shows instead (e.g. "62% of income").
 
+### Fixed
+- Recurring transactions: no duplicates after the app is closed mid catch-up, or when two synced devices both create the same one.
+- Sync: a recurring rule moving to its next due date no longer overrides an edit made to it on the other device.
+- Sync: a sync that fails partway no longer loses a record the other device had restored after you deleted it.
+- Holdings dividends: offline, foreign-currency dividends use the last known exchange rate instead of being counted 1:1 in your currency.
+
 ## [2.1.0] — 2026-11-12
 
 ### Added

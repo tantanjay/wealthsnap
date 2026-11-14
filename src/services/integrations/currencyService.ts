@@ -23,6 +23,7 @@ export const fetchExchangeRate = async (base: string, target: string, date?: str
     const cacheKey = `${CACHE_PREFIX}${base}_${target}_${date || 'LATEST'}`;
 
     // 1. Check Cache
+    let staleRate: number | null = null;
     try {
         const cached = await AsyncStorage.getItem(cacheKey);
         if (cached) {
@@ -33,6 +34,7 @@ export const fetchExchangeRate = async (base: string, target: string, date?: str
             if (date || (Date.now() - data.timestamp < CACHE_EXPIRY_MS)) {
                 return data.rate;
             }
+            staleRate = data.rate;
         }
     } catch (e) {
         console.warn('[CurrencyService] Cache read failed', e);
@@ -68,5 +70,6 @@ export const fetchExchangeRate = async (base: string, target: string, date?: str
         console.error(`[CurrencyService] Failed to fetch rate for ${base}->${target} (${date})`, error);
     }
 
-    return null;
+    // Offline: an expired latest rate beats no rate at all.
+    return staleRate;
 };

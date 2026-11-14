@@ -19,11 +19,11 @@ Scope lines were last checked against the tracked files at `f4e10bb`.
 | [`SEC`](#sec-security-encryption-and-privacy) | Security, encryption and privacy | High | Never | | |
 | [`DB`](#db-database-storage-and-app-start) | Database, storage and app start | High | Never | | |
 | [`BAK`](#bak-backup-restore-import-and-export) | Backup, restore, import and export | High | Never | | |
-| [`SYNC`](#sync-live-sync) | Live sync | High | Never | | 0 / 0 / 3 / 1 |
-| [`TXN`](#txn-transactions-recurrence-and-budgets) | Transactions, recurrence and budgets | High | Never | | 0 / 0 / 1 / 0 |
+| [`SYNC`](#sync-live-sync) | Live sync | High | Never | | 0 / 0 / 0 / 0 |
+| [`TXN`](#txn-transactions-recurrence-and-budgets) | Transactions, recurrence and budgets | High | Never | | 0 / 0 / 0 / 0 |
 | [`ACCT`](#acct-accounts) | Accounts | High | Not built | | |
 | [`DEBT`](#debt-debts) | Debts | High | Never | | |
-| [`INV`](#inv-investments-and-assets) | Investments and assets | High | Never | | 0 / 0 / 1 / 0 |
+| [`INV`](#inv-investments-and-assets) | Investments and assets | High | Never | | 0 / 0 / 0 / 0 |
 | [`TD`](#td-time-deposits) | Time deposits | High | Not built | | |
 | [`MET`](#met-metrics-and-formulas) | Metrics and formulas | High | Never | | |
 | [`AI`](#ai-ai-and-chat) | AI and chat | High | Never | | |
@@ -299,16 +299,17 @@ No findings yet.
 
 | ID | Sev | Status | Where | What happens | Proof | Found | Closed |
 |---|---|---|---|---|---|---|---|
-| SYNC-001 | M | Open | `syncService.ts:54` | Last-write-wins compares timestamps from two devices with no skew protection, so a phone whose clock runs ahead wins every conflict. | Prior review | Retro Round 1 | |
-| SYNC-002 | M | Open | `syncService.ts:207` | The merge clears tombstones before the chunked upsert commits, and isn't one transaction. A failure in between loses the delete. Called rare in the original review. | Prior review | Retro Round 1 | |
-| SYNC-003 | M | Open | `recurrenceService.ts:128` | Recurrence catch-up advances a rule's `nextDueDate` in a way the original review said corrupts `updatedAt`, which breaks last-write-wins for that rule. Logged here because the harm is to sync; re-prove against the current `bulkSaveRecurrenceRules`. | Prior review | Retro Round 1 | |
-| SYNC-004 | L | Open | `liveSyncTransport.ts:66` | `FrameReader.feed` concatenates every chunk into one buffer, which is O(n²) for large payloads. Needs a data size at which it actually breaks to stay Open. | Prior review | Retro Round 1 | |
+| SYNC-001 | M | Accepted | `syncService.ts:54` | Last-write-wins compares timestamps from two devices with no skew protection, so a phone whose clock runs ahead wins every conflict. Not fixed: phones keep network time, so it only matters for edits to the same record on both phones within moments, and a real fix (per-device or logical clocks) changes every synced table and the sync format. Decided by the user, 2026-11-14 | Prior review | Retro Round 1 | |
+| SYNC-002 | M | Fixed | `syncService.ts:207` | The merge cleared a resurrected row's tombstone before the upsert ran. If the upsert failed, the row was neither present nor tombstoned. Fixed: tombstones are cleared only after the upsert lands; a failed sync leaves the row deleted and the next sync retries it. | Traced | Retro Round 1; proven 2026-11-14 `885355d` | uncommitted |
+| SYNC-003 | M | Fixed | `recurrenceService.ts:141`, `recurrenceService.ts:169` | Catch-up saved advanced rules through `bulkSaveRecurrenceRules`, whose insert leaves out `updatedAt`, so SQLite stamped "now" on every advance. A phone that only caught up then beat the other phone's real edit to that rule in last-write-wins. Fixed: catch-up only runs `UPDATE … SET nextDueDate`, leaving `updatedAt` alone. | Traced | Retro Round 1; proven 2026-11-14 `885355d` | uncommitted |
+| SYNC-004 | L | Accepted | `liveSyncTransport.ts:66` | `FrameReader.feed` concatenates every chunk into one buffer, which is O(n²) for large payloads. Not fixed: no sync has been reported slow, and a change to the wire protocol needs a two-phone test. Revisit if large syncs with many receipts drag. Decided by the user, 2026-11-14 | Prior review | Retro Round 1 | |
 
 **History**
 
 | Date | Commit | Depth | Covered | Result | Notes |
 |---|---|---|---|---|---|
 | 2026-11-14 | `f4e10bb` | — | — | 4 carried over | Phase created; unresolved items carried over from the retro review log. Not audited yet |
+| 2026-11-14 | `885355d` | Findings only | Re-check of carried-over items | SYNC-002 and SYNC-003 proven and fixed | SYNC-001 and SYNC-004 Accepted by the user. The phase itself is not audited yet |
 
 ## `TXN`: Transactions, recurrence and budgets
 
@@ -328,13 +329,15 @@ No findings yet.
 
 | ID | Sev | Status | Where | What happens | Proof | Found | Closed |
 |---|---|---|---|---|---|---|---|
-| TXN-001 | M | Open | `recurrenceService.ts:137` | Catch-up saves the generated transactions, then the advanced rules, as two separate writes. If the second fails, the next run generates the same transactions again. | Prior review | Retro Round 1 | |
+| TXN-001 | M | Fixed | `recurrenceService.ts:137` | Catch-up saves the generated transactions, then the advanced rules, as two separate writes. If the second fails or the app is killed in between, the next run generates the same transactions again. Fixed with TXN-002's deterministic ids: a re-run skips occurrences that already exist or were deleted. | Traced | Retro Round 1; proven 2026-11-14 `885355d` | uncommitted |
+| TXN-002 | M | Fixed | `recurrenceService.ts:110`, `syncService.ts:180` | With Live Sync on two phones, each phone's catch-up created its own copy of every occurrence under a random id. The merge has no duplicate check, so after syncing both copies survived and the rent or salary counted twice. Fixed: each occurrence's id is a v4-shaped hash of the rule id and due date (`deterministicUUID`), so both phones create the same row. Pre-existing duplicates are not removed, and phones in different time zones can still compute different due dates. | Traced | 2026-11-14 `885355d` | uncommitted |
 
 **History**
 
 | Date | Commit | Depth | Covered | Result | Notes |
 |---|---|---|---|---|---|
 | 2026-11-14 | `f4e10bb` | — | — | 1 carried over | Phase created. Not audited yet |
+| 2026-11-14 | `885355d` | Findings only | Re-check of TXN-001, recurrence catch-up | 1 M found; both fixed | TXN-002 found while re-checking TXN-001. The phase itself is not audited yet |
 
 ## `ACCT`: Accounts
 
@@ -406,13 +409,15 @@ No findings yet.
 
 | ID | Sev | Status | Where | What happens | Proof | Found | Closed |
 |---|---|---|---|---|---|---|---|
-| INV-001 | M | Open | `dividendHistoryService.ts:39` | `getDividendConversionRate` converts dividends at today's exchange rate, not the rate on the ex-date, so past dividend totals change whenever the rate moves. Flagged twice, never decided. | Prior review | Retro Round 2 | |
+| INV-001 | M | Accepted | `dividendHistoryService.ts:39` | `getDividendConversionRate` converts dividends at today's exchange rate, not the rate on the ex-date. Intended: the function only feeds projections, the annual estimate and the calendar, which look forward, so today's rate is the right one. Received dividends are recorded as transactions separately. Decided by the user, 2026-11-14 | Prior review | Retro Round 2 | |
+| INV-002 | M | Fixed | `currencyService.ts:33`, `dividendHistoryService.ts:49` | Once the cached latest rate was over 24 hours old and the fetch failed (offline), `fetchExchangeRate` returned `null` and dividend conversion fell back to a rate of 1, so USD dividends showed as the same number of pesos. Fixed: an expired cached rate is used when the fetch fails, and with no rate at all the symbol is left out of dividend totals instead of counted 1:1. | Traced | 2026-11-14 `885355d` | uncommitted |
 
 **History**
 
 | Date | Commit | Depth | Covered | Result | Notes |
 |---|---|---|---|---|---|
 | 2026-11-14 | `f4e10bb` | — | — | 1 carried over | Phase created. Not audited yet |
+| 2026-11-14 | `885355d` | Findings only | Re-check of INV-001, dividend FX | 1 M found and fixed | INV-002 found while re-checking INV-001. The phase itself is not audited yet |
 
 ## `TD`: Time deposits
 

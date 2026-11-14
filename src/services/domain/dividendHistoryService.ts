@@ -34,9 +34,10 @@ const getDefaultCurrency = async (): Promise<string> => {
  * dividend_history has no currency column - amounts are stored raw in the asset's native
  * currency (both manual entry and the AI fetch save them unconverted). Convert to the user's
  * profile currency here at read time, since callers compare/combine these amounts against
- * profile-currency prices and holdings.
+ * profile-currency prices and holdings. Null when no rate is known: callers skip the symbol
+ * rather than show a foreign amount 1:1 as profile currency.
  */
-const getDividendConversionRate = async (symbol: string): Promise<BigNumber> => {
+const getDividendConversionRate = async (symbol: string): Promise<BigNumber | null> => {
     try {
         const [asset, profileCurrency] = await Promise.all([
             getAsset(symbol),
@@ -47,9 +48,9 @@ const getDividendConversionRate = async (symbol: string): Promise<BigNumber> => 
         if (!assetCurrency || assetCurrency === profileCurrency) return new BigNumber(1);
 
         const rate = await fetchExchangeRate(assetCurrency, profileCurrency);
-        return rate ? new BigNumber(rate) : new BigNumber(1);
+        return rate ? new BigNumber(rate) : null;
     } catch {
-        return new BigNumber(1);
+        return null;
     }
 };
 
@@ -272,6 +273,7 @@ export const getProjectedDividends = async (holdings: PortfolioHolding[], invest
         for (const holding of holdings) {
             const history = await db.getAllAsync<any>(GET_DIVIDEND_HISTORY_BY_SYMBOL_QUERY, [holding.symbol]);
             const conversionRate = await getDividendConversionRate(holding.symbol);
+            if (!conversionRate) continue;
             const asset = await getAsset(holding.symbol);
             const proRated = asset?.dividendBasis === 'PRO_RATED';
             const trades = proRated
@@ -348,6 +350,7 @@ export const getAnnualDividend = async (symbol: string): Promise<number> => {
         });
 
         const conversionRate = await getDividendConversionRate(symbol);
+        if (!conversionRate) return 0;
         return total.times(conversionRate).toNumber();
     } catch (error) {
         console.error(`Error calculating annual dividend per share for ${symbol}:`, error);
@@ -381,6 +384,7 @@ export const getDividendCalendar = async (holdings: PortfolioHolding[], year: nu
             const query = `SELECT * FROM dividend_history WHERE symbol = ?`;
             const rows = await db.getAllAsync<any>(query, [holding.symbol]);
             const conversionRate = await getDividendConversionRate(holding.symbol);
+            if (!conversionRate) continue;
 
             // Map to helper objects
             const events = rows.map(r => {

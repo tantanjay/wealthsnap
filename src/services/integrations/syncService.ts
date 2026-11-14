@@ -204,11 +204,13 @@ async function applyMergePlan(d: SyncEntityDescriptor, plan: EntityMergePlan): P
     for (const t of plan.tombstonesToWrite) {
         await upsertTombstone(d.key, t.id, t.deletedAt);
     }
-    for (const id of plan.tombstonesToClear) {
-        await clearTombstone(d.key, id);
-    }
     if (plan.toUpsert.length > 0) {
         await d.bulkUpsertForMerge(plan.toUpsert);
+    }
+    // Only after the upsert lands: if it fails, a resurrected row stays deleted (and
+    // tombstoned) instead of vanishing with no tombstone; the next sync retries it.
+    for (const id of plan.tombstonesToClear) {
+        await clearTombstone(d.key, id);
     }
 }
 

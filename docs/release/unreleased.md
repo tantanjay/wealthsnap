@@ -25,5 +25,17 @@
 
 ---
 
+## 🔁 Recurring Transactions & Sync Fixes
+- **No more doubled recurring transactions**: If the app was closed while it was catching up on recurring transactions, the next catch-up could add the same ones again. And with Live Sync on two phones, both phones created their own copy of each one, so your rent or salary counted twice after syncing. Each occurrence of a rule is now the same transaction on every device, so it's only ever added once. One you deleted stays deleted. This applies to occurrences from now on, once both phones are updated; existing duplicates aren't removed.
+- **Rule edits survive a sync**: Moving a rule to its next due date counted as an edit to the rule, so the other phone's real change to it (a new amount, say) could lose the next sync. Moving the due date no longer counts.
+- **A failed sync can't lose a record**: If you deleted something on one phone and then edited it on the other, syncing brings it back. If that sync failed partway, the record could end up gone on both. Now it stays deleted until the next sync brings it back properly.
+
+---
+
+## 💱 Dividends Offline
+- When the latest exchange rate couldn't be fetched, Holdings counted foreign-currency dividends as if they were already in your currency, so $100 showed as ₱100. It now uses the last rate it fetched. If it has never fetched one for that currency, that stock's dividends are left out until it can.
+
+---
+
 **Previous Version:** 2.1.0
 **Package:** `com.christian.soyosa.WealthSnap`
