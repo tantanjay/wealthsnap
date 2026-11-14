@@ -1,5 +1,7 @@
 # Retroactive Code Review Log
 
+> **Superseded by [AUDIT.md](AUDIT.md)** for new audits. This log stays as the history of Rounds 1–3; its unresolved and accepted items are carried into AUDIT.md's phases.
+
 Tracks deep code reviews of **already-released** WealthSnap versions, done to catch bugs that
 shipped but were never caught (as opposed to reviewing work still in `[Unreleased]`). Check this
 log before starting a new round so ranges aren't re-reviewed, and so context survives across
